@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Animated Gradient Background</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+    transition: background-color 0.6s ease;
+  }
+
+  canvas#bgCanvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+  }
+
+  .ui-overlay {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 10;
+    padding: 16px 16px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 18px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.18);
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.35s ease;
+  }
+  .theme-toggle:active { transform: scale(0.95); }
+  .theme-toggle .icon { font-size: 15px; transition: transform 0.4s ease; }
+  .theme-toggle .label {
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.6px; text-transform: uppercase;
+    color: rgba(255,255,255,0.85);
+    transition: color 0.3s ease;
+  }
+  body.light-theme .theme-toggle {
+    background: rgba(0,0,0,0.06);
+    border-color: rgba(0,0,0,0.08);
+  }
+  body.light-theme .theme-toggle .label { color: rgba(0,0,0,0.6); }
+
+  .color-picker-row {
+    display: flex; gap: 6px;
+    justify-content: center; flex-wrap: wrap;
+    max-width: 320px;
+    padding: 10px 14px;
+    border-radius: 24px;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.12);
+    transition: all 0.35s ease;
+  }
+  body.light-theme .color-picker-row {
+    background: rgba(0,0,0,0.04);
+    border-color: rgba(0,0,0,0.06);
+  }
+
+  .color-dot {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2.5px solid transparent;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    flex-shrink: 0;
+  }
+  .color-dot:active { transform: scale(0.9) !important; }
+  .color-dot.active {
+    border-color: rgba(255,255,255,0.9);
+    transform: scale(1.25);
+    box-shadow: 0 0 20px rgba(255,255,255,0.25);
+  }
+  body.light-theme .color-dot.active {
+    border-color: rgba(0,0,0,0.5);
+    box-shadow: 0 0 14px rgba(0,0,0,0.12);
+  }
+
+  .color-label {
+    font-size: 11px; font-weight: 500;
+    letter-spacing: 0.4px;
+    color: rgba(255,255,255,0.5);
+    text-align: center;
+    transition: color 0.3s ease;
+  }
+  body.light-theme .color-label { color: rgba(0,0,0,0.35); }
+</style>
+</head>
+<body>
+<canvas id="bgCanvas"></canvas>
+
+<div class="ui-overlay">
+  <div class="color-label" id="colorName">Amber</div>
+  <div class="color-picker-row" id="colorPicker"></div>
+  <div class="theme-toggle" id="themeToggle">
+    <span class="icon" id="themeIcon">🌙</span>
+    <span class="label" id="themeLabel">Dark</span>
+  </div>
+</div>
+
+<script>
+// ========== PALETTES ==========
+const COLORS = [
+  { name:'Amber',
+    dark:[255,190,0], light:[255,175,0],
+    a1d:[255,140,30], a1l:[255,120,0],
+    a2d:[255,230,50], a2l:[255,215,0],
+    a3d:[255,105,60], a3l:[255,80,20],
+    a4d:[255,220,100], a4l:[255,200,40],
+    compD:[60,100,255], compL:[40,80,255] },
+  { name:'Coral',
+    dark:[255,80,45], light:[255,60,25],
+    a1d:[255,50,90], a1l:[255,30,70],
+    a2d:[255,145,35], a2l:[255,125,10],
+    a3d:[255,25,55], a3l:[255,10,40],
+    a4d:[255,180,120], a4l:[255,150,70],
+    compD:[0,200,210], compL:[0,180,200] },
+  { name:'Rose',
+    dark:[255,35,115], light:[255,15,95],
+    a1d:[255,75,175], a1l:[255,50,155],
+    a2d:[255,15,65], a2l:[255,0,50],
+    a3d:[195,45,155], a3l:[185,20,140],
+    a4d:[255,130,160], a4l:[255,100,130],
+    compD:[0,220,140], compL:[0,200,120] },
+  { name:'Fuchsia',
+    dark:[255,25,215], light:[255,0,200],
+    a1d:[255,75,175], a1l:[255,50,160],
+    a2d:[195,35,255], a2l:[180,10,255],
+    a3d:[255,45,135], a3l:[255,20,115],
+    a4d:[220,80,255], a4l:[210,50,255],
+    compD:[0,230,40], compL:[0,210,20] },
+  { name:'Violet',
+    dark:[175,45,255], light:[165,20,255],
+    a1d:[125,55,255], a1l:[110,30,255],
+    a2d:[215,55,235], a2l:[205,30,225],
+    a3d:[95,75,255], a3l:[80,50,255],
+    a4d:[180,100,255], a4l:[170,70,255],
+    compD:[200,255,0], compL:[185,240,0] },
+  { name:'Indigo',
+    dark:[85,65,255], light:[70,45,255],
+    a1d:[55,115,255], a1l:[35,95,255],
+    a2d:[135,45,255], a2l:[120,25,255],
+    a3d:[35,95,255], a3l:[15,75,255],
+    a4d:[100,140,255], a4l:[80,115,255],
+    compD:[255,190,0], compL:[255,170,0] },
+  { name:'Azure',
+    dark:[15,145,255], light:[0,130,255],
+    a1d:[45,195,255], a1l:[20,175,255],
+    a2d:[25,105,255], a2l:[5,85,255],
+    a3d:[75,215,235], a3l:[40,200,230],
+    a4d:[0,170,255], a4l:[0,150,255],
+    compD:[255,110,0], compL:[255,90,0] },
+  { name:'Cyan',
+    dark:[0,225,235], light:[0,210,225],
+    a1d:[0,195,195], a1l:[0,180,180],
+    a2d:[35,250,215], a2l:[10,240,200],
+    a3d:[0,175,255], a3l:[0,155,250],
+    a4d:[50,255,200], a4l:[20,245,180],
+    compD:[255,30,20], compL:[255,10,5] },
+  { name:'Teal',
+    dark:[0,215,165], light:[0,200,150],
+    a1d:[0,195,115], a1l:[0,180,100],
+    a2d:[35,235,205], a2l:[15,225,190],
+    a3d:[0,175,135], a3l:[0,160,120],
+    a4d:[40,240,180], a4l:[20,230,165],
+    compD:[255,40,90], compL:[255,20,75] },
+  { name:'Emerald',
+    dark:[15,215,85], light:[0,205,65],
+    a1d:[55,235,145], a1l:[30,225,125],
+    a2d:[0,195,55], a2l:[0,180,35],
+    a3d:[95,245,115], a3l:[70,235,90],
+    a4d:[30,255,130], a4l:[10,245,110],
+    compD:[240,40,170], compL:[230,15,155] },
+  { name:'Lime',
+    dark:[165,240,15], light:[155,230,0],
+    a1d:[115,225,45], a1l:[100,215,20],
+    a2d:[205,250,35], a2l:[195,245,10],
+    a3d:[75,215,55], a3l:[55,200,30],
+    a4d:[190,255,80], a4l:[175,250,50],
+    compD:[170,15,240], compL:[160,0,230] },
+  { name:'Gold',
+    dark:[255,210,0], light:[255,195,0],
+    a1d:[255,175,25], a1l:[255,155,0],
+    a2d:[255,235,55], a2l:[255,220,20],
+    a3d:[235,155,45], a3l:[225,135,15],
+    a4d:[255,200,80], a4l:[255,180,40],
+    compD:[0,45,255], compL:[0,25,245] },
+];
+
+const canvas = document.getElementById('bgCanvas');
+const ctx = canvas.getContext('2d');
+let W, H, dpr;
+let isDark = true;
+let currentIndex = 0, targetIndex = 0;
+let morphProgress = 1;
+const morphSpeed = 0.04;
+
+let themeBlend = 1; // 1=dark, 0=light
+let themeTarget = 1;
+let time = 0;
+
+// ========== PARALLAX ==========
+let parallaxX = 0, parallaxY = 0;
+let targetParallaxX = 0, targetParallaxY = 0;
+const parallaxStrength = 0.035;
+const parallaxSmooth = 0.06;
+let hasGyro = false;
+
+function initGyro() {
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    document.addEventListener('touchstart', function iosGyroRequest() {
+      DeviceOrientationEvent.requestPermission().then(state => {
+        if (state === 'granted') { bindGyro(); }
+      }).catch(()=>{});
+      document.removeEventListener('touchstart', iosGyroRequest);
+    }, { once: true });
+  } else {
+    bindGyro();
+  }
+}
+
+function bindGyro() {
+  window.addEventListener('deviceorientation', (e) => {
+    if (e.gamma === null && e.beta === null) return;
+    hasGyro = true;
+    const gx = (e.gamma || 0) / 45;
+    const gy = ((e.beta || 0) - 45) / 45;
+    targetParallaxX = Math.max(-1, Math.min(1, gx));
+    targetParallaxY = Math.max(-1, Math.min(1, gy));
+  }, true);
+}
+
+function initMouseParallax() {
+  window.addEventListener('mousemove', (e) => {
+    if (hasGyro) return;
+    targetParallaxX = (e.clientX / window.innerWidth - 0.5) * 2;
+    targetParallaxY = (e.clientY / window.innerHeight - 0.5) * 2;
+  });
+}
+
+// ========== LIGHT SOURCES ==========
+const LIGHT_SOURCES = [
+  // DOMINANT bottom center
+  { basePos:[0.5, 0.82], drift:(t)=>[Math.sin(t*0.0008)*0.04, Math.cos(t*0.0006)*0.015],
+    rMul:0.75, darkOp:1.0, lightOp:1.0, colorKey:'main', pxMul:1.0, bloomMul:1.0 },
+  // Warm core (tinted, slightly brighter than main)
+  { basePos:[0.5, 0.82], drift:(t)=>[Math.sin(t*0.0008)*0.04, Math.cos(t*0.0006)*0.015],
+    rMul:0.25, darkOp:0.55, lightOp:0.75, colorKey:'core', pxMul:0.6, bloomMul:0.6 },
+  // Accent warm: bottom-left
+  { basePos:[0.12, 0.88], drift:(t)=>[Math.sin(t*0.001+1)*0.06, Math.cos(t*0.0008+2)*0.03],
+    rMul:0.50, darkOp:0.55, lightOp:0.7, colorKey:'a1', pxMul:1.2, bloomMul:0.7 },
+  // Accent cool: bottom-right
+  { basePos:[0.88, 0.84], drift:(t)=>[Math.cos(t*0.0009+3)*0.05, Math.sin(t*0.0007+1)*0.025],
+    rMul:0.48, darkOp:0.50, lightOp:0.65, colorKey:'a2', pxMul:1.1, bloomMul:0.7 },
+  // Deep accent: mid-left
+  { basePos:[0.06, 0.52], drift:(t)=>[Math.sin(t*0.0005+5)*0.04, Math.cos(t*0.0005+4)*0.06],
+    rMul:0.42, darkOp:0.35, lightOp:0.55, colorKey:'a3', pxMul:1.5, bloomMul:0.5 },
+  // High accent: top-right
+  { basePos:[0.90, 0.14], drift:(t)=>[Math.cos(t*0.0004+2)*0.05, Math.sin(t*0.0005+6)*0.05],
+    rMul:0.40, darkOp:0.28, lightOp:0.45, colorKey:'a4', pxMul:1.8, bloomMul:0.4 },
+  // Complementary glow: upper-left
+  { basePos:[0.28, 0.22], drift:(t)=>[Math.sin(t*0.0003+7)*0.08, Math.cos(t*0.0004+3)*0.06],
+    rMul:0.46, darkOp:0.20, lightOp:0.35, colorKey:'comp', pxMul:2.0, bloomMul:0.4 },
+  // Complementary accent: upper-right
+  { basePos:[0.76, 0.32], drift:(t)=>[Math.cos(t*0.0003+4)*0.06, Math.sin(t*0.0004+8)*0.04],
+    rMul:0.34, darkOp:0.14, lightOp:0.28, colorKey:'comp', pxMul:1.6, bloomMul:0.3 },
+  // Wide ambient wash from bottom
+  { basePos:[0.5, 1.05], drift:(t)=>[0,0],
+    rMul:1.4, darkOp:0.22, lightOp:0.50, colorKey:'a1', pxMul:0.3, bloomMul:0.8 },
+  // Extra mid accent for richness
+  { basePos:[0.5, 0.45], drift:(t)=>[Math.sin(t*0.0006+9)*0.07, Math.cos(t*0.0007+2)*0.04],
+    rMul:0.52, darkOp:0.12, lightOp:0.30, colorKey:'a4', pxMul:1.4, bloomMul:0.3 },
+];
+
+// ========== HELPERS ==========
+function lerp(a, b, t) { return a + (b - a) * t; }
+function easeInOutCubic(t) { return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2; }
+
+function getColorForKey(key) {
+  const from = COLORS[currentIndex];
+  const to = COLORS[targetIndex];
+  const t = easeInOutCubic(morphProgress);
+  const tb = themeBlend;
+
+  function blend(dkF, ltF, dkT, ltT) {
+    const dR = lerp(dkF[0], dkT[0], t), dG = lerp(dkF[1], dkT[1], t), dB = lerp(dkF[2], dkT[2], t);
+    const lR = lerp(ltF[0], ltT[0], t), lG = lerp(ltF[1], ltT[1], t), lB = lerp(ltF[2], ltT[2], t);
+    return { r: lerp(lR, dR, tb), g: lerp(lG, dG, tb), b: lerp(lB, dB, tb) };
+  }
+
+  switch(key) {
+    case 'main': return blend(from.dark, from.light, to.dark, to.light);
+    case 'a1': return blend(from.a1d, from.a1l, to.a1d, to.a1l);
+    case 'a2': return blend(from.a2d, from.a2l, to.a2d, to.a2l);
+    case 'a3': return blend(from.a3d, from.a3l, to.a3d, to.a3l);
+    case 'a4': return blend(from.a4d, from.a4l, to.a4d, to.a4l);
+    case 'comp': return blend(from.compD, from.compL, to.compD, to.compL);
+    case 'core': {
+      const m = blend(from.dark, from.light, to.dark, to.light);
+      const lift = lerp(0.18, 0.12, tb);
+      return {
+        r: Math.min(255, m.r + (255 - m.r) * lift),
+        g: Math.min(255, m.g + (255 - m.g) * lift),
+        b: Math.min(255, m.b + (255 - m.b) * lift),
+      };
+    }
+    default: return blend(from.dark, from.light, to.dark, to.light);
+  }
+}
+
+// ========== RESIZE ==========
+function resize() {
+  dpr = Math.min(devicePixelRatio, 2);
+  W = canvas.width = window.innerWidth * dpr;
+  H = canvas.height = window.innerHeight * dpr;
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+  initOffscreens();
+}
+
+// ========== OFFSCREEN CANVASES ==========
+let offCanvas, offCtx, bloomCanvas, bloomCtx;
+function initOffscreens() {
+  offCanvas = document.createElement('canvas');
+  offCanvas.width = W;
+  offCanvas.height = H;
+  offCtx = offCanvas.getContext('2d');
+
+  // Bloom at quarter resolution for performance + natural blur
+  bloomCanvas = document.createElement('canvas');
+  bloomCanvas.width = Math.round(W / 4);
+  bloomCanvas.height = Math.round(H / 4);
+  bloomCtx = bloomCanvas.getContext('2d');
+}
+
+// ========== DRAW A SINGLE BLOB ==========
+function drawBlob(context, px, py, radius, r, g, b, alpha) {
+  const grad = context.createRadialGradient(px, py, 0, px, py, radius);
+  grad.addColorStop(0, `rgba(${r},${g},${b},${alpha})`);
+  grad.addColorStop(0.08, `rgba(${r},${g},${b},${alpha * 0.92})`);
+  grad.addColorStop(0.2, `rgba(${r},${g},${b},${alpha * 0.7})`);
+  grad.addColorStop(0.4, `rgba(${r},${g},${b},${alpha * 0.35})`);
+  grad.addColorStop(0.65, `rgba(${r},${g},${b},${alpha * 0.10})`);
+  grad.addColorStop(0.85, `rgba(${r},${g},${b},${alpha * 0.02})`);
+  grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+  context.fillStyle = grad;
+  context.fillRect(0, 0, context.canvas.width, context.canvas.height);
+}
+
+// ========== MAIN DRAW ==========
+function drawFrame() {
+  time += 1;
+
+  // Morph
+  if (morphProgress < 1) {
+    morphProgress = Math.min(1, morphProgress + morphSpeed);
+    if (morphProgress >= 1) { currentIndex = targetIndex; }
+  }
+
+  // Theme blend
+  themeBlend += (themeTarget - themeBlend) * 0.05;
+
+  // Parallax smooth
+  parallaxX += (targetParallaxX - parallaxX) * parallaxSmooth;
+  parallaxY += (targetParallaxY - parallaxY) * parallaxSmooth;
+
+  // Breathing
+  const b1 = Math.sin(time * 0.005) * 0.06;
+  const b2 = Math.sin(time * 0.003 + 1.5) * 0.04;
+  const b3 = Math.sin(time * 0.008 + 3.0) * 0.03;
+  const breathScale = 1 + b1 + b2 + b3;
+  const baseRadius = Math.max(W, H) * breathScale;
+
+  // BG
+  const bgR = Math.round(lerp(255, 8, themeBlend));
+  const bgG = Math.round(lerp(252, 6, themeBlend));
+  const bgB = Math.round(lerp(248, 12, themeBlend));
+
+  // ===== RENDER BLOBS ON OFFSCREEN (black bg, additive) =====
+  offCtx.fillStyle = '#000';
+  offCtx.fillRect(0, 0, W, H);
+  offCtx.save();
+  offCtx.globalCompositeOperation = 'lighter';
+
+  for (const src of LIGHT_SOURCES) {
+    const [dx, dy] = src.drift(time);
+    const px = (src.basePos[0] + dx + parallaxX * parallaxStrength * src.pxMul) * W;
+    const py = (src.basePos[1] + dy + parallaxY * parallaxStrength * src.pxMul) * H;
+    const col = getColorForKey(src.colorKey);
+    const r = Math.round(Math.min(255, col.r));
+    const g = Math.round(Math.min(255, col.g));
+    const b = Math.round(Math.min(255, col.b));
+    const radius = baseRadius * src.rMul;
+    const alpha = lerp(src.lightOp, src.darkOp, themeBlend);
+
+    drawBlob(offCtx, px, py, radius, r, g, b, alpha);
+  }
+  offCtx.restore();
+
+  // ===== BLOOM PASS: downscale → draw → upscale (natural box blur) =====
+  const bW = bloomCanvas.width, bH = bloomCanvas.height;
+  bloomCtx.fillStyle = '#000';
+  bloomCtx.fillRect(0, 0, bW, bH);
+  // Draw offscreen scaled down (acts as blur)
+  bloomCtx.drawImage(offCanvas, 0, 0, bW, bH);
+  // Extra softening: draw it on itself offset slightly multiple times
+  bloomCtx.save();
+  bloomCtx.globalCompositeOperation = 'lighter';
+  bloomCtx.globalAlpha = 0.35;
+  const bloomSpread = Math.round(bW * 0.02);
+  bloomCtx.drawImage(bloomCanvas, -bloomSpread, -bloomSpread, bW + bloomSpread*2, bH + bloomSpread*2);
+  bloomCtx.drawImage(bloomCanvas, bloomSpread, bloomSpread, bW - bloomSpread*2, bH - bloomSpread*2);
+  bloomCtx.restore();
+
+  // ===== COMPOSITE TO MAIN CANVAS =====
+  ctx.fillStyle = `rgb(${bgR},${bgG},${bgB})`;
+  ctx.fillRect(0, 0, W, H);
+
+  const isLight = themeBlend < 0.5;
+  const lightFactor = 1 - themeBlend; // 0 when dark, 1 when light
+
+  if (themeBlend > 0.95) {
+    // === DARK THEME ===
+    // Additive blending (lights on dark)
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.drawImage(offCanvas, 0, 0);
+    ctx.restore();
+
+    // Bloom layer
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.3;
+    ctx.drawImage(bloomCanvas, 0, 0, W, H);
+    ctx.restore();
+
+  } else if (themeBlend < 0.05) {
+    // === LIGHT THEME ===
+    // Strategy: use 'multiply' blend. On white bg, multiply with the blob colors
+    // shows the actual colors. But blobs are on black = mostly dark.
+    // So we invert: draw blobs as-is with normal blending but high alpha directly.
+    // Better approach: draw the colored blobs DIRECTLY on white bg using normal composite.
+
+    // Draw blobs directly onto the white canvas (no offscreen tricks)
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+    for (const src of LIGHT_SOURCES) {
+      const [dx, dy] = src.drift(time);
+      const px = (src.basePos[0] + dx + parallaxX * parallaxStrength * src.pxMul) * W;
+      const py = (src.basePos[1] + dy + parallaxY * parallaxStrength * src.pxMul) * H;
+      const col = getColorForKey(src.colorKey);
+      const r = Math.round(Math.min(255, col.r));
+      const g = Math.round(Math.min(255, col.g));
+      const b = Math.round(Math.min(255, col.b));
+      const radius = baseRadius * src.rMul;
+      const alpha = src.lightOp * 0.85;
+
+      drawBlob(ctx, px, py, radius, r, g, b, alpha);
+    }
+    ctx.restore();
+
+    // Bloom on light: draw bloom with multiply to tint white areas
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 0.25;
+    // Re-render bloom blobs directly too
+    for (const src of LIGHT_SOURCES) {
+      const [dx, dy] = src.drift(time);
+      const px = (src.basePos[0] + dx + parallaxX * parallaxStrength * src.pxMul) * W;
+      const py = (src.basePos[1] + dy + parallaxY * parallaxStrength * src.pxMul) * H;
+      const col = getColorForKey(src.colorKey);
+      const r = Math.round(Math.min(255, col.r));
+      const g = Math.round(Math.min(255, col.g));
+      const b = Math.round(Math.min(255, col.b));
+      const radius = baseRadius * src.rMul * 1.4; // wider for bloom
+      const alpha = src.bloomMul * 0.5;
+
+      drawBlob(ctx, px, py, radius, r, g, b, alpha);
+    }
+    ctx.restore();
+
+  } else {
+    // === TRANSITION: blend between dark and light approaches ===
+
+    // Dark contribution (additive)
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = themeBlend;
+    ctx.drawImage(offCanvas, 0, 0);
+    ctx.restore();
+
+    // Light contribution (direct blobs)
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = lightFactor;
+    for (const src of LIGHT_SOURCES) {
+      const [dx, dy] = src.drift(time);
+      const px = (src.basePos[0] + dx + parallaxX * parallaxStrength * src.pxMul) * W;
+      const py = (src.basePos[1] + dy + parallaxY * parallaxStrength * src.pxMul) * H;
+      const col = getColorForKey(src.colorKey);
+      const r = Math.round(Math.min(255, col.r));
+      const g = Math.round(Math.min(255, col.g));
+      const b = Math.round(Math.min(255, col.b));
+      const radius = baseRadius * src.rMul;
+      const alpha = src.lightOp * 0.85;
+
+      drawBlob(ctx, px, py, radius, r, g, b, alpha);
+    }
+    ctx.restore();
+
+    // Bloom for both
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.25 * themeBlend;
+    ctx.drawImage(bloomCanvas, 0, 0, W, H);
+    ctx.restore();
+  }
+
+  // Subtle top vignette
+  const vigAlpha = lerp(0.03, 0.15, themeBlend);
+  const vig = ctx.createLinearGradient(0, 0, 0, H * 0.35);
+  vig.addColorStop(0, themeBlend > 0.5 ? `rgba(0,0,0,${vigAlpha})` : `rgba(200,200,210,${vigAlpha * 0.5})`);
+  vig.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, W, H * 0.35);
+
+  requestAnimationFrame(drawFrame);
+}
+
+// ========== UI ==========
+function buildPicker() {
+  const picker = document.getElementById('colorPicker');
+  picker.innerHTML = '';
+  COLORS.forEach((c, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'color-dot' + (i === currentIndex ? ' active' : '');
+    const col = c.dark;
+    dot.style.background = `rgb(${col[0]},${col[1]},${col[2]})`;
+    dot.style.boxShadow = `0 2px 8px rgba(${col[0]},${col[1]},${col[2]},0.45)`;
+    dot.addEventListener('click', () => selectColor(i));
+    picker.appendChild(dot);
+  });
+}
+
+function selectColor(index) {
+  if (index === targetIndex && morphProgress >= 1) return;
+  currentIndex = targetIndex;
+  targetIndex = index;
+  morphProgress = 0;
+  document.getElementById('colorName').textContent = COLORS[index].name;
+  document.querySelectorAll('.color-dot').forEach((dot, i) => {
+    dot.classList.toggle('active', i === index);
+  });
+}
+
+function toggleTheme() {
+  isDark = !isDark;
+  themeTarget = isDark ? 1 : 0;
+  document.body.classList.toggle('light-theme', !isDark);
+  document.getElementById('themeIcon').textContent = isDark ? '🌙' : '☀️';
+  document.getElementById('themeLabel').textContent = isDark ? 'Dark' : 'Light';
+}
+
+// ========== INIT ==========
+window.addEventListener('resize', resize);
+document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+resize();
+buildPicker();
+initGyro();
+initMouseParallax();
+drawFrame();
+</script>
+</body>
+</html>

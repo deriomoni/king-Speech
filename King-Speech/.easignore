@@ -1,0 +1,5 @@
+.local/
+attached_assets/
+server_dist/
+*.md
+!README.md

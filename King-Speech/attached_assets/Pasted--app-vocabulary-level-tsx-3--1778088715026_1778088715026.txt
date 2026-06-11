@@ -1,0 +1,243 @@
+## ЗАДАЧА: Переработать `app/vocabulary-level.tsx` — 3 конкретных изменения
+
+### Контекст
+Файл уже существует: `app/vocabulary-level.tsx`. База слов: `constants/vocabularyData.ts` — не трогать.
+Нужно внести три чётких изменения в существующий код. Ничего больше не менять.
+
+---
+
+### ИЗМЕНЕНИЕ 1 — SpinPhase: автовыбор через 6 секунд
+
+Найти компонент `SpinPhase` (строки ~312–430).
+
+Добавить таймер автовыбора. Если игрок не нажал СТОП в течение 6 секунд — игра сама вызывает `handleStop()`:
+
+```typescript
+// Добавить внутрь SpinPhase сразу после существующих useEffect:
+useEffect(() => {
+  const autoId = setTimeout(() => {
+    if (isSpinning) {
+      handleStop();
+    }
+  }, 6000);
+  return () => clearTimeout(autoId);
+}, []); // запускается один раз при монтировании
+```
+
+Никаких визуальных изменений в SpinPhase не делать — дизайн и анимации оставить как есть.
+
+---
+
+### ИЗМЕНЕНИЕ 2 — PlayPhase: убрать кнопку Старт, добавить countdown 3-2-1
+
+Найти компонент `PlayPhase`. Сейчас есть два этапа: `stage === "ready"` (показывает кнопку Старт) и `stage === "active"` (идёт запись).
+
+Нужно убрать промежуточный экран "ready" с кнопкой Старт полностью. Вместо него — автоматический обратный отсчёт 3...2...1...Старт сразу после входа в PlayPhase.
+
+#### Изменения в state:
+```typescript
+// Заменить:
+const [stage, setStage] = useState<"ready" | "active">("ready");
+
+// На:
+const [stage, setStage] = useState<"countdown" | "active">("countdown");
+const [countdown, setCountdown] = useState(3);
+```
+
+#### Добавить useEffect для countdown (сразу после объявления countdown):
+```typescript
+useEffect(() => {
+  if (stage !== "countdown") return;
+  if (countdown === 0) {
+    // Запустить игру
+    setStage("active");
+    isPlayingRef.current = true;
+    startRecognition();
+    return;
+  }
+  const id = setTimeout(() => setCountdown((c) => c - 1), 1000);
+  return () => clearTimeout(id);
+}, [stage, countdown]);
+```
+
+#### Изменить handleStart — он больше не нужен, удалить.
+
+#### Изменить JSX в PlayPhase:
+
+Найти блок `{stage === "ready" ? (...) : (...)}` и заменить на:
+
+```tsx
+{stage === "countdown" ? (
+  // Экран обратного отсчёта — максимально минималистично
+  
+    
+      {countdown === 0 ? "СТАРТ" : countdown}
+    
+
+    {/* Слово уже видно во время отсчёта — игрок успевает настроиться */}
+    
+      Готовься называть синонимы
+    
+  
+) : (
+  // Активная игра — весь существующий JSX для stage === "active" без изменений
+  <>
+    
+      {bars.map((b) => (
+        
+      ))}
+    
+
+    
+      {feed.map((item) =>
+        item.status === "correct" ? (
+          
+            + {item.word} +3
+          
+        ) : (
+          
+            x {item.word}
+          
+        ),
+      )}
+    
+
+    
+      {foundSynonyms.length} из {word.synonyms.length} · {score} очков
+    
+
+    {allFoundBanner ? (
+      
+        Отлично! Все синонимы найдены!
+      
+    ) : null}
+
+    {/* Убрать кнопку стоп слева и центральный блок — оставить только индикатор микрофона */}
+    
+      
+        
+      
+    
+
+    {recognitionError ? (
+      
+        {recognitionError}
+        
+          
+           [
+              styles.fallbackSend,
+              { opacity: pressed ? 0.8 : 1 },
+            ]}
+          >
+            
+          
+        
+      
+    ) : null}
+  
+)}
+```
+
+#### Изменить topBar таймер в PlayPhase:
+Найти строку где отображается таймер. Сейчас там:
+```typescript
+{stage === "active" ? timerText : `${word.timerSeconds} сек`}
+```
+Заменить на:
+```typescript
+{stage === "active" ? timerText : `${word.timerSeconds} сек`}
+// Цвет таймера: при stage === "countdown" → rgba(255,255,255,0.4)
+// Добавить условие к color:
+color: stage === "active" ? timerColor : "rgba(255,255,255,0.40)"
+```
+
+#### Изменить запуск микрофона:
+Найти useEffect для startMicCapture:
+```typescript
+// Было:
+if (stage !== "active") return;
+
+// Заменить на:
+if (stage !== "active") return;
+// (оставить как есть — микрофон запускается только при active)
+```
+
+#### Убрать showHint и hintBox — они были в ready stage, теперь не нужны.
+Удалить строки:
+```typescript
+const showHint = stage === "ready" && word.difficulty === 1;
+const hintExamples = word.synonyms.slice(0, 3).join(", ");
+```
+И стили `readyBody`, `readyPrompt`, `hintBox`, `hintText` из StyleSheet (или просто оставить — они не будут использоваться).
+
+---
+
+### ИЗМЕНЕНИЕ 3 — ResultPhase: показывать только слова найденные игроком
+
+Найти компонент `ResultPhase` (строки ~1012–1130).
+
+Сейчас там отображаются ВСЕ синонимы из `word.synonyms` — найденные зелёным, пропущенные серым:
+```typescript
+// ТЕКУЩИЙ КОД (удалить):
+
+  {word.synonyms.map((syn) => {
+    const found = foundSet.has(normalizeForCompare(syn));
+    return (
+      
+        
+          {found ? "+ " : "x "}{syn}
+        
+      
+    );
+  })}
+
+```
+
+Заменить на — показывать ТОЛЬКО слова которые игрок нашёл, без пропущенных:
+```typescript
+// НОВЫЙ КОД:
+{foundSynonyms.length > 0 ? (
+  <>
+    
+      Ты назвал:
+    
+    
+      {foundSynonyms.map((syn) => (
+        
+          
+            + {syn}
+          
+        
+      ))}
+    
+  
+) : (
+  
+    В следующий раз получится!
+  
+)}
+```
+
+Также убрать строки `resultLabel` которые показывают "из N синонимов" — достаточно показать только количество найденных и очки. Найти и удалить:
+```typescript
+// Удалить эту строку из JSX ResultPhase:
+
+  из {word.synonyms.length} синонимов
+
+```
+
+---
+
+### ИТОГО — только эти три изменения:
+1. `SpinPhase` — добавить `setTimeout(handleStop, 6000)` при монтировании
+2. `PlayPhase` — заменить `stage "ready"` на `stage "countdown"` с отсчётом 3-2-1
+3. `ResultPhase` — показывать только `foundSynonyms`, убрать все пропущенные слова
+
+### НЕ ТРОГАТЬ:
+- `constants/vocabularyData.ts`
+- Всю логику распознавания речи (startRecognition, checkSynonymAdvanced)
+- Waveform и bars
+- Стили кроме случаев указанных выше
+- Анимации SpinPhase
+- TutorialPhase
+- GameContext (addXP, markLevelComplete)

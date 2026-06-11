@@ -1,0 +1,1670 @@
+// 3D WebGL Vinyl Cover Slider — iPhone 17 optimized (2622×1206 / 874×402 logical)
+const scene = new THREE.Scene();
+scene.background = null; // We'll use CSS gradient background instead
+scene.fog = new THREE.FogExp2(0x0a0a0a, 0.08);
+
+// iPhone 17 target aspect ratio (portrait): 1206/2622 ≈ 0.46
+const IPHONE17_ASPECT = 1206 / 2622; // ~0.46 portrait width/height
+
+// Compute canvas size that fits viewport while preserving iPhone 17 aspect
+function computeCanvasSize() {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const viewportAspect = vw / vh;
+  let cw, ch;
+  if (viewportAspect > IPHONE17_ASPECT) {
+    // Viewport is wider — height-limited
+    ch = vh;
+    cw = vh * IPHONE17_ASPECT;
+  } else {
+    // Viewport is taller or exact — width-limited
+    cw = vw;
+    ch = vw / IPHONE17_ASPECT;
+  }
+  return { width: Math.round(cw), height: Math.round(ch) };
+}
+
+const canvasSize = computeCanvasSize();
+
+const camera = new THREE.PerspectiveCamera(50, canvasSize.width / canvasSize.height, 0.1, 100);
+camera.position.set(0, 0.5, 6);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(canvasSize.width, canvasSize.height);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.6;
+
+// Center canvas symmetrically in viewport
+renderer.domElement.style.position = 'absolute';
+renderer.domElement.style.left = '50%';
+renderer.domElement.style.top = '50%';
+renderer.domElement.style.transform = 'translate(-50%, -50%)';
+document.body.style.overflow = 'hidden';
+document.body.style.background = '#050510';
+document.body.appendChild(renderer.domElement);
+
+// Dynamic gradient background layer
+const gradientBg = document.createElement('div');
+gradientBg.id = 'gradientBg';
+gradientBg.style.cssText = `
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  z-index: -1; transition: background 1.8s cubic-bezier(0.4, 0, 0.2, 1);
+`;
+document.body.appendChild(gradientBg);
+
+// Album color palettes for background gradients — hand-tuned dark reflexion tones
+const albumGradients = [
+  // Midnight Drive (pink) — deep plum with magenta reflexion
+  { stops: ['#0a0412', '#12031a', '#1a0622', '#0d0318', '#080210'], accent: 'rgba(255,20,147,0.08)', accent2: 'rgba(180,40,120,0.06)' },
+  // Ocean Waves (blue) — midnight navy with cerulean reflexion
+  { stops: ['#030810', '#041020', '#061428', '#040c1a', '#020610'], accent: 'rgba(0,102,255,0.09)', accent2: 'rgba(50,140,255,0.05)' },
+  // Golden Hour (gold) — deep umber with amber reflexion
+  { stops: ['#0c0804', '#140e04', '#1a1208', '#100a04', '#080602'], accent: 'rgba(255,170,0,0.08)', accent2: 'rgba(255,194,0,0.05)' },
+  // Emerald City (green) — forest depths with jade reflexion
+  { stops: ['#020c06', '#041408', '#06180c', '#031006', '#020a04'], accent: 'rgba(0,204,102,0.08)', accent2: 'rgba(68,255,170,0.05)' },
+  // Purple Rain (violet) — cosmic purple with amethyst reflexion
+  { stops: ['#08020e', '#100418', '#160622', '#0c0314', '#06010a'], accent: 'rgba(153,51,255,0.10)', accent2: 'rgba(204,102,255,0.06)' },
+  // Arctic Chill (cyan) — deep arctic with icy reflexion
+  { stops: ['#020a0e', '#041218', '#061822', '#030e14', '#02080c'], accent: 'rgba(102,221,255,0.08)', accent2: 'rgba(170,238,255,0.05)' },
+  // Crimson Tide (red) — blood noir with scarlet reflexion
+  { stops: ['#0c0204', '#140406', '#1a060a', '#100306', '#080202'], accent: 'rgba(204,0,51,0.09)', accent2: 'rgba(255,51,85,0.05)' },
+];
+
+function updateGradientBackground(index) {
+  const grad = albumGradients[index];
+  const angle = 38; // degrees
+  gradientBg.style.background = `
+    linear-gradient(${angle}deg,
+      ${grad.stops[0]} 0%,
+      ${grad.stops[1]} 18%,
+      ${grad.stops[2]} 40%,
+      ${grad.stops[3]} 70%,
+      ${grad.stops[4]} 100%
+    )
+  `;
+  // Add radial accent overlays via box-shadow trick on a pseudo-like overlay
+  gradientBg.style.boxShadow = `
+    inset -20vw 10vh 60vw -10vw ${grad.accent},
+    inset 15vw -20vh 50vw -8vw ${grad.accent2},
+    inset -30vw -30vh 70vw -15vw ${grad.accent}
+  `;
+}
+
+// Also create a subtle radial glow overlay that follows album color
+const glowOverlay = document.createElement('div');
+glowOverlay.id = 'glowOverlay';
+glowOverlay.style.cssText = `
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  z-index: -1; pointer-events: none;
+  transition: background 1.8s cubic-bezier(0.4, 0, 0.2, 1);
+`;
+document.body.appendChild(glowOverlay);
+
+function updateGlowOverlay(index) {
+  const album = albums[index];
+  const r = (album.colors[0] >> 16) & 255;
+  const g = (album.colors[0] >> 8) & 255;
+  const b = album.colors[0] & 255;
+  glowOverlay.style.background = `
+    radial-gradient(ellipse 60% 50% at 30% 60%, rgba(${r},${g},${b},0.04) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 75% 35%, rgba(${r},${g},${b},0.03) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 40% at 50% 90%, rgba(${r},${g},${b},0.025) 0%, transparent 50%)
+  `;
+}
+
+// Lighting
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+ambientLight.name = 'ambientLight';
+scene.add(ambientLight);
+
+const spotLight = new THREE.SpotLight(0xffffff, 150);
+spotLight.name = 'spotLight';
+spotLight.position.set(0, 6, 6);
+spotLight.angle = 0.7;
+spotLight.penumbra = 0.6;
+spotLight.castShadow = true;
+spotLight.shadow.mapSize.set(1024, 1024);
+scene.add(spotLight);
+
+const rimLight = new THREE.PointLight(0x4466ff, 30);
+rimLight.name = 'rimLight';
+rimLight.position.set(-5, 3, 2);
+scene.add(rimLight);
+
+const rimLight2 = new THREE.PointLight(0xff4466, 30);
+rimLight2.name = 'rimLight2';
+rimLight2.position.set(5, 3, 2);
+scene.add(rimLight2);
+
+const frontFill = new THREE.PointLight(0xffffff, 20);
+frontFill.name = 'frontFill';
+frontFill.position.set(0, 2, 5);
+scene.add(frontFill);
+
+// Album data
+const albums = [
+  { title: 'Midnight Drive', artist: 'Neon Pulse', year: '2024', colors: [0xff1493, 0x2a0020, 0xff69b4, 0x4a0035] },
+  { title: 'Ocean Waves', artist: 'Blue Horizon', year: '2023', colors: [0x0066ff, 0x001133, 0x33aaff, 0x002255] },
+  { title: 'Golden Hour', artist: 'Sun Valley', year: '2024', colors: [0xffaa00, 0x2a1500, 0xffc200, 0x4a2800] },
+  { title: 'Emerald City', artist: 'Forest Echo', year: '2023', colors: [0x00cc66, 0x002211, 0x44ffaa, 0x004422] },
+  { title: 'Purple Rain', artist: 'Violet Storm', year: '2022', colors: [0x9933ff, 0x110022, 0xcc66ff, 0x330055] },
+  { title: 'Arctic Chill', artist: 'Frost Byte', year: '2024', colors: [0x66ddff, 0x001122, 0xaaeeff, 0x003344] },
+  { title: 'Crimson Tide', artist: 'Red Velvet', year: '2023', colors: [0xcc0033, 0x220000, 0xff3355, 0x440011] },
+];
+
+// Cover art design styles
+const coverDesigns = [
+  'retroWave',    // Midnight Drive — synthwave sunset grid
+  'tidalWave',    // Ocean Waves — layered ocean waves
+  'sunburst',     // Golden Hour — radial sunburst with horizon
+  'botanical',    // Emerald City — abstract plant/leaf motifs
+  'cosmos',       // Purple Rain — swirling galaxy/cosmos
+  'geometric',    // Arctic Chill — icy geometric crystal mosaic
+  'typographic',  // Crimson Tide — bold typographic layout
+];
+
+function hexStr(c) { return '#' + c.toString(16).padStart(6, '0'); }
+
+function createAlbumTexture(album, index) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  const design = coverDesigns[index % coverDesigns.length];
+  const c0 = hexStr(album.colors[0]);
+  const c1 = hexStr(album.colors[1]);
+  const c2 = hexStr(album.colors[2]);
+  const c3 = hexStr(album.colors[3]);
+
+  // Color helpers
+  const r0 = (album.colors[0] >> 16) & 255, g0 = (album.colors[0] >> 8) & 255, b0 = album.colors[0] & 255;
+  const r2 = (album.colors[2] >> 16) & 255, g2 = (album.colors[2] >> 8) & 255, b2 = album.colors[2] & 255;
+
+  if (design === 'retroWave') {
+    // Minimal: split gradient with a single horizontal line
+    const bg = ctx.createLinearGradient(0, 0, 0, 512);
+    bg.addColorStop(0, c1);
+    bg.addColorStop(0.45, c0);
+    bg.addColorStop(0.55, c0);
+    bg.addColorStop(1, c1);
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Single glowing circle
+    const sunGrad = ctx.createRadialGradient(256, 256, 0, 256, 256, 160);
+    sunGrad.addColorStop(0, c2 + 'cc');
+    sunGrad.addColorStop(0.5, c0 + '44');
+    sunGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = sunGrad;
+    ctx.beginPath();
+    ctx.arc(256, 256, 160, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Horizontal divider
+    ctx.strokeStyle = c2 + '66';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(60, 280);
+    ctx.lineTo(452, 280);
+    ctx.stroke();
+
+    // Title minimal
+    ctx.fillStyle = '#ffffffcc';
+    ctx.font = '300 28px Inter, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(album.title.toLowerCase(), 256, 420);
+    ctx.fillStyle = '#ffffff44';
+    ctx.font = '300 11px Inter, Arial, sans-serif';
+    ctx.fillText(album.artist.toLowerCase(), 256, 445);
+
+  } else if (design === 'tidalWave') {
+    // Minimal: soft gradient with layered arcs
+    ctx.fillStyle = c1;
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Stacked soft arcs
+    for (let i = 0; i < 5; i++) {
+      const y = 220 + i * 50;
+      const alpha = 0.06 + i * 0.04;
+      ctx.beginPath();
+      ctx.ellipse(256, y, 300 - i * 20, 60 + i * 15, 0, 0, Math.PI);
+      ctx.fillStyle = `rgba(${r0}, ${g0}, ${b0}, ${alpha})`;
+      ctx.fill();
+    }
+
+    // Small circle accent
+    ctx.beginPath();
+    ctx.arc(400, 100, 30, 0, Math.PI * 2);
+    ctx.fillStyle = c2 + '22';
+    ctx.fill();
+    ctx.strokeStyle = c2 + '44';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Title top-left
+    ctx.fillStyle = '#ffffffbb';
+    ctx.font = '300 26px Inter, Arial, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(album.title.toLowerCase(), 36, 460);
+    ctx.fillStyle = '#ffffff33';
+    ctx.font = '300 10px Inter, Arial, sans-serif';
+    ctx.fillText(album.artist.toLowerCase() + '  /  ' + album.year, 38, 480);
+
+  } else if (design === 'sunburst') {
+    // Minimal: warm field with concentric rings
+    const bg = ctx.createRadialGradient(256, 256, 0, 256, 256, 362);
+    bg.addColorStop(0, c0);
+    bg.addColorStop(0.6, c1);
+    bg.addColorStop(1, '#0a0500');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Concentric thin rings
+    for (let i = 1; i <= 5; i++) {
+      ctx.beginPath();
+      ctx.arc(256, 256, i * 45, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(255,255,255,${0.03 + i * 0.02})`;
+      ctx.lineWidth = 0.7;
+      ctx.stroke();
+    }
+
+    // Small dot at center
+    ctx.beginPath();
+    ctx.arc(256, 256, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff88';
+    ctx.fill();
+
+    // Title centered bottom
+    ctx.fillStyle = '#fff';
+    ctx.font = '600 30px Inter, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(album.title.toUpperCase(), 256, 450);
+    ctx.fillStyle = '#ffffff55';
+    ctx.font = '300 12px Inter, Arial, sans-serif';
+    ctx.fillText(album.artist, 256, 475);
+
+  } else if (design === 'botanical') {
+    // Minimal: dark field with a few abstract curved lines
+    ctx.fillStyle = c1;
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Flowing organic curves
+    for (let i = 0; i < 6; i++) {
+      ctx.beginPath();
+      const startY = 100 + i * 60;
+      ctx.moveTo(-20, startY);
+      ctx.bezierCurveTo(150, startY - 80 + i * 15, 360, startY + 80 - i * 10, 532, startY + i * 20);
+      ctx.strokeStyle = `rgba(${r2}, ${g2}, ${b2}, ${0.06 + i * 0.03})`;
+      ctx.lineWidth = 1 + i * 0.3;
+      ctx.stroke();
+    }
+
+    // Single accent dot
+    ctx.beginPath();
+    ctx.arc(420, 90, 18, 0, Math.PI * 2);
+    ctx.fillStyle = c0 + '33';
+    ctx.fill();
+
+    // Title bottom-left
+    ctx.fillStyle = '#ffffffcc';
+    ctx.font = '300 24px Inter, Arial, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(album.title.toLowerCase(), 32, 455);
+    ctx.fillStyle = c2 + '77';
+    ctx.font = '300 10px Inter, Arial, sans-serif';
+    ctx.fillText(album.artist.toLowerCase(), 34, 478);
+
+  } else if (design === 'cosmos') {
+    // Minimal: dark with soft radial glow and scattered dots
+    ctx.fillStyle = '#050008';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Soft nebula glow
+    const glow = ctx.createRadialGradient(200, 220, 0, 200, 220, 250);
+    glow.addColorStop(0, `rgba(${r0}, ${g0}, ${b0}, 0.2)`);
+    glow.addColorStop(0.5, `rgba(${r0}, ${g0}, ${b0}, 0.05)`);
+    glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Sparse stars
+    for (let i = 0; i < 40; i++) {
+      const sx = Math.random() * 512, sy = Math.random() * 512;
+      const size = Math.random() < 0.15 ? 2 : 1;
+      ctx.fillStyle = `rgba(255,255,255,${0.15 + Math.random() * 0.4})`;
+      ctx.beginPath();
+      ctx.arc(sx, sy, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Single ring
+    ctx.beginPath();
+    ctx.arc(256, 240, 100, 0, Math.PI * 2);
+    ctx.strokeStyle = c2 + '22';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+
+    // Title centered
+    ctx.fillStyle = '#ffffffcc';
+    ctx.font = '300 30px Inter, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(album.title.toLowerCase(), 256, 445);
+    ctx.fillStyle = c2 + '66';
+    ctx.font = '300 10px Inter, Arial, sans-serif';
+    ctx.fillText(album.artist.toLowerCase() + '   ·   ' + album.year, 256, 470);
+
+  } else if (design === 'geometric') {
+    // Minimal: dark with a few sharp lines and a shape
+    const bg = ctx.createLinearGradient(0, 0, 512, 512);
+    bg.addColorStop(0, c1);
+    bg.addColorStop(1, '#030508');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Single large triangle outline
+    ctx.beginPath();
+    ctx.moveTo(256, 100);
+    ctx.lineTo(400, 350);
+    ctx.lineTo(112, 350);
+    ctx.closePath();
+    ctx.strokeStyle = c2 + '33';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Inner smaller triangle
+    ctx.beginPath();
+    ctx.moveTo(256, 160);
+    ctx.lineTo(350, 320);
+    ctx.lineTo(162, 320);
+    ctx.closePath();
+    ctx.strokeStyle = c2 + '18';
+    ctx.lineWidth = 0.7;
+    ctx.stroke();
+
+    // Vertex dots
+    [[256,100],[400,350],[112,350]].forEach(([px,py]) => {
+      ctx.beginPath();
+      ctx.arc(px, py, 3, 0, Math.PI * 2);
+      ctx.fillStyle = c2 + '88';
+      ctx.fill();
+    });
+
+    // Title right-aligned
+    ctx.fillStyle = '#ffffffcc';
+    ctx.font = '600 24px Inter, Arial, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(album.title.toUpperCase(), 480, 450);
+    ctx.fillStyle = c2 + '55';
+    ctx.font = '300 10px Inter, Arial, sans-serif';
+    ctx.fillText(album.artist + '  ·  ' + album.year, 480, 472);
+
+  } else if (design === 'typographic') {
+    // Minimal: bold oversized letter with clean type
+    ctx.fillStyle = c1;
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Giant single letter
+    ctx.fillStyle = c0 + '15';
+    ctx.font = 'bold 420px Inter, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(album.title[0].toUpperCase(), 256, 240);
+    ctx.textBaseline = 'alphabetic';
+
+    // Thin horizontal rule
+    ctx.strokeStyle = c2 + '44';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(36, 400);
+    ctx.lineTo(476, 400);
+    ctx.stroke();
+
+    // Title below rule
+    ctx.fillStyle = '#ffffffdd';
+    ctx.font = '600 26px Inter, Arial, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(album.title.toUpperCase(), 36, 440);
+    ctx.fillStyle = c2 + '88';
+    ctx.font = '300 11px Inter, Arial, sans-serif';
+    ctx.fillText(album.artist, 38, 462);
+
+    // Year far right
+    ctx.fillStyle = '#ffffff18';
+    ctx.font = '600 48px Inter, Arial, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(album.year, 480, 492);
+  }
+
+  // Universal: subtle vignette overlay
+  const vignette = ctx.createRadialGradient(256, 256, 100, 256, 256, 362);
+  vignette.addColorStop(0, 'rgba(0,0,0,0)');
+  vignette.addColorStop(1, 'rgba(0,0,0,0.35)');
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Subtle printed grain/noise texture
+  const grainData = ctx.getImageData(0, 0, 512, 512);
+  const pixels = grainData.data;
+  for (let p = 0; p < pixels.length; p += 4) {
+    const noise = (Math.random() - 0.5) * 4;
+    pixels[p] = Math.min(255, Math.max(0, pixels[p] + noise));
+    pixels[p + 1] = Math.min(255, Math.max(0, pixels[p + 1] + noise));
+    pixels[p + 2] = Math.min(255, Math.max(0, pixels[p + 2] + noise));
+  }
+  ctx.putImageData(grainData, 0, 0);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return texture;
+}
+
+// Simplex-like noise for marble patterns
+function noiseHash(x, y) {
+  const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+  return n - Math.floor(n);
+}
+function smoothNoise(x, y) {
+  const ix = Math.floor(x), iy = Math.floor(y);
+  const fx = x - ix, fy = y - iy;
+  const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+  const a = noiseHash(ix, iy), b = noiseHash(ix + 1, iy);
+  const c = noiseHash(ix, iy + 1), d = noiseHash(ix + 1, iy + 1);
+  return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
+}
+function fbm(x, y, octaves) {
+  let val = 0, amp = 0.5, freq = 1;
+  for (let i = 0; i < octaves; i++) {
+    val += amp * smoothNoise(x * freq, y * freq);
+    amp *= 0.5; freq *= 2.1;
+  }
+  return val;
+}
+
+// Vinyl pattern types
+const vinylPatterns = [
+  'marble',      // Midnight Drive — hot pink marble swirls
+  'splatter',    // Ocean Waves — blue ink splatter / translucent
+  'nebula',      // Golden Hour — amber smoke wisps
+  'starburst',   // Emerald City — green radial starburst
+  'lava',        // Purple Rain — purple lava lamp swirl
+  'frost',       // Arctic Chill — icy crystal frost
+  'blood',       // Crimson Tide — deep red veins / crackle
+];
+
+// Create vinyl disc texture with unique patterns per album
+function createVinylTexture(color, albumIndex) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  const album = albums[albumIndex];
+  const pattern = vinylPatterns[albumIndex % vinylPatterns.length];
+  const seed = albumIndex * 137.7;
+
+  // Helper: hex color from int
+  function hex(c) { return '#' + c.toString(16).padStart(6, '0'); }
+  function hexA(c, a) { return hex(c) + Math.round(a * 255).toString(16).padStart(2, '0'); }
+
+  // Base disc — translucent tinted base
+  const baseColor = album.colors[1];
+  const brightColor = album.colors[0];
+  const accentColor = album.colors[2];
+
+  // Clip to circle for all drawing
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(256, 256, 252, 0, Math.PI * 2);
+  ctx.clip();
+
+  // Translucent base fill
+  const r = (brightColor >> 16 & 255), g = (brightColor >> 8 & 255), b = (brightColor & 255);
+  ctx.fillStyle = `rgba(${Math.round(r*0.3)}, ${Math.round(g*0.3)}, ${Math.round(b*0.3)}, 1)`;
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Light translucent wash
+  const washGrad = ctx.createRadialGradient(256, 256, 30, 256, 256, 260);
+  washGrad.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.25)`);
+  washGrad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.12)`);
+  washGrad.addColorStop(1, `rgba(${Math.round(r*0.5)}, ${Math.round(g*0.5)}, ${Math.round(b*0.5)}, 0.3)`);
+  ctx.fillStyle = washGrad;
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Pattern-specific drawing
+  if (pattern === 'marble') {
+    // Flowing marble veins like the reference image
+    for (let pass = 0; pass < 3; pass++) {
+      ctx.globalAlpha = 0.4 - pass * 0.08;
+      for (let i = 0; i < 2000; i++) {
+        const px = Math.random() * 512;
+        const py = Math.random() * 512;
+        const dx = px / 512 - 0.5, dy = py / 512 - 0.5;
+        if (dx * dx + dy * dy > 0.24) continue;
+        const n = fbm(px * 0.008 + seed, py * 0.008 + pass * 3.3, 6);
+        const warp = fbm(px * 0.005 + n * 4 + seed, py * 0.005 + n * 4, 5);
+        if (warp > 0.35 && warp < 0.65) {
+          const intensity = 1 - Math.abs(warp - 0.5) * 5;
+          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${intensity * 0.8})`;
+          ctx.fillRect(px, py, 2.5 + intensity * 3, 2.5 + intensity * 3);
+        }
+      }
+    }
+    // Larger ink blobs
+    ctx.globalAlpha = 0.35;
+    for (let i = 0; i < 8; i++) {
+      const bx = 100 + noiseHash(seed + i, 0) * 312;
+      const by = 100 + noiseHash(0, seed + i) * 312;
+      const br = 20 + noiseHash(seed, i) * 60;
+      const blobGrad = ctx.createRadialGradient(bx, by, 0, bx, by, br);
+      blobGrad.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.7)`);
+      blobGrad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.25)`);
+      blobGrad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+      ctx.fillStyle = blobGrad;
+      ctx.beginPath();
+      ctx.arc(bx, by, br, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+  } else if (pattern === 'splatter') {
+    // Ink splatter / droplets scattered across translucent disc
+    ctx.globalAlpha = 0.15;
+    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 1)`;
+    ctx.fillRect(0, 0, 512, 512);
+    ctx.globalAlpha = 1;
+    for (let i = 0; i < 120; i++) {
+      const sx = noiseHash(seed + i, i * 0.3) * 512;
+      const sy = noiseHash(i * 0.3, seed + i) * 512;
+      const dx = sx / 512 - 0.5, dy = sy / 512 - 0.5;
+      if (dx * dx + dy * dy > 0.23) continue;
+      const sr = 3 + noiseHash(i, seed) * 25;
+      const splatGrad = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr);
+      const alpha = 0.3 + noiseHash(seed, i * 2) * 0.5;
+      splatGrad.addColorStop(0, `rgba(${Math.min(255, r + 80)}, ${Math.min(255, g + 80)}, ${Math.min(255, b + 80)}, ${alpha})`);
+      splatGrad.addColorStop(0.6, `rgba(${r}, ${g}, ${b}, ${alpha * 0.5})`);
+      splatGrad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+      ctx.fillStyle = splatGrad;
+      ctx.beginPath();
+      ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Fine mist dots
+    for (let i = 0; i < 800; i++) {
+      const mx = Math.random() * 512, my = Math.random() * 512;
+      const dx = mx / 512 - 0.5, dy = my / 512 - 0.5;
+      if (dx * dx + dy * dy > 0.23) continue;
+      ctx.fillStyle = `rgba(${Math.min(255, r + 50)}, ${Math.min(255, g + 50)}, ${Math.min(255, b + 50)}, ${0.15 + Math.random() * 0.3})`;
+      ctx.fillRect(mx, my, 1 + Math.random() * 2, 1 + Math.random() * 2);
+    }
+
+  } else if (pattern === 'nebula') {
+    // Smoke wisps — layered turbulent clouds
+    for (let pass = 0; pass < 4; pass++) {
+      ctx.globalAlpha = 0.3;
+      for (let i = 0; i < 2500; i++) {
+        const px = Math.random() * 512, py = Math.random() * 512;
+        const dx = px / 512 - 0.5, dy = py / 512 - 0.5;
+        if (dx * dx + dy * dy > 0.24) continue;
+        const n1 = fbm(px * 0.006 + seed + pass * 5, py * 0.006, 5);
+        const n2 = fbm(px * 0.01 + n1 * 3, py * 0.01 + n1 * 3 + seed, 4);
+        const brightness = n2 * n2;
+        if (brightness > 0.15) {
+          const rr = Math.min(255, r + Math.round(brightness * 120));
+          const gg = Math.min(255, g + Math.round(brightness * 80));
+          ctx.fillStyle = `rgba(${rr}, ${gg}, ${b}, ${brightness * 0.6})`;
+          const size = 1.5 + brightness * 4;
+          ctx.fillRect(px, py, size, size);
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+
+  } else if (pattern === 'starburst') {
+    // Radial streaks emanating from center
+    for (let ray = 0; ray < 40; ray++) {
+      const angle = (ray / 40) * Math.PI * 2 + noiseHash(seed, ray) * 0.3;
+      const width = 3 + noiseHash(ray, seed) * 15;
+      const length = 80 + noiseHash(seed + ray, 0) * 170;
+      const alpha = 0.15 + noiseHash(ray * 2, seed) * 0.35;
+      ctx.save();
+      ctx.translate(256, 256);
+      ctx.rotate(angle);
+      const rayGrad = ctx.createLinearGradient(40, 0, length, 0);
+      rayGrad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha})`);
+      rayGrad.addColorStop(0.3, `rgba(${Math.min(255, r + 60)}, ${Math.min(255, g + 60)}, ${Math.min(255, b + 60)}, ${alpha * 0.8})`);
+      rayGrad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+      ctx.fillStyle = rayGrad;
+      ctx.fillRect(40, -width / 2, length, width);
+      ctx.restore();
+    }
+    // Fine particle scatter
+    for (let i = 0; i < 500; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const dist = 50 + Math.random() * 190;
+      const px = 256 + Math.cos(a) * dist, py = 256 + Math.sin(a) * dist;
+      ctx.fillStyle = `rgba(${Math.min(255, r + 80)}, ${Math.min(255, g + 80)}, ${Math.min(255, b + 80)}, ${0.1 + Math.random() * 0.25})`;
+      ctx.fillRect(px, py, 1.5, 1.5);
+    }
+
+  } else if (pattern === 'lava') {
+    // Swirling lava lamp organic shapes
+    for (let blob = 0; blob < 12; blob++) {
+      const cx = 128 + noiseHash(seed + blob, blob) * 256;
+      const cy = 128 + noiseHash(blob, seed + blob) * 256;
+      const dx = cx / 512 - 0.5, dy = cy / 512 - 0.5;
+      if (dx * dx + dy * dy > 0.2) continue;
+      // Organic blob via multiple overlapping circles
+      for (let sub = 0; sub < 8; sub++) {
+        const angle = (sub / 8) * Math.PI * 2 + noiseHash(blob, sub) * 2;
+        const dist = 10 + noiseHash(sub, blob) * 30;
+        const bx = cx + Math.cos(angle) * dist;
+        const by = cy + Math.sin(angle) * dist;
+        const br = 15 + noiseHash(blob + sub, seed) * 45;
+        const blobGrad = ctx.createRadialGradient(bx, by, 0, bx, by, br);
+        blobGrad.addColorStop(0, `rgba(${Math.min(255, r + 40)}, ${Math.min(255, g + 40)}, ${Math.min(255, b + 40)}, 0.5)`);
+        blobGrad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.25)`);
+        blobGrad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+        ctx.fillStyle = blobGrad;
+        ctx.beginPath();
+        ctx.arc(bx, by, br, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    // Thin swirl veins
+    ctx.globalAlpha = 0.5;
+    for (let i = 0; i < 1500; i++) {
+      const px = Math.random() * 512, py = Math.random() * 512;
+      const dx = px / 512 - 0.5, dy = py / 512 - 0.5;
+      if (dx * dx + dy * dy > 0.23) continue;
+      const angle = Math.atan2(dy, dx);
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const swirl = fbm(px * 0.007 + seed, py * 0.007, 4) + angle * 0.5 + dist * 3;
+      const v = Math.sin(swirl * 8) * 0.5 + 0.5;
+      if (v > 0.65) {
+        ctx.fillStyle = `rgba(${Math.min(255, r + 60)}, ${Math.min(255, g + 30)}, ${Math.min(255, b + 60)}, ${(v - 0.65) * 2})`;
+        ctx.fillRect(px, py, 2, 2);
+      }
+    }
+    ctx.globalAlpha = 1;
+
+  } else if (pattern === 'frost') {
+    // Icy crystalline frost — branching patterns
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = `rgba(${Math.min(255, r + 100)}, ${Math.min(255, g + 100)}, ${Math.min(255, b + 100)}, 1)`;
+    ctx.fillRect(0, 0, 512, 512);
+    ctx.globalAlpha = 1;
+    // Crystal branches
+    for (let branch = 0; branch < 16; branch++) {
+      const startAngle = (branch / 16) * Math.PI * 2 + noiseHash(seed, branch) * 0.2;
+      const cx = 256, cy = 256;
+      ctx.strokeStyle = `rgba(${Math.min(255, r + 80)}, ${Math.min(255, g + 80)}, ${Math.min(255, b + 80)}, 0.3)`;
+      ctx.lineWidth = 1 + noiseHash(branch, seed) * 2;
+      ctx.beginPath();
+      let bx = cx + Math.cos(startAngle) * 50;
+      let by = cy + Math.sin(startAngle) * 50;
+      ctx.moveTo(bx, by);
+      for (let step = 0; step < 30; step++) {
+        const drift = (noiseHash(branch + step, seed + step) - 0.5) * 0.4;
+        bx += Math.cos(startAngle + drift) * 7;
+        by += Math.sin(startAngle + drift) * 7;
+        const dx = bx / 512 - 0.5, dy = by / 512 - 0.5;
+        if (dx * dx + dy * dy > 0.23) break;
+        ctx.lineTo(bx, by);
+        // Sub-branches
+        if (step % 4 === 0 && step > 0) {
+          const subAngle = startAngle + (noiseHash(step, branch) > 0.5 ? 0.6 : -0.6);
+          ctx.moveTo(bx, by);
+          let sx = bx, sy = by;
+          for (let s = 0; s < 8; s++) {
+            sx += Math.cos(subAngle) * 5;
+            sy += Math.sin(subAngle) * 5;
+            ctx.lineTo(sx, sy);
+          }
+          ctx.moveTo(bx, by);
+        }
+      }
+      ctx.stroke();
+    }
+    // Frost dust
+    for (let i = 0; i < 600; i++) {
+      const fx = Math.random() * 512, fy = Math.random() * 512;
+      const dx = fx / 512 - 0.5, dy = fy / 512 - 0.5;
+      if (dx * dx + dy * dy > 0.23) continue;
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.05 + Math.random() * 0.15})`;
+      ctx.fillRect(fx, fy, 1 + Math.random() * 2, 1 + Math.random() * 2);
+    }
+
+  } else if (pattern === 'blood') {
+    // Deep veined crackle pattern
+    for (let pass = 0; pass < 3; pass++) {
+      ctx.globalAlpha = 0.4;
+      for (let i = 0; i < 2000; i++) {
+        const px = Math.random() * 512, py = Math.random() * 512;
+        const dx = px / 512 - 0.5, dy = py / 512 - 0.5;
+        if (dx * dx + dy * dy > 0.24) continue;
+        const n = fbm(px * 0.007 + seed + pass * 10, py * 0.007, 6);
+        const ridge = Math.abs(Math.sin(n * 12));
+        if (ridge < 0.15) {
+          const intensity = 1 - ridge / 0.15;
+          ctx.fillStyle = `rgba(${Math.min(255, r + 80)}, ${Math.min(255, g + 20)}, ${Math.min(255, b + 20)}, ${intensity * 0.7})`;
+          ctx.fillRect(px, py, 1.5 + intensity * 2.5, 1.5 + intensity * 2.5);
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+    // Dark pooling blobs
+    for (let i = 0; i < 6; i++) {
+      const bx = 120 + noiseHash(seed + i * 3, i) * 272;
+      const by = 120 + noiseHash(i, seed + i * 3) * 272;
+      const br = 25 + noiseHash(seed, i * 7) * 50;
+      const poolGrad = ctx.createRadialGradient(bx, by, 0, bx, by, br);
+      poolGrad.addColorStop(0, `rgba(${Math.round(r * 0.5)}, ${Math.round(g * 0.3)}, ${Math.round(b * 0.3)}, 0.5)`);
+      poolGrad.addColorStop(1, `rgba(${Math.round(r * 0.3)}, 0, 0, 0)`);
+      ctx.fillStyle = poolGrad;
+      ctx.beginPath();
+      ctx.arc(bx, by, br, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  ctx.restore(); // restore circle clip
+
+  // ---- Now draw non-clipped elements ----
+
+  // Subtle groove lines on top of pattern
+  ctx.globalAlpha = 0.15;
+  for (let i = 0; i < 50; i++) {
+    ctx.beginPath();
+    ctx.arc(256, 256, 70 + i * 3.5, 0, Math.PI * 2);
+    ctx.strokeStyle = i % 4 === 0 ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // Reflective sheen across disc
+  const sheenGrad = ctx.createLinearGradient(80, 80, 432, 432);
+  sheenGrad.addColorStop(0, 'rgba(255,255,255,0.0)');
+  sheenGrad.addColorStop(0.35, 'rgba(255,255,255,0.04)');
+  sheenGrad.addColorStop(0.5, 'rgba(255,255,255,0.1)');
+  sheenGrad.addColorStop(0.65, 'rgba(255,255,255,0.04)');
+  sheenGrad.addColorStop(1, 'rgba(255,255,255,0.0)');
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(256, 256, 250, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.fillStyle = sheenGrad;
+  ctx.fillRect(0, 0, 512, 512);
+  ctx.restore();
+
+  // Label — vivid center label
+  const c = hex(brightColor);
+  const labelGrad = ctx.createRadialGradient(256, 256, 0, 256, 256, 65);
+  labelGrad.addColorStop(0, '#ffffff');
+  labelGrad.addColorStop(0.25, c);
+  labelGrad.addColorStop(1, hex(baseColor));
+  ctx.beginPath();
+  ctx.arc(256, 256, 65, 0, Math.PI * 2);
+  ctx.fillStyle = labelGrad;
+  ctx.fill();
+  // Label ring
+  ctx.beginPath();
+  ctx.arc(256, 256, 65, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Label text
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 11px Inter, Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(album.title.toUpperCase(), 256, 250);
+  ctx.font = '8px Inter, Arial, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.fillText(album.artist, 256, 264);
+
+  // Center hole
+  ctx.beginPath();
+  ctx.arc(256, 256, 8, 0, Math.PI * 2);
+  ctx.fillStyle = '#000000';
+  ctx.fill();
+
+  // Outer edge darkening ring
+  ctx.beginPath();
+  ctx.arc(256, 256, 252, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  return texture;
+}
+
+// Create album sleeve (cover)
+const sleeveGroup = new THREE.Group();
+sleeveGroup.name = 'sleeveGroup';
+scene.add(sleeveGroup);
+
+const coverItems = [];
+const SPACING = 2.8;
+
+albums.forEach((album, i) => {
+  const group = new THREE.Group();
+  group.name = `albumGroup_${i}`;
+
+  // Sleeve (thicker box for 3D feel) with custom shader on front face
+  const sleeveGeo = new THREE.BoxGeometry(2.2, 2.2, 0.06);
+  
+  const tex = createAlbumTexture(album, i);
+  const sleeveMat = new THREE.MeshStandardMaterial({
+    map: tex,
+    roughness: 0.4,
+    metalness: 0.1,
+  });
+  const sleeve = new THREE.Mesh(sleeveGeo, sleeveMat);
+  sleeve.name = `sleeve_${i}`;
+  sleeve.castShadow = true;
+  group.add(sleeve);
+
+  // Store a dummy frontMat with uniforms so animation loop doesn't break
+  const dummyFrontMat = {
+    uniforms: {
+      uTime: { value: 0 },
+      uHover: { value: 0 },
+      uMouse: { value: new THREE.Vector2(0.5, 0.5) },
+    }
+  };
+
+  // Vinyl disc (peeking out)
+  const vinylGeo = new THREE.CylinderGeometry(0.95, 0.95, 0.03, 64);
+  const vinylTex = createVinylTexture(album.colors[0], i);
+  const vinylMat = new THREE.MeshStandardMaterial({
+    map: vinylTex,
+    roughness: 0.15,
+    metalness: 0.4,
+    color: 0xcccccc,
+  });
+  const vinyl = new THREE.Mesh(vinylGeo, vinylMat);
+  vinyl.name = `vinyl_${i}`;
+  vinyl.rotation.x = Math.PI / 2;
+  vinyl.position.set(0.6, 0, 0.01);
+  vinyl.castShadow = true;
+  group.add(vinyl);
+
+  // Contact shadow underneath
+  const shadowGeo = new THREE.PlaneGeometry(2.4, 0.6);
+  const shadowMat = new THREE.MeshBasicMaterial({
+    color: 0x000000,
+    transparent: true,
+    opacity: 0.3,
+    depthWrite: false,
+  });
+  const contactShadow = new THREE.Mesh(shadowGeo, shadowMat);
+  contactShadow.name = `contactShadow_${i}`;
+  contactShadow.rotation.x = -Math.PI / 2;
+  contactShadow.position.y = -1.08;
+  contactShadow.position.z = 0.05;
+  group.add(contactShadow);
+
+  group.position.x = i * SPACING;
+  sleeveGroup.add(group);
+
+  coverItems.push({ group, sleeve, vinyl, contactShadow, album, index: i, frontMat: dummyFrontMat });
+});
+
+// Floor — semi-transparent to let gradient show through
+const floorGeo = new THREE.PlaneGeometry(80, 20);
+const floorMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.95, metalness: 0.05, transparent: true, opacity: 0.6 });
+const floor = new THREE.Mesh(floorGeo, floorMat);
+floor.name = 'floor';
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = -1.5;
+floor.receiveShadow = true;
+scene.add(floor);
+
+// Reflection plane (subtle)
+const reflGeo = new THREE.PlaneGeometry(80, 5);
+const reflMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.7, metalness: 0.2, transparent: true, opacity: 0.25 });
+const reflection = new THREE.Mesh(reflGeo, reflMat);
+reflection.name = 'reflectionPlane';
+reflection.rotation.x = -Math.PI / 2;
+reflection.position.y = -1.49;
+scene.add(reflection);
+
+// State
+let currentIndex = 3;
+let targetX = -currentIndex * SPACING;
+let currentX = targetX;
+let isDragging = false;
+let dragStartX = 0;
+let dragOffsetX = 0;
+let velocity = 0;
+
+// Playing state
+let isPlaying = false;
+let playingIndex = -1;
+let playingVinylMesh = null;
+let playingTrackIndex = 0;
+let playingProgress = 0;
+let playingStartTime = 0;
+let trackListPanel = null;
+
+// Track data for each album
+const albumTracks = [
+  { tracks: ['Neon Skyline', 'Midnight Cruise', 'Retrograde', 'Digital Sunset', 'Chrome Hearts', 'City Afterglow', 'Dreamstate', 'Vapor Trail'], durations: [234, 198, 267, 312, 185, 245, 290, 221] },
+  { tracks: ['Tidal Pull', 'Deep Blue', 'Coral Drift', 'Undertow', 'Salt & Light', 'Pacific Dream', 'Foam & Silence', 'Horizon Line'], durations: [278, 215, 302, 189, 256, 341, 198, 267] },
+  { tracks: ['First Light', 'Amber Fields', 'Solstice', 'Warm Front', 'Haze', 'Lantern Glow', 'Dusk Ritual', 'Afterburn'], durations: [245, 312, 189, 267, 198, 334, 223, 278] },
+  { tracks: ['Canopy', 'Root System', 'Verdant', 'Morning Fog', 'Fern & Stone', 'Overgrown', 'Clearing', 'Nightbloom'], durations: [267, 198, 289, 234, 312, 178, 256, 301] },
+  { tracks: ['Nebula Waltz', 'Astral Plane', 'Violet Hour', 'Cosmos', 'Gravity Well', 'Supernova', 'Eclipse', 'Stardust Fade'], durations: [312, 245, 278, 198, 334, 189, 267, 256] },
+  { tracks: ['Frozen Air', 'Glacial Drift', 'Permafrost', 'Aurora', 'White Noise', 'Crystal Lattice', 'Subzero', 'Thaw'], durations: [198, 267, 289, 345, 212, 234, 278, 198] },
+  { tracks: ['Blood Moon', 'Scarlet Tide', 'Undertow Red', 'Iron Pulse', 'Crimson Peak', 'Burning Shore', 'Red Meridian', 'Embers'], durations: [256, 198, 312, 234, 278, 189, 267, 301] },
+];
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function createTrackListPanel(albumIndex) {
+  if (trackListPanel) trackListPanel.remove();
+  const album = albums[albumIndex];
+  const trackData = albumTracks[albumIndex];
+  const accentColor = hexStr(album.colors[0]);
+  const accentDim = hexStr(album.colors[2]);
+
+  const panel = document.createElement('div');
+  panel.id = 'trackListPanel';
+  panel.style.cssText = `
+    position: absolute; right: 0; top: 0; width: 50%; height: 100%;
+    display: flex; align-items: center; justify-content: flex-end;
+    box-sizing: border-box; padding: 0;
+    font-family: 'Inter', sans-serif;
+    z-index: 20; opacity: 0;
+    transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateX(30px);
+    pointer-events: auto; overflow: hidden;
+    background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.4) 30%, rgba(0,0,0,0.5) 100%);
+  `;
+
+  // Inner content wrapper capped at 480px, centered within the panel
+  const panelInner = document.createElement('div');
+  panelInner.style.cssText = `
+    width: 100%; max-width: 480px;
+    margin: 0 auto;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 0 24px; box-sizing: border-box;
+    height: 100%;
+  `;
+
+  // Album info header
+  const header = document.createElement('div');
+  header.style.cssText = `padding: 0 0 20px 0; border-bottom: 1px solid rgba(255,255,255,0.06);`;
+  header.innerHTML = `
+    <div style="font-size: 11px; color: rgba(255,255,255,0.3); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 8px;">Now Playing</div>
+    <div style="font-size: 22px; color: #fff; font-family: 'Playfair Display', serif; font-style: italic; font-weight: 400; margin-bottom: 4px;">${album.title}</div>
+    <div style="font-size: 11px; color: rgba(255,255,255,0.35); letter-spacing: 2px; text-transform: uppercase;">${album.artist}  ·  ${album.year}</div>
+  `;
+  panelInner.appendChild(header);
+
+  // Now playing track display
+  const nowPlaying = document.createElement('div');
+  nowPlaying.id = 'nowPlayingDisplay';
+  nowPlaying.style.cssText = `padding: 18px 0; border-bottom: 1px solid rgba(255,255,255,0.06);`;
+  nowPlaying.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+      <div style="width: 8px; height: 8px; border-radius: 50%; background: ${accentColor}; animation: pulse 1.5s ease infinite;"></div>
+      <div id="currentTrackName" style="font-size: 14px; color: #fff; font-weight: 400;">${trackData.tracks[0]}</div>
+    </div>
+    <div style="position: relative; width: 100%; height: 2px; background: rgba(255,255,255,0.06); border-radius: 1px; margin-bottom: 8px;">
+      <div id="trackProgressBar" style="position: absolute; left: 0; top: 0; height: 100%; width: 0%; background: ${accentColor}; border-radius: 1px; transition: width 0.3s linear;"></div>
+    </div>
+    <div style="display: flex; justify-content: space-between;">
+      <span id="trackTimeElapsed" style="font-size: 10px; color: rgba(255,255,255,0.25); letter-spacing: 1px;">0:00</span>
+      <span id="trackTimeTotal" style="font-size: 10px; color: rgba(255,255,255,0.25); letter-spacing: 1px;">${formatTime(trackData.durations[0])}</span>
+    </div>
+  `;
+  panelInner.appendChild(nowPlaying);
+
+  // Track list
+  const trackList = document.createElement('div');
+  trackList.style.cssText = `padding: 14px 0 0 0; max-height: 40vh; overflow-y: auto;`;
+  trackList.id = 'trackListItems';
+
+  // Custom scrollbar
+  const scrollStyle = document.createElement('style');
+  scrollStyle.textContent = `
+    #trackListItems::-webkit-scrollbar { width: 2px; }
+    #trackListItems::-webkit-scrollbar-track { background: transparent; }
+    #trackListItems::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 1px; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  `;
+  document.head.appendChild(scrollStyle);
+
+  trackData.tracks.forEach((track, idx) => {
+    const row = document.createElement('div');
+    row.className = 'track-row';
+    row.dataset.index = idx;
+    row.style.cssText = `
+      display: flex; align-items: center; gap: 14px; padding: 10px 8px;
+      cursor: pointer; border-radius: 4px; transition: background 0.2s ease;
+    `;
+    row.innerHTML = `
+      <span style="font-size: 10px; color: ${idx === 0 ? accentColor : 'rgba(255,255,255,0.2)'}; width: 18px; text-align: right; font-variant-numeric: tabular-nums; transition: color 0.3s;">${String(idx + 1).padStart(2, '0')}</span>
+      <span class="track-name" style="flex: 1; font-size: 12px; color: ${idx === 0 ? '#fff' : 'rgba(255,255,255,0.45)'}; transition: color 0.3s;">${track}</span>
+      <span style="font-size: 10px; color: rgba(255,255,255,0.15); letter-spacing: 1px; font-variant-numeric: tabular-nums;">${formatTime(trackData.durations[idx])}</span>
+    `;
+    row.addEventListener('mouseenter', () => {
+      if (idx !== playingTrackIndex) row.style.background = 'rgba(255,255,255,0.03)';
+    });
+    row.addEventListener('mouseleave', () => {
+      row.style.background = 'transparent';
+    });
+    row.addEventListener('click', () => {
+      jumpToTrack(albumIndex, idx);
+    });
+    trackList.appendChild(row);
+  });
+
+  panelInner.appendChild(trackList);
+
+  // Close / back button
+  const closeBtn = document.createElement('div');
+  closeBtn.style.cssText = `
+    margin-top: 20px; padding: 10px 0; text-align: center; cursor: pointer;
+    font-size: 10px; color: rgba(255,255,255,0.25); letter-spacing: 3px; text-transform: uppercase;
+    transition: color 0.3s;
+  `;
+  closeBtn.textContent = '← Back to Collection';
+  closeBtn.addEventListener('mouseenter', () => closeBtn.style.color = 'rgba(255,255,255,0.6)');
+  closeBtn.addEventListener('mouseleave', () => closeBtn.style.color = 'rgba(255,255,255,0.25)');
+  closeBtn.addEventListener('click', stopPlaying);
+  panelInner.appendChild(closeBtn);
+
+  panel.appendChild(panelInner);
+
+  // Attach to canvas wrapper so it stays inside the viewport frame
+  const canvasWrapper = document.getElementById('canvasWrapper');
+  (canvasWrapper || document.body).appendChild(panel);
+  trackListPanel = panel;
+
+  // Animate in
+  requestAnimationFrame(() => {
+    panel.style.opacity = '1';
+    panel.style.transform = 'translateX(0)';
+  });
+}
+
+function updateTrackHighlight(albumIndex, trackIdx) {
+  const panel = document.getElementById('trackListPanel');
+  if (!panel) return;
+  const album = albums[albumIndex];
+  const accentColor = hexStr(album.colors[0]);
+  const trackData = albumTracks[albumIndex];
+  const rows = panel.querySelectorAll('.track-row');
+
+  rows.forEach((row, idx) => {
+    const numEl = row.querySelector('span');
+    const nameEl = row.querySelector('.track-name');
+    if (idx === trackIdx) {
+      numEl.style.color = accentColor;
+      nameEl.style.color = '#fff';
+    } else {
+      numEl.style.color = 'rgba(255,255,255,0.2)';
+      nameEl.style.color = 'rgba(255,255,255,0.45)';
+    }
+  });
+
+  const nameDisplay = document.getElementById('currentTrackName');
+  const totalDisplay = document.getElementById('trackTimeTotal');
+  if (nameDisplay) nameDisplay.textContent = trackData.tracks[trackIdx];
+  if (totalDisplay) totalDisplay.textContent = formatTime(trackData.durations[trackIdx]);
+}
+
+function jumpToTrack(albumIndex, trackIdx) {
+  playingTrackIndex = trackIdx;
+  playingProgress = 0;
+  playingStartTime = clock.getElapsedTime();
+  updateTrackHighlight(albumIndex, trackIdx);
+}
+
+function startPlaying(albumIndex) {
+  if (isPlaying) return;
+  isPlaying = true;
+  playingIndex = albumIndex;
+  playingTrackIndex = 0;
+  playingProgress = 0;
+  playingStartTime = clock.getElapsedTime();
+
+  // Hide bottom UI
+  uiContainer.style.transition = 'opacity 0.5s ease';
+  uiContainer.style.opacity = '0';
+  uiContainer.style.pointerEvents = 'none';
+
+  // Create track list panel
+  createTrackListPanel(albumIndex);
+}
+
+function stopPlaying() {
+  if (!isPlaying) return;
+  
+  // Immediately reset the playing album's vinyl position/rotation before changing state
+  if (playingIndex >= 0 && playingIndex < coverItems.length) {
+    const item = coverItems[playingIndex];
+    // Snap vinyl back behind sleeve instantly
+    item.vinyl.position.x = 0.6;
+    item.vinyl.rotation.y = 0;
+    item.vinyl.material.opacity = 0;
+    item.vinyl.visible = false;
+    // Restore sleeve visibility
+    item.sleeve.visible = true;
+  }
+
+  isPlaying = false;
+
+  // Remove track panel
+  if (trackListPanel) {
+    trackListPanel.style.opacity = '0';
+    trackListPanel.style.transform = 'translateX(30px)';
+    setTimeout(() => {
+      if (trackListPanel) { trackListPanel.remove(); trackListPanel = null; }
+    }, 600);
+  }
+
+  // Show bottom UI
+  uiContainer.style.opacity = '1';
+  uiContainer.style.pointerEvents = '';
+
+  playingIndex = -1;
+}
+
+// UI Overlay
+// Create a wrapper div to contain everything within the iPhone 17 frame
+const canvasWrapper = document.createElement('div');
+canvasWrapper.id = 'canvasWrapper';
+canvasWrapper.style.cssText = `
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: ${canvasSize.width}px; height: ${canvasSize.height}px;
+  overflow: hidden; pointer-events: none;
+`;
+document.body.appendChild(canvasWrapper);
+
+// Move canvas into wrapper
+renderer.domElement.style.position = 'relative';
+renderer.domElement.style.left = '0';
+renderer.domElement.style.top = '0';
+renderer.domElement.style.transform = 'none';
+canvasWrapper.appendChild(renderer.domElement);
+renderer.domElement.style.pointerEvents = 'auto';
+
+const uiContainer = document.createElement('div');
+uiContainer.style.cssText = `
+  position: absolute; bottom: 36px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  font-family: 'Inter', sans-serif; z-index: 10; pointer-events: none;
+`;
+canvasWrapper.appendChild(uiContainer);
+
+const infoDiv = document.createElement('div');
+infoDiv.style.cssText = `
+  color: #fff; text-align: center; transition: opacity 0.4s ease;
+`;
+uiContainer.appendChild(infoDiv);
+
+const titleEl = document.createElement('div');
+titleEl.style.cssText = `
+  font-size: 26px; font-weight: 400; letter-spacing: 1px; margin-bottom: 0;
+  font-family: 'Playfair Display', Georgia, serif; font-style: italic;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+  color: rgba(255,255,255,0.85);
+`;
+infoDiv.appendChild(titleEl);
+
+const navDiv = document.createElement('div');
+navDiv.style.cssText = 'display: flex; align-items: center; gap: 28px; pointer-events: auto;';
+uiContainer.appendChild(navDiv);
+
+// Triangle arrow buttons — pure SVG triangles
+function createTriangleBtn(direction) {
+  const btn = document.createElement('button');
+  const isLeft = direction === 'left';
+  btn.innerHTML = `<svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="${isLeft ? 'M12 1L2 8L12 15' : 'M2 1L12 8L2 15'}" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+  btn.style.cssText = `
+    background: none; border: none; cursor: pointer; padding: 10px;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+    opacity: 0.6;
+  `;
+  btn.onmouseenter = () => {
+    btn.style.transform = `scale(1.2) translateX(${isLeft ? '-2px' : '2px'})`;
+    btn.style.opacity = '1';
+    btn.querySelector('path').setAttribute('stroke', 'rgba(255,255,255,0.9)');
+  };
+  btn.onmouseleave = () => {
+    btn.style.transform = 'scale(1) translateX(0)';
+    btn.style.opacity = '0.6';
+    btn.querySelector('path').setAttribute('stroke', 'rgba(255,255,255,0.4)');
+  };
+  return btn;
+}
+
+const prevBtn = createTriangleBtn('left');
+navDiv.appendChild(prevBtn);
+
+// Dots — minimal line indicators
+const dotsDiv = document.createElement('div');
+dotsDiv.style.cssText = 'display: flex; gap: 6px; align-items: center;';
+navDiv.appendChild(dotsDiv);
+
+const dots = [];
+albums.forEach((_, i) => {
+  const dot = document.createElement('div');
+  dot.style.cssText = `
+    width: ${i === currentIndex ? '24px' : '8px'}; height: 2px; border-radius: 1px;
+    background: ${i === currentIndex ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.15)'};
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); cursor: pointer;
+  `;
+  dot.addEventListener('click', () => goTo(i));
+  dotsDiv.appendChild(dot);
+  dots.push(dot);
+});
+
+const nextBtn = createTriangleBtn('right');
+navDiv.appendChild(nextBtn);
+
+function updateUI() {
+  const album = albums[currentIndex];
+
+  // Animate title swap
+  titleEl.style.opacity = '0';
+  titleEl.style.transform = 'translateY(8px)';
+  setTimeout(() => {
+    titleEl.textContent = album.title;
+    titleEl.style.opacity = '1';
+    titleEl.style.transform = 'translateY(0)';
+  }, 150);
+
+  dots.forEach((dot, i) => {
+    dot.style.width = i === currentIndex ? '24px' : '8px';
+    dot.style.background = i === currentIndex ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.15)';
+  });
+
+  // Update dynamic gradient background
+  updateGradientBackground(currentIndex);
+  updateGlowOverlay(currentIndex);
+
+  // Update scene fog to match gradient mood
+  const grad = albumGradients[currentIndex];
+  const fogColor = new THREE.Color(grad.stops[2]);
+  scene.fog.color.lerp(fogColor, 0.3);
+}
+
+function goTo(index) {
+  currentIndex = Math.max(0, Math.min(albums.length - 1, index));
+  targetX = -currentIndex * SPACING;
+  updateUI();
+}
+
+prevBtn.addEventListener('click', () => goTo(currentIndex - 1));
+nextBtn.addEventListener('click', () => goTo(currentIndex + 1));
+
+// Raycaster for hover and click detection
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let hoveredIndex = -1;
+let isHoveringCenter = false;
+
+let mouseScreenX = 0;
+let mouseScreenY = 0;
+
+renderer.domElement.addEventListener('pointermove', (e) => {
+  // Convert pointer coords relative to the canvas wrapper, not the full window
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  mouseScreenX = mouse.x;
+  mouseScreenY = mouse.y;
+
+  raycaster.setFromCamera(mouse, camera);
+
+  if (isPlaying && playingIndex >= 0) {
+    // In playing mode, raycast against the vinyl disc
+    const vinylMeshes = [coverItems[playingIndex].vinyl];
+    const vinylIntersects = raycaster.intersectObjects(vinylMeshes);
+    if (vinylIntersects.length > 0) {
+      hoveredIndex = playingIndex;
+      renderer.domElement.style.cursor = 'pointer';
+      const point = vinylIntersects[0].point;
+      // Get the vinyl's actual world center (not the group origin)
+      const vinylWorldPos = new THREE.Vector3();
+      coverItems[playingIndex].vinyl.getWorldPosition(vinylWorldPos);
+      const scale = coverItems[playingIndex].group.scale.x || 1;
+      coverItems[playingIndex]._hitLocalX = (point.x - vinylWorldPos.x) / (1.0 * scale);
+      coverItems[playingIndex]._hitLocalY = (point.y - vinylWorldPos.y) / (1.0 * scale);
+    } else {
+      hoveredIndex = -1;
+      renderer.domElement.style.cursor = 'default';
+    }
+  } else {
+    // Normal slider mode, raycast against sleeves
+    const sleeves = coverItems.map(item => item.sleeve);
+    const intersects = raycaster.intersectObjects(sleeves);
+
+    if (intersects.length > 0) {
+      const hit = intersects[0].object;
+      const hitIndex = coverItems.findIndex(item => item.sleeve === hit);
+      hoveredIndex = hitIndex;
+      isHoveringCenter = (hitIndex === currentIndex);
+      renderer.domElement.style.cursor = 'pointer';
+
+      // Store local UV-like hit point for tilt
+      const point = intersects[0].point;
+      const worldPos = new THREE.Vector3();
+      coverItems[hitIndex].group.getWorldPosition(worldPos);
+      coverItems[hitIndex]._hitLocalX = (point.x - worldPos.x) / 1.1;
+      coverItems[hitIndex]._hitLocalY = (point.y - worldPos.y) / 1.1;
+    } else {
+      hoveredIndex = -1;
+      isHoveringCenter = false;
+      renderer.domElement.style.cursor = 'default';
+    }
+  }
+});
+
+renderer.domElement.addEventListener('pointerleave', () => {
+  hoveredIndex = -1;
+  isHoveringCenter = false;
+  renderer.domElement.style.cursor = 'default';
+});
+
+// Mouse / touch drag
+let pointerDownTime = 0;
+let pointerDownX = 0;
+
+renderer.domElement.addEventListener('pointerdown', (e) => {
+  if (isPlaying) return; // Block dragging while playing
+  isDragging = true;
+  dragStartX = e.clientX;
+  pointerDownX = e.clientX;
+  pointerDownTime = Date.now();
+  dragOffsetX = 0;
+  velocity = 0;
+});
+
+window.addEventListener('pointermove', (e) => {
+  if (!isDragging || isPlaying) return;
+  dragOffsetX = (e.clientX - dragStartX) * 0.008;
+});
+
+window.addEventListener('pointerup', (e) => {
+  const elapsed = Date.now() - pointerDownTime;
+  const movedPx = Math.abs(e.clientX - pointerDownX);
+
+  // If playing, a quick tap anywhere stops playing (no drag needed)
+  if (isPlaying && elapsed < 300 && movedPx < 10) {
+    stopPlaying();
+    isDragging = false;
+    dragOffsetX = 0;
+    return;
+  }
+
+  if (!isDragging) return;
+  isDragging = false;
+
+  // If it was a quick tap/click (not a drag), check for album click
+  if (elapsed < 300 && movedPx < 10) {
+
+    const rect2 = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((e.clientX - rect2.left) / rect2.width) * 2 - 1;
+    mouse.y = -((e.clientY - rect2.top) / rect2.height) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const sleeves = coverItems.map(item => item.sleeve);
+    const intersects = raycaster.intersectObjects(sleeves);
+    if (intersects.length > 0) {
+      const hit = intersects[0].object;
+      const hitIndex = coverItems.findIndex(item => item.sleeve === hit);
+      if (hitIndex !== -1 && hitIndex !== currentIndex) {
+        goTo(hitIndex);
+        dragOffsetX = 0;
+        return;
+      }
+      // Click on center/focused cover -> start playing
+      if (hitIndex === currentIndex) {
+        startPlaying(currentIndex);
+        dragOffsetX = 0;
+        return;
+      }
+    }
+  }
+
+  if (Math.abs(dragOffsetX) > 0.3) {
+    goTo(currentIndex + (dragOffsetX < 0 ? 1 : -1));
+  } else {
+    targetX = -currentIndex * SPACING;
+  }
+  dragOffsetX = 0;
+});
+
+// Keyboard
+window.addEventListener('keydown', (e) => {
+  if (isPlaying) {
+    if (e.key === 'Escape') stopPlaying();
+    return;
+  }
+  if (e.key === 'ArrowLeft') goTo(currentIndex - 1);
+  if (e.key === 'ArrowRight') goTo(currentIndex + 1);
+});
+
+// Mouse wheel
+renderer.domElement.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  if (isPlaying) return; // Block scrolling while playing
+  if (e.deltaY > 20) goTo(currentIndex + 1);
+  else if (e.deltaY < -20) goTo(currentIndex - 1);
+}, { passive: false });
+
+updateUI();
+
+// Load Inter font
+const fontLink = document.createElement('link');
+fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap';
+fontLink.rel = 'stylesheet';
+document.head.appendChild(fontLink);
+
+// Initialize gradient background on load
+updateGradientBackground(currentIndex);
+updateGlowOverlay(currentIndex);
+
+// Animate
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  const time = clock.getElapsedTime();
+
+  // Smooth slide
+  const tx = targetX + dragOffsetX * SPACING * 0.5;
+  currentX += (tx - currentX) * 0.08;
+  sleeveGroup.position.x = currentX;
+
+  // Animate each cover
+  coverItems.forEach((item, i) => {
+    const distFromCenter = (item.index * SPACING + currentX);
+    const normDist = distFromCenter / SPACING;
+    const absDist = Math.abs(normDist);
+
+    const isActivePlayingAlbum = (isPlaying && i === playingIndex);
+    const isOtherWhilePlaying = (isPlaying && i !== playingIndex);
+
+    // Z-depth curve
+    const normalZ = -absDist * 0.8;
+    const playingZ = 0;
+    const targetZ = isActivePlayingAlbum ? playingZ : (isOtherWhilePlaying ? normalZ - 2 : normalZ);
+    if (item._currentZ === undefined) item._currentZ = normalZ;
+    item._currentZ += (targetZ - item._currentZ) * 0.06;
+    item.group.position.z = item._currentZ;
+
+    // Y curve
+    item.group.position.y = -absDist * 0.15;
+
+    // Base rotation from carousel position
+    const baseRotY = normDist * 0.35;
+
+    const isHovered = (i === hoveredIndex) && !isPlaying;
+    const isHoveredPlaying = (i === hoveredIndex) && isPlaying && (i === playingIndex);
+
+    // 3D tilt on hover — only for sleeve in slider mode, not for vinyl in playing mode
+    const shouldTilt = isHovered;
+    const tiltStrength = 0.1;
+    const tiltClamp = 0.08;
+    const tiltX = shouldTilt ? THREE.MathUtils.clamp((item._hitLocalY || 0) * -tiltStrength, -tiltClamp, tiltClamp) : 0;
+    const tiltY = shouldTilt ? THREE.MathUtils.clamp((item._hitLocalX || 0) * tiltStrength, -tiltClamp, tiltClamp) : 0;
+    
+    if (!item._currentTiltX) item._currentTiltX = 0;
+    if (!item._currentTiltY) item._currentTiltY = 0;
+    item._currentTiltX += (tiltX - item._currentTiltX) * 0.1;
+    item._currentTiltY += (tiltY - item._currentTiltY) * 0.1;
+
+    item.group.rotation.x = item._currentTiltX;
+    item.group.rotation.y = isActivePlayingAlbum ? item._currentTiltY : baseRotY + item._currentTiltY;
+
+    // Scale active — playing album stays full size, others shrink away
+    const normalScale = THREE.MathUtils.lerp(0.75, 1, Math.max(0, 1 - absDist * 0.5));
+    const targetScale = isActivePlayingAlbum ? 1.1 : (isOtherWhilePlaying ? 0 : normalScale);
+    if (item._currentScale === undefined) item._currentScale = normalScale;
+    item._currentScale += (targetScale - item._currentScale) * 0.06;
+    item.group.scale.setScalar(Math.max(0.001, item._currentScale));
+
+    // Playing mode: vinyl slides out to left, sleeve shifts right
+    const isCenterHovered = (i === currentIndex && isHoveringCenter && !isPlaying);
+
+    let hoverSleeveOffsetX, hoverVinylOffsetX;
+    if (isActivePlayingAlbum) {
+      // Sleeve fully hidden, vinyl centered and shifted further left
+      hoverSleeveOffsetX = 0;
+      hoverVinylOffsetX = -1.0;
+      // Hide sleeve mesh completely when playing
+      item.sleeve.visible = false;
+    } else if (isCenterHovered) {
+      hoverSleeveOffsetX = -0.2;
+      hoverVinylOffsetX = 0.85;
+      item.sleeve.visible = true;
+    } else {
+      hoverSleeveOffsetX = 0;
+      hoverVinylOffsetX = 0.6;
+      item.sleeve.visible = true;
+    }
+
+    // Smooth lerp for sleeve offset
+    const currentSleeveX = item.sleeve.position.x || 0;
+    item.sleeve.position.x += (hoverSleeveOffsetX - currentSleeveX) * 0.08;
+
+    // Smooth lerp for vinyl position
+    const currentVinylX = item.vinyl.position.x;
+    item.vinyl.position.x += (hoverVinylOffsetX - currentVinylX) * 0.08;
+
+    // Vinyl spin when playing — rotate around Y axis since cylinder is X-rotated to lay flat
+    if (isActivePlayingAlbum) {
+      item.vinyl.rotation.y += dt * 2.5;
+    }
+
+    // Update holographic shader uniforms
+    item.frontMat.uniforms.uTime.value = time;
+    const targetHover = isHovered ? 1.0 : 0.0;
+    item.frontMat.uniforms.uHover.value += (targetHover - item.frontMat.uniforms.uHover.value) * 0.08;
+    if (isHovered) {
+      const mx = (item._hitLocalX || 0) * 0.5 + 0.5;
+      const my = (item._hitLocalY || 0) * 0.5 + 0.5;
+      item.frontMat.uniforms.uMouse.value.lerp(new THREE.Vector2(mx, my), 0.15);
+    }
+
+    // Show/hide vinyl with smooth transition
+    item.vinyl.visible = true;
+    const targetVinylOpacity = (isCenterHovered || isActivePlayingAlbum) ? 1 : 0;
+    if (!item.vinyl.material.transparent) {
+      item.vinyl.material.transparent = true;
+      item.vinyl.material.opacity = 0;
+    }
+    item.vinyl.material.opacity += (targetVinylOpacity - item.vinyl.material.opacity) * 0.1;
+    if (item.vinyl.material.opacity < 0.01) {
+      item.vinyl.visible = false;
+      // Reset vinyl rotation and position when fully hidden so it doesn't appear clipped on next hover
+      item.vinyl.rotation.y = 0;
+      item.vinyl.position.x = 0.6;
+    }
+
+    // Animate contact shadow
+    if (item.contactShadow) {
+      const shadowOpacity = isOtherWhilePlaying ? 0 : THREE.MathUtils.clamp(0.35 - absDist * 0.08, 0.05, 0.35);
+      item.contactShadow.material.opacity += (shadowOpacity - item.contactShadow.material.opacity) * 0.08;
+    }
+
+    // Opacity fade for far items + darken when center is hovered + hide ALL when playing
+    const baseOpacity = THREE.MathUtils.clamp(1 - absDist * 0.2, 0.3, 1);
+    let dimTarget;
+    if (isPlaying) {
+      // ALL sleeves disappear when playing, including the active one
+      dimTarget = 0;
+    } else if (isHoveringCenter && i !== currentIndex) {
+      dimTarget = 0.15;
+    } else {
+      dimTarget = baseOpacity;
+    }
+    if (item._currentOpacity === undefined) item._currentOpacity = baseOpacity;
+    item._currentOpacity += (dimTarget - item._currentOpacity) * 0.06;
+    item.sleeve.material.opacity = item._currentOpacity;
+    item.sleeve.material.transparent = true;
+
+    // Hide contact shadow for all covers when playing
+    if (item.contactShadow && isPlaying) {
+      item.contactShadow.material.opacity += (0 - item.contactShadow.material.opacity) * 0.08;
+      if (item.contactShadow.material.opacity < 0.01) item.contactShadow.visible = false;
+    } else if (item.contactShadow) {
+      item.contactShadow.visible = true;
+    }
+  });
+
+  // Update playing progress / track info
+  if (isPlaying && playingIndex >= 0) {
+    const trackData = albumTracks[playingIndex];
+    const trackDuration = trackData.durations[playingTrackIndex];
+    playingProgress = ((time - playingStartTime) * 12) % trackDuration; // sped up for demo
+
+    const progressBar2 = document.getElementById('trackProgressBar');
+    const elapsedEl = document.getElementById('trackTimeElapsed');
+    if (progressBar2) progressBar2.style.width = ((playingProgress / trackDuration) * 100) + '%';
+    if (elapsedEl) elapsedEl.textContent = formatTime(playingProgress);
+
+    // Auto-advance track
+    if (playingProgress >= trackDuration - 0.5) {
+      const nextTrack = (playingTrackIndex + 1) % trackData.tracks.length;
+      jumpToTrack(playingIndex, nextTrack);
+    }
+  }
+
+  // Subtle camera sway
+  camera.position.y = 0.5 + Math.sin(time * 0.5) * 0.05;
+  camera.lookAt(0, 0, 0);
+
+  // Lights pulse
+  rimLight.intensity = 30 + Math.sin(time * 2) * 5;
+  rimLight2.intensity = 30 + Math.cos(time * 2) * 5;
+
+  renderer.render(scene, camera);
+}
+animate();
+
+// Resize — recalculate iPhone 17 frame and recenter
+window.addEventListener('resize', () => {
+  const newSize = computeCanvasSize();
+  camera.aspect = newSize.width / newSize.height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(newSize.width, newSize.height);
+  canvasWrapper.style.width = newSize.width + 'px';
+  canvasWrapper.style.height = newSize.height + 'px';
+});

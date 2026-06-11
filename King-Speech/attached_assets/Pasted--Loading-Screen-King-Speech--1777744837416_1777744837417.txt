@@ -1,0 +1,126 @@
+## ЗАДАЧА: Создать Loading Screen для анализа речи
+
+### Контекст проекта
+Приложение King Speech (Expo + React Native). После того как игрок заканчивает запись речи — идёт запрос к серверу (POST /api/analyze-speech или OpenAI). Это занимает 2–5 секунд. Сейчас в это время экран просто зависает. Нужно создать красивый loading screen который показывается пока идёт анализ.
+
+### Создать компонент `components/SpeechAnalyzingLoader.tsx`
+
+Props:
+```typescript
+interface SpeechAnalyzingLoaderProps {
+  visible: boolean;   // показывать/скрывать
+  lang: 'ru' | 'en';
+}
+```
+
+### Вращающиеся фразы
+
+Компонент каждые 2 секунды меняет фразу из массива (циклично, с FadeIn/FadeOut анимацией):
+
+```typescript
+const PHRASES_RU = [
+  'Анализируем вашу речь...',
+  'Оцениваем чёткость произношения...',
+  'Считаем слова-паразиты...',
+  'Измеряем уверенность голоса...',
+  'Сравниваем с оригинальным текстом...',
+  'Готовим персональный совет...',
+  'Почти готово...',
+];
+
+const PHRASES_EN = [
+  'Analyzing your speech...',
+  'Evaluating pronunciation clarity...',
+  'Checking filler words...',
+  'Measuring voice confidence...',
+  'Comparing with original text...',
+  'Preparing your personal tip...',
+  'Almost done...',
+];
+```
+
+### Визуальный дизайн экрана
+
+Полноэкранный overlay поверх текущего экрана (position: absolute, zIndex: 999).
+Фон: тёмно-синий с лёгким размытием (backgroundColor: 'rgba(10, 15, 40, 0.96)').
+
+Структура по центру экрана (вертикально и горизонтально):
+
+```
+┌──────────────────────────────┐
+│                              │
+│                              │
+│       🎙️  (анимация)         │  ← пульсирующий круг с иконкой микрофона
+│                              │
+│  ≋ ≋ ≋ ≋ ≋ ≋ ≋ ≋ ≋ ≋ ≋ ≋  │  ← анимированные волны эквалайзера (5–7 баров)
+│                              │
+│  Анализируем вашу речь...    │  ← сменяющиеся фразы (FadeIn/FadeOut)
+│                              │
+│  ━━━━━━━━░░░░░░░░░░░░░░░░░  │  ← прогресс-бар (имитация, 0→100% за 4 сек)
+│                              │
+└──────────────────────────────┘
+```
+
+**Элемент 1 — Пульсирующий круг с микрофоном:**
+- Круг диаметром 90px, фон: rgba(255, 209, 102, 0.15) (золотой полупрозрачный)
+- Внутри: Ionicons "mic" размер 36px цвет #FFD166
+- Анимация: withRepeat(withSequence(withTiming(1.1), withTiming(1.0))) — пульс каждые 1.2 сек
+- Вокруг круга: второй круг большего размера (130px) rgba(255,209,102,0.06) с той же анимацией но с задержкой 0.3 сек
+
+**Элемент 2 — Мини эквалайзер (волны):**
+- 7 вертикальных баров, каждый шириной 4px, border-radius 2px, цвет #FFD166
+- Каждый бар анимируется независимо:
+  withRepeat(withSequence(
+    withTiming(randomHeight, { duration: 300 + random*200 }),
+    withTiming(minHeight, { duration: 300 + random*200 })
+  ))
+- Высоты: min 8px, max 32px
+- Gap между барами: 5px
+
+**Элемент 3 — Сменяющаяся фраза:**
+- fontSize: 16px, color: 'rgba(255,255,255,0.85)', textAlign: 'center'
+- fontStyle: 'italic'
+- FadeIn при появлении (duration 400ms), FadeOut перед сменой (duration 300ms)
+- Смена каждые 2000ms через useEffect + setInterval
+
+**Элемент 4 — Прогресс-бар:**
+- Ширина: 220px, высота: 3px
+- Фон трека: rgba(255,255,255,0.1)
+- Заполнение: линейный градиент от #FFD166 до #FF9F43
+- Анимация: withTiming(1.0, { duration: 4500, easing: Easing.bezier(0.4, 0, 0.2, 1) })
+- Начинает с 0 при появлении компонента
+
+### Анимация появления/скрытия компонента
+- visible: true → FadeIn всего overlay за 300ms
+- visible: false → FadeOut за 400ms, затем unmount
+
+### Интеграция
+
+В `components/VoiceRecorder.tsx` или в экранах заданий — показывать `SpeechAnalyzingLoader` в момент между:
+- окончанием записи (после нажатия стоп)
+- получением результата от сервера
+
+```typescript
+const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+const handleStopRecording = async () => {
+  setIsAnalyzing(true);
+  try {
+    const result = await analyzeRecording(audioUri);
+    setAnalysisResult(result);
+  } finally {
+    setIsAnalyzing(false);
+  }
+};
+
+// В JSX:
+
+```
+
+Найти все места в коде где вызывается анализ речи и добавить этот паттерн.
+
+### НЕ ТРОГАТЬ
+- `app/(auth)/` — аутентификация
+- `context/GameContext.tsx`
+- `app/_layout.tsx`
+- Логику самого анализа речи — только обернуть в loader

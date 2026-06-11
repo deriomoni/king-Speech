@@ -1,0 +1,32 @@
+---
+description: После сеанса — локальный Expo Go + OTA для удалённых iOS-тестеров
+alwaysApply: true
+---
+
+# После каждого сеанса
+
+## Локально (разработчик, тот же Wi‑Fi)
+
+Старт сессии — см. правило `expo-go-session-start.mdc` (автозапуск через hook + `npm run dev:session`).
+
+По окончании работы или при сбое Metro:
+1. Перезапустить: `npm run dev:session` из `King-Speech/`.
+2. Освободить порт 8081 при необходимости.
+3. Сообщить URL: `exp://<LAN_IP>:8081` и веб `http://localhost:8081`.
+
+## Удалённая iOS-группа (TestFlight)
+Основной канал — **TestFlight** (безопасно, без общего Wi‑Fi, ПК не нужен).
+
+После изменений в JS/TS (без нативных модулей):
+```bash
+npm run update:testflight
+```
+Тестеры получают обновление при следующем открытии приложения.
+
+После изменений в `app.json`, плагинах или нативных зависимостях:
+```bash
+npm run build:ios:testflight
+npm run submit:ios:testflight
+```
+
+Секреты API — только в EAS Secrets / облачном деплое, никогда в git.

@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native builds
+ios/
+android/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Environment & secrets
+.env
+.env*.local
+
+# IDE & local session
+.cursor/expo-dev.log
+.cursor/expo-session.json
+.local/
+
+# OS & debug
+.DS_Store
+*.pem
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+debug-*.log
+
+# Accidental editor artifacts (invalid on Windows/Git)
+King-Speech/app/(tabs)/index.tsx.
+King-Speech/app/(tabs)/index.tsx_100-600
+King-Speech/app/(tabs)/index.tsx:100-600
+
+# Build output
+server_dist/
+.vercel
+*.tsbuildinfo

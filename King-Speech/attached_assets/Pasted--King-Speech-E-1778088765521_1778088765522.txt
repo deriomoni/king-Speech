@@ -1,0 +1,462 @@
+## ЗАДАЧА: Уровень «Словарный запас» — финальная механика
+
+### Контекст
+Приложение King Speech (Expo + React Native + Express). Файл: `app/vocabulary-level.tsx`. База данных: `constants/vocabularyData.ts` — уже готова, не изменять содержимое слов и синонимов, только проставить `timerSeconds` по правилу: difficulty 1 → 40 сек, difficulty 2 → 30 сек, difficulty 3 → 20 сек.
+
+---
+
+### Концепция уровня
+
+Игрок видит слово вверху экрана и говорит синонимы вслух в произвольном порядке — сколько успеет за отведённое время. Никакого списка подсказок — только пустое пространство которое заполняется словами по мере того как игрок их произносит. Правильное слово появляется зелёной карточкой с анимацией и остаётся до конца. Неправильное — вспыхивает красным и исчезает через 1.2 секунды. Список возможных синонимов игрок видит ТОЛЬКО на экране результата.
+
+---
+
+### ТРИ ФАЗЫ уровня
+
+Управление состоянием:
+```typescript
+type VocabPhase = 'ready' | 'playing' | 'result';
+const [phase, setPhase] = useState('ready');
+const [selectedWord, setSelectedWord] = useState(null);
+const [foundSynonyms, setFoundSynonyms] = useState([]);
+const [wrongAttempts, setWrongAttempts] = useState([]);
+const [score, setScore] = useState(0);
+const [timeLeft, setTimeLeft] = useState(0);
+const isPlayingRef = useRef(false);
+```
+
+При входе на экран — автоматически выбрать случайное слово:
+```typescript
+useEffect(() => {
+  const word = getRandomVocabWord([]);
+  setSelectedWord(word);
+  setTimeLeft(word.timerSeconds);
+}, []);
+```
+
+---
+
+### ФАЗА 1 — Ready (экран готовности)
+
+```
+┌─────────────────────────────┐
+│  [x]              40 сек    │
+│                             │
+│  ┌── слово ───────────────┐ │
+│  │  Подбери синонимы к    │ │
+│  │  С Т Р А Х            │ │
+│  │  существительное·лёгк. │ │
+│  └────────────────────────┘ │
+│                             │
+│  ┌── правила ─────────────┐ │
+│  │  Говори синонимы вслух │ │
+│  │  Верное — зелёное ✓    │ │
+│  │  Неверное — красное ✗  │ │
+│  └────────────────────────┘ │
+│                             │
+│  [         Начать        ]  │
+└─────────────────────────────┘
+```
+
+Стили:
+```typescript
+// Блок слова:
+// background: 'rgba(255,59,48,0.07)'
+// border: '0.5px solid rgba(255,59,48,0.20)'
+// borderRadius: 13, padding: '16px 12px', textAlign: 'center'
+
+// Слово: fontSize:26, fontWeight:'700', letterSpacing:5, color:'#fff'
+// Часть речи: fontSize:11, color:'rgba(255,255,255,0.30)'
+// Сложность dot: width:6, height:6, borderRadius:3
+//   difficulty 1 → color '#639922'
+//   difficulty 2 → color '#EF9F27'
+//   difficulty 3 → color '#FF3B30'
+
+// Блок правил:
+// background: 'rgba(255,255,255,0.04)'
+// borderRadius: 10, padding: '12px 14px'
+// fontSize:13, color:'rgba(255,255,255,0.50)', lineHeight:1.6
+
+// Кнопка Начать:
+// width:'100%', height:54, borderRadius:27
+// background:'#FF3B30', color:'#fff'
+// fontSize:15, fontWeight:'600'
+// При нажатии: setPhase('playing') + startRecognition() + startTimer()
+```
+
+---
+
+### ФАЗА 2 — Playing (активная игра)
+
+```
+┌─────────────────────────────┐
+│  [x]              00:22     │  ← таймер меняет цвет
+│                             │
+│  ┌── слово ───────────────┐ │
+│  │  С Т Р А Х            │ │
+│  │  существительное       │ │
+│  └────────────────────────┘ │
+│                             │
+│  ── найденные слова ──────  │
+│  [ ужас ] [ тревога ]       │  ← зелёные, появляются анимацией
+│  [ паника ]                 │
+│                             │
+│                             │  ← пустое пространство
+│                             │
+│  ≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋  │  ← живые волны
+│         [mic]               │  ← кнопка микрофона
+│   Говори синонимы вслух     │
+└─────────────────────────────┘
+```
+
+#### Таймер (обратный отсчёт)
+```typescript
+useEffect(() => {
+  if (phase !== 'playing') return;
+  const interval = setInterval(() => {
+    setTimeLeft(prev => {
+      if (prev <= 1) {
+        clearInterval(interval);
+        handleTimeUp();
+        return 0;
+      }
+      return prev - 1;
+    });
+  }, 1000);
+  return () => clearInterval(interval);
+}, [phase]);
+
+// Цвет и анимация таймера:
+// timeLeft > 10: color 'rgba(255,255,255,0.5)', фон rgba(255,255,255,0.08)
+// timeLeft <= 10: color '#FF3B30', фон rgba(255,59,48,0.20)
+//   + withRepeat(withSequence(
+//       withTiming(-3, {duration:55}),
+//       withTiming(3, {duration:55}),
+//       withTiming(0, {duration:55})
+//     )) translateX — лёгкая тряска
+// timeLeft <= 5: тряска ±5px каждые 40ms
+//   + фон экрана: withRepeat rgba(255,59,48,0) ↔ rgba(255,59,48,0.04)
+// timeLeft === 0: вспышка rgba(255,59,48,0.12) → 0 за 300ms → setPhase('result')
+```
+
+#### Область найденных слов
+
+Зелёные карточки появляются одна за другой в порядке произнесения — сверху вниз, слева направо, как теги. `flexWrap: 'wrap'`, `gap: 7`.
+
+```typescript
+// Карточка найденного синонима:
+interface FoundChip {
+  word: string;
+  id: string;
+  isNew: boolean; // true первые 600ms после появления
+}
+
+// Стиль карточки (обычная):
+// padding: '6px 12px', borderRadius: 14
+// background: 'rgba(39,80,10,0.55)'
+// border: '0.5px solid #639922'
+// color: '#C0DD97', fontSize: 13, fontWeight: '500'
+
+// Стиль карточки (isNew === true — только появилась):
+// border: '1.5px solid #97C459' (яркая рамка)
+// + shimmer: background анимируется rgba(39,80,10,0.55) → rgba(60,120,15,0.7) → rgba(39,80,10,0.55) за 600ms
+// После 600ms: isNew = false, вернуть обычный стиль
+
+// Анимация появления карточки (Reanimated):
+// FadeIn + ScaleIn от scale(0.6) до scale(1.0) за 250ms
+// Easing: withSpring({ damping: 12, stiffness: 200 })
+```
+
+#### Карточка неверного слова
+
+Появляется НАД областью микрофона, по центру экрана, поверх всего остального.
+
+```typescript
+interface WrongChip {
+  word: string;
+  id: string;
+}
+const [wrongChips, setWrongChips] = useState([]);
+
+// Добавить при неверном слове:
+const showWrongChip = (word: string) => {
+  const id = Date.now().toString();
+  setWrongChips(prev => [...prev, { word, id }]);
+  // Через 1200ms — удалить
+  setTimeout(() => {
+    setWrongChips(prev => prev.filter(c => c.id !== id));
+  }, 1200);
+};
+
+// Стиль:
+// position: 'absolute', alignSelf: 'center', zIndex: 10
+// padding: '7px 16px', borderRadius: 16
+// background: 'rgba(160,40,40,0.50)'
+// border: '0.5px solid rgba(255,59,48,0.40)'
+// color: 'rgba(255,180,180,0.85)', fontSize: 14, fontWeight: '500'
+
+// Анимация появления: FadeIn + ScaleIn (0.7→1.0) за 150ms
+// Анимация исчезновения: FadeOut + scale(0.8) + translateY(-10px) за 300ms
+// Haptics: Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+```
+
+#### Web Speech Recognition — правильная реализация
+
+```typescript
+const recognitionRef = useRef(null);
+
+const startRecognition = () => {
+  const SpeechRecog =
+    (window as any).SpeechRecognition ||
+    (window as any).webkitSpeechRecognition;
+
+  if (!SpeechRecog) {
+    // Показать сообщение что STT недоступен на этом устройстве
+    setFallbackMode(true);
+    return;
+  }
+
+  const rec = new SpeechRecog();
+  rec.lang = lang === 'ru' ? 'ru-RU' : 'en-US';
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.maxAlternatives = 3;
+
+  rec.onresult = (event: any) => {
+    if (!isPlayingRef.current) return;
+
+    // Проверить все alternative варианты распознавания
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      for (let alt = 0; alt < event.results[i].length; alt++) {
+        const raw = event.results[i][alt].transcript;
+
+        // Разбить на отдельные слова (игрок мог сказать несколько)
+        const words = raw.split(/[\s,]+/).map((w: string) => w.trim()).filter((w: string) => w.length > 2);
+
+        for (const word of words) {
+          const matched = checkSynonymAdvanced(word, selectedWord!.synonyms, foundSynonyms);
+
+          if (matched && !foundSynonyms.includes(matched)) {
+            // ПРАВИЛЬНОЕ СЛОВО
+            handleCorrectSynonym(matched);
+            return;
+          }
+
+          // Только для final results показывать неверные
+          if (event.results[i].isFinal && !matched) {
+            showWrongChip(word);
+          }
+        }
+      }
+    }
+  };
+
+  rec.onerror = (e: any) => {
+    if (e.error === 'no-speech' && isPlayingRef.current) {
+      rec.stop();
+      setTimeout(() => { if (isPlayingRef.current) rec.start(); }, 300);
+    }
+  };
+
+  rec.onend = () => {
+    if (isPlayingRef.current) rec.start();
+  };
+
+  rec.start();
+  recognitionRef.current = rec;
+};
+
+const stopRecognition = () => {
+  isPlayingRef.current = false;
+  recognitionRef.current?.stop();
+  recognitionRef.current = null;
+};
+
+const handleCorrectSynonym = (word: string) => {
+  setFoundSynonyms(prev => [...prev, word]);
+  setScore(prev => prev + 3);
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+};
+
+const handleTimeUp = () => {
+  stopRecognition();
+  setPhase('result');
+};
+```
+
+#### Нормализация и проверка синонимов
+
+```typescript
+const normalize = (s: string): string =>
+  s.toLowerCase().trim()
+   .replace(/ё/g, 'е')
+   .replace(/[^а-яa-z]/g, '');
+
+const stem = (s: string): string => {
+  const w = normalize(s);
+  return w.replace(/(ами|ями|ого|его|ому|ему|ой|ей|ую|юю|ые|ие|ых|их|ом|ем|ах|ях|ов|ев|ам|ям|ть|ться|тся|ешь|ишь|ает|яет|ует|ит|ат|ят|ала|ало|али|ал|ила|ило|или|ил|ый|ий|ая|яя|ое|ее)$/, '') || w;
+};
+
+const levenshtein = (a: string, b: string): number => {
+  const dp = Array.from({length: a.length+1}, (_,i) =>
+    Array.from({length: b.length+1}, (_,j) => i===0 ? j : j===0 ? i : 0));
+  for (let i=1;i<=a.length;i++)
+    for (let j=1;j<=b.length;j++)
+      dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1] : 1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[a.length][b.length];
+};
+
+export function checkSynonymAdvanced(input: string, synonyms: string[], foundAlready: string[]): string | null {
+  const ni = normalize(input);
+  const si = stem(input);
+  for (const syn of synonyms) {
+    if (foundAlready.map(normalize).includes(normalize(syn))) continue;
+    const ns = normalize(syn);
+    const ss = stem(syn);
+    if (ni === ns) return syn;
+    if (si === ss && si.length >= 4) return syn;
+    if (ni.includes(ns) && ns.length >= 4) return syn;
+    if (ns.length >= 6 && levenshtein(ni, ns) === 1) return syn;
+    if (ss.length >= 4 && levenshtein(si, ss) <= 1) return syn;
+  }
+  return null;
+}
+```
+
+#### Кнопка микрофона и волны
+
+Использовать компонент `WaveformRecorder` (из промпта №4) с параметрами:
+```typescript
+
+```
+
+Под волнами — круглая кнопка микрофона:
+```typescript
+// width:54, height:54, borderRadius:27
+// background:'#FF3B30'
+// Ionicons 'mic' size:24 color:'#fff'
+// Без функциональности — просто индикатор активной записи
+// Пульсирует: withRepeat(withSequence(
+//   withTiming(1.08, {duration:700}),
+//   withTiming(1.0, {duration:700})
+// )) scale
+```
+
+---
+
+### ФАЗА 3 — Result (итог)
+
+```
+┌─────────────────────────────┐
+│       Время вышло!          │
+│                             │
+│           4                 │  ← анимированный счётчик
+│     из 8 синонимов          │
+│        12 очков             │
+│                             │
+│  ── ты назвал ─────────────│
+│  [ ужас ][ тревога ][ паника│
+│                             │
+│  ── ты не вспомнил ────────│
+│  [ боязнь ][ трепет ]       │
+│  [ фобия ][ опасение ]      │
+│                             │
+│  [ Названо: 4 ] [Не то: 2 ] │
+│                             │
+│  [         Далее         ]  │
+└─────────────────────────────┘
+```
+
+```typescript
+// Заголовок: 'Время вышло!' fontSize:20, color:'#fff'
+// Анимированный счётчик найденных:
+//   от 0 до foundSynonyms.length за 1000ms
+//   fontSize:52, fontWeight:'700', color:'#fff'
+//   Easing.out(Easing.cubic)
+
+// 'из N синонимов': fontSize:14, color:'rgba(255,255,255,0.35)'
+// Очки: fontSize:24, fontWeight:'500', color:'#FF3B30'
+
+// Секция 'Ты назвал' — зелёные карточки:
+// те же chip-ok стили что во время игры
+// появляются FadeInDown с stagger 80ms между карточками
+
+// Секция 'Ты не вспомнил' — серые карточки:
+// padding:'5px 10px', borderRadius:12
+// background:'rgba(255,255,255,0.04)'
+// border:'0.5px solid rgba(255,255,255,0.08)'
+// color:'rgba(255,255,255,0.25)', fontSize:12
+// появляются после зелёных, stagger 60ms
+// НЕ показывать если foundSynonyms.length === selectedWord.synonyms.length (нашёл все)
+
+// Статистика внизу:
+// две плашки рядом:
+// [ Названо: N ] — background rgba(39,80,10,0.35), color '#C0DD97'
+// [ Не то: M ]   — background rgba(160,40,40,0.35), color 'rgba(255,130,130,0.8)'
+// если M === 0 — не показывать плашку 'Не то'
+
+// Особый случай — нашёл ВСЕ синонимы до конца времени:
+// Заголовок: 'Все синонимы найдены!' color:'#C0DD97'
+// Не показывать секцию 'Не вспомнил'
+// Бонус очков: +10 к итогу
+
+// Кнопка Далее:
+// width:'100%', height:54, borderRadius:27
+// background:'#FF3B30', color:'#fff', fontSize:15
+// При нажатии:
+//   addXP(Math.min(50, foundSynonyms.length * 6)) из GameContext
+//   markLevelComplete(levelId) из GameContext
+//   Переход на следующий уровень (логика из промпта №3)
+// Нет минимального порога — любой результат = прохождение
+```
+
+---
+
+### Дополнительные edge cases
+
+```typescript
+// 1. Если нашёл все синонимы до истечения времени:
+//    stopRecognition() → пауза 600ms → setPhase('result')
+//    Показать сообщение 'Все синонимы найдены!'
+
+// 2. Крестик во время фазы playing:
+//    Alert: 'Выйти? Прогресс не сохранится'
+//    [Остаться] [Выйти → router.replace('/(tabs)/')]
+//    При выходе: stopRecognition() перед навигацией
+
+// 3. STT недоступен (нет SpeechRecognition в window):
+//    Показать TextInput как fallback
+//    Поле ввода + кнопка 'Проверить'
+//    Та же логика checkSynonymAdvanced
+
+// 4. Одно слово засчитывается только раз:
+//    Проверять foundSynonyms.includes(matched) перед добавлением
+//    Если уже есть — не показывать ни зелёную ни красную карточку
+
+// 5. Слова-паразиты ('ну', 'эм', 'это', 'типа', 'как', 'вот'):
+//    const FILLER_WORDS = ['ну','эм','это','типа','как','вот','блин','ой']
+//    Если слово в FILLER_WORDS — полностью игнорировать, не показывать красную карточку
+
+// 6. При unmount компонента:
+//    useEffect(() => () => stopRecognition(), [])
+```
+
+---
+
+### Порядок реализации
+
+1. `constants/vocabularyData.ts` — проставить `timerSeconds` по difficulty
+2. Фаза ready — экран готовности со словом и правилами
+3. Web Speech Recognition — `startRecognition` и `checkSynonymAdvanced`
+4. Фаза playing — зелёные карточки + красные всплески + таймер
+5. Фаза result — анимированный итог с найденными и пропущенными словами
+6. Интеграция в карту (`gameContent.ts` + `index.tsx`)
+
+---
+
+### НЕ ТРОГАТЬ
+- `constants/vocabularyData.ts` — только timerSeconds
+- `app/(auth)/`
+- `context/GameContext.tsx` — только addXP и markLevelComplete
+- `app/_layout.tsx` и `app/(tabs)/_layout.tsx`
+- Все другие типы уровней

@@ -1,0 +1,97 @@
+Обновленные стили (секция const s = StyleSheet.create)
+Замени старые стили (примерно с 1511 строки) на эти. Здесь использованы переменные SH (высота экрана) и SW (ширина), чтобы элементы масштабировались автоматически:
+
+TypeScript
+const s = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#000', // Или твой фоновый цвет
+  },
+  // Зона аватара Дженни - теперь она занимает верхнюю часть экрана пропорционально
+  avatarArea: {
+    height: SH * 0.42,          // Ровно 42% высоты экрана
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,                  // Чтобы была над фоном
+  },
+  avatarGlow: {
+    position: 'absolute',
+    width: SW * 0.8,            // Свечение зависит от ширины экрана
+    height: SW * 0.8,
+    borderRadius: (SW * 0.8) / 2,
+    backgroundColor: 'rgba(255, 215, 0, 0.15)', // Мягкое золотое свечение
+    filter: 'blur(40px)',       // Если поддерживается, иначе через opacity
+    opacity: 0.5,
+  },
+  // Основная карточка с текстом (стеклянная панель)
+  panel: {
+    flex: 1,                    // Занимает всё оставшееся пространство
+    backgroundColor: 'rgba(25, 25, 25, 0.9)',
+    borderTopLeftRadius: 36,
+    borderTopRightRadius: 36,
+    marginTop: -40,             // Наползает на зону аватара для эффекта глубины
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 25, // Отступ под челку/кнопку home
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  handle: {
+    width: 45,
+    height: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 10,
+    alignSelf: 'center',
+    marginBottom: 15,
+  },
+  jennyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  // Карточка самого вопроса
+  questionCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 24,
+    padding: 20,
+    minHeight: SH * 0.15,       // Минимум 15% высоты экрана
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.2)', // Тонкая золотая рамка
+  },
+  questionTxt: {
+    fontSize: SH > 700 ? 20 : 18, // Адаптивный размер шрифта
+    lineHeight: 28,
+    color: '#FFF',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  // Блок кнопок внизу
+  controlRow: {
+    marginTop: 'auto',          // Прижимает кнопки к низу панели
+    paddingTop: 20,
+    gap: 15,
+  },
+  nextBtn: {
+    height: 64,                 // Крупная, удобная кнопка
+    borderRadius: 20,
+    backgroundColor: '#FFD700', // Яркое золото
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+});
+2. Что именно изменить в JSX (структуре)
+Чтобы всё «село» идеально, проверь, чтобы элементы в render (вокруг 1370 строки) были обернуты именно так:
+
+Дженни: Она должна быть в avatarArea. Благодаря height: SH * 0.42, она не будет «прыгать» на разных телефонах.
+
+Панель: GlassCard (или View с эффектом стекла) должна иметь flex: 1. Это заставит её растягиваться до самого низа экрана, независимо от того, насколько длинный текст вопроса.
+
+Кнопки: controlRow с marginTop: 'auto' всегда будет находиться в нижней части панели, оставляя всё свободное место под текст вопроса.

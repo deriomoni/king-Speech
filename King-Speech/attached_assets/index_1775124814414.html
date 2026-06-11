@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remix: Omma Valley</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; background: #2b9173; font-family: 'Segoe UI', sans-serif; }
+    canvas { display: block; width: 100vw; height: 100vh; }
+
+    #ui-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 10;
+    }
+
+    #top-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 24px; pointer-events: auto;
+    }
+
+    #game-title {
+      color: rgba(255,255,255,0.85); font-size: 14px; font-weight: 300;
+      letter-spacing: 4px; text-transform: uppercase;
+    }
+
+    #level-indicator {
+      color: rgba(255,255,255,0.6); font-size: 12px; letter-spacing: 2px;
+    }
+
+    .btn-group { display: flex; gap: 8px; }
+
+    .btn {
+      padding: 8px 18px; border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.8);
+      font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+      cursor: pointer; border-radius: 4px; transition: all 0.3s;
+      backdrop-filter: blur(10px); pointer-events: auto;
+    }
+    .btn:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.4); }
+    .btn.active { background: rgba(110,130,210,0.5); border-color: rgba(110,130,210,0.8); }
+
+    #perf-panel {
+      position: fixed; top: 60px; right: 16px;
+      display: none; flex-direction: row; gap: 14px;
+      padding: 8px 14px;
+      background: rgba(10,10,20,0.82); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; backdrop-filter: blur(14px);
+      pointer-events: none; z-index: 26;
+    }
+    #perf-panel.visible { display: flex; }
+
+    #perf-panel .perf-label {
+      color: rgba(255,255,255,0.4); font-size: 9px; letter-spacing: 2px;
+      text-transform: uppercase; display: block; margin-bottom: 2px;
+    }
+    #perf-panel .perf-value {
+      color: rgba(255,255,255,0.85); font-size: 16px; font-weight: 300;
+      font-variant-numeric: tabular-nums; letter-spacing: 0.5px;
+    }
+
+    #debug-panel {
+      position: fixed; top: 108px; right: 16px;
+      display: none; flex-direction: column; gap: 10px;
+      padding: 16px 18px; min-width: 220px;
+      background: rgba(10,10,20,0.82); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; backdrop-filter: blur(14px);
+      pointer-events: auto; z-index: 25;
+    }
+    #debug-panel.visible { display: flex; }
+
+    #debug-panel h3 {
+      color: rgba(255,255,255,0.7); font-size: 10px; font-weight: 500;
+      letter-spacing: 3px; text-transform: uppercase; margin: 0 0 2px 0;
+      padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .debug-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .debug-row label {
+      color: rgba(255,255,255,0.55); font-size: 11px; letter-spacing: 1px;
+      min-width: 62px; text-transform: uppercase;
+    }
+    .debug-row input[type="range"] {
+      flex: 1; height: 4px; -webkit-appearance: none; appearance: none;
+      background: rgba(255,255,255,0.12); border-radius: 2px; outline: none;
+    }
+    .debug-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 12px; height: 12px; border-radius: 50%;
+      background: rgba(110,130,210,0.9); cursor: pointer;
+    }
+    .debug-row input[type="color"] {
+      width: 28px; height: 22px; border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 4px; background: none; cursor: pointer; padding: 0;
+    }
+    .link-btn {
+      width: 24px; height: 22px; border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 4px; background: rgba(255,255,255,0.06); cursor: pointer;
+      font-size: 12px; line-height: 1; padding: 0; display: flex;
+      align-items: center; justify-content: center; transition: all 0.2s;
+      color: rgba(255,255,255,0.35); flex-shrink: 0;
+    }
+    .link-btn.linked {
+      background: rgba(110,130,210,0.25); border-color: rgba(110,130,210,0.5);
+      color: rgba(200,210,255,0.9);
+    }
+    .link-btn:hover { background: rgba(255,255,255,0.12); }
+    .debug-val {
+      color: rgba(255,255,255,0.7); font-size: 11px; min-width: 32px;
+      text-align: right; font-variant-numeric: tabular-nums;
+    }
+
+    #editor-panel {
+      position: fixed; left: 16px; top: 50%; transform: translateY(-50%);
+      display: none; flex-direction: column; gap: 6px;
+      pointer-events: auto; z-index: 20;
+    }
+    #editor-panel.visible { display: flex; }
+
+    .editor-btn {
+      width: 48px; height: 48px; border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.8);
+      font-size: 18px; cursor: pointer; border-radius: 8px;
+      transition: all 0.3s; backdrop-filter: blur(10px);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .editor-btn:hover { background: rgba(255,255,255,0.15); }
+    .editor-btn.active { background: rgba(110,130,210,0.5); border-color: rgba(110,130,210,0.7); }
+    .editor-btn .tooltip {
+      display: none; position: absolute; left: 56px;
+      background: rgba(0,0,0,0.8); color: #fff; padding: 4px 10px;
+      border-radius: 4px; font-size: 11px; white-space: nowrap; letter-spacing: 1px;
+    }
+    .editor-btn:hover .tooltip { display: block; }
+
+    #height-control {
+      position: fixed; right: 16px; top: 50%; transform: translateY(-50%);
+      display: none; flex-direction: column; align-items: center; gap: 4px;
+      pointer-events: auto; z-index: 20;
+    }
+    #height-control.visible { display: flex; }
+
+    #height-control label {
+      color: rgba(255,255,255,0.5); font-size: 10px; letter-spacing: 2px;
+      text-transform: uppercase; margin-bottom: 4px;
+    }
+
+    .height-btn {
+      width: 36px; height: 36px; border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.8);
+      font-size: 16px; cursor: pointer; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.3s;
+    }
+    .height-btn:hover { background: rgba(255,255,255,0.15); }
+
+    #height-val {
+      color: rgba(255,255,255,0.8); font-size: 14px;
+      font-weight: 300; padding: 4px 0;
+    }
+
+    #movable-panel {
+      position: fixed; right: 16px; bottom: 80px;
+      display: none; flex-direction: column; gap: 6px;
+      padding: 14px 16px; min-width: 180px;
+      background: rgba(10,10,20,0.82); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; backdrop-filter: blur(14px);
+      pointer-events: auto; z-index: 25;
+    }
+    #movable-panel.visible { display: flex; }
+
+    #movable-panel h4 {
+      color: rgba(255,255,255,0.7); font-size: 10px; font-weight: 500;
+      letter-spacing: 3px; text-transform: uppercase; margin: 0 0 2px 0;
+      padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .mv-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    }
+    .mv-row label {
+      color: rgba(255,255,255,0.55); font-size: 11px; letter-spacing: 1px;
+      text-transform: uppercase; min-width: 40px;
+    }
+    .mv-row input[type="number"] {
+      width: 52px; padding: 4px 6px; border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85);
+      font-size: 12px; border-radius: 4px; text-align: center; outline: none;
+      font-variant-numeric: tabular-nums;
+    }
+    .mv-row input[type="number"]:focus {
+      border-color: rgba(110,130,210,0.6);
+    }
+
+    #level-select {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      display: none; gap: 10px; pointer-events: auto; z-index: 20;
+    }
+
+    .level-btn {
+      width: 40px; height: 40px; border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7);
+      font-size: 13px; font-weight: 300; cursor: pointer;
+      border-radius: 50%; transition: all 0.3s; backdrop-filter: blur(10px);
+    }
+    .level-btn:hover { background: rgba(255,255,255,0.15); }
+    .level-btn.active { background: rgba(110,130,210,0.5); border-color: rgba(110,130,210,0.8); color: #fff; }
+
+    /* ─── 3D Level Select Overlay ─── */
+    #ls-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 200; pointer-events: none; opacity: 0;
+      transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      display: none;
+      overflow: hidden;
+    }
+    #ls-overlay.visible {
+      pointer-events: auto; opacity: 1;
+    }
+    #ls-overlay-bg {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(180deg, #1f7a5c 0%, #2b9173 30%, #34b88a 60%, #45d4a0 100%);
+    }
+
+    /* Floating clouds */
+    .ls-cloud {
+      position: absolute; border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.05) 60%, transparent 100%);
+      filter: blur(20px); pointer-events: none;
+      animation: ls-cloud-drift linear infinite;
+    }
+    @keyframes ls-cloud-drift {
+      0% { transform: translateX(0) translateY(0); }
+      25% { transform: translateX(30px) translateY(-15px); }
+      50% { transform: translateX(10px) translateY(10px); }
+      75% { transform: translateX(-20px) translateY(-5px); }
+      100% { transform: translateX(0) translateY(0); }
+    }
+
+    /* Top bar inside overlay */
+    #ls-top-bar {
+      position: absolute; top: 0; left: 0; right: 0;
+      padding: 18px 24px; display: flex; justify-content: space-between; align-items: center;
+      z-index: 10;
+    }
+    #ls-title-area {
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    #ls-title {
+      color: rgba(255,255,255,0.95); font-size: 22px; font-weight: 200;
+      letter-spacing: 6px; text-transform: uppercase;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+    #ls-subtitle {
+      color: rgba(255,255,255,0.5); font-size: 11px;
+      letter-spacing: 3px; text-transform: uppercase;
+    }
+    #ls-back-btn {
+      padding: 8px 20px; border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85);
+      font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+      cursor: pointer; border-radius: 6px; transition: all 0.3s;
+      backdrop-filter: blur(12px);
+    }
+    #ls-back-btn:hover {
+      background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.4);
+    }
+
+    /* 3D Scene Container */
+    #ls-scene {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      perspective: 1200px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #ls-staircase {
+      transform-style: preserve-3d;
+      transform: rotateX(-18deg) rotateY(-22deg) translateY(20px);
+      position: relative;
+      transition: transform 0.3s ease;
+    }
+
+    /* Staircase railing */
+    .ls-railing {
+      position: absolute;
+      transform-style: preserve-3d;
+      pointer-events: none;
+    }
+    .ls-railing-beam {
+      position: absolute;
+      background: linear-gradient(180deg, rgba(31,107,85,0.8) 0%, rgba(25,90,70,0.6) 100%);
+      border-radius: 4px;
+      transform-style: preserve-3d;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .ls-railing-post {
+      position: absolute;
+      width: 6px; background: linear-gradient(180deg, #2a8a6a, #1f6b55);
+      border-radius: 3px;
+      transform-style: preserve-3d;
+    }
+    .ls-railing-cap {
+      position: absolute;
+      width: 12px; height: 12px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #3ec9a0, #1f6b55);
+    }
+
+    /* Step (level) */
+    .ls-step {
+      position: absolute;
+      transform-style: preserve-3d;
+      cursor: pointer;
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .ls-step:hover {
+      transform: scale(1.08) translateZ(12px);
+    }
+    .ls-step.selected {
+      transform: scale(1.15) translateZ(20px);
+    }
+
+    /* Floating idle animation */
+    .ls-step-float {
+      animation: ls-step-float 4s ease-in-out infinite;
+    }
+    @keyframes ls-step-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    /* Step top face */
+    .ls-step-top {
+      position: absolute;
+      border-radius: 14px;
+      display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+      transform-style: preserve-3d;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.35);
+      transition: box-shadow 0.35s;
+      overflow: hidden;
+    }
+    .ls-step-top::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 50%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 100%);
+      border-radius: 14px 14px 0 0;
+      pointer-events: none;
+    }
+    .ls-step:hover .ls-step-top {
+      box-shadow: 0 12px 40px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.45);
+    }
+
+    /* Step side faces (3D depth) */
+    .ls-step-right-face {
+      position: absolute;
+      border-radius: 0 14px 14px 0;
+      transform-origin: left center;
+      transform: rotateY(90deg);
+    }
+    .ls-step-bottom-face {
+      position: absolute;
+      border-radius: 0 0 14px 14px;
+      transform-origin: top center;
+      transform: rotateX(-90deg);
+    }
+
+    /* Neon glow ring */
+    .ls-step-glow {
+      position: absolute;
+      border-radius: 18px;
+      opacity: 0;
+      transition: opacity 0.4s;
+      pointer-events: none;
+      filter: blur(12px);
+    }
+    .ls-step:hover .ls-step-glow {
+      opacity: 0.4;
+    }
+    .ls-step.selected .ls-step-glow {
+      opacity: 0.8;
+      animation: ls-glow-pulse 1s ease-in-out infinite;
+    }
+    @keyframes ls-glow-pulse {
+      0%, 100% { opacity: 0.6; transform: scale(1); }
+      50% { opacity: 0.9; transform: scale(1.04); }
+    }
+
+    /* Step content */
+    .ls-step-icon {
+      width: 42px; height: 42px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+      box-shadow: inset 0 -2px 4px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+    }
+    .ls-step:hover .ls-step-icon { transform: scale(1.1); }
+
+    .ls-step-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; z-index: 1; }
+    .ls-step-name {
+      font-size: 14px; font-weight: 600; letter-spacing: 0.5px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .ls-step-sub {
+      font-size: 11px; opacity: 0.7; letter-spacing: 0.3px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .ls-step-num {
+      position: absolute; top: -10px; right: -6px;
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+      z-index: 2;
+      transition: transform 0.3s;
+    }
+    .ls-step:hover .ls-step-num { transform: scale(1.15) rotate(10deg); }
+
+    /* Bottom hint */
+    #ls-info-bar {
+      position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+      color: rgba(255,255,255,0.6); font-size: 12px;
+      letter-spacing: 2px; text-transform: uppercase;
+      text-shadow: 0 1px 8px rgba(0,0,0,0.1);
+      z-index: 10; text-align: center; padding: 8px 20px;
+      background: rgba(0,0,0,0.08); border-radius: 20px;
+      backdrop-filter: blur(8px);
+    }
+
+    #toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.7); color: rgba(255,255,255,0.8);
+      padding: 8px 20px; border-radius: 20px; font-size: 12px;
+      letter-spacing: 1px; opacity: 0; transition: opacity 0.4s;
+      pointer-events: none; z-index: 30;
+    }
+    #toast.show { opacity: 1; }
+
+    #grid-cursor {
+      position: fixed; bottom: 60px; right: 20px;
+      background: rgba(10,10,20,0.82); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px; padding: 8px 14px; backdrop-filter: blur(14px);
+      display: none; z-index: 25; pointer-events: none;
+    }
+    #grid-cursor.visible { display: flex; gap: 14px; }
+    #grid-cursor .gc-item {
+      display: flex; flex-direction: column; align-items: center;
+    }
+    #grid-cursor .gc-label {
+      color: rgba(255,255,255,0.4); font-size: 9px; letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    #grid-cursor .gc-value {
+      color: rgba(255,255,255,0.85); font-size: 16px; font-weight: 300;
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- ═══ 3D Level Select Overlay ═══ -->
+  <div id="ls-overlay">
+    <div id="ls-overlay-bg">
+      <!-- Floating clouds at various depths -->
+      <div class="ls-cloud" style="width:280px;height:140px;top:8%;left:5%;animation-duration:18s;"></div>
+      <div class="ls-cloud" style="width:350px;height:180px;top:15%;right:3%;animation-duration:24s;animation-delay:-5s;"></div>
+      <div class="ls-cloud" style="width:200px;height:100px;top:55%;left:8%;animation-duration:20s;animation-delay:-8s;"></div>
+      <div class="ls-cloud" style="width:320px;height:160px;top:65%;right:10%;animation-duration:22s;animation-delay:-12s;"></div>
+      <div class="ls-cloud" style="width:240px;height:120px;top:30%;left:50%;animation-duration:26s;animation-delay:-3s;"></div>
+      <div class="ls-cloud" style="width:180px;height:90px;top:80%;left:30%;animation-duration:19s;animation-delay:-7s;"></div>
+      <div class="ls-cloud" style="width:400px;height:200px;top:3%;left:35%;animation-duration:30s;animation-delay:-15s;opacity:0.5;"></div>
+      <div class="ls-cloud" style="width:160px;height:80px;top:45%;right:5%;animation-duration:16s;animation-delay:-10s;"></div>
+    </div>
+
+    <div id="ls-top-bar">
+      <div id="ls-title-area">
+        <div id="ls-title">Select Level</div>
+        <div id="ls-subtitle">Choose your path</div>
+      </div>
+      <button id="ls-back-btn">← Back</button>
+    </div>
+
+    <!-- 3D Staircase scene rendered via CSS transforms -->
+    <div id="ls-scene">
+      <div id="ls-staircase">
+        <!-- Steps are injected by JS -->
+      </div>
+    </div>
+
+    <div id="ls-info-bar">Click a step to play</div>
+  </div>
+
+  <!-- Flash overlay for diamond collection -->
+  <div id="diamond-flash" style="
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 99; opacity: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(255,215,0,0.6) 0%, rgba(255,255,255,0.3) 30%, transparent 70%);
+    transition: none;
+  "></div>
+
+  <!-- Ring burst overlay -->
+  <div id="diamond-ring" style="
+    position: fixed; top: 50%; left: 50%; width: 0; height: 0;
+    pointer-events: none; z-index: 99;
+    border: 3px solid rgba(255,215,0,0.8);
+    border-radius: 50%; transform: translate(-50%, -50%);
+    opacity: 0; box-shadow: 0 0 20px rgba(255,215,0,0.4), inset 0 0 20px rgba(255,215,0,0.2);
+  "></div>
+
+  <!-- Fade overlay for level transitions -->
+  <div id="fade-overlay" style="
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: #c47830; opacity: 0; pointer-events: none;
+    z-index: 100; transition: opacity 1.2s ease-in-out;
+  "></div>
+
+  <div id="ui-overlay">
+    <div id="top-bar">
+      <div>
+        <div id="game-title">Isora</div>
+        <div id="level-indicator">Level 1</div>
+      </div>
+      <div class="btn-group">
+        <button class="btn" id="btn-levels" style="background:rgba(62,201,160,0.3);border-color:rgba(62,201,160,0.5);">Levels</button>
+        <button class="btn" id="btn-edit">Edit</button>
+        <button class="btn" id="btn-play">Play</button>
+        <button class="btn" id="btn-debug">Debug</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="editor-panel">
+    <button class="editor-btn active" data-tool="block">
+      ◼<span class="tooltip">Block</span>
+    </button>
+    <button class="editor-btn" data-tool="stair">
+      ⧈<span class="tooltip">Stair</span>
+    </button>
+    <button class="editor-btn" data-tool="pillar">
+      ▮<span class="tooltip">Pillar</span>
+    </button>
+    <button class="editor-btn" data-tool="arch">
+      ◠<span class="tooltip">Arch</span>
+    </button>
+    <button class="editor-btn" data-tool="dome">
+      ◓<span class="tooltip">Dome</span>
+    </button>
+    <button class="editor-btn" data-tool="water">
+      ≈<span class="tooltip">Water</span>
+    </button>
+    <div style="width:48px;height:1px;background:rgba(255,255,255,0.1);margin:4px 0;"></div>
+    <button class="editor-btn" data-tool="tp-a" style="font-size:10px;">
+      <span style="color:#00ccff;">◉A</span><span class="tooltip">Teleport A</span>
+    </button>
+    <button class="editor-btn" data-tool="tp-b" style="font-size:10px;">
+      <span style="color:#ff6600;">◉B</span><span class="tooltip">Teleport B</span>
+    </button>
+    <div style="width:48px;height:1px;background:rgba(255,255,255,0.1);margin:4px 0;"></div>
+    <button class="editor-btn" data-tool="mv-x" style="font-size:10px;">
+      <span style="color:#ff8844;">⇔X</span><span class="tooltip">Movable X</span>
+    </button>
+    <button class="editor-btn" data-tool="mv-z" style="font-size:10px;">
+      <span style="color:#44cc88;">⇔Z</span><span class="tooltip">Movable Z</span>
+    </button>
+    <button class="editor-btn" data-tool="mv-y" style="font-size:10px;">
+      <span style="color:#44aaff;">⇕Y</span><span class="tooltip">Movable Y</span>
+    </button>
+    <div style="width:48px;height:1px;background:rgba(255,255,255,0.1);margin:4px 0;"></div>
+    <button class="editor-btn" data-tool="eraser">
+      ✕<span class="tooltip">Eraser</span>
+    </button>
+    <div style="width:48px;height:1px;background:rgba(255,255,255,0.1);margin:4px 0;"></div>
+    <button class="editor-btn" id="btn-angle" data-tool="rotate" title="Rotate block +90°">
+      ↻<span class="tooltip">Rotate</span>
+    </button>
+    <div style="width:48px;height:1px;background:rgba(255,255,255,0.1);margin:4px 0;"></div>
+    <button class="editor-btn" id="btn-snippet" title="Copy level code">
+      { }<span class="tooltip">Snippet</span>
+    </button>
+  </div>
+
+  <div id="height-control">
+    <label>Height</label>
+    <button class="height-btn" id="h-up">+</button>
+    <div id="height-val">1</div>
+    <button class="height-btn" id="h-down">−</button>
+  </div>
+
+  <div id="movable-panel">
+    <h4>Movable Range</h4>
+    <div class="mv-row">
+      <label>Min</label>
+      <input type="number" id="mv-min" value="-3" min="-20" max="20" step="1">
+    </div>
+    <div class="mv-row">
+      <label>Max</label>
+      <input type="number" id="mv-max" value="3" min="-20" max="20" step="1">
+    </div>
+  </div>
+
+  <div id="level-select">
+    <button class="level-btn active" data-level="1">1</button>
+    <button class="level-btn" data-level="2">2</button>
+    <button class="level-btn" data-level="3">3</button>
+  </div>
+
+  <div id="perf-panel">
+    <div id="perf-fps">
+      <span class="perf-label">FPS</span>
+      <span class="perf-value" id="fps-val">0</span>
+    </div>
+    <div id="perf-gpu">
+      <span class="perf-label">GPU</span>
+      <span class="perf-value" id="gpu-val">0.0 ms</span>
+    </div>
+  </div>
+
+  <div id="debug-panel">
+    <h3>Fog Settings</h3>
+    <div class="debug-row">
+      <label>Top Y</label>
+      <input type="range" id="fog-y" min="-2" max="12" step="0.5" value="1.0">
+      <span class="debug-val" id="fog-y-val">1.0</span>
+    </div>
+    <div class="debug-row">
+      <label>Bottom Y</label>
+      <input type="range" id="fog-depth" min="-10" max="4" step="0.5" value="-1.5">
+      <span class="debug-val" id="fog-depth-val">-1.5</span>
+    </div>
+    <div class="debug-row">
+      <label>Density</label>
+      <input type="range" id="fog-density" min="0.05" max="1" step="0.05" value="1.0">
+      <span class="debug-val" id="fog-density-val">1.00</span>
+    </div>
+    <div class="debug-row">
+      <label>Color</label>
+      <input type="color" id="fog-color" value="#2b9173">
+      <span class="debug-val" id="fog-color-val">#2b9173</span>
+    </div>
+    <h3 style="margin-top:8px;">Scene</h3>
+    <div class="debug-row">
+      <label>Size</label>
+      <input type="range" id="cell-size" min="0.3" max="1.0" step="0.05" value="0.80">
+      <span class="debug-val" id="cell-size-val">0.80</span>
+    </div>
+    <div class="debug-row">
+      <label>Background</label>
+      <input type="color" id="bg-color" value="#2b9173">
+      <span class="debug-val" id="bg-color-val">#2b9173</span>
+      <button id="fog-bg-link" class="link-btn linked" title="Link fog & background colors">🔗</button>
+    </div>
+    <div class="debug-row">
+      <label>Ground Y</label>
+      <input type="range" id="ground-y" min="-6" max="2" step="0.1" value="-1.4">
+      <span class="debug-val" id="ground-y-val">-1.4</span>
+    </div>
+    <div class="debug-row">
+      <label>Ground Color</label>
+      <input type="color" id="ground-color" value="#20a24d">
+      <span class="debug-val" id="ground-color-val">#20a24d</span>
+    </div>
+    <div class="debug-row">
+      <label>Ground Opacity</label>
+      <input type="range" id="ground-opacity" min="0" max="1" step="0.05" value="1">
+      <span class="debug-val" id="ground-opacity-val">1.00</span>
+    </div>
+    <h3 style="margin-top:8px;">Brick</h3>
+    <div class="debug-row">
+      <label>Top Color</label>
+      <input type="color" id="brick-top-color" value="#ff7c5c">
+      <span class="debug-val" id="brick-top-color-val">#ff7c5c</span>
+    </div>
+    <div class="debug-row">
+      <label>Side Color</label>
+      <input type="color" id="brick-side-color" value="#ff7070">
+      <span class="debug-val" id="brick-side-color-val">#ff7070</span>
+    </div>
+    <div class="debug-row">
+      <label>Accent</label>
+      <input type="color" id="brick-accent-color" value="#ff957a">
+      <span class="debug-val" id="brick-accent-color-val">#ff957a</span>
+    </div>
+    <div class="debug-row">
+      <label>Window</label>
+      <input type="color" id="brick-window-color" value="#ffffff">
+      <span class="debug-val" id="brick-window-color-val">#ffffff</span>
+    </div>
+    <div class="debug-row">
+      <label>Dome</label>
+      <input type="color" id="brick-dome-color" value="#575757">
+      <span class="debug-val" id="brick-dome-color-val">#575757</span>
+    </div>
+    <div class="debug-row">
+      <label>Movable Color</label>
+      <input type="color" id="movable-color" value="#575757">
+      <span class="debug-val" id="movable-color-val">#575757</span>
+    </div>
+    <div class="debug-row">
+      <label>Cloud Color</label>
+      <input type="color" id="cloud-color" value="#ffffff">
+      <span class="debug-val" id="cloud-color-val">#ffffff</span>
+    </div>
+    <h3 style="margin-top:8px;">Lighting</h3>
+    <div class="debug-row">
+      <label>Shadow Color</label>
+      <input type="color" id="shadow-color" value="#ffe8d6">
+      <span class="debug-val" id="shadow-color-val">#ffe8d6</span>
+    </div>
+    <div class="debug-row">
+      <label>Shadow Strength</label>
+      <input type="range" id="shadow-strength" min="0" max="2" step="0.05" value="0.6">
+      <span class="debug-val" id="shadow-strength-val">0.60</span>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <div id="snippet-modal" style="
+    position:fixed; top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.6); display:none; z-index:100;
+    align-items:center; justify-content:center;
+    pointer-events:auto;
+  ">
+    <div style="
+      background:rgba(15,15,30,0.95); border:1px solid rgba(255,255,255,0.15);
+      border-radius:12px; padding:20px; max-width:680px; width:90%;
+      max-height:80vh; display:flex; flex-direction:column; gap:12px;
+      backdrop-filter:blur(20px);
+    ">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="color:rgba(255,255,255,0.7); font-size:11px; letter-spacing:3px; text-transform:uppercase;">Level Code Snippet</span>
+        <button id="snippet-close" style="
+          background:none; border:1px solid rgba(255,255,255,0.2); color:rgba(255,255,255,0.7);
+          width:28px; height:28px; border-radius:6px; cursor:pointer; font-size:14px;
+        ">✕</button>
+      </div>
+      <textarea id="snippet-code" readonly style="
+        width:100%; height:50vh; background:rgba(0,0,0,0.4); color:rgba(255,255,255,0.85);
+        border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:14px;
+        font-family:'Courier New',monospace; font-size:12px; line-height:1.5;
+        resize:none; outline:none;
+      "></textarea>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button id="snippet-copy" style="
+          padding:8px 20px; border:1px solid rgba(110,130,210,0.6);
+          background:rgba(110,130,210,0.3); color:rgba(255,255,255,0.9);
+          font-size:11px; letter-spacing:2px; text-transform:uppercase;
+          cursor:pointer; border-radius:6px; transition:all 0.3s;
+        ">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="grid-cursor">
+    <div class="gc-item">
+      <span class="gc-label">X</span>
+      <span class="gc-value" id="gc-x">0</span>
+    </div>
+    <div class="gc-item">
+      <span class="gc-label">Z</span>
+      <span class="gc-value" id="gc-z">0</span>
+    </div>
+    <div class="gc-item">
+      <span class="gc-label">Y</span>
+      <span class="gc-value" id="gc-y">0</span>
+    </div>
+  </div>
+<script type="module" src="game.js"></script>
+</body>
+</html>

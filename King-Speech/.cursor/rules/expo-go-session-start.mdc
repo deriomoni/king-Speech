@@ -1,0 +1,39 @@
+---
+description: При старте сессии King Speech — обязательно запускать Expo Go и веб-трансляцию приложения
+alwaysApply: true
+---
+
+# Старт сессии King Speech — Expo Go + трансляция
+
+**В начале каждой новой сессии** (первое сообщение пользователя, открытие проекта, любая задача по King Speech) агент **обязан** до основной работы:
+
+1. **Проверить Metro** на порту 8081 (`http://localhost:8081`).
+2. **Если не запущен** — выполнить из `King-Speech/`:
+   ```powershell
+   npm run dev:session
+   ```
+   Скрипт: LAN Metro + `--web`, QR-код, открытие браузера.
+3. **Трансляция экрана** — открыть веб-превью `http://localhost:8081` (браузер или MCP `cursor-ide-browser`). После UI-изменений — обновить страницу и проверить.
+4. **Сообщить пользователю**:
+   - `exp://<LAN_IP>:8081` для Expo Go (телефон в той же Wi‑Fi)
+   - путь к QR: `King-Speech/expo-go-qr.png`
+   - веб: `http://localhost:8081`
+
+## Автозапуск
+
+Hook `sessionStart` в `.cursor/hooks.json` вызывает `.cursor/hooks/start-expo-session.ps1`. Скрипт **ждёт готовности bundle** (не открывает браузер раньше времени). Если hook не сработал — агент запускает `dev:session` вручную.
+
+## Когда перезапускать Metro
+
+- После изменений в `app.config.ts`, плагинах, нативных зависимостях
+- Если порт 8081 занят или bundler завис
+- По запросу пользователя «запусти Expo Go»
+
+Команда перезапуска:
+```powershell
+npm run dev:session
+```
+
+## TestFlight (удалённые тестеры)
+
+См. правило `expo-go-after-session.mdc` — OTA и rebuild для iOS.

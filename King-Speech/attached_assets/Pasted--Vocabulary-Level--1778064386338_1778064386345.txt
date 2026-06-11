@@ -1,0 +1,354 @@
+## ЗАДАЧА: Создать уровень «Словарный запас» (Vocabulary Level)
+
+### Контекст проекта
+Приложение King Speech (Expo + React Native). Добавить новый тип уровня `vocabulary` — 6-й уровень в каждом модуле, после tonguetwister. Игрок видит случайное слово и должен голосом называть как можно больше синонимов за отведённое время. Цель: развить словарный запас и избежать тавтологии в речи.
+
+---
+
+### ШАГ 1 — База данных слов
+
+Создать файл `constants/vocabularyData.ts`.
+
+Структура типов:
+```typescript
+export type PartOfSpeech = 'noun' | 'verb' | 'adjective' | 'adverb';
+
+export interface VocabWord {
+  id: string;
+  word: string;
+  partOfSpeech: PartOfSpeech;
+  synonyms: string[];
+  timerSeconds: number; // 25 если synonyms.length <= 9, 40 если 10–14, 60 если 15+
+  lang: 'ru' | 'en';
+  difficulty: 1 | 2 | 3; // 1=лёгкое, 2=среднее, 3=сложное
+}
+```
+
+Создать массив `VOCAB_WORDS_RU` из минимум 60 слов (20 существительных, 20 глаголов, 20 прилагательных). Примеры для старта — Replit должен заполнить остальные самостоятельно:
+
+```typescript
+export const VOCAB_WORDS_RU: VocabWord[] = [
+  // СУЩЕСТВИТЕЛЬНЫЕ
+  { id:'n01', word:'Радость', partOfSpeech:'noun', difficulty:1, lang:'ru',
+    synonyms:['счастье','восторг','ликование','блаженство','эйфория','удовольствие','веселье','торжество'],
+    timerSeconds:25 },
+  { id:'n02', word:'Страх', partOfSpeech:'noun', difficulty:1, lang:'ru',
+    synonyms:['ужас','тревога','паника','боязнь','фобия','испуг','опасение','трепет'],
+    timerSeconds:25 },
+  { id:'n03', word:'Смелость', partOfSpeech:'noun', difficulty:2, lang:'ru',
+    synonyms:['храбрость','отвага','мужество','бесстрашие','дерзость','решимость','доблесть','героизм'],
+    timerSeconds:25 },
+  { id:'n04', word:'Мудрость', partOfSpeech:'noun', difficulty:2, lang:'ru',
+    synonyms:['разум','интеллект','опыт','знание','проницательность','дальновидность','рассудительность','прозорливость'],
+    timerSeconds:25 },
+  { id:'n05', word:'Победа', partOfSpeech:'noun', difficulty:1, lang:'ru',
+    synonyms:['триумф','успех','достижение','завоевание','первенство','превосходство','господство'],
+    timerSeconds:25 },
+
+  // ГЛАГОЛЫ
+  { id:'v01', word:'Говорить', partOfSpeech:'verb', difficulty:1, lang:'ru',
+    synonyms:['произносить','высказывать','вещать','излагать','объяснять','рассуждать','повествовать','рассказывать'],
+    timerSeconds:25 },
+  { id:'v02', word:'Думать', partOfSpeech:'verb', difficulty:1, lang:'ru',
+    synonyms:['размышлять','рассуждать','анализировать','соображать','полагать','рефлексировать','обдумывать','созерцать'],
+    timerSeconds:25 },
+  { id:'v03', word:'Побеждать', partOfSpeech:'verb', difficulty:2, lang:'ru',
+    synonyms:['одерживать','торжествовать','завоёвывать','превосходить','доминировать','опережать','обгонять'],
+    timerSeconds:25 },
+  { id:'v04', word:'Создавать', partOfSpeech:'verb', difficulty:2, lang:'ru',
+    synonyms:['строить','творить','изобретать','конструировать','воздвигать','основывать','формировать','генерировать'],
+    timerSeconds:25 },
+  { id:'v05', word:'Вдохновлять', partOfSpeech:'verb', difficulty:3, lang:'ru',
+    synonyms:['мотивировать','воодушевлять','побуждать','окрылять','зажигать','стимулировать','пробуждать','поощрять'],
+    timerSeconds:25 },
+
+  // ПРИЛАГАТЕЛЬНЫЕ
+  { id:'a01', word:'Красивый', partOfSpeech:'adjective', difficulty:1, lang:'ru',
+    synonyms:['прекрасный','великолепный','восхитительный','изящный','привлекательный','чудесный','обворожительный','роскошный'],
+    timerSeconds:25 },
+  { id:'a02', word:'Умный', partOfSpeech:'adjective', difficulty:1, lang:'ru',
+    synonyms:['сообразительный','мудрый','проницательный','талантливый','одарённый','способный','смышлёный','толковый'],
+    timerSeconds:25 },
+  { id:'a03', word:'Сильный', partOfSpeech:'adjective', difficulty:1, lang:'ru',
+    synonyms:['мощный','крепкий','могучий','выносливый','стойкий','непреклонный','твёрдый','богатырский'],
+    timerSeconds:25 },
+  { id:'a04', word:'Быстрый', partOfSpeech:'adjective', difficulty:1, lang:'ru',
+    synonyms:['стремительный','молниеносный','скорый','проворный','резвый','шустрый','стремительный','динамичный'],
+    timerSeconds:25 },
+  { id:'a05', word:'Яркий', partOfSpeech:'adjective', difficulty:2, lang:'ru',
+    synonyms:['насыщенный','сияющий','блестящий','выразительный','броский','интенсивный','ослепительный','красочный'],
+    timerSeconds:25 },
+];
+
+// Добавить аналогичный массив VOCAB_WORDS_EN с 30 словами на английском
+
+export function getRandomVocabWord(lang: 'ru' | 'en', excludeIds: string[] = []): VocabWord {
+  const words = (lang === 'ru' ? VOCAB_WORDS_RU : VOCAB_WORDS_EN)
+    .filter(w => !excludeIds.includes(w.id));
+  return words[Math.floor(Math.random() * words.length)];
+}
+
+export function checkSynonym(input: string, synonyms: string[]): boolean {
+  const clean = input.toLowerCase().trim()
+    .replace(/[.,!?]/g, '');
+  return synonyms.some(s => s.toLowerCase().trim() === clean);
+}
+```
+
+---
+
+### ШАГ 2 — Экран уровня (3 фазы)
+
+Создать `app/vocabulary-level.tsx` с тремя чёткими фазами.
+
+---
+
+#### ФАЗА 1 — Стоп-скролл (выбор слова)
+
+Экран:
+```
+┌──────────────────────────────┐
+│  [×]                         │
+│                              │
+│  Словарный запас             │
+│  Нажми СТОП чтобы           │
+│  выбрать слово               │
+│                              │
+│  ┌────────────────────────┐  │
+│  │      Мудрость          │  │  ← предыдущее
+│  │  → [ СТРАХ ]  ←        │  │  ← текущее (крупно, золото)
+│  │      Победа            │  │  ← следующее
+│  └────────────────────────┘  │
+│                              │
+│  [       С Т О П       ]     │
+└──────────────────────────────┘
+```
+
+Реализация скролла через FlatList с автоскроллом:
+```typescript
+// Использовать FlatList с getItemLayout для производительности
+// scrollToIndex каждые 250ms на следующий элемент (4 слова в секунду)
+// Центральный элемент = выбранное слово
+// При нажатии СТОП: остановить scrollToIndex, зафиксировать currentIndex
+// Анимация остановки: withSpring на последней позиции
+
+// Стиль элементов:
+// центральный (active): fontSize: 28, color: #FFD166, fontWeight: 600, opacity: 1
+// соседние (±1): fontSize: 18, color: rgba(255,255,255,0.5), opacity: 0.7
+// дальние (±2): fontSize: 14, color: rgba(255,255,255,0.2), opacity: 0.4
+```
+
+Кнопка СТОП:
+- Полная ширина, height: 56, border-radius: 28
+- background: #FF3B30, color: #fff, fontSize: 18, fontWeight: 600, letterSpacing: 4
+- Текст: "С Т О П" (с пробелами для эффекта)
+
+После остановки — анимация ZoomIn выбранного слова (scale 1.0 → 1.15 → 1.0 за 400ms), затем автопереход в Фазу 2 через 800ms.
+
+---
+
+#### ФАЗА 2 — Активная игра
+
+```
+┌──────────────────────────────┐
+│  [×]              ⏱ 00:38   │  ← таймер (красный когда < 10 сек)
+│                              │
+│  С Т Р А Х                  │  ← слово крупно, по центру
+│  существительное             │  ← часть речи мелко
+│                              │
+│  Называй синонимы вслух!     │
+│                              │
+│  ┌── лента синонимов ──────┐ │
+│  │ ✓ УЖАС          +3    │ │  ← зелёная карточка
+│  │ ✓ ПАНИКА        +3    │ │
+│  │ ✗ ТЬМА    (не подходит)│ │  ← красная, исчезает через 1.5 сек
+│  └────────────────────────┘ │
+│                              │
+│  Найдено: 2 из 8  •  6 очков│
+│                              │
+│  🎤  [   С Т О П   ]        │
+└──────────────────────────────┘
+```
+
+**Таймер:**
+```typescript
+// Запускается сразу при входе в Фазу 2
+// Обратный отсчёт от word.timerSeconds до 0
+// При timeLeft <= 10: цвет таймера меняется на #FF3B30
+// При timeLeft <= 5: таймер трясётся (withRepeat translateX ±3px каждые 100ms)
+// При timeLeft === 0: автопереход в Фазу 3
+```
+
+**Слово и часть речи:**
+```typescript
+const POS_LABELS = {
+  ru: { noun:'существительное', verb:'глагол', adjective:'прилагательное', adverb:'наречие' },
+  en: { noun:'noun', verb:'verb', adjective:'adjective', adverb:'adverb' }
+};
+// Слово: fontSize: 36, fontWeight: 700, letterSpacing: 6, color: #fff
+// По центру экрана, uppercase
+```
+
+**Распознавание синонимов (Web):**
+```typescript
+// Использовать SpeechRecognition с continuous: true, interimResults: true
+// lang: 'ru-RU' или 'en-US'
+// При каждом interim result — вызвать checkSynonym(transcript, word.synonyms)
+// Если совпадение найдено И слово ещё не засчитано:
+//   → добавить в foundSynonyms[], score += 3
+//   → показать зелёную карточку (FadeInDown анимация)
+//   → тактильный отклик (expo-haptics impactAsync Medium)
+// Если не совпало (final result):
+//   → показать красную карточку на 1.5 сек затем FadeOut
+//   → тактильный отклик (notificationAsync ERROR)
+// Одно слово засчитывается только 1 раз (проверять includes в foundSynonyms)
+```
+
+**Распознавание на Native:**
+```typescript
+// Отправлять аудио-чанки каждые 2 сек на POST /api/vocabulary/check-synonym
+// Body: { transcript: string, synonyms: string[], foundAlready: string[] }
+// Response: { matched: string | null, isValid: boolean }
+```
+
+**Лента синонимов:**
+- ScrollView с автоскроллом вниз при добавлении нового элемента
+- Зелёная карточка: background rgba(39,80,10,0.6), border #639922, текст белый
+- Красная карточка: background rgba(160,40,40,0.5), border #FF3B30, исчезает через 1.5 сек
+- Каждая карточка: border-radius 12, padding 10px 14px, FadeInDown анимация
+
+**Счётчик прогресса:**
+```
+Найдено: 2 из 8  •  6 очков
+```
+- fontSize: 14, color: rgba(255,255,255,0.6)
+- "2" меняется анимированно при каждом новом синониме (ScaleIn)
+
+**Визуальные эффекты срочности:**
+```typescript
+// При timeLeft <= 10: фон экрана начинает очень слабо пульсировать
+// rgba(255,59,48,0.0) → rgba(255,59,48,0.04) каждые 1 сек
+// При timeLeft <= 5: пульсация быстрее (каждые 0.5 сек)
+// При timeLeft === 0: финальная вспышка rgba(255,59,48,0.15) → 0 за 300ms
+```
+
+---
+
+#### ФАЗА 3 — Результат
+
+```
+┌──────────────────────────────┐
+│                              │
+│  ⏱ Время вышло!             │
+│                              │
+│  Слово: СТРАХ               │
+│                              │
+│  Найдено синонимов           │
+│  3 из 8                     │  ← крупно
+│                              │
+│  Очки: 9                    │  ← анимированный счётчик
+│                              │
+│  ┌── что было в базе ──────┐ │
+│  │ ✓ ужас   ✓ паника      │ │  ← зелёные (названные)
+│  │ ✗ тревога ✗ боязнь     │ │  ← серые (пропущенные)
+│  │ ✗ фобия  ✗ испуг       │ │
+│  └────────────────────────┘ │
+│                              │
+│  [      Далее →      ]       │
+└──────────────────────────────┘
+```
+
+- Счётчик очков: анимация от 0 до finalScore за 1 сек
+- Список всех синонимов из базы: найденные зелёные ✓, пропущенные серые ✗
+- Кнопка «Далее»: #FF3B30, border-radius: 28, полная ширина
+
+---
+
+### ШАГ 3 — Серверный роут
+
+Добавить в `server/routes.ts`:
+```typescript
+app.post('/api/vocabulary/check-synonym', async (req, res) => {
+  const { transcript, synonyms, foundAlready } = req.body as {
+    transcript: string;
+    synonyms: string[];
+    foundAlready: string[];
+  };
+
+  const clean = transcript.toLowerCase().trim().replace(/[.,!?]/g, '');
+
+  // Точное совпадение
+  const exactMatch = synonyms.find(s =>
+    s.toLowerCase().trim() === clean
+  );
+
+  // Частичное совпадение (слово входит в транскрипт)
+  const partialMatch = !exactMatch
+    ? synonyms.find(s => clean.includes(s.toLowerCase().trim()))
+    : null;
+
+  const matched = exactMatch || partialMatch || null;
+  const alreadyFound = matched ? foundAlready.includes(matched) : false;
+
+  res.json({
+    matched: alreadyFound ? null : matched,
+    isValid: !!matched && !alreadyFound
+  });
+});
+```
+
+---
+
+### ШАГ 4 — Интеграция в игровую карту
+
+В `constants/gameContent.ts` — добавить уровень типа vocabulary шестым в каждый модуль:
+```typescript
+{
+  id: `module${moduleNum}_vocabulary`,
+  moduleId: `module${moduleNum}`,
+  levelNumber: 6,
+  type: 'vocabulary',
+  title: lang === 'ru' ? 'Словарный запас' : 'Vocabulary',
+  subtitle: lang === 'ru' ? 'Синонимы на скорость' : 'Speed synonyms',
+  icon: '📚',
+  xpReward: 50,
+  difficulty: moduleNum,
+}
+```
+
+В `app/(tabs)/index.tsx` — добавить обработку нажатия на уровень типа vocabulary:
+```typescript
+case 'vocabulary':
+  router.push('/vocabulary-level');
+  break;
+```
+
+---
+
+### ШАГ 5 — Scoring и XP
+
+```typescript
+// Очки за уровень = foundSynonyms.length * 3
+// XP = Math.min(50, foundSynonyms.length * 6)
+// Нет минимального порога (в отличие от других уровней)
+// Любой результат = прохождение уровня
+
+// Вызвать addXP(xp) и markLevelComplete(levelId) из GameContext
+// после нажатия «Далее» в Фазе 3
+```
+
+---
+
+### НЕ ТРОГАТЬ
+- `app/(auth)/` — аутентификация
+- `context/GameContext.tsx` — только вызывать addXP и markLevelComplete
+- `app/_layout.tsx` и `app/(tabs)/_layout.tsx`
+- Существующие типы уровней и их логику
+
+### Приоритет реализации
+1. База данных (vocabularyData.ts) — без неё ничего не работает
+2. Фаза 1 (стоп-скролл)
+3. Фаза 2 (игра, сначала Web SpeechRecognition)
+4. Фаза 3 (результат)
+5. Серверный роут (для Native)
+6. Интеграция в карту

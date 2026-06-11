@@ -1,0 +1,35 @@
+diff --git a/node_modules/metro-file-map/src/watchers/FallbackWatcher.js b/node_modules/metro-file-map/src/watchers/FallbackWatcher.js
+index e431e90..de1c214 100644
+--- a/node_modules/metro-file-map/src/watchers/FallbackWatcher.js
++++ b/node_modules/metro-file-map/src/watchers/FallbackWatcher.js
+@@ -116,13 +116,23 @@ class FallbackWatcher extends _AbstractWatcher.AbstractWatcher {
+     if (this.watched[dir]) {
+       return false;
+     }
+-    const watcher = _fs.default.watch(
+-      dir,
+-      {
+-        persistent: true,
+-      },
+-      (event, filename) => this._normalizeChange(dir, event, filename),
+-    );
++    let watcher;
++    try {
++      watcher = _fs.default.watch(
++        dir,
++        {
++          persistent: true,
++        },
++        (event, filename) => this._normalizeChange(dir, event, filename),
++      );
++    } catch (e) {
++      // Directory may have been deleted between the walk and the watch call.
++      // Swallow transient ENOENT/EPERM so Metro does not crash.
++      if (e.code === 'ENOENT' || e.code === 'EPERM') {
++        return false;
++      }
++      throw e;
++    }
+     this.watched[dir] = watcher;
+     watcher.on("error", this._checkedEmitError);
+     if (this.root !== dir) {

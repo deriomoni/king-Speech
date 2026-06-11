@@ -1,0 +1,494 @@
+## ЗАДАЧА: Переработать уровень «Словарный запас» (Vocabulary) — полный рефакторинг
+
+### Контекст
+Приложение King Speech (Expo + React Native + Express). Файл уровня: `app/vocabulary-level.tsx`. База данных слов: `constants/vocabularyData.ts` — уже готова, не трогать содержимое, только исправить `timerSeconds` по правилу: difficulty 1 → 40 сек, difficulty 2 → 30 сек, difficulty 3 → 20 сек.
+
+Текущая реализация имеет критические ошибки и плохой UX. Нужен полный рефакторинг файла `app/vocabulary-level.tsx`.
+
+---
+
+### КРИТИЧЕСКИЕ ОШИБКИ которые нужно исправить
+
+1. Синонимы не засчитываются даже если сказаны правильно — исправить логику `checkSynonym`
+2. Слова в неправильной форме не засчитываются — добавить нормализацию словоформ
+3. Анимация стоп-скролла выглядит плохо — полностью переделать
+
+---
+
+### ДИЗАЙН — строгие правила
+
+- Никаких эмодзи и смайликов нигде в коде
+- Никаких вытянутых кнопок СТОП — только круглая компактная кнопка (72x72px, border-radius: 36)
+- Цветовая схема: красный акцент #FF3B30, тёмный фон #0A0F28
+- Все тексты — чистые, без декоративных символов
+- Иконки только через Ionicons (уже в проекте)
+
+---
+
+### ФАЗА 0 — Экран правил (новый, показывается один раз)
+
+Показывать перед первым запуском уровня. Хранить флаг в AsyncStorage `vocab_tutorial_seen`.
+
+Структура экрана:
+```
+┌──────────────────────────────┐
+│  [x]      Словарный запас    │
+│                              │
+│  [иконка book-outline 48px] │
+│     Как играть               │
+│     Прочитай перед началом   │
+│                              │
+│  ┌── карточка правил ──────┐ │
+│  │  [1]  Нажми Стоп —      │ │
+│  │       получишь слово     │ │
+│  │  [2]  Нажми Старт и     │ │
+│  │       говори синонимы    │ │
+│  │  [3]  За каждый         │ │
+│  │       синоним +3 очка    │ │
+│  │  [4]  Чем больше слов   │ │
+│  │       тем выше балл      │ │
+│  └────────────────────────┘ │
+│                              │
+│  [     Понятно, начать     ] │
+└──────────────────────────────┘
+```
+
+Стили:
+```typescript
+// Фон карточки правил: rgba(255,255,255,0.05), border-radius:14
+// Нумерованные кружки: width:22, height:22, borderRadius:11
+//   background: rgba(255,59,48,0.2), color:'#FF3B30', fontSize:11, fontWeight:'600'
+// Текст правил: fontSize:13, color:'rgba(255,255,255,0.65)', lineHeight:1.5
+// Кнопка: width:'100%', height:54, borderRadius:27
+//   background:'#FF3B30', color:'#fff', fontSize:15, fontWeight:'600'
+```
+
+---
+
+### ФАЗА 1 — Стоп-скролл (полная переработка)
+
+Концепция: все слова внутри ОДНОГО блока-контейнера. Слова меняются очень быстро внутри него — как рулетка. Игрок нажимает круглую кнопку СТОП — слово фиксируется.
+
+```
+┌──────────────────────────────┐
+│  [x]       Выбери слово      │
+│                              │
+│  Слова меняются — нажми      │
+│  когда будешь готов          │
+│                              │
+│  ┌─── блок-рулетка ────────┐ │
+│  │        Страх            │ │  ← верхнее слово, opacity 0.25
+│  │  ── [ П О Б Е Д А ] ── │ │  ← активное, крупно, красный
+│  │        Мудрость         │ │  ← нижнее слово, opacity 0.25
+│  └────────────────────────┘ │
+│                              │
+│  существительное · лёгкое    │  ← метка под блоком
+│                              │
+│        [  СТОП  ]            │  ← круглая кнопка 72x72
+└──────────────────────────────┘
+```
+
+Реализация блока-рулетки:
+```typescript
+// НЕ использовать FlatList со скроллом — использовать простой setInterval
+// который меняет currentIndex каждые 120ms
+
+const [currentIndex, setCurrentIndex] = useState(0);
+const [isSpinning, setIsSpinning] = useState(true);
+const shuffledWords = useMemo(() =>
+  [...VOCAB_WORDS_RU].sort(() => Math.random() - 0.5), []);
+
+useEffect(() => {
+  if (!isSpinning) return;
+  const interval = setInterval(() => {
+    setCurrentIndex(prev => (prev + 1) % shuffledWords.length);
+  }, 120);
+  return () => clearInterval(interval);
+}, [isSpinning]);
+
+// Отображать 3 слова: prev, current, next
+const prevWord = shuffledWords[(currentIndex - 1 + shuffledWords.length) % shuffledWords.length];
+const currentWord = shuffledWords[currentIndex];
+const nextWord = shuffledWords[(currentIndex + 1) % shuffledWords.length];
+```
+
+Стили блока:
+```typescript
+// Контейнер блока: background:'rgba(255,59,48,0.06)',
+//   border:'0.5px solid rgba(255,59,48,0.2)', borderRadius:16, padding:20
+//   textAlign:'center', overflow:'hidden'
+
+// Верхнее и нижнее слово: fontSize:16, color:'rgba(255,255,255,0.22)', marginVertical:6
+
+// Активное слово: fontSize:28, fontWeight:'700', color:'#FF3B30',
+//   letterSpacing:5, textTransform:'uppercase'
+//   Анимация: при каждой смене — withSpring scale 0.85→1.0 за 80ms
+
+// Метка под блоком: fontSize:12, color:'rgba(255,255,255,0.35)', marginTop:10
+// Текст: '{partOfSpeech} · {difficulty===1?"лёгкое":difficulty===2?"среднее":"сложное"}'
+```
+
+Кнопка СТОП — круглая:
+```typescript
+// width:72, height:72, borderRadius:36
+// background:'#FF3B30', color:'#fff'
+// fontSize:13, fontWeight:'700', letterSpacing:3
+// Текст: 'СТОП' (без пробелов)
+// Расположение: по центру экрана
+// При нажатии: setIsSpinning(false)
+
+// Анимация при остановке:
+// Активное слово — withSpring scale 1.0 → 1.2 → 1.0 за 500ms
+// Через 900ms: setSelectedWord(currentWord); setPhase('play')
+```
+
+---
+
+### ФАЗА 2 — Игра (полная переработка UX)
+
+Два подэтапа: сначала кнопка Старт, затем активная запись.
+
+#### Подэтап 2а — Готовность (до нажатия Старт)
+
+```
+┌──────────────────────────────┐
+│  [x]              40 сек     │  ← таймер не идёт ещё
+│                              │
+│    П О Б Е Д А              │  ← слово крупно
+│    существительное · лёгкое  │
+│                              │
+│    Называй синонимы вслух    │
+│    когда нажмёшь Старт       │
+│                              │
+│  ┌── подсказка ────────────┐ │
+│  │  Например: триумф,      │ │
+│  │  успех, достижение...   │ │
+│  └────────────────────────┘ │
+│                              │
+│  [          Старт          ] │  ← большая кнопка, красная
+└──────────────────────────────┘
+```
+
+```typescript
+// Подсказка: показать первые 3 синонима из массива как пример
+// НО только если difficulty === 1. При difficulty 2 и 3 — не показывать
+// background подсказки: rgba(255,255,255,0.05), borderRadius:12, padding:12
+// Текст: fontSize:13, color:'rgba(255,255,255,0.45)'
+
+// Кнопка Старт:
+// width:'100%', height:56, borderRadius:28
+// background:'#FF3B30', color:'#fff', fontSize:16, fontWeight:'600'
+// При нажатии: запустить таймер + SpeechRecognition одновременно
+```
+
+#### Подэтап 2б — Активная запись
+
+```
+┌──────────────────────────────┐
+│  [x]              00:32      │  ← таймер идёт
+│                              │
+│    П О Б Е Д А              │
+│    существительное           │
+│                              │
+│  [==живые волны записи===]   │  ← waveform из WaveformRecorder
+│                              │
+│  ┌── лента синонимов ──────┐ │
+│  │ + триумф          +3   │ │  ← зелёная
+│  │ + успех           +3   │ │
+│  │ x темнота              │ │  ← красная, исчезает
+│  └────────────────────────┘ │
+│                              │
+│  2 из 8 · 6 очков           │
+│                              │
+│  [стоп]  [  Слушаю...  ] [mic]│
+└──────────────────────────────┘
+```
+
+---
+
+### Исправление распознавания синонимов — ГЛАВНАЯ ОШИБКА
+
+Текущая функция `checkSynonym` не работает. Заменить полностью:
+
+```typescript
+// Нормализация строки — убирает всё лишнее
+const normalize = (s: string): string =>
+  s.toLowerCase()
+   .trim()
+   .replace(/ё/g, 'е')          // ё = е
+   .replace(/[^а-яa-z\s]/g, '') // только буквы
+   .replace(/\s+/g, ' ');       // лишние пробелы
+
+// Стемминг — обрезка окончаний для сравнения словоформ
+const stem = (s: string): string => {
+  const w = normalize(s);
+  // Убрать типичные окончания русских слов (падежи, числа, роды)
+  return w
+    .replace(/(ами|ями|ого|его|ому|ему|ой|ей|ую|юю|ые|ие|ых|их|ом|ем|ах|ях|ов|ев|ью|ью|ам|ям|ть|ться|тся|ешь|ишь|ает|яет|ует|ит|ат|ят|ала|ало|али|ал|ила|ило|или|ил|ые|ие|ый|ий|ая|яя|ое|ее|ен|ана|оны|оне|аны|аня|он|ны|на|ны)$/,'')
+    .replace(/(ость|ение|ание|ство|тель|ница)$/,'') // суффиксы
+    || w; // если после обрезки пусто — вернуть оригинал
+};
+
+// Расстояние Левенштейна — допуск на 1 опечатку
+const levenshtein = (a: string, b: string): number => {
+  const m = a.length, n = b.length;
+  const dp: number[][] = Array.from({length:m+1}, (_,i) =>
+    Array.from({length:n+1}, (_,j) => i===0?j:j===0?i:0));
+  for(let i=1;i<=m;i++)
+    for(let j=1;j<=n;j++)
+      dp[i][j] = a[i-1]===b[j-1]
+        ? dp[i-1][j-1]
+        : 1+Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+  return dp[m][n];
+};
+
+// Главная функция проверки
+export function checkSynonymAdvanced(
+  input: string,
+  synonyms: string[],
+  foundAlready: string[]
+): string | null {
+  const normInput = normalize(input);
+  const stemInput = stem(input);
+
+  for (const syn of synonyms) {
+    // Пропустить уже засчитанные
+    if (foundAlready.some(f => normalize(f) === normalize(syn))) continue;
+
+    const normSyn = normalize(syn);
+    const stemSyn = stem(syn);
+
+    // 1. Точное совпадение
+    if (normInput === normSyn) return syn;
+
+    // 2. Совпадение основ (словоформы)
+    if (stemInput === stemSyn && stemInput.length >= 4) return syn;
+
+    // 3. Транскрипт содержит синоним целиком
+    if (normInput.includes(normSyn) && normSyn.length >= 4) return syn;
+
+    // 4. Допуск на 1 ошибку (для слов от 6 букв)
+    if (normSyn.length >= 6 && levenshtein(normInput, normSyn) === 1) return syn;
+
+    // 5. Совпадение основ с допуском
+    if (stemSyn.length >= 4 && levenshtein(stemInput, stemSyn) <= 1) return syn;
+  }
+  return null;
+}
+```
+
+Использовать `checkSynonymAdvanced` вместо старой функции во всех местах проверки.
+
+---
+
+### SpeechRecognition — правильная реализация (Web)
+
+```typescript
+// Инициализировать ОДИН РАЗ при нажатии Старт, не пересоздавать
+const recognitionRef = useRef(null);
+
+const startRecognition = () => {
+  const SpeechRecog = (window as any).SpeechRecognition ||
+                      (window as any).webkitSpeechRecognition;
+  if (!SpeechRecog) {
+    // Показать сообщение: распознавание недоступно
+    setFallbackMode(true);
+    return;
+  }
+
+  const rec = new SpeechRecog();
+  rec.lang = 'ru-RU';
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.maxAlternatives = 3; // проверять 3 варианта распознавания
+
+  rec.onresult = (event: SpeechRecognitionEvent) => {
+    // Проверить ВСЕ альтернативы из results
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      for (let alt = 0; alt < event.results[i].length; alt++) {
+        const transcript = event.results[i][alt].transcript;
+        // Разбить транскрипт на отдельные слова (игрок мог сказать несколько)
+        const words = transcript.split(/[\s,]+/).filter(w => w.length > 2);
+
+        for (const word of words) {
+          const matched = checkSynonymAdvanced(word, selectedWord.synonyms, foundSynonyms);
+          if (matched) {
+            handleCorrectSynonym(matched);
+            return; // не проверять дальше для этого события
+          }
+        }
+      }
+    }
+  };
+
+  rec.onerror = (event) => {
+    // При ошибке 'no-speech' — перезапустить автоматически
+    if (event.error === 'no-speech') {
+      rec.stop();
+      setTimeout(() => rec.start(), 300);
+    }
+  };
+
+  rec.onend = () => {
+    // Перезапускать пока идёт игра
+    if (isPlayingRef.current) rec.start();
+  };
+
+  rec.start();
+  recognitionRef.current = rec;
+};
+
+// При засчитывании синонима
+const handleCorrectSynonym = (matched: string) => {
+  setFoundSynonyms(prev => {
+    if (prev.includes(matched)) return prev; // двойная защита
+    return [...prev, matched];
+  });
+  setScore(prev => prev + 3);
+  addToFeed({ word: matched, status: 'correct' });
+  // Haptics
+  if (typeof Haptics !== 'undefined') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+};
+
+// Остановить при завершении
+const stopRecognition = () => {
+  isPlayingRef.current = false;
+  recognitionRef.current?.stop();
+  recognitionRef.current = null;
+};
+```
+
+---
+
+### Waveform во время записи
+
+Использовать компонент `WaveformRecorder` (уже создан в промпте №4).
+Показывать его между словом и лентой синонимов во время активной записи.
+```typescript
+// Передавать isRecording={isRecording} для активации волн
+// height={40} width={screenWidth - 48}
+// color='#FF3B30' (красный для этого уровня)
+```
+
+---
+
+### Таймер — визуальные состояния
+
+```typescript
+// timeLeft > 10: color '#fff', размер нормальный
+// timeLeft <= 10: color '#FF3B30'
+//   + withRepeat(withSequence(
+//       withTiming(-4, {duration:60}),
+//       withTiming(4, {duration:60}),
+//       withTiming(0, {duration:60})
+//     ), -1) translateX — тряска
+// timeLeft <= 5: тряска каждые 40ms, фон слабо пульсирует
+//   rgba(255,59,48,0) ↔ rgba(255,59,48,0.05) каждые 400ms
+// timeLeft === 0: stopRecognition() → setPhase('result')
+```
+
+---
+
+### Лента синонимов
+
+```typescript
+interface FeedItem {
+  id: string;
+  word: string;
+  status: 'correct' | 'wrong';
+}
+
+// Зелёная карточка (correct):
+// background:'rgba(39,80,10,0.55)', borderColor:'#639922'
+// Текст: '+ {слово}  +3' — цвет: '#C0DD97'
+// FadeInDown анимация, остаётся
+
+// Красная карточка (wrong):
+// background:'rgba(160,40,40,0.45)', borderColor:'rgba(255,59,48,0.35)'
+// Текст: 'x {слово}' — цвет: 'rgba(255,255,255,0.35)'
+// FadeInDown → через 1800ms FadeOut → удалить
+
+// ScrollView: максимальная высота 160px, autoScroll вниз при добавлении
+// borderRadius: 10, padding: 6px 10px
+```
+
+---
+
+### ФАЗА 3 — Результат
+
+```
+┌──────────────────────────────┐
+│                              │
+│     Время вышло!             │  fontSize:20, #fff
+│     Слово: ПОБЕДА            │  fontSize:14, opacity:0.5
+│                              │
+│         3                   │  ← анимированный счётчик, fontSize:64
+│    из 8 синонимов            │  opacity:0.5
+│                              │
+│        9 очков               │  fontSize:28, #FF3B30
+│                              │
+│  ┌── все слова базы ───────┐ │
+│  │ + триумф   + успех      │ │  ← зелёные
+│  │ x достижение x выигрыш │ │  ← серые
+│  └────────────────────────┘ │
+│                              │
+│  [         Далее           ] │
+└──────────────────────────────┘
+```
+
+```typescript
+// Анимация главного числа: Animated.timing от 0 до foundSynonyms.length за 1200ms
+// Easing.out(Easing.cubic)
+
+// Все синонимы в 2 колонки: flexDirection:'row', flexWrap:'wrap', gap:6
+// Найденные: color:'#639922', prefix:'+ '
+// Пропущенные: color:'rgba(255,255,255,0.25)', prefix:'x '
+// fontSize:13 для всех
+
+// Кнопка Далее:
+// width:'100%', height:54, borderRadius:27
+// background:'#FF3B30', color:'#fff', fontSize:15
+
+// При нажатии:
+// 1. addXP(Math.min(50, foundSynonyms.length * 6)) из GameContext
+// 2. markLevelComplete(levelId) из GameContext
+// 3. Переход на следующий уровень (логика из промпта №3)
+// Нет минимального порога — любой результат = прохождение
+```
+
+---
+
+### Edge cases
+
+```typescript
+// 1. Игрок называет уже засчитанное слово — молча игнорировать
+//    НЕ добавлять красную карточку
+
+// 2. Крестик во время фазы play — Alert подтверждения
+//    'Выйти? Прогресс не сохранится' → [Остаться] [Выйти]
+
+// 3. SpeechRecognition недоступен → показать TextInput как fallback
+//    Поле ввода + кнопка Проверить — для устройств без поддержки
+
+// 4. Если все 8 синонимов названы до истечения времени:
+//    stopRecognition() → небольшая пауза 800ms с сообщением
+//    'Отлично! Все синонимы найдены!' → автопереход в фазу result
+
+// 5. ё/е нормализация: 'объём' засчитывается как 'объем' и наоборот
+```
+
+---
+
+### НЕ ТРОГАТЬ
+- `constants/vocabularyData.ts` — данные слов (только timerSeconds по правилу difficulty)
+- `app/(auth)/` — аутентификация
+- `context/GameContext.tsx` — только вызывать addXP и markLevelComplete
+- `app/_layout.tsx` и `app/(tabs)/_layout.tsx`
+- Все остальные типы уровней
+
+### Порядок реализации
+1. Исправить `checkSynonymAdvanced` и `startRecognition` — это устраняет главную ошибку
+2. Переделать фазу 1 (блок-рулетка)
+3. Добавить фазу 0 (правила)
+4. Улучшить фазу 2 (кнопка Старт + waveform)
+5. Улучшить фазу 3 (результат)

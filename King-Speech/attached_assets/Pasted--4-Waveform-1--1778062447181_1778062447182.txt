@@ -1,0 +1,70 @@
+## ДОПОЛНЕНИЕ к промпту №4 (Waveform записи)
+
+### Изменение 1 — Таймер запускается вместе с записью
+
+Таймер (`elapsedSeconds`) должен стартовать ОДНОВРЕМЕННО с началом записи аудио.
+
+Реализация:
+```typescript
+// В хуке useWaveformBars.ts или WaveformRecorder.tsx
+const [elapsedSeconds, setElapsedSeconds] = useState(0);
+const timerRef = useRef | null>(null);
+
+const startTimer = () => {
+  setElapsedSeconds(0);
+  timerRef.current = setInterval(() => {
+    setElapsedSeconds(prev => prev + 1);
+  }, 1000);
+};
+
+const stopTimer = () => {
+  if (timerRef.current) clearInterval(timerRef.current);
+};
+
+const pauseTimer = () => {
+  if (timerRef.current) clearInterval(timerRef.current);
+};
+
+// При старте записи: startTimer() вызывается сразу после Audio.startRecordingAsync()
+// При паузе: pauseTimer() — таймер замирает, elapsedSeconds сохраняется
+// При возобновлении: setInterval снова запускается с текущего elapsedSeconds
+// При стопе: stopTimer()
+// При рестарте: stopTimer() + setElapsedSeconds(0)
+```
+
+Формат отображения таймера:
+```typescript
+const formatTime = (seconds: number) => {
+  const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const s = (seconds % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+};
+// Результат: "00:00" → "00:01" → ... → "01:23"
+```
+
+---
+
+### Изменение 2 — Цветовая схема: красный вместо золотого
+
+Заменить ВСЕ вхождения золотого цвета (#FFD166 и rgba(255,209,102,...)) на красный:
+
+```typescript
+// БЫЛО → СТАЛО
+'#FFD166'                    → '#FF3B30'
+'rgba(255, 209, 102, 0.06)'  → 'rgba(255, 59, 48, 0.06)'
+'rgba(255, 209, 102, 0.15)'  → 'rgba(255, 59, 48, 0.15)'
+'rgba(255, 209, 102, 0.18)'  → 'rgba(255, 59, 48, 0.18)'
+'rgba(255, 209, 102, 0.35)'  → 'rgba(255, 59, 48, 0.35)'
+```
+
+Затронутые элементы:
+- Бары waveform → красные (#FF3B30)
+- Точки незаписанной части → rgba(255,59,48,0.18)
+- Фон контейнера waveform → rgba(255,59,48,0.06)
+- Border контейнера → rgba(255,59,48,0.15)
+- Кнопка СТОП → background: #FF3B30, color: #ffffff
+- REC-точка оставить красной (#FF3B30) — она уже была красной
+
+Цвет текста кнопки СТОП меняется с '#0A0F28' на '#ffffff' (белый на красном фоне).
+
+Все остальные элементы (фон экрана, текст, иконки кнопок ↺ ⏸) — не трогать.

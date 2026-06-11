@@ -1,0 +1,58 @@
+## ЗАДАЧА: Переработать систему оценки речи (analyzeSpeech)
+
+### Контекст проекта
+Это мобильное приложение King Speech (Expo + React Native). Файл анализа речи: `services/speechAnalysis.ts`. Сейчас функция `analyzeSpeech` использует Math.random() для генерации оценок — это нужно полностью заменить на честный алгоритм.
+
+### Что нужно сделать
+
+**1. Переработать функцию `analyzeSpeech` в `services/speechAnalysis.ts`**
+
+Функция теперь принимает дополнительные параметры:
+- `transcript: string` — текст, распознанный через STT
+- `originalText?: string` — исходный текст задания (для Show Time, Reading, Poetry)
+- `audioDurationSeconds: number` — длина записи
+- `levelType: string` — тип задания
+- `lang: Lang`
+- `levelNumber: number`
+
+**2. Формула оценки для Show Time / Reading / Poetry / Warmup / Tonguetwister:**
+
+```
+score = (clarity × 0.35) + (textMatch × 0.30) + (volume × 0.20) + (confidence × 0.15)
+```
+
+Как считать каждый критерий (от 0 до 10):
+
+- **clarity** (четкость): если STT вернул transcript длиннее 10 слов → базовая 7.0. Добавить +1 если нет слов-паразитов ("ну", "эм", "типа", "как бы"). Вычесть 1 если transcript пустой или короче 3 слов. Диапазон 0–10.
+
+- **textMatch** (соответствие тексту): если `originalText` передан — считать процент совпадающих слов между transcript и originalText (разбить на слова, найти пересечение). 100% совпадение = 10, 70% = 7, и т.д. Если originalText не передан → возвращать 7 как нейтральное значение.
+
+- **volume** (громкость): оценивать по длительности записи vs длине текста. Если audioDurationSeconds < 3 → 4 (слишком коротко, говорил тихо/мало). Если 3–8 сек → 7. Если > 8 сек → 8.5. Диапазон 0–10.
+
+- **confidence** (уверенность): считать по количеству слов-паразитов и длине записи. Меньше 2 паразитов → 8. 2–4 паразита → 6. Больше 4 → 4. Если запись слишком короткая (< 5 сек для большинства заданий) → штраф −1.
+
+**3. Отдельная формула для Interview mode (levelType === 'interview'):**
+
+```
+score = (clarity × 0.25) + (volume × 0.15) + (confidence × 0.20) + (logic × 0.20) + (eloquence × 0.20)
+```
+
+Для `logic` и `eloquence` — вызвать OpenAI через существующий клиент `openai` из `server/replit_integrations/audio/client.ts`. Передать transcript и получить JSON-ответ:
+```json
+{ "logic": 7, "eloquence": 6, "tip": "Старайтесь строить ответ по схеме: тезис → аргумент → вывод" }
+```
+
+**4. Итоговый балл** — округлить до 1 знака после запятой. Максимум 10.
+
+**5. Поле `tip` в SpeechAnalysis** — добавить поле `tip: string` — персональный совет на основе самого низкого критерия. Генерировать на нужном языке (ru/en).
+
+**6. НЕ ТРОГАТЬ:**
+- Файлы в папке `app/(auth)/` — аутентификация временно отключена
+- Файл `context/GameContext.tsx` — не менять логику XP и рангов
+- Файлы навигации `app/_layout.tsx` и `app/(tabs)/_layout.tsx`
+
+### Проверь в конце
+- Функция `analyzeSpeech` больше не использует `Math.random()` для основных оценок
+- Тип `SpeechAnalysis` содержит поле `tip: string`
+- Interview mode вызывает GPT для logic и eloquence
+- Show Time mode считает textMatch через сравнение строк

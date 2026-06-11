@@ -1,0 +1,30 @@
+Role: Act as an expert Frontend Developer and UI/UX Engineer.
+
+Task: Create a stunning, high-performance, and modern dynamic ambient background for my application, identical to the "animated mesh gradient" or "blurred glow blobs" effect used in premium AI interfaces (like Gemini or Apple designs).
+
+Visual Requirements:
+
+Aesthetic: Abstract, ultra-smooth, organic transitions. It should look like soft clouds of colorful light blending into each other over a dark/neutral base.
+
+Colors: Use a modern, sophisticated palette (e.g., deep dark base #0d0d11, with moving blobs of soft violet, ambient blue, and a hint of muted pink/coral). Ensure high contrast for overlaying white text.
+
+Softness: The blending must be seamless. Use heavy blurring effects (at least 80px to 150px blur radius) so there are absolutely no sharp edges.
+
+Movement: The animation must feel alive but subtle ("breathing" effect). Blobs should move along organic paths (approximating Perlin noise or smooth independent loops). Avoid linear or robotic movements.
+
+Technical & Performance Requirements (CRITICAL):
+
+Implementation Options: You can use either HTML5 Canvas (2D/WebGL) for maximum smoothness OR hardware-accelerated CSS (using will-change: transform, transform: translate3d(), and mix-blend-mode: screen/lighten). Choose the method that ensures 60 FPS without spiking CPU usage.
+
+Responsiveness: The background must scale perfectly to any screen size (100vw and 100vh) and handle window resizing gracefully without stretching artifacts.
+
+Code Quality: Provide clean, modular, and well-commented code. If using vanilla JS/CSS, keep it separated. If my project uses a specific framework (like React/Vite), adapt the code to be a reusable Background component.
+
+Please generate the full implementation and explain how to integrate it.
+
+💡 Лайфхак для настройки под себя перед отправкой:
+Если у тебя конкретный стек: В самом конце промпта (где написано If my project uses a specific framework...) замени эту фразу на свой стек. Например: «Adapt the code into a reusable Next.js React component using Tailwind CSS» или «Provide it as a single HTML/CSS/JS file structure».
+
+Цвета: Если у тебя уже есть фирменные цвета приложения, прямо в тексте замени значения в скобках (e.g., deep dark base...) на свои HEX-коды.
+
+Replit AI на основе этого промпта, скорее всего, предложит либо вариант на HTML5 Canvas (что идеально для производительности), либо продвинутый CSS с requestAnimationFrame для управления слоями. Получится точь-в-точь как у меня!

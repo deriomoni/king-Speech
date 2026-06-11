@@ -1,0 +1,169 @@
+## ЗАДАЧА: Анимация waveform записи речи (стильный дизайн)
+
+### Контекст проекта
+Приложение King Speech (Expo + React Native). Нужно полностью переработать экран записи речи — создать красивую анимацию waveform как в профессиональных voice-memo приложениях. Референсы: приложение DreamCut (тёмный стиль, белые бары, пунктир справа) и профессиональный voice recorder (цветные бары на контрастном фоне).
+
+### Концепция дизайна
+
+Waveform — это история записи. Бары появляются СЛЕВА НАПРАВО по мере того как игрок говорит. Левая часть = уже записанный звук (золотые бары разной высоты). Правая часть = ещё не записано (пунктирные точки).
+
+```
+[████ ██ ████ ███ ██ █ ████] . . . . . . . . . . . 00:12
+ ← уже записано →           ← ещё не записано →
+```
+
+### Создать компонент `components/WaveformRecorder.tsx`
+
+```typescript
+interface WaveformRecorderProps {
+  isRecording: boolean;
+  isPaused: boolean;
+  elapsedSeconds: number;
+  onStop: () => void;
+  onPause: () => void;
+  onRestart: () => void;
+  lang: 'ru' | 'en';
+}
+```
+
+### Внутренняя логика waveform
+
+Создать хук `hooks/useWaveformBars.ts`:
+
+```typescript
+interface WaveformBar {
+  height: number;    // высота бара в пикселях (4–56)
+  opacity: number;   // прозрачность (0.5–1.0)
+  isRecorded: boolean; // true = золотой бар, false = точка
+}
+
+// Состояние: массив до 60 баров
+// При isRecording === true: каждые ~150ms добавлять новый бар
+// Высота нового бара = текущая амплитуда * 56
+// Если баров стало > 60: сдвигать всё влево (shift + push)
+// При isRecording === false: все бары замирают
+```
+
+Получение амплитуды:
+- Web: Web Audio API AnalyserNode → getByteFrequencyData → среднее → нормализовать 0–1
+- Native (expo-av): recording.setOnRecordingStatusUpdate → status.metering → нормализовать из dB:
+  `amplitude = Math.max(0, Math.min(1, (metering + 60) / 60))`
+
+### Визуальный дизайн компонента
+
+**Контейнер waveform:**
+```
+background: rgba(255, 209, 102, 0.06)
+border: 0.5px solid rgba(255, 209, 102, 0.15)
+border-radius: 16px
+padding: 14px 16px
+height: 84px
+```
+
+**Бары (записанная часть):**
+- Ширина каждого бара: 4px
+- Border-radius: 2px
+- Gap между барами: 3px
+- Цвет: #FFD166
+- Высота: от амплитуды (min: 4px, max: 56px)
+- Opacity: нарастает слева направо (самый старый = 0.5, самый новый = 1.0)
+- Выровнены по центру по вертикали (растут вверх и вниз от центральной оси)
+- Анимация появления нового бара: ScaleY от 0 до finalHeight за 80ms (spring)
+
+**Точки (незаписанная часть):**
+- Ширина: 3px, высота: 3px (круглые точки)
+- Border-radius: 50%
+- Цвет: rgba(255, 209, 102, 0.18)
+- Gap: 5px между точками
+- Заполняют оставшееся место справа
+
+**Таймер:**
+- Расположен НАД waveform контейнером по центру
+- Формат: "00:12" (минуты:секунды)
+- Font: monospace, fontSize: 28, fontWeight: 500, color: #fff
+- Если isRecording: слева от таймера — красная мигающая точка (REC)
+  `width: 8, height: 8, borderRadius: 4, background: #FF4757`
+  Анимация: opacity 1 → 0.15 → 1 каждые 1.2 сек (withRepeat Reanimated)
+
+### Кнопки управления
+
+Три кнопки в ряд под waveform:
+
+```
+[  ↺  ]  [    СТОП / STOP    ]  [  ⏸  ]
+ restart      (основная)          pause
+```
+
+**Кнопка Рестарт (слева):**
+- Круглая, 52×52, border-radius: 26
+- background: rgba(255,255,255,0.08)
+- border: 0.5px solid rgba(255,255,255,0.15)
+- Иконка: Ionicons "refresh" size 22 color rgba(255,255,255,0.7)
+- При нажатии: Alert подтверждения "Начать заново? Запись будет удалена"
+
+**Кнопка СТОП (центр, основная):**
+- Pill-форма, flex: 1, height: 52, border-radius: 26
+- background: #FFD166
+- color: #0A0F28, fontSize: 15, fontWeight: 500
+- Текст: "Стоп" (ru) / "Stop" (en)
+- При нажатии → onStop() → начинается анализ (SpeechAnalyzingLoader)
+
+**Кнопка Пауза (справа):**
+- Круглая, 52×52
+- background: rgba(255,255,255,0.08)
+- border: 0.5px solid rgba(255,255,255,0.15)
+- Иконка: если isRecording → Ionicons "pause" / если isPaused → Ionicons "mic"
+- При паузе: waveform замирает, REC-точка гаснет, бары не добавляются
+
+### Полный экран записи
+
+Создать или обновить компонент `components/VoiceRecorder.tsx`.
+
+Структура экрана во время записи:
+```
+┌─────────────────────────────────┐
+│                                 │
+│   [текст задания / инструкция]  │  ← ScrollView если текст длинный
+│                                 │
+│   ● REC    00:23                │  ← таймер с REC индикатором
+│                                 │
+│  ┌─────────────────────────────┐│
+│  │ ██ ███ ██ █ ████ . . . . . ││  ← WaveformRecorder
+│  └─────────────────────────────┘│
+│                                 │
+│  [ ↺ ]  [    СТОП    ]  [ ⏸ ]  │  ← кнопки
+│                                 │
+└─────────────────────────────────┘
+```
+
+### Состояния компонента
+
+```typescript
+type RecordingPhase = 'idle' | 'recording' | 'paused' | 'analyzing' | 'done';
+```
+
+- **idle**: показать кнопку "Начать запись 🎙" (золотая pill-кнопка по центру)
+- **recording**: показать WaveformRecorder (полный вид описан выше)
+- **paused**: waveform замирает, кнопка паузы меняется на mic, REC гаснет
+- **analyzing**: скрыть кнопки, показать `SpeechAnalyzingLoader`
+- **done**: показать результат (ScoreScreen)
+
+Кнопка "Начать запись" в фазе idle:
+```
+width: '70%', height: 56, border-radius: 28
+background: #FFD166, color: #0A0F28
+fontSize: 16, fontWeight: 500
+Иконка: Ionicons "mic" слева
+```
+
+### Интеграция
+
+- Подключить `WaveformRecorder` в `VoiceRecorder.tsx` заменив текущую кнопку микрофона MicButton
+- Убедиться что `expo-av` Audio permissions запрашиваются до начала записи
+- После onStop: вызвать `setPhase('analyzing')` → запустить `SpeechAnalyzingLoader` → вызвать API анализа → `setPhase('done')`
+
+### НЕ ТРОГАТЬ
+- `app/(auth)/` — аутентификация
+- `context/GameContext.tsx` — XP и ранги
+- `app/_layout.tsx`
+- Логику отправки аудио на сервер — только добавить визуализацию
