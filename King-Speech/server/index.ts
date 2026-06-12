@@ -1,5 +1,8 @@
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
+import { createProxyMiddleware } from "http-proxy-middleware";
+import { spawn, type ChildProcess } from "child_process";
+import type { Server } from "http";
 import { registerRoutes } from "./routes";
 import * as fs from "fs";
 import * as path from "path";
@@ -226,17 +229,108 @@ function setupErrorHandler(app: express.Application) {
   });
 }
 
-(async () => {
-  setupCors(app);
-  setupBodyParsing(app);
-  setupRequestLogging(app);
+const METRO_WEB_PORT = 8081;
+const METRO_WEB_TARGET = `http://localhost:${METRO_WEB_PORT}`;
 
-  configureExpoAndLanding(app);
+/**
+ * Dev-only: start the Expo web (Metro) dev server as a child process so the
+ * real React Native app renders in the browser via react-native-web. The app's
+ * API base URL is pinned to the Replit dev domain so web API calls resolve to
+ * this same origin (the proxy below forwards everything except /api to Metro).
+ */
+function startMetroWeb(): ChildProcess {
+  const domain = process.env.REPLIT_DEV_DOMAIN;
+  const publicUrl = domain ? `https://${domain}` : undefined;
 
-  const server = await registerRoutes(app);
+  log(`Starting Expo web (Metro) dev server on port ${METRO_WEB_PORT}...`);
+  if (publicUrl) log(`Web API base (EXPO_PUBLIC_API_URL): ${publicUrl}`);
 
-  setupErrorHandler(app);
+  const metro = spawn("npm", ["run", "web:metro"], {
+    stdio: ["ignore", "pipe", "pipe"],
+    // Own process group so shutdown can tear down the whole Metro tree
+    // (npm -> expo -> metro) instead of orphaning a process holding :8081.
+    detached: true,
+    env: {
+      ...process.env,
+      BROWSER: "none",
+      ...(publicUrl
+        ? {
+            EXPO_PUBLIC_API_URL: publicUrl,
+            EXPO_PACKAGER_PROXY_URL: publicUrl,
+            REACT_NATIVE_PACKAGER_HOSTNAME: domain,
+          }
+        : {}),
+    },
+  });
 
+  metro.stdout?.on("data", (d) => process.stdout.write(`[Metro] ${d}`));
+  metro.stderr?.on("data", (d) => process.stderr.write(`[Metro] ${d}`));
+  metro.on("exit", (code) => log(`[Metro] exited with code ${code}`));
+
+  const cleanup = () => {
+    if (metro.killed || metro.pid === undefined) return;
+    try {
+      // Negative pid signals the entire process group (npm + expo + metro).
+      process.kill(-metro.pid, "SIGTERM");
+    } catch {
+      try {
+        metro.kill("SIGTERM");
+      } catch {
+        // ignore
+      }
+    }
+  };
+  process.on("exit", cleanup);
+  process.on("SIGINT", () => {
+    cleanup();
+    process.exit(0);
+  });
+  process.on("SIGTERM", () => {
+    cleanup();
+    process.exit(0);
+  });
+
+  return metro;
+}
+
+/**
+ * Dev-only: forward every non-/api request (HTML, JS bundles, assets and the
+ * Metro HMR websocket) to the Expo web dev server, so the browser sees the live
+ * app on the same origin that serves the API.
+ */
+function setupWebProxy(app: express.Application, server: Server) {
+  const proxy = createProxyMiddleware({
+    target: METRO_WEB_TARGET,
+    changeOrigin: true,
+    ws: true,
+    pathFilter: (pathname) => !pathname.startsWith("/api"),
+    on: {
+      proxyRes: (proxyRes) => {
+        // Allow embedding inside the Replit preview iframe.
+        delete proxyRes.headers["x-frame-options"];
+        delete proxyRes.headers["content-security-policy"];
+      },
+      error: (_err, _req, res) => {
+        // Metro is still warming up (first web bundle can take a while).
+        if (res && "writeHead" in res && !res.headersSent) {
+          res.writeHead(503, {
+            "Content-Type": "text/html; charset=utf-8",
+            "Retry-After": "4",
+          });
+          res.end(
+            `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="4"></head><body style="font-family:-apple-system,system-ui,sans-serif;background:#0B1426;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><div style="text-align:center"><h2 style="margin:0 0 8px">King Speech</h2><p style="opacity:.7;margin:0">Запускаем веб-версию… первая сборка может занять минуту.</p></div></body></html>`,
+          );
+        }
+      },
+    },
+  });
+
+  app.use(proxy);
+  server.on("upgrade", proxy.upgrade!);
+  log(`Proxying web requests to Expo dev server at ${METRO_WEB_TARGET}`);
+}
+
+function listen(server: Server) {
   const port = parseInt(process.env.PORT || "5000", 10);
   server.listen(
     {
@@ -248,4 +342,29 @@ function setupErrorHandler(app: express.Application) {
       log(`express server serving on port ${port}`);
     },
   );
+}
+
+(async () => {
+  const isProd = process.env.NODE_ENV === "production";
+
+  setupCors(app);
+  setupBodyParsing(app);
+  setupRequestLogging(app);
+
+  if (isProd) {
+    // Production: serve the pre-built static Expo bundles + landing page.
+    configureExpoAndLanding(app);
+    const server = await registerRoutes(app);
+    setupErrorHandler(app);
+    listen(server);
+    return;
+  }
+
+  // Development: run the app as a web preview in the browser. The API is served
+  // here on /api/*, everything else is proxied to the Expo web dev server.
+  startMetroWeb();
+  const server = await registerRoutes(app);
+  setupWebProxy(app, server);
+  setupErrorHandler(app);
+  listen(server);
 })();

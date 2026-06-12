@@ -13,6 +13,7 @@
     "db:push": "drizzle-kit push",
     "start": "npx expo start",
     "dev:web": "expo start --web",
+    "web:metro": "expo start --web --port 8081",
     "dev:session": "powershell -ExecutionPolicy Bypass -File scripts/start-expo-dev.ps1",
     "dev:session:fresh": "powershell -ExecutionPolicy Bypass -File scripts/start-expo-dev.ps1 -Fresh",
     "lint": "npx expo lint",
