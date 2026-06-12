@@ -6,20 +6,9 @@ import { randomUUID } from "crypto";
 import { tmpdir } from "os";
 import { join } from "path";
 
-let _openai: OpenAI | null = null;
-export function getOpenAI(): OpenAI {
-  if (!_openai) {
-    _openai = new OpenAI({
-      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-    });
-  }
-  return _openai;
-}
-export const openai = new Proxy({} as OpenAI, {
-  get(_target, prop) {
-    return (getOpenAI() as any)[prop];
-  },
+export const openai = new OpenAI({
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
 export type AudioFormat = "wav" | "mp3" | "webm" | "mp4" | "ogg" | "unknown";
@@ -114,99 +103,6 @@ export async function ensureCompatibleFormat(
   // Convert WebM, MP4, OGG, or unknown to WAV
   const wavBuffer = await convertToWav(audioBuffer);
   return { buffer: wavBuffer, format: "wav" };
-}
-
-/**
- * Real audio loudness measured by ffmpeg's `volumedetect` filter.
- *
- * `meanVolumeDb` and `maxVolumeDb` are in dBFS (0 dBFS = full-scale digital
- * peak). For valid silence both are -Infinity and the linear `rms` / `peak`
- * are 0.
- *
- * `ok` is `false` when ffmpeg failed to decode or produced no parseable
- * `volumedetect` output. Callers should treat `ok=false` as "no loudness
- * signal" (omit it from the response) rather than "silence", so downstream
- * scorers fall back to their heuristics instead of awarding 0.
- *
- * `rms` and `peak` are the same numbers re-expressed on a 0..1 linear scale
- * (10^(dB/20)) so callers can score loudness without doing log math.
- */
-export interface AudioLoudness {
-  ok: boolean;
-  rms: number;
-  peak: number;
-  meanVolumeDb: number;
-  maxVolumeDb: number;
-}
-
-/**
- * Run ffmpeg's `volumedetect` filter and parse mean / peak volume out of
- * stderr. Works on any container ffmpeg can decode (WAV, MP3, WebM, MP4…),
- * so it can be called on the raw upload before format conversion.
- *
- * Same input → same numbers (deterministic), so the resulting volume score
- * is stable across retries of the same recording.
- *
- * On any failure (ffmpeg crash, non-zero exit, no parseable output, empty
- * buffer) returns `{ ok: false, ... }` so the caller can distinguish
- * "analysis failed" from "audio really was silent".
- */
-export async function computeLoudness(audioBuffer: Buffer): Promise<AudioLoudness> {
-  const failed: AudioLoudness = {
-    ok: false,
-    rms: 0,
-    peak: 0,
-    meanVolumeDb: -Infinity,
-    maxVolumeDb: -Infinity,
-  };
-  if (!audioBuffer || audioBuffer.length < 200) return failed;
-
-  const inputPath = join(tmpdir(), `loudness-${randomUUID()}`);
-  try {
-    await writeFile(inputPath, audioBuffer);
-
-    const result = await new Promise<{ code: number | null; stderr: string }>((resolve, reject) => {
-      const ffmpeg = spawn("ffmpeg", [
-        "-i", inputPath,
-        "-vn", "-sn", "-dn",        // ignore video / subtitle / data tracks
-        "-af", "volumedetect",
-        "-f", "null",
-        "-",
-      ]);
-      let buf = "";
-      ffmpeg.stderr.on("data", (d) => { buf += d.toString(); });
-      ffmpeg.on("close", (code) => resolve({ code, stderr: buf }));
-      ffmpeg.on("error", reject);
-    });
-
-    // Non-zero exit → decode/filter failed. Don't masquerade as silence.
-    if (result.code !== 0) return failed;
-
-    const meanMatch = result.stderr.match(/mean_volume:\s*(-?\d+(?:\.\d+)?)\s*dB/);
-    const maxMatch = result.stderr.match(/max_volume:\s*(-?\d+(?:\.\d+)?)\s*dB/);
-    // No parseable output at all → also a failure (volumedetect not run).
-    // `volumedetect` always emits both lines on success; for true silence
-    // ffmpeg prints `mean_volume: -inf dB`, which doesn't match our regex,
-    // so we additionally accept the explicit `-inf` form here.
-    const hasInf = /mean_volume:\s*-inf\s*dB/i.test(result.stderr);
-    if (!meanMatch && !maxMatch && !hasInf) return failed;
-
-    const meanVolumeDb = meanMatch ? parseFloat(meanMatch[1]) : -Infinity;
-    const maxVolumeDb = maxMatch ? parseFloat(maxMatch[1]) : -Infinity;
-    const dbToLinear = (db: number) => Number.isFinite(db) ? Math.pow(10, db / 20) : 0;
-
-    return {
-      ok: true,
-      rms: dbToLinear(meanVolumeDb),
-      peak: dbToLinear(maxVolumeDb),
-      meanVolumeDb,
-      maxVolumeDb,
-    };
-  } catch {
-    return failed;
-  } finally {
-    await unlink(inputPath).catch(() => {});
-  }
 }
 
 /**
