@@ -18,6 +18,11 @@ The app's `ReadinessGate` blocks rendering until `fontsReady && game/lang/theme/
 - The `app_preview` screenshot tool **navigates a fresh page on every call** and captures it while still young (~3-5s), i.e. before the font observer settles. So it shows the in-app LoadingScreen (crown "K" + spinner) and *looks* permanently stuck. It is not.
 **How to apply:** never conclude "stuck" from screenshots for load states that depend on a timer/observer. Verify with the Playwright **testing** skill and an explicit wait (e.g. wait up to 20s for the welcome text). Server-side `sleep` does NOT age the browser page — only Playwright can.
 
+## Must preserve Expo Go phone preview alongside the web app
+The task explicitly requires the mobile (Expo Go) QR/manifest preview to keep working after web preview is added — do NOT drop it from dev.
+**Why:** an earlier attempt was rejected in review for moving `configureExpoAndLanding` to prod-only, which removed the dev manifest/QR routes.
+**How to apply:** the Expo client sends an `expo-platform: ios|android` header that browsers never send — key the manifest route off that header so the web app can own `/` while phones still get the manifest at `/` (and `/manifest`). Relocate the browser-facing QR landing page off `/` (to `/mobile`) so it doesn't shadow the web app. In dev, do NOT mount the `/assets`/`static-build` static middleware (it would shadow Metro's `/assets` web responses); Metro serves web assets through the proxy.
+
 ## Fonts/assets actually work through the proxy
 Curling `/assets/?unstable_path=...ttf` through :5000 returns 200 `font/ttf` (incl. 8 in parallel ~15ms each). With the font gate temporarily bypassed, the real welcome screen renders in the **real custom fonts** — proving `@font-face` CSS + proxy are fine. The delay is purely observer settle time, not a network/proxy problem.
 

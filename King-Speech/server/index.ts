@@ -164,7 +164,13 @@ function serveLandingPage({
   res.status(200).send(html);
 }
 
-function configureExpoAndLanding(app: express.Application) {
+function configureExpoAndLanding(
+  app: express.Application,
+  options: { landingPath?: string } = {},
+) {
+  const landingPath = options.landingPath ?? "/";
+  const landingAtRoot = landingPath === "/";
+
   const templatePath = path.resolve(
     process.cwd(),
     "server",
@@ -174,23 +180,27 @@ function configureExpoAndLanding(app: express.Application) {
   const landingPageTemplate = fs.readFileSync(templatePath, "utf-8");
   const appName = getAppName();
 
-  log("Serving static Expo files with dynamic manifest routing");
+  log(`Serving Expo manifest routing; QR landing page at ${landingPath}`);
 
   app.use((req: Request, res: Response, next: NextFunction) => {
     if (req.path.startsWith("/api")) {
       return next();
     }
 
-    if (req.path !== "/" && req.path !== "/manifest") {
-      return next();
-    }
-
+    // Expo Go (phone) preview: the Expo client sends an `expo-platform` header.
+    // Browsers never send it, so the web app served at "/" is unaffected and
+    // the mobile manifest/QR flow keeps working as before.
     const platform = req.header("expo-platform");
-    if (platform && (platform === "ios" || platform === "android")) {
+    if (
+      (platform === "ios" || platform === "android") &&
+      (req.path === "/" || req.path === "/manifest")
+    ) {
       return serveExpoManifest(platform, res);
     }
 
-    if (req.path === "/") {
+    // Browser-facing QR landing page. In production this is "/"; in dev web
+    // preview it is moved off "/" (e.g. "/mobile") so the real web app owns "/".
+    if (req.path === landingPath) {
       return serveLandingPage({
         req,
         res,
@@ -202,10 +212,17 @@ function configureExpoAndLanding(app: express.Application) {
     next();
   });
 
-  app.use("/assets", express.static(path.resolve(process.cwd(), "assets")));
-  app.use(express.static(path.resolve(process.cwd(), "static-build")));
+  if (landingAtRoot) {
+    // Production: also serve the pre-built static Expo web bundle + project
+    // assets. Skipped in dev, where Metro (proxied) serves the web assets and
+    // mounting these here would shadow Metro's "/assets" responses.
+    app.use("/assets", express.static(path.resolve(process.cwd(), "assets")));
+    app.use(express.static(path.resolve(process.cwd(), "static-build")));
+  }
 
-  log("Expo routing: Checking expo-platform header on / and /manifest");
+  log(
+    `Expo routing: manifest on expo-platform header (/ and /manifest); QR landing at ${landingPath}`,
+  );
 }
 
 function setupErrorHandler(app: express.Application) {
@@ -361,8 +378,11 @@ function listen(server: Server) {
   }
 
   // Development: run the app as a web preview in the browser. The API is served
-  // here on /api/*, everything else is proxied to the Expo web dev server.
+  // here on /api/*, the mobile (Expo Go) manifest stays on the expo-platform
+  // header with its QR landing moved to /mobile, and everything else is proxied
+  // to the Expo web dev server.
   startMetroWeb();
+  configureExpoAndLanding(app, { landingPath: "/mobile" });
   const server = await registerRoutes(app);
   setupWebProxy(app, server);
   setupErrorHandler(app);
