@@ -166,10 +166,14 @@ function serveLandingPage({
 
 function configureExpoAndLanding(
   app: express.Application,
-  options: { landingPath?: string } = {},
+  options: { landingPath?: string; serveManifestFromStatic?: boolean } = {},
 ) {
   const landingPath = options.landingPath ?? "/";
   const landingAtRoot = landingPath === "/";
+  // Production serves a pre-built manifest from static-build/. In dev there is
+  // no static export, so the live Expo Go manifest must come from the running
+  // Metro dev server (reached via the web proxy further down the chain).
+  const serveManifestFromStatic = options.serveManifestFromStatic ?? true;
 
   const templatePath = path.resolve(
     process.cwd(),
@@ -195,7 +199,12 @@ function configureExpoAndLanding(
       (platform === "ios" || platform === "android") &&
       (req.path === "/" || req.path === "/manifest")
     ) {
-      return serveExpoManifest(platform, res);
+      if (serveManifestFromStatic) {
+        return serveExpoManifest(platform, res);
+      }
+      // Dev: hand the manifest request to the Metro proxy below so Expo Go
+      // loads the live development bundle.
+      return next();
     }
 
     // Browser-facing QR landing page. In production this is "/"; in dev web
@@ -382,7 +391,10 @@ function listen(server: Server) {
   // header with its QR landing moved to /mobile, and everything else is proxied
   // to the Expo web dev server.
   startMetroWeb();
-  configureExpoAndLanding(app, { landingPath: "/mobile" });
+  configureExpoAndLanding(app, {
+    landingPath: "/mobile",
+    serveManifestFromStatic: false,
+  });
   const server = await registerRoutes(app);
   setupWebProxy(app, server);
   setupErrorHandler(app);
