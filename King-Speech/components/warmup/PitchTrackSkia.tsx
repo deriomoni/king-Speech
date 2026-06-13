@@ -17,9 +17,14 @@ export type { TrackSegment };
 
 interface Props {
   segments: TrackSegment[];
-  progress01: SharedValue<number>;
+  passSec: number;
+  clockSec: SharedValue<number>;
   ballY01: SharedValue<number>;
+  glow01: SharedValue<number>;
+  burst01: SharedValue<number>;
   activeIndex: number;
+  activeFill01: number;
+  held: boolean;
   moduleColor: string;
   hitZone: HitZone;
 }

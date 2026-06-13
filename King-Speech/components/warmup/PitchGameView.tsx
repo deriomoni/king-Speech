@@ -3,8 +3,13 @@ import { View, Text, StyleSheet, Pressable } from "react-native";
 import Animated, {
   FadeIn,
   FadeInDown,
+  Easing,
+  cancelAnimation,
+  useAnimatedStyle,
   useSharedValue,
+  withSequence,
   withSpring,
+  withTiming,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -13,6 +18,7 @@ import PitchTrackSkia, {
   buildTrackSegments,
   passDurationSec,
 } from "@/components/warmup/PitchTrackSkia";
+import { activeSegmentIndexAt } from "@/components/warmup/pitchTrackGeometry";
 import { usePitchDetection } from "@/hooks/usePitchDetection";
 import type { NormalizedWarmup } from "@/constants/contentLoader";
 import { targetHz } from "@/services/warmupPitch";
@@ -30,6 +36,7 @@ import { warmupFonts, warmupSpring, warmupTheme } from "@/components/warmup/warm
 type Phase = "countdown" | "playing";
 
 const COUNTDOWN_SEC = 3;
+const CLEAN_HAPTIC_MIN_MS = 320;
 
 interface Props {
   data: NormalizedWarmup;
@@ -65,24 +72,41 @@ export default function PitchGameView({
   const [session, setSession] = useState<PitchGameSession>(createPitchSession);
   const [hitZone, setHitZone] = useState<HitZone>("touch");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [activeFill01, setActiveFill01] = useState(0);
   const [currentSyllable, setCurrentSyllable] = useState(data.syllables[0] ?? "");
   const [missFlash, setMissFlash] = useState(false);
   const [progressPct, setProgressPct] = useState(0);
 
   const progress01 = useSharedValue(0);
+  const clockSec = useSharedValue(0);
   const ballY01 = useSharedValue(0.5);
+  const glow01 = useSharedValue(0);
+  const burst01 = useSharedValue(0);
+  const syllableScale = useSharedValue(1);
+  const comboScale = useSharedValue(1);
+
   const elapsedRef = useRef(0);
   const sessionRef = useRef<PitchGameSession>(createPitchSession());
   const loopRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const finishedRef = useRef(false);
+  const lastZoneRef = useRef<HitZone>("miss");
+  const lastCleanHapticRef = useRef(0);
+  const lastSyllableRef = useRef("");
+  const lastComboRef = useRef(0);
+  const aliveRef = useRef(true);
 
-  const clearLoops = () => {
+  // Keep the latest pitch readings in a ref so the game loop reads live values
+  // without making the loop/countdown effect depend on the (per-render) pitch object.
+  const pitchRef = useRef(pitch);
+  pitchRef.current = pitch;
+
+  const clearLoops = useCallback(() => {
     if (loopRef.current) clearInterval(loopRef.current);
     if (countdownRef.current) clearInterval(countdownRef.current);
     loopRef.current = null;
     countdownRef.current = null;
-  };
+  }, []);
 
   const restartTask = useCallback(() => {
     elapsedRef.current = 0;
@@ -91,20 +115,33 @@ export default function PitchGameView({
     sessionRef.current = fresh;
     setSession(fresh);
     progress01.value = 0;
+    cancelAnimation(clockSec);
+    clockSec.value = 0;
+    glow01.value = 0;
+    burst01.value = 0;
+    lastZoneRef.current = "miss";
+    lastComboRef.current = 0;
+    lastSyllableRef.current = "";
+    setActiveIndex(0);
+    setActiveFill01(0);
+    setCurrentSyllable(data.syllables[0] ?? "");
     setMissFlash(false);
-  }, [progress01]);
+  }, [progress01, clockSec, glow01, burst01, data.syllables]);
 
   const finishGame = useCallback(() => {
     if (finishedRef.current) return;
     finishedRef.current = true;
     clearLoops();
-    pitch.stopListening();
+    pitchRef.current.stopListening();
     onComplete(finalizeWarmupScore(sessionRef.current));
-  }, [onComplete, pitch]);
+  }, [onComplete, clearLoops]);
+  const finishGameRef = useRef(finishGame);
+  finishGameRef.current = finishGame;
 
   const startPlaying = useCallback(async () => {
     restartTask();
-    await pitch.startListening();
+    await pitchRef.current.startListening();
+    if (!aliveRef.current) return;
     setPhase("playing");
     const tickMs = 50;
     loopRef.current = setInterval(() => {
@@ -112,44 +149,77 @@ export default function PitchGameView({
       const elapsedSec = elapsedRef.current / 1000;
       const p = Math.min(elapsedRef.current / totalMs, 1);
       progress01.value = p;
+      clockSec.value = withTiming(elapsedSec, {
+        duration: tickMs,
+        easing: Easing.linear,
+      });
       setProgressPct(Math.round(p * 100));
 
       const posInPass = elapsedSec % passSec;
-      let segIdx = 0;
-      for (let i = segments.length - 1; i >= 0; i--) {
-        if (posInPass >= segments[i].startSec) {
-          segIdx = i;
-          break;
+      const segIdx = activeSegmentIndexAt(segments, posInPass);
+      const seg = segments[segIdx];
+      setActiveIndex(segIdx);
+
+      if (seg && seg.syllable !== lastSyllableRef.current) {
+        lastSyllableRef.current = seg.syllable;
+        setCurrentSyllable(seg.syllable);
+        syllableScale.value = withSequence(
+          withSpring(1.18, warmupSpring),
+          withSpring(1, warmupSpring),
+        );
+      }
+
+      const fill = seg
+        ? Math.min(1, Math.max(0, (posInPass - seg.startSec) / Math.max(seg.durationSec, 0.001)))
+        : 0;
+      setActiveFill01(fill);
+
+      const live = pitchRef.current;
+      const target = targetHz(seg?.offsetNorm ?? 0.5, live.range);
+      const zone = classifyPitchHit(live.hz, target, data.rank, live.voiceActive);
+      setHitZone(zone);
+
+      glow01.value = withTiming(zone === "clean" ? 1 : zone === "touch" ? 0.55 : 0, {
+        duration: 120,
+      });
+
+      // Clean-hit onset: celebratory pulse + throttled light haptic (never every tick).
+      if (zone === "clean" && lastZoneRef.current !== "clean") {
+        const now = Date.now();
+        if (now - lastCleanHapticRef.current > CLEAN_HAPTIC_MIN_MS) {
+          lastCleanHapticRef.current = now;
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          burst01.value = withSequence(
+            withTiming(1, { duration: 90 }),
+            withTiming(0, { duration: 320 }),
+          );
         }
       }
-      setActiveIndex(segIdx);
-      setCurrentSyllable(segments[segIdx]?.syllable ?? "");
-
-      const target = targetHz(
-        segments[segIdx]?.offsetNorm ?? 0.5,
-        pitch.range,
-      );
-      const zone = classifyPitchHit(
-        pitch.hz,
-        target,
-        data.rank,
-        pitch.voiceActive,
-      );
-      setHitZone(zone);
+      lastZoneRef.current = zone;
 
       const { session: next, heartLost } = tickPitchSession(
         sessionRef.current,
         zone,
         tickMs,
-        pitch.voiceActive,
+        live.voiceActive,
       );
       sessionRef.current = next;
       setSession({ ...next });
 
+      if (next.combo > lastComboRef.current && next.combo >= 3) {
+        comboScale.value = withSequence(
+          withSpring(1.25, warmupSpring),
+          withSpring(1, warmupSpring),
+        );
+      }
+      lastComboRef.current = next.combo;
+
       if (heartLost) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         setMissFlash(true);
-        setTimeout(() => setMissFlash(false), 180);
+        setTimeout(() => {
+          if (aliveRef.current) setMissFlash(false);
+        }, 180);
         if (next.hearts <= 0) {
           elapsedRef.current = 0;
           progress01.value = 0;
@@ -158,39 +228,53 @@ export default function PitchGameView({
         }
       }
 
-      ballY01.value = withSpring(pitch.position01, warmupSpring);
+      ballY01.value = withSpring(live.position01, warmupSpring);
 
-      if (p >= 1) finishGame();
+      if (p >= 1) finishGameRef.current();
     }, tickMs);
   }, [
     ballY01,
+    burst01,
+    clockSec,
+    comboScale,
     data.rank,
-    finishGame,
+    glow01,
     passSec,
-    pitch,
     progress01,
     restartTask,
     segments,
+    syllableScale,
     totalMs,
   ]);
 
   useEffect(() => {
+    aliveRef.current = true;
     let n = COUNTDOWN_SEC;
     countdownRef.current = setInterval(() => {
       n -= 1;
       setCountdown(n);
       if (n <= 0) {
-        clearLoops();
+        if (countdownRef.current) clearInterval(countdownRef.current);
+        countdownRef.current = null;
         startPlaying();
       }
     }, 1000);
     return () => {
+      aliveRef.current = false;
       clearLoops();
-      pitch.stopListening();
+      pitchRef.current.stopListening();
     };
-  }, [pitch, startPlaying]);
+  }, [startPlaying, clearLoops]);
 
   const hearts = session.hearts;
+  const held = hitZone !== "miss";
+
+  const syllableStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: syllableScale.value }],
+  }));
+  const comboStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: comboScale.value }],
+  }));
 
   return (
     <View style={[styles.root, { paddingTop: topPad }]}>
@@ -234,22 +318,33 @@ export default function PitchGameView({
 
       {phase === "playing" && (
         <Animated.View entering={FadeIn.duration(300)} style={styles.game}>
-          <Text style={styles.syllable}>{currentSyllable}</Text>
+          <Animated.Text style={[styles.syllable, syllableStyle]}>
+            {currentSyllable}
+          </Animated.Text>
+
+          {session.comboMax > 0 && session.combo >= 3 && (
+            <Animated.View style={[styles.comboPill, comboStyle]}>
+              <Ionicons name="flame" size={14} color={warmupTheme.gold} />
+              <Text style={styles.comboText}>Комбо ×{session.combo}</Text>
+            </Animated.View>
+          )}
+
           <PitchTrackSkia
             segments={segments}
-            progress01={progress01}
+            passSec={passSec}
+            clockSec={clockSec}
             ballY01={ballY01}
+            glow01={glow01}
+            burst01={burst01}
             activeIndex={activeIndex}
+            activeFill01={activeFill01}
+            held={held}
             moduleColor={moduleColor}
             hitZone={hitZone}
           />
+
           <View style={styles.progressBar}>
-            <View
-              style={[
-                styles.progressFill,
-                { width: `${progressPct}%` },
-              ]}
-            />
+            <View style={[styles.progressFill, { width: `${progressPct}%` }]} />
           </View>
           <Text style={styles.hint}>
             {pitch.pitchMode === "metering"
@@ -304,7 +399,23 @@ const styles = StyleSheet.create({
     fontSize: 42,
     color: "#fff",
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: 6,
+  },
+  comboPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "center",
+    backgroundColor: "#ffffff14",
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 16,
+    marginBottom: 10,
+  },
+  comboText: {
+    fontFamily: warmupFonts.label,
+    color: warmupTheme.gold,
+    fontSize: 13,
   },
   progressBar: {
     height: 4,

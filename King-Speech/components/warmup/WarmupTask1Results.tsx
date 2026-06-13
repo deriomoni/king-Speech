@@ -12,6 +12,7 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import OreoMascot from "@/components/OreoMascot";
 import { GlassCard, PrimaryButton } from "@/components/ds";
+import CelebrationBurst from "@/components/warmup/CelebrationBurst";
 import { warmupFonts, warmupSpring, warmupTheme } from "@/components/warmup/warmupTheme";
 import type { WarmupScoreResult } from "@/services/warmupScoring";
 
@@ -57,6 +58,7 @@ export default function WarmupTask1Results({ result, onNext }: Props) {
         colors={[warmupTheme.bg, "#1a1030", warmupTheme.bg]}
         style={StyleSheet.absoluteFill}
       />
+      <CelebrationBurst play={result.stars >= 2} />
       <Animated.View entering={FadeIn.duration(400)} style={styles.body}>
         <OreoMascot size={120} shouldPlay />
         <Text style={styles.cheer}>
