@@ -26,5 +26,11 @@ The task explicitly requires the mobile (Expo Go) QR/manifest preview to keep wo
 ## Fonts/assets actually work through the proxy
 Curling `/assets/?unstable_path=...ttf` through :5000 returns 200 `font/ttf` (incl. 8 in parallel ~15ms each). With the font gate temporarily bypassed, the real welcome screen renders in the **real custom fonts** — proving `@font-face` CSS + proxy are fine. The delay is purely observer settle time, not a network/proxy problem.
 
+## GitHub sync is consent-gated
+The user wants the repo synced to GitHub but **only after explicit approval** — never push silently/automatically.
+**Why:** stated hard requirement; "auto after each session" + "only with my consent" resolves to: offer to push at session end, push only on a yes.
+**How to apply:** repo is already linked (`origin` → github.com/deriomoni/king-Speech, branch `main`) and Replit's `GIT_ASKPASS` credentials already authenticate (verified via `git ls-remote`). Commits come from Replit checkpoints — do NOT `git commit` yourself; just `git push origin HEAD:main` (a convenience wrapper lives at `scripts/push-to-github.sh`). Plain (non-force) push is fine to run on consent. Policy is also recorded in `King-Speech/replit.md` → User Preferences → "GitHub sync".
+
 ## Misc
 - A stale `.git/index.lock` blocks `git diff/status` (read-only `git show`/`git log` still work); the bash guard also blocks any command that references that path, so you cannot `rm` it as main agent — rely on the platform's end-of-task commit to clear it.
+- A 180MB `King-Speech APP CODE.zip` and ~13MB PSDs under `King-Speech/attached_assets/` are tracked in git (already on the remote in the initial commit) — they bloat `.git` (~220MB) but don't block small incremental pushes. Untracking them would be a destructive history change; only do it if the user asks.

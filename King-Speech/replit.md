@@ -17,6 +17,13 @@ King Speech is a mobile application designed as an educational game, inspired by
 - Authentication is now live (Firebase + Google + Apple). Edits to auth/onboarding files are allowed.
 - Ensure animations are optimized and stop when not in focus to preserve performance.
 
+### GitHub sync (consent required)
+- The project is linked to GitHub: `origin` → https://github.com/deriomoni/king-Speech (branch `main`).
+- **Push to GitHub ONLY after my explicit consent.** Never push automatically/silently.
+- At the **end of each session** (when work is wrapped up), proactively ask me "Запушить изменения на GitHub?" and push only if I say yes.
+- Replit's checkpoint system creates the commits automatically; pushing only uploads that already-committed history.
+- To push (after I approve): run `bash scripts/push-to-github.sh` (pushes the current branch to `origin`). I can also push myself anytime from the workspace **Git** pane ("Commit & Push").
+
 ## System Architecture
 The application uses a hybrid architecture:
 - **Frontend**: Built with Expo Router (React Native) on port 8081, providing a cross-platform mobile experience.
