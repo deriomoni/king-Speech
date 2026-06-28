@@ -12,6 +12,7 @@ import {
   Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -98,7 +99,7 @@ export default function ProfileScreen() {
   const { theme } = useTheme();
   const { t } = useLang();
   const insets = useSafeAreaInsets();
-  const { levels, totalXp } = useGame();
+  const { levels, totalXp, readingRecordings } = useGame();
   const { user, saveProfile, setPhotoURL } = useAuth();
   const [name, setName] = useState(user?.name ?? "");
   const [editingName, setEditingName] = useState(false);
@@ -293,6 +294,23 @@ export default function ProfileScreen() {
 
         <Animated.View entering={FadeInDown.delay(170).duration(400)}>
           <RankProgress theme={theme} xp={totalXp} />
+        </Animated.View>
+
+        {/* Private reading library */}
+        <Animated.View entering={FadeInDown.delay(200).duration(400)}>
+          <Text style={[styles.sectionLabel, { color: theme.text }]}>
+            {t("myLibrary")}
+          </Text>
+          <ListWrapper theme={theme}>
+            <ListRow
+              theme={theme}
+              icon="library-outline"
+              label={t("myLibrarySub")}
+              value={`${readingRecordings.length}`}
+              isLast
+              onPress={() => router.push("/reading-library")}
+            />
+          </ListWrapper>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(230).duration(400)}>

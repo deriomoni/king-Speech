@@ -47,8 +47,14 @@ interface Props {
   /**
    * Called when the reader finishes. `audioBase64` is the recorded audio
    * encoded as base64 (no data: prefix); empty when the mic was blocked.
+   * `audioUri` is a directly playable URI (native file path, or a web
+   * object URL) so the self-review screen can play the take back.
    */
-  onRecordingComplete: (durationSeconds: number, audioBase64?: string) => void;
+  onRecordingComplete: (
+    durationSeconds: number,
+    audioBase64?: string,
+    audioUri?: string,
+  ) => void;
   resetSignal: number;
   author?: string;
   workTitle?: string;
@@ -140,6 +146,9 @@ export default function ReadingLevelView({
 
   const pulse = useSharedValue(1);
   const micPress = useSharedValue(1);
+  // Entry highlight behind the work title + author so the player notices and
+  // memorizes them before reading. Pulses a couple of times on enter / reset.
+  const heroGlow = useSharedValue(0);
 
   useEffect(() => {
     return () => {
@@ -176,6 +185,12 @@ export default function ReadingLevelView({
     if (countdownTimerRef.current) clearTimeout(countdownTimerRef.current);
     cancelAnimation(pulse);
     pulse.value = 1;
+    // Re-trigger the title/author highlight on entry and on every reset.
+    cancelAnimation(heroGlow);
+    heroGlow.value = 0;
+    // Pulse twice (4 reps, reversing) then settle back to 0 → a gentle, steady
+    // highlight pill stays behind the title/author so it remains memorable.
+    heroGlow.value = withRepeat(withTiming(1, { duration: 850 }), 4, true);
   }, [resetSignal]);
 
   useEffect(() => {
@@ -327,10 +342,16 @@ export default function ReadingLevelView({
     }
 
     let audioBase64: string | undefined;
+    // A directly playable URI for the self-review screen. On native it's the
+    // recorded file; on web we wrap the captured blob in an object URL.
+    let playableUri: string | undefined;
     try {
       if (Platform.OS === "web") {
         const blob = audioBlobRef.current;
         if (blob) {
+          try {
+            playableUri = URL.createObjectURL(blob);
+          } catch {}
           audioBase64 = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => {
@@ -344,6 +365,7 @@ export default function ReadingLevelView({
       } else {
         const uri = audioUriRef.current;
         if (uri) {
+          playableUri = uri;
           const FileSystem = require("expo-file-system/legacy");
           audioBase64 = await FileSystem.readAsStringAsync(uri, { encoding: "base64" });
         }
@@ -351,7 +373,7 @@ export default function ReadingLevelView({
     } catch (e) {
       console.warn("ReadingLevelView: could not read audio", e);
     }
-    onRecordingComplete(durationSec, audioBase64);
+    onRecordingComplete(durationSec, audioBase64, playableUri);
   };
 
   const handleMicPress = () => {
@@ -362,6 +384,10 @@ export default function ReadingLevelView({
 
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulse.value * micPress.value }],
+  }));
+  const heroGlowStyle = useAnimatedStyle(() => ({
+    opacity: 0.16 + heroGlow.value * 0.4,
+    transform: [{ scaleX: 0.96 + heroGlow.value * 0.04 }],
   }));
 
   const elapsedSec = Math.floor(elapsedMs / 1000);
@@ -429,6 +455,32 @@ export default function ReadingLevelView({
         showsVerticalScrollIndicator={false}
         scrollEnabled={!isRecording && !showCountdown}
       >
+        {!isRecording && !showCountdown && (
+          <Animated.View entering={FadeIn.duration(450)} style={s.hero}>
+            <Animated.View
+              pointerEvents="none"
+              style={[s.heroGlow, { backgroundColor: accentColor }, heroGlowStyle]}
+            />
+            <Text
+              style={[s.heroKicker, { color: accentColor, fontFamily: "Nunito_700Bold" }]}
+            >
+              {t("memorizeWork").toUpperCase()}
+            </Text>
+            <Text
+              style={[s.heroTitle, { color: colors.text, fontFamily: "Rubik_700Bold" }]}
+            >
+              {workTitle ?? title}
+            </Text>
+            {author ? (
+              <Text
+                style={[s.heroAuthor, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}
+              >
+                {author}
+              </Text>
+            ) : null}
+          </Animated.View>
+        )}
+
         {!isRecording && !showCountdown && (
           <Text
             style={[s.hint, { color: colors.textMuted, fontFamily: "Nunito_400Regular" }]}
@@ -591,6 +643,18 @@ const s = StyleSheet.create({
   workTitle: { fontSize: 17 },
   textScroll: { flex: 1 },
   textContent: { paddingHorizontal: 24, paddingTop: 18 },
+  hero: { alignItems: "center", marginBottom: 20, paddingVertical: 12 },
+  heroGlow: {
+    position: "absolute",
+    top: 4,
+    left: 8,
+    right: 8,
+    bottom: 4,
+    borderRadius: 22,
+  },
+  heroKicker: { fontSize: 11, letterSpacing: 2, marginBottom: 10 },
+  heroTitle: { fontSize: 28, textAlign: "center", letterSpacing: 0.3, lineHeight: 34 },
+  heroAuthor: { fontSize: 16, fontStyle: "italic", marginTop: 8 },
   hint: {
     fontSize: 13,
     textAlign: "center",

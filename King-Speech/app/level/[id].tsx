@@ -32,6 +32,7 @@ import { useLang } from "@/context/LangContext";
 import { useDevTools } from "@/context/DevToolsContext";
 import VoiceRecorder from "@/components/WaveformVoiceRecorder";
 import ReadingLevelView from "@/components/ReadingLevelView";
+import ReadingResultsView from "@/components/ReadingResultsView";
 import WarmupLevelView from "@/components/warmup/WarmupLevelView";
 import DevSkipButton from "@/components/DevSkipButton";
 import { getModuleFromLevelId } from "@/constants/contentLoader";
@@ -736,7 +737,7 @@ export default function LevelScreen() {
   const levelId = id as LevelType;
   const { colors, colorScheme, isDark } = useAppColors();
   const insets = useSafeAreaInsets();
-  const { getLevelById, completeTask, completeAllTasksForLevel } = useGame();
+  const { getLevelById, completeTask, completeAllTasksForLevel, addReadingRecording } = useGame();
   const { t, lang } = useLang();
   const { isOpenTestingEnabled } = useDevTools();
 
@@ -771,6 +772,14 @@ export default function LevelScreen() {
   const [readingResetSignal, setReadingResetSignal] = useState(0);
   const [levelStartTime] = useState(() => Date.now());
   const [levelDurationSec, setLevelDurationSec] = useState(0);
+  // Reading self-review (poetry/prose levels): instead of the AI results
+  // sheet, the player listens back to their own take, self-rates with stars,
+  // and the AI verdict streams in underneath. The take is saved to their
+  // private library.
+  const [showReadingReview, setShowReadingReview] = useState(false);
+  const [readingAudioUri, setReadingAudioUri] = useState<string | null>(null);
+  const [readingDurationSec, setReadingDurationSec] = useState(0);
+  const [readingSaving, setReadingSaving] = useState(false);
 
   // Compute next level
   const allLevels = React.useMemo(() => getLevelsData(lang), [lang]);
@@ -888,11 +897,51 @@ export default function LevelScreen() {
   const isReadingLevel = levelId.startsWith("reading");
   const isWarmupLevel = getBaseType(levelId) === "warmup";
 
+  // Reading metadata (work title / author / category / full text) lifted here
+  // so both the recording handler and the render below share one source.
+  // Plain computation (not a hook) — this runs after the `if (!level)` guard.
+  const readingMeta = (() => {
+    if (!isReadingLevel || !level) return null;
+    const lit = lang === "ru" ? getLiterature(getModuleFromReadingId(levelId)) : null;
+    const legacyText = level.tasks
+      .map((tk) => tk.content)
+      .filter((c) => !!c)
+      .join("\n\n");
+    const fullText = lit ? getLiteratureFullText(lit) : legacyText;
+    const m = getReadingMeta(levelId);
+    const author = lit
+      ? lit.author
+      : m
+        ? lang === "ru" ? m.authorRu : m.authorEn
+        : undefined;
+    const workTitle = lit
+      ? lit.work
+      : m
+        ? lang === "ru" ? m.titleRu : m.titleEn
+        : undefined;
+    const category = lit ? literatureCategory(lit.kind) : m?.category;
+    return { fullText, author, workTitle, category };
+  })();
+
   const activeTask = activeTaskIndex !== null ? level.tasks[activeTaskIndex] : null;
 
-  const handleRecordingComplete = async (durationSeconds: number, audioBase64?: string) => {
-    setAnalyzing(true);
-    setShowResults(true);
+  const handleRecordingComplete = async (
+    durationSeconds: number,
+    audioBase64?: string,
+    audioUri?: string,
+  ) => {
+    if (isReadingLevel) {
+      // Reading levels open the self-review screen immediately (so the player
+      // can listen back) and analyze in the background — no blocking loader.
+      setReadingAudioUri(audioUri ?? null);
+      setReadingDurationSec(durationSeconds);
+      setCurrentAnalysis(null);
+      setShowReadingReview(true);
+      setAnalyzing(true);
+    } else {
+      setAnalyzing(true);
+      setShowResults(true);
+    }
     try {
       // 1) Transcribe — only if we actually captured audio. Falling back to
       //    an empty transcript yields conservative, low-but-honest scores
@@ -939,8 +988,10 @@ export default function LevelScreen() {
       // Empty-recording guard: STT ran but heard essentially nothing (fewer
       // than 2 recognized words). The player stayed silent — don't score it,
       // don't count the level, and invite a friendly re-record instead.
+      // Reading levels skip this: the self-review still lets the player listen
+      // back and self-rate even on a quiet take (the AI verdict just lands low).
       const spokenWords = transcript.trim().split(/\s+/).filter(Boolean).length;
-      if (transcribedOk && spokenWords < 2) {
+      if (!isReadingLevel && transcribedOk && spokenWords < 2) {
         setShowResults(false);
         setCurrentAnalysis(null);
         setEmptyRecording(true);
@@ -950,7 +1001,8 @@ export default function LevelScreen() {
       // 2) For reading levels, the prompt text is the merged task content —
       //    the analyzer uses it for textMatch scoring.
       const originalText = isReadingLevel
-        ? level.tasks.map((tk) => tk.content).filter(Boolean).join("\n\n")
+        ? (readingMeta?.fullText ||
+            level.tasks.map((tk) => tk.content).filter(Boolean).join("\n\n"))
         : activeTask?.content || activeTask?.instruction || "";
 
       try {
@@ -1030,7 +1082,71 @@ export default function LevelScreen() {
     setCurrentAnalysis(null);
     setAnalyzing(false);
     setEmptyRecording(false);
+    setShowReadingReview(false);
+    setReadingAudioUri(null);
     if (isReadingLevel) setReadingResetSignal((n) => n + 1);
+  };
+
+  // Copy a freshly-recorded reading take to a durable location so it survives
+  // in the player's library (expo-av records into the cache, which the OS can
+  // clear). Web object URLs are session-only; we keep them as-is.
+  const persistReadingAudio = async (uri: string | null): Promise<string | null> => {
+    if (!uri) return null;
+    if (Platform.OS === "web") return uri;
+    try {
+      const FileSystem = require("expo-file-system/legacy");
+      const dir = `${FileSystem.documentDirectory}reading/`;
+      try {
+        await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+      } catch {}
+      const ext = (uri.split("?")[0].split(".").pop() || "m4a").slice(0, 5);
+      const dest = `${dir}take_${Date.now()}.${ext}`;
+      await FileSystem.copyAsync({ from: uri, to: dest });
+      return dest;
+    } catch (e) {
+      console.warn("persistReadingAudio failed:", e);
+      return uri;
+    }
+  };
+
+  // Save & continue from the reading self-review: persist the take to the
+  // private library (with the player's self-rating + the AI verdict), mark the
+  // level complete, then show the celebration.
+  const handleReadingSave = async (selfRating: number) => {
+    if (readingSaving) return;
+    setReadingSaving(true);
+    const overall = currentAnalysis?.score.overall ?? 0;
+    // Fall back to the self-rating (scaled to /10) for XP/stars if the AI
+    // analysis never arrived (offline / backend down).
+    const finalScore = overall > 0 ? overall : Math.max(2, selfRating * 2);
+
+    try {
+      const durableUri = await persistReadingAudio(readingAudioUri);
+      if (durableUri) {
+        addReadingRecording({
+          uri: durableUri,
+          title: readingMeta?.workTitle || level.title,
+          author: readingMeta?.author,
+          category: readingMeta?.category,
+          date: Date.now(),
+          durationSec: readingDurationSec,
+          selfRating,
+          aiStars: overall > 0 ? Math.round(overall / 2) : undefined,
+          aiScore: overall > 0 ? overall : undefined,
+        });
+      }
+    } catch (e) {
+      console.warn("save reading recording failed:", e);
+    }
+
+    completeAllTasksForLevel(levelId, finalScore);
+    setScores([finalScore, finalScore, finalScore]);
+    setShowReadingReview(false);
+    setReadingAudioUri(null);
+    setCurrentAnalysis(null);
+    setActiveTaskIndex(null);
+    setReadingSaving(false);
+    setTimeout(() => setShowLevelComplete(true), 400);
   };
 
   const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
@@ -1090,32 +1206,13 @@ export default function LevelScreen() {
 
   // Reading / poetry levels use a single-text karaoke flow.
   if (isReadingLevel) {
-    // New Russian literature anthology lives in JSON (see literatureLoader).
-    // Use it for RU; fall back to the legacy hardcoded content for EN or if
-    // the module entry is missing/invalid.
-    const lit = lang === "ru" ? getLiterature(getModuleFromReadingId(levelId)) : null;
-    const legacyText = level.tasks
-      .map((tk) => tk.content)
-      .filter((c) => !!c)
-      .join("\n\n");
-    const fullText = lit ? getLiteratureFullText(lit) : legacyText;
+    // Metadata (work / author / category / full text) is computed once in
+    // `readingMeta` above so the recording handler and this render agree.
+    const fullText = readingMeta?.fullText ?? "";
     const accent = level.color || colors.gold;
-    const meta = getReadingMeta(levelId);
-    const author = lit
-      ? lit.author
-      : meta
-        ? lang === "ru"
-          ? meta.authorRu
-          : meta.authorEn
-        : undefined;
-    const workTitle = lit
-      ? lit.work
-      : meta
-        ? lang === "ru"
-          ? meta.titleRu
-          : meta.titleEn
-        : undefined;
-    const category = lit ? literatureCategory(lit.kind) : meta?.category;
+    const author = readingMeta?.author;
+    const workTitle = readingMeta?.workTitle;
+    const category = readingMeta?.category;
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <LinearGradient
@@ -1144,18 +1241,28 @@ export default function LevelScreen() {
           resetSignal={readingResetSignal}
         />
 
-        <ResultsSheet
-          visible={showResults}
-          analysis={currentAnalysis}
-          analyzing={analyzing}
-          task={level.tasks[0]}
-          onRetry={handleRetry}
-          onNext={handleNextTask}
-          colors={colors}
-          isDark={isDark}
-          t={t}
-          lang={lang}
-        />
+        {/* Reading self-review — listen back, self-rate, AI verdict streams
+            in underneath. Full-screen overlay above the karaoke view. */}
+        {showReadingReview && (
+          <View style={StyleSheet.absoluteFill}>
+            <ReadingResultsView
+              title={workTitle || level.title}
+              author={author}
+              category={category}
+              audioUri={readingAudioUri ?? ""}
+              durationSec={readingDurationSec}
+              analysis={currentAnalysis}
+              analyzing={analyzing}
+              colors={colors}
+              isDark={isDark}
+              t={t}
+              lang={lang}
+              onRetry={handleRetry}
+              onSave={handleReadingSave}
+              saving={readingSaving}
+            />
+          </View>
+        )}
 
         <EmptyRecordingSheet
           visible={emptyRecording}
@@ -1164,8 +1271,6 @@ export default function LevelScreen() {
           isDark={isDark}
           lang={lang}
         />
-
-        <SpeechAnalyzingLoader visible={analyzing} lang={lang} />
 
         <LevelCompleteModal
           visible={showLevelComplete}
@@ -1184,7 +1289,9 @@ export default function LevelScreen() {
           t={t}
         />
 
-        {/* Close X (top-right, above ReadingLevelView header) */}
+        {/* Close X (top-right, above ReadingLevelView header) — hidden while
+            the self-review overlay is up so it doesn't sit over the hero. */}
+        {!showReadingReview && (
         <Pressable
           onPress={handleExitPress}
           hitSlop={12}
@@ -1195,6 +1302,7 @@ export default function LevelScreen() {
         >
           <Ionicons name="close" size={24} color={colors.text} />
         </Pressable>
+        )}
         <DevSkipButton levelId={levelId} />
       </View>
     );

@@ -191,6 +191,13 @@ const METRIC_SCORES_KEY = "@kingspeech_metric_scores_v3";
 // inside a rank window. Shape: { [rankId]: { [metricName]: number[] } }
 const METRIC_SERIES_KEY = "@kingspeech_metric_series_v1";
 const PORTAL_DONE_KEY = "@kingspeech_portal_done_v1";
+// v1: the player's private reading library — every poem/prose they record on
+// a Reading level is appended here so they can re-listen any time from their
+// profile. Flat, newest-first list. Audio lives in a durable directory on
+// native; on web we keep a data: URI.
+const READING_LIBRARY_KEY = "@kingspeech_reading_library_v1";
+// Hard cap so the library can't grow without bound on a heavy user.
+const READING_LIBRARY_CAP = 100;
 
 // Hard cap per metric per rank so the series cannot grow unbounded if a
 // player records dozens of takes inside one world.
@@ -217,6 +224,21 @@ export interface MetricTrend {
 export interface ShowTimeRecording {
   uri: string;
   label?: string;
+}
+
+// A single saved reading take in the player's private library. `selfRating`
+// is the 1–5 stars the player gave themselves after listening back; `aiStars`
+// / `aiScore` mirror the background AI verdict so the library can show both.
+export interface ReadingRecording {
+  uri: string;
+  title: string;
+  author?: string;
+  category?: string;        // "poetry" | "prose" | "fable"
+  date: number;             // ms epoch — when it was recorded
+  durationSec?: number;
+  selfRating?: number;      // 1–5, the player's own score
+  aiStars?: number;         // 0–5, derived from the AI overall score
+  aiScore?: number;         // 0–10 AI overall (optional)
 }
 
 interface GameContextValue {
@@ -258,6 +280,10 @@ interface GameContextValue {
   getMetricTrendForRank: (rankId: number, metric: string) => MetricTrend | null;
   portalCompleted: Record<number, boolean>; // which rank portals were finished
   markPortalCompleted: (rankId: number) => void;
+  // Private reading library — every recorded reading take, newest first.
+  readingRecordings: ReadingRecording[];
+  addReadingRecording: (rec: ReadingRecording) => void;
+  removeReadingRecording: (uri: string) => void;
 }
 
 const GameContext = createContext<GameContextValue | null>(null);
@@ -273,6 +299,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [metricScores, setMetricScores] = useState<Record<number, MetricScores>>({});
   const [metricSeries, setMetricSeries] = useState<Record<number, MetricSeries>>({});
   const [portalCompleted, setPortalCompleted] = useState<Record<number, boolean>>({});
+  const [readingRecordings, setReadingRecordings] = useState<ReadingRecording[]>([]);
 
   useEffect(() => {
     Promise.all([
@@ -284,7 +311,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       AsyncStorage.getItem(METRIC_SCORES_KEY),
       AsyncStorage.getItem(METRIC_SERIES_KEY),
       AsyncStorage.getItem(PORTAL_DONE_KEY),
-    ]).then(([progressRaw, legacyRaw, xpRaw, rankRaw, recRaw, scoresRaw, seriesRaw, portalRaw]) => {
+      AsyncStorage.getItem(READING_LIBRARY_KEY),
+    ]).then(([progressRaw, legacyRaw, xpRaw, rankRaw, recRaw, scoresRaw, seriesRaw, portalRaw, readingRaw]) => {
       let progress: SavedProgress[] | null = null;
 
       if (progressRaw) {
@@ -361,6 +389,18 @@ export function GameProvider({ children }: { children: ReactNode }) {
         try {
           const obj = JSON.parse(portalRaw);
           if (obj && typeof obj === "object") setPortalCompleted(obj);
+        } catch {}
+      }
+      if (readingRaw) {
+        try {
+          const arr = JSON.parse(readingRaw);
+          if (Array.isArray(arr)) {
+            const clean = arr.filter(
+              (r): r is ReadingRecording =>
+                r && typeof r.uri === "string" && typeof r.title === "string",
+            );
+            setReadingRecordings(clean);
+          }
         } catch {}
       }
 
@@ -568,6 +608,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setMetricScores({});
     setMetricSeries({});
     setPortalCompleted({});
+    setReadingRecordings([]);
     AsyncStorage.setItem(PROGRESS_KEY, JSON.stringify([]));
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(buildLevelsFromContent(lang, null)));
     AsyncStorage.setItem(XP_KEY, "0");
@@ -576,6 +617,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     AsyncStorage.setItem(METRIC_SCORES_KEY, JSON.stringify({}));
     AsyncStorage.setItem(METRIC_SERIES_KEY, JSON.stringify({}));
     AsyncStorage.setItem(PORTAL_DONE_KEY, JSON.stringify({}));
+    AsyncStorage.setItem(READING_LIBRARY_KEY, JSON.stringify([]));
   };
 
   const advanceRank = () => {
@@ -643,6 +685,27 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const updated = { ...prev, [rankId]: nextList };
       AsyncStorage.setItem(SHOWTIME_RECORDINGS_KEY, JSON.stringify(updated));
       return updated;
+    });
+  };
+
+  const addReadingRecording = (rec: ReadingRecording) => {
+    if (!rec || !rec.uri || !rec.title) return;
+    setReadingRecordings((prev) => {
+      // Dedupe by uri (re-saving the same take just updates it in place).
+      const withoutDup = prev.filter((r) => r.uri !== rec.uri);
+      const next = [rec, ...withoutDup].slice(0, READING_LIBRARY_CAP);
+      AsyncStorage.setItem(READING_LIBRARY_KEY, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+  };
+
+  const removeReadingRecording = (uri: string) => {
+    if (!uri) return;
+    setReadingRecordings((prev) => {
+      const next = prev.filter((r) => r.uri !== uri);
+      if (next.length === prev.length) return prev;
+      AsyncStorage.setItem(READING_LIBRARY_KEY, JSON.stringify(next)).catch(() => {});
+      return next;
     });
   };
 
@@ -752,6 +815,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setMetricScores({});
       setMetricSeries({});
       setPortalCompleted({});
+      setReadingRecordings([]);
       try {
         await Promise.all([
           AsyncStorage.setItem(PROGRESS_KEY, JSON.stringify([])),
@@ -762,6 +826,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           AsyncStorage.setItem(METRIC_SCORES_KEY, JSON.stringify({})),
           AsyncStorage.setItem(METRIC_SERIES_KEY, JSON.stringify({})),
           AsyncStorage.setItem(PORTAL_DONE_KEY, JSON.stringify({})),
+          AsyncStorage.setItem(READING_LIBRARY_KEY, JSON.stringify([])),
         ]);
       } catch (e) {
         console.warn("[game] registered reset failed:", e);
@@ -1130,8 +1195,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
       getMetricTrendForRank,
       portalCompleted,
       markPortalCompleted,
+      readingRecordings,
+      addReadingRecording,
+      removeReadingRecording,
     }),
-    [levels, totalXp, isLoaded, currentRank, showTimeRecordings, metricScores, metricSeries, portalCompleted]
+    [levels, totalXp, isLoaded, currentRank, showTimeRecordings, metricScores, metricSeries, portalCompleted, readingRecordings]
   );
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

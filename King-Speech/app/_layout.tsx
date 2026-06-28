@@ -126,6 +126,10 @@ function RootLayoutNav() {
         name="world/[id]"
         options={{ headerShown: false, presentation: "card" }}
       />
+      <Stack.Screen
+        name="reading-library"
+        options={{ headerShown: false, presentation: "card" }}
+      />
       </Stack>
     </>
   );
