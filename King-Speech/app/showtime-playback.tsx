@@ -35,6 +35,7 @@ import { getApiUrl } from "@/lib/query-client";
 import { playSfx } from "@/lib/sfx";
 import { getLevelsData } from "@/constants/gameContent";
 import SpeechAnalyzingLoader from "@/components/SpeechAnalyzingLoader";
+import ScoreFlower, { aspectsFromMetrics5 } from "@/components/ScoreFlower";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -329,33 +330,7 @@ function AnimatedStar({ filled, delay }: { filled: boolean; delay: number }) {
   );
 }
 
-// ── CATEGORY BAR ─────────────────────────────────────────────────────────────
-function CategoryBar({ label, score, delay }: { label: string; score: number; delay: number }) {
-  const width = useSharedValue(0);
-  useEffect(() => {
-    width.value = withDelay(delay, withTiming(score / 5, { duration: 700 }));
-  }, [score]);
-  const barStyle = useAnimatedStyle(() => ({ width: `${width.value * 100}%` as any }));
-  const color = score >= 4 ? "#2DCB8E" : score >= 3 ? "#FFD166" : "#F5A623";
-
-  return (
-    <View style={cb.row}>
-      <Text style={[cb.label, { color: "rgba(240,237,232,0.7)", fontFamily: "Inter_400Regular" }]}>{label}</Text>
-      <View style={[cb.track, { backgroundColor: "#2A3348" }]}>
-        <Animated.View style={[cb.fill, barStyle, { backgroundColor: color }]} />
-      </View>
-      <Text style={[cb.score, { color, fontFamily: "Inter_700Bold" }]}>{score}/5</Text>
-    </View>
-  );
-}
-
-const cb = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: 10 },
-  label: { fontSize: 13, width: 120 },
-  track: { flex: 1, height: 6, borderRadius: 3, overflow: "hidden" },
-  fill: { height: 6, borderRadius: 3 },
-  score: { fontSize: 12, width: 28, textAlign: "right" },
-});
+// (Per-aspect bars replaced by the ScoreFlower petals.)
 
 // ── AI ANALYSIS CARD ──────────────────────────────────────────────────────────
 interface AnalysisResult {
@@ -386,7 +361,7 @@ interface AnalysisResult {
 
 function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (key: any) => string; lang: "ru" | "en" }) {
   if (!result) return null;
-  const { stars, score, silent, feedback, categories, errors, tip } = result;
+  const { stars, score, silent, feedback, categories, metrics, errors, tip } = result;
 
   if (silent || stars === 0) {
     return (
@@ -405,14 +380,15 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
 
   const SCORE_COLOR = stars === 3 ? "#2DCB8E" : stars === 2 ? "#FFD166" : "#F5A623";
   const SCORE_LABEL = stars === 3 ? t("excellent") : stars === 2 ? t("good") : t("keepGoing");
-  const catList = categories
-    ? [
-        { label: t("diction"), score: categories.diction.score },
-        { label: t("expressiveness"), score: categories.expressiveness.score },
-        { label: t("voice"), score: categories.voice.score },
-        { label: t("confidence"), score: categories.confidence.score },
-      ]
+
+  // Overall 0..10 from the six 1..5 metrics so the flower centre reads smoothly
+  // (the star→score map is too coarse for the headline number).
+  const metricVals = metrics
+    ? [metrics.clarity, metrics.expressiveness, metrics.volume, metrics.confidence, metrics.tempo, metrics.pauses]
     : [];
+  const overall10 = metricVals.length
+    ? Math.round((metricVals.reduce((a, b) => a + b, 0) / metricVals.length) * 2 * 10) / 10
+    : score;
 
   return (
     <Animated.View entering={FadeInUp.delay(100).duration(500)} style={[ac.card, { borderColor: SCORE_COLOR + "44" }]}>
@@ -420,10 +396,16 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
 
       <Text style={[ac.label, { color: SCORE_COLOR, fontFamily: "Inter_600SemiBold" }]}>{t("aiAnalysis")}</Text>
 
-      {/* Stars */}
-      <View style={ac.starsRow}>
-        {[1, 2, 3].map((n) => <AnimatedStar key={n} filled={n <= stars} delay={n * 200} />)}
-      </View>
+      {/* Flower (per-aspect petals) when we have full metrics; else stars. */}
+      {metrics ? (
+        <View style={ac.flowerWrap}>
+          <ScoreFlower overall={overall10} aspects={aspectsFromMetrics5(metrics, lang)} size={300} centerLabel="AI" />
+        </View>
+      ) : (
+        <View style={ac.starsRow}>
+          {[1, 2, 3].map((n) => <AnimatedStar key={n} filled={n <= stars} delay={n * 200} />)}
+        </View>
+      )}
 
       {/* Score badge */}
       <Animated.View entering={ZoomIn.delay(800).duration(400)} style={[ac.scoreBadge, { backgroundColor: SCORE_COLOR + "20", borderColor: SCORE_COLOR + "60" }]}>
@@ -435,16 +417,6 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
       <Animated.Text entering={FadeIn.delay(900).duration(400)} style={[ac.feedback, { color: "rgba(240,237,232,0.85)", fontFamily: "Inter_400Regular" }]}>
         {feedback}
       </Animated.Text>
-
-      {/* Category bars */}
-      {catList.length > 0 && (
-        <Animated.View entering={FadeIn.delay(1000).duration(400)} style={ac.catsSection}>
-          <View style={[ac.divider, { backgroundColor: "#2A3348" }]} />
-          {catList.map((c, i) => (
-            <CategoryBar key={c.label} label={c.label} score={c.score} delay={1100 + i * 150} />
-          ))}
-        </Animated.View>
-      )}
 
       {/* Coaching tip — surfaced from /api/analyze-speech.tip so the
           performer gets one concrete thing to fix next take. */}
@@ -483,6 +455,7 @@ const ac = StyleSheet.create({
   card: { borderRadius: 20, borderWidth: 1, padding: 20, gap: 14, overflow: "hidden" },
   label: { fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase" },
   starsRow: { flexDirection: "row", gap: 12, justifyContent: "center", paddingVertical: 4 },
+  flowerWrap: { alignItems: "center", justifyContent: "center", paddingVertical: 4 },
   scoreBadge: { alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
   scoreText: { fontSize: 16 },
   xpText: { fontSize: 14 },

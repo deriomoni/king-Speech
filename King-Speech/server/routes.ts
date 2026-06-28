@@ -583,12 +583,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         modNum == null ? "mid" : modNum <= 10 ? "early" : modNum <= 30 ? "mid" : "advanced";
       const leniencyDirective = (lang === "en"
         ? {
-            early: `DIFFICULTY — EARLY module: the speaker is just starting out. Be especially gentle and encouraging. Lead with strengths and progress, give the benefit of the doubt, and round borderline scores UP. Frame any growth point as an easy next step, not a mistake — avoid 1-2 scores unless the delivery is clearly very weak.`,
+            early: `DIFFICULTY — EARLY module: keep the WORDING warm and encouraging, but score HONESTLY — do NOT inflate or round borderline scores up. Reflect exactly how the delivery actually sounded: if a criterion was weak, score it low (1-2 when warranted) and frame the fix as an easy next step. Accuracy in the numbers, kindness only in the tone.`,
             mid: `DIFFICULTY — MID-LEVEL module: keep a warm, balanced tone. Acknowledge what worked, then give one honest, concrete thing to improve. Score fairly — neither inflating nor harsh.`,
             advanced: `DIFFICULTY — ADVANCED module: the speaker is experienced now. Be honest and precise, hold a higher bar and do NOT inflate scores. Stay supportive and respectful — demanding, but never harsh or discouraging.`,
           }
         : {
-            early: `СЛОЖНОСТЬ — НАЧАЛЬНЫЙ модуль: игрок только начинает. Будь особенно мягким и подбадривающим. Начинай с сильных сторон и прогресса, трактуй спорное в пользу игрока и округляй пограничные баллы ВВЕРХ. Любую точку роста подавай как лёгкий следующий шаг, а не ошибку — избегай оценок 1-2, если подача не совсем уж слабая.`,
+            early: `СЛОЖНОСТЬ — НАЧАЛЬНЫЙ модуль: держи ФОРМУЛИРОВКИ тёплыми и подбадривающими, но оценивай ЧЕСТНО — НЕ завышай и НЕ округляй пограничные баллы вверх. Отражай ровно то, как реально звучала подача: если критерий слабый — ставь низкий балл (1-2, когда это оправдано) и подавай исправление как лёгкий следующий шаг. Точность в цифрах, доброта только в тоне.`,
             mid: `СЛОЖНОСТЬ — СРЕДНИЙ модуль: держи тёплый, сбалансированный тон. Отметь, что получилось, затем дай одно честное, конкретное улучшение. Оценивай справедливо — без завышения, но и без жёсткости.`,
             advanced: `СЛОЖНОСТЬ — ПРОДВИНУТЫЙ модуль: игрок уже опытный. Будь честным и точным, держи более высокую планку и НЕ завышай баллы. Оставайся поддерживающим и уважительным — требовательно, но никогда не жёстко и не обескураживающе.`,
           })[tier];

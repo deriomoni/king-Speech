@@ -33,6 +33,7 @@ import { useDevTools } from "@/context/DevToolsContext";
 import VoiceRecorder from "@/components/WaveformVoiceRecorder";
 import ReadingLevelView from "@/components/ReadingLevelView";
 import ReadingResultsView from "@/components/ReadingResultsView";
+import ScoreFlower, { aspectsFromScore10 } from "@/components/ScoreFlower";
 import WarmupLevelView from "@/components/warmup/WarmupLevelView";
 import DevSkipButton from "@/components/DevSkipButton";
 import { getModuleFromLevelId } from "@/constants/contentLoader";
@@ -48,7 +49,7 @@ import {
   getTongueTwistersForModule,
   getModuleFromTongueTwisterId,
 } from "@/constants/tongueTwisterLoader";
-import { analyzeSpeech, generateTips, FILLERS, type SpeechAnalysis } from "@/services/speechAnalysis";
+import { analyzeSpeech, analyzeSpeechPro, generateTips, FILLERS, type SpeechAnalysis } from "@/services/speechAnalysis";
 import { getApiUrl } from "@/lib/query-client";
 import { fetch as expoFetch } from "expo/fetch";
 import { ActivityIndicator } from "react-native";
@@ -252,15 +253,6 @@ function ResultsSheet({
     return null;
   }
 
-  const params: Array<{ key: keyof typeof analysis.score; label: string }> = [
-    { key: "clarity", label: t("clarity") },
-    { key: "confidence", label: t("confidence") },
-    { key: "volume", label: t("volume") },
-    { key: "tempo", label: t("tempo") },
-    { key: "expressiveness", label: t("expressiveness") },
-    { key: "pauses", label: t("pauses") },
-  ];
-
   const score = analysis.score.overall;
   const tone = (v: number) => (v >= 8 ? RS_HIGH : v >= 6 ? RS_MID : RS_LOW);
   const scoreColor = tone(score);
@@ -297,47 +289,17 @@ function ResultsSheet({
           <View style={[rs.handle, { backgroundColor: handleBg }]} />
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={rs.content}>
-            {/* Score */}
-            <Animated.View entering={FadeIn.duration(400)} style={rs.scoreSection}>
-              <View style={[rs.scoreBig, { borderColor: scoreColor, shadowColor: scoreColor }]}>
-                <Text style={[rs.scoreNumber, { color: scoreColor, fontFamily: "Inter_700Bold" }]}>
-                  {score}
-                </Text>
-                <Text style={[rs.scoreDenom, { color: fgFaint, fontFamily: "Inter_400Regular" }]}>
-                  /10
-                </Text>
-              </View>
+            {/* Score flower — one petal per aspect, overall in the centre */}
+            <Animated.View entering={FadeIn.duration(400)} style={rs.flowerSection}>
+              <ScoreFlower
+                overall={score}
+                aspects={aspectsFromScore10(analysis.score, lang)}
+                size={300}
+                centerLabel="AI"
+              />
               <Text style={[rs.scoreSummary, { color: fgText, fontFamily: "Inter_600SemiBold" }]}>
                 {analysis.summary}
               </Text>
-            </Animated.View>
-
-            {/* Param bars */}
-            <Animated.View entering={FadeInDown.delay(100).duration(400)} style={rs.paramsSection}>
-              {params.map((p) => {
-                const val = analysis.score[p.key] as number;
-                return (
-                  <View key={p.key} style={rs.paramRow}>
-                    <Text style={[rs.paramLabel, { color: fgMuted, fontFamily: "Inter_400Regular" }]}>
-                      {p.label}
-                    </Text>
-                    <View style={[rs.paramBarBg, { backgroundColor: trackBg }]}>
-                      <Animated.View
-                        style={[
-                          rs.paramBarFill,
-                          {
-                            backgroundColor: tone(val),
-                            width: `${(val / 10) * 100}%` as any,
-                          },
-                        ]}
-                      />
-                    </View>
-                    <Text style={[rs.paramValue, { color: fgText, fontFamily: "Inter_600SemiBold" }]}>
-                      {val.toFixed(1)}
-                    </Text>
-                  </View>
-                );
-              })}
             </Animated.View>
 
             {/* Strengths */}
@@ -943,6 +905,24 @@ export default function LevelScreen() {
       setShowResults(true);
     }
     try {
+      // Reading levels: grade with the professional, signal-grounded Claude
+      // scorer (honest per-aspect 1..5 + a result-based tip). Falls back to the
+      // local heuristic below if the server is unreachable.
+      if (isReadingLevel && audioBase64 && audioBase64.length > 100) {
+        const pro = await analyzeSpeechPro({
+          audioBase64,
+          title: readingMeta?.workTitle,
+          moduleNumber: level.module,
+          lang,
+          durationSeconds,
+        });
+        if (pro) {
+          setCurrentAnalysis(pro);
+          return;
+        }
+        // else: fall through to transcribe + local heuristic
+      }
+
       // 1) Transcribe — only if we actually captured audio. Falling back to
       //    an empty transcript yields conservative, low-but-honest scores
       //    instead of fake high ones.
@@ -1672,6 +1652,12 @@ const rs = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     marginTop: 6,
+  },
+  flowerSection: {
+    alignItems: "center",
+    gap: 14,
+    marginTop: 2,
+    marginBottom: 4,
   },
   scoreBig: {
     width: 108,

@@ -429,6 +429,73 @@ export async function analyzeSpeech(params: AnalyzeSpeechParams): Promise<Speech
   };
 }
 
+/**
+ * Professional, signal-grounded analysis via the server's Claude scorer
+ * (`/api/analyze-speech`). The server transcribes, measures loudness + speech
+ * rate, and returns six 1..5 criteria + a result-based tip. We map that to the
+ * 0..10 `SpeechAnalysis` shape so every UI keeps working — only the grading
+ * gets honest. Returns null on any failure so callers fall back to the local
+ * heuristic and stay fully offline-capable.
+ */
+export async function analyzeSpeechPro(params: {
+  audioBase64: string;
+  title?: string;
+  moduleNumber?: number;
+  lang?: Lang;
+  durationSeconds?: number;
+}): Promise<SpeechAnalysis | null> {
+  const { audioBase64, title, moduleNumber, lang = "ru", durationSeconds } = params;
+  if (!audioBase64 || audioBase64.length < 100) return null;
+  try {
+    const url = new URL("/api/analyze-speech", getApiUrl()).toString();
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ audioBase64, title, moduleNumber, durationSeconds, lang }),
+    });
+    if (!res.ok) return null;
+    const data: any = await res.json();
+    if (!data || typeof data !== "object" || !data.metrics) return null;
+
+    const m = data.metrics;
+    const to10 = (v: any) => round1(clamp01to10((Number(v) || 0) * 2));
+    const clarity = to10(m.clarity);
+    const confidence = to10(m.confidence);
+    const volume = to10(m.volume);
+    const tempo = to10(m.tempo);
+    const expressiveness = to10(m.expressiveness);
+    const pauses = to10(m.pauses);
+    const overall = round1(
+      clamp01to10((clarity + confidence + volume + tempo + expressiveness + pauses) / 6),
+    );
+
+    const transcript = typeof data.transcript === "string" ? data.transcript : "";
+    const fillerCount = countFillers(transcript, lang);
+    const tip =
+      typeof data.tip === "string" && data.tip.trim()
+        ? data.tip.trim()
+        : tipFor(pickWeakest({ clarity, confidence, volume }), lang);
+
+    const recommendations: string[] = Array.isArray(data.errors)
+      ? data.errors.filter((e: any) => typeof e === "string").slice(0, 3)
+      : [];
+
+    return {
+      score: { overall, clarity, confidence, volume, tempo, expressiveness, pauses },
+      strengths: [],
+      recommendations,
+      summary: typeof data.feedback === "string" ? data.feedback : "",
+      xpBonus: overall >= 9 ? 5 : overall >= 8 ? 2 : 0,
+      tip,
+      transcript,
+      fillerCount,
+      textMatchRatio: null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function calculateConfidence(score: SpeechScore): number {
   return round1((score.confidence + score.clarity + score.volume) / 3);
 }

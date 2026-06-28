@@ -17,6 +17,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import RecordingPlayer from "@/components/RecordingPlayer";
+import ScoreFlower, { aspectsFromScore10 } from "@/components/ScoreFlower";
 import type { AppColors } from "@/constants/colors";
 import type { SpeechAnalysis } from "@/services/speechAnalysis";
 
@@ -123,7 +124,6 @@ export default function ReadingResultsView({
     setSelfRating(n);
   };
 
-  const aiStars = analysis ? Math.max(0, Math.min(5, Math.round(analysis.score.overall / 2))) : 0;
   const canSave = selfRating > 0 && !saving;
 
   return (
@@ -225,20 +225,12 @@ export default function ReadingResultsView({
             </Animated.View>
           ) : analysis ? (
             <Animated.View entering={FadeInUp.duration(400)} style={st.aiResult}>
-              <View style={st.aiScoreRow}>
-                <View style={st.aiStarsRow}>
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <Ionicons
-                      key={n}
-                      name={n <= aiStars ? "star" : "star-outline"}
-                      size={18}
-                      color={n <= aiStars ? accent : trackColor}
-                    />
-                  ))}
-                </View>
-                <Text style={[st.aiScoreText, { color: fg, fontFamily: "Inter_700Bold" }]}>
-                  {analysis.score.overall.toFixed(1)}/10
-                </Text>
+              <View style={st.flowerWrap}>
+                <ScoreFlower
+                  overall={analysis.score.overall}
+                  aspects={aspectsFromScore10(analysis.score, lang)}
+                  size={300}
+                />
               </View>
               {analysis.summary ? (
                 <Text style={[st.aiSummary, { color: fg, fontFamily: "Inter_500Medium" }]}>
@@ -341,10 +333,8 @@ const st = StyleSheet.create({
   aiLoading: { alignItems: "center", gap: 10, paddingVertical: 8 },
   dots: { flexDirection: "row" },
   aiLoadingText: { fontSize: 13, textAlign: "center" },
-  aiResult: { gap: 10 },
-  aiScoreRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  aiStarsRow: { flexDirection: "row", gap: 3 },
-  aiScoreText: { fontSize: 16 },
+  aiResult: { gap: 12 },
+  flowerWrap: { alignItems: "center", justifyContent: "center", marginVertical: 4 },
   aiSummary: { fontSize: 14, lineHeight: 20 },
   tipCard: { flexDirection: "row", gap: 8, alignItems: "flex-start", padding: 11, borderRadius: 12, borderWidth: 1 },
   tipText: { flex: 1, fontSize: 13, lineHeight: 18 },
