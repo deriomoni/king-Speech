@@ -17,7 +17,18 @@ import { getLevelsData } from "@/constants/gameContent";
  * (gated behind __DEV__) or when the toggle is off — so it never ships and can't
  * affect a real player's progression.
  */
-export default function DevSkipButton({ levelId }: { levelId: string }) {
+export default function DevSkipButton({
+  levelId,
+  onPreviewResults,
+}: {
+  levelId: string;
+  /**
+   * When provided, Skip passes all tasks at max score and then opens THIS
+   * screen's score window (flower) with example data — instead of navigating
+   * to the next level. Used to quickly preview the results design.
+   */
+  onPreviewResults?: () => void;
+}) {
   const { isDevSkipEnabled } = useDevTools();
   const { completeAllTasksForLevel } = useGame();
   const { triggerModuleTransition } = useModuleTransition();
@@ -34,6 +45,13 @@ export default function DevSkipButton({ levelId }: { levelId: string }) {
       completeAllTasksForLevel(levelId as any, 10);
     } catch (e) {
       console.warn("[DevSkipButton] complete failed:", e);
+    }
+
+    // Preview mode: stay on this screen and show the score window (flower)
+    // populated with example data, instead of advancing to the next level.
+    if (onPreviewResults) {
+      onPreviewResults();
+      return;
     }
     // Route to the next path level — same logic as a normal level completion.
     const all = getLevelsData(lang);

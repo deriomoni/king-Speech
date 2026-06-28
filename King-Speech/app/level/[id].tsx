@@ -66,6 +66,21 @@ const RS_LOW  = "#FB7185";   // coral pink  (<6) — only red-ish tone in app, i
 // scannable at a glance. The user can tap to reveal the rest.
 const TRANSCRIPT_COLLAPSED_CHARS = 180;
 
+// DEV preview data for the Skip button — showcases the score window (flower)
+// without a real recording. Scores deliberately span the colour tiers so every
+// petal tone (mint / teal / amber / coral) is visible at a glance.
+const DEMO_ANALYSIS: SpeechAnalysis = {
+  score: { overall: 7.0, clarity: 9.0, confidence: 7.0, volume: 5.0, tempo: 8.0, expressiveness: 9.5, pauses: 3.5 },
+  strengths: ["Пример: яркая интонация", "Пример: чёткая дикция"],
+  recommendations: ["Пример: добавь паузы после знаков препинания", "Пример: говори чуть громче к финалу"],
+  summary: "Пример оценки: выразительное и чёткое прочтение — поработай над паузами и громкостью.",
+  xpBonus: 2,
+  tip: "Совет (пример): делай чуть больше осмысленных пауз после ключевых строк — сейчас они проскакивают.",
+  transcript: "Пример распознанного текста вашего выступления для предпросмотра дизайна.",
+  fillerCount: 1,
+  textMatchRatio: 0.86,
+};
+
 // Split transcript into ordered segments, marking which segments are filler
 // words. Multi-word fillers ("you know", "как бы") match too, and word
 // boundaries are checked so "umpire" doesn't get tagged as "um".
@@ -1129,6 +1144,23 @@ export default function LevelScreen() {
     setTimeout(() => setShowLevelComplete(true), 400);
   };
 
+  // DEV-only: open this screen's score window with example data so the new
+  // flower design can be previewed instantly (wired to the Skip button).
+  const handlePreviewResults = React.useCallback(() => {
+    setCurrentAnalysis(DEMO_ANALYSIS);
+    setAnalyzing(false);
+    setEmptyRecording(false);
+    if (isReadingLevel) {
+      setReadingAudioUri(null);
+      setReadingDurationSec(0);
+      setShowReadingReview(true);
+    } else {
+      setActiveTaskIndex((cur) => (cur == null ? 0 : cur));
+      setShowResults(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isReadingLevel]);
+
   const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
 
   const handleWarmupTaskComplete = React.useCallback(
@@ -1283,7 +1315,7 @@ export default function LevelScreen() {
           <Ionicons name="close" size={24} color={colors.text} />
         </Pressable>
         )}
-        <DevSkipButton levelId={levelId} />
+        <DevSkipButton levelId={levelId} onPreviewResults={handlePreviewResults} />
       </View>
     );
   }
@@ -1608,7 +1640,7 @@ export default function LevelScreen() {
         </Text>
       </View>
 
-      <DevSkipButton levelId={levelId} />
+      <DevSkipButton levelId={levelId} onPreviewResults={handlePreviewResults} />
     </View>
   );
 }
