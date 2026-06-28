@@ -6,9 +6,13 @@ import { randomUUID } from "crypto";
 import { tmpdir } from "os";
 import { join } from "path";
 
+// Prefer a direct OpenAI key (OPENAI_API_KEY → default api.openai.com).
+// Falls back to the legacy Replit AI Integrations proxy if only those vars
+// are set, so existing Replit deploys keep working.
+const useDirectOpenAI = !!process.env.OPENAI_API_KEY;
 export const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  apiKey: process.env.OPENAI_API_KEY ?? process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  baseURL: useDirectOpenAI ? undefined : process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
 export type AudioFormat = "wav" | "mp3" | "webm" | "mp4" | "ogg" | "unknown";
@@ -337,7 +341,7 @@ export async function speechToText(
   const file = await toFile(audioBuffer, `audio.${format}`);
   const response = await openai.audio.transcriptions.create({
     file,
-    model: "gpt-4o-mini-transcribe",
+    model: "gpt-4o-transcribe",
   });
   return response.text;
 }
@@ -353,7 +357,7 @@ export async function speechToTextStream(
   const file = await toFile(audioBuffer, `audio.${format}`);
   const stream = await openai.audio.transcriptions.create({
     file,
-    model: "gpt-4o-mini-transcribe",
+    model: "gpt-4o-transcribe",
     stream: true,
   });
 
@@ -364,4 +368,36 @@ export async function speechToTextStream(
       }
     }
   })();
+}
+
+/**
+ * Jenny's voice. Natural, human-sounding text-to-speech via OpenAI
+ * `gpt-4o-mini-tts`. Pure pay-per-use (no idle cost), and the `instructions`
+ * field lets us steer tone so she sounds warm and conversational, not robotic.
+ *
+ * Swap target later: ElevenLabs for maximum naturalness — keep this signature.
+ */
+export type JennyVoice =
+  | "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer" | "coral" | "sage";
+
+export async function synthesizeSpeech(
+  text: string,
+  opts: {
+    voice?: JennyVoice;
+    instructions?: string;
+    format?: "mp3" | "wav" | "opus";
+  } = {},
+): Promise<{ buffer: Buffer; format: "mp3" | "wav" | "opus" }> {
+  const format = opts.format ?? "mp3";
+  const response = await openai.audio.speech.create({
+    model: "gpt-4o-mini-tts",
+    voice: opts.voice ?? "nova",
+    input: text,
+    instructions:
+      opts.instructions ??
+      "You are Jenny, a warm, friendly human interviewer. Speak naturally and conversationally with gentle, expressive intonation, light warmth and a smile in your voice. Vary your pace, breathe, and never sound flat or robotic.",
+    response_format: format,
+  } as any);
+  const arrayBuffer = await response.arrayBuffer();
+  return { buffer: Buffer.from(arrayBuffer), format };
 }

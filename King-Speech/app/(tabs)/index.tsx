@@ -36,6 +36,7 @@ import {
   RANKS_MODULAR,
 } from "@/context/GameContext";
 import { useLang, Lang } from "@/context/LangContext";
+import { getModuleName } from "@/constants/showtimeLoader";
 import { useAppColors } from "@/hooks/useAppColors";
 import { useDevTools } from "@/context/DevToolsContext";
 import { RankBackground } from "@/components/path/RankBackground";
@@ -45,6 +46,7 @@ import {
 } from "@/components/path/PathPaintingBackground";
 import FinalPortal from "@/components/path/FinalPortal";
 import { getRankTheme } from "@/components/path/rankTheme";
+import PathScrubber from "@/components/path/PathScrubber";
 
 function GlowRing({ color }: { color: string }) {
   const scale = useSharedValue(1);
@@ -376,7 +378,9 @@ function StepBlock({
                   fontFamily: rankTheme.fontFamily,
                 },
               ]}
-              numberOfLines={1}
+              numberOfLines={item.id?.startsWith("reading") ? 2 : 1}
+              adjustsFontSizeToFit={item.id?.startsWith("reading")}
+              minimumFontScale={0.7}
             >
               {item.subtitle}
             </Text>
@@ -475,6 +479,19 @@ function ModuleDivider({
             {moduleNum}
           </Text>
         </View>
+        {lang === "ru" && getModuleName(moduleNum) ? (
+          <Text
+            style={{
+              color: colors.text,
+              fontFamily: "Rubik_700Bold",
+              fontSize: 16,
+              textAlign: "center",
+              marginBottom: 4,
+            }}
+          >
+            {getModuleName(moduleNum)}
+          </Text>
+        ) : null}
         <Text
           style={[
             styles.moduleQuoteText,
@@ -590,12 +607,19 @@ export default function PathScreen() {
     gIdx++;
   }
 
-  const activeKey = renderItems.find(
+  const activeStep = renderItems.find(
     (ri) => ri.type === "step" && ri.step?.status === "available",
-  )?.key;
+  )?.step;
+  const activeKey = activeStep?.id;
 
   const itemYRef = useRef<Record<string, number>>({});
   const lastScrolledCount = useRef(-1);
+  // While true, the map keeps itself pinned to the active step. Set on every
+  // focus and held until the player grabs the scroll themselves — this is what
+  // makes the map land on the current module instead of being bounced back to
+  // the top by the tall content's late layout passes (fonts/images reflowing).
+  const autoPinRef = useRef(true);
+
 
   const scrollToY = useCallback(
     (y: number) => {
@@ -607,8 +631,13 @@ export default function PathScreen() {
     [scrollTopInset],
   );
 
+  // Raw, un-animated scroll for the drag scrubber (absolute content offset).
+  const scrubScrollTo = useCallback((y: number) => {
+    scrollRef.current?.scrollTo({ y: Math.max(0, y), animated: false });
+  }, []);
+
   const scrollToActive = useCallback(
-    (force: boolean) => {
+    (force: boolean, animated: boolean = true) => {
       if (isOpenTestingEnabled) return;
       if (!activeKey) return;
       if (!force && lastScrolledCount.current === completedCount) return;
@@ -616,25 +645,32 @@ export default function PathScreen() {
         const y = itemYRef.current[activeKey];
         if (typeof y === "number") {
           lastScrolledCount.current = completedCount;
-          scrollToY(y);
-        } else if (attempt < 8) {
+          scrollRef.current?.scrollTo({
+            y: Math.max(0, y - scrollTopInset),
+            animated,
+          });
+        } else if (attempt < 12) {
           setTimeout(() => tryScroll(attempt + 1), 80);
         }
       };
       tryScroll(0);
     },
-    [activeKey, completedCount, scrollToY, isOpenTestingEnabled],
+    [activeKey, completedCount, scrollTopInset, isOpenTestingEnabled],
   );
 
   useFocusEffect(
     useCallback(() => {
+      // Entering the map: re-enable pinning and jump straight to the current
+      // module (instant, no long animation across the whole ladder).
+      autoPinRef.current = true;
       lastScrolledCount.current = -1;
-      scrollToActive(true);
+      scrollToActive(true, false);
     }, [scrollToActive]),
   );
 
   const [scrollY, setScrollY] = useState(0);
   const [viewportH, setViewportH] = useState(0);
+  const [contentH, setContentH] = useState(0);
   // Bumped each time a new item Y is measured, so the visible-section
   // computation re-runs once the layout pass finishes for new rows.
   const [measureTick, setMeasureTick] = useState(0);
@@ -709,6 +745,21 @@ export default function PathScreen() {
   }, []);
 
   const activeY = activeKey ? itemYRef.current[activeKey] : undefined;
+
+  // Keep the view glued to the active step while auto-pin is on. The tall map
+  // reflows several times after mount (fonts, step images, divider layout); each
+  // reflow changes the active step's measured Y, and without this the content
+  // would settle back near the top. Instant scroll = no visible bounce. Once the
+  // player drags the map themselves we stop pinning (see onScrollBeginDrag).
+  useEffect(() => {
+    if (!autoPinRef.current || isOpenTestingEnabled) return;
+    if (typeof activeY !== "number") return;
+    scrollRef.current?.scrollTo({
+      y: Math.max(0, activeY - scrollTopInset),
+      animated: false,
+    });
+  }, [activeY, scrollTopInset, isOpenTestingEnabled]);
+
   const ROW_H = 80;
   let direction: "up" | "down" | null = null;
   if (
@@ -874,10 +925,20 @@ export default function PathScreen() {
 
       <ScrollView
         ref={scrollRef}
-        onContentSizeChange={() => {
-          if (!isOpenTestingEnabled) scrollToActive(false);
+        onContentSizeChange={(_w, h) => {
+          setContentH(h);
+          // While pinning, force an instant re-pin to the active step as the
+          // tall content settles. Afterwards keep the original completion-driven
+          // (animated, guarded) scroll behavior.
+          if (autoPinRef.current) scrollToActive(true, false);
+          else scrollToActive(false);
         }}
         onScroll={onScrollEvt}
+        onScrollBeginDrag={() => {
+          // Player took control of the scroll — stop auto-pinning so we don't
+          // fight their dragging. Pinning resumes next time the map is focused.
+          autoPinRef.current = false;
+        }}
         onScrollEndDrag={onScrollEndEvt}
         onMomentumScrollEnd={onScrollEndEvt}
         scrollEventThrottle={64}
@@ -1016,6 +1077,17 @@ export default function PathScreen() {
         </View>
       </ScrollView>
 
+      <PathScrubber
+        contentH={contentH}
+        viewportH={viewportH}
+        scrollY={scrollY}
+        topInset={scrollTopInset}
+        bottomInset={bottomPad}
+        accent={rankTheme.accent}
+        dark={colorScheme === "dark"}
+        onScrubTo={scrubScrollTo}
+      />
+
       <Animated.View
         pointerEvents={showFab ? "auto" : "none"}
         style={[
@@ -1043,6 +1115,7 @@ export default function PathScreen() {
           />
         </Pressable>
       </Animated.View>
+
     </View>
   );
 }

@@ -6,6 +6,7 @@ import { getLevelsData, getTasksData } from "@/constants/gameContent";
 import {
   getModuleFromLevelId,
   getWarmupTasksForLevel,
+  getInterviewTasksForLevel,
 } from "@/constants/contentLoader";
 import { MODULE_QUOTES } from "@/constants/gameContent";
 import { useLang, type Lang } from "@/context/LangContext";
@@ -135,6 +136,11 @@ function buildLevelsFromContent(lang: Lang, savedProgress: SavedProgress[] | nul
         getModuleFromLevelId(levelInfo.id),
         lang,
       );
+    } else if (getBaseType(levelInfo.id) === "interview") {
+      // Light, theme-bound questions from the content pipeline (task 1.8).
+      // Falls back to the legacy hardcoded tasks if no content is found.
+      const interviewTasks = getInterviewTasksForLevel(levelInfo.id, lang);
+      if (interviewTasks) taskContent = interviewTasks;
     }
 
     const tasks: Task[] = taskContent.map((t) => {

@@ -1262,7 +1262,9 @@ function ModulesBlock({
                     detailStyles.modSub,
                     { color: theme.textSecondary, fontFamily: theme.fontFamily },
                   ]}
-                  numberOfLines={1}
+                  numberOfLines={l.id?.startsWith("reading") ? 2 : 1}
+                  adjustsFontSizeToFit={l.id?.startsWith("reading")}
+                  minimumFontScale={0.7}
                 >
                   {l.subtitle}
                 </Text>

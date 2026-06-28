@@ -8,6 +8,7 @@ import {
   Dimensions,
   ScrollView,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, router, useNavigation } from "expo-router";
@@ -31,6 +32,8 @@ import * as Haptics from "expo-haptics";
 import { useGame, getRankForSection } from "@/context/GameContext";
 import { useLang } from "@/context/LangContext";
 import { getApiUrl } from "@/lib/query-client";
+import { playSfx } from "@/lib/sfx";
+import { getLevelsData } from "@/constants/gameContent";
 import SpeechAnalyzingLoader from "@/components/SpeechAnalyzingLoader";
 
 let Audio: any = null;
@@ -516,6 +519,7 @@ export default function ShowtimePlaybackScreen() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [completing, setCompleting] = useState(false);
   const [hasListenedFully, setHasListenedFully] = useState(false);
+  const [showListenPrompt, setShowListenPrompt] = useState(false);
 
   const handlePlaybackComplete = () => {
     setHasListenedFully(true);
@@ -585,10 +589,13 @@ export default function ShowtimePlaybackScreen() {
       }
 
       const apiUrl = new URL("/api/analyze-speech", getApiUrl()).toString();
+      // Module number drives the analyzer's leniency: early modules are scored
+      // gently and encouragingly, later ones more honestly (see /api/analyze-speech).
+      const moduleNumber = getLevelById(levelId)?.module;
       const res = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audioBase64, title }),
+        body: JSON.stringify({ audioBase64, title, moduleNumber }),
       });
       const data = await res.json();
       if (typeof data.stars === "number") {
@@ -622,15 +629,36 @@ export default function ShowtimePlaybackScreen() {
     }
   };
 
-  const handleDone = () => {
-    if (completing) return;
-    // Block progression if the player said nothing
-    if (analysisResult?.silent || analysisResult?.stars === 0) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+  // After Show Time, advance to the next path level instead of dumping the
+  // player back on the map. Trainer mode (free play) still returns to map.
+  const goAfterShowTime = () => {
+    if (isTrainer) {
+      router.push("/");
       return;
     }
+    const all = getLevelsData(lang);
+    const idx = all.findIndex((l) => l.id === levelId);
+    const next = idx >= 0 && idx < all.length - 1 ? all[idx + 1] : null;
+    if (!next) {
+      router.push("/");
+      return;
+    }
+    if (next.id.startsWith("showtime")) {
+      router.replace({ pathname: "/showtime-stage", params: { levelId: next.id, mode: "game" } });
+    } else if (next.id.startsWith("vocabulary")) {
+      router.replace({ pathname: "/vocabulary-level", params: { levelId: next.id, moduleId: String(next.module) } });
+    } else {
+      router.replace({ pathname: "/level/[id]", params: { id: next.id } });
+    }
+  };
+
+  // Actual completion: record progress and move on. Called either after the
+  // player listened fully, or when they explicitly skip the self-listen prompt.
+  const proceed = () => {
+    if (completing) return;
     setCompleting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    playSfx("success").catch(() => {});
 
     if (!isTrainer) {
       const score = analysisResult?.score ?? 7;
@@ -678,7 +706,33 @@ export default function ShowtimePlaybackScreen() {
       }
     }
 
-    router.push("/");
+    goAfterShowTime();
+  };
+
+  const handleDone = () => {
+    if (completing) return;
+    // Block progression if the player said nothing
+    if (analysisResult?.silent || analysisResult?.stars === 0) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+    // Encourage full self-listening before moving on — but allow skipping.
+    if (!hasListenedFully && recordingUri) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      setShowListenPrompt(true);
+      return;
+    }
+    proceed();
+  };
+
+  const skipListening = () => {
+    // TODO (task 1.15 — monetization): gate this skip behind a rewarded ad,
+    // i.e. only allow proceeding here once the player has watched an ad.
+    // Ads are intentionally NOT wired up yet — for now the prompt is a soft
+    // nudge and skipping is always allowed.
+    setShowListenPrompt(false);
+    setHasListenedFully(true);
+    proceed();
   };
 
   const isSilent = analysisResult?.silent || analysisResult?.stars === 0;
@@ -815,12 +869,12 @@ export default function ShowtimePlaybackScreen() {
             </Pressable>
             <Pressable
               onPress={handleDone}
-              disabled={completing || isSilent || !analysisResult || (!hasListenedFully && !!recordingUri)}
+              disabled={completing || isSilent || !analysisResult}
               style={({ pressed }) => [
                 pb.doneBtn,
                 {
-                  backgroundColor: isSilent ? "#1A1A2A" : (!hasListenedFully && !!recordingUri) ? "#1A1A2A" : "#0B1426",
-                  opacity: pressed || completing || !analysisResult || (!hasListenedFully && !!recordingUri) ? 0.5 : 1,
+                  backgroundColor: isSilent ? "#1A1A2A" : "#0B1426",
+                  opacity: pressed || completing || !analysisResult ? 0.5 : 1,
                   borderWidth: isSilent ? 1 : 0,
                   borderColor: isSilent ? "#0EA5E940" : "transparent",
                 },
@@ -845,9 +899,106 @@ export default function ShowtimePlaybackScreen() {
       </ScrollView>
 
       <SpeechAnalyzingLoader visible={analyzing && !analysisResult} lang={lang} />
+
+      <Modal
+        visible={showListenPrompt}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowListenPrompt(false)}
+      >
+        <View style={listenPrompt.overlay}>
+          <View style={listenPrompt.card}>
+            <Ionicons name="headset-outline" size={38} color="#FFD166" />
+            <Text style={listenPrompt.title}>
+              {lang === "en" ? "Listen to yourself" : "Послушай себя"}
+            </Text>
+            <Text style={listenPrompt.body}>
+              {lang === "en"
+                ? "Listen to your speech to the end — honest self-reflection is a real step toward getting better."
+                : "Прослушай свою речь до конца — честный самоанализ это шаг к тому, чтобы стать лучше."}
+            </Text>
+            <Pressable
+              onPress={() => setShowListenPrompt(false)}
+              style={({ pressed }) => [listenPrompt.btn, { opacity: pressed ? 0.85 : 1 }]}
+            >
+              <Text style={listenPrompt.btnText}>
+                {lang === "en" ? "Listen" : "Дослушать"}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={skipListening}
+              style={({ pressed }) => [listenPrompt.skipBtn, { opacity: pressed ? 0.7 : 1 }]}
+            >
+              <Text style={listenPrompt.skipBtnText}>
+                {lang === "en" ? "Skip" : "Пропустить"}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
+
+const listenPrompt = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(3,7,14,0.78)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 28,
+  },
+  card: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: "#0E1626",
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,209,102,0.25)",
+    padding: 26,
+    alignItems: "center",
+    gap: 12,
+  },
+  title: {
+    color: "#fff",
+    fontSize: 19,
+    fontFamily: "Inter_700Bold",
+    textAlign: "center",
+  },
+  body: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 14.5,
+    lineHeight: 21,
+    textAlign: "center",
+    fontFamily: "Inter_400Regular",
+  },
+  btn: {
+    marginTop: 8,
+    backgroundColor: "#FFD166",
+    paddingHorizontal: 28,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  btnText: {
+    color: "#2A1E00",
+    fontSize: 15,
+    fontFamily: "Inter_700Bold",
+  },
+  skipBtn: {
+    marginTop: 2,
+    paddingHorizontal: 20,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  skipBtnText: {
+    color: "rgba(255,255,255,0.55)",
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+  },
+});
 
 const pb = StyleSheet.create({
   container: { flex: 1 },

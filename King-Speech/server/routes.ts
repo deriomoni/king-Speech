@@ -2,7 +2,8 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { openai, speechToText, ensureCompatibleFormat, computeLoudness } from "./replit_integrations/audio/client";
+import { speechToText, ensureCompatibleFormat, computeLoudness, synthesizeSpeech, type JennyVoice } from "./replit_integrations/audio/client";
+import { chatComplete } from "./llm";
 
 const JOURNALIST_NAME = "JENNY";
 const MAX_QUESTIONS   = 5;
@@ -133,16 +134,8 @@ async function generateGreeting(topic: string, lang: Lang): Promise<string> {
     ? `Hello! I'm ${JOURNALIST_NAME}, your virtual journalist. Today we'll talk about "${topic}". Glad to meet you — let's begin!`
     : `Здравствуйте! Я ${JOURNALIST_NAME}, ваш виртуальный журналист. Сегодня мы поговорим о теме «${topic}». Рада нашей встрече — давайте начнём!`;
 
-  const resp = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-    max_tokens: 130,
-    temperature: 0.8,
-  });
-  return resp.choices[0]?.message?.content?.trim() ?? fallback;
+  const out = await chatComplete({ system: systemPrompt, user: userPrompt, maxTokens: 130 });
+  return out || fallback;
 }
 
 async function generateInterviewQuestion(
@@ -154,30 +147,24 @@ async function generateInterviewQuestion(
   const prevContext =
     previousAnswers.length > 0
       ? (lang === "en"
-        ? `Previous questions:\n${previousAnswers.map((a, i) => `${i + 1}. ${a.question}`).join("\n")}`
-        : `Предыдущие вопросы:\n${previousAnswers.map((a, i) => `${i + 1}. ${a.question}`).join("\n")}`)
+        ? `Conversation so far:\n${previousAnswers.map((a) => `You asked: ${a.question}\nThey answered: ${a.transcript?.trim() || "(they stayed silent)"}`).join("\n\n")}`
+        : `Беседа до этого момента:\n${previousAnswers.map((a) => `Вы спросили: ${a.question}\nОни ответили: ${a.transcript?.trim() || "(человек промолчал)"}`).join("\n\n")}`)
       : "";
 
+  // Jenny's personality lives here: she runs a real conversation, not a form —
+  // every question builds on what the person actually just said.
   const systemPrompt = lang === "en"
-    ? `You are ${JOURNALIST_NAME}, a friendly journalist-interviewer. Topic: "${topic}". Ask simple, warm, human questions about life, feelings and personal experience. Questions should be easy to answer, not too complex. Good examples: "What does happiness mean to you?", "What kind of person do you want to become?", "What do you value most in people?", "What makes your day truly good?". One question, one sentence. Only the question text, no explanations.`
-    : `Ты — ${JOURNALIST_NAME}, дружелюбный журналист-интервьюер. Тема: "${topic}". Задавай простые, тёплые, человечные вопросы о жизни, чувствах и личном опыте. Вопросы должны быть лёгкими для ответа, не слишком сложными. Хорошие примеры: "Что для вас значит счастье?", "Каким человеком вы хотите стать?", "Что вы больше всего цените в людях?", "Что делает ваш день по-настоящему хорошим?". Один вопрос, одно предложение. Только текст вопроса, без пояснений.`;
+    ? `You are ${JOURNALIST_NAME}, a warm, alive and emotionally attuned interviewer. Topic of the conversation: "${topic}". You are NOT running a questionnaire — you are having a real human conversation. Listen closely and let your next question grow out of what the person just said: pick up their exact words, their feelings, a detail they mentioned ("You said your father... tell me more about that"). Keep questions simple, open, human and easy to answer. If they stayed silent or gave a very short answer, gently come at it from an easier, more concrete angle. Ask ONE warm question, one or two sentences. Return ONLY the question text — no preface, no quotation marks.`
+    : `Ты — ${JOURNALIST_NAME}, тёплый, живой и эмоционально чуткий интервьюер. Тема беседы: "${topic}". Ты ведёшь НЕ анкету, а настоящий человеческий разговор. Внимательно слушай и строй следующий вопрос на том, что человек только что сказал: подхватывай его слова, чувства, упомянутую деталь («Вы сказали, что ваш отец… расскажите об этом подробнее»). Вопросы простые, открытые, человечные, лёгкие для ответа. Если человек промолчал или ответил очень коротко — мягко зайди с другой, более простой и конкретной стороны. Задай ОДИН тёплый вопрос, одно-два предложения. Верни ТОЛЬКО текст вопроса — без вступлений и без кавычек.`;
 
   const userPrompt = lang === "en"
-    ? `Question ${questionIndex + 1} of ${MAX_QUESTIONS}.\n${prevContext}\nAsk the next question.`
-    : `Вопрос ${questionIndex + 1} из ${MAX_QUESTIONS}.\n${prevContext}\nЗадай следующий вопрос.`;
+    ? `${prevContext}\n\nThis is question ${questionIndex + 1} of about ${MAX_QUESTIONS}. Ask your next question — make it follow naturally from their last answer.`
+    : `${prevContext}\n\nЭто примерно ${questionIndex + 1}-й вопрос из ${MAX_QUESTIONS}. Задай следующий вопрос — пусть он естественно вытекает из последнего ответа человека.`;
 
   const fallback = lang === "en" ? "What does happiness mean to you?" : "Что для вас значит счастье?";
 
-  const resp = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-    max_tokens: 80,
-    temperature: 0.9,
-  });
-  return resp.choices[0]?.message?.content?.trim() ?? fallback;
+  const out = await chatComplete({ system: systemPrompt, user: userPrompt, maxTokens: 80 });
+  return out || fallback;
 }
 
 function getTransition(grammarScore: number, dictionScore: number, lang: Lang): string {
@@ -248,18 +235,14 @@ Respond STRICTLY in JSON: {"grammarScore": <0-5>, "dictionScore": <0-5>, "feedba
   const answerLabel = lang === "en" ? "Answer" : "Ответ";
   const fallbackFeedback = lang === "en" ? "Good answer, keep developing." : "Хороший ответ, продолжайте развиваться.";
 
-  const resp = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: `${topicLabel}: "${topic}"\n${questionLabel}: ${question}\n${answerLabel}: ${transcript}` },
-    ],
-    max_tokens: 200,
-    temperature: 0.3,
-    response_format: { type: "json_object" },
+  const out = await chatComplete({
+    system: systemPrompt,
+    user: `${topicLabel}: "${topic}"\n${questionLabel}: ${question}\n${answerLabel}: ${transcript}`,
+    maxTokens: 200,
+    json: true,
   });
   try {
-    const p = JSON.parse(resp.choices[0]?.message?.content ?? "{}");
+    const p = JSON.parse(out || "{}");
     return {
       grammarScore: Math.min(5, Math.max(0, Math.round(p.grammarScore ?? 2))),
       dictionScore: Math.min(5, Math.max(0, Math.round(p.dictionScore ?? 2))),
@@ -297,18 +280,14 @@ async function generateStructuredSummary(session: InterviewSession): Promise<Fin
     ? "Thank you for the interview! Great job, keep training."
     : "Спасибо за интервью! Вы молодец, продолжайте тренироваться.";
 
-  const resp = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: `${topicLabel}: "${session.topic}"\n\n${answersText}` },
-    ],
-    max_tokens: 350,
-    temperature: 0.7,
-    response_format: { type: "json_object" },
+  const out = await chatComplete({
+    system: systemPrompt,
+    user: `${topicLabel}: "${session.topic}"\n\n${answersText}`,
+    maxTokens: 350,
+    json: true,
   });
   try {
-    const p = JSON.parse(resp.choices[0]?.message?.content ?? "{}");
+    const p = JSON.parse(out || "{}");
     return {
       strengths:  Array.isArray(p.strengths)  ? p.strengths.slice(0, 4)  : [fallbackStrengths[0]],
       weaknesses: Array.isArray(p.weaknesses) ? p.weaknesses.slice(0, 3) : [],
@@ -454,6 +433,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Jenny's voice. Turns a line of text into natural human-sounding speech.
+  // The interview client calls this for the greeting, every question, the
+  // reactions and the spoken summary. Returns base64 audio the client plays.
+  // NOTE: this consumes paid AI — gate it behind the premium entitlement
+  // check (RevenueCat) once payments are wired, before doing real work.
+  app.post("/api/tts", async (req: Request, res: Response) => {
+    try {
+      const { text, voice, instructions } = req.body ?? {};
+      if (!text || typeof text !== "string" || !text.trim()) {
+        return res.status(400).json({ error: "text required" });
+      }
+      const { buffer, format } = await synthesizeSpeech(text.trim().slice(0, 2000), {
+        voice: voice as JennyVoice | undefined,
+        instructions: typeof instructions === "string" ? instructions : undefined,
+      });
+      return res.json({ audioBase64: buffer.toString("base64"), format });
+    } catch (err) {
+      console.error("tts error:", err);
+      return res.status(500).json({ error: "Speech synthesis failed" });
+    }
+  });
+
   // Interview judgement endpoint. Returns logic + eloquence on a 0..10
   // scale plus an optional one-line tip. Called by the analyzer for any
   // levelType whose base type is "interview".
@@ -468,20 +469,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const systemPrompt = lang === "en"
         ? `You are a strict speech coach scoring an interview answer. Rate two qualities on a 0..10 scale:\n- logic: clarity of thought, structure (thesis → argument → conclusion), coherence.\n- eloquence: vocabulary range, precise wording, expressive style (penalize generic phrases & filler).\nReturn STRICTLY JSON: {"logic": <0-10>, "eloquence": <0-10>, "tip": "<one short coaching tip in English>"}`
         : `Ты — строгий тренер по речи, оценивающий ответ на интервью. Оцени два качества по шкале 0..10:\n- logic: ясность мысли, структура (тезис → аргумент → вывод), связность.\n- eloquence: богатство словаря, точность формулировок, выразительность (штрафуй за шаблоны и слова-паразиты).\nВерни СТРОГО JSON: {"logic": <0-10>, "eloquence": <0-10>, "tip": "<один короткий совет на русском>"}`;
-      const resp = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: transcript.trim().slice(0, 4000) },
-        ],
-        max_tokens: 200,
-        // temperature: 0 → identical transcript yields identical scores, so
-        // retries of the same recording give the same result.
-        temperature: 0,
-        response_format: { type: "json_object" },
+      const out = await chatComplete({
+        system: systemPrompt,
+        user: transcript.trim().slice(0, 4000),
+        maxTokens: 200,
+        json: true,
       });
       let parsed: any = {};
-      try { parsed = JSON.parse(resp.choices[0]?.message?.content ?? "{}"); } catch { parsed = {}; }
+      try { parsed = JSON.parse(out || "{}"); } catch { parsed = {}; }
       const clamp = (v: any) => {
         const n = Number(v);
         if (!Number.isFinite(n)) return 6;
@@ -500,7 +495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/analyze-speech", async (req: Request, res: Response) => {
     try {
-      const { audioBase64, title } = req.body;
+      const { audioBase64, title, durationSeconds, moduleNumber } = req.body;
       const lang = getLang(req.body);
       if (!audioBase64) return res.status(400).json({ error: "audioBase64 required" });
 
@@ -514,8 +509,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!transcript || transcript.trim().length < 8) {
         const silentFeedback = lang === "en"
-          ? "Nothing was said. Please try again - speak the text out loud."
-          : "Ничего не было сказано. Попробуйте снова — произнесите текст выступления вслух.";
+          ? "We didn't quite hear you. No worries — to pass this level just speak out loud, a little louder and closer to the mic."
+          : "Кажется, мы тебя не услышали. Ничего страшного — чтобы пройти уровень, просто говори вслух, чуть увереннее и ближе к микрофону.";
         const silentError = lang === "en"
           ? "Speech not detected - microphone didn't pick up voice or speech wasn't delivered."
           : "Речь не обнаружена — микрофон не уловил голос или выступление не было произнесено.";
@@ -535,27 +530,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // --- Real measured signals so scoring is grounded, not guessed ---
+      // Acoustic loudness (volume/projection) straight from the audio.
+      const loud = await computeLoudness(buffer).catch(() => ({
+        ok: false, rms: 0, peak: 0, meanVolumeDb: -Infinity, maxVolumeDb: -Infinity,
+      }));
+      // Speech rate (tempo) and filler density from the transcript + duration.
+      const tokens = transcript.toLowerCase().split(/[^a-zа-яё0-9]+/i).filter(Boolean);
+      const wordCount = tokens.length;
+      const FILLERS_RU = ["э", "эм", "ну", "типа", "значит", "вот", "короче", "это", "блин", "как бы", "в общем", "так сказать", "это самое"];
+      const FILLERS_EN = ["um", "uh", "like", "basically", "actually", "so", "well", "you know", "i mean", "kinda", "sorta"];
+      const single = new Set((lang === "en" ? FILLERS_EN : FILLERS_RU).filter((f) => !f.includes(" ")));
+      const multi = (lang === "en" ? FILLERS_EN : FILLERS_RU).filter((f) => f.includes(" "));
+      const lowerText = " " + transcript.toLowerCase() + " ";
+      let fillerCount = tokens.filter((t) => single.has(t)).length;
+      for (const phrase of multi) fillerCount += lowerText.split(phrase).length - 1;
+      const dur = typeof durationSeconds === "number" && durationSeconds > 0 ? durationSeconds : null;
+      const wpm = dur ? Math.round(wordCount / (dur / 60)) : null;
+      const naLabel = lang === "en" ? "not measured" : "не измерено";
+
+      // Translate the raw acoustic loudness into a plain, human-readable level
+      // BEFORE handing it to the AI. This keeps scoring grounded in the real
+      // measurement while making sure the model never even sees a technical
+      // unit (dBFS) it could otherwise echo back to the player.
+      const loudnessLevel = (() => {
+        if (!loud.ok || !Number.isFinite(loud.meanVolumeDb)) return null;
+        if (Number.isFinite(loud.maxVolumeDb) && loud.maxVolumeDb >= -1) return "tooLoud" as const;
+        if (loud.meanVolumeDb >= -12) return "loud" as const;
+        if (loud.meanVolumeDb >= -20) return "good" as const;
+        if (loud.meanVolumeDb >= -30) return "quiet" as const;
+        return "tooQuiet" as const;
+      })();
+      const loudnessText = (() => {
+        if (!loudnessLevel) return naLabel;
+        const map = lang === "en"
+          ? { tooLoud: "too loud, the voice is overloaded", loud: "strong, maybe a touch too loud", good: "clear and confident", quiet: "a little quiet", tooQuiet: "barely audible (too quiet)" }
+          : { tooLoud: "слишком громко, голос перегружен", loud: "сильно, возможно чуть громко", good: "чисто и уверенно", quiet: "немного тихо", tooQuiet: "почти не слышно (слишком тихо)" };
+        return map[loudnessLevel];
+      })();
+
+      const signals = lang === "en"
+        ? `Measured signals (rely on these — do NOT guess volume or tempo):\n- Duration: ${dur ? dur.toFixed(1) + " s" : naLabel}\n- Words: ${wordCount}\n- Speech rate: ${wpm ? wpm + " words/min" : naLabel}\n- Voice loudness: ${loudnessText}\n- Filler words detected: ${fillerCount}`
+        : `Измеренные сигналы (опирайся на них — НЕ угадывай громкость и темп):\n- Длительность: ${dur ? dur.toFixed(1) + " c" : naLabel}\n- Слов: ${wordCount}\n- Темп речи: ${wpm ? wpm + " слов/мин" : naLabel}\n- Громкость голоса: ${loudnessText}\n- Слов-паразитов: ${fillerCount}`;
+
+      // --- Difficulty-aware leniency ---
+      // Early modules are scored gently and warmly (lead with strengths and
+      // progress); later modules raise the bar and get more honest — but never
+      // harsh. Module number comes from the client (1..67). When it's missing
+      // (trainer / free play) we fall back to the balanced middle tier.
+      const modNum = typeof moduleNumber === "number" && Number.isFinite(moduleNumber) ? moduleNumber : null;
+      const tier: "early" | "mid" | "advanced" =
+        modNum == null ? "mid" : modNum <= 10 ? "early" : modNum <= 30 ? "mid" : "advanced";
+      const leniencyDirective = (lang === "en"
+        ? {
+            early: `DIFFICULTY — EARLY module: the speaker is just starting out. Be especially gentle and encouraging. Lead with strengths and progress, give the benefit of the doubt, and round borderline scores UP. Frame any growth point as an easy next step, not a mistake — avoid 1-2 scores unless the delivery is clearly very weak.`,
+            mid: `DIFFICULTY — MID-LEVEL module: keep a warm, balanced tone. Acknowledge what worked, then give one honest, concrete thing to improve. Score fairly — neither inflating nor harsh.`,
+            advanced: `DIFFICULTY — ADVANCED module: the speaker is experienced now. Be honest and precise, hold a higher bar and do NOT inflate scores. Stay supportive and respectful — demanding, but never harsh or discouraging.`,
+          }
+        : {
+            early: `СЛОЖНОСТЬ — НАЧАЛЬНЫЙ модуль: игрок только начинает. Будь особенно мягким и подбадривающим. Начинай с сильных сторон и прогресса, трактуй спорное в пользу игрока и округляй пограничные баллы ВВЕРХ. Любую точку роста подавай как лёгкий следующий шаг, а не ошибку — избегай оценок 1-2, если подача не совсем уж слабая.`,
+            mid: `СЛОЖНОСТЬ — СРЕДНИЙ модуль: держи тёплый, сбалансированный тон. Отметь, что получилось, затем дай одно честное, конкретное улучшение. Оценивай справедливо — без завышения, но и без жёсткости.`,
+            advanced: `СЛОЖНОСТЬ — ПРОДВИНУТЫЙ модуль: игрок уже опытный. Будь честным и точным, держи более высокую планку и НЕ завышай баллы. Оставайся поддерживающим и уважительным — требовательно, но никогда не жёстко и не обескураживающе.`,
+          })[tier];
+
       const systemPrompt = lang === "en"
-        ? `You are a strict professional oratory expert. Evaluate the transcription of a public speech by six criteria (each 1 to 5):\n1. diction — Diction (clarity of articulation).\n2. expressiveness — Expressiveness.\n3. voice — Voice (volume / projection).\n4. confidence — Confidence.\n5. tempo — Tempo (pacing — neither rushed nor dragging).\n6. pauses — Pauses (meaningful silence at the right moments, not excessive filler/hesitation).\nFinal rating (stars): 1 if average < 2.5, 2 if 2.5-3.9, 3 if >= 4.0.\nReturn STRICTLY JSON:\n{"stars": <1|2|3>, "diction": <1-5>, "expressiveness": <1-5>, "voice": <1-5>, "confidence": <1-5>, "tempo": <1-5>, "pauses": <1-5>, "summary": "<one sentence>", "tip": "<one short, concrete coaching tip targeting the weakest criterion>", "errors": ["<error 1>", ...]}`
-        : `Ты — строгий профессиональный эксперт по ораторскому мастерству. Оцени транскрипцию публичного выступления по шести критериям (каждый от 1 до 5):\n1. diction — Дикция (чёткость артикуляции).\n2. expressiveness — Выразительность.\n3. voice — Голос (громкость / посыл).\n4. confidence — Уверенность.\n5. tempo — Темп (не торопится и не растягивает).\n6. pauses — Паузы (осмысленное молчание в нужных местах, без лишних запинок и слов-паразитов).\nИтоговый рейтинг (stars): 1 если средний балл < 2.5, 2 если 2.5–3.9, 3 если >= 4.0.\nВерни СТРОГО JSON:\n{"stars": <1|2|3>, "diction": <1-5>, "expressiveness": <1-5>, "voice": <1-5>, "confidence": <1-5>, "tempo": <1-5>, "pauses": <1-5>, "summary": "<одно предложение>", "tip": "<один короткий конкретный совет по самому слабому критерию>", "errors": ["<ошибка 1>", ...]}`;
+        ? `You are a warm, encouraging speech mentor who genuinely believes in the speaker. The speaker is reading a PRE-WRITTEN text aloud — so do NOT judge the text itself: its wording, content, grammar, structure and word choice are NOT graded. Score ONLY how it is VOICED (delivery) on 6 criteria (each 1-5), using the transcription for pacing/fillers AND the measured signals (do not guess volume/tempo — rely on the data):\n1. diction — articulation & intelligibility; lower it for mumbled/garbled/cut-off words.\n2. expressiveness — VOCAL expressiveness: intonation variety, emphasis, emotional colour in the VOICE (not the text's content).\n3. voice — loudness & projection. Use the measured "Voice loudness" level: "clear and confident" = strong (4-5); "a little quiet" or "barely audible" = weak (1-2); "too loud, the voice is overloaded" also loses points.\n4. confidence — steady, firm voice without hesitation; many fillers/false starts lower it.\n5. tempo — from speech rate: a comfortable conversational pace (~110-150 words/min) is best (4-5); racing through (>180) or dragging (<90) lowers it. If rate not measured, judge from phrasing.\n6. pauses — meaningful pauses are good; frequent fillers/hesitation are not (use the filler count).\nCalibration: 5 = experienced speaker, 3 = average, 1 = serious problems. Be honest, but kind — lead with what went well, then gently point to one thing to grow.\nstars: 1 if average < 2.5; 2 if 2.5-3.9; 3 if >= 4.0.\n${leniencyDirective}\nTONE — THIS IS CRITICAL:\n- Write "summary", "tip" and "errors" like a warm human mentor talking to a friend, NEVER like a technical analyzer. The speaker should finish feeling encouraged and motivated, not criticized.\n- NEVER use technical terms or units. Forbidden: dBFS, decibels, dB, clipping, overload, signal, amplitude, frequency, and bare numbers with units. Turn every issue into plain, caring language. For example:\n  • too loud / overloaded → "your voice sounds too loud and a little strained — try speaking a touch softer"\n  • too quiet / barely audible → "you're hard to hear — speak up a bit, with more confidence"\n  • mumbling → "some words blur together — open your mouth a little more and they'll land"\n  • rushing → "you're speeding up a little — give your words room to breathe"\n- "summary", "tip" and "errors" must be about DELIVERY only (mumbling, rushing, monotone, too quiet, fillers) — NEVER about the wording or content of the text.\nReturn STRICTLY JSON: {"stars":<1|2|3>,"diction":<1-5>,"expressiveness":<1-5>,"voice":<1-5>,"confidence":<1-5>,"tempo":<1-5>,"pauses":<1-5>,"summary":"<one warm sentence about delivery>","tip":"<one concrete, kind delivery tip for the weakest criterion>","errors":["<delivery issue in plain, supportive words>", ...]}`
+        : `Ты — тёплый, поддерживающий наставник по речи, который искренне верит в говорящего. Спикер читает вслух ЗАГОТОВЛЕННЫЙ текст — поэтому НЕ оценивай сам текст: его слова, содержание, грамматику, структуру и формулировки НЕ суди. Оценивай ТОЛЬКО то, как это ОЗВУЧЕНО (подачу), по 6 критериям (каждый 1-5), используя транскрипцию для темпа/слов-паразитов И измеренные сигналы (НЕ угадывай громкость/темп — опирайся на данные):\n1. diction — Дикция: чёткость и разборчивость; снижай за смазанные/оборванные слова.\n2. expressiveness — ВОКАЛЬНАЯ выразительность: интонационное разнообразие, акценты, эмоциональная окраска ГОЛОСА (не содержание текста).\n3. voice — Голос/громкость: опирайся на измеренный уровень «Громкость голоса»: «чисто и уверенно» = сильно (4-5); «немного тихо» или «почти не слышно» = слабо (1-2); «слишком громко, голос перегружен» тоже минус.\n4. confidence — Уверенность: ровный, твёрдый голос без колебаний; много слов-паразитов и оговорок снижают балл.\n5. tempo — Темп: по скорости речи: спокойный разговорный темп (~110-150 слов/мин) — лучше всего (4-5); тараторит (>180) или тянет (<90) — ниже. Если скорость не измерена — оцени по построению фраз.\n6. pauses — Паузы: осмысленные паузы хорошо; частые запинки/слова-паразиты плохо (учитывай число слов-паразитов).\nКалибровка: 5 = опытный спикер, 3 = средне, 1 = серьёзные проблемы. Будь честным, но добрым — сначала отметь, что получилось, потом мягко подскажи одно, над чем поработать.\nstars: 1 если средний < 2.5; 2 если 2.5-3.9; 3 если >= 4.0.\n${leniencyDirective}\nТОН — ЭТО КРИТИЧЕСКИ ВАЖНО:\n- Пиши "summary", "tip" и "errors" как тёплый живой наставник, говорящий с другом, НИКОГДА как технический анализатор. После обратной связи игрок должен чувствовать поддержку и желание продолжать, а не критику.\n- НИКОГДА не используй технические термины и единицы. Запрещено: dBFS, децибелы, дБ, клиппинг, перегруз, сигнал, амплитуда, частота и голые числа с единицами. Переводи каждую проблему на простой, тёплый язык. Например:\n  • слишком громко / перегруз → «твой голос звучит слишком громко и немного напряжённо — попробуй говорить чуть мягче»\n  • слишком тихо / почти не слышно → «тебя почти не слышно — говори увереннее и чуть громче»\n  • смазанность → «некоторые слова сливаются — открывай рот чуть шире, и они зазвучат чётко»\n  • спешка → «ты немного ускоряешься — дай словам пространство, не торопись»\n- "summary", "tip" и "errors" — ТОЛЬКО про подачу голосом (смазанность, спешка, монотонность, тихо, слова-паразиты), НИКОГДА про слова или содержание текста.\nВерни СТРОГО JSON: {"stars":<1|2|3>,"diction":<1-5>,"expressiveness":<1-5>,"voice":<1-5>,"confidence":<1-5>,"tempo":<1-5>,"pauses":<1-5>,"summary":"<одно тёплое предложение про подачу>","tip":"<один конкретный, добрый совет по подаче для самого слабого критерия>","errors":["<проблема подачи простыми, поддерживающими словами>", ...]}`;
 
       const topicLabel = lang === "en" ? "Speech topic" : "Тема выступления";
       const transcriptLabel = lang === "en" ? "Transcription" : "Транскрипция";
       const fallbackSummary = lang === "en" ? "Good performance!" : "Хорошее выступление!";
 
-      const resp = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `${topicLabel}: "${title ?? (lang === "en" ? "public speech" : "публичное выступление")}"\n\n${transcriptLabel}:\n${transcript}` },
-        ],
-        max_tokens: 400,
-        temperature: 0.3,
-        response_format: { type: "json_object" },
+      const out = await chatComplete({
+        system: systemPrompt,
+        user: `${topicLabel}: "${title ?? (lang === "en" ? "public speech" : "публичное выступление")}"\n\n${signals}\n\n${transcriptLabel}:\n${transcript}`,
+        maxTokens: 400,
+        json: true,
       });
 
       let parsed: any = {};
-      try { parsed = JSON.parse(resp.choices[0]?.message?.content ?? "{}"); } catch { parsed = {}; }
+      try { parsed = JSON.parse(out || "{}"); } catch { parsed = {}; }
 
       const stars = Math.min(3, Math.max(1, Math.round(parsed.stars ?? 2))) as 1 | 2 | 3;
       const scoreMap: Record<1 | 2 | 3, number> = { 1: 4, 2: 7, 3: 10 };

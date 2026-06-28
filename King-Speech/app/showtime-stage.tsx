@@ -7,6 +7,7 @@ import {
   Platform,
   Dimensions,
   Modal,
+  ScrollView,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -26,6 +27,12 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import { useLang, Lang } from "@/context/LangContext";
+import {
+  getShowtimeModule,
+  getModuleFromShowtimeId,
+} from "@/constants/showtimeLoader";
+import { playSfx, preloadSfx, unloadSfx } from "@/lib/sfx";
+import DevSkipButton from "@/components/DevSkipButton";
 
 // expo-av only on native
 let Audio: any = null;
@@ -4077,8 +4084,31 @@ const SPEECH_THEMES_EN: Record<string, SpeechTheme> = {
   },
 };
 
+// Russian Show Time speeches + module names now live in JSON (see
+// showtimeLoader). Merge them over the existing visual themes (gradients,
+// colors, stage interior, timer are preserved; only `title` + `speeches`
+// are replaced). Computed once and cached. English keeps the legacy themes.
+let RU_MERGED_THEMES: Record<string, SpeechTheme> | null = null;
+function getRuMergedThemes(): Record<string, SpeechTheme> {
+  if (RU_MERGED_THEMES) return RU_MERGED_THEMES;
+  const out: Record<string, SpeechTheme> = {};
+  for (const [id, theme] of Object.entries(SPEECH_THEMES)) {
+    const mod = getShowtimeModule(getModuleFromShowtimeId(id));
+    out[id] =
+      mod && mod.parts.length > 0
+        ? {
+            ...theme,
+            title: mod.title,
+            speeches: mod.parts.map((p) => ({ title: p.title, lines: p.lines })),
+          }
+        : theme;
+  }
+  RU_MERGED_THEMES = out;
+  return out;
+}
+
 export function getSpeechThemes(lang: Lang): Record<string, SpeechTheme> {
-  return lang === "en" ? SPEECH_THEMES_EN : SPEECH_THEMES;
+  return lang === "en" ? SPEECH_THEMES_EN : getRuMergedThemes();
 }
 
 // ── NOISE EFFECTS ─────────────────────────────────────────────────────────────
@@ -4412,6 +4442,14 @@ export default function ShowtimeStageScreen() {
   const [currentLine, setCurrentLine] = useState(0);
   const [started, setStarted] = useState(false);
   const [finished, setFinished] = useState(false);
+
+  // Teleprompter scroll mode: "manual" (player taps next) or "auto"
+  // (paragraphs advance on their own, highlighted, with a speed control).
+  const [scrollMode, setScrollMode] = useState<"manual" | "auto">("manual");
+  const [autoPaused, setAutoPaused] = useState(false);
+  const AUTO_SPEEDS = [0.5, 1, 1.5, 2];
+  const [speedIdx, setSpeedIdx] = useState(1); // default 1×
+  const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [noiseBubbles, setNoiseBubbles] = useState<NoiseBubble[]>([]);
   const bubbleIdRef = useRef(0);
   const noiseTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -4430,6 +4468,11 @@ export default function ShowtimeStageScreen() {
   const recordingUriRef = useRef<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
 
+  // Scrollable teleprompter: full speech is readable from the top and
+  // auto-follows the active line as the speaker advances.
+  const linesScrollRef = useRef<ScrollView>(null);
+  const lineYRef = useRef<Record<number, number>>({});
+
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
@@ -4441,6 +4484,12 @@ export default function ShowtimeStageScreen() {
 
   useEffect(() => {
     liveTagScale.value = withRepeat(withTiming(1.08, { duration: 700 }), -1, true);
+  }, []);
+
+  // Preload sound effects (generated once into cache) and free them on exit.
+  useEffect(() => {
+    preloadSfx(["swipe", "click", "applause"]).catch(() => {});
+    return () => { unloadSfx().catch(() => {}); };
   }, []);
 
   useEffect(() => {
@@ -4536,10 +4585,12 @@ export default function ShowtimeStageScreen() {
     if (isFinishingRef.current || finished) return;
     isFinishingRef.current = true;
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    if (autoTimerRef.current) { clearTimeout(autoTimerRef.current); autoTimerRef.current = null; }
     await stopRecording();
     noiseTimersRef.current.forEach(clearTimeout);
     noiseTimersRef.current = [];
     setFinished(true);
+    playSfx("applause").catch(() => {});
     setTimeout(() => {
       const uri = recordingUriRef.current ?? "";
       router.push({ pathname: "/showtime-playback", params: { recordingUri: uri, title: speech.title, levelId, mode } });
@@ -4579,6 +4630,7 @@ export default function ShowtimeStageScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (showTutorial) dismissTutorial();
     if (currentLine < speech.lines.length - 1) {
+      playSfx("swipe").catch(() => {});
       setCurrentLine((l) => l + 1);
     } else {
       await finishPerformance();
@@ -4588,6 +4640,55 @@ export default function ShowtimeStageScreen() {
   const prevLine = () => {
     if (currentLine > 0) setCurrentLine((l) => l - 1);
   };
+
+  // Keep the active line in view as the speaker advances. Aim a bit above
+  // center of the teleprompter so the active line sits in a comfortable zone
+  // (not jammed at the very top or bottom).
+  useEffect(() => {
+    const y = lineYRef.current[currentLine];
+    if (y != null) {
+      linesScrollRef.current?.scrollTo({ y: Math.max(0, y - SH * 0.12), animated: true });
+    }
+  }, [currentLine]);
+
+  // Auto-swipe: advance the active line on a timer. Pace scales with line
+  // length and the chosen speed. Re-runs whenever the line changes, so it
+  // naturally chains line→line; pausing or switching to manual stops it.
+  useEffect(() => {
+    if (!started || finished || scrollMode !== "auto" || autoPaused) return;
+    const speed = AUTO_SPEEDS[speedIdx] ?? 1;
+    const isLast = currentLine >= speech.lines.length - 1;
+    const line = speech.lines[currentLine] ?? "";
+    const words = line.trim().split(/\s+/).filter(Boolean).length;
+    const readMs = Math.max(1700, 500 + words * 360) / speed;
+    const delay = isLast ? 1600 / speed : readMs;
+    autoTimerRef.current = setTimeout(() => {
+      if (isLast) {
+        finishPerformance();
+      } else {
+        playSfx("swipe").catch(() => {});
+        setCurrentLine((l) => l + 1);
+      }
+    }, delay);
+    return () => {
+      if (autoTimerRef.current) {
+        clearTimeout(autoTimerRef.current);
+        autoTimerRef.current = null;
+      }
+    };
+    // finishPerformance is stable enough for this purpose; excluded from deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [started, finished, scrollMode, autoPaused, speedIdx, currentLine, speech.lines]);
+
+  const cycleSpeed = useCallback(() => {
+    Haptics.selectionAsync().catch(() => {});
+    setSpeedIdx((i) => (i + 1) % AUTO_SPEEDS.length);
+  }, []);
+
+  const toggleAutoPause = useCallback(() => {
+    Haptics.selectionAsync().catch(() => {});
+    setAutoPaused((p) => !p);
+  }, []);
 
   const curtainStyle = useAnimatedStyle(() => ({ opacity: curtainOpacity.value }));
   const audienceStyle = useAnimatedStyle(() => ({ opacity: audienceReveal.value }));
@@ -4636,6 +4737,36 @@ export default function ShowtimeStageScreen() {
                 <Text key={i} style={[s.previewLine, { fontFamily: "Inter_400Regular", opacity: 0.5 - i * 0.08 }]}>{line}</Text>
               ))}
               <Text style={[s.previewLine, { fontFamily: "Inter_400Regular", opacity: 0.18 }]}>...</Text>
+            </View>
+            {/* Scroll-mode selector */}
+            <View style={s.modeRow}>
+              {(["manual", "auto"] as const).map((m) => {
+                const active = scrollMode === m;
+                return (
+                  <Pressable
+                    key={m}
+                    onPress={() => { Haptics.selectionAsync().catch(() => {}); setScrollMode(m); }}
+                    style={[
+                      s.modeBtn,
+                      {
+                        borderColor: active ? theme.accentColor : "rgba(255,255,255,0.18)",
+                        backgroundColor: active ? theme.accentColor + "22" : "rgba(255,255,255,0.04)",
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={m === "manual" ? "hand-left-outline" : "play-forward-outline"}
+                      size={18}
+                      color={active ? theme.accentColor : "rgba(255,255,255,0.6)"}
+                    />
+                    <Text style={[s.modeBtnText, { fontFamily: "Inter_600SemiBold", color: active ? theme.accentColor : "rgba(255,255,255,0.6)" }]}>
+                      {m === "manual"
+                        ? (lang === "en" ? "Manual" : "Механический")
+                        : (lang === "en" ? "Auto-scroll" : "Авто-свайп")}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
             <StartButton accentColor={theme.accentColor} onPress={handleStart} label={t("goOnStage")} />
             <Pressable onPress={() => router.back()} style={({ pressed }) => [s.curtainExitBtn, { opacity: pressed ? 0.6 : 1 }]}>
@@ -4755,17 +4886,47 @@ export default function ShowtimeStageScreen() {
       {/* Speech panel */}
       {started && !finished && (
         <Animated.View style={[s.speechPanel, speechStyle, { paddingBottom: bottomPad + 14 }]}>
-          {/* Lines */}
-          <View style={s.linesContainer}>
+          {/* Lines — scrollable so the full speech is readable from the top */}
+          <ScrollView
+            ref={linesScrollRef}
+            style={s.linesScroll}
+            contentContainerStyle={s.linesContainer}
+            showsVerticalScrollIndicator={false}
+          >
             {speech.lines.map((line, i) => (
-              <SpeechLine key={i} text={line} isActive={i === currentLine} isDone={i < currentLine} />
+              <View
+                key={i}
+                onLayout={(e) => {
+                  lineYRef.current[i] = e.nativeEvent.layout.y;
+                }}
+              >
+                <SpeechLine text={line} isActive={i === currentLine} isDone={i < currentLine} />
+              </View>
             ))}
-          </View>
+          </ScrollView>
 
           {/* Progress bar */}
           <View style={s.progressBg}>
             <View style={[s.progressFill, { backgroundColor: theme.accentColor, width: `${((currentLine + 1) / speech.lines.length) * 100}%` as any }]} />
           </View>
+
+          {/* Auto-scroll controls: pause/play + speed */}
+          {scrollMode === "auto" && (
+            <View style={s.autoRow}>
+              <Pressable onPress={toggleAutoPause} style={({ pressed }) => [s.autoChip, { borderColor: theme.accentColor + "55", opacity: pressed ? 0.7 : 1 }]}>
+                <Ionicons name={autoPaused ? "play" : "pause"} size={16} color={theme.accentColor} />
+                <Text style={[s.autoChipText, { fontFamily: "Inter_600SemiBold", color: theme.accentColor }]}>
+                  {autoPaused ? (lang === "en" ? "Play" : "Старт") : (lang === "en" ? "Pause" : "Пауза")}
+                </Text>
+              </Pressable>
+              <Pressable onPress={cycleSpeed} style={({ pressed }) => [s.autoChip, { borderColor: theme.accentColor + "55", opacity: pressed ? 0.7 : 1 }]}>
+                <Ionicons name="speedometer-outline" size={16} color={theme.accentColor} />
+                <Text style={[s.autoChipText, { fontFamily: "Inter_700Bold", color: theme.accentColor }]}>
+                  {AUTO_SPEEDS[speedIdx]}×
+                </Text>
+              </Pressable>
+            </View>
+          )}
 
           {/* Navigation */}
           <View style={s.navRow}>
@@ -4806,6 +4967,8 @@ export default function ShowtimeStageScreen() {
           </View>
         </Animated.View>
       )}
+
+      <DevSkipButton levelId={levelId} />
     </View>
   );
 }
@@ -4834,9 +4997,23 @@ const s = StyleSheet.create({
   curtainHint: { fontSize: 14, color: "rgba(255,255,255,0.4)", textAlign: "center", lineHeight: 20 },
   previewBox: { alignItems: "center", gap: 2, marginTop: 4, paddingHorizontal: 12 },
   previewLine: { fontSize: 13, color: "rgba(255,209,102,0.7)", textAlign: "center", lineHeight: 20 },
-  // Speech panel
-  speechPanel: { position: "absolute", bottom: 0, left: 0, right: 0, paddingTop: 16, paddingHorizontal: 18, gap: 12 },
-  linesContainer: { alignItems: "center", gap: 0 },
+  // Scroll-mode selector (curtain)
+  modeRow: { flexDirection: "row", gap: 10, marginTop: 6 },
+  modeBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 14, borderWidth: 1.5 },
+  modeBtnText: { fontSize: 14 },
+  // Auto controls (panel)
+  autoRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
+  autoChip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, borderWidth: 1, backgroundColor: "rgba(0,0,0,0.25)" },
+  autoChipText: { fontSize: 13 },
+  // Speech panel — raised off the bottom so the text sits comfortably and
+  // never jams into the very bottom edge.
+  // Bounded reading window: starts just below the stage floor (SH*0.48) and
+  // runs to the safe-area bottom. A fixed top boundary stops long speeches
+  // from spilling up into the audience; the text area flexes inside it so
+  // short speeches sit vertically centered and long ones scroll within bounds.
+  speechPanel: { position: "absolute", top: SH * 0.5, bottom: 0, left: 0, right: 0, paddingTop: 16, paddingHorizontal: 18, gap: 12 },
+  linesScroll: { flex: 1, width: "100%" },
+  linesContainer: { flexGrow: 1, justifyContent: "center", alignItems: "center", gap: 0, paddingVertical: 4 },
   progressBg: { height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.1)", overflow: "hidden" },
   progressFill: { height: 3, borderRadius: 2, backgroundColor: "#FFD166" },
   navRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },

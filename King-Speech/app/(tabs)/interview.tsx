@@ -34,6 +34,9 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { getApiUrl } from "@/lib/query-client";
+import { useJennyVoice } from "@/hooks/useJennyVoice";
+import { usePremium } from "@/hooks/usePremium";
+import JennyPaywall from "@/components/JennyPaywall";
 import { useGame, type LevelType } from "@/context/GameContext";
 import { useLang, Lang } from "@/context/LangContext";
 import JennyAvatar from "@/components/JennyAvatar";
@@ -1589,6 +1592,8 @@ export default function InterviewScreen() {
   const [skipCount, setSkipCount] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
   const [avatarState, setAvatarState] = useState<AvatarState>("idle");
+  const jennyVoice = useJennyVoice();
+  const { isPremium, loading: premiumLoading, setPremium } = usePremium();
 
   const [currentQ, setCurrentQ] = useState("");
   const [displayedQ, setDisplayedQ] = useState("");
@@ -1707,15 +1712,25 @@ export default function InterviewScreen() {
   const playQuestion = useCallback((text: string) => {
     setCurrentQ(text);
     setAvatarState("speaking");
-    startTypewriter(text, setDisplayedQ, () => {
-      const dur = Math.max(2400, text.trim().split(/\s+/).length * 300);
-      if (speakTimerRef.current) clearTimeout(speakTimerRef.current);
-      speakTimerRef.current = setTimeout(() => setAvatarState("idle"), dur);
+    startTypewriter(text, setDisplayedQ);
+    // Estimated-duration fallback so the avatar stops "speaking" even when the
+    // voice backend isn't reachable. If real audio starts, we cancel this and
+    // let the actual playback end drive the idle transition instead.
+    const dur = Math.max(2400, text.trim().split(/\s+/).length * 300);
+    if (speakTimerRef.current) clearTimeout(speakTimerRef.current);
+    speakTimerRef.current = setTimeout(() => setAvatarState("idle"), dur);
+    jennyVoice.speak(text, {
+      onStart: () => {
+        if (speakTimerRef.current) clearTimeout(speakTimerRef.current);
+      },
+      onEnd: () => setAvatarState("idle"),
     });
-  }, [startTypewriter]);
+  }, [startTypewriter, jennyVoice]);
 
   const startRecording = useCallback(async () => {
     stopReactionTimer();
+    jennyVoice.stop(); // Jenny stops talking the moment the user starts answering
+    if (speakTimerRef.current) clearTimeout(speakTimerRef.current);
     setLiveTranscript("");
 
     if (Platform.OS === "web") {
@@ -1751,7 +1766,7 @@ export default function InterviewScreen() {
         setPhase("waiting");
       }
     }
-  }, [stopReactionTimer, startSpeechRecognition, startAnswerTimer]);
+  }, [stopReactionTimer, startSpeechRecognition, startAnswerTimer, jennyVoice]);
 
   const stopAndProcessRef = useRef<(() => void) | null>(null);
   const startSessionRef = useRef<(() => void) | null>(null);
@@ -2089,12 +2104,21 @@ export default function InterviewScreen() {
   useEffect(() => {
     if (macroPhase === "greeting" && greeting) {
       setAvatarState("speaking");
-      startTypewriter(greeting, setDisplayedG, () => {
-        if (speakTimerRef.current) clearTimeout(speakTimerRef.current);
-        speakTimerRef.current = setTimeout(() => setAvatarState("idle"), 800);
+      startTypewriter(greeting, setDisplayedG);
+      const dur = Math.max(2400, greeting.trim().split(/\s+/).length * 300);
+      if (speakTimerRef.current) clearTimeout(speakTimerRef.current);
+      speakTimerRef.current = setTimeout(() => setAvatarState("idle"), dur);
+      jennyVoice.speak(greeting, {
+        onStart: () => {
+          if (speakTimerRef.current) clearTimeout(speakTimerRef.current);
+        },
+        onEnd: () => setAvatarState("idle"),
       });
     }
-  }, [macroPhase, greeting]);
+  }, [macroPhase, greeting, jennyVoice, startTypewriter]);
+
+  // Stop Jenny's voice if the screen unmounts mid-sentence.
+  useEffect(() => () => jennyVoice.stop(), [jennyVoice]);
 
   const handleInterviewLost = useCallback(async () => {
     stopReactionTimer();
@@ -2159,6 +2183,27 @@ export default function InterviewScreen() {
       } catch {}
     };
   }, []);
+
+  // Jenny Interview is a Premium feature — the whole flow sits behind the
+  // paywall. "Unlock for testing" (onDevUnlock) lets us in without a real
+  // purchase until the store / RevenueCat is configured.
+  if (!premiumLoading && !isPremium) {
+    return (
+      <JennyPaywall
+        lang={lang === "en" ? "en" : "ru"}
+        onPurchase={() =>
+          Alert.alert(
+            lang === "en" ? "Coming soon" : "Скоро будет",
+            lang === "en"
+              ? "In-app purchases will be enabled once the store (RevenueCat) is set up."
+              : "Покупки включатся, когда будет настроен магазин (RevenueCat).",
+          )
+        }
+        onDevUnlock={() => setPremium(true)}
+        onClose={() => router.replace("/(tabs)")}
+      />
+    );
+  }
 
   if (macroPhase === "lobby" || !dailyPlan) {
     if (!dailyPlan) return <LoadingOverlay />;

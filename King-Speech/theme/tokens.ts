@@ -94,6 +94,3 @@ export function darkenHex(hex: string, amount = 0.35): string {
     Math.round(c * (1 - amount)).toString(16).padStart(2, "0");
   return `#${mix(r)}${mix(g)}${mix(b)}`;
 }
-
-export const KAZAKH_GLYPH_TEST =
-  "Сәлеметсіз бе! Қош келдіңіз. Ә Ғ Қ Ң Ө Ұ Ү Һ І — ә ғ қ ң ө ұ ү һ і";

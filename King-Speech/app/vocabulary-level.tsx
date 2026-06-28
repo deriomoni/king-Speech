@@ -25,6 +25,7 @@ import {
   type ExpoSpeechRecognitionErrorEvent,
 } from "@/lib/speechRecognition";
 import type { EventSubscription } from "expo-modules-core";
+import DevSkipButton from "@/components/DevSkipButton";
 import Animated, {
   FadeInDown,
   FadeOut,
@@ -44,7 +45,8 @@ import {
   VocabWord,
   checkSynonymAdvanced,
 } from "@/constants/vocabularyData";
-import { useGame } from "@/context/GameContext";
+import { useGame, MODULE_COLORS } from "@/context/GameContext";
+import { useModuleTransition } from "@/context/ModuleTransitionContext";
 import { WAVEFORM_BAR_MAX, useWaveformBars } from "@/hooks/useWaveformBars";
 
 type Phase = "tutorial" | "spin" | "play" | "result";
@@ -78,6 +80,13 @@ export default function VocabularyLevelScreen() {
   }>();
   const levelId = String(params.levelId ?? "vocabulary");
   const { addXP, markLevelComplete } = useGame();
+  const { triggerModuleTransition } = useModuleTransition();
+  // Vocabulary is a module's LAST level, so finishing it crosses into the next
+  // module. Resolve the current module number (from the param, fallback to id).
+  const moduleNum =
+    parseInt(String(params.moduleId ?? ""), 10) ||
+    parseInt(levelId.replace(/\D/g, ""), 10) ||
+    1;
 
   const [phase, setPhase] = useState<Phase>("tutorial");
   const [tutorialChecked, setTutorialChecked] = useState(false);
@@ -201,11 +210,22 @@ export default function VocabularyLevelScreen() {
             const xp = Math.min(50, foundSynonyms.length * 6);
             addXP(xp);
             markLevelComplete(levelId);
+            // Module boundary: finishing vocabulary advances to the next module.
+            // Play the full-screen corridor (current → next), floor tinted to the
+            // next module's color, then return to the map (already auto-scrolled
+            // to the new module). Skipped at the final module.
+            const nextModule = moduleNum + 1;
+            if (nextModule <= 67) {
+              const color = MODULE_COLORS[nextModule]?.color ?? "#9468FB";
+              triggerModuleTransition(moduleNum, nextModule, color);
+            }
             if (router.canGoBack()) router.back();
             else router.replace("/(tabs)");
           }}
         />
       )}
+
+      <DevSkipButton levelId={levelId} />
     </View>
   );
 }
@@ -287,11 +307,15 @@ function SpinPhase({
   onPicked: (w: VocabWord) => void;
   onClose: () => void;
 }) {
-  const pool = useMemo(() => {
+  // Frozen ONCE at mount. Previously this was a useMemo keyed on excludeIds —
+  // when the parent recorded the picked word (excludeIds changed) the pool
+  // reshuffled mid-stop, so the roulette flipped to a different word than the
+  // one the player landed on. Freezing keeps the landed word stable.
+  const [pool] = useState<VocabWord[]>(() => {
     const available = VOCAB_WORDS_RU.filter((w) => !excludeIds.includes(w.id));
     const base = available.length > 0 ? available : VOCAB_WORDS_RU;
     return [...base].sort(() => Math.random() - 0.5);
-  }, [excludeIds]);
+  });
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSpinning, setIsSpinning] = useState(true);
@@ -308,6 +332,9 @@ function SpinPhase({
   const prev = pool[(currentIndex - 1 + pool.length) % pool.length];
   const current = pool[currentIndex];
   const next = pool[(currentIndex + 1) % pool.length];
+  // Once stopped, the centre always shows the FROZEN picked word — never a
+  // live tick — so what you land on is exactly what you play.
+  const center = pickedWord ?? current;
 
   // Auto-stop the roulette after 6s if the player hasn't pressed STOP.
   // Silent — no on-screen countdown — just picks whatever word is centered.
@@ -373,7 +400,7 @@ function SpinPhase({
     onPicked(current);
   };
 
-  const diffLabel = DIFFICULTY_LABEL_RU[current.difficulty];
+  const diffLabel = DIFFICULTY_LABEL_RU[center.difficulty];
 
   return (
     <View style={styles.spinRoot}>
@@ -399,7 +426,7 @@ function SpinPhase({
             numberOfLines={1}
             adjustsFontSizeToFit
           >
-            {current.word.toUpperCase()}
+            {center.word.toUpperCase()}
           </Animated.Text>
           <Text style={styles.rouletteEdge} numberOfLines={1}>
             {next.word}
@@ -407,7 +434,7 @@ function SpinPhase({
         </View>
 
         <Text style={styles.rouletteMeta}>
-          {POS_LABELS_RU[current.partOfSpeech]} · {diffLabel}
+          {POS_LABELS_RU[center.partOfSpeech]} · {diffLabel}
         </Text>
       </View>
 
@@ -1103,6 +1130,14 @@ function ResultPhase({
     return () => clearInterval(id);
   }, [foundSynonyms.length, score]);
 
+  // Full synonym set with found/missed split, so the player sees every word
+  // that fit — including the ones they missed (that's how they learn).
+  const total = word.synonyms.length;
+  const isFound = (s: string) =>
+    foundSynonyms.some((f) => f.trim().toLowerCase() === s.trim().toLowerCase());
+  const foundCount = word.synonyms.filter(isFound).length;
+  const missedCount = Math.max(0, total - foundCount);
+
   return (
     <ScrollView
       style={{ flex: 1 }}
@@ -1112,29 +1147,39 @@ function ResultPhase({
       <Text style={styles.resultTitle}>Время вышло!</Text>
       <Text style={styles.resultWord}>Слово: {word.word.toUpperCase()}</Text>
 
-      <Text style={styles.resultBigCount}>{animFound}</Text>
-      <Text style={styles.resultScore}>{animScore} очков</Text>
+      <Text style={styles.resultBigCount}>{animFound} / {total}</Text>
+      <Text style={styles.resultScore}>+{animScore} очков</Text>
 
-      {foundSynonyms.length > 0 ? (
-        <>
-          <Text style={styles.resultSubtitle}>Ты назвал:</Text>
-          <View style={styles.synList}>
-            {foundSynonyms.map((syn, idx) => (
-              <Animated.View
-                key={`${syn}-${idx}`}
-                entering={FadeInDown.delay(idx * 80).duration(220)}
-                style={styles.foundChip}
-              >
-                <Text style={styles.foundChipText}>+ {syn}</Text>
-              </Animated.View>
-            ))}
-          </View>
-        </>
-      ) : (
-        <Text style={styles.resultEncourage}>
-          В следующий раз получится!
-        </Text>
-      )}
+      <View style={styles.progressTrack}>
+        <Animated.View
+          entering={FadeInDown.duration(400)}
+          style={[styles.progressFill, { width: `${total ? (foundCount / total) * 100 : 0}%` }]}
+        />
+      </View>
+
+      <Text style={styles.synSectionLabel}>Синонимы к слову «{word.word}»</Text>
+      <View style={styles.synList}>
+        {word.synonyms.map((syn, idx) => {
+          const found = isFound(syn);
+          return (
+            <Animated.View
+              key={`${syn}-${idx}`}
+              entering={FadeInDown.delay(idx * 55).duration(240)}
+              style={found ? styles.foundChip : styles.missedChip}
+            >
+              <Text style={found ? styles.foundChipText : styles.missedChipText}>
+                {found ? "✓ " : ""}{syn}
+              </Text>
+            </Animated.View>
+          );
+        })}
+      </View>
+      <Text style={styles.statsLine}>
+        Назвал {foundCount} · Пропустил {missedCount}
+      </Text>
+      {foundCount === 0 ? (
+        <Text style={styles.resultEncourage}>В следующий раз получится!</Text>
+      ) : null}
 
       <Pressable
         onPress={onNext}
@@ -1558,6 +1603,47 @@ const styles = StyleSheet.create({
     color: "#C0DD97",
     fontSize: 13,
     fontWeight: "500",
+    fontFamily: "Inter_500Medium",
+  },
+  missedChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.14)",
+  },
+  missedChipText: {
+    color: "rgba(255,255,255,0.5)",
+    fontSize: 13,
+    fontWeight: "500",
+    fontFamily: "Inter_500Medium",
+  },
+  progressTrack: {
+    width: "100%",
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    marginTop: 22,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 5,
+    backgroundColor: GREEN_BORDER,
+  },
+  synSectionLabel: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 14,
+    marginTop: 28,
+    marginBottom: 14,
+    alignSelf: "flex-start",
+    fontFamily: "Inter_600SemiBold",
+  },
+  statsLine: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 14,
+    marginTop: 18,
     fontFamily: "Inter_500Medium",
   },
 

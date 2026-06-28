@@ -1,7 +1,7 @@
 // King Speech brand tokens — see theme/tokens.ts and docs/brand/
 import { colors as brandColors } from "@/theme/tokens";
 
-export { colors, radii, spring, typography, LEVEL_PALETTE_ORDER, darkenHex, KAZAKH_GLYPH_TEST } from "@/theme/tokens";
+export { colors, radii, spring, typography, LEVEL_PALETTE_ORDER, darkenHex } from "@/theme/tokens";
 
 const PRIMARY = brandColors.purple;
 const PRIMARY_DEEP = brandColors.purpleDeep;

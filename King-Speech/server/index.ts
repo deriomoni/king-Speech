@@ -238,14 +238,16 @@ function setupErrorHandler(app: express.Application) {
   setupErrorHandler(app);
 
   const port = parseInt(process.env.PORT || "5000", 10);
-  server.listen(
-    {
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    },
-    () => {
-      log(`express server serving on port ${port}`);
-    },
-  );
+  // `reusePort` (SO_REUSEPORT) is unsupported on Windows and throws ENOTSUP —
+  // only enable it off-Windows (it was needed for Replit's multi-process setup).
+  const listenOpts: { port: number; host: string; reusePort?: boolean } = {
+    port,
+    host: "0.0.0.0",
+  };
+  if (process.platform !== "win32") {
+    listenOpts.reusePort = true;
+  }
+  server.listen(listenOpts, () => {
+    log(`express server serving on port ${port}`);
+  });
 })();

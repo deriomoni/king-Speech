@@ -19,7 +19,6 @@ import { useAuth } from "@/context/AuthContext";
 import { useDevTools } from "@/context/DevToolsContext";
 import { useRouter } from "expo-router";
 import { useTheme, type Theme, type ThemeMode } from "@/context/ThemeContext";
-import { KAZAKH_GLYPH_TEST } from "@/theme/tokens";
 
 const SIGN_OUT = "#E5484D";
 
@@ -180,7 +179,7 @@ export default function SettingsScreen() {
   const { resetProgress } = useGame();
   const { lang: appLang, setLang: setAppLang, t } = useLang();
   const { user, signOut } = useAuth();
-  const { isOpenTestingEnabled, setOpenTestingEnabled } = useDevTools();
+  const { isOpenTestingEnabled, setOpenTestingEnabled, isDevSkipEnabled, setDevSkipEnabled } = useDevTools();
   const router = useRouter();
 
   const [sound, setSound] = useState(true);
@@ -407,8 +406,21 @@ export default function SettingsScreen() {
               toggle
               toggleVal={isOpenTestingEnabled}
               onToggle={setOpenTestingEnabled}
-              isLast
+              isLast={!__DEV__}
             />
+            {/* Dev-only Skip mode. Gated behind __DEV__ so it is stripped from
+                production builds and never ships to players. */}
+            {__DEV__ && (
+              <Row
+                theme={theme}
+                icon="play-skip-forward-outline"
+                label="Skip уровней (dev)"
+                toggle
+                toggleVal={isDevSkipEnabled}
+                onToggle={setDevSkipEnabled}
+                isLast
+              />
+            )}
           </Section>
         </Animated.View>
 
@@ -430,39 +442,6 @@ export default function SettingsScreen() {
             />
           </Section>
         </Animated.View>
-
-        {__DEV__ ? (
-          <Animated.View entering={FadeInDown.delay(360).duration(400)}>
-            <Section theme={theme} title="Font glyph test (dev)">
-              <View style={styles.glyphBlock}>
-                <Text
-                  style={[
-                    styles.glyphLabel,
-                    { color: theme.text, fontFamily: "Rubik_700Bold" },
-                  ]}
-                >
-                  Rubik: {KAZAKH_GLYPH_TEST}
-                </Text>
-                <Text
-                  style={[
-                    styles.glyphLabel,
-                    { color: theme.text, fontFamily: "Nunito_400Regular" },
-                  ]}
-                >
-                  Nunito: {KAZAKH_GLYPH_TEST}
-                </Text>
-                <Text
-                  style={[
-                    styles.glyphLabel,
-                    { color: theme.text, fontFamily: "Literata_400Regular" },
-                  ]}
-                >
-                  Literata: {KAZAKH_GLYPH_TEST}
-                </Text>
-              </View>
-            </Section>
-          </Animated.View>
-        ) : null}
 
         <Animated.View entering={FadeInDown.delay(380).duration(400)} style={styles.brand}>
           <View
@@ -569,14 +548,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: "Nunito_400Regular",
     marginTop: 1,
-  },
-  glyphBlock: {
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  glyphLabel: {
-    fontSize: 13,
-    lineHeight: 20,
   },
 });

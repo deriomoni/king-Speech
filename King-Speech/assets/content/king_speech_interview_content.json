@@ -1,0 +1,1007 @@
+[
+  {
+    "module": 1,
+    "theme": "Знакомство",
+    "theme_en": "Getting to know you",
+    "q": [
+      ["Расскажи немного о себе — чем занимаешься и что любишь делать в свободное время?", "Как обычно проходит твой день? Что в нём самое приятное?", "Чем ты увлекаешься? Расскажи о любимом занятии."],
+      ["Какой твой любимый жанр музыки? Если бы можно было слушать только один — какой бы выбрал?", "Какое твоё любимое блюдо и почему именно оно?", "Расскажи про место, где тебе всегда хорошо."],
+      ["Если бы у тебя появился свободный день только для себя — как бы ты его провёл?", "Что поднимает тебе настроение в обычный день?", "Какой подарок тебе было бы приятнее всего получить?"]
+    ],
+    "q_en": [
+      ["Tell us a little about yourself — what do you do and what do you enjoy in your free time?", "What does your usual day look like? What's the nicest part of it?", "What are you into? Tell us about a favorite hobby."],
+      ["What's your favorite music genre? If you could only listen to one for life, which would it be?", "What's your favorite dish, and why that one?", "Tell us about a place where you always feel good."],
+      ["If you had a free day just for yourself, how would you spend it?", "What lifts your mood on an ordinary day?", "What gift would you be happiest to receive?"]
+    ]
+  },
+  {
+    "module": 2,
+    "theme": "Тишина — тоже часть речи",
+    "theme_en": "Silence is also speech",
+    "q": [
+      ["Где тебе нравится бывать в тишине — дома, на природе, где-то ещё?", "Любишь тишину или тебе комфортнее с музыкой и звуками вокруг?", "В какой момент дня тебе спокойнее всего?"],
+      ["Расскажи про занятие, в котором приятно побыть наедине с собой.", "Какая погода тебе нравится больше всего и под какое настроение?", "Есть место, куда хочется сбежать ото всех — какое оно?"],
+      ["Что для тебя лучший отдых — шумная компания или тихий вечер?", "Помогает ли тебе пауза или прогулка, когда нужно подумать?", "Что ты любишь делать в полной тишине?"]
+    ],
+    "q_en": [
+      ["Where do you like to be in silence — at home, in nature, somewhere else?", "Do you enjoy silence, or are you more comfortable with music and sounds around you?", "What time of day feels calmest to you?"],
+      ["Tell us about something you enjoy doing on your own.", "What weather do you like most, and what mood does it bring?", "Is there a place you escape to from everyone — what is it like?"],
+      ["What's better rest for you — a lively crowd or a quiet evening?", "Does a pause or a walk help you when you need to think?", "What do you love doing in complete silence?"]
+    ]
+  },
+  {
+    "module": 3,
+    "theme": "Ясность — вежливость мастера",
+    "theme_en": "Clarity is the master's courtesy",
+    "q": [
+      ["Расскажи про фильм, который недавно произвёл на тебя впечатление.", "Какую книгу ты читал последней и какое впечатление она оставила?", "О чём ты можешь рассказывать долго и с удовольствием?"],
+      ["Если бы ты стал учителем на один день — какой предмет преподавал бы и почему?", "Объясни простыми словами своё хобби тому, кто о нём ничего не знает.", "Какую тему тебе всегда легко объяснить друзьям?"],
+      ["Что тебе помогает понятно донести свою мысль до других?", "Какой совет ты бы дал тому, кто стесняется говорить?", "Что для тебя значит говорить честно и по делу?"]
+    ],
+    "q_en": [
+      ["Tell us about a film that recently impressed you.", "What book did you read last, and what impression did it leave?", "What's something you can talk about for a long time and with joy?"],
+      ["If you became a teacher for one day — what subject would you teach and why?", "Explain your hobby in simple words to someone who knows nothing about it.", "What topic is always easy for you to explain to friends?"],
+      ["What helps you get your point across clearly to others?", "What advice would you give someone who's shy about speaking?", "What does speaking honestly and to the point mean to you?"]
+    ]
+  },
+  {
+    "module": 4,
+    "theme": "Слова — ключи к сердцам",
+    "theme_en": "Words are keys to hearts",
+    "q": [
+      ["Какие слова или комплимент тебе приятнее всего слышать?", "Кто умеет поддержать тебя парой слов?", "Какое доброе слово тебе однажды запомнилось надолго?"],
+      ["Расскажи про человека, чьи слова на тебя повлияли.", "Какой цвет, по-твоему, тебя характеризует и почему?", "Какую фразу ты часто говоришь близким?"],
+      ["Что важнее в разговоре — что сказано или как сказано?", "Как ты обычно поддерживаешь друга, когда ему трудно?", "Какие слова легко поднимают тебе настроение?"]
+    ],
+    "q_en": [
+      ["What words or compliment do you most enjoy hearing?", "Who knows how to support you with just a couple of words?", "What kind word once stayed with you for a long time?"],
+      ["Tell us about a person whose words influenced you.", "What color do you think describes you, and why?", "What phrase do you often say to people close to you?"],
+      ["What matters more in a conversation — what is said or how it's said?", "How do you usually support a friend when they're having a hard time?", "What words easily lift your mood?"]
+    ]
+  },
+  {
+    "module": 5,
+    "theme": "Действие сильнее слов",
+    "theme_en": "Actions speak louder than words",
+    "q": [
+      ["Чем ты любишь заниматься на выходных?", "Что давно хотел попробовать — спорт, хобби, поездку?", "Какое дело даёт тебе ощущение, что день прошёл не зря?"],
+      ["В какую страну или город ты бы хотел отправиться и почему?", "Расскажи про что-то, что ты сделал своими руками.", "Какой маленький шаг недавно вывел тебя из зоны комфорта?"],
+      ["Что тебе проще — придумать или сделать?", "С чего ты обычно начинаешь, когда берёшься за новое дело?", "Какая привычка реально улучшила твою жизнь?"]
+    ],
+    "q_en": [
+      ["What do you like to do on weekends?", "What have you long wanted to try — a sport, a hobby, a trip?", "What activity gives you the feeling the day wasn't wasted?"],
+      ["What country or city would you love to visit, and why?", "Tell us about something you made with your own hands.", "What small step recently took you out of your comfort zone?"],
+      ["What's easier for you — coming up with an idea or doing it?", "How do you usually start when you take on something new?", "What habit has genuinely improved your life?"]
+    ]
+  },
+  {
+    "module": 6,
+    "theme": "Красота в глазах смотрящего",
+    "theme_en": "Beauty is in the eye of the beholder",
+    "q": [
+      ["Какая твоя любимая картина, фото или вид — и чем он тебе нравится?", "Что делает для тебя обычный день красивым?", "Какое место кажется тебе самым красивым из тех, где ты бывал?"],
+      ["Расскажи про момент, который показался тебе по-настоящему красивым.", "Какая музыка кажется тебе красивой?", "Что в людях ты считаешь красивым?"],
+      ["Красота — это про внешнее или про что-то другое?", "Где ты чаще всего замечаешь красоту вокруг?", "Что бы ты показал гостю, чтобы удивить красотой своего города?"]
+    ],
+    "q_en": [
+      ["What's your favorite painting, photo, or view — and what do you like about it?", "What makes an ordinary day beautiful for you?", "What's the most beautiful place you've ever been to?"],
+      ["Tell us about a moment that felt truly beautiful to you.", "What music feels beautiful to you?", "What do you find beautiful in people?"],
+      ["Is beauty about looks or about something else?", "Where do you most often notice beauty around you?", "What would you show a guest to surprise them with your city's beauty?"]
+    ]
+  },
+  {
+    "module": 7,
+    "theme": "Вера в себя",
+    "theme_en": "Belief in yourself",
+    "q": [
+      ["За что ты можешь себя похвалить в последнее время?", "Что у тебя получается легко, будто само собой?", "Какое своё качество ты ценишь больше всего?"],
+      ["Если бы ты на один день стал другим человеком — кем и почему?", "Расскажи про момент, когда ты гордился собой.", "Кто верит в тебя и как это тебе помогает?"],
+      ["Что помогает тебе поверить в себя перед чем-то важным?", "Что бы ты сказал себе в трудный момент?", "Какая твоя сильная сторона удивляет других?"]
+    ],
+    "q_en": [
+      ["What can you praise yourself for lately?", "What comes easily to you, as if on its own?", "Which of your qualities do you value most?"],
+      ["If you became someone else for a day — who and why?", "Tell us about a moment you were proud of yourself.", "Who believes in you, and how does it help you?"],
+      ["What helps you believe in yourself before something important?", "What would you say to yourself in a hard moment?", "What strength of yours surprises other people?"]
+    ]
+  },
+  {
+    "module": 8,
+    "theme": "Сила слов",
+    "theme_en": "The power of words",
+    "q": [
+      ["Какая цитата или фраза тебя вдохновляет?", "Любимый блогер, ведущий или рассказчик — чем цепляет?", "Какую историю ты любишь пересказывать друзьям?"],
+      ["Расскажи про слова, которые тебя когда-то поддержали.", "Чья речь или выступление тебе запомнились?", "Какое выражение ты часто используешь?"],
+      ["Могут ли слова менять настроение и решения — как у тебя?", "Что бы ты хотел уметь говорить лучше?", "Какой комплимент ты бы сделал близкому человеку прямо сейчас?"]
+    ],
+    "q_en": [
+      ["What quote or phrase inspires you?", "Favorite blogger, host, or storyteller — what hooks you?", "What story do you love retelling to friends?"],
+      ["Tell us about words that once supported you.", "Whose speech or talk stayed with you?", "What expression do you use a lot?"],
+      ["Can words change moods and decisions — how is it for you?", "What would you like to be better at saying?", "What compliment would you give a loved one right now?"]
+    ]
+  },
+  {
+    "module": 9,
+    "theme": "Ошибки — не поражение",
+    "theme_en": "Mistakes are not defeat",
+    "q": [
+      ["Расскажи про забавный случай, который вспоминаешь с улыбкой.", "Чему тебя научило любимое хобби?", "Какая мелкая неудача потом обернулась чем-то хорошим?"],
+      ["Что бы ты посоветовал себе в начале какого-нибудь дела?", "Расскажи, как ты однажды чему-то научился методом проб.", "Какой урок ты вынес из обычной жизненной ситуации?"],
+      ["Как ты обычно относишься к своим ошибкам?", "Что помогает тебе не сдаваться после промаха?", "Что бы ты сказал другу, который боится ошибиться?"]
+    ],
+    "q_en": [
+      ["Tell us about a funny moment you remember with a smile.", "What has your favorite hobby taught you?", "What small setback later turned into something good?"],
+      ["What would you advise yourself at the start of some new task?", "Tell us how you once learned something by trial and error.", "What lesson did you take from an everyday situation?"],
+      ["How do you usually treat your own mistakes?", "What helps you not give up after a miss?", "What would you say to a friend who's afraid of making mistakes?"]
+    ]
+  },
+  {
+    "module": 10,
+    "theme": "Если боишься — значит важно",
+    "theme_en": "If you fear it, it matters",
+    "q": [
+      ["Что тебя приятно волнует перед чем-то новым?", "Какое маленькое достижение тебя порадовало?", "Что ты сделал, хотя сначала немного боялся?"],
+      ["О какой мечте ты думаешь чаще всего?", "Расскажи про момент, когда волнение оказалось не зря.", "Что бы ты попробовал, если бы точно не боялся?"],
+      ["Как ты справляешься с лёгким волнением?", "Что для тебя важнее — комфорт или интересный риск?", "Что помогает тебе сделать первый шаг?"]
+    ],
+    "q_en": [
+      ["What pleasantly excites you before something new?", "What small achievement made you happy?", "What did you do even though you were a little scared at first?"],
+      ["What dream do you think about most often?", "Tell us about a moment when the nerves were worth it.", "What would you try if you weren't afraid at all?"],
+      ["How do you handle mild nervousness?", "What matters more to you — comfort or an exciting risk?", "What helps you take the first step?"]
+    ]
+  },
+  {
+    "module": 11,
+    "theme": "Жить полной жизнью",
+    "theme_en": "Live life fully",
+    "q": [
+      ["Что для тебя — отлично проведённый день?", "Какое недавнее впечатление зарядило тебя энергией?", "Что ты любишь делать, чтобы почувствовать жизнь ярче?"],
+      ["Расскажи про маленькую радость, которая делает день лучше.", "Какое путешествие или приключение тебе запомнилось?", "Что в твоём списке «хочу попробовать однажды»?"],
+      ["Что значит для тебя жить полной жизнью?", "Чему ты уделял бы больше времени, будь его побольше?", "Что бы ты сделал прямо в эти выходные ради удовольствия?"]
+    ],
+    "q_en": [
+      ["What's a great day for you?", "What recent experience charged you with energy?", "What do you like to do to feel life more vividly?"],
+      ["Tell us about a small joy that makes your day better.", "What trip or adventure stayed with you?", "What's on your 'want to try someday' list?"],
+      ["What does living life fully mean to you?", "What would you give more time to if you had more of it?", "What would you do this very weekend just for fun?"]
+    ]
+  },
+  {
+    "module": 12,
+    "theme": "Кто может изменить мир",
+    "theme_en": "Who can change the world",
+    "q": [
+      ["Кто из людей тебя вдохновляет и почему?", "Какой маленький добрый поступок недавно тебя порадовал?", "Что хорошего ты можешь сделать для близких уже сегодня?"],
+      ["Расскажи про человека, который изменил что-то вокруг себя.", "Если бы ты мог улучшить одну вещь в своём городе — что бы это было?", "Какое дело тебе хотелось бы поддержать?"],
+      ["Может ли один человек что-то менять — как ты думаешь?", "С чего, по-твоему, начинаются большие перемены?", "Какой след ты хотел бы оставить рядом с собой?"]
+    ],
+    "q_en": [
+      ["Who among people inspires you, and why?", "What small kind act recently made you happy?", "What good could you do for your loved ones today?"],
+      ["Tell us about someone who changed something around them.", "If you could improve one thing in your city — what would it be?", "What cause would you like to support?"],
+      ["Can one person change anything — what do you think?", "Where do big changes start, in your view?", "What mark would you like to leave around you?"]
+    ]
+  },
+  {
+    "module": 13,
+    "theme": "Успех — это путь",
+    "theme_en": "Success is a path",
+    "q": [
+      ["Что для тебя — хороший результат в любимом деле?", "Каким своим маленьким шагом ты доволен в последнее время?", "Чем ты занимаешься с удовольствием, даже без награды?"],
+      ["Расскажи, как ты добивался чего-то постепенно.", "Какая цель тебе сейчас интересна?", "Что помогает тебе двигаться к задуманному?"],
+      ["Что для тебя значит успех — своими словами?", "Что важнее — результат или сам процесс?", "Как ты понимаешь, что день удался?"]
+    ],
+    "q_en": [
+      ["What's a good result in your favorite activity for you?", "What small step of yours are you happy with lately?", "What do you enjoy doing even without a reward?"],
+      ["Tell us how you achieved something step by step.", "What goal interests you right now?", "What helps you move toward what you planned?"],
+      ["What does success mean to you — in your own words?", "What matters more — the result or the process itself?", "How do you know a day went well?"]
+    ]
+  },
+  {
+    "module": 14,
+    "theme": "Идеального момента нет",
+    "theme_en": "There is no perfect moment",
+    "q": [
+      ["Что ты любишь делать прямо сейчас, не откладывая?", "Какое спонтанное решение оказалось удачным?", "Что обычно помогает тебе наконец начать?"],
+      ["Расскажи про случай, когда ты решился, не дожидаясь идеального момента.", "Что ты давно откладываешь, но хотел бы попробовать?", "Какой день стал особенным, хотя был обычным?"],
+      ["Ты больше планируешь или действуешь по ситуации?", "Что для тебя «подходящий момент»?", "Что бы ты начал, если бы решил не ждать?"]
+    ],
+    "q_en": [
+      ["What do you like to do right now, without postponing?", "What spontaneous decision turned out well?", "What usually helps you finally get started?"],
+      ["Tell us about a time you went for it without waiting for the perfect moment.", "What have you been putting off but would like to try?", "What day became special even though it was ordinary?"],
+      ["Do you plan more or act as things come?", "What's 'the right moment' for you?", "What would you start if you decided not to wait?"]
+    ]
+  },
+  {
+    "module": 15,
+    "theme": "Сила выбора",
+    "theme_en": "The power of choice",
+    "q": [
+      ["Чай или кофе, утро или вечер — расскажи про свои маленькие предпочтения.", "Какой недавний выбор сделал твой день лучше?", "Что ты выбираешь, когда хочешь отдохнуть?"],
+      ["Расскажи про выбор, которым ты доволен.", "Как ты обычно выбираешь, что посмотреть или почитать?", "Какое решение далось легко и оказалось верным?"],
+      ["Что тебе помогает делать выбор?", "Ты больше слушаешь логику или интуицию?", "Что для тебя значит право выбирать своё?"]
+    ],
+    "q_en": [
+      ["Tea or coffee, morning or evening — tell us about your little preferences.", "What recent choice made your day better?", "What do you choose when you want to relax?"],
+      ["Tell us about a choice you're happy with.", "How do you usually choose what to watch or read?", "What decision came easily and turned out right?"],
+      ["What helps you make choices?", "Do you listen more to logic or intuition?", "What does the right to choose your own way mean to you?"]
+    ]
+  },
+  {
+    "module": 16,
+    "theme": "Радость в каждом дне",
+    "theme_en": "Joy in every day",
+    "q": [
+      ["Что сегодня тебя порадовало, пусть даже мелочь?", "Какая привычная вещь поднимает тебе настроение?", "С чего тебе приятно начинать утро?"],
+      ["Расскажи про маленький ритуал, который делает день приятнее.", "Какой запах, вкус или звук дарит тебе радость?", "Какой недавний момент заставил тебя улыбнуться?"],
+      ["Где ты чаще всего находишь радость в обычной жизни?", "Что для тебя — идеальный спокойный вечер?", "Чем ты любишь себя баловать?"]
+    ],
+    "q_en": [
+      ["What made you happy today, even a small thing?", "What everyday thing lifts your mood?", "How do you like to start your morning?"],
+      ["Tell us about a little ritual that makes your day nicer.", "What smell, taste, or sound brings you joy?", "What recent moment made you smile?"],
+      ["Where do you most often find joy in ordinary life?", "What's an ideal calm evening for you?", "How do you like to treat yourself?"]
+    ]
+  },
+  {
+    "module": 17,
+    "theme": "Социальные сети",
+    "theme_en": "Social media",
+    "q": [
+      ["Какие соцсети или блоги ты любишь и на кого подписан с удовольствием?", "Какой контент поднимает тебе настроение в ленте?", "Что ты чаще смотришь — видео, фото или тексты?"],
+      ["Расскажи про пост или ролик, который тебя недавно зацепил.", "За каким автором или темой тебе интересно следить?", "Что бы ты сам с удовольствием снял или выложил?"],
+      ["Соцсети тебе больше помогают или отвлекают?", "Как ты выбираешь, на кого подписываться?", "Что бы ты посоветовал тем, кто слишком залипает в телефоне?"]
+    ],
+    "q_en": [
+      ["What social media or blogs do you enjoy, and who do you happily follow?", "What content lifts your mood in your feed?", "What do you watch more — videos, photos, or texts?"],
+      ["Tell us about a post or clip that recently caught you.", "What author or topic do you enjoy following?", "What would you happily film or post yourself?"],
+      ["Does social media help you more or distract you?", "How do you choose who to follow?", "What would you advise people who get too glued to their phones?"]
+    ]
+  },
+  {
+    "module": 18,
+    "theme": "Один шанс",
+    "theme_en": "One chance",
+    "q": [
+      ["Что ты точно хотел бы попробовать хотя бы раз в жизни?", "Какой момент ты рад, что не упустил?", "Что из недавнего ты сделал «пока есть возможность»?"],
+      ["Расскажи про случай, когда ты воспользовался шансом.", "Какое предложение или приглашение тебя порадовало?", "Что бы ты сделал, если бы знал, что точно получится?"],
+      ["Ты чаще ловишь момент или предпочитаешь подумать?", "Что помогает тебе решиться, когда шанс рядом?", "Какую возможность ты бы не хотел упустить в этом году?"]
+    ],
+    "q_en": [
+      ["What would you definitely like to try at least once in life?", "What moment are you glad you didn't miss?", "What did you recently do 'while there's a chance'?"],
+      ["Tell us about a time you took a chance.", "What offer or invitation made you happy?", "What would you do if you knew it would definitely work out?"],
+      ["Do you grab the moment more often, or prefer to think it over?", "What helps you decide when a chance is near?", "What opportunity wouldn't you want to miss this year?"]
+    ]
+  },
+  {
+    "module": 19,
+    "theme": "Сила вопроса",
+    "theme_en": "The power of a question",
+    "q": [
+      ["Что тебе недавно стало интересно узнать?", "Какой вопрос ты любишь задавать новым знакомым?", "О чём ты можешь расспрашивать часами?"],
+      ["Расскажи про вопрос, который заставил тебя задуматься.", "Что ты всегда хотел узнать, но не успел?", "Какой ответ тебя однажды приятно удивил?"],
+      ["Что лучше помогает понять человека — слушать или спрашивать?", "Какой вопрос ты бы задал любому интересному человеку?", "Что тебе самому было бы интересно, чтобы у тебя спросили?"]
+    ],
+    "q_en": [
+      ["What recently made you curious to learn more?", "What question do you like to ask new acquaintances?", "What can you ask about for hours?"],
+      ["Tell us about a question that made you think.", "What have you always wanted to find out but never got to?", "What answer once pleasantly surprised you?"],
+      ["What helps you understand a person better — listening or asking?", "What question would you ask any interesting person?", "What would you find interesting to be asked yourself?"]
+    ]
+  },
+  {
+    "module": 20,
+    "theme": "Моё окружение",
+    "theme_en": "My environment",
+    "q": [
+      ["Расскажи про друга, с которым тебе всегда легко.", "Кто из близких чаще всего поднимает тебе настроение?", "С кем ты любишь проводить свободное время?"],
+      ["Расскажи про приятную традицию с друзьями или семьёй.", "Кто научил тебя чему-то полезному?", "За что ты благодарен своим близким?"],
+      ["Какие люди заряжают тебя энергией?", "Что для тебя значит хорошая компания?", "Как ты поддерживаешь связь с теми, кто тебе дорог?"]
+    ],
+    "q_en": [
+      ["Tell us about a friend you always feel at ease with.", "Who among your loved ones lifts your mood most often?", "Who do you like to spend your free time with?"],
+      ["Tell us about a nice tradition with friends or family.", "Who taught you something useful?", "What are you grateful to your loved ones for?"],
+      ["What kind of people give you energy?", "What does good company mean to you?", "How do you keep in touch with those who matter to you?"]
+    ]
+  },
+  {
+    "module": 21,
+    "theme": "Время — наш ресурс",
+    "theme_en": "Time is our resource",
+    "q": [
+      ["Как ты любишь проводить свободное время?", "На что у тебя всегда найдётся время, что бы ни было?", "Как выглядит твой идеальный выходной?"],
+      ["Расскажи, как ты отдыхаешь и перезагружаешься.", "Какое занятие для тебя — точно не пустая трата времени?", "Что ты успел сделать недавно, чем доволен?"],
+      ["Ты больше планируешь время или живёшь по настроению?", "Чему хотел бы уделять больше времени?", "Что для тебя значит провести время с пользой?"]
+    ],
+    "q_en": [
+      ["How do you like to spend your free time?", "What will you always find time for, no matter what?", "What does your ideal day off look like?"],
+      ["Tell us how you rest and recharge.", "What activity is definitely not a waste of time for you?", "What did you recently get done that you're happy with?"],
+      ["Do you plan your time more or live by your mood?", "What would you like to give more time to?", "What does spending time well mean to you?"]
+    ]
+  },
+  {
+    "module": 22,
+    "theme": "Движение важнее скорости",
+    "theme_en": "Movement matters more than speed",
+    "q": [
+      ["Чему ты учишься потихоньку прямо сейчас?", "Какой маленький прогресс тебя недавно порадовал?", "Что ты делаешь регулярно, пусть и понемногу?"],
+      ["Расскажи, как ты осваивал что-то шаг за шагом.", "Какая привычка появилась у тебя постепенно?", "Что у тебя стало получаться лучше, чем раньше?"],
+      ["Что важнее для тебя — двигаться быстро или ровно?", "Как ты не бросаешь начатое?", "Что помогает тебе продолжать, когда не видно быстрого результата?"]
+    ],
+    "q_en": [
+      ["What are you slowly learning right now?", "What small progress made you happy recently?", "What do you do regularly, even if a little at a time?"],
+      ["Tell us how you mastered something step by step.", "What habit formed gradually for you?", "What are you better at now than before?"],
+      ["What matters more to you — moving fast or steadily?", "How do you keep from quitting what you started?", "What helps you continue when there's no quick result?"]
+    ]
+  },
+  {
+    "module": 23,
+    "theme": "Доброта — это сила",
+    "theme_en": "Kindness is strength",
+    "q": [
+      ["Расскажи про маленький добрый поступок — твой или чей-то.", "Кто недавно был к тебе добр?", "Что тебя трогает в других людях?"],
+      ["Расскажи, как тебе однажды помог незнакомый человек.", "Чем ты любишь радовать близких?", "Какой добрый жест запомнился тебе надолго?"],
+      ["Легко ли быть добрым каждый день — как у тебя?", "Что для тебя значит настоящая забота?", "Как доброта помогает в общении, по-твоему?"]
+    ],
+    "q_en": [
+      ["Tell us about a small kind act — yours or someone else's.", "Who has been kind to you recently?", "What touches you in other people?"],
+      ["Tell us how a stranger once helped you.", "How do you like to make your loved ones happy?", "What kind gesture stayed with you for a long time?"],
+      ["Is it easy to be kind every day — how is it for you?", "What does real care mean to you?", "How does kindness help in communication, in your view?"]
+    ]
+  },
+  {
+    "module": 24,
+    "theme": "Самодисциплина",
+    "theme_en": "Self-discipline",
+    "q": [
+      ["Какая полезная привычка у тебя уже прижилась?", "С чего ты обычно начинаешь продуктивный день?", "Что помогает тебе собраться, когда лень?"],
+      ["Расскажи, как ты довёл какое-то дело до конца.", "Какой распорядок тебе подходит лучше всего?", "Что ты делаешь, чтобы не отвлекаться?"],
+      ["Ты строгий к себе или мягкий — и что лучше работает?", "Что для тебя значит держать слово перед собой?", "Какой маленький режим реально изменил твой день?"]
+    ],
+    "q_en": [
+      ["What useful habit have you already settled into?", "How do you usually start a productive day?", "What helps you get going when you feel lazy?"],
+      ["Tell us how you saw some task through to the end.", "What routine suits you best?", "What do you do to avoid getting distracted?"],
+      ["Are you strict or gentle with yourself — and what works better?", "What does keeping a promise to yourself mean to you?", "What small routine genuinely changed your day?"]
+    ]
+  },
+  {
+    "module": 25,
+    "theme": "Роль искусства",
+    "theme_en": "The role of art",
+    "q": [
+      ["Какая музыка, фильм или книга тебе по-настоящему нравится?", "Что из искусства недавно тебя тронуло?", "Чем ты любишь заниматься для души?"],
+      ["Расскажи про произведение, которое запало тебе в душу.", "Ты сам что-то создаёшь — рисуешь, поёшь, пишешь, готовишь?", "Какое творчество вдохновляет тебя?"],
+      ["Зачем людям искусство — как ты думаешь?", "Что для тебя важнее в искусстве — красота или смысл?", "Какой вид искусства ты бы хотел освоить?"]
+    ],
+    "q_en": [
+      ["What music, film, or book do you really love?", "What piece of art recently moved you?", "What do you like to do for the soul?"],
+      ["Tell us about a work that touched your heart.", "Do you create something yourself — draw, sing, write, cook?", "What kind of art inspires you?"],
+      ["Why do people need art — what do you think?", "What matters more in art for you — beauty or meaning?", "What art form would you like to learn?"]
+    ]
+  },
+  {
+    "module": 26,
+    "theme": "Честность или выгода",
+    "theme_en": "Honesty or profit",
+    "q": [
+      ["Тебе проще сказать как есть или промолчать?", "Кому ты доверяешь больше всего?", "Что для тебя значит быть честным с близкими?"],
+      ["Расскажи про случай, когда честность оказалась правильным выбором.", "Когда тебе было приятно, что с тобой говорят прямо?", "Какой честный разговор тебе запомнился?"],
+      ["Что важнее в дружбе — честность или удобство?", "Легко ли тебе говорить правду по-доброму?", "Как ты понимаешь, что человеку можно доверять?"]
+    ],
+    "q_en": [
+      ["Is it easier for you to say it as it is, or stay quiet?", "Who do you trust the most?", "What does being honest with loved ones mean to you?"],
+      ["Tell us about a time when honesty was the right choice.", "When were you glad someone spoke to you directly?", "What honest conversation stayed with you?"],
+      ["What matters more in friendship — honesty or convenience?", "Is it easy for you to tell the truth kindly?", "How do you tell that a person can be trusted?"]
+    ]
+  },
+  {
+    "module": 27,
+    "theme": "Личные границы",
+    "theme_en": "Personal boundaries",
+    "q": [
+      ["Как ты любишь отдыхать, чтобы восстановиться?", "Что помогает тебе побыть в своём пространстве?", "Когда тебе важно побыть одному?"],
+      ["Расскажи, как ты находишь баланс между делами и отдыхом.", "Что ты делаешь, когда устал от суеты?", "Какое твоё личное правило помогает тебе беречь силы?"],
+      ["Легко ли тебе говорить «нет», когда нужно?", "Что для тебя значит уважать чужое пространство?", "Как ты понимаешь, что пора отдохнуть?"]
+    ],
+    "q_en": [
+      ["How do you like to rest so you really recover?", "What helps you spend time in your own space?", "When is it important for you to be alone?"],
+      ["Tell us how you find balance between tasks and rest.", "What do you do when you're tired of the rush?", "What personal rule helps you protect your energy?"],
+      ["Is it easy for you to say 'no' when needed?", "What does respecting someone else's space mean to you?", "How do you know it's time to rest?"]
+    ]
+  },
+  {
+    "module": 28,
+    "theme": "Сила улыбки",
+    "theme_en": "The power of a smile",
+    "q": [
+      ["Что или кто легко может тебя рассмешить?", "Что заставило тебя улыбнуться сегодня?", "Какая комедия или мем поднимают тебе настроение?"],
+      ["Расскажи про забавный момент, который вспоминаешь с улыбкой.", "Кто из друзей умеет тебя развеселить?", "Какая история всегда вызывает у тебя смех?"],
+      ["Помогает ли улыбка в общении — как у тебя?", "Что ты делаешь, чтобы поднять настроение себе и другим?", "Чему стоит улыбаться чаще, по-твоему?"]
+    ],
+    "q_en": [
+      ["What or who can easily make you laugh?", "What made you smile today?", "What comedy or meme lifts your mood?"],
+      ["Tell us about a funny moment you remember with a smile.", "Which friend knows how to cheer you up?", "What story always makes you laugh?"],
+      ["Does a smile help in communication — how is it for you?", "What do you do to lift the mood for yourself and others?", "What's worth smiling at more often, in your view?"]
+    ]
+  },
+  {
+    "module": 29,
+    "theme": "Умение слушать",
+    "theme_en": "The art of listening",
+    "q": [
+      ["Кого тебе всегда интересно слушать?", "Какой рассказ друга тебе недавно запомнился?", "О чём ты можешь слушать долго и с интересом?"],
+      ["Расскажи про разговор, который тебе было приятно вести.", "Кто умеет тебя выслушать?", "Какой совет ты однажды по-настоящему услышал?"],
+      ["Что важнее в общении — говорить или слушать?", "Как ты показываешь, что человеку интересно?", "Что помогает тебе быть хорошим собеседником?"]
+    ],
+    "q_en": [
+      ["Who is always interesting for you to listen to?", "What story from a friend stayed with you recently?", "What can you listen to for a long time with interest?"],
+      ["Tell us about a conversation you enjoyed having.", "Who knows how to really hear you out?", "What advice did you once truly take to heart?"],
+      ["What matters more in communication — talking or listening?", "How do you show a person that they're interesting?", "What helps you be a good conversation partner?"]
+    ]
+  },
+  {
+    "module": 30,
+    "theme": "Как формируется характер",
+    "theme_en": "How character is formed",
+    "q": [
+      ["Какая черта характера тебе в себе нравится?", "Что в детстве повлияло на то, какой ты сейчас?", "Чему тебя научила любимая игра или занятие?"],
+      ["Расскажи про человека, у которого ты перенял что-то хорошее.", "Какой случай тебя чему-то научил?", "Что ты ценишь в людях больше всего?"],
+      ["Характер даётся или вырабатывается — как ты думаешь?", "Что помогает тебе становиться лучше?", "Какую свою черту ты бы хотел развить?"]
+    ],
+    "q_en": [
+      ["What character trait do you like in yourself?", "What in childhood shaped who you are now?", "What did your favorite game or activity teach you?"],
+      ["Tell us about a person from whom you picked up something good.", "What event taught you something?", "What do you value most in people?"],
+      ["Is character given or built — what do you think?", "What helps you become better?", "What trait of yours would you like to develop?"]
+    ]
+  },
+  {
+    "module": 31,
+    "theme": "Уважение",
+    "theme_en": "Respect",
+    "q": [
+      ["За что ты уважаешь людей вокруг себя?", "Кто вызывает у тебя искреннее уважение и почему?", "Что для тебя значит уважительное отношение?"],
+      ["Расскажи про человека, которым ты восхищаешься.", "Когда тебе было приятно почувствовать уважение к себе?", "Какой поступок другого человека тебя впечатлил?"],
+      ["Как, по-твоему, заслужить уважение?", "Что важнее — уважение или популярность?", "Как ты показываешь уважение в общении?"]
+    ],
+    "q_en": [
+      ["What do you respect in the people around you?", "Who earns your sincere respect, and why?", "What does respectful treatment mean to you?"],
+      ["Tell us about a person you admire.", "When did it feel good to be respected?", "What act by another person impressed you?"],
+      ["How do you earn respect, in your view?", "What matters more — respect or popularity?", "How do you show respect in communication?"]
+    ]
+  },
+  {
+    "module": 32,
+    "theme": "Говорить уверенно",
+    "theme_en": "Speaking with confidence",
+    "q": [
+      ["В какой теме ты чувствуешь себя уверенно и можешь говорить легко?", "Когда тебе комфортнее всего выступать или рассказывать?", "О чём ты можешь рассказать без подготовки?"],
+      ["Расскажи про момент, когда ты уверенно выступил или ответил.", "Кто умеет говорить так, что заслушаешься?", "Что помогает тебе собраться перед важным разговором?"],
+      ["Что для тебя значит говорить уверенно?", "Откуда берётся уверенность в речи, по-твоему?", "Какой совет ты дашь тому, кто волнуется выступать?"]
+    ],
+    "q_en": [
+      ["On what topic do you feel confident and can speak easily?", "When are you most comfortable presenting or telling a story?", "What can you talk about with no preparation?"],
+      ["Tell us about a moment when you spoke or answered confidently.", "Who speaks in a way you could listen to all day?", "What helps you gather yourself before an important talk?"],
+      ["What does speaking confidently mean to you?", "Where does confidence in speech come from, in your view?", "What advice would you give someone nervous about presenting?"]
+    ]
+  },
+  {
+    "module": 33,
+    "theme": "Не сдаваться",
+    "theme_en": "Never give up",
+    "q": [
+      ["Что ты делал долго, пока не получилось?", "Какое дело ты не бросил, хотя было непросто?", "Что помогает тебе продолжать, когда хочется остановиться?"],
+      ["Расскажи, как ты дошёл до цели, несмотря на трудности.", "Кто поддерживал тебя, когда было тяжело?", "Какой маленький успех дался тебе упорством?"],
+      ["Откуда ты берёшь силы не сдаваться?", "Что важнее — талант или упорство?", "Что бы ты сказал тому, кто хочет всё бросить?"]
+    ],
+    "q_en": [
+      ["What did you do for a long time until it finally worked?", "What did you not give up on, even though it was hard?", "What helps you keep going when you want to stop?"],
+      ["Tell us how you reached a goal despite difficulties.", "Who supported you when it was tough?", "What small success came to you through persistence?"],
+      ["Where do you get the strength not to give up?", "What matters more — talent or persistence?", "What would you say to someone who wants to quit everything?"]
+    ]
+  },
+  {
+    "module": 34,
+    "theme": "Одно решение меняет всё",
+    "theme_en": "One decision changes everything",
+    "q": [
+      ["Какое решение сделало твою жизнь лучше?", "Что хорошего началось с одного твоего шага?", "Какой выбор ты сделал и ни разу не пожалел?"],
+      ["Расскажи про решение, которое многое изменило для тебя.", "Какой совет однажды подтолкнул тебя к переменам?", "С чего началось твоё новое увлечение?"],
+      ["Ты долго решаешь или быстро?", "Что помогает тебе принимать важные решения?", "Какое решение ты обдумываешь сейчас?"]
+    ],
+    "q_en": [
+      ["What decision made your life better?", "What good thing started from one step of yours?", "What choice did you make and never regretted?"],
+      ["Tell us about a decision that changed a lot for you.", "What advice once nudged you toward change?", "How did your new hobby begin?"],
+      ["Do you decide slowly or quickly?", "What helps you make important decisions?", "What decision are you thinking over right now?"]
+    ]
+  },
+  {
+    "module": 35,
+    "theme": "Откуда уверенность",
+    "theme_en": "Where confidence comes from",
+    "q": [
+      ["В какие моменты ты чувствуешь себя увереннее всего?", "Что придаёт тебе уверенности с утра?", "Что у тебя получается так, что не сомневаешься?"],
+      ["Расскажи про момент, когда ты поверил в свои силы.", "Кто или что помогает тебе чувствовать опору?", "Какая твоя победа добавила тебе уверенности?"],
+      ["Уверенность — врождённая или её можно развить?", "Что помогает тебе перед чем-то важным?", "Что бы ты посоветовал для уверенности другу?"]
+    ],
+    "q_en": [
+      ["In what moments do you feel most confident?", "What gives you confidence in the morning?", "What do you do so well that you have no doubts?"],
+      ["Tell us about a moment when you believed in your own strength.", "Who or what helps you feel grounded?", "What win of yours added to your confidence?"],
+      ["Is confidence inborn, or can it be developed?", "What helps you before something important?", "What would you advise a friend for confidence?"]
+    ]
+  },
+  {
+    "module": 36,
+    "theme": "Зачем человеку мечты",
+    "theme_en": "Why we need dreams",
+    "q": [
+      ["О чём ты мечтаешь в последнее время?", "Какая мечта была у тебя в детстве?", "Что бы ты сделал, если бы всё было возможно?"],
+      ["Расскажи про мечту, к которой ты потихоньку идёшь.", "Какое желание тебе уже удалось исполнить?", "О каком путешествии или деле ты мечтаешь?"],
+      ["Зачем человеку мечты — как ты думаешь?", "Мечты должны быть большими или достижимыми?", "Что помогает тебе не забывать о своих мечтах?"]
+    ],
+    "q_en": [
+      ["What have you been dreaming about lately?", "What dream did you have as a child?", "What would you do if everything were possible?"],
+      ["Tell us about a dream you're slowly moving toward.", "What wish have you already managed to fulfill?", "What trip or pursuit do you dream about?"],
+      ["Why do people need dreams — what do you think?", "Should dreams be big or achievable?", "What helps you not forget your dreams?"]
+    ]
+  },
+  {
+    "module": 37,
+    "theme": "Бороться с волнением",
+    "theme_en": "Conquering anxiety",
+    "q": [
+      ["Что помогает тебе успокоиться перед важным моментом?", "Как ты приходишь в себя, когда переживаешь?", "Что тебя расслабляет лучше всего?"],
+      ["Расскажи, как ты справился с волнением и всё прошло хорошо.", "Какой простой приём помогает тебе собраться?", "Когда волнение оказалось пустым — и всё получилось?"],
+      ["Волнение мешает или помогает — как у тебя?", "Что ты говоришь себе, когда нервничаешь?", "Что бы ты посоветовал тому, кто сильно волнуется?"]
+    ],
+    "q_en": [
+      ["What helps you calm down before an important moment?", "How do you come back to yourself when you're worried?", "What relaxes you best?"],
+      ["Tell us how you handled nerves and it all went well.", "What simple trick helps you gather yourself?", "When did the worry turn out to be for nothing — and it worked out?"],
+      ["Do nerves get in the way or help — how is it for you?", "What do you tell yourself when you're nervous?", "What would you advise someone who worries a lot?"]
+    ]
+  },
+  {
+    "module": 38,
+    "theme": "Адаптивность",
+    "theme_en": "Adaptability",
+    "q": [
+      ["Как ты ведёшь себя, когда планы вдруг меняются?", "Что помогает тебе быстро привыкнуть к новому?", "Какое неожиданное изменение пошло тебе на пользу?"],
+      ["Расскажи, как ты приспособился к новому месту или ситуации.", "Что нового ты освоил за последнее время?", "Какой переезд, работа или поездка тебя многому научили?"],
+      ["Ты любишь перемены или привычный порядок?", "Что помогает тебе не теряться в новой обстановке?", "Как ты находишь плюсы в неожиданных ситуациях?"]
+    ],
+    "q_en": [
+      ["How do you act when plans suddenly change?", "What helps you adjust quickly to something new?", "What unexpected change turned out to be good for you?"],
+      ["Tell us how you adapted to a new place or situation.", "What new thing have you picked up lately?", "What move, job, or trip taught you a lot?"],
+      ["Do you like change or a familiar order?", "What helps you not get lost in a new setting?", "How do you find upsides in unexpected situations?"]
+    ]
+  },
+  {
+    "module": 39,
+    "theme": "Что делает человека сильным",
+    "theme_en": "What makes a person strong",
+    "q": [
+      ["Кого ты считаешь по-настоящему сильным человеком?", "Какая черта помогает людям справляться с трудностями?", "В чём твоя сила, как ты думаешь?"],
+      ["Расскажи про человека, чья стойкость тебя впечатлила.", "Когда ты почувствовал себя сильным?", "Что помогло тебе пройти через непростой период?"],
+      ["Сила — это про характер или про мышцы?", "Что делает тебя сильнее день за днём?", "Что бы ты сказал тому, кто чувствует себя слабым?"]
+    ],
+    "q_en": [
+      ["Who do you consider a truly strong person?", "What trait helps people cope with difficulties?", "What's your strength, do you think?"],
+      ["Tell us about a person whose resilience impressed you.", "When did you feel strong?", "What helped you get through a tough period?"],
+      ["Is strength about character or muscles?", "What makes you stronger day by day?", "What would you say to someone who feels weak?"]
+    ]
+  },
+  {
+    "module": 40,
+    "theme": "Влияние медиа на самооценку",
+    "theme_en": "Media and self-esteem",
+    "q": [
+      ["Какой контент в ленте поднимает тебе настроение?", "На кого тебе приятно и полезно подписываться?", "Что ты смотришь, чтобы вдохновиться?"],
+      ["Расскажи про блог или автора, который влияет на тебя в хорошем смысле.", "Что помогает тебе не сравнивать себя с картинками из интернета?", "Какой совет из соцсетей тебе реально пригодился?"],
+      ["Соцсети влияют на самооценку — как у тебя?", "Что помогает тебе оставаться собой в эпоху лайков?", "Что бы ты посоветовал тем, кто сравнивает себя с другими онлайн?"]
+    ],
+    "q_en": [
+      ["What content in your feed lifts your mood?", "Who is pleasant and useful for you to follow?", "What do you watch to get inspired?"],
+      ["Tell us about a blog or author who influences you in a good way.", "What helps you not compare yourself to pictures from the internet?", "What piece of advice from social media actually came in handy?"],
+      ["Does social media affect self-esteem — how is it for you?", "What helps you stay yourself in the age of likes?", "What would you advise people who compare themselves to others online?"]
+    ]
+  },
+  {
+    "module": 41,
+    "theme": "Чему учит неудача",
+    "theme_en": "What failure teaches",
+    "q": [
+      ["Какая мелкая неудача потом тебя чему-то научила?", "Что ты понял, когда что-то пошло не по плану?", "Какой опыт оказался полезнее, чем казался сначала?"],
+      ["Расскажи, как промах превратился в хороший урок.", "Чему тебя научила ситуация, которую не хотелось бы повторять?", "Какой совет ты вынес из своей ошибки?"],
+      ["Как ты относишься к неудачам?", "Что помогает тебе попробовать снова?", "Что бы ты сказал другу после неудачи?"]
+    ],
+    "q_en": [
+      ["What small failure later taught you something?", "What did you realize when something didn't go as planned?", "What experience turned out more useful than it first seemed?"],
+      ["Tell us how a miss turned into a good lesson.", "What did a situation you wouldn't want to repeat teach you?", "What advice did you take from your own mistake?"],
+      ["How do you feel about failures?", "What helps you try again?", "What would you say to a friend after a setback?"]
+    ]
+  },
+  {
+    "module": 42,
+    "theme": "Поиск признания",
+    "theme_en": "Searching for recognition",
+    "q": [
+      ["Чья похвала тебе особенно приятна?", "За что тебя недавно благодарили?", "Какой твой результат заметили и оценили?"],
+      ["Расскажи про момент, когда твои усилия оценили.", "Кому важно твоё мнение и почему?", "Какое признание тебя порадовало?"],
+      ["Что важнее — признание других или своё ощущение?", "Делаешь ли ты что-то просто для себя, без оценки?", "Что для тебя значит быть нужным?"]
+    ],
+    "q_en": [
+      ["Whose praise is especially nice for you?", "What were you thanked for recently?", "What result of yours got noticed and appreciated?"],
+      ["Tell us about a moment when your efforts were appreciated.", "Whose opinion matters to you, and why?", "What recognition made you happy?"],
+      ["What matters more — others' recognition or your own sense of it?", "Do you do something just for yourself, without any judgment?", "What does being needed mean to you?"]
+    ]
+  },
+  {
+    "module": 43,
+    "theme": "Что останется после меня",
+    "theme_en": "What remains of me",
+    "q": [
+      ["Чем бы ты хотел запомниться близким?", "Какое доброе дело тебе приятно делать для других?", "Что хорошего ты привносишь в компанию друзей?"],
+      ["Расскажи, чему ты можешь научить других.", "Какой совет ты бы передал младшим?", "Что из твоих привычек ты хотел бы передать дальше?"],
+      ["Что для тебя значит оставить добрый след?", "Какие дела важнее всего, по-твоему?", "О чём ты хотел бы, чтобы тебя вспоминали с теплом?"]
+    ],
+    "q_en": [
+      ["What would you like to be remembered for by your loved ones?", "What kind deed do you enjoy doing for others?", "What good do you bring to your circle of friends?"],
+      ["Tell us what you could teach others.", "What advice would you pass on to younger people?", "Which of your habits would you like to pass forward?"],
+      ["What does leaving a good trace mean to you?", "What deeds matter most, in your view?", "What would you like to be remembered for warmly?"]
+    ]
+  },
+  {
+    "module": 44,
+    "theme": "Информационный шум",
+    "theme_en": "Information noise",
+    "q": [
+      ["Как ты отдыхаешь от потока новостей и уведомлений?", "Что помогает тебе сосредоточиться, когда вокруг много всего?", "Чем ты заменяешь телефон, когда хочешь тишины?"],
+      ["Расскажи, как ты устраиваешь себе перерыв от экрана.", "Какое спокойное занятие тебя перезагружает?", "Что ты делаешь, чтобы голова отдохнула?"],
+      ["Как ты выбираешь, чему уделять внимание?", "Слишком много информации — это про тебя?", "Что помогает тебе слышать главное среди шума?"]
+    ],
+    "q_en": [
+      ["How do you take a break from the stream of news and notifications?", "What helps you focus when there's a lot going on around you?", "What do you replace your phone with when you want quiet?"],
+      ["Tell us how you give yourself a break from the screen.", "What calm activity recharges you?", "What do you do to let your mind rest?"],
+      ["How do you choose what to give attention to?", "Is 'too much information' about you?", "What helps you hear what matters amid the noise?"]
+    ]
+  },
+  {
+    "module": 45,
+    "theme": "Работа в команде",
+    "theme_en": "Teamwork",
+    "q": [
+      ["Тебе больше нравится работать в команде или одному?", "Расскажи про дело, которое вы сделали вместе с кем-то.", "Какая роль в команде тебе ближе?"],
+      ["Расскажи про хорошую командную работу, которая тебе запомнилась.", "Кто из команды или друзей тебя здорово дополняет?", "Какой совместный проект тебя порадовал?"],
+      ["Что делает команду по-настоящему хорошей?", "Как ты помогаешь общему делу?", "Что важнее — личный результат или общий?"]
+    ],
+    "q_en": [
+      ["Do you prefer working in a team or alone?", "Tell us about something you did together with someone.", "What role in a team feels closer to you?"],
+      ["Tell us about good teamwork that stayed with you.", "Who on your team or among friends complements you well?", "What joint project made you happy?"],
+      ["What makes a team truly good?", "How do you contribute to a shared effort?", "What matters more — a personal result or a shared one?"]
+    ]
+  },
+  {
+    "module": 46,
+    "theme": "Ответственность",
+    "theme_en": "Responsibility",
+    "q": [
+      ["За что или за кого ты любишь отвечать?", "Какое дело ты всегда доводишь до конца?", "Что для тебя значит держать слово?"],
+      ["Расскажи про случай, когда на тебя положились — и не зря.", "За что ты отвечаешь в своей семье или компании?", "Какой обязанностью ты на самом деле гордишься?"],
+      ["Ответственность — это груз или опора?", "Как ты решаешь, что важнее сделать в первую очередь?", "Что помогает тебе быть надёжным?"]
+    ],
+    "q_en": [
+      ["What or who do you enjoy being responsible for?", "What task do you always see through to the end?", "What does keeping your word mean to you?"],
+      ["Tell us about a time people relied on you — and were right to.", "What are you responsible for in your family or group?", "What duty are you actually proud of?"],
+      ["Is responsibility a burden or a support?", "How do you decide what's most important to do first?", "What helps you be dependable?"]
+    ]
+  },
+  {
+    "module": 47,
+    "theme": "Миллениалы",
+    "theme_en": "Millennials",
+    "q": [
+      ["Какая музыка, фильмы или вещи из прошлого тебе до сих пор нравятся?", "Что из своего поколения ты вспоминаешь с теплом?", "Какая ностальгия тебя иногда накрывает?"],
+      ["Расскажи про игру, мультик или песню из детства.", "Какая технология сильно изменила твою жизнь?", "Что раньше было популярно, а тебе нравится до сих пор?"],
+      ["Чем отличаются поколения, по-твоему?", "Что хорошего у молодёжи и что — у старших?", "Чему разные поколения могут научить друг друга?"]
+    ],
+    "q_en": [
+      ["What music, films, or things from the past do you still love?", "What about your generation do you remember warmly?", "What nostalgia hits you sometimes?"],
+      ["Tell us about a game, cartoon, or song from your childhood.", "What technology greatly changed your life?", "What used to be popular and you still like it?"],
+      ["How do generations differ, in your view?", "What's good about the young, and what about the older?", "What can different generations teach each other?"]
+    ]
+  },
+  {
+    "module": 48,
+    "theme": "Тренды и быть в теме",
+    "theme_en": "Trends and staying current",
+    "q": [
+      ["Какой тренд тебе недавно понравился?", "Что популярного ты попробовал и не пожалел?", "За какими новинками тебе интересно следить?"],
+      ["Расскажи про моду или увлечение, которое тебя зацепило.", "Что из модного оказалось реально полезным?", "Какой тренд ты бы посоветовал друзьям?"],
+      ["Важно ли быть в теме трендов — как у тебя?", "Ты следишь за модой или идёшь своим путём?", "Какой тренд тебе кажется забавным или странным?"]
+    ],
+    "q_en": [
+      ["What trend did you recently like?", "What popular thing did you try and didn't regret?", "What new things are interesting for you to follow?"],
+      ["Tell us about a trend or hobby that caught you.", "What trendy thing turned out genuinely useful?", "What trend would you recommend to friends?"],
+      ["Is it important to stay on top of trends — how is it for you?", "Do you follow trends or go your own way?", "What trend seems funny or strange to you?"]
+    ]
+  },
+  {
+    "module": 49,
+    "theme": "Сравнение с другими",
+    "theme_en": "Comparison with others",
+    "q": [
+      ["Что у тебя получается по-своему, не как у других?", "Чем ты отличаешься от друзей в хорошем смысле?", "Какая твоя особенность тебе нравится?"],
+      ["Расскажи про свой талант или умение, которым ты доволен.", "Когда ты порадовался своему собственному прогрессу?", "Что ты ценишь в себе, не оглядываясь на других?"],
+      ["Помогает ли сравнение с другими — как у тебя?", "Что помогает тебе радоваться своим успехам?", "Что бы ты сказал тому, кто часто себя сравнивает?"]
+    ],
+    "q_en": [
+      ["What do you do in your own way, not like others?", "How are you different from your friends in a good way?", "What feature of yours do you like?"],
+      ["Tell us about a talent or skill you're happy with.", "When did you feel glad about your own progress?", "What do you value in yourself without looking at others?"],
+      ["Does comparing yourself to others help — how is it for you?", "What helps you enjoy your own wins?", "What would you say to someone who compares themselves a lot?"]
+    ]
+  },
+  {
+    "module": 50,
+    "theme": "Идеальная продуктивность",
+    "theme_en": "Ideal productivity",
+    "q": [
+      ["В какое время суток ты работаешь лучше всего?", "Что помогает тебе сосредоточиться на деле?", "Какой твой способ всё успевать?"],
+      ["Расскажи про день, когда ты много успел и был доволен.", "Какой простой приём делает тебя продуктивнее?", "Чем ты награждаешь себя после хорошей работы?"],
+      ["Что важнее — много сделать или сделать важное?", "Как ты отдыхаешь, чтобы потом работать с силами?", "Что для тебя значит хорошо организованный день?"]
+    ],
+    "q_en": [
+      ["What time of day do you work best?", "What helps you focus on a task?", "What's your way of getting things done?"],
+      ["Tell us about a day when you got a lot done and felt good.", "What simple trick makes you more productive?", "How do you reward yourself after good work?"],
+      ["What matters more — doing a lot or doing what's important?", "How do you rest so you can work with energy afterward?", "What does a well-organized day mean to you?"]
+    ]
+  },
+  {
+    "module": 51,
+    "theme": "Страх упустить",
+    "theme_en": "Fear of missing out",
+    "q": [
+      ["Что для тебя — отлично проведённое время, даже дома?", "Какой спокойный вечер тебе нравится больше шумной вечеринки?", "Что приносит тебе радость без спешки?"],
+      ["Расскажи про момент, когда тишина оказалась лучше движухи.", "Что ты с удовольствием пропустил бы ради отдыха?", "Какой выбор «остаться дома» оказался правильным?"],
+      ["Тебе важно успеть везде или хватает своего?", "Что помогает тебе не гнаться за всем сразу?", "Как ты понимаешь, что тебе сейчас действительно нужно?"]
+    ],
+    "q_en": [
+      ["What's great time well spent for you, even at home?", "What quiet evening do you prefer over a loud party?", "What brings you joy without any rush?"],
+      ["Tell us about a time when quiet was better than the buzz.", "What would you happily skip for the sake of rest?", "What 'staying home' choice turned out to be the right one?"],
+      ["Is it important for you to be everywhere, or is your own enough?", "What helps you not chase everything at once?", "How do you tell what you actually need right now?"]
+    ]
+  },
+  {
+    "module": 52,
+    "theme": "Границы и диалог",
+    "theme_en": "Boundaries and dialogue",
+    "q": [
+      ["Как ты обычно решаешь мелкие разногласия с близкими?", "Что помогает тебе спокойно договориться?", "Как ты говоришь о том, что тебе важно?"],
+      ["Расскажи про разговор, после которого стало легче.", "Когда тебе удалось найти общий язык с кем-то?", "Какой спор закончился хорошо благодаря разговору?"],
+      ["Что важнее в диалоге — слушать или объяснять?", "Как ты находишь компромисс?", "Что помогает понять чужую точку зрения?"]
+    ],
+    "q_en": [
+      ["How do you usually settle small disagreements with loved ones?", "What helps you reach an agreement calmly?", "How do you talk about what matters to you?"],
+      ["Tell us about a conversation that made things easier afterward.", "When did you manage to find common ground with someone?", "What argument ended well thanks to talking it out?"],
+      ["What matters more in dialogue — listening or explaining?", "How do you find a compromise?", "What helps you understand someone else's point of view?"]
+    ]
+  },
+  {
+    "module": 53,
+    "theme": "Правильный путь",
+    "theme_en": "The right path",
+    "q": [
+      ["Какое дело тебе кажется по-настоящему твоим?", "Что приносит тебе ощущение, что ты на своём месте?", "Чем ты занимался бы, даже если бы не нужно было?"],
+      ["Расскажи, как ты понял, что тебе что-то по душе.", "Какой выбор привёл тебя туда, где ты сейчас?", "Что тебе подсказывает, куда двигаться дальше?"],
+      ["Есть ли один правильный путь — как ты думаешь?", "Что помогает тебе выбирать своё направление?", "Как понять, что идёшь в нужную сторону?"]
+    ],
+    "q_en": [
+      ["What pursuit feels truly yours?", "What gives you the feeling you're in the right place?", "What would you do even if you didn't have to?"],
+      ["Tell us how you realized you liked something.", "What choice led you to where you are now?", "What hints to you where to go next?"],
+      ["Is there one right path — what do you think?", "What helps you choose your own direction?", "How do you know you're heading the right way?"]
+    ]
+  },
+  {
+    "module": 54,
+    "theme": "Усталость без причины",
+    "theme_en": "Tiredness without a cause",
+    "q": [
+      ["Что помогает тебе восстановить силы?", "Как ты понимаешь, что пора отдохнуть?", "Что тебя по-настоящему расслабляет?"],
+      ["Расскажи про свой любимый способ перезагрузиться.", "Какой отдых вернул тебе энергию недавно?", "Что ты делаешь, когда нет сил, но надо мягко себя поддержать?"],
+      ["Откуда, по-твоему, берётся усталость без причины?", "Что важнее — больше отдыхать или меньше нагружаться?", "Как ты заботишься о себе в такие дни?"]
+    ],
+    "q_en": [
+      ["What helps you recover your energy?", "How do you know it's time to rest?", "What truly relaxes you?"],
+      ["Tell us about your favorite way to recharge.", "What rest brought your energy back recently?", "What do you do when you have no energy but want to support yourself gently?"],
+      ["Where does tiredness without a cause come from, in your view?", "What matters more — resting more or loading yourself less?", "How do you take care of yourself on days like that?"]
+    ]
+  },
+  {
+    "module": 55,
+    "theme": "От мышления зависит всё",
+    "theme_en": "Mindset shapes everything",
+    "q": [
+      ["Что помогает тебе настроиться на хороший день?", "Как ты поднимаешь себе настрой, когда нужно?", "Что ты говоришь себе в начале дня?"],
+      ["Расскажи, как взгляд на ситуацию помог тебе справиться.", "Когда смена настроя реально изменила исход?", "Какая мысль тебя поддерживает?"],
+      ["Правда ли, что многое зависит от настроя — как у тебя?", "Что помогает тебе видеть плюсы?", "Как ты переключаешься с плохого на хорошее?"]
+    ],
+    "q_en": [
+      ["What helps you tune in to a good day?", "How do you lift your own spirits when needed?", "What do you tell yourself at the start of the day?"],
+      ["Tell us how a fresh take on a situation helped you cope.", "When did a change of mindset truly change the outcome?", "What thought keeps you going?"],
+      ["Is it true that a lot depends on mindset — how is it for you?", "What helps you see the upsides?", "How do you switch from bad to good?"]
+    ]
+  },
+  {
+    "module": 56,
+    "theme": "Первое впечатление",
+    "theme_en": "First impressions",
+    "q": [
+      ["Что тебе помогает чувствовать себя свободно при знакомстве?", "Как ты обычно начинаешь разговор с новым человеком?", "Что в людях производит на тебя хорошее впечатление?"],
+      ["Расскажи про знакомство, которое переросло в дружбу.", "Когда первое впечатление о ком-то приятно тебя удивило?", "Кого ты сразу запомнил и почему?"],
+      ["Насколько важно первое впечатление — как ты думаешь?", "Что ты ценишь при первом общении?", "Как ты располагаешь к себе людей?"]
+    ],
+    "q_en": [
+      ["What helps you feel at ease when meeting someone?", "How do you usually start a conversation with a new person?", "What in people makes a good impression on you?"],
+      ["Tell us about a meeting that grew into friendship.", "When did a first impression of someone pleasantly surprise you?", "Who did you remember right away, and why?"],
+      ["How important is a first impression — what do you think?", "What do you value in a first conversation?", "How do you win people over?"]
+    ]
+  },
+  {
+    "module": 57,
+    "theme": "Любопытство",
+    "theme_en": "Curiosity",
+    "q": [
+      ["Что тебе недавно захотелось узнать или попробовать?", "Какая тема тебе по-настоящему интересна?", "О чём ты любишь читать или смотреть ролики?"],
+      ["Расскажи про что-то новое, что ты узнал и удивился.", "Какое открытие или факт тебя поразили?", "Чему бы ты с радостью научился?"],
+      ["Откуда в тебе берётся интерес к новому?", "Что помогает сохранять любопытство?", "Что бы ты изучил, будь у тебя свободный месяц?"]
+    ],
+    "q_en": [
+      ["What did you recently want to learn or try?", "What topic genuinely interests you?", "What do you like to read about or watch videos on?"],
+      ["Tell us about something new you learned and were surprised by.", "What discovery or fact amazed you?", "What would you gladly learn?"],
+      ["Where does your interest in new things come from?", "What helps you keep your curiosity?", "What would you study if you had a free month?"]
+    ]
+  },
+  {
+    "module": 58,
+    "theme": "Терпение",
+    "theme_en": "Patience",
+    "q": [
+      ["Что ты делаешь спокойно и неспеша, с удовольствием?", "Какое занятие учит тебя терпению?", "Что помогает тебе ждать без раздражения?"],
+      ["Расскажи, как терпение помогло тебе чего-то добиться.", "Что ты выращивал, собирал или мастерил долго?", "Какой результат стоил того, чтобы подождать?"],
+      ["Ты терпеливый человек — как считаешь?", "Что важнее — скорость или спокойствие?", "Как ты сохраняешь спокойствие, когда всё затягивается?"]
+    ],
+    "q_en": [
+      ["What do you do calmly and unhurriedly, with pleasure?", "What activity teaches you patience?", "What helps you wait without irritation?"],
+      ["Tell us how patience helped you achieve something.", "What did you grow, collect, or build over a long time?", "What result was worth the wait?"],
+      ["Are you a patient person — what do you think?", "What matters more — speed or calm?", "How do you stay calm when things drag on?"]
+    ]
+  },
+  {
+    "module": 59,
+    "theme": "Благодарность",
+    "theme_en": "Gratitude",
+    "q": [
+      ["За что ты благодарен сегодня, пусть даже за мелочь?", "Кому тебе хочется сказать спасибо?", "Что хорошего случилось с тобой недавно?"],
+      ["Расскажи про человека, которому ты благодарен.", "Какой подарок или помощь тебя тронули?", "За какой момент в жизни ты особенно благодарен?"],
+      ["Помогает ли благодарность чувствовать себя счастливее?", "Как ты выражаешь благодарность близким?", "За что ты благодарен самому себе?"]
+    ],
+    "q_en": [
+      ["What are you grateful for today, even a small thing?", "Who would you like to say thank you to?", "What good thing happened to you recently?"],
+      ["Tell us about a person you're grateful to.", "What gift or help touched you?", "What moment in life are you especially grateful for?"],
+      ["Does gratitude help you feel happier?", "How do you express gratitude to loved ones?", "What are you grateful to yourself for?"]
+    ]
+  },
+  {
+    "module": 60,
+    "theme": "Прощение",
+    "theme_en": "Forgiveness",
+    "q": [
+      ["Что помогает тебе отпустить мелкие обиды?", "Как ты миришься с близкими после ссоры?", "Что для тебя значит начать с чистого листа?"],
+      ["Расскажи, как тебе стало легче, когда ты что-то отпустил.", "Когда тебе было приятно, что тебя простили?", "Какой разговор помог вам помириться?"],
+      ["Легко ли тебе прощать — как у тебя?", "Что важнее — быть правым или сохранить отношения?", "Как ты отпускаешь то, что уже не изменить?"]
+    ],
+    "q_en": [
+      ["What helps you let go of small grudges?", "How do you make up with loved ones after a quarrel?", "What does starting with a clean slate mean to you?"],
+      ["Tell us how you felt lighter once you let something go.", "When was it nice to be forgiven?", "What conversation helped you make peace?"],
+      ["Is it easy for you to forgive — how is it for you?", "What matters more — being right or keeping the relationship?", "How do you let go of what can't be changed?"]
+    ]
+  },
+  {
+    "module": 61,
+    "theme": "Правда о себе",
+    "theme_en": "Truth about yourself",
+    "q": [
+      ["Что ты в себе хорошо знаешь и принимаешь?", "Какая твоя привычка очень тебе подходит?", "В чём ты точно остаёшься собой?"],
+      ["Расскажи про момент, когда ты был честен с самим собой.", "Что ты понял о себе за последнее время?", "Какое своё «да» или «нет» тебе помогло?"],
+      ["Легко ли быть честным с собой — как у тебя?", "Что помогает тебе понимать свои желания?", "Что бы ты хотел в себе принять чуть больше?"]
+    ],
+    "q_en": [
+      ["What do you know well and accept about yourself?", "What habit of yours suits you really well?", "Where do you definitely stay yourself?"],
+      ["Tell us about a moment when you were honest with yourself.", "What did you realize about yourself lately?", "What 'yes' or 'no' of yours helped you?"],
+      ["Is it easy to be honest with yourself — how is it for you?", "What helps you understand your own wishes?", "What would you like to accept in yourself a bit more?"]
+    ]
+  },
+  {
+    "module": 62,
+    "theme": "Сила одиночества",
+    "theme_en": "The power of solitude",
+    "q": [
+      ["Что ты любишь делать в одиночку, для себя?", "Когда тебе хорошо побыть наедине с собой?", "Какое занятие наедине тебя вдохновляет?"],
+      ["Расскажи про спокойное время, проведённое в одиночестве.", "Что ты понял или придумал, когда был один?", "Какое место ты любишь для уединения?"],
+      ["Одиночество для тебя — отдых или скука?", "Что хорошего даёт время наедине с собой?", "Как ты используешь такие моменты с пользой?"]
+    ],
+    "q_en": [
+      ["What do you like to do on your own, for yourself?", "When does it feel good to be alone with yourself?", "What solo activity inspires you?"],
+      ["Tell us about calm time spent alone.", "What did you figure out or come up with when you were alone?", "What place do you like for solitude?"],
+      ["Is solitude rest or boredom for you?", "What good does time alone give you?", "How do you use such moments well?"]
+    ]
+  },
+  {
+    "module": 63,
+    "theme": "Память и опыт",
+    "theme_en": "Memory and experience",
+    "q": [
+      ["Какое тёплое воспоминание ты часто вспоминаешь?", "Какой день из прошлого ты бы хотел пережить снова?", "Что из детства тебе особенно дорого?"],
+      ["Расскажи про событие, которое осталось в памяти надолго.", "Какая поездка или праздник тебе запомнились?", "Какой урок из прошлого помогает тебе сейчас?"],
+      ["Что для тебя важнее — память или мечты о будущем?", "Как ты сохраняешь приятные моменты?", "Чему тебя научил твой опыт?"]
+    ],
+    "q_en": [
+      ["What warm memory do you often recall?", "What day from the past would you like to relive?", "What from childhood is especially dear to you?"],
+      ["Tell us about an event that stayed in your memory for a long time.", "What trip or celebration stayed with you?", "What lesson from the past helps you now?"],
+      ["What matters more to you — memory or dreams of the future?", "How do you keep pleasant moments?", "What has your experience taught you?"]
+    ]
+  },
+  {
+    "module": 64,
+    "theme": "Надежда",
+    "theme_en": "Hope",
+    "q": [
+      ["Чего хорошего ты ждёшь в ближайшее время?", "Что вселяет в тебя оптимизм?", "О чём ты думаешь с надеждой?"],
+      ["Расскажи про момент, когда надежда тебя поддержала.", "Что помогло тебе поверить, что всё наладится?", "Какое ожидание тебя радует прямо сейчас?"],
+      ["Что помогает тебе сохранять надежду?", "Почему важно верить в лучшее, как ты думаешь?", "Что бы ты сказал тому, кто приуныл?"]
+    ],
+    "q_en": [
+      ["What good thing are you looking forward to soon?", "What fills you with optimism?", "What do you think about with hope?"],
+      ["Tell us about a moment when hope supported you.", "What helped you believe things would work out?", "What expectation makes you happy right now?"],
+      ["What helps you keep hope?", "Why is it important to believe in the best, do you think?", "What would you say to someone feeling down?"]
+    ]
+  },
+  {
+    "module": 65,
+    "theme": "Мудрость",
+    "theme_en": "Wisdom",
+    "q": [
+      ["Какой простой совет в жизни оказался для тебя ценным?", "Чему тебя научили старшие?", "Какое правило ты считаешь по-настоящему мудрым?"],
+      ["Расскажи про урок, который ты вынес из жизни.", "Чьи слова стали для тебя мудростью?", "Какой опыт сделал тебя мудрее?"],
+      ["Мудрость приходит с возрастом или с опытом?", "Что для тебя значит поступать мудро?", "Какой совет ты бы дал самому себе помладше?"]
+    ],
+    "q_en": [
+      ["What simple piece of life advice turned out valuable for you?", "What did your elders teach you?", "What rule do you consider truly wise?"],
+      ["Tell us about a lesson you took from life.", "Whose words became wisdom for you?", "What experience made you wiser?"],
+      ["Does wisdom come with age or with experience?", "What does acting wisely mean to you?", "What advice would you give your younger self?"]
+    ]
+  },
+  {
+    "module": 66,
+    "theme": "Наследие",
+    "theme_en": "Legacy",
+    "q": [
+      ["Что хорошего ты хотел бы передать другим?", "Какой совет ты бы оставил будущим поколениям?", "Чему ты можешь научить тех, кто младше?"],
+      ["Расскажи про традицию или ценность из своей семьи.", "Что передали тебе родные, и ты этим дорожишь?", "Какое умение ты хотел бы передать дальше?"],
+      ["Что значит оставить после себя что-то доброе?", "Какие дела, по-твоему, остаются надолго?", "За что ты хотел бы, чтобы тебя помнили?"]
+    ],
+    "q_en": [
+      ["What good would you like to pass on to others?", "What advice would you leave for future generations?", "What can you teach those who are younger?"],
+      ["Tell us about a tradition or value from your family.", "What did your family pass to you that you cherish?", "What skill would you like to pass forward?"],
+      ["What does leaving something good behind mean?", "What deeds last a long time, in your view?", "What would you like to be remembered for?"]
+    ]
+  },
+  {
+    "module": 67,
+    "theme": "Твой голос",
+    "theme_en": "Your voice",
+    "q": [
+      ["О чём тебе всегда хочется говорить?", "Что ты хотел бы сказать миру, будь у тебя сцена?", "Какая тема — по-настоящему твоя?"],
+      ["Расскажи про момент, когда твой голос был услышан.", "Чем ты гордишься в том, как ты говоришь?", "Какой свой рассказ ты любишь больше всего?"],
+      ["Что для тебя значит иметь свой голос?", "Как изменилась твоя речь за время в приложении?", "Что бы ты сказал тем, кто только начинает говорить смелее?"]
+    ],
+    "q_en": [
+      ["What do you always want to talk about?", "What would you say to the world if you had a stage?", "What topic is truly yours?"],
+      ["Tell us about a moment when your voice was heard.", "What are you proud of in the way you speak?", "What story of yours do you love the most?"],
+      ["What does having your own voice mean to you?", "How has your speech changed during your time in the app?", "What would you say to those just beginning to speak more boldly?"]
+    ]
+  }
+]

@@ -33,9 +33,20 @@ import { useDevTools } from "@/context/DevToolsContext";
 import VoiceRecorder from "@/components/WaveformVoiceRecorder";
 import ReadingLevelView from "@/components/ReadingLevelView";
 import WarmupLevelView from "@/components/warmup/WarmupLevelView";
+import DevSkipButton from "@/components/DevSkipButton";
 import { getModuleFromLevelId } from "@/constants/contentLoader";
 import SpeechAnalyzingLoader from "@/components/SpeechAnalyzingLoader";
 import { getReadingMeta, getLevelsData } from "@/constants/gameContent";
+import {
+  getLiterature,
+  getModuleFromReadingId,
+  getLiteratureFullText,
+  literatureCategory,
+} from "@/constants/literatureLoader";
+import {
+  getTongueTwistersForModule,
+  getModuleFromTongueTwisterId,
+} from "@/constants/tongueTwisterLoader";
 import { analyzeSpeech, generateTips, FILLERS, type SpeechAnalysis } from "@/services/speechAnalysis";
 import { getApiUrl } from "@/lib/query-client";
 import { fetch as expoFetch } from "expo/fetch";
@@ -94,7 +105,7 @@ function highlightFillers(
   return segs;
 }
 
-function TranscriptBlock({
+const TranscriptBlock = React.memo(function TranscriptBlock({
   transcript,
   lang,
   fgText,
@@ -119,7 +130,10 @@ function TranscriptBlock({
     !isLong || expanded
       ? transcript
       : transcript.slice(0, TRANSCRIPT_COLLAPSED_CHARS).trimEnd() + "…";
-  const segments = highlightFillers(visibleText, lang);
+  const segments = React.useMemo(
+    () => highlightFillers(visibleText, lang),
+    [visibleText, lang],
+  );
 
   const toggle = () => {
     if (!isLong) return;
@@ -201,7 +215,7 @@ function TranscriptBlock({
       </Pressable>
     </Animated.View>
   );
-}
+});
 
 function ResultsSheet({
   visible,
@@ -418,6 +432,68 @@ function ResultsSheet({
     </Modal>
   );
 }
+
+// ---- Empty recording (player stayed silent) ----
+// Shown instead of the results sheet when speech-to-text heard nothing. The
+// take is NOT scored or counted — the only action is a gentle re-record.
+function EmptyRecordingSheet({
+  visible,
+  onRetry,
+  colors,
+  isDark,
+  lang,
+}: {
+  visible: boolean;
+  onRetry: () => void;
+  colors: import("@/constants/colors").AppColors;
+  isDark: boolean;
+  lang: "ru" | "en";
+}) {
+  const cardBg = isDark ? "#15151F" : "#FFFFFF";
+  const fg = isDark ? "#F8F8FB" : colors.text;
+  const muted = isDark ? "rgba(248,248,251,0.6)" : colors.textSecondary;
+  const accent = "#0EA5E9";
+  const btnBg = isDark ? "#FFFFFF" : "#0F0F1E";
+  const btnFg = isDark ? "#0A0A12" : "#FFFFFF";
+  return (
+    <Modal visible={visible} animationType="fade" transparent presentationStyle="overFullScreen">
+      <View style={ers.overlay}>
+        <View style={[ers.card, { backgroundColor: cardBg }]}>
+          <View style={[ers.iconCircle, { backgroundColor: accent + "1A" }]}>
+            <Ionicons name="mic-off-outline" size={34} color={accent} />
+          </View>
+          <Text style={[ers.title, { color: fg, fontFamily: "Inter_700Bold" }]}>
+            {lang === "ru" ? "Кажется, мы тебя не услышали" : "We didn't quite hear you"}
+          </Text>
+          <Text style={[ers.body, { color: muted, fontFamily: "Inter_400Regular" }]}>
+            {lang === "ru"
+              ? "Чтобы пройти уровень, нужно говорить вслух. Ничего страшного — попробуй ещё раз, чуть увереннее и ближе к микрофону."
+              : "To pass this level you need to speak out loud. No worries — give it another go, a little louder and closer to the mic."}
+          </Text>
+          <Pressable
+            onPress={onRetry}
+            style={({ pressed }) => [ers.btn, { backgroundColor: btnBg, opacity: pressed ? 0.85 : 1 }]}
+          >
+            <Ionicons name="refresh" size={18} color={btnFg} />
+            <Text style={[ers.btnText, { color: btnFg, fontFamily: "Inter_700Bold" }]}>
+              {lang === "ru" ? "Записать снова" : "Record again"}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const ers = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "center", alignItems: "center", padding: 28 },
+  card: { width: "100%", maxWidth: 380, borderRadius: 24, paddingVertical: 30, paddingHorizontal: 24, alignItems: "center", gap: 14 },
+  iconCircle: { width: 68, height: 68, borderRadius: 34, justifyContent: "center", alignItems: "center" },
+  title: { fontSize: 19, textAlign: "center" },
+  body: { fontSize: 15, lineHeight: 22, textAlign: "center" },
+  btn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, alignSelf: "stretch", height: 52, borderRadius: 16, marginTop: 6 },
+  btnText: { fontSize: 16 },
+});
 
 // ---- Level Complete (modern celebration) ----
 function ConfettiSpark({ delay, x, color }: { delay: number; x: number; color: string }) {
@@ -664,11 +740,32 @@ export default function LevelScreen() {
   const { t, lang } = useLang();
   const { isOpenTestingEnabled } = useDevTools();
 
-  const level = getLevelById(levelId);
+  // Tongue-twister levels (RU) pull their text from JSON (see
+  // tongueTwisterLoader). We keep the SAME number of tasks — only the text is
+  // swapped — so completion/indexing logic is unaffected. EN keeps legacy text.
+  const baseLevel = getLevelById(levelId);
+  const level =
+    baseLevel && lang === "ru" && levelId.startsWith("tonguetwister")
+      ? {
+          ...baseLevel,
+          tasks: (() => {
+            const tts = getTongueTwistersForModule(
+              getModuleFromTongueTwisterId(levelId),
+              baseLevel.tasks.length,
+            );
+            return baseLevel.tasks.map((tk, i) =>
+              tts[i] ? { ...tk, content: tts[i] } : tk,
+            );
+          })(),
+        }
+      : baseLevel;
   const [activeTaskIndex, setActiveTaskIndex] = useState<number | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [currentAnalysis, setCurrentAnalysis] = useState<SpeechAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  // True when speech-to-text ran but heard essentially nothing — the player
+  // stayed silent. We don't score or count such a take; we invite a re-record.
+  const [emptyRecording, setEmptyRecording] = useState(false);
   const [showLevelComplete, setShowLevelComplete] = useState(false);
   const [scores, setScores] = useState<number[]>([]);
   const [readingResetSignal, setReadingResetSignal] = useState(0);
@@ -690,12 +787,21 @@ export default function LevelScreen() {
   const handleLevelCompleteNext = React.useCallback(() => {
     setShowLevelComplete(false);
     setScores([]);
-    if (nextLevel) {
-      router.replace({ pathname: "/level/[id]", params: { id: nextLevel.id } });
-    } else {
+    if (!nextLevel) {
       Alert.alert(t("allLevelsDone"), "", [
         { text: t("okBtn"), onPress: () => router.replace("/(tabs)") },
       ]);
+      return;
+    }
+    // Route by level type — Show Time and Vocabulary have dedicated screens.
+    // Previously every "next level" opened /level/[id], so advancing into a
+    // Show Time level showed the generic task screen (looked like Interview).
+    if (nextLevel.id.startsWith("showtime")) {
+      router.replace({ pathname: "/showtime-stage", params: { levelId: nextLevel.id, mode: "game" } });
+    } else if (nextLevel.id.startsWith("vocabulary")) {
+      router.replace({ pathname: "/vocabulary-level", params: { levelId: nextLevel.id, moduleId: String(nextLevel.module) } });
+    } else {
+      router.replace({ pathname: "/level/[id]", params: { id: nextLevel.id } });
     }
   }, [nextLevel, t]);
 
@@ -801,6 +907,11 @@ export default function LevelScreen() {
       // Undefined when the server didn't return it (older builds, network
       // failure, etc.) — analyzer falls back to its duration heuristic.
       let audioRms: number | undefined;
+      // Whether speech-to-text actually ran (a successful response came back).
+      // We only treat an empty transcript as "the player was silent" when STT
+      // genuinely ran — otherwise (offline / backend down) an empty transcript
+      // just means we couldn't transcribe, which must NOT be blamed on the user.
+      let transcribedOk = false;
       if (audioBase64 && audioBase64.length > 100) {
         try {
           const url = new URL("/api/transcribe", getApiUrl()).toString();
@@ -810,6 +921,7 @@ export default function LevelScreen() {
             body: JSON.stringify({ audioBase64, audioDurationSeconds: durationSeconds }),
           });
           if (res.ok) {
+            transcribedOk = true;
             const data = await res.json();
             if (typeof data.transcript === "string") transcript = data.transcript;
             if (typeof data.audioDurationSeconds === "number" && data.audioDurationSeconds > 0) {
@@ -822,6 +934,17 @@ export default function LevelScreen() {
         } catch (e) {
           console.warn("transcribe failed:", e);
         }
+      }
+
+      // Empty-recording guard: STT ran but heard essentially nothing (fewer
+      // than 2 recognized words). The player stayed silent — don't score it,
+      // don't count the level, and invite a friendly re-record instead.
+      const spokenWords = transcript.trim().split(/\s+/).filter(Boolean).length;
+      if (transcribedOk && spokenWords < 2) {
+        setShowResults(false);
+        setCurrentAnalysis(null);
+        setEmptyRecording(true);
+        return;
       }
 
       // 2) For reading levels, the prompt text is the merged task content —
@@ -906,6 +1029,7 @@ export default function LevelScreen() {
     setShowResults(false);
     setCurrentAnalysis(null);
     setAnalyzing(false);
+    setEmptyRecording(false);
     if (isReadingLevel) setReadingResetSignal((n) => n + 1);
   };
 
@@ -959,21 +1083,39 @@ export default function LevelScreen() {
           isDark={isDark}
           t={t}
         />
+        <DevSkipButton levelId={levelId} />
       </View>
     );
   }
 
   // Reading / poetry levels use a single-text karaoke flow.
   if (isReadingLevel) {
-    const fullText = level.tasks
+    // New Russian literature anthology lives in JSON (see literatureLoader).
+    // Use it for RU; fall back to the legacy hardcoded content for EN or if
+    // the module entry is missing/invalid.
+    const lit = lang === "ru" ? getLiterature(getModuleFromReadingId(levelId)) : null;
+    const legacyText = level.tasks
       .map((tk) => tk.content)
       .filter((c) => !!c)
       .join("\n\n");
+    const fullText = lit ? getLiteratureFullText(lit) : legacyText;
     const accent = level.color || colors.gold;
     const meta = getReadingMeta(levelId);
-    const author = meta ? (lang === "ru" ? meta.authorRu : meta.authorEn) : undefined;
-    const workTitle = meta ? (lang === "ru" ? meta.titleRu : meta.titleEn) : undefined;
-    const category = meta?.category;
+    const author = lit
+      ? lit.author
+      : meta
+        ? lang === "ru"
+          ? meta.authorRu
+          : meta.authorEn
+        : undefined;
+    const workTitle = lit
+      ? lit.work
+      : meta
+        ? lang === "ru"
+          ? meta.titleRu
+          : meta.titleEn
+        : undefined;
+    const category = lit ? literatureCategory(lit.kind) : meta?.category;
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <LinearGradient
@@ -1015,6 +1157,14 @@ export default function LevelScreen() {
           lang={lang}
         />
 
+        <EmptyRecordingSheet
+          visible={emptyRecording}
+          onRetry={handleRetry}
+          colors={colors}
+          isDark={isDark}
+          lang={lang}
+        />
+
         <SpeechAnalyzingLoader visible={analyzing} lang={lang} />
 
         <LevelCompleteModal
@@ -1045,6 +1195,7 @@ export default function LevelScreen() {
         >
           <Ionicons name="close" size={24} color={colors.text} />
         </Pressable>
+        <DevSkipButton levelId={levelId} />
       </View>
     );
   }
@@ -1334,6 +1485,14 @@ export default function LevelScreen() {
         lang={lang}
       />
 
+      <EmptyRecordingSheet
+        visible={emptyRecording}
+        onRetry={handleRetry}
+        colors={colors}
+        isDark={colorScheme === "dark"}
+        lang={lang}
+      />
+
       <SpeechAnalyzingLoader visible={analyzing} lang={lang} />
 
       {/* Level Complete Modal */}
@@ -1360,6 +1519,8 @@ export default function LevelScreen() {
           {t("selfAnalysis")}
         </Text>
       </View>
+
+      <DevSkipButton levelId={levelId} />
     </View>
   );
 }
