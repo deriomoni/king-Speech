@@ -4968,7 +4968,15 @@ export default function ShowtimeStageScreen() {
         </Animated.View>
       )}
 
-      <DevSkipButton levelId={levelId} />
+      <DevSkipButton
+        levelId={levelId}
+        onPreviewResults={() =>
+          router.push({
+            pathname: "/showtime-playback",
+            params: { title: speech.title, levelId, mode, demo: "1" },
+          })
+        }
+      />
     </View>
   );
 }

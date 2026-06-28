@@ -469,15 +469,37 @@ const ac = StyleSheet.create({
   errorText: { flex: 1, fontSize: 13, lineHeight: 19 },
 });
 
+// DEV preview data for the Skip button — showcases the flower score window
+// without a recording. Metrics span the colour tiers (mint / emerald / amber).
+const DEMO_RESULT: AnalysisResult = {
+  stars: 3,
+  score: 8,
+  silent: false,
+  feedback: "Пример оценки: уверенное, живое выступление — поработай над паузами и громкостью.",
+  categories: {
+    diction: { score: 5, label: "Дикция" },
+    expressiveness: { score: 5, label: "Выразительность" },
+    voice: { score: 3, label: "Голос" },
+    confidence: { score: 4, label: "Уверенность" },
+  },
+  metrics: { clarity: 5, expressiveness: 5, volume: 3, confidence: 4, tempo: 4, pauses: 2 },
+  errors: ["Пример: паузы проскакивают — дай ключевым словам прозвучать"],
+  tip: "Совет (пример): делай чуть больше осмысленных пауз после ключевых строк.",
+};
+
 // ── MAIN PLAYBACK SCREEN ──────────────────────────────────────────────────────
 export default function ShowtimePlaybackScreen() {
-  const { recordingUri, title, taskNumber: taskNumberParam, levelId: levelIdParam, mode: modeParam } = useLocalSearchParams<{
+  const { recordingUri, title, taskNumber: taskNumberParam, levelId: levelIdParam, mode: modeParam, demo: demoParam } = useLocalSearchParams<{
     recordingUri: string;
     title: string;
     taskNumber?: string;
     levelId?: string;
     mode?: string;
+    demo?: string;
   }>();
+  // DEV preview: opened from the Skip button to show the flower score window
+  // with example data, no recording required.
+  const isDemo = demoParam === "1";
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -517,6 +539,13 @@ export default function ShowtimePlaybackScreen() {
     headerOpacity.value = withTiming(1, { duration: 600 });
     contentY.value = withDelay(300, withSpring(0, { damping: 16 }));
     contentOpacity.value = withDelay(300, withTiming(1, { duration: 500 }));
+
+    // DEV preview: show example results immediately, skip real analysis.
+    if (isDemo) {
+      setHasListenedFully(true);
+      setAnalysisResult(DEMO_RESULT);
+      return;
+    }
 
     // Always trigger analysis — handles both recorded and missing audio
     const timer = setTimeout(() => runAnalysis(), 2200);
@@ -633,7 +662,7 @@ export default function ShowtimePlaybackScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     playSfx("success").catch(() => {});
 
-    if (!isTrainer) {
+    if (!isTrainer && !isDemo) {
       const score = analysisResult?.score ?? 7;
       completeTask(levelId as any, 1, score);
       completeTask(levelId as any, 2, score);
