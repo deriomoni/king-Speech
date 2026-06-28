@@ -1,12 +1,14 @@
 import React, { useEffect } from "react";
-import { View, Text, StyleSheet } from "react-native";
-import Svg, { Path, Circle, Defs, LinearGradient as SvgLinearGradient, RadialGradient, Stop, G, Line } from "react-native-svg";
+import { View, Text, StyleSheet, Platform } from "react-native";
+import Svg, { Ellipse, Circle, Defs, RadialGradient, Stop } from "react-native-svg";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withDelay,
   withTiming,
   withSpring,
+  withRepeat,
+  withSequence,
   Easing,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
@@ -32,7 +34,7 @@ export const ASPECT_META: Record<
   confidence:     { ru: "Уверенность",     en: "Confidence",     icon: "shield-checkmark-outline" },
   volume:         { ru: "Громкость",       en: "Volume",         icon: "volume-high-outline" },
   tempo:          { ru: "Темп",            en: "Tempo",          icon: "speedometer-outline" },
-  expressiveness: { ru: "Выразительность", en: "Expressiveness", icon: "sparkles-outline" },
+  expressiveness: { ru: "Выразительность", en: "Expressive",     icon: "sparkles-outline" },
   pauses:         { ru: "Паузы",           en: "Pauses",         icon: "pause-circle-outline" },
 };
 
@@ -78,59 +80,115 @@ function clamp10(v: number): number {
 // an at-a-glance heat map across the petals.
 export function toneFor(score: number): string {
   if (score >= 8) return "#5EEAD4"; // aqua mint
-  if (score >= 6) return "#2DD4BF"; // teal
+  if (score >= 6) return "#34D399"; // emerald
   if (score >= 4) return "#FBBF24"; // amber
   return "#FB7185"; // coral
+}
+
+function glow(color: string, radius: number, opacity = 0.9) {
+  return Platform.OS === "web"
+    ? ({ boxShadow: `0 0 ${radius}px ${Math.round(radius * 0.5)}px ${color}` } as any)
+    : {
+        shadowColor: color,
+        shadowOpacity: opacity,
+        shadowRadius: radius,
+        shadowOffset: { width: 0, height: 0 },
+        elevation: 0,
+      };
 }
 
 interface Props {
   overall: number; // 0..10
   aspects: FlowerAspect[];
   size?: number;
-  /** Center label under the score, e.g. "AI" or "/10". */
-  centerLabel?: string;
 }
 
-export default function ScoreFlower({ overall, aspects, size = 300, centerLabel = "/10" }: Props) {
+export default function ScoreFlower({ overall, aspects, size = 320 }: Props) {
   const cx = size / 2;
   const cy = size / 2;
-  const innerR = size * 0.135;
-  const outerR = size * 0.345;
-  const halfW = size * 0.1;
-  const labelR = size * 0.43;
-  const coreR = size * 0.135;
-
   const n = aspects.length;
   const step = 360 / n;
-  const tipY = cy - outerR;
-  const baseY = cy - innerR;
-  const midY = (tipY + baseY) / 2;
-  const petalPath = `M ${cx} ${baseY} Q ${cx + halfW} ${midY} ${cx} ${tipY} Q ${cx - halfW} ${midY} ${cx} ${baseY} Z`;
+
+  // Petal geometry — broad rounded lobes (ellipses) overlapping toward the
+  // centre, so the whole thing reads as a flower and each petal is big enough
+  // to hold its own label + score INSIDE it.
+  const lobeDist = size * 0.255; // centre→petal-centre
+  const rx = size * 0.14; // petal half-width
+  const ry = size * 0.185; // petal half-length (radial)
+  const coreR = size * 0.155;
 
   const overallTone = toneFor(overall);
 
-  // Whole-flower entrance (RN view animation — reliable across SVG).
-  const bloom = useSharedValue(0.92);
+  // Whole-flower entrance.
+  const bloom = useSharedValue(0.9);
   const fade = useSharedValue(0);
-  const coreScale = useSharedValue(0.5);
-  const coreOpacity = useSharedValue(0);
   useEffect(() => {
     fade.value = withTiming(1, { duration: 450 });
     bloom.value = withSpring(1, { damping: 14, stiffness: 90 });
-    coreScale.value = withDelay(140, withSpring(1, { damping: 11 }));
-    coreOpacity.value = withDelay(140, withTiming(1, { duration: 450 }));
   }, []);
   const flowerStyle = useAnimatedStyle(() => ({
     opacity: fade.value,
     transform: [{ scale: bloom.value }],
   }));
-  const coreStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: coreScale.value }],
-    opacity: coreOpacity.value,
+
+  // Looping "aura" — a soft tone halo that breathes behind the core.
+  const aura = useSharedValue(0);
+  useEffect(() => {
+    aura.value = withDelay(
+      300,
+      withRepeat(withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.quad) }), -1, true),
+    );
+  }, []);
+  const auraStyle = useAnimatedStyle(() => ({
+    opacity: 0.28 + aura.value * 0.34,
+    transform: [{ scale: 0.92 + aura.value * 0.16 }],
   }));
 
+  // Looping micro-pulse on the overall number + a delayed entrance.
+  const numScale = useSharedValue(0.6);
+  const numOpacity = useSharedValue(0);
+  useEffect(() => {
+    numOpacity.value = withDelay(160, withTiming(1, { duration: 450 }));
+    numScale.value = withDelay(
+      160,
+      withSequence(
+        withSpring(1, { damping: 10 }),
+        withRepeat(
+          withSequence(
+            withTiming(1.045, { duration: 1300, easing: Easing.inOut(Easing.quad) }),
+            withTiming(1, { duration: 1300, easing: Easing.inOut(Easing.quad) }),
+          ),
+          -1,
+          false,
+        ),
+      ),
+    );
+  }, []);
+  const numStyle = useAnimatedStyle(() => ({
+    opacity: numOpacity.value,
+    transform: [{ scale: numScale.value }],
+  }));
+
+  const auraSize = size * 0.52;
+
   return (
-    <View style={{ width: size, height: size }}>
+    <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
+      {/* Breathing aura behind the core */}
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          {
+            position: "absolute",
+            width: auraSize,
+            height: auraSize,
+            borderRadius: auraSize / 2,
+            backgroundColor: overallTone + "26",
+            ...glow(overallTone, size * 0.16, 0.8),
+          },
+          auraStyle,
+        ]}
+      />
+
       <Animated.View style={[StyleSheet.absoluteFill, flowerStyle]}>
         <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
           <Defs>
@@ -138,80 +196,61 @@ export default function ScoreFlower({ overall, aspects, size = 300, centerLabel 
               const frac = a.score / 10;
               const color = toneFor(a.score);
               return (
-                <SvgLinearGradient key={i} id={`pet${i}`} x1="0.5" y1="1" x2="0.5" y2="0">
-                  <Stop offset="0" stopColor={color} stopOpacity={(0.22 + frac * 0.6).toFixed(3)} />
-                  <Stop offset="0.55" stopColor={color} stopOpacity={(0.12 + frac * 0.35).toFixed(3)} />
-                  <Stop offset="1" stopColor={color} stopOpacity="0.04" />
-                </SvgLinearGradient>
+                <RadialGradient key={i} id={`pet${i}`} cx="50%" cy="40%" r="62%">
+                  <Stop offset="0" stopColor={color} stopOpacity={(0.34 + frac * 0.45).toFixed(3)} />
+                  <Stop offset="0.6" stopColor={color} stopOpacity={(0.16 + frac * 0.3).toFixed(3)} />
+                  <Stop offset="1" stopColor={color} stopOpacity="0.05" />
+                </RadialGradient>
               );
             })}
-            <RadialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
-              <Stop offset="0" stopColor={overallTone} stopOpacity="0.30" />
-              <Stop offset="1" stopColor={overallTone} stopOpacity="0" />
-            </RadialGradient>
-            <RadialGradient id="coreFill" cx="50%" cy="42%" r="65%">
-              <Stop offset="0" stopColor="#1A1530" stopOpacity="1" />
-              <Stop offset="1" stopColor="#0B0913" stopOpacity="1" />
+            <RadialGradient id="coreFill" cx="50%" cy="40%" r="70%">
+              <Stop offset="0" stopColor="#15131F" stopOpacity="1" />
+              <Stop offset="1" stopColor="#08070D" stopOpacity="1" />
             </RadialGradient>
           </Defs>
 
-          {/* Soft centre halo */}
-          <Circle cx={cx} cy={cy} r={outerR * 0.95} fill="url(#coreGlow)" />
-
-          {/* Faint radial guide lines (neo grid) */}
-          {aspects.map((_, i) => {
-            const a = ((-90 + i * step) * Math.PI) / 180;
+          {/* Petals — rounded lobes overlapping toward the centre */}
+          {aspects.map((a, i) => {
+            const ang = ((-90 + i * step) * Math.PI) / 180;
+            const lx = cx + Math.cos(ang) * lobeDist;
+            const ly = cy + Math.sin(ang) * lobeDist;
+            const color = toneFor(a.score);
+            const frac = a.score / 10;
+            const rotDeg = -90 + i * step + 90; // long axis points outward
             return (
-              <Line
-                key={`l${i}`}
-                x1={cx}
-                y1={cy}
-                x2={cx + Math.cos(a) * outerR}
-                y2={cy + Math.sin(a) * outerR}
-                stroke="#5EEAD4"
-                strokeOpacity={0.06}
-                strokeWidth={1}
+              <Ellipse
+                key={i}
+                cx={lx}
+                cy={ly}
+                rx={rx}
+                ry={ry}
+                fill={`url(#pet${i})`}
+                stroke={color}
+                strokeWidth={1.25}
+                strokeOpacity={0.25 + frac * 0.45}
+                transform={`rotate(${rotDeg} ${lx} ${ly})`}
               />
             );
           })}
 
-          {/* Petals */}
-          {aspects.map((a, i) => {
-            const color = toneFor(a.score);
-            const frac = a.score / 10;
-            return (
-              <G key={i} transform={`rotate(${i * step} ${cx} ${cy})`}>
-                <Path
-                  d={petalPath}
-                  fill={`url(#pet${i})`}
-                  stroke={color}
-                  strokeWidth={1.5}
-                  strokeOpacity={0.3 + frac * 0.5}
-                />
-              </G>
-            );
-          })}
-
-          {/* Centre core ring */}
-          <Circle cx={cx} cy={cy} r={coreR + 4} fill="none" stroke={overallTone} strokeOpacity={0.25} strokeWidth={1} />
-          <Circle cx={cx} cy={cy} r={coreR} fill="url(#coreFill)" stroke="#7C3AED" strokeWidth={2.5} />
-          <Circle cx={cx} cy={cy} r={coreR - 5} fill="none" stroke="#7C3AED" strokeOpacity={0.4} strokeWidth={1} />
+          {/* Centre core — dark glass, thin tone ring (no purple) */}
+          <Circle cx={cx} cy={cy} r={coreR + 3} fill="none" stroke={overallTone} strokeOpacity={0.18} strokeWidth={1} />
+          <Circle cx={cx} cy={cy} r={coreR} fill="url(#coreFill)" stroke={overallTone} strokeWidth={1.5} strokeOpacity={0.85} />
         </Svg>
       </Animated.View>
 
-      {/* Center score (RN text overlay for crisp typography) */}
-      <Animated.View style={[StyleSheet.absoluteFill, st.center, coreStyle]} pointerEvents="none">
+      {/* Centre overall score — looping micro-pulse */}
+      <Animated.View style={[st.center, numStyle]} pointerEvents="none">
         <Text style={[st.scoreNum, { color: overallTone }]}>{overall.toFixed(1)}</Text>
-        <Text style={st.scoreDenom}>{centerLabel}</Text>
+        <View style={[st.scoreUnderline, { backgroundColor: overallTone }]} />
       </Animated.View>
 
-      {/* Petal labels + per-aspect scores (positioned by polar geometry) */}
+      {/* Per-petal label + score, INSIDE each lobe (upright) */}
       {aspects.map((a, i) => {
         const ang = ((-90 + i * step) * Math.PI) / 180;
-        const lx = cx + Math.cos(ang) * labelR;
-        const ly = cy + Math.sin(ang) * labelR;
-        const tone = toneFor(a.score);
-        const BOX = size * 0.3;
+        const lx = cx + Math.cos(ang) * (lobeDist * 1.02);
+        const ly = cy + Math.sin(ang) * (lobeDist * 1.02);
+        const BOX = size * 0.26;
         return (
           <AspectLabel
             key={`lbl${i}`}
@@ -220,9 +259,9 @@ export default function ScoreFlower({ overall, aspects, size = 300, centerLabel 
             box={BOX}
             label={a.label}
             score={a.score}
-            tone={tone}
+            tone={toneFor(a.score)}
             icon={ASPECT_META[a.key].icon}
-            delay={300 + i * 70}
+            delay={420 + i * 70}
           />
         );
       })}
@@ -250,34 +289,37 @@ function AspectLabel({
   delay: number;
 }) {
   const op = useSharedValue(0);
-  const ty = useSharedValue(6);
+  const sc = useSharedValue(0.7);
   useEffect(() => {
-    op.value = withDelay(delay, withTiming(1, { duration: 350, easing: Easing.out(Easing.quad) }));
-    ty.value = withDelay(delay, withSpring(0, { damping: 13 }));
+    op.value = withDelay(delay, withTiming(1, { duration: 360, easing: Easing.out(Easing.quad) }));
+    sc.value = withDelay(delay, withSpring(1, { damping: 13 }));
   }, []);
-  const style = useAnimatedStyle(() => ({ opacity: op.value, transform: [{ translateY: ty.value }] }));
+  const style = useAnimatedStyle(() => ({ opacity: op.value, transform: [{ scale: sc.value }] }));
   return (
     <Animated.View
       pointerEvents="none"
-      style={[st.labelBox, { width: box, left: x - box / 2, top: y - box * 0.16 }, style]}
+      style={[st.labelBox, { width: box, left: x - box / 2, top: y - box * 0.42 }, style]}
     >
-      <View style={st.labelRow}>
-        <Ionicons name={icon} size={12} color={tone} />
-        <Text numberOfLines={1} style={[st.labelText, { color: "rgba(244,244,250,0.78)" }]}>
-          {label}
-        </Text>
-      </View>
+      <Ionicons name={icon} size={13} color={tone} style={{ marginBottom: 1 }} />
+      <Text numberOfLines={2} style={st.labelText}>
+        {label}
+      </Text>
       <Text style={[st.labelScore, { color: tone }]}>{score.toFixed(1)}</Text>
     </Animated.View>
   );
 }
 
 const st = StyleSheet.create({
-  center: { alignItems: "center", justifyContent: "center" },
-  scoreNum: { fontSize: 34, fontFamily: "Inter_700Bold", letterSpacing: -1, lineHeight: 38 },
-  scoreDenom: { fontSize: 12, fontFamily: "Inter_500Medium", color: "rgba(244,244,250,0.45)", marginTop: -2 },
-  labelBox: { position: "absolute", alignItems: "center", gap: 1 },
-  labelRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  labelText: { fontSize: 11, fontFamily: "Inter_500Medium", letterSpacing: 0.1 },
-  labelScore: { fontSize: 15, fontFamily: "Inter_700Bold", letterSpacing: -0.3 },
+  center: { position: "absolute", alignItems: "center", justifyContent: "center" },
+  scoreNum: { fontSize: 40, fontFamily: "Fredoka_700Bold", letterSpacing: 0.5, lineHeight: 46 },
+  scoreUnderline: { width: 22, height: 3, borderRadius: 2, marginTop: 3, opacity: 0.85 },
+  labelBox: { position: "absolute", alignItems: "center", gap: 0 },
+  labelText: {
+    fontSize: 10.5,
+    fontFamily: "Rubik_500Medium",
+    color: "rgba(244,244,250,0.82)",
+    textAlign: "center",
+    lineHeight: 13,
+  },
+  labelScore: { fontSize: 18, fontFamily: "Fredoka_700Bold", letterSpacing: 0.3, marginTop: 1 },
 });

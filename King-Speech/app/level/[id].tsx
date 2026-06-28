@@ -8,6 +8,7 @@ import {
   Platform,
   Modal,
   Alert,
+  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
@@ -65,6 +66,8 @@ const RS_LOW  = "#FB7185";   // coral pink  (<6) — only red-ish tone in app, i
 // Transcript display: collapse anything longer than this so the sheet stays
 // scannable at a glance. The user can tap to reveal the rest.
 const TRANSCRIPT_COLLAPSED_CHARS = 180;
+
+const SCREEN_W = Dimensions.get("window").width;
 
 // DEV preview data for the Skip button — showcases the score window (flower)
 // without a real recording. Scores deliberately span the colour tiers so every
@@ -268,146 +271,184 @@ function ResultsSheet({
     return null;
   }
 
-  const score = analysis.score.overall;
-  const tone = (v: number) => (v >= 8 ? RS_HIGH : v >= 6 ? RS_MID : RS_LOW);
-  const scoreColor = tone(score);
+  return (
+    <Modal visible={visible} animationType="slide" transparent={false} presentationStyle="fullScreen">
+      <FlowerResultWindow
+        overall={analysis.score.overall}
+        aspects={aspectsFromScore10(analysis.score, lang)}
+        summary={analysis.summary}
+        tip={analysis.tip}
+        growth={analysis.recommendations}
+        strengths={analysis.strengths}
+        isDark={isDark}
+        colors={colors}
+        t={t}
+        lang={lang}
+        primaryLabel={t("forward")}
+        onPrimary={onNext}
+        onRetry={onRetry}
+      />
+    </Modal>
+  );
+}
 
-  // Premium background: deep black gradient (dark mode) or soft cream
-  // gradient (light mode). Both have a subtle accent halo behind the score.
+// ───────────────────────────────────────────────────────────────────────────
+// Shared full-screen "score window": dark-neon flower + a single combined
+// "what to improve" message (tip + growth points merged). Reused by the
+// generic level results sheet; the reading self-review embeds its own variant.
+// ───────────────────────────────────────────────────────────────────────────
+export function FlowerResultWindow({
+  overall,
+  aspects,
+  summary,
+  tip,
+  growth,
+  strengths,
+  isDark,
+  colors,
+  t,
+  lang,
+  primaryLabel,
+  onPrimary,
+  onRetry,
+}: {
+  overall: number;
+  aspects: ReturnType<typeof aspectsFromScore10>;
+  summary?: string;
+  tip?: string;
+  growth?: string[];
+  strengths?: string[];
+  isDark: boolean;
+  colors: import("@/constants/colors").AppColors;
+  t: (key: any) => string;
+  lang: "ru" | "en";
+  primaryLabel: string;
+  onPrimary: () => void;
+  onRetry?: () => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const topPad = Platform.OS === "web" ? 28 : insets.top + 8;
+  const bottomPad = Platform.OS === "web" ? 28 : insets.bottom + 10;
+
+  const tone = (v: number) => (v >= 8 ? RS_HIGH : v >= 6 ? "#34D399" : v >= 4 ? "#FBBF24" : RS_LOW);
+  const scoreColor = tone(overall);
+
+  // Deep teal-black neon canvas (no purple) to match the flower.
   const bgColors = isDark
-    ? (["#06060A", "#15151F", "#0A0A12"] as const)
-    : (["#F8FAFC", "#EEF1F7", "#F4F4F7"] as const);
-  const haloColor = isDark ? "rgba(124,58,237,0.18)" : "rgba(124,58,237,0.10)";
-  const fgText = isDark ? "#F8F8FB" : colors.text;
-  const fgMuted = isDark ? "rgba(248,248,251,0.55)" : colors.textSecondary;
-  const fgFaint = isDark ? "rgba(248,248,251,0.35)" : colors.textMuted;
-  const trackBg = isDark ? "rgba(255,255,255,0.07)" : "rgba(15,15,30,0.07)";
-  const handleBg = isDark ? "rgba(255,255,255,0.18)" : "rgba(15,15,30,0.18)";
-  const retryBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(15,15,30,0.04)";
-  const retryBorder = isDark ? "rgba(255,255,255,0.10)" : "rgba(15,15,30,0.08)";
-  const nextBg = isDark ? "#FFFFFF" : "#0F0F1E";
-  const nextFg = isDark ? "#0A0A12" : "#FFFFFF";
+    ? (["#05080A", "#0A1210", "#06090B"] as const)
+    : (["#F3F7F6", "#EAF1EF", "#F3F7F6"] as const);
+  const fgText = isDark ? "#F1F6F4" : colors.text;
+  const fgMuted = isDark ? "rgba(241,246,244,0.62)" : colors.textSecondary;
+  const cardBg = isDark ? "rgba(255,255,255,0.045)" : "rgba(10,40,36,0.04)";
+  const cardBorder = isDark ? "rgba(94,234,212,0.16)" : "rgba(10,50,46,0.10)";
+  const retryBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(10,30,28,0.04)";
+  const retryBorder = isDark ? "rgba(255,255,255,0.10)" : "rgba(10,30,28,0.08)";
+
+  // Merge the coaching tip + growth points into ONE message (tip leads, the
+  // remaining growth points become supporting lines).
+  const tipText = (tip ?? "").trim();
+  const growthLines = (growth ?? [])
+    .map((g) => g.trim())
+    .filter((g) => g && g.toLowerCase() !== tipText.toLowerCase());
+  const hasAdvice = !!tipText || growthLines.length > 0;
+  const strengthList = (strengths ?? []).filter(Boolean);
 
   return (
-    <Modal visible={visible} animationType="slide" transparent presentationStyle="overFullScreen">
-      <View style={rs.overlay}>
-        <View style={[rs.sheet, { backgroundColor: bgColors[0] }]}>
-          <LinearGradient
-            colors={bgColors}
-            style={StyleSheet.absoluteFill}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-          />
-          {/* Soft accent halo behind score */}
-          <View pointerEvents="none" style={[rs.halo, { backgroundColor: haloColor }]} />
+    <View style={{ flex: 1, backgroundColor: bgColors[0] }}>
+      <LinearGradient colors={bgColors} style={StyleSheet.absoluteFill} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} />
 
-          <View style={[rs.handle, { backgroundColor: handleBg }]} />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[rs.content, { paddingTop: topPad, paddingBottom: bottomPad + 8 }]}
+      >
+        <Animated.Text
+          entering={FadeIn.duration(400)}
+          style={[rs.kicker, { color: scoreColor, fontFamily: "Rubik_600SemiBold" }]}
+        >
+          {(lang === "ru" ? "Оценка ИИ" : "AI score").toUpperCase()}
+        </Animated.Text>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={rs.content}>
-            {/* Score flower — one petal per aspect, overall in the centre */}
-            <Animated.View entering={FadeIn.duration(400)} style={rs.flowerSection}>
-              <ScoreFlower
-                overall={score}
-                aspects={aspectsFromScore10(analysis.score, lang)}
-                size={300}
-                centerLabel="AI"
-              />
-              <Text style={[rs.scoreSummary, { color: fgText, fontFamily: "Inter_600SemiBold" }]}>
-                {analysis.summary}
+        {/* Flower */}
+        <Animated.View entering={FadeIn.duration(450)} style={rs.flowerSection}>
+          <ScoreFlower overall={overall} aspects={aspects} size={Math.min(360, SCREEN_W - 48)} />
+        </Animated.View>
+
+        {/* Summary right under the flower */}
+        {summary ? (
+          <Animated.Text
+            entering={FadeInDown.delay(120).duration(400)}
+            style={[rs.summary, { color: fgText, fontFamily: "Nunito_700Bold" }]}
+          >
+            {summary}
+          </Animated.Text>
+        ) : null}
+
+        {/* One combined "what to improve" message (tip + growth merged) */}
+        {hasAdvice ? (
+          <Animated.View
+            entering={FadeInDown.delay(220).duration(400)}
+            style={[rs.adviceCard, { backgroundColor: scoreColor + "12", borderColor: scoreColor + "40" }]}
+          >
+            <View style={rs.adviceHead}>
+              <Ionicons name="bulb" size={16} color={scoreColor} />
+              <Text style={[rs.adviceTitle, { color: scoreColor, fontFamily: "Rubik_600SemiBold" }]}>
+                {lang === "ru" ? "Над чем поработать" : "What to work on"}
               </Text>
-            </Animated.View>
+            </View>
+            {tipText ? (
+              <Text style={[rs.adviceLead, { color: fgText, fontFamily: "Nunito_700Bold" }]}>{tipText}</Text>
+            ) : null}
+            {growthLines.map((g, i) => (
+              <View key={i} style={rs.adviceRow}>
+                <View style={[rs.dot, { backgroundColor: scoreColor }]} />
+                <Text style={[rs.adviceText, { color: fgMuted, fontFamily: "Nunito_400Regular" }]}>{g}</Text>
+              </View>
+            ))}
+          </Animated.View>
+        ) : null}
 
-            {/* Strengths */}
-            <Animated.View entering={FadeInDown.delay(200).duration(400)} style={rs.feedbackSection}>
-              <Text style={[rs.feedbackTitle, { color: fgText, fontFamily: "Inter_600SemiBold" }]}>
+        {/* Strengths — compact positive note */}
+        {strengthList.length > 0 ? (
+          <Animated.View
+            entering={FadeInDown.delay(300).duration(400)}
+            style={[rs.strengthCard, { backgroundColor: cardBg, borderColor: cardBorder }]}
+          >
+            <View style={rs.adviceHead}>
+              <Ionicons name="sparkles" size={15} color={RS_HIGH} />
+              <Text style={[rs.adviceTitle, { color: RS_HIGH, fontFamily: "Rubik_600SemiBold" }]}>
                 {t("strengths")}
               </Text>
-              {analysis.strengths.map((s, i) => (
-                <View key={i} style={rs.feedbackRow}>
-                  <View style={[rs.dot, { backgroundColor: RS_HIGH }]} />
-                  <Text style={[rs.feedbackText, { color: fgMuted, fontFamily: "Inter_400Regular" }]}>
-                    {s}
-                  </Text>
-                </View>
-              ))}
-            </Animated.View>
+            </View>
+            <Text style={[rs.adviceText, { color: fgMuted, fontFamily: "Nunito_400Regular" }]}>
+              {strengthList.join(" · ")}
+            </Text>
+          </Animated.View>
+        ) : null}
 
-            {/* Recommendations */}
-            <Animated.View entering={FadeInDown.delay(300).duration(400)} style={rs.feedbackSection}>
-              <Text style={[rs.feedbackTitle, { color: fgText, fontFamily: "Inter_600SemiBold" }]}>
-                {t("growthPoints")}
-              </Text>
-              {analysis.recommendations.map((r, i) => (
-                <View key={i} style={rs.feedbackRow}>
-                  <View style={[rs.dot, { backgroundColor: RS_MID }]} />
-                  <Text style={[rs.feedbackText, { color: fgMuted, fontFamily: "Inter_400Regular" }]}>
-                    {r}
-                  </Text>
-                </View>
-              ))}
-            </Animated.View>
-
-            {/* What we heard — surfaces the raw transcript so users can
-                see what the analyzer actually scored against. Filler words
-                are highlighted in the score-tone accent so the clarity /
-                confidence drop becomes visible at a glance. */}
-            {analysis.transcript && analysis.transcript.trim().length > 0 ? (
-              <TranscriptBlock
-                transcript={analysis.transcript.trim()}
-                lang={lang}
-                fgText={fgText}
-                fgMuted={fgMuted}
-                cardBg={isDark ? "rgba(255,255,255,0.04)" : "rgba(15,15,30,0.03)"}
-                cardBorder={isDark ? "rgba(255,255,255,0.08)" : "rgba(15,15,30,0.08)"}
-                accent={RS_LOW}
-                fillerBg={RS_LOW + "22"}
-              />
-            ) : null}
-
-            {/* Personal tip — derived from the weakest criterion. */}
-            {analysis.tip ? (
-              <Animated.View entering={FadeInDown.delay(350).duration(400)} style={[rs.tipCard, { borderColor: scoreColor + "55", backgroundColor: scoreColor + "12" }]}>
-                <View style={rs.tipHeader}>
-                  <Ionicons name="bulb" size={16} color={scoreColor} />
-                  <Text style={[rs.tipLabel, { color: scoreColor, fontFamily: "Inter_600SemiBold" }]}>
-                    {lang === "ru" ? "Совет на следующий раз" : "Tip for next take"}
-                  </Text>
-                </View>
-                <Text style={[rs.tipText, { color: fgText, fontFamily: "Inter_500Medium" }]}>
-                  {analysis.tip}
-                </Text>
-              </Animated.View>
-            ) : null}
-
-            {/* Buttons */}
-            <Animated.View entering={FadeInDown.delay(400).duration(400)} style={rs.btnRow}>
-              <Pressable
-                onPress={onRetry}
-                style={({ pressed }) => [
-                  rs.retryBtn,
-                  { backgroundColor: retryBg, borderColor: retryBorder, opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Ionicons name="refresh" size={18} color={fgMuted} />
-                <Text style={[rs.retryBtnText, { color: fgMuted, fontFamily: "Inter_600SemiBold" }]}>
-                  {t("again")}
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={onNext}
-                style={({ pressed }) => [
-                  rs.nextBtn,
-                  { backgroundColor: nextBg, opacity: pressed ? 0.85 : 1 },
-                ]}
-              >
-                <Text style={[rs.nextBtnText, { fontFamily: "Inter_700Bold", color: nextFg }]}>{t("forward")}</Text>
-                <Ionicons name="arrow-forward" size={18} color={nextFg} />
-              </Pressable>
-            </Animated.View>
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
+        {/* Buttons */}
+        <Animated.View entering={FadeInDown.delay(380).duration(400)} style={rs.btnRow}>
+          {onRetry ? (
+            <Pressable
+              onPress={onRetry}
+              style={({ pressed }) => [
+                rs.retryBtn,
+                { backgroundColor: retryBg, borderColor: retryBorder, opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <Ionicons name="refresh" size={18} color={fgMuted} />
+              <Text style={[rs.retryBtnText, { color: fgMuted, fontFamily: "Rubik_600SemiBold" }]}>{t("again")}</Text>
+            </Pressable>
+          ) : null}
+          <Pressable
+            onPress={onPrimary}
+            style={({ pressed }) => [rs.nextBtn, { backgroundColor: scoreColor, opacity: pressed ? 0.85 : 1 }]}
+          >
+            <Text style={[rs.nextBtnText, { fontFamily: "Rubik_700Bold", color: "#06100E" }]}>{primaryLabel}</Text>
+            <Ionicons name="arrow-forward" size={18} color="#06100E" />
+          </Pressable>
+        </Animated.View>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -1779,6 +1820,17 @@ const rs = StyleSheet.create({
     borderRadius: 16,
   },
   nextBtnText: { fontSize: 16 },
+
+  // Flower result window
+  kicker: { fontSize: 12, letterSpacing: 2.5, textAlign: "center", marginBottom: 2 },
+  summary: { fontSize: 17, lineHeight: 24, textAlign: "center", marginTop: 2 },
+  adviceCard: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 9 },
+  adviceHead: { flexDirection: "row", alignItems: "center", gap: 7 },
+  adviceTitle: { fontSize: 13, letterSpacing: 0.6, textTransform: "uppercase" },
+  adviceLead: { fontSize: 15.5, lineHeight: 22 },
+  adviceRow: { flexDirection: "row", alignItems: "flex-start", gap: 9 },
+  adviceText: { flex: 1, fontSize: 14, lineHeight: 20 },
+  strengthCard: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 8 },
 });
 
 // Level complete styles (modern celebration)

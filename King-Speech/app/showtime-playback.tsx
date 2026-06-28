@@ -399,7 +399,7 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
       {/* Flower (per-aspect petals) when we have full metrics; else stars. */}
       {metrics ? (
         <View style={ac.flowerWrap}>
-          <ScoreFlower overall={overall10} aspects={aspectsFromMetrics5(metrics, lang)} size={300} centerLabel="AI" />
+          <ScoreFlower overall={overall10} aspects={aspectsFromMetrics5(metrics, lang)} size={300} />
         </View>
       ) : (
         <View style={ac.starsRow}>
