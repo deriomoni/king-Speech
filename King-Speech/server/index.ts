@@ -1,3 +1,6 @@
+// MUST be first: populate process.env from .env before any module that reads
+// secrets at import time (llm.ts → ANTHROPIC_API_KEY, audio/client.ts → OPENAI).
+import "./load-env";
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
@@ -34,7 +37,12 @@ function setupCors(app: express.Application) {
       origin?.startsWith("http://localhost:") ||
       origin?.startsWith("http://127.0.0.1:");
 
-    if (origin && (origins.has(origin) || isLocalhost)) {
+    // In development, reflect any origin so the Expo web preview works whether
+    // it's served from localhost or the machine's LAN IP (e.g. 192.168.x.x).
+    // Native (Expo Go) isn't subject to CORS, so this only matters for web.
+    const isDev = process.env.NODE_ENV !== "production";
+
+    if (origin && (origins.has(origin) || isLocalhost || isDev)) {
       res.header("Access-Control-Allow-Origin", origin);
       res.header(
         "Access-Control-Allow-Methods",
