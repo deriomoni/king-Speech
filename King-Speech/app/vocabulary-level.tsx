@@ -13,6 +13,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -304,58 +305,62 @@ function TutorialPhase({
 // PHASE 1 — SPIN
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Text Scroller reel geometry.
-const ITEM_H = 52;
-const VISIBLE_ROWS = 5;
-const CENTER_ROW = (VISIBLE_ROWS - 1) / 2;
-const REEL_LEN = 96; // long enough to keep scrolling for the full 6s window
-const SETTLE_ROWS = 4; // rows to glide past after STOP for a natural landing
-const SPIN_SPEED = 14; // rows per second while spinning
+// Text Scroller reel geometry — HORIZONTAL sweep (words travel left → right,
+// entering from the left edge like the Lottie reference), decelerating to land
+// on the centred word.
+const ROW_H = 130; // height of the reel window (a single tall row)
+const REEL_LEN = 72; // long enough to keep sweeping for the full auto-stop window
+const SETTLE_COLS = 3; // slots to glide past after STOP for a natural landing
+const SPIN_SPEED = 4.2; // words per second while spinning (calm, like the reference)
 
-// One scrolling word. Its size / opacity / colour are derived purely from its
-// distance to the live scroll position, so a single continuous animation drives
-// the whole slot-machine effect — the centred word is big & red, edges fade out.
-function ReelRow({
+// One sweeping word. Its size / opacity / colour are derived purely from its
+// horizontal distance to the live scroll position, so a single continuous
+// animation drives the whole effect — the centred word is big & red, the
+// neighbours peeking at the edges fade out.
+function ReelCol({
   word,
   index,
   pos,
   popScale,
   landed,
+  itemW,
 }: {
   word: string;
   index: number;
   pos: SharedValue<number>;
   popScale: SharedValue<number>;
   landed: boolean;
+  itemW: number;
 }) {
   const style = useAnimatedStyle(() => {
     const d = Math.abs(index - pos.value);
     let scale = interpolate(
       d,
-      [0, 1, 2, 3],
-      [1, 0.66, 0.5, 0.44],
+      [0, 1, 2],
+      [1, 0.58, 0.44],
       Extrapolation.CLAMP,
     );
     if (landed) scale *= popScale.value;
     const opacity = interpolate(
       d,
-      [0, 1, 2, 3, 4],
-      [1, 0.5, 0.22, 0.08, 0],
+      [0, 0.6, 1.4, 2],
+      [1, 0.6, 0.18, 0],
       Extrapolation.CLAMP,
     );
     const color = interpolateColor(
       d > 1 ? 1 : d,
       [0, 1],
-      [RED, "rgba(255,255,255,0.92)"],
+      [RED, "rgba(255,255,255,0.9)"],
     );
     return { opacity, color, transform: [{ scale }] };
   });
 
   return (
     <Animated.Text
-      style={[styles.reelRow, style]}
+      style={[styles.reelCol, { width: itemW }, style]}
       numberOfLines={1}
       adjustsFontSizeToFit
+      minimumFontScale={0.5}
     >
       {word.toUpperCase()}
     </Animated.Text>
@@ -371,6 +376,11 @@ function SpinPhase({
   onPicked: (w: VocabWord) => void;
   onClose: () => void;
 }) {
+  const { width: SCREEN_W } = useWindowDimensions();
+  // Centre word occupies ~55% of the width so its neighbours peek in from the
+  // left and right edges, selling the horizontal "sweep".
+  const itemW = Math.min(320, Math.max(200, SCREEN_W * 0.55));
+
   // A finite reel of Russian words, frozen ONCE at mount. Because the strip is
   // built here (not derived from a live pool), the parent recording the picked
   // word — which changes excludeIds — can never reshuffle it mid-spin, so the
@@ -385,7 +395,11 @@ function SpinPhase({
     );
   });
 
-  const pos = useSharedValue(0);
+  // Start near the END of the reel and count DOWN toward the start so the strip
+  // slides to the RIGHT — new words enter from the left edge (the direction the
+  // reference sweeps).
+  const START_POS = REEL_LEN - 2;
+  const pos = useSharedValue(START_POS);
   const popScale = useSharedValue(1);
   const [landIndex, setLandIndex] = useState<number | null>(null);
   const stoppedRef = useRef(false);
@@ -393,11 +407,13 @@ function SpinPhase({
   const isSpinning = landIndex == null;
   const center = landIndex != null ? reel[landIndex] : null;
 
-  // Continuous constant-speed scroll while spinning.
+  // Continuous constant-speed sweep while spinning. Runs a bit longer than the
+  // 6s auto-stop so the reel can never run dry before it stops.
   useEffect(() => {
-    const farTarget = REEL_LEN - SETTLE_ROWS - 2;
+    const travel = SPIN_SPEED * 7.5;
+    const farTarget = Math.max(START_POS - travel, SETTLE_COLS + 1);
     pos.value = withTiming(farTarget, {
-      duration: (farTarget / SPIN_SPEED) * 1000,
+      duration: ((START_POS - farTarget) / SPIN_SPEED) * 1000,
       easing: Easing.linear,
     });
     return () => cancelAnimation(pos);
@@ -408,7 +424,7 @@ function SpinPhase({
     (idx: number) => {
       setLandIndex(idx);
       popScale.value = withSequence(
-        withTiming(1.18, { duration: 220 }),
+        withTiming(1.16, { duration: 220 }),
         withTiming(1, { duration: 260 }),
       );
       if (Platform.OS !== "web") {
@@ -420,15 +436,16 @@ function SpinPhase({
   );
 
   // Glide to a clean landing on STOP / auto-stop. Guarded so the button and the
-  // 6s timeout can't both trigger a landing.
+  // 6s timeout can't both trigger a landing. Continues in the same direction
+  // (counting down) for a natural deceleration.
   const stop = useCallback(() => {
     if (stoppedRef.current) return;
     stoppedRef.current = true;
-    const land = Math.min(Math.round(pos.value) + SETTLE_ROWS, REEL_LEN - 1);
+    const land = Math.max(Math.round(pos.value) - SETTLE_COLS, 1);
     cancelAnimation(pos);
     pos.value = withTiming(
       land,
-      { duration: 780, easing: Easing.out(Easing.cubic) },
+      { duration: 900, easing: Easing.out(Easing.cubic) },
       (finished) => {
         if (finished) runOnJS(finishPick)(land);
       },
@@ -446,7 +463,7 @@ function SpinPhase({
   }, []);
 
   const stripStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: (CENTER_ROW - pos.value) * ITEM_H }],
+    transform: [{ translateX: SCREEN_W / 2 - itemW / 2 - pos.value * itemW }],
   }));
 
   return (
@@ -464,30 +481,41 @@ function SpinPhase({
       </Text>
 
       <View style={{ flex: 1, justifyContent: "center" }}>
-        <View style={styles.reelWindow}>
-          <Animated.View style={stripStyle}>
+        <View style={[styles.reelWindow, { height: ROW_H }]}>
+          <Animated.View style={[styles.reelStrip, stripStyle]}>
             {reel.map((w, i) => (
-              <ReelRow
+              <ReelCol
                 key={i}
                 word={w.word}
                 index={i}
                 pos={pos}
                 popScale={popScale}
                 landed={landIndex === i}
+                itemW={itemW}
               />
             ))}
           </Animated.View>
 
-          <View pointerEvents="none" style={styles.reelCenterFrame} />
-          <LinearGradient
+          <View
             pointerEvents="none"
-            colors={[BG, "rgba(10,15,40,0)"]}
-            style={[styles.reelFade, styles.reelFadeTop]}
+            style={[
+              styles.reelCenterFrame,
+              { left: (SCREEN_W - itemW) / 2, width: itemW, height: ROW_H },
+            ]}
           />
           <LinearGradient
             pointerEvents="none"
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            colors={[BG, "rgba(10,15,40,0)"]}
+            style={[styles.reelFade, styles.reelFadeLeft]}
+          />
+          <LinearGradient
+            pointerEvents="none"
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
             colors={["rgba(10,15,40,0)", BG]}
-            style={[styles.reelFade, styles.reelFadeBottom]}
+            style={[styles.reelFade, styles.reelFadeRight]}
           />
         </View>
 
@@ -1362,39 +1390,37 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   reelWindow: {
-    height: VISIBLE_ROWS * ITEM_H,
-    marginHorizontal: 24,
-    borderRadius: 16,
+    width: "100%",
+    justifyContent: "center",
     overflow: "hidden",
   },
-  reelRow: {
-    height: ITEM_H,
-    lineHeight: ITEM_H,
-    fontSize: 26,
-    fontWeight: "700",
-    letterSpacing: 4,
+  reelStrip: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  reelCol: {
+    fontSize: 34,
+    lineHeight: ROW_H,
+    letterSpacing: 1,
     textAlign: "center",
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Fredoka_700Bold",
   },
   reelCenterFrame: {
     position: "absolute",
-    left: 12,
-    right: 12,
-    top: CENTER_ROW * ITEM_H,
-    height: ITEM_H,
-    borderRadius: 12,
+    top: 0,
+    borderRadius: 18,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,59,48,0.35)",
-    backgroundColor: "rgba(255,59,48,0.07)",
+    borderColor: "rgba(255,59,48,0.3)",
+    backgroundColor: "rgba(255,59,48,0.06)",
   },
   reelFade: {
     position: "absolute",
-    left: 0,
-    right: 0,
-    height: ITEM_H * 1.6,
+    top: 0,
+    bottom: 0,
+    width: 90,
   },
-  reelFadeTop: { top: 0 },
-  reelFadeBottom: { bottom: 0 },
+  reelFadeLeft: { left: 0 },
+  reelFadeRight: { right: 0 },
   rouletteMeta: {
     color: "rgba(255,255,255,0.35)",
     fontSize: 12,
