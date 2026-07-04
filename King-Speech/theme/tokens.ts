@@ -46,6 +46,42 @@ export const colors = {
   },
 } as const;
 
+// ───────────────────────────────────────────────────────────────────────────
+// Brand accent system — the "King Speech" signature. Two royal accents with
+// STRICT roles so they never fight: violet = brand/depth/identity (surfaces,
+// glows, progress, ambient), gold = action/reward (the one thing you tap and
+// the thing you earn). Tuned to sit near the reference palette without copying
+// it 1:1. Neutrals carry a faint violet undertone so the whole app "breathes"
+// the brand even before a single accent lands.
+// ───────────────────────────────────────────────────────────────────────────
+export const brand = {
+  // violet family — brand & depth
+  violet: "#7C4DFF",
+  violetDeep: "#5B2CE0",
+  violetSoft: "#CDBEFF",
+  violetGlow: "rgba(124,77,255,0.45)",
+  onViolet: "#F1EBFF",
+
+  // gold family — action & reward
+  gold: "#FFD230",
+  goldSoft: "#FFE68C",
+  onGold: "#3A2C00",
+  goldGlow: "rgba(255,210,48,0.40)",
+
+  // violet-tinted dark neutrals (signature "purple-black")
+  ink: "#0F0E14",
+  surface: "#1A1822",
+  elevated: "#232030",
+  borderViolet: "rgba(124,120,168,0.16)",
+
+  // semantic roles (use these in UI, not raw hues)
+  action: "#FFD230",     // primary CTA / XP / streak / crown
+  onAction: "#3A2C00",
+  reward: "#FFE68C",
+  identity: "#7C4DFF",   // ambient brand: progress fills, selected, glows
+  bgTint: "#14121C",     // score/celebration backdrop base
+} as const;
+
 export const radii = {
   card: 22,
   button: 16,

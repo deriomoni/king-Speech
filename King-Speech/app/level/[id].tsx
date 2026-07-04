@@ -34,7 +34,10 @@ import { useDevTools } from "@/context/DevToolsContext";
 import VoiceRecorder from "@/components/WaveformVoiceRecorder";
 import ReadingLevelView from "@/components/ReadingLevelView";
 import ReadingResultsView from "@/components/ReadingResultsView";
-import ScoreFlower, { aspectsFromScore10 } from "@/components/ScoreFlower";
+import { aspectsFromScore10 } from "@/components/ScoreFlower";
+import ScoreLadder from "@/components/ScoreLadder";
+import TaskFlowView from "@/components/TaskFlowView";
+import { aggregateAnalyses } from "@/services/analyzeGenericTask";
 import WarmupLevelView from "@/components/warmup/WarmupLevelView";
 import DevSkipButton from "@/components/DevSkipButton";
 import { getModuleFromLevelId } from "@/constants/contentLoader";
@@ -56,12 +59,12 @@ import { fetch as expoFetch } from "expo/fetch";
 import { ActivityIndicator } from "react-native";
 
 // ---- Results screen (premium gaming look) ----
-// Score palette is exclusive to this evaluation surface — replaces the
-// app-wide gold/emerald pair with cooler, premium tones (mint / lavender /
-// coral) so the eval feels like a distinct "judging" moment.
-const RS_HIGH = "#5EEAD4";   // aqua mint  (>=8)
-const RS_MID  = "#C4B5FD";   // lavender    (>=6)
-const RS_LOW  = "#FB7185";   // coral pink  (<6) — only red-ish tone in app, intentionally allowed here
+// Brand-aligned evaluation palette: King Speech royal gold + violet on a
+// purple-black canvas. Gold = strong, violet = good, coral = weak — the same
+// heat map the ScoreFlower petals use, so score screen + flower read as one.
+const RS_HIGH = "#FFD230";   // royal gold  (>=8)
+const RS_MID  = "#B79BFF";   // light violet (>=6)
+const RS_LOW  = "#FB7185";   // coral        (<6) — honest "low" tone
 
 // Transcript display: collapse anything longer than this so the sheet stays
 // scannable at a glance. The user can tap to reveal the rest.
@@ -330,19 +333,19 @@ export function FlowerResultWindow({
   const topPad = Platform.OS === "web" ? 28 : insets.top + 8;
   const bottomPad = Platform.OS === "web" ? 28 : insets.bottom + 10;
 
-  const tone = (v: number) => (v >= 8 ? RS_HIGH : v >= 6 ? "#34D399" : v >= 4 ? "#FBBF24" : RS_LOW);
+  const tone = (v: number) => (v >= 8 ? RS_HIGH : v >= 6 ? RS_MID : v >= 4 ? "#FF9E4A" : RS_LOW);
   const scoreColor = tone(overall);
 
-  // Deep teal-black neon canvas (no purple) to match the flower.
+  // Signature purple-black canvas to match the re-skinned flower.
   const bgColors = isDark
-    ? (["#05080A", "#0A1210", "#06090B"] as const)
-    : (["#F3F7F6", "#EAF1EF", "#F3F7F6"] as const);
-  const fgText = isDark ? "#F1F6F4" : colors.text;
-  const fgMuted = isDark ? "rgba(241,246,244,0.62)" : colors.textSecondary;
-  const cardBg = isDark ? "rgba(255,255,255,0.045)" : "rgba(10,40,36,0.04)";
-  const cardBorder = isDark ? "rgba(94,234,212,0.16)" : "rgba(10,50,46,0.10)";
-  const retryBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(10,30,28,0.04)";
-  const retryBorder = isDark ? "rgba(255,255,255,0.10)" : "rgba(10,30,28,0.08)";
+    ? (["#0F0E14", "#15121F", "#0F0E14"] as const)
+    : (["#F5F3FB", "#EEEAF7", "#F5F3FB"] as const);
+  const fgText = isDark ? "#F2EEFB" : colors.text;
+  const fgMuted = isDark ? "rgba(242,238,251,0.62)" : colors.textSecondary;
+  const cardBg = isDark ? "rgba(124,77,255,0.07)" : "rgba(91,44,224,0.05)";
+  const cardBorder = isDark ? "rgba(124,120,168,0.20)" : "rgba(91,44,224,0.12)";
+  const retryBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(30,20,50,0.04)";
+  const retryBorder = isDark ? "rgba(255,255,255,0.10)" : "rgba(30,20,50,0.08)";
 
   // Merge the coaching tip + growth points into ONE message (tip leads, the
   // remaining growth points become supporting lines).
@@ -368,9 +371,10 @@ export function FlowerResultWindow({
           {(lang === "ru" ? "Оценка ИИ" : "AI score").toUpperCase()}
         </Animated.Text>
 
-        {/* Flower */}
-        <Animated.View entering={FadeIn.duration(450)} style={rs.flowerSection}>
-          <ScoreFlower overall={overall} aspects={aspects} size={Math.min(360, SCREEN_W - 48)} />
+        {/* Score ladder — overall + criteria as one readable staircase,
+            revealed node-by-node, tier-coloured (lime / lemon / orange-red). */}
+        <Animated.View entering={FadeIn.duration(300)} style={rs.ladderSection}>
+          <ScoreLadder overall={overall} aspects={aspects} width={Math.min(420, SCREEN_W - 40)} lang={lang} />
         </Animated.View>
 
         {/* Summary right under the flower */}
@@ -441,10 +445,10 @@ export function FlowerResultWindow({
           ) : null}
           <Pressable
             onPress={onPrimary}
-            style={({ pressed }) => [rs.nextBtn, { backgroundColor: scoreColor, opacity: pressed ? 0.85 : 1 }]}
+            style={({ pressed }) => [rs.nextBtn, { backgroundColor: "#FFD230", opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
           >
-            <Text style={[rs.nextBtnText, { fontFamily: "Rubik_700Bold", color: "#06100E" }]}>{primaryLabel}</Text>
-            <Ionicons name="arrow-forward" size={18} color="#06100E" />
+            <Text style={[rs.nextBtnText, { fontFamily: "Rubik_700Bold", color: "#3A2C00" }]}>{primaryLabel}</Text>
+            <Ionicons name="arrow-forward" size={18} color="#3A2C00" />
           </Pressable>
         </Animated.View>
       </ScrollView>
@@ -786,6 +790,10 @@ export default function LevelScreen() {
   // stayed silent. We don't score or count such a take; we invite a re-record.
   const [emptyRecording, setEmptyRecording] = useState(false);
   const [showLevelComplete, setShowLevelComplete] = useState(false);
+  // New one-task-per-screen flow: the aggregate level flower shown after the
+  // last task (null = hidden). Its own dark canvas + bloom is the "screen
+  // darkens → flower appears" moment.
+  const [levelFlower, setLevelFlower] = useState<SpeechAnalysis | null>(null);
   const [scores, setScores] = useState<number[]>([]);
   const [readingResetSignal, setReadingResetSignal] = useState(0);
   const [levelStartTime] = useState(() => Date.now());
@@ -1196,8 +1204,8 @@ export default function LevelScreen() {
       setReadingDurationSec(0);
       setShowReadingReview(true);
     } else {
-      setActiveTaskIndex((cur) => (cur == null ? 0 : cur));
-      setShowResults(true);
+      // New flow preview: bloom the aggregate level flower directly.
+      setLevelFlower(DEMO_ANALYSIS);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReadingLevel]);
@@ -1224,6 +1232,28 @@ export default function LevelScreen() {
     },
     [],
   );
+
+  // New one-task-per-screen flow (tongue twisters / interview levels): the
+  // player finished the last task. Aggregate every per-task take into one
+  // level flower; continuing from it opens the LevelComplete celebration.
+  const handleFlowFinished = React.useCallback(
+    (payload: { scores: number[]; analyses: SpeechAnalysis[]; durationSec: number }) => {
+      setScores(payload.scores);
+      setLevelDurationSec(payload.durationSec);
+      setLevelFlower(aggregateAnalyses(payload.analyses, lang));
+    },
+    [lang],
+  );
+  const handleFlowScored = React.useCallback(
+    (taskNumber: number, score: number) => {
+      completeTask(levelId, taskNumber, score);
+    },
+    [completeTask, levelId],
+  );
+  const handleFlowerContinue = React.useCallback(() => {
+    setLevelFlower(null);
+    setShowLevelComplete(true);
+  }, []);
 
   // Warm-up: Pitch Game + mouth exercise (2 tasks from JSON).
   if (isWarmupLevel) {
@@ -1374,287 +1404,46 @@ export default function LevelScreen() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: topPad + 8 }]}>
-        <Pressable
-          onPress={() => router.back()}
-          style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.7 : 1 }]}
-        >
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <View style={styles.headerCenter}>
-          <Text style={[styles.levelTitle, { color: colors.text, fontFamily: "Inter_700Bold" }]}>
-            {level.title}
-          </Text>
-          <Text style={[styles.levelSubtitle, { color: colors.textMuted, fontFamily: "Inter_400Regular" }]}>
-            {level.subtitle}
-          </Text>
-        </View>
-        <Pressable
-          onPress={handleExitPress}
-          hitSlop={12}
-          style={({ pressed }) => [styles.headerRight, styles.closeBtnInline, { opacity: pressed ? 0.6 : 1 }]}
-        >
-          <Ionicons name="close" size={24} color={colors.text} />
-        </Pressable>
-      </View>
-
-      <ScrollView
-        ref={scrollRef}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad + 40 }]}
-        showsVerticalScrollIndicator={false}
-        contentInsetAdjustmentBehavior="automatic"
-      >
-        {/* Level description */}
-        <Animated.View entering={FadeInDown.duration(400)}>
-          <View style={[styles.descCard, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}>
-            <LinearGradient
-              colors={[colors.backgroundSecondary, colors.surface]}
-              style={StyleSheet.absoluteFill}
-            />
-            <Ionicons name={level.icon as any} size={26} color={level.color || colors.gold} />
-            <Text style={[styles.descText, { color: colors.text, fontFamily: "Inter_400Regular" }]}>
-              {level.description}
-            </Text>
-          </View>
-        </Animated.View>
-
-        {/* Tips */}
-        <Animated.View entering={FadeInDown.delay(100).duration(400)}>
-          <Text style={[styles.sectionLabel, { color: colors.textMuted, fontFamily: "Inter_500Medium" }]}>
-            {t("tipsForLevel")}
-          </Text>
-          <View style={[styles.tipsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            {tips.map((tip, i) => (
-              <View key={i} style={styles.tipRow}>
-                <View style={[styles.tipDot, { backgroundColor: level.color || colors.gold }]} />
-                <Text style={[styles.tipText, { color: colors.textSecondary, fontFamily: "Inter_400Regular" }]}>
-                  {tip}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </Animated.View>
-
-        {/* Tasks */}
-        <Text style={[styles.sectionLabel, { color: colors.textMuted, fontFamily: "Inter_500Medium", marginTop: 8 }]}>
-          {t("tasks")}
-        </Text>
-
-        {level.tasks.map((task, i) => {
-          const effectiveStatus =
-            isOpenTestingEnabled && task.status === "locked" ? "available" : task.status;
-          const isActive = activeTaskIndex === i;
-          const isDone = effectiveStatus === "completed";
-          const isAvailable = effectiveStatus === "available";
-          const isLocked = effectiveStatus === "locked";
-          // Completed tasks should be re-openable so the player (or a
-          // tester in Open Testing) can retake them. Only truly locked
-          // tasks block interaction.
-          const canOpen = isAvailable || isActive || isDone;
-
-          return (
-            <Animated.View
-              key={task.id}
-              entering={FadeInDown.delay(200 + i * 80).duration(400)}
-              ref={(node) => {
-                // Animated.View forwards its ref to the underlying View,
-                // which exposes measureLayout used by the auto-scroll
-                // effect above.
-                taskRefs.current[i] = (node as unknown as View) ?? null;
-              }}
-            >
-              <Pressable
-                onPress={() => {
-                  if (!canOpen) return;
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setActiveTaskIndex(isActive ? null : i);
-                  setCurrentAnalysis(null);
-                  setShowResults(false);
-                }}
-                disabled={isLocked}
-                style={({ pressed }) => [
-                  styles.taskCard,
-                  {
-                    backgroundColor: isActive
-                      ? isDark
-                        ? colors.backgroundSecondary
-                        : colors.surface
-                      : colors.surface,
-                    borderColor: isActive
-                      ? level.color || colors.accent
-                      : isDone
-                      ? colors.green
-                      : colors.border,
-                    borderWidth: isActive ? 2 : isDone ? 1.5 : 1,
-                    opacity: isLocked ? 0.45 : pressed ? 0.9 : 1,
-                  },
-                ]}
-              >
-                <View style={styles.taskHeader}>
-                  <View
-                    style={[
-                      styles.taskNum,
-                      {
-                        backgroundColor: isDone
-                          ? colors.green
-                          : isActive
-                          ? (level.color || colors.gold)
-                          : isAvailable
-                          ? (level.color || colors.stepAvailable) + "80"
-                          : colors.border,
-                      },
-                    ]}
-                  >
-                    {isDone ? (
-                      <Ionicons name="checkmark" size={14} color="#fff" />
-                    ) : (
-                      <Text
-                        style={[
-                          styles.taskNumText,
-                          {
-                            color:
-                              isDone || isLocked
-                                ? colors.textMuted
-                                : isActive || isAvailable
-                                ? "#1A1A2E"
-                                : colors.textMuted,
-                            fontFamily: "Inter_700Bold",
-                          },
-                        ]}
-                      >
-                        {task.taskNumber}
-                      </Text>
-                    )}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={[
-                        styles.taskTitle,
-                        {
-                          color: colors.text,
-                          fontFamily: "Inter_600SemiBold",
-                        },
-                      ]}
-                    >
-                      {task.title}
-                    </Text>
-                    {task.bestScore !== undefined && (
-                      <Text
-                        style={[
-                          styles.taskScore,
-                          {
-                            color: isActive ? colors.accent : colors.textMuted,
-                            fontFamily: "Inter_400Regular",
-                          },
-                        ]}
-                      >
-                        {t("bestScore")}: {task.bestScore.toFixed(1)}/10
-                      </Text>
-                    )}
-                  </View>
-                  {isLocked ? (
-                    <Ionicons name="lock-closed" size={16} color={colors.textMuted} />
-                  ) : isActive ? (
-                    <Ionicons name="chevron-up" size={18} color={level.color || colors.gold} />
-                  ) : isDone ? (
-                    <Ionicons name="star" size={16} color={colors.green} />
-                  ) : (
-                    <Ionicons name="chevron-down" size={18} color={colors.textMuted} />
-                  )}
-                </View>
-
-                {/* Expanded task content */}
-                {isActive && (
-                  <Animated.View
-                    entering={FadeIn.duration(300)}
-                    style={styles.taskExpanded}
-                  >
-                    {/* Instruction */}
-                    <View
-                      style={[
-                        styles.instructionBox,
-                        {
-                          backgroundColor: isDark
-                            ? "rgba(255,255,255,0.06)"
-                            : "rgba(14,14,16,0.05)",
-                          borderColor: colors.border,
-                          borderWidth: 1,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.instructionText,
-                          {
-                            color: colors.textSecondary,
-                            fontFamily: "Inter_400Regular",
-                          },
-                        ]}
-                      >
-                        {task.instruction}
-                      </Text>
-                    </View>
-
-                    {/* Content to read / question */}
-                    <View
-                      style={[
-                        styles.contentBox,
-                        {
-                          backgroundColor: (level.color || colors.gold) + (isDark ? "22" : "20"),
-                          borderColor: (level.color || colors.gold) + (isDark ? "55" : "45"),
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.contentText,
-                          {
-                            color: colors.text,
-                            fontFamily: "Inter_500Medium",
-                          },
-                        ]}
-                      >
-                        {task.content}
-                      </Text>
-                    </View>
-
-                    {/* Voice recorder */}
-                    <VoiceRecorder
-                      onRecordingComplete={handleRecordingComplete}
-                      colors={colors}
-                    />
-                  </Animated.View>
-                )}
-              </Pressable>
-            </Animated.View>
-          );
-        })}
-      </ScrollView>
-
-      {/* Results Modal */}
-      <ResultsSheet
-        visible={showResults}
-        analysis={currentAnalysis}
-        analyzing={analyzing}
-        task={activeTask}
-        onRetry={handleRetry}
-        onNext={handleNextTask}
+      {/* One task = one screen. Big text card, record→Next morph, a very
+          short score summary between tasks. Reading / warm-up / show-time
+          levels return earlier with their own dedicated views. */}
+      <TaskFlowView
+        tasks={level.tasks}
+        levelId={levelId}
+        levelNumber={level.levelNumber}
+        title={level.title}
+        subtitle={level.subtitle}
+        accent={level.color || colors.gold}
         colors={colors}
-        isDark={colorScheme === "dark"}
-        t={t}
+        isDark={isDark}
         lang={lang}
+        topPad={topPad}
+        bottomPad={bottomPad}
+        onTaskScored={handleFlowScored}
+        onAllComplete={handleFlowFinished}
+        onExit={handleExitPress}
       />
 
-      <EmptyRecordingSheet
-        visible={emptyRecording}
-        onRetry={handleRetry}
-        colors={colors}
-        isDark={colorScheme === "dark"}
-        lang={lang}
-      />
-
-      <SpeechAnalyzingLoader visible={analyzing} lang={lang} />
+      {/* Aggregate level flower — its dark canvas + bloom IS the "screen
+          darkens → flower appears" moment after the last task. */}
+      <Modal visible={!!levelFlower} animationType="fade" transparent={false} presentationStyle="fullScreen">
+        {levelFlower ? (
+          <FlowerResultWindow
+            overall={levelFlower.score.overall}
+            aspects={aspectsFromScore10(levelFlower.score, lang)}
+            summary={levelFlower.summary}
+            tip={levelFlower.tip}
+            growth={levelFlower.recommendations}
+            strengths={levelFlower.strengths}
+            isDark={isDark}
+            colors={colors}
+            t={t}
+            lang={lang}
+            primaryLabel={t("forward")}
+            onPrimary={handleFlowerContinue}
+          />
+        ) : null}
+      </Modal>
 
       {/* Level Complete Modal */}
       <LevelCompleteModal
@@ -1668,18 +1457,11 @@ export default function LevelScreen() {
         onNext={handleLevelCompleteNext}
         onMap={handleLevelCompleteMap}
         onClose={handleLevelCompleteMap}
-          lang={lang}
+        lang={lang}
         colors={colors}
         isDark={colorScheme === "dark"}
         t={t}
       />
-
-      <View style={[styles.selfAnalysisFooter, { paddingBottom: bottomPad + 10 }]}>
-        <Ionicons name="eye-outline" size={14} color={colors.textMuted} />
-        <Text style={[styles.selfAnalysisText, { color: colors.textMuted, fontFamily: "Inter_400Regular" }]}>
-          {t("selfAnalysis")}
-        </Text>
-      </View>
 
       <DevSkipButton levelId={levelId} onPreviewResults={handlePreviewResults} />
     </View>
@@ -1731,6 +1513,11 @@ const rs = StyleSheet.create({
     gap: 14,
     marginTop: 2,
     marginBottom: 4,
+  },
+  ladderSection: {
+    alignItems: "center",
+    marginTop: 6,
+    marginBottom: 8,
   },
   scoreBig: {
     width: 108,

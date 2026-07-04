@@ -76,13 +76,14 @@ function clamp10(v: number): number {
   return Math.max(0, Math.min(10, v));
 }
 
-// Neon tone by score — bright mint for strong, amber/coral for weak. Reads as
-// an at-a-glance heat map across the petals.
+// Brand tone by score — royal gold for strong, violet for good, apricot/coral
+// for weak. Reads as an at-a-glance heat map across the petals, on-brand
+// (King Speech = purple + gold) instead of the old teal-neon.
 export function toneFor(score: number): string {
-  if (score >= 8) return "#5EEAD4"; // aqua mint
-  if (score >= 6) return "#34D399"; // emerald
-  if (score >= 4) return "#FBBF24"; // amber
-  return "#FB7185"; // coral
+  if (score >= 8) return "#FFD230"; // royal gold
+  if (score >= 6) return "#B79BFF"; // light violet
+  if (score >= 4) return "#FF9E4A"; // apricot
+  return "#FB7185"; // coral (honest "low")
 }
 
 function glow(color: string, radius: number, opacity = 0.9) {
@@ -204,8 +205,8 @@ export default function ScoreFlower({ overall, aspects, size = 320 }: Props) {
               );
             })}
             <RadialGradient id="coreFill" cx="50%" cy="40%" r="70%">
-              <Stop offset="0" stopColor="#15131F" stopOpacity="1" />
-              <Stop offset="1" stopColor="#08070D" stopOpacity="1" />
+              <Stop offset="0" stopColor="#211C33" stopOpacity="1" />
+              <Stop offset="1" stopColor="#0F0E14" stopOpacity="1" />
             </RadialGradient>
           </Defs>
 
