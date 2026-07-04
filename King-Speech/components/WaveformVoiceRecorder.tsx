@@ -428,12 +428,12 @@ export default function WaveformVoiceRecorder({
           ]}
         >
           <LinearGradient
-            colors={["#FFD56A", "#F5A623"]}
+            colors={["#FFDE5C", "#FFC01E"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={[StyleSheet.absoluteFill, { borderRadius: 28 }]}
           />
-          <Ionicons name="mic" size={20} color="#1A1A2E" />
+          <Ionicons name="mic" size={20} color="#3A2C00" />
           <Text style={styles.startPillText}>{label}</Text>
         </Pressable>
       </View>
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
     }),
   },
   startPillText: {
-    color: "#1A1A2E",
+    color: "#3A2C00",
     fontFamily: "Inter_700Bold",
     fontSize: 16,
     letterSpacing: 0.4,

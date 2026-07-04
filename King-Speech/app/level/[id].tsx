@@ -8,6 +8,7 @@ import {
   Platform,
   Modal,
   Alert,
+  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
@@ -32,26 +33,59 @@ import { useLang } from "@/context/LangContext";
 import { useDevTools } from "@/context/DevToolsContext";
 import VoiceRecorder from "@/components/WaveformVoiceRecorder";
 import ReadingLevelView from "@/components/ReadingLevelView";
+import ReadingResultsView from "@/components/ReadingResultsView";
+import { aspectsFromScore10 } from "@/components/ScoreFlower";
+import ScoreLadder from "@/components/ScoreLadder";
+import TaskFlowView from "@/components/TaskFlowView";
+import { aggregateAnalyses } from "@/services/analyzeGenericTask";
 import WarmupLevelView from "@/components/warmup/WarmupLevelView";
+import DevSkipButton from "@/components/DevSkipButton";
 import { getModuleFromLevelId } from "@/constants/contentLoader";
 import SpeechAnalyzingLoader from "@/components/SpeechAnalyzingLoader";
 import { getReadingMeta, getLevelsData } from "@/constants/gameContent";
-import { analyzeSpeech, generateTips, FILLERS, type SpeechAnalysis } from "@/services/speechAnalysis";
+import {
+  getLiterature,
+  getModuleFromReadingId,
+  getLiteratureFullText,
+  literatureCategory,
+} from "@/constants/literatureLoader";
+import {
+  getTongueTwistersForModule,
+  getModuleFromTongueTwisterId,
+} from "@/constants/tongueTwisterLoader";
+import { analyzeSpeech, analyzeSpeechPro, generateTips, FILLERS, type SpeechAnalysis } from "@/services/speechAnalysis";
 import { getApiUrl } from "@/lib/query-client";
 import { fetch as expoFetch } from "expo/fetch";
 import { ActivityIndicator } from "react-native";
 
 // ---- Results screen (premium gaming look) ----
-// Score palette is exclusive to this evaluation surface — replaces the
-// app-wide gold/emerald pair with cooler, premium tones (mint / lavender /
-// coral) so the eval feels like a distinct "judging" moment.
-const RS_HIGH = "#5EEAD4";   // aqua mint  (>=8)
-const RS_MID  = "#C4B5FD";   // lavender    (>=6)
-const RS_LOW  = "#FB7185";   // coral pink  (<6) — only red-ish tone in app, intentionally allowed here
+// Brand-aligned evaluation palette: King Speech royal gold + violet on a
+// purple-black canvas. Gold = strong, violet = good, coral = weak — the same
+// heat map the ScoreFlower petals use, so score screen + flower read as one.
+const RS_HIGH = "#FFD230";   // royal gold  (>=8)
+const RS_MID  = "#B79BFF";   // light violet (>=6)
+const RS_LOW  = "#FB7185";   // coral        (<6) — honest "low" tone
 
 // Transcript display: collapse anything longer than this so the sheet stays
 // scannable at a glance. The user can tap to reveal the rest.
 const TRANSCRIPT_COLLAPSED_CHARS = 180;
+
+const SCREEN_W = Dimensions.get("window").width;
+
+// DEV preview data for the Skip button — showcases the score window (flower)
+// without a real recording. Scores deliberately span the colour tiers so every
+// petal tone (mint / teal / amber / coral) is visible at a glance.
+const DEMO_ANALYSIS: SpeechAnalysis = {
+  score: { overall: 7.0, clarity: 9.0, confidence: 7.0, volume: 5.0, tempo: 8.0, expressiveness: 9.5, pauses: 3.5 },
+  strengths: ["Пример: яркая интонация", "Пример: чёткая дикция"],
+  recommendations: ["Пример: добавь паузы после знаков препинания", "Пример: говори чуть громче к финалу"],
+  summary: "Пример оценки: выразительное и чёткое прочтение — поработай над паузами и громкостью.",
+  xpBonus: 2,
+  tip: "Совет (пример): делай чуть больше осмысленных пауз после ключевых строк — сейчас они проскакивают.",
+  transcript: "Пример распознанного текста вашего выступления для предпросмотра дизайна.",
+  fillerCount: 1,
+  textMatchRatio: 0.86,
+};
 
 // Split transcript into ordered segments, marking which segments are filler
 // words. Multi-word fillers ("you know", "как бы") match too, and word
@@ -94,7 +128,7 @@ function highlightFillers(
   return segs;
 }
 
-function TranscriptBlock({
+const TranscriptBlock = React.memo(function TranscriptBlock({
   transcript,
   lang,
   fgText,
@@ -119,7 +153,10 @@ function TranscriptBlock({
     !isLong || expanded
       ? transcript
       : transcript.slice(0, TRANSCRIPT_COLLAPSED_CHARS).trimEnd() + "…";
-  const segments = highlightFillers(visibleText, lang);
+  const segments = React.useMemo(
+    () => highlightFillers(visibleText, lang),
+    [visibleText, lang],
+  );
 
   const toggle = () => {
     if (!isLong) return;
@@ -201,7 +238,7 @@ function TranscriptBlock({
       </Pressable>
     </Animated.View>
   );
-}
+});
 
 function ResultsSheet({
   visible,
@@ -237,187 +274,249 @@ function ResultsSheet({
     return null;
   }
 
-  const params: Array<{ key: keyof typeof analysis.score; label: string }> = [
-    { key: "clarity", label: t("clarity") },
-    { key: "confidence", label: t("confidence") },
-    { key: "volume", label: t("volume") },
-    { key: "tempo", label: t("tempo") },
-    { key: "expressiveness", label: t("expressiveness") },
-    { key: "pauses", label: t("pauses") },
-  ];
+  return (
+    <Modal visible={visible} animationType="slide" transparent={false} presentationStyle="fullScreen">
+      <FlowerResultWindow
+        overall={analysis.score.overall}
+        aspects={aspectsFromScore10(analysis.score, lang)}
+        summary={analysis.summary}
+        tip={analysis.tip}
+        growth={analysis.recommendations}
+        strengths={analysis.strengths}
+        isDark={isDark}
+        colors={colors}
+        t={t}
+        lang={lang}
+        primaryLabel={t("forward")}
+        onPrimary={onNext}
+        onRetry={onRetry}
+      />
+    </Modal>
+  );
+}
 
-  const score = analysis.score.overall;
-  const tone = (v: number) => (v >= 8 ? RS_HIGH : v >= 6 ? RS_MID : RS_LOW);
-  const scoreColor = tone(score);
+// ───────────────────────────────────────────────────────────────────────────
+// Shared full-screen "score window": dark-neon flower + a single combined
+// "what to improve" message (tip + growth points merged). Reused by the
+// generic level results sheet; the reading self-review embeds its own variant.
+// ───────────────────────────────────────────────────────────────────────────
+export function FlowerResultWindow({
+  overall,
+  aspects,
+  summary,
+  tip,
+  growth,
+  strengths,
+  isDark,
+  colors,
+  t,
+  lang,
+  primaryLabel,
+  onPrimary,
+  onRetry,
+}: {
+  overall: number;
+  aspects: ReturnType<typeof aspectsFromScore10>;
+  summary?: string;
+  tip?: string;
+  growth?: string[];
+  strengths?: string[];
+  isDark: boolean;
+  colors: import("@/constants/colors").AppColors;
+  t: (key: any) => string;
+  lang: "ru" | "en";
+  primaryLabel: string;
+  onPrimary: () => void;
+  onRetry?: () => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const topPad = Platform.OS === "web" ? 28 : insets.top + 8;
+  const bottomPad = Platform.OS === "web" ? 28 : insets.bottom + 10;
 
-  // Premium background: deep black gradient (dark mode) or soft cream
-  // gradient (light mode). Both have a subtle accent halo behind the score.
+  const tone = (v: number) => (v >= 8 ? RS_HIGH : v >= 6 ? RS_MID : v >= 4 ? "#FF9E4A" : RS_LOW);
+  const scoreColor = tone(overall);
+
+  // Signature purple-black canvas to match the re-skinned flower.
   const bgColors = isDark
-    ? (["#06060A", "#15151F", "#0A0A12"] as const)
-    : (["#F8FAFC", "#EEF1F7", "#F4F4F7"] as const);
-  const haloColor = isDark ? "rgba(124,58,237,0.18)" : "rgba(124,58,237,0.10)";
-  const fgText = isDark ? "#F8F8FB" : colors.text;
-  const fgMuted = isDark ? "rgba(248,248,251,0.55)" : colors.textSecondary;
-  const fgFaint = isDark ? "rgba(248,248,251,0.35)" : colors.textMuted;
-  const trackBg = isDark ? "rgba(255,255,255,0.07)" : "rgba(15,15,30,0.07)";
-  const handleBg = isDark ? "rgba(255,255,255,0.18)" : "rgba(15,15,30,0.18)";
-  const retryBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(15,15,30,0.04)";
-  const retryBorder = isDark ? "rgba(255,255,255,0.10)" : "rgba(15,15,30,0.08)";
-  const nextBg = isDark ? "#FFFFFF" : "#0F0F1E";
-  const nextFg = isDark ? "#0A0A12" : "#FFFFFF";
+    ? (["#0F0E14", "#15121F", "#0F0E14"] as const)
+    : (["#F5F3FB", "#EEEAF7", "#F5F3FB"] as const);
+  const fgText = isDark ? "#F2EEFB" : colors.text;
+  const fgMuted = isDark ? "rgba(242,238,251,0.62)" : colors.textSecondary;
+  const cardBg = isDark ? "rgba(124,77,255,0.07)" : "rgba(91,44,224,0.05)";
+  const cardBorder = isDark ? "rgba(124,120,168,0.20)" : "rgba(91,44,224,0.12)";
+  const retryBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(30,20,50,0.04)";
+  const retryBorder = isDark ? "rgba(255,255,255,0.10)" : "rgba(30,20,50,0.08)";
+
+  // Merge the coaching tip + growth points into ONE message (tip leads, the
+  // remaining growth points become supporting lines).
+  const tipText = (tip ?? "").trim();
+  const growthLines = (growth ?? [])
+    .map((g) => g.trim())
+    .filter((g) => g && g.toLowerCase() !== tipText.toLowerCase());
+  const hasAdvice = !!tipText || growthLines.length > 0;
+  const strengthList = (strengths ?? []).filter(Boolean);
 
   return (
-    <Modal visible={visible} animationType="slide" transparent presentationStyle="overFullScreen">
-      <View style={rs.overlay}>
-        <View style={[rs.sheet, { backgroundColor: bgColors[0] }]}>
-          <LinearGradient
-            colors={bgColors}
-            style={StyleSheet.absoluteFill}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-          />
-          {/* Soft accent halo behind score */}
-          <View pointerEvents="none" style={[rs.halo, { backgroundColor: haloColor }]} />
+    <View style={{ flex: 1, backgroundColor: bgColors[0] }}>
+      <LinearGradient colors={bgColors} style={StyleSheet.absoluteFill} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} />
 
-          <View style={[rs.handle, { backgroundColor: handleBg }]} />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[rs.content, { paddingTop: topPad, paddingBottom: bottomPad + 8 }]}
+      >
+        <Animated.Text
+          entering={FadeIn.duration(400)}
+          style={[rs.kicker, { color: scoreColor, fontFamily: "Rubik_600SemiBold" }]}
+        >
+          {(lang === "ru" ? "Оценка ИИ" : "AI score").toUpperCase()}
+        </Animated.Text>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={rs.content}>
-            {/* Score */}
-            <Animated.View entering={FadeIn.duration(400)} style={rs.scoreSection}>
-              <View style={[rs.scoreBig, { borderColor: scoreColor, shadowColor: scoreColor }]}>
-                <Text style={[rs.scoreNumber, { color: scoreColor, fontFamily: "Inter_700Bold" }]}>
-                  {score}
-                </Text>
-                <Text style={[rs.scoreDenom, { color: fgFaint, fontFamily: "Inter_400Regular" }]}>
-                  /10
-                </Text>
-              </View>
-              <Text style={[rs.scoreSummary, { color: fgText, fontFamily: "Inter_600SemiBold" }]}>
-                {analysis.summary}
+        {/* Score ladder — overall + criteria as one readable staircase,
+            revealed node-by-node, tier-coloured (lime / lemon / orange-red). */}
+        <Animated.View entering={FadeIn.duration(300)} style={rs.ladderSection}>
+          <ScoreLadder overall={overall} aspects={aspects} width={Math.min(420, SCREEN_W - 40)} lang={lang} />
+        </Animated.View>
+
+        {/* Summary right under the flower */}
+        {summary ? (
+          <Animated.Text
+            entering={FadeInDown.delay(120).duration(400)}
+            style={[rs.summary, { color: fgText, fontFamily: "Nunito_700Bold" }]}
+          >
+            {summary}
+          </Animated.Text>
+        ) : null}
+
+        {/* One combined "what to improve" message (tip + growth merged) */}
+        {hasAdvice ? (
+          <Animated.View
+            entering={FadeInDown.delay(220).duration(400)}
+            style={[rs.adviceCard, { backgroundColor: scoreColor + "12", borderColor: scoreColor + "40" }]}
+          >
+            <View style={rs.adviceHead}>
+              <Ionicons name="bulb" size={16} color={scoreColor} />
+              <Text style={[rs.adviceTitle, { color: scoreColor, fontFamily: "Rubik_600SemiBold" }]}>
+                {lang === "ru" ? "Над чем поработать" : "What to work on"}
               </Text>
-            </Animated.View>
+            </View>
+            {tipText ? (
+              <Text style={[rs.adviceLead, { color: fgText, fontFamily: "Nunito_700Bold" }]}>{tipText}</Text>
+            ) : null}
+            {growthLines.map((g, i) => (
+              <View key={i} style={rs.adviceRow}>
+                <View style={[rs.dot, { backgroundColor: scoreColor }]} />
+                <Text style={[rs.adviceText, { color: fgMuted, fontFamily: "Nunito_400Regular" }]}>{g}</Text>
+              </View>
+            ))}
+          </Animated.View>
+        ) : null}
 
-            {/* Param bars */}
-            <Animated.View entering={FadeInDown.delay(100).duration(400)} style={rs.paramsSection}>
-              {params.map((p) => {
-                const val = analysis.score[p.key] as number;
-                return (
-                  <View key={p.key} style={rs.paramRow}>
-                    <Text style={[rs.paramLabel, { color: fgMuted, fontFamily: "Inter_400Regular" }]}>
-                      {p.label}
-                    </Text>
-                    <View style={[rs.paramBarBg, { backgroundColor: trackBg }]}>
-                      <Animated.View
-                        style={[
-                          rs.paramBarFill,
-                          {
-                            backgroundColor: tone(val),
-                            width: `${(val / 10) * 100}%` as any,
-                          },
-                        ]}
-                      />
-                    </View>
-                    <Text style={[rs.paramValue, { color: fgText, fontFamily: "Inter_600SemiBold" }]}>
-                      {val.toFixed(1)}
-                    </Text>
-                  </View>
-                );
-              })}
-            </Animated.View>
-
-            {/* Strengths */}
-            <Animated.View entering={FadeInDown.delay(200).duration(400)} style={rs.feedbackSection}>
-              <Text style={[rs.feedbackTitle, { color: fgText, fontFamily: "Inter_600SemiBold" }]}>
+        {/* Strengths — compact positive note */}
+        {strengthList.length > 0 ? (
+          <Animated.View
+            entering={FadeInDown.delay(300).duration(400)}
+            style={[rs.strengthCard, { backgroundColor: cardBg, borderColor: cardBorder }]}
+          >
+            <View style={rs.adviceHead}>
+              <Ionicons name="sparkles" size={15} color={RS_HIGH} />
+              <Text style={[rs.adviceTitle, { color: RS_HIGH, fontFamily: "Rubik_600SemiBold" }]}>
                 {t("strengths")}
               </Text>
-              {analysis.strengths.map((s, i) => (
-                <View key={i} style={rs.feedbackRow}>
-                  <View style={[rs.dot, { backgroundColor: RS_HIGH }]} />
-                  <Text style={[rs.feedbackText, { color: fgMuted, fontFamily: "Inter_400Regular" }]}>
-                    {s}
-                  </Text>
-                </View>
-              ))}
-            </Animated.View>
+            </View>
+            <Text style={[rs.adviceText, { color: fgMuted, fontFamily: "Nunito_400Regular" }]}>
+              {strengthList.join(" · ")}
+            </Text>
+          </Animated.View>
+        ) : null}
 
-            {/* Recommendations */}
-            <Animated.View entering={FadeInDown.delay(300).duration(400)} style={rs.feedbackSection}>
-              <Text style={[rs.feedbackTitle, { color: fgText, fontFamily: "Inter_600SemiBold" }]}>
-                {t("growthPoints")}
-              </Text>
-              {analysis.recommendations.map((r, i) => (
-                <View key={i} style={rs.feedbackRow}>
-                  <View style={[rs.dot, { backgroundColor: RS_MID }]} />
-                  <Text style={[rs.feedbackText, { color: fgMuted, fontFamily: "Inter_400Regular" }]}>
-                    {r}
-                  </Text>
-                </View>
-              ))}
-            </Animated.View>
+        {/* Buttons */}
+        <Animated.View entering={FadeInDown.delay(380).duration(400)} style={rs.btnRow}>
+          {onRetry ? (
+            <Pressable
+              onPress={onRetry}
+              style={({ pressed }) => [
+                rs.retryBtn,
+                { backgroundColor: retryBg, borderColor: retryBorder, opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <Ionicons name="refresh" size={18} color={fgMuted} />
+              <Text style={[rs.retryBtnText, { color: fgMuted, fontFamily: "Rubik_600SemiBold" }]}>{t("again")}</Text>
+            </Pressable>
+          ) : null}
+          <Pressable
+            onPress={onPrimary}
+            style={({ pressed }) => [rs.nextBtn, { backgroundColor: "#FFD230", opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
+          >
+            <Text style={[rs.nextBtnText, { fontFamily: "Rubik_700Bold", color: "#3A2C00" }]}>{primaryLabel}</Text>
+            <Ionicons name="arrow-forward" size={18} color="#3A2C00" />
+          </Pressable>
+        </Animated.View>
+      </ScrollView>
+    </View>
+  );
+}
 
-            {/* What we heard — surfaces the raw transcript so users can
-                see what the analyzer actually scored against. Filler words
-                are highlighted in the score-tone accent so the clarity /
-                confidence drop becomes visible at a glance. */}
-            {analysis.transcript && analysis.transcript.trim().length > 0 ? (
-              <TranscriptBlock
-                transcript={analysis.transcript.trim()}
-                lang={lang}
-                fgText={fgText}
-                fgMuted={fgMuted}
-                cardBg={isDark ? "rgba(255,255,255,0.04)" : "rgba(15,15,30,0.03)"}
-                cardBorder={isDark ? "rgba(255,255,255,0.08)" : "rgba(15,15,30,0.08)"}
-                accent={RS_LOW}
-                fillerBg={RS_LOW + "22"}
-              />
-            ) : null}
-
-            {/* Personal tip — derived from the weakest criterion. */}
-            {analysis.tip ? (
-              <Animated.View entering={FadeInDown.delay(350).duration(400)} style={[rs.tipCard, { borderColor: scoreColor + "55", backgroundColor: scoreColor + "12" }]}>
-                <View style={rs.tipHeader}>
-                  <Ionicons name="bulb" size={16} color={scoreColor} />
-                  <Text style={[rs.tipLabel, { color: scoreColor, fontFamily: "Inter_600SemiBold" }]}>
-                    {lang === "ru" ? "Совет на следующий раз" : "Tip for next take"}
-                  </Text>
-                </View>
-                <Text style={[rs.tipText, { color: fgText, fontFamily: "Inter_500Medium" }]}>
-                  {analysis.tip}
-                </Text>
-              </Animated.View>
-            ) : null}
-
-            {/* Buttons */}
-            <Animated.View entering={FadeInDown.delay(400).duration(400)} style={rs.btnRow}>
-              <Pressable
-                onPress={onRetry}
-                style={({ pressed }) => [
-                  rs.retryBtn,
-                  { backgroundColor: retryBg, borderColor: retryBorder, opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Ionicons name="refresh" size={18} color={fgMuted} />
-                <Text style={[rs.retryBtnText, { color: fgMuted, fontFamily: "Inter_600SemiBold" }]}>
-                  {t("again")}
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={onNext}
-                style={({ pressed }) => [
-                  rs.nextBtn,
-                  { backgroundColor: nextBg, opacity: pressed ? 0.85 : 1 },
-                ]}
-              >
-                <Text style={[rs.nextBtnText, { fontFamily: "Inter_700Bold", color: nextFg }]}>{t("forward")}</Text>
-                <Ionicons name="arrow-forward" size={18} color={nextFg} />
-              </Pressable>
-            </Animated.View>
-          </ScrollView>
+// ---- Empty recording (player stayed silent) ----
+// Shown instead of the results sheet when speech-to-text heard nothing. The
+// take is NOT scored or counted — the only action is a gentle re-record.
+function EmptyRecordingSheet({
+  visible,
+  onRetry,
+  colors,
+  isDark,
+  lang,
+}: {
+  visible: boolean;
+  onRetry: () => void;
+  colors: import("@/constants/colors").AppColors;
+  isDark: boolean;
+  lang: "ru" | "en";
+}) {
+  const cardBg = isDark ? "#15151F" : "#FFFFFF";
+  const fg = isDark ? "#F8F8FB" : colors.text;
+  const muted = isDark ? "rgba(248,248,251,0.6)" : colors.textSecondary;
+  const accent = "#0EA5E9";
+  const btnBg = isDark ? "#FFFFFF" : "#0F0F1E";
+  const btnFg = isDark ? "#0A0A12" : "#FFFFFF";
+  return (
+    <Modal visible={visible} animationType="fade" transparent presentationStyle="overFullScreen">
+      <View style={ers.overlay}>
+        <View style={[ers.card, { backgroundColor: cardBg }]}>
+          <View style={[ers.iconCircle, { backgroundColor: accent + "1A" }]}>
+            <Ionicons name="mic-off-outline" size={34} color={accent} />
+          </View>
+          <Text style={[ers.title, { color: fg, fontFamily: "Inter_700Bold" }]}>
+            {lang === "ru" ? "Кажется, мы тебя не услышали" : "We didn't quite hear you"}
+          </Text>
+          <Text style={[ers.body, { color: muted, fontFamily: "Inter_400Regular" }]}>
+            {lang === "ru"
+              ? "Чтобы пройти уровень, нужно говорить вслух. Ничего страшного — попробуй ещё раз, чуть увереннее и ближе к микрофону."
+              : "To pass this level you need to speak out loud. No worries — give it another go, a little louder and closer to the mic."}
+          </Text>
+          <Pressable
+            onPress={onRetry}
+            style={({ pressed }) => [ers.btn, { backgroundColor: btnBg, opacity: pressed ? 0.85 : 1 }]}
+          >
+            <Ionicons name="refresh" size={18} color={btnFg} />
+            <Text style={[ers.btnText, { color: btnFg, fontFamily: "Inter_700Bold" }]}>
+              {lang === "ru" ? "Записать снова" : "Record again"}
+            </Text>
+          </Pressable>
         </View>
       </View>
     </Modal>
   );
 }
+
+const ers = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "center", alignItems: "center", padding: 28 },
+  card: { width: "100%", maxWidth: 380, borderRadius: 24, paddingVertical: 30, paddingHorizontal: 24, alignItems: "center", gap: 14 },
+  iconCircle: { width: 68, height: 68, borderRadius: 34, justifyContent: "center", alignItems: "center" },
+  title: { fontSize: 19, textAlign: "center" },
+  body: { fontSize: 15, lineHeight: 22, textAlign: "center" },
+  btn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, alignSelf: "stretch", height: 52, borderRadius: 16, marginTop: 6 },
+  btnText: { fontSize: 16 },
+});
 
 // ---- Level Complete (modern celebration) ----
 function ConfettiSpark({ delay, x, color }: { delay: number; x: number; color: string }) {
@@ -660,20 +759,53 @@ export default function LevelScreen() {
   const levelId = id as LevelType;
   const { colors, colorScheme, isDark } = useAppColors();
   const insets = useSafeAreaInsets();
-  const { getLevelById, completeTask, completeAllTasksForLevel } = useGame();
+  const { getLevelById, completeTask, completeAllTasksForLevel, addReadingRecording } = useGame();
   const { t, lang } = useLang();
   const { isOpenTestingEnabled } = useDevTools();
 
-  const level = getLevelById(levelId);
+  // Tongue-twister levels (RU) pull their text from JSON (see
+  // tongueTwisterLoader). We keep the SAME number of tasks — only the text is
+  // swapped — so completion/indexing logic is unaffected. EN keeps legacy text.
+  const baseLevel = getLevelById(levelId);
+  const level =
+    baseLevel && lang === "ru" && levelId.startsWith("tonguetwister")
+      ? {
+          ...baseLevel,
+          tasks: (() => {
+            const tts = getTongueTwistersForModule(
+              getModuleFromTongueTwisterId(levelId),
+              baseLevel.tasks.length,
+            );
+            return baseLevel.tasks.map((tk, i) =>
+              tts[i] ? { ...tk, content: tts[i] } : tk,
+            );
+          })(),
+        }
+      : baseLevel;
   const [activeTaskIndex, setActiveTaskIndex] = useState<number | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [currentAnalysis, setCurrentAnalysis] = useState<SpeechAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  // True when speech-to-text ran but heard essentially nothing — the player
+  // stayed silent. We don't score or count such a take; we invite a re-record.
+  const [emptyRecording, setEmptyRecording] = useState(false);
   const [showLevelComplete, setShowLevelComplete] = useState(false);
+  // New one-task-per-screen flow: the aggregate level flower shown after the
+  // last task (null = hidden). Its own dark canvas + bloom is the "screen
+  // darkens → flower appears" moment.
+  const [levelFlower, setLevelFlower] = useState<SpeechAnalysis | null>(null);
   const [scores, setScores] = useState<number[]>([]);
   const [readingResetSignal, setReadingResetSignal] = useState(0);
   const [levelStartTime] = useState(() => Date.now());
   const [levelDurationSec, setLevelDurationSec] = useState(0);
+  // Reading self-review (poetry/prose levels): instead of the AI results
+  // sheet, the player listens back to their own take, self-rates with stars,
+  // and the AI verdict streams in underneath. The take is saved to their
+  // private library.
+  const [showReadingReview, setShowReadingReview] = useState(false);
+  const [readingAudioUri, setReadingAudioUri] = useState<string | null>(null);
+  const [readingDurationSec, setReadingDurationSec] = useState(0);
+  const [readingSaving, setReadingSaving] = useState(false);
 
   // Compute next level
   const allLevels = React.useMemo(() => getLevelsData(lang), [lang]);
@@ -690,12 +822,21 @@ export default function LevelScreen() {
   const handleLevelCompleteNext = React.useCallback(() => {
     setShowLevelComplete(false);
     setScores([]);
-    if (nextLevel) {
-      router.replace({ pathname: "/level/[id]", params: { id: nextLevel.id } });
-    } else {
+    if (!nextLevel) {
       Alert.alert(t("allLevelsDone"), "", [
         { text: t("okBtn"), onPress: () => router.replace("/(tabs)") },
       ]);
+      return;
+    }
+    // Route by level type — Show Time and Vocabulary have dedicated screens.
+    // Previously every "next level" opened /level/[id], so advancing into a
+    // Show Time level showed the generic task screen (looked like Interview).
+    if (nextLevel.id.startsWith("showtime")) {
+      router.replace({ pathname: "/showtime-stage", params: { levelId: nextLevel.id, mode: "game" } });
+    } else if (nextLevel.id.startsWith("vocabulary")) {
+      router.replace({ pathname: "/vocabulary-level", params: { levelId: nextLevel.id, moduleId: String(nextLevel.module) } });
+    } else {
+      router.replace({ pathname: "/level/[id]", params: { id: nextLevel.id } });
     }
   }, [nextLevel, t]);
 
@@ -782,12 +923,70 @@ export default function LevelScreen() {
   const isReadingLevel = levelId.startsWith("reading");
   const isWarmupLevel = getBaseType(levelId) === "warmup";
 
+  // Reading metadata (work title / author / category / full text) lifted here
+  // so both the recording handler and the render below share one source.
+  // Plain computation (not a hook) — this runs after the `if (!level)` guard.
+  const readingMeta = (() => {
+    if (!isReadingLevel || !level) return null;
+    const lit = lang === "ru" ? getLiterature(getModuleFromReadingId(levelId)) : null;
+    const legacyText = level.tasks
+      .map((tk) => tk.content)
+      .filter((c) => !!c)
+      .join("\n\n");
+    const fullText = lit ? getLiteratureFullText(lit) : legacyText;
+    const m = getReadingMeta(levelId);
+    const author = lit
+      ? lit.author
+      : m
+        ? lang === "ru" ? m.authorRu : m.authorEn
+        : undefined;
+    const workTitle = lit
+      ? lit.work
+      : m
+        ? lang === "ru" ? m.titleRu : m.titleEn
+        : undefined;
+    const category = lit ? literatureCategory(lit.kind) : m?.category;
+    return { fullText, author, workTitle, category };
+  })();
+
   const activeTask = activeTaskIndex !== null ? level.tasks[activeTaskIndex] : null;
 
-  const handleRecordingComplete = async (durationSeconds: number, audioBase64?: string) => {
-    setAnalyzing(true);
-    setShowResults(true);
+  const handleRecordingComplete = async (
+    durationSeconds: number,
+    audioBase64?: string,
+    audioUri?: string,
+  ) => {
+    if (isReadingLevel) {
+      // Reading levels open the self-review screen immediately (so the player
+      // can listen back) and analyze in the background — no blocking loader.
+      setReadingAudioUri(audioUri ?? null);
+      setReadingDurationSec(durationSeconds);
+      setCurrentAnalysis(null);
+      setShowReadingReview(true);
+      setAnalyzing(true);
+    } else {
+      setAnalyzing(true);
+      setShowResults(true);
+    }
     try {
+      // Reading levels: grade with the professional, signal-grounded Claude
+      // scorer (honest per-aspect 1..5 + a result-based tip). Falls back to the
+      // local heuristic below if the server is unreachable.
+      if (isReadingLevel && audioBase64 && audioBase64.length > 100) {
+        const pro = await analyzeSpeechPro({
+          audioBase64,
+          title: readingMeta?.workTitle,
+          moduleNumber: level.module,
+          lang,
+          durationSeconds,
+        });
+        if (pro) {
+          setCurrentAnalysis(pro);
+          return;
+        }
+        // else: fall through to transcribe + local heuristic
+      }
+
       // 1) Transcribe — only if we actually captured audio. Falling back to
       //    an empty transcript yields conservative, low-but-honest scores
       //    instead of fake high ones.
@@ -801,6 +1000,11 @@ export default function LevelScreen() {
       // Undefined when the server didn't return it (older builds, network
       // failure, etc.) — analyzer falls back to its duration heuristic.
       let audioRms: number | undefined;
+      // Whether speech-to-text actually ran (a successful response came back).
+      // We only treat an empty transcript as "the player was silent" when STT
+      // genuinely ran — otherwise (offline / backend down) an empty transcript
+      // just means we couldn't transcribe, which must NOT be blamed on the user.
+      let transcribedOk = false;
       if (audioBase64 && audioBase64.length > 100) {
         try {
           const url = new URL("/api/transcribe", getApiUrl()).toString();
@@ -810,6 +1014,7 @@ export default function LevelScreen() {
             body: JSON.stringify({ audioBase64, audioDurationSeconds: durationSeconds }),
           });
           if (res.ok) {
+            transcribedOk = true;
             const data = await res.json();
             if (typeof data.transcript === "string") transcript = data.transcript;
             if (typeof data.audioDurationSeconds === "number" && data.audioDurationSeconds > 0) {
@@ -824,10 +1029,24 @@ export default function LevelScreen() {
         }
       }
 
+      // Empty-recording guard: STT ran but heard essentially nothing (fewer
+      // than 2 recognized words). The player stayed silent — don't score it,
+      // don't count the level, and invite a friendly re-record instead.
+      // Reading levels skip this: the self-review still lets the player listen
+      // back and self-rate even on a quiet take (the AI verdict just lands low).
+      const spokenWords = transcript.trim().split(/\s+/).filter(Boolean).length;
+      if (!isReadingLevel && transcribedOk && spokenWords < 2) {
+        setShowResults(false);
+        setCurrentAnalysis(null);
+        setEmptyRecording(true);
+        return;
+      }
+
       // 2) For reading levels, the prompt text is the merged task content —
       //    the analyzer uses it for textMatch scoring.
       const originalText = isReadingLevel
-        ? level.tasks.map((tk) => tk.content).filter(Boolean).join("\n\n")
+        ? (readingMeta?.fullText ||
+            level.tasks.map((tk) => tk.content).filter(Boolean).join("\n\n"))
         : activeTask?.content || activeTask?.instruction || "";
 
       try {
@@ -906,8 +1125,90 @@ export default function LevelScreen() {
     setShowResults(false);
     setCurrentAnalysis(null);
     setAnalyzing(false);
+    setEmptyRecording(false);
+    setShowReadingReview(false);
+    setReadingAudioUri(null);
     if (isReadingLevel) setReadingResetSignal((n) => n + 1);
   };
+
+  // Copy a freshly-recorded reading take to a durable location so it survives
+  // in the player's library (expo-av records into the cache, which the OS can
+  // clear). Web object URLs are session-only; we keep them as-is.
+  const persistReadingAudio = async (uri: string | null): Promise<string | null> => {
+    if (!uri) return null;
+    if (Platform.OS === "web") return uri;
+    try {
+      const FileSystem = require("expo-file-system/legacy");
+      const dir = `${FileSystem.documentDirectory}reading/`;
+      try {
+        await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+      } catch {}
+      const ext = (uri.split("?")[0].split(".").pop() || "m4a").slice(0, 5);
+      const dest = `${dir}take_${Date.now()}.${ext}`;
+      await FileSystem.copyAsync({ from: uri, to: dest });
+      return dest;
+    } catch (e) {
+      console.warn("persistReadingAudio failed:", e);
+      return uri;
+    }
+  };
+
+  // Save & continue from the reading self-review: persist the take to the
+  // private library (with the player's self-rating + the AI verdict), mark the
+  // level complete, then show the celebration.
+  const handleReadingSave = async (selfRating: number) => {
+    if (readingSaving) return;
+    setReadingSaving(true);
+    const overall = currentAnalysis?.score.overall ?? 0;
+    // Fall back to the self-rating (scaled to /10) for XP/stars if the AI
+    // analysis never arrived (offline / backend down).
+    const finalScore = overall > 0 ? overall : Math.max(2, selfRating * 2);
+
+    try {
+      const durableUri = await persistReadingAudio(readingAudioUri);
+      if (durableUri) {
+        addReadingRecording({
+          uri: durableUri,
+          title: readingMeta?.workTitle || level.title,
+          author: readingMeta?.author,
+          category: readingMeta?.category,
+          date: Date.now(),
+          durationSec: readingDurationSec,
+          selfRating,
+          aiStars: overall > 0 ? Math.round(overall / 2) : undefined,
+          aiScore: overall > 0 ? overall : undefined,
+        });
+      }
+    } catch (e) {
+      console.warn("save reading recording failed:", e);
+    }
+
+    completeAllTasksForLevel(levelId, finalScore);
+    setScores([finalScore, finalScore, finalScore]);
+    setShowReadingReview(false);
+    setReadingAudioUri(null);
+    setCurrentAnalysis(null);
+    setActiveTaskIndex(null);
+    setReadingSaving(false);
+    setTimeout(() => setShowLevelComplete(true), 400);
+  };
+
+  // DEV-only: open this screen's score window with example data so the new
+  // flower design can be previewed instantly (wired to the Skip button).
+  const handlePreviewResults = React.useCallback(() => {
+    setCurrentAnalysis(DEMO_ANALYSIS);
+    setAnalyzing(false);
+    setEmptyRecording(false);
+    if (isReadingLevel) {
+      setReadingAudioUri(null);
+      setReadingDurationSec(0);
+      setShowReadingReview(true);
+    } else {
+      // New flow preview: bloom the aggregate level flower directly.
+      setLevelFlower(DEMO_ANALYSIS);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isReadingLevel]);
 
   const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
 
@@ -931,6 +1232,28 @@ export default function LevelScreen() {
     },
     [],
   );
+
+  // New one-task-per-screen flow (tongue twisters / interview levels): the
+  // player finished the last task. Aggregate every per-task take into one
+  // level flower; continuing from it opens the LevelComplete celebration.
+  const handleFlowFinished = React.useCallback(
+    (payload: { scores: number[]; analyses: SpeechAnalysis[]; durationSec: number }) => {
+      setScores(payload.scores);
+      setLevelDurationSec(payload.durationSec);
+      setLevelFlower(aggregateAnalyses(payload.analyses, lang));
+    },
+    [lang],
+  );
+  const handleFlowScored = React.useCallback(
+    (taskNumber: number, score: number) => {
+      completeTask(levelId, taskNumber, score);
+    },
+    [completeTask, levelId],
+  );
+  const handleFlowerContinue = React.useCallback(() => {
+    setLevelFlower(null);
+    setShowLevelComplete(true);
+  }, []);
 
   // Warm-up: Pitch Game + mouth exercise (2 tasks from JSON).
   if (isWarmupLevel) {
@@ -959,21 +1282,20 @@ export default function LevelScreen() {
           isDark={isDark}
           t={t}
         />
+        <DevSkipButton levelId={levelId} />
       </View>
     );
   }
 
   // Reading / poetry levels use a single-text karaoke flow.
   if (isReadingLevel) {
-    const fullText = level.tasks
-      .map((tk) => tk.content)
-      .filter((c) => !!c)
-      .join("\n\n");
+    // Metadata (work / author / category / full text) is computed once in
+    // `readingMeta` above so the recording handler and this render agree.
+    const fullText = readingMeta?.fullText ?? "";
     const accent = level.color || colors.gold;
-    const meta = getReadingMeta(levelId);
-    const author = meta ? (lang === "ru" ? meta.authorRu : meta.authorEn) : undefined;
-    const workTitle = meta ? (lang === "ru" ? meta.titleRu : meta.titleEn) : undefined;
-    const category = meta?.category;
+    const author = readingMeta?.author;
+    const workTitle = readingMeta?.workTitle;
+    const category = readingMeta?.category;
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <LinearGradient
@@ -1002,20 +1324,36 @@ export default function LevelScreen() {
           resetSignal={readingResetSignal}
         />
 
-        <ResultsSheet
-          visible={showResults}
-          analysis={currentAnalysis}
-          analyzing={analyzing}
-          task={level.tasks[0]}
+        {/* Reading self-review — listen back, self-rate, AI verdict streams
+            in underneath. Full-screen overlay above the karaoke view. */}
+        {showReadingReview && (
+          <View style={StyleSheet.absoluteFill}>
+            <ReadingResultsView
+              title={workTitle || level.title}
+              author={author}
+              category={category}
+              audioUri={readingAudioUri ?? ""}
+              durationSec={readingDurationSec}
+              analysis={currentAnalysis}
+              analyzing={analyzing}
+              colors={colors}
+              isDark={isDark}
+              t={t}
+              lang={lang}
+              onRetry={handleRetry}
+              onSave={handleReadingSave}
+              saving={readingSaving}
+            />
+          </View>
+        )}
+
+        <EmptyRecordingSheet
+          visible={emptyRecording}
           onRetry={handleRetry}
-          onNext={handleNextTask}
           colors={colors}
           isDark={isDark}
-          t={t}
           lang={lang}
         />
-
-        <SpeechAnalyzingLoader visible={analyzing} lang={lang} />
 
         <LevelCompleteModal
           visible={showLevelComplete}
@@ -1034,7 +1372,9 @@ export default function LevelScreen() {
           t={t}
         />
 
-        {/* Close X (top-right, above ReadingLevelView header) */}
+        {/* Close X (top-right, above ReadingLevelView header) — hidden while
+            the self-review overlay is up so it doesn't sit over the hero. */}
+        {!showReadingReview && (
         <Pressable
           onPress={handleExitPress}
           hitSlop={12}
@@ -1045,6 +1385,8 @@ export default function LevelScreen() {
         >
           <Ionicons name="close" size={24} color={colors.text} />
         </Pressable>
+        )}
+        <DevSkipButton levelId={levelId} onPreviewResults={handlePreviewResults} />
       </View>
     );
   }
@@ -1062,279 +1404,46 @@ export default function LevelScreen() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: topPad + 8 }]}>
-        <Pressable
-          onPress={() => router.back()}
-          style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.7 : 1 }]}
-        >
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <View style={styles.headerCenter}>
-          <Text style={[styles.levelTitle, { color: colors.text, fontFamily: "Inter_700Bold" }]}>
-            {level.title}
-          </Text>
-          <Text style={[styles.levelSubtitle, { color: colors.textMuted, fontFamily: "Inter_400Regular" }]}>
-            {level.subtitle}
-          </Text>
-        </View>
-        <Pressable
-          onPress={handleExitPress}
-          hitSlop={12}
-          style={({ pressed }) => [styles.headerRight, styles.closeBtnInline, { opacity: pressed ? 0.6 : 1 }]}
-        >
-          <Ionicons name="close" size={24} color={colors.text} />
-        </Pressable>
-      </View>
-
-      <ScrollView
-        ref={scrollRef}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad + 40 }]}
-        showsVerticalScrollIndicator={false}
-        contentInsetAdjustmentBehavior="automatic"
-      >
-        {/* Level description */}
-        <Animated.View entering={FadeInDown.duration(400)}>
-          <View style={[styles.descCard, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}>
-            <LinearGradient
-              colors={[colors.backgroundSecondary, colors.surface]}
-              style={StyleSheet.absoluteFill}
-            />
-            <Ionicons name={level.icon as any} size={26} color={level.color || colors.gold} />
-            <Text style={[styles.descText, { color: colors.text, fontFamily: "Inter_400Regular" }]}>
-              {level.description}
-            </Text>
-          </View>
-        </Animated.View>
-
-        {/* Tips */}
-        <Animated.View entering={FadeInDown.delay(100).duration(400)}>
-          <Text style={[styles.sectionLabel, { color: colors.textMuted, fontFamily: "Inter_500Medium" }]}>
-            {t("tipsForLevel")}
-          </Text>
-          <View style={[styles.tipsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            {tips.map((tip, i) => (
-              <View key={i} style={styles.tipRow}>
-                <View style={[styles.tipDot, { backgroundColor: level.color || colors.gold }]} />
-                <Text style={[styles.tipText, { color: colors.textSecondary, fontFamily: "Inter_400Regular" }]}>
-                  {tip}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </Animated.View>
-
-        {/* Tasks */}
-        <Text style={[styles.sectionLabel, { color: colors.textMuted, fontFamily: "Inter_500Medium", marginTop: 8 }]}>
-          {t("tasks")}
-        </Text>
-
-        {level.tasks.map((task, i) => {
-          const effectiveStatus =
-            isOpenTestingEnabled && task.status === "locked" ? "available" : task.status;
-          const isActive = activeTaskIndex === i;
-          const isDone = effectiveStatus === "completed";
-          const isAvailable = effectiveStatus === "available";
-          const isLocked = effectiveStatus === "locked";
-          // Completed tasks should be re-openable so the player (or a
-          // tester in Open Testing) can retake them. Only truly locked
-          // tasks block interaction.
-          const canOpen = isAvailable || isActive || isDone;
-
-          return (
-            <Animated.View
-              key={task.id}
-              entering={FadeInDown.delay(200 + i * 80).duration(400)}
-              ref={(node) => {
-                // Animated.View forwards its ref to the underlying View,
-                // which exposes measureLayout used by the auto-scroll
-                // effect above.
-                taskRefs.current[i] = (node as unknown as View) ?? null;
-              }}
-            >
-              <Pressable
-                onPress={() => {
-                  if (!canOpen) return;
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setActiveTaskIndex(isActive ? null : i);
-                  setCurrentAnalysis(null);
-                  setShowResults(false);
-                }}
-                disabled={isLocked}
-                style={({ pressed }) => [
-                  styles.taskCard,
-                  {
-                    backgroundColor: isActive
-                      ? isDark
-                        ? colors.backgroundSecondary
-                        : colors.surface
-                      : colors.surface,
-                    borderColor: isActive
-                      ? level.color || colors.accent
-                      : isDone
-                      ? colors.green
-                      : colors.border,
-                    borderWidth: isActive ? 2 : isDone ? 1.5 : 1,
-                    opacity: isLocked ? 0.45 : pressed ? 0.9 : 1,
-                  },
-                ]}
-              >
-                <View style={styles.taskHeader}>
-                  <View
-                    style={[
-                      styles.taskNum,
-                      {
-                        backgroundColor: isDone
-                          ? colors.green
-                          : isActive
-                          ? (level.color || colors.gold)
-                          : isAvailable
-                          ? (level.color || colors.stepAvailable) + "80"
-                          : colors.border,
-                      },
-                    ]}
-                  >
-                    {isDone ? (
-                      <Ionicons name="checkmark" size={14} color="#fff" />
-                    ) : (
-                      <Text
-                        style={[
-                          styles.taskNumText,
-                          {
-                            color:
-                              isDone || isLocked
-                                ? colors.textMuted
-                                : isActive || isAvailable
-                                ? "#1A1A2E"
-                                : colors.textMuted,
-                            fontFamily: "Inter_700Bold",
-                          },
-                        ]}
-                      >
-                        {task.taskNumber}
-                      </Text>
-                    )}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={[
-                        styles.taskTitle,
-                        {
-                          color: colors.text,
-                          fontFamily: "Inter_600SemiBold",
-                        },
-                      ]}
-                    >
-                      {task.title}
-                    </Text>
-                    {task.bestScore !== undefined && (
-                      <Text
-                        style={[
-                          styles.taskScore,
-                          {
-                            color: isActive ? colors.accent : colors.textMuted,
-                            fontFamily: "Inter_400Regular",
-                          },
-                        ]}
-                      >
-                        {t("bestScore")}: {task.bestScore.toFixed(1)}/10
-                      </Text>
-                    )}
-                  </View>
-                  {isLocked ? (
-                    <Ionicons name="lock-closed" size={16} color={colors.textMuted} />
-                  ) : isActive ? (
-                    <Ionicons name="chevron-up" size={18} color={level.color || colors.gold} />
-                  ) : isDone ? (
-                    <Ionicons name="star" size={16} color={colors.green} />
-                  ) : (
-                    <Ionicons name="chevron-down" size={18} color={colors.textMuted} />
-                  )}
-                </View>
-
-                {/* Expanded task content */}
-                {isActive && (
-                  <Animated.View
-                    entering={FadeIn.duration(300)}
-                    style={styles.taskExpanded}
-                  >
-                    {/* Instruction */}
-                    <View
-                      style={[
-                        styles.instructionBox,
-                        {
-                          backgroundColor: isDark
-                            ? "rgba(255,255,255,0.06)"
-                            : "rgba(14,14,16,0.05)",
-                          borderColor: colors.border,
-                          borderWidth: 1,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.instructionText,
-                          {
-                            color: colors.textSecondary,
-                            fontFamily: "Inter_400Regular",
-                          },
-                        ]}
-                      >
-                        {task.instruction}
-                      </Text>
-                    </View>
-
-                    {/* Content to read / question */}
-                    <View
-                      style={[
-                        styles.contentBox,
-                        {
-                          backgroundColor: (level.color || colors.gold) + (isDark ? "22" : "20"),
-                          borderColor: (level.color || colors.gold) + (isDark ? "55" : "45"),
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.contentText,
-                          {
-                            color: colors.text,
-                            fontFamily: "Inter_500Medium",
-                          },
-                        ]}
-                      >
-                        {task.content}
-                      </Text>
-                    </View>
-
-                    {/* Voice recorder */}
-                    <VoiceRecorder
-                      onRecordingComplete={handleRecordingComplete}
-                      colors={colors}
-                    />
-                  </Animated.View>
-                )}
-              </Pressable>
-            </Animated.View>
-          );
-        })}
-      </ScrollView>
-
-      {/* Results Modal */}
-      <ResultsSheet
-        visible={showResults}
-        analysis={currentAnalysis}
-        analyzing={analyzing}
-        task={activeTask}
-        onRetry={handleRetry}
-        onNext={handleNextTask}
+      {/* One task = one screen. Big text card, record→Next morph, a very
+          short score summary between tasks. Reading / warm-up / show-time
+          levels return earlier with their own dedicated views. */}
+      <TaskFlowView
+        tasks={level.tasks}
+        levelId={levelId}
+        levelNumber={level.levelNumber}
+        title={level.title}
+        subtitle={level.subtitle}
+        accent={level.color || colors.gold}
         colors={colors}
-        isDark={colorScheme === "dark"}
-        t={t}
+        isDark={isDark}
         lang={lang}
+        topPad={topPad}
+        bottomPad={bottomPad}
+        onTaskScored={handleFlowScored}
+        onAllComplete={handleFlowFinished}
+        onExit={handleExitPress}
       />
 
-      <SpeechAnalyzingLoader visible={analyzing} lang={lang} />
+      {/* Aggregate level flower — its dark canvas + bloom IS the "screen
+          darkens → flower appears" moment after the last task. */}
+      <Modal visible={!!levelFlower} animationType="fade" transparent={false} presentationStyle="fullScreen">
+        {levelFlower ? (
+          <FlowerResultWindow
+            overall={levelFlower.score.overall}
+            aspects={aspectsFromScore10(levelFlower.score, lang)}
+            summary={levelFlower.summary}
+            tip={levelFlower.tip}
+            growth={levelFlower.recommendations}
+            strengths={levelFlower.strengths}
+            isDark={isDark}
+            colors={colors}
+            t={t}
+            lang={lang}
+            primaryLabel={t("forward")}
+            onPrimary={handleFlowerContinue}
+          />
+        ) : null}
+      </Modal>
 
       {/* Level Complete Modal */}
       <LevelCompleteModal
@@ -1348,18 +1457,13 @@ export default function LevelScreen() {
         onNext={handleLevelCompleteNext}
         onMap={handleLevelCompleteMap}
         onClose={handleLevelCompleteMap}
-          lang={lang}
+        lang={lang}
         colors={colors}
         isDark={colorScheme === "dark"}
         t={t}
       />
 
-      <View style={[styles.selfAnalysisFooter, { paddingBottom: bottomPad + 10 }]}>
-        <Ionicons name="eye-outline" size={14} color={colors.textMuted} />
-        <Text style={[styles.selfAnalysisText, { color: colors.textMuted, fontFamily: "Inter_400Regular" }]}>
-          {t("selfAnalysis")}
-        </Text>
-      </View>
+      <DevSkipButton levelId={levelId} onPreviewResults={handlePreviewResults} />
     </View>
   );
 }
@@ -1403,6 +1507,17 @@ const rs = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     marginTop: 6,
+  },
+  flowerSection: {
+    alignItems: "center",
+    gap: 14,
+    marginTop: 2,
+    marginBottom: 4,
+  },
+  ladderSection: {
+    alignItems: "center",
+    marginTop: 6,
+    marginBottom: 8,
   },
   scoreBig: {
     width: 108,
@@ -1492,6 +1607,17 @@ const rs = StyleSheet.create({
     borderRadius: 16,
   },
   nextBtnText: { fontSize: 16 },
+
+  // Flower result window
+  kicker: { fontSize: 12, letterSpacing: 2.5, textAlign: "center", marginBottom: 2 },
+  summary: { fontSize: 17, lineHeight: 24, textAlign: "center", marginTop: 2 },
+  adviceCard: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 9 },
+  adviceHead: { flexDirection: "row", alignItems: "center", gap: 7 },
+  adviceTitle: { fontSize: 13, letterSpacing: 0.6, textTransform: "uppercase" },
+  adviceLead: { fontSize: 15.5, lineHeight: 22 },
+  adviceRow: { flexDirection: "row", alignItems: "flex-start", gap: 9 },
+  adviceText: { flex: 1, fontSize: 14, lineHeight: 20 },
+  strengthCard: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 8 },
 });
 
 // Level complete styles (modern celebration)

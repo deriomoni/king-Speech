@@ -1,1 +1,2 @@
-- [Warmup pitch-game loop](warmup-pitch-game.md) — game loop/countdown effect must NOT depend on usePitchDetection()'s returned object; read live values via a ref or it tears down its own intervals.
+- [Git sync when git networking is blocked](git-sync-blocked-tarball-workaround.md) — git fetch/merge/push blocked; use HTTPS tarball + `git merge-file` + read-only `git archive`; node not python3.
+- [Server startup resilience](server-startup-lazy-clients.md) — construct external API clients (OpenAI/Anthropic) lazily, never at module top level, so missing keys don't crash boot.

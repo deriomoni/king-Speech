@@ -8,6 +8,7 @@ import {
   Dimensions,
   ScrollView,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, router, useNavigation } from "expo-router";
@@ -31,7 +32,10 @@ import * as Haptics from "expo-haptics";
 import { useGame, getRankForSection } from "@/context/GameContext";
 import { useLang } from "@/context/LangContext";
 import { getApiUrl } from "@/lib/query-client";
+import { playSfx } from "@/lib/sfx";
+import { getLevelsData } from "@/constants/gameContent";
 import SpeechAnalyzingLoader from "@/components/SpeechAnalyzingLoader";
+import ScoreFlower, { aspectsFromMetrics5 } from "@/components/ScoreFlower";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -326,33 +330,7 @@ function AnimatedStar({ filled, delay }: { filled: boolean; delay: number }) {
   );
 }
 
-// ── CATEGORY BAR ─────────────────────────────────────────────────────────────
-function CategoryBar({ label, score, delay }: { label: string; score: number; delay: number }) {
-  const width = useSharedValue(0);
-  useEffect(() => {
-    width.value = withDelay(delay, withTiming(score / 5, { duration: 700 }));
-  }, [score]);
-  const barStyle = useAnimatedStyle(() => ({ width: `${width.value * 100}%` as any }));
-  const color = score >= 4 ? "#2DCB8E" : score >= 3 ? "#FFD166" : "#F5A623";
-
-  return (
-    <View style={cb.row}>
-      <Text style={[cb.label, { color: "rgba(240,237,232,0.7)", fontFamily: "Inter_400Regular" }]}>{label}</Text>
-      <View style={[cb.track, { backgroundColor: "#2A3348" }]}>
-        <Animated.View style={[cb.fill, barStyle, { backgroundColor: color }]} />
-      </View>
-      <Text style={[cb.score, { color, fontFamily: "Inter_700Bold" }]}>{score}/5</Text>
-    </View>
-  );
-}
-
-const cb = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: 10 },
-  label: { fontSize: 13, width: 120 },
-  track: { flex: 1, height: 6, borderRadius: 3, overflow: "hidden" },
-  fill: { height: 6, borderRadius: 3 },
-  score: { fontSize: 12, width: 28, textAlign: "right" },
-});
+// (Per-aspect bars replaced by the ScoreFlower petals.)
 
 // ── AI ANALYSIS CARD ──────────────────────────────────────────────────────────
 interface AnalysisResult {
@@ -383,7 +361,7 @@ interface AnalysisResult {
 
 function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (key: any) => string; lang: "ru" | "en" }) {
   if (!result) return null;
-  const { stars, score, silent, feedback, categories, errors, tip } = result;
+  const { stars, score, silent, feedback, categories, metrics, errors, tip } = result;
 
   if (silent || stars === 0) {
     return (
@@ -402,14 +380,15 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
 
   const SCORE_COLOR = stars === 3 ? "#2DCB8E" : stars === 2 ? "#FFD166" : "#F5A623";
   const SCORE_LABEL = stars === 3 ? t("excellent") : stars === 2 ? t("good") : t("keepGoing");
-  const catList = categories
-    ? [
-        { label: t("diction"), score: categories.diction.score },
-        { label: t("expressiveness"), score: categories.expressiveness.score },
-        { label: t("voice"), score: categories.voice.score },
-        { label: t("confidence"), score: categories.confidence.score },
-      ]
+
+  // Overall 0..10 from the six 1..5 metrics so the flower centre reads smoothly
+  // (the star→score map is too coarse for the headline number).
+  const metricVals = metrics
+    ? [metrics.clarity, metrics.expressiveness, metrics.volume, metrics.confidence, metrics.tempo, metrics.pauses]
     : [];
+  const overall10 = metricVals.length
+    ? Math.round((metricVals.reduce((a, b) => a + b, 0) / metricVals.length) * 2 * 10) / 10
+    : score;
 
   return (
     <Animated.View entering={FadeInUp.delay(100).duration(500)} style={[ac.card, { borderColor: SCORE_COLOR + "44" }]}>
@@ -417,10 +396,16 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
 
       <Text style={[ac.label, { color: SCORE_COLOR, fontFamily: "Inter_600SemiBold" }]}>{t("aiAnalysis")}</Text>
 
-      {/* Stars */}
-      <View style={ac.starsRow}>
-        {[1, 2, 3].map((n) => <AnimatedStar key={n} filled={n <= stars} delay={n * 200} />)}
-      </View>
+      {/* Flower (per-aspect petals) when we have full metrics; else stars. */}
+      {metrics ? (
+        <View style={ac.flowerWrap}>
+          <ScoreFlower overall={overall10} aspects={aspectsFromMetrics5(metrics, lang)} size={300} />
+        </View>
+      ) : (
+        <View style={ac.starsRow}>
+          {[1, 2, 3].map((n) => <AnimatedStar key={n} filled={n <= stars} delay={n * 200} />)}
+        </View>
+      )}
 
       {/* Score badge */}
       <Animated.View entering={ZoomIn.delay(800).duration(400)} style={[ac.scoreBadge, { backgroundColor: SCORE_COLOR + "20", borderColor: SCORE_COLOR + "60" }]}>
@@ -432,16 +417,6 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
       <Animated.Text entering={FadeIn.delay(900).duration(400)} style={[ac.feedback, { color: "rgba(240,237,232,0.85)", fontFamily: "Inter_400Regular" }]}>
         {feedback}
       </Animated.Text>
-
-      {/* Category bars */}
-      {catList.length > 0 && (
-        <Animated.View entering={FadeIn.delay(1000).duration(400)} style={ac.catsSection}>
-          <View style={[ac.divider, { backgroundColor: "#2A3348" }]} />
-          {catList.map((c, i) => (
-            <CategoryBar key={c.label} label={c.label} score={c.score} delay={1100 + i * 150} />
-          ))}
-        </Animated.View>
-      )}
 
       {/* Coaching tip — surfaced from /api/analyze-speech.tip so the
           performer gets one concrete thing to fix next take. */}
@@ -480,6 +455,7 @@ const ac = StyleSheet.create({
   card: { borderRadius: 20, borderWidth: 1, padding: 20, gap: 14, overflow: "hidden" },
   label: { fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase" },
   starsRow: { flexDirection: "row", gap: 12, justifyContent: "center", paddingVertical: 4 },
+  flowerWrap: { alignItems: "center", justifyContent: "center", paddingVertical: 4 },
   scoreBadge: { alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
   scoreText: { fontSize: 16 },
   xpText: { fontSize: 14 },
@@ -493,15 +469,37 @@ const ac = StyleSheet.create({
   errorText: { flex: 1, fontSize: 13, lineHeight: 19 },
 });
 
+// DEV preview data for the Skip button — showcases the flower score window
+// without a recording. Metrics span the colour tiers (mint / emerald / amber).
+const DEMO_RESULT: AnalysisResult = {
+  stars: 3,
+  score: 8,
+  silent: false,
+  feedback: "Пример оценки: уверенное, живое выступление — поработай над паузами и громкостью.",
+  categories: {
+    diction: { score: 5, label: "Дикция" },
+    expressiveness: { score: 5, label: "Выразительность" },
+    voice: { score: 3, label: "Голос" },
+    confidence: { score: 4, label: "Уверенность" },
+  },
+  metrics: { clarity: 5, expressiveness: 5, volume: 3, confidence: 4, tempo: 4, pauses: 2 },
+  errors: ["Пример: паузы проскакивают — дай ключевым словам прозвучать"],
+  tip: "Совет (пример): делай чуть больше осмысленных пауз после ключевых строк.",
+};
+
 // ── MAIN PLAYBACK SCREEN ──────────────────────────────────────────────────────
 export default function ShowtimePlaybackScreen() {
-  const { recordingUri, title, taskNumber: taskNumberParam, levelId: levelIdParam, mode: modeParam } = useLocalSearchParams<{
+  const { recordingUri, title, taskNumber: taskNumberParam, levelId: levelIdParam, mode: modeParam, demo: demoParam } = useLocalSearchParams<{
     recordingUri: string;
     title: string;
     taskNumber?: string;
     levelId?: string;
     mode?: string;
+    demo?: string;
   }>();
+  // DEV preview: opened from the Skip button to show the flower score window
+  // with example data, no recording required.
+  const isDemo = demoParam === "1";
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -516,6 +514,7 @@ export default function ShowtimePlaybackScreen() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [completing, setCompleting] = useState(false);
   const [hasListenedFully, setHasListenedFully] = useState(false);
+  const [showListenPrompt, setShowListenPrompt] = useState(false);
 
   const handlePlaybackComplete = () => {
     setHasListenedFully(true);
@@ -540,6 +539,13 @@ export default function ShowtimePlaybackScreen() {
     headerOpacity.value = withTiming(1, { duration: 600 });
     contentY.value = withDelay(300, withSpring(0, { damping: 16 }));
     contentOpacity.value = withDelay(300, withTiming(1, { duration: 500 }));
+
+    // DEV preview: show example results immediately, skip real analysis.
+    if (isDemo) {
+      setHasListenedFully(true);
+      setAnalysisResult(DEMO_RESULT);
+      return;
+    }
 
     // Always trigger analysis — handles both recorded and missing audio
     const timer = setTimeout(() => runAnalysis(), 2200);
@@ -585,10 +591,13 @@ export default function ShowtimePlaybackScreen() {
       }
 
       const apiUrl = new URL("/api/analyze-speech", getApiUrl()).toString();
+      // Module number drives the analyzer's leniency: early modules are scored
+      // gently and encouragingly, later ones more honestly (see /api/analyze-speech).
+      const moduleNumber = getLevelById(levelId)?.module;
       const res = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audioBase64, title }),
+        body: JSON.stringify({ audioBase64, title, moduleNumber }),
       });
       const data = await res.json();
       if (typeof data.stars === "number") {
@@ -622,17 +631,38 @@ export default function ShowtimePlaybackScreen() {
     }
   };
 
-  const handleDone = () => {
-    if (completing) return;
-    // Block progression if the player said nothing
-    if (analysisResult?.silent || analysisResult?.stars === 0) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+  // After Show Time, advance to the next path level instead of dumping the
+  // player back on the map. Trainer mode (free play) still returns to map.
+  const goAfterShowTime = () => {
+    if (isTrainer) {
+      router.push("/");
       return;
     }
+    const all = getLevelsData(lang);
+    const idx = all.findIndex((l) => l.id === levelId);
+    const next = idx >= 0 && idx < all.length - 1 ? all[idx + 1] : null;
+    if (!next) {
+      router.push("/");
+      return;
+    }
+    if (next.id.startsWith("showtime")) {
+      router.replace({ pathname: "/showtime-stage", params: { levelId: next.id, mode: "game" } });
+    } else if (next.id.startsWith("vocabulary")) {
+      router.replace({ pathname: "/vocabulary-level", params: { levelId: next.id, moduleId: String(next.module) } });
+    } else {
+      router.replace({ pathname: "/level/[id]", params: { id: next.id } });
+    }
+  };
+
+  // Actual completion: record progress and move on. Called either after the
+  // player listened fully, or when they explicitly skip the self-listen prompt.
+  const proceed = () => {
+    if (completing) return;
     setCompleting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    playSfx("success").catch(() => {});
 
-    if (!isTrainer) {
+    if (!isTrainer && !isDemo) {
       const score = analysisResult?.score ?? 7;
       completeTask(levelId as any, 1, score);
       completeTask(levelId as any, 2, score);
@@ -678,7 +708,33 @@ export default function ShowtimePlaybackScreen() {
       }
     }
 
-    router.push("/");
+    goAfterShowTime();
+  };
+
+  const handleDone = () => {
+    if (completing) return;
+    // Block progression if the player said nothing
+    if (analysisResult?.silent || analysisResult?.stars === 0) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+    // Encourage full self-listening before moving on — but allow skipping.
+    if (!hasListenedFully && recordingUri) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      setShowListenPrompt(true);
+      return;
+    }
+    proceed();
+  };
+
+  const skipListening = () => {
+    // TODO (task 1.15 — monetization): gate this skip behind a rewarded ad,
+    // i.e. only allow proceeding here once the player has watched an ad.
+    // Ads are intentionally NOT wired up yet — for now the prompt is a soft
+    // nudge and skipping is always allowed.
+    setShowListenPrompt(false);
+    setHasListenedFully(true);
+    proceed();
   };
 
   const isSilent = analysisResult?.silent || analysisResult?.stars === 0;
@@ -815,12 +871,12 @@ export default function ShowtimePlaybackScreen() {
             </Pressable>
             <Pressable
               onPress={handleDone}
-              disabled={completing || isSilent || !analysisResult || (!hasListenedFully && !!recordingUri)}
+              disabled={completing || isSilent || !analysisResult}
               style={({ pressed }) => [
                 pb.doneBtn,
                 {
-                  backgroundColor: isSilent ? "#1A1A2A" : (!hasListenedFully && !!recordingUri) ? "#1A1A2A" : "#0B1426",
-                  opacity: pressed || completing || !analysisResult || (!hasListenedFully && !!recordingUri) ? 0.5 : 1,
+                  backgroundColor: isSilent ? "#1A1A2A" : "#0B1426",
+                  opacity: pressed || completing || !analysisResult ? 0.5 : 1,
                   borderWidth: isSilent ? 1 : 0,
                   borderColor: isSilent ? "#0EA5E940" : "transparent",
                 },
@@ -845,9 +901,106 @@ export default function ShowtimePlaybackScreen() {
       </ScrollView>
 
       <SpeechAnalyzingLoader visible={analyzing && !analysisResult} lang={lang} />
+
+      <Modal
+        visible={showListenPrompt}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowListenPrompt(false)}
+      >
+        <View style={listenPrompt.overlay}>
+          <View style={listenPrompt.card}>
+            <Ionicons name="headset-outline" size={38} color="#FFD166" />
+            <Text style={listenPrompt.title}>
+              {lang === "en" ? "Listen to yourself" : "Послушай себя"}
+            </Text>
+            <Text style={listenPrompt.body}>
+              {lang === "en"
+                ? "Listen to your speech to the end — honest self-reflection is a real step toward getting better."
+                : "Прослушай свою речь до конца — честный самоанализ это шаг к тому, чтобы стать лучше."}
+            </Text>
+            <Pressable
+              onPress={() => setShowListenPrompt(false)}
+              style={({ pressed }) => [listenPrompt.btn, { opacity: pressed ? 0.85 : 1 }]}
+            >
+              <Text style={listenPrompt.btnText}>
+                {lang === "en" ? "Listen" : "Дослушать"}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={skipListening}
+              style={({ pressed }) => [listenPrompt.skipBtn, { opacity: pressed ? 0.7 : 1 }]}
+            >
+              <Text style={listenPrompt.skipBtnText}>
+                {lang === "en" ? "Skip" : "Пропустить"}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
+
+const listenPrompt = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(3,7,14,0.78)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 28,
+  },
+  card: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: "#0E1626",
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,209,102,0.25)",
+    padding: 26,
+    alignItems: "center",
+    gap: 12,
+  },
+  title: {
+    color: "#fff",
+    fontSize: 19,
+    fontFamily: "Inter_700Bold",
+    textAlign: "center",
+  },
+  body: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 14.5,
+    lineHeight: 21,
+    textAlign: "center",
+    fontFamily: "Inter_400Regular",
+  },
+  btn: {
+    marginTop: 8,
+    backgroundColor: "#FFD166",
+    paddingHorizontal: 28,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  btnText: {
+    color: "#2A1E00",
+    fontSize: 15,
+    fontFamily: "Inter_700Bold",
+  },
+  skipBtn: {
+    marginTop: 2,
+    paddingHorizontal: 20,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  skipBtnText: {
+    color: "rgba(255,255,255,0.55)",
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+  },
+});
 
 const pb = StyleSheet.create({
   container: { flex: 1 },

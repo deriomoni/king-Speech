@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
   cancelAnimation,
 } from "react-native-reanimated";
+import { useIsFocused } from "@react-navigation/native";
 import type { RankTheme } from "./rankTheme";
 import type { ThemeMode } from "@/context/ThemeContext";
 import { MeshGradientBackground } from "./MeshGradientBackground";
@@ -535,10 +536,12 @@ function AmateurPopArtPattern({ theme }: { theme: RankTheme }) {
 
 function ConfidentTechGrid({ theme }: { theme: RankTheme }) {
   const shimmer = useSharedValue(0);
+  const isFocused = useIsFocused();
   useEffect(() => {
+    if (!isFocused) return;
     shimmer.value = withRepeat(withTiming(1, { duration: 4500 }), -1, true);
     return () => cancelAnimation(shimmer);
-  }, []);
+  }, [isFocused]);
   const shimmerStyle = useAnimatedStyle(() => ({ opacity: 0.18 + shimmer.value * 0.18 }));
   const cells = 18;
   return (
@@ -642,10 +645,12 @@ function MasterArtDeco({ theme }: { theme: RankTheme }) {
 
 function ProCosmos({ theme }: { theme: RankTheme }) {
   const orbit = useSharedValue(0);
+  const isFocused = useIsFocused();
   useEffect(() => {
+    if (!isFocused) return;
     orbit.value = withRepeat(withTiming(1, { duration: 14000 }), -1, false);
     return () => cancelAnimation(orbit);
-  }, []);
+  }, [isFocused]);
   const orbitStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${orbit.value * 360}deg` }],
   }));

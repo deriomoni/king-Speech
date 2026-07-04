@@ -2,6 +2,7 @@ import type { Lang } from "@/context/LangContext";
 import type { TaskData } from "@/constants/gameContent";
 
 import warmupData from "@/assets/content/king_speech_warmup_content.json";
+import interviewData from "@/assets/content/king_speech_interview_content.json";
 
 export interface WarmupChant {
   sound: string;
@@ -123,6 +124,85 @@ export function normalizeWarmupModule(mod: WarmupModule): NormalizedWarmup {
 export function getNormalizedWarmup(moduleId: number): NormalizedWarmup | null {
   const mod = getWarmup(moduleId);
   return mod ? normalizeWarmupModule(mod) : null;
+}
+
+// ===================== Interview ("Путь") =====================
+// Light, theme-bound interview questions live in the content pipeline (one
+// entry per module). Each module holds 3 task slots × 3 interchangeable
+// variants = 9 questions. The level shows the first variant of each slot; the
+// remaining variants back the future "replace question" button (task 1.11).
+
+export interface InterviewModuleContent {
+  module: number;
+  theme: string;
+  theme_en: string;
+  /** 3 task slots, each with 3 variant questions (RU). */
+  q: string[][];
+  /** 3 task slots, each with 3 variant questions (EN). */
+  q_en: string[][];
+}
+
+const INTERVIEW = interviewData as InterviewModuleContent[];
+
+// Generic, reusable framing for interview tasks (title/instruction/tips) by
+// task position, so the JSON only carries the questions themselves. Kept light
+// and supportive to match the new tone.
+const INTERVIEW_TASK_META: Record<Lang, { title: string; instruction: string; tips: string[] }[]> = {
+  ru: [
+    { title: "Лёгкий вопрос", instruction: "Ответь голосом — спокойно, как другу. 30–60 секунд.", tips: ["Не торопись", "Говори своими словами", "Здесь нет неправильных ответов"] },
+    { title: "Расскажи историю", instruction: "Поделись маленькой историей из жизни. Можно с примером.", tips: ["Добавь деталь или эмоцию", "Говори искренне", "Не бойся пауз"] },
+    { title: "Твоё мнение", instruction: "Скажи, что думаешь — своими словами, без правильных ответов.", tips: ["Будь собой", "Поясни почему", "Заверши спокойно"] },
+  ],
+  en: [
+    { title: "Easy question", instruction: "Answer with your voice — calmly, like to a friend. 30–60 seconds.", tips: ["Take your time", "Use your own words", "There are no wrong answers here"] },
+    { title: "Tell a story", instruction: "Share a small story from your life. An example is welcome.", tips: ["Add a detail or emotion", "Speak sincerely", "Don't fear pauses"] },
+    { title: "Your opinion", instruction: "Say what you think — in your own words, no right answers.", tips: ["Be yourself", "Explain why", "Finish calmly"] },
+  ],
+};
+
+/** interview → 1, interview2 → 2; 0 when the id isn't an interview level. */
+export function getInterviewModuleFromLevelId(levelId: string): number {
+  const base = levelId.replace(/\d+$/, "");
+  if (base !== "interview") return 0;
+  const suffix = levelId.slice("interview".length);
+  return suffix ? parseInt(suffix, 10) : 1;
+}
+
+export function getInterviewModuleContent(moduleId: number): InterviewModuleContent | null {
+  return INTERVIEW.find((m) => m.module === moduleId) ?? null;
+}
+
+/**
+ * Three light, theme-bound interview tasks for a Path level (first variant of
+ * each slot). Returns null when the id isn't an interview level or no content
+ * exists for the module, so the caller can fall back to legacy tasks.
+ */
+export function getInterviewTasksForLevel(levelId: string, lang: Lang): TaskData[] | null {
+  const moduleId = getInterviewModuleFromLevelId(levelId);
+  if (moduleId <= 0) return null;
+  const mod = getInterviewModuleContent(moduleId);
+  if (!mod) return null;
+  const slots = lang === "en" ? mod.q_en : mod.q;
+  const meta = INTERVIEW_TASK_META[lang];
+  return slots.slice(0, 3).map((variants, i) => ({
+    taskNumber: i + 1,
+    title: meta[i]?.title ?? (lang === "en" ? "Question" : "Вопрос"),
+    instruction: meta[i]?.instruction ?? "",
+    content: variants[0] ?? "",
+    tips: meta[i]?.tips ?? [],
+  }));
+}
+
+/**
+ * All 3 variant questions for each of the 3 interview task slots, ready for the
+ * future "replace question" button (task 1.11). null when not applicable.
+ */
+export function getInterviewVariantsForLevel(levelId: string, lang: Lang): string[][] | null {
+  const moduleId = getInterviewModuleFromLevelId(levelId);
+  if (moduleId <= 0) return null;
+  const mod = getInterviewModuleContent(moduleId);
+  if (!mod) return null;
+  return (lang === "en" ? mod.q_en : mod.q).map((variants) => variants.slice());
 }
 
 /** Two synthetic tasks for GameContext progress tracking. */

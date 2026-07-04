@@ -1,4 +1,5 @@
 import type { Lang } from "@/context/LangContext";
+import { getLiterature, getModuleFromReadingId } from "@/constants/literatureLoader";
 
 export interface LevelData {
   id: string;
@@ -5246,12 +5247,36 @@ const TASKS_EN: Record<string, TaskData[]> = {
   ],
 };
 
+/** "Александр Пушкин" → "А. Пушкин"; single-word names kept as-is. */
+function abbrevAuthor(full: string): string {
+  const parts = full.trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return full.trim();
+  const surname = parts[parts.length - 1];
+  const first = parts[0];
+  return `${first[0]}. ${surname}`;
+}
+
 export function getLevelsData(lang: Lang): LevelData[] {
   const content = lang === "en" ? LEVELS_EN : LEVELS_RU;
-  return content.map((c, i) => ({
-    ...c,
-    ...LEVEL_META[i],
-  }));
+  return content.map((c, i) => {
+    const level: LevelData = {
+      ...c,
+      ...LEVEL_META[i],
+    };
+    // Reading titles for RU are derived from the actual literature JSON
+    // (the single source of truth) so the map card, the level header, and
+    // the displayed text always agree. EN keeps its legacy hardcoded meta.
+    if (lang === "ru" && level.id.startsWith("reading")) {
+      const lit = getLiterature(getModuleFromReadingId(level.id));
+      if (lit) {
+        // Title stays a plain "Чтение"; the work + abbreviated author go on
+        // the step-card subtitle (which auto-shrinks so it never truncates).
+        level.title = "Чтение";
+        level.subtitle = `${lit.work} · ${abbrevAuthor(lit.author)}`;
+      }
+    }
+    return level;
+  });
 }
 
 export function getTasksData(lang: Lang): Record<string, TaskData[]> {

@@ -307,7 +307,10 @@ export function MeshGradientBackground({
   const baseColor = isDark ? "#0A0A0F" : "#F6F6FA";
 
   const baseOpacity = isDark ? 0.55 : 0.45;
-  const blurIntensity = isDark ? 80 : 70;
+  // Lower blur intensity → much less per-frame GPU work (a full-screen
+  // real-time blur is the single most expensive continuous element here).
+  // The look stays soft; battery/heat drop noticeably.
+  const blurIntensity = isDark ? 42 : 36;
 
   // The blob container — on web it gets a CSS blur filter; on native
   // it's a normal View with a BlurView stacked above.

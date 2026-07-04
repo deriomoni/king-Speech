@@ -32,6 +32,27 @@ function Test-MetroStatusRunning() {
   return ($out -match "running")
 }
 
+function Test-BackendRunning() {
+  $code = curl.exe -s -o NUL -w "%{http_code}" --max-time 3 "http://localhost:5000/" 2>$null
+  return ($code -eq "200")
+}
+
+# Boot the Express AI backend (port 5000) if it isn't already up. Without it
+# the in-app AI (speech transcription + scoring) silently falls back. The
+# server loads .env on its own (see server/load-env.ts), so no env prefix.
+function Ensure-Backend() {
+  if (Test-BackendRunning) {
+    Write-Status "Backend (AI) already running on :5000"
+    return
+  }
+  $serverLog = Join-Path $cursorDir "server.log"
+  if (Test-Path $serverLog) { Remove-Item $serverLog -Force -ErrorAction SilentlyContinue }
+  $serverCmd = "cd /d `"$ProjectRoot`" && npx tsx server/index.ts >> `"$serverLog`" 2>&1"
+  Start-Process -FilePath "cmd.exe" -ArgumentList @("/c", $serverCmd) -WorkingDirectory $ProjectRoot -WindowStyle Minimized
+  Write-Status "Backend (AI) starting on :5000 - log: $serverLog"
+  Write-DebugLog "H4" "backend_start" @{ log = $serverLog }
+}
+
 function Test-WebBundleInLog([string]$LogPath) {
   if (-not (Test-Path $LogPath)) { return $false }
   try {
@@ -94,6 +115,10 @@ $cursorDir = Join-Path $ProjectRoot ".cursor"
 New-Item -ItemType Directory -Force -Path $cursorDir | Out-Null
 $statusPath = Join-Path $cursorDir "expo-session.json"
 $logFile = Join-Path $cursorDir "expo-dev.log"
+
+# Always make sure the AI backend is up first — every Metro branch below needs
+# it, including the early "already running" exits.
+Ensure-Backend
 
 $lanIp = (
   Get-NetIPAddress -AddressFamily IPv4 |

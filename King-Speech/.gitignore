@@ -23,6 +23,7 @@ android/
 .metro-health-check*
 .cursor/expo-dev.log
 .cursor/expo-session.json
+.cursor/*.log
 
 # debug
 npm-debug.*

@@ -62,6 +62,7 @@ import { GameProvider, useGame } from "@/context/GameContext";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { LangProvider, useLang } from "@/context/LangContext";
 import { DevToolsProvider, useDevTools } from "@/context/DevToolsContext";
+import { ModuleTransitionProvider } from "@/context/ModuleTransitionContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 
 SplashScreen.preventAutoHideAsync();
@@ -123,6 +124,10 @@ function RootLayoutNav() {
       />
       <Stack.Screen
         name="world/[id]"
+        options={{ headerShown: false, presentation: "card" }}
+      />
+      <Stack.Screen
+        name="reading-library"
         options={{ headerShown: false, presentation: "card" }}
       />
       </Stack>
@@ -297,9 +302,11 @@ export default function RootLayout() {
                 <KeyboardProvider>
                   <DevToolsProvider>
                     <GameProvider>
-                      <ReadinessGate fontsReady={fontsReady}>
-                        <RootLayoutNav />
-                      </ReadinessGate>
+                      <ModuleTransitionProvider>
+                        <ReadinessGate fontsReady={fontsReady}>
+                          <RootLayoutNav />
+                        </ReadinessGate>
+                      </ModuleTransitionProvider>
                     </GameProvider>
                   </DevToolsProvider>
                 </KeyboardProvider>
