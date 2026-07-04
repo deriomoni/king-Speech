@@ -1,2 +1,3 @@
 - [Git sync when git networking is blocked](git-sync-blocked-tarball-workaround.md) — git fetch/merge/push blocked; use HTTPS tarball + `git merge-file` + read-only `git archive`; node not python3.
 - [Server startup resilience](server-startup-lazy-clients.md) — construct external API clients (OpenAI/Anthropic) lazily, never at module top level, so missing keys don't crash boot.
+- [Vocabulary word roulette](vocab-word-roulette.md) — word picker is a native Reanimated reel (Lottie ref has baked non-editable text); freeze the reel at mount so landed word == played word.
