@@ -324,6 +324,7 @@ function ReelCol({
   popScale,
   landed,
   itemW,
+  centerLeft,
 }: {
   word: string;
   index: number;
@@ -331,15 +332,16 @@ function ReelCol({
   popScale: SharedValue<number>;
   landed: boolean;
   itemW: number;
+  centerLeft: number;
 }) {
+  // Each word positions ITSELF, absolutely, centred in the window and then
+  // offset horizontally by its distance to the live position. This avoids a
+  // single giant translated flex-row (which React Native Web mis-lays when the
+  // row is far wider than its container, leaving the visible window empty).
   const style = useAnimatedStyle(() => {
-    const d = Math.abs(index - pos.value);
-    let scale = interpolate(
-      d,
-      [0, 1, 2],
-      [1, 0.58, 0.44],
-      Extrapolation.CLAMP,
-    );
+    const rel = index - pos.value;
+    const d = Math.abs(rel);
+    let scale = interpolate(d, [0, 1, 2], [1, 0.58, 0.44], Extrapolation.CLAMP);
     if (landed) scale *= popScale.value;
     const opacity = interpolate(
       d,
@@ -352,12 +354,16 @@ function ReelCol({
       [0, 1],
       [RED, "rgba(255,255,255,0.9)"],
     );
-    return { opacity, color, transform: [{ scale }] };
+    return {
+      opacity,
+      color,
+      transform: [{ translateX: rel * itemW }, { scale }],
+    };
   });
 
   return (
     <Animated.Text
-      style={[styles.reelCol, { width: itemW }, style]}
+      style={[styles.reelCol, { width: itemW, left: centerLeft }, style]}
       numberOfLines={1}
       adjustsFontSizeToFit
       minimumFontScale={0.5}
@@ -462,9 +468,7 @@ function SpinPhase({
     return () => clearTimeout(autoId);
   }, []);
 
-  const stripStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: SCREEN_W / 2 - itemW / 2 - pos.value * itemW }],
-  }));
+  const centerLeft = (SCREEN_W - itemW) / 2;
 
   return (
     <View style={styles.spinRoot}>
@@ -482,19 +486,18 @@ function SpinPhase({
 
       <View style={{ flex: 1, justifyContent: "center" }}>
         <View style={[styles.reelWindow, { height: ROW_H }]}>
-          <Animated.View style={[styles.reelStrip, stripStyle]}>
-            {reel.map((w, i) => (
-              <ReelCol
-                key={i}
-                word={w.word}
-                index={i}
-                pos={pos}
-                popScale={popScale}
-                landed={landIndex === i}
-                itemW={itemW}
-              />
-            ))}
-          </Animated.View>
+          {reel.map((w, i) => (
+            <ReelCol
+              key={i}
+              word={w.word}
+              index={i}
+              pos={pos}
+              popScale={popScale}
+              landed={landIndex === i}
+              itemW={itemW}
+              centerLeft={centerLeft}
+            />
+          ))}
 
           <View
             pointerEvents="none"
@@ -1390,15 +1393,15 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   reelWindow: {
+    position: "relative",
     width: "100%",
     justifyContent: "center",
     overflow: "hidden",
   },
-  reelStrip: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
   reelCol: {
+    position: "absolute",
+    top: 0,
+    height: ROW_H,
     fontSize: 34,
     lineHeight: ROW_H,
     letterSpacing: 1,

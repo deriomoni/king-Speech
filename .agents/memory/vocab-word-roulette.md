@@ -23,6 +23,14 @@ reference only and drive from `VOCAB_WORDS_RU`. Current font is Fredoka_700Bold
 (rounded) as a close visual match — the true reference font is unknown; if the
 user names it, switch to it.
 
+**Rendering gotcha (why it went blank):** an early horizontal version rendered
+all words in ONE flex-row strip and moved the whole strip with a huge negative
+`translateX`. React Native Web mis-lays a flex row far wider than its container,
+so the visible window showed nothing even though the landing logic worked (tests
+passed, user saw an empty reel). Fix / rule: on RN Web, don't build a reel as one
+giant translated flex strip — position each item absolutely and let each item
+compute its own offset from the shared position. Keep it this way.
+
 **Invariant to preserve:** the word the reel visually lands on MUST equal the
 word passed to `onPicked` / played next. Guaranteed by freezing the finite reel
 array once at mount (not from a live pool), so the parent recording the pick
