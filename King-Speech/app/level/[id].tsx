@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
+import { ROLES, tx as roleTx } from "@/constants/rolesData";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -560,6 +561,7 @@ function LevelCompleteModal({
   isDark,
   t,
   lang,
+  roleBonus,
 }: {
   visible: boolean;
   levelTitle: string;
@@ -575,6 +577,7 @@ function LevelCompleteModal({
   isDark: boolean;
   t: (key: any) => string;
   lang: "ru" | "en";
+  roleBonus?: { emoji: string; title: string; onPlay: () => void } | null;
 }) {
   const scale = useSharedValue(0.7);
   const opacity = useSharedValue(0);
@@ -711,6 +714,30 @@ function LevelCompleteModal({
             </View>
           </View>
 
+          {roleBonus && (
+            <Pressable
+              onPress={roleBonus.onPlay}
+              style={({ pressed }) => [lc.roleBonus, { opacity: pressed ? 0.85 : 1 }]}
+            >
+              <LinearGradient
+                colors={["#8E5BFF", "#E84393"]}
+                style={StyleSheet.absoluteFill}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              />
+              <Text style={lc.roleBonusEmoji}>{roleBonus.emoji}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[lc.roleBonusLabel, { fontFamily: "Inter_600SemiBold" }]}>
+                  {lang === "en" ? "BONUS ROLE" : "БОНУС-РОЛЬ"}
+                </Text>
+                <Text style={[lc.roleBonusTitle, { fontFamily: "Inter_700Bold" }]} numberOfLines={1}>
+                  {roleBonus.title}
+                </Text>
+              </View>
+              <Ionicons name="arrow-forward-circle" size={22} color="#fff" />
+            </Pressable>
+          )}
+
           {!hasNext && (
             <Text style={[lc.allDone, { fontFamily: "Inter_600SemiBold" }]}>
               {t("allLevelsDone")}
@@ -818,6 +845,24 @@ export default function LevelScreen() {
     : null;
   const hasNext = !!nextLevel;
   const bestScore = scores.length > 0 ? Math.max(...scores) : 0;
+
+  // Bonus role — deterministically surfaced on a subset of «Путь» levels to add
+  // variety. Same level always maps to the same role/mode; ~1 in 3 levels show one.
+  const roleBonus = React.useMemo(() => {
+    let h = 0;
+    for (let i = 0; i < levelId.length; i++) h = (h * 31 + levelId.charCodeAt(i)) >>> 0;
+    if (h % 3 !== 0) return null;
+    const role = ROLES[h % ROLES.length];
+    const mode = h % 2 === 0 ? "scripted" : "improv";
+    return {
+      emoji: role.emoji,
+      title: roleTx(role.title, lang),
+      onPlay: () => {
+        setShowLevelComplete(false);
+        router.push({ pathname: "/role-stage", params: { roleId: role.id, mode } });
+      },
+    };
+  }, [levelId, lang]);
 
   const handleLevelCompleteNext = React.useCallback(() => {
     setShowLevelComplete(false);
@@ -1281,6 +1326,7 @@ export default function LevelScreen() {
           colors={colors}
           isDark={isDark}
           t={t}
+          roleBonus={roleBonus}
         />
         <DevSkipButton levelId={levelId} />
       </View>
@@ -1370,6 +1416,7 @@ export default function LevelScreen() {
           colors={colors}
           isDark={isDark}
           t={t}
+          roleBonus={roleBonus}
         />
 
         {/* Close X (top-right, above ReadingLevelView header) — hidden while
@@ -1461,6 +1508,7 @@ export default function LevelScreen() {
         colors={colors}
         isDark={colorScheme === "dark"}
         t={t}
+        roleBonus={roleBonus}
       />
 
       <DevSkipButton levelId={levelId} onPreviewResults={handlePreviewResults} />
@@ -1760,6 +1808,20 @@ const lc = StyleSheet.create({
     elevation: 8,
   },
   nextBtnText: { fontSize: 16, color: "#1A1033", letterSpacing: 0.3 },
+  roleBonus: {
+    marginTop: 16,
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 18,
+    overflow: "hidden",
+  },
+  roleBonusEmoji: { fontSize: 26 },
+  roleBonusLabel: { fontSize: 10, color: "rgba(255,255,255,0.8)", letterSpacing: 1.2 },
+  roleBonusTitle: { fontSize: 15, color: "#fff", marginTop: 1 },
   mapLink: {
     marginTop: 12,
     paddingVertical: 6,

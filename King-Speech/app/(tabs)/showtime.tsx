@@ -184,6 +184,37 @@ export default function ShowTimeScreen() {
           </Pressable>
         </Animated.View>
 
+        <Animated.View entering={FadeInDown.delay(500).duration(400)}>
+          <Pressable
+            onPress={() => {
+              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push("/roles");
+            }}
+            style={({ pressed }) => [st.rolesEntry, { opacity: pressed ? 0.9 : 1 }]}
+          >
+            <LinearGradient
+              colors={["#8E5BFF", "#E84393"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={st.rolesEntryIcon}>
+              <Ionicons name="happy" size={24} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[st.rolesEntryTitle, { fontFamily: "Nunito_800ExtraBold" }]}>
+                {lang === "en" ? "Roles" : "Роли"}
+              </Text>
+              <Text style={[st.rolesEntrySub, { fontFamily: "Inter_400Regular" }]}>
+                {lang === "en"
+                  ? "Play a character & train adaptability"
+                  : "Играй персонажа и тренируй адаптивность"}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color="#ffffffCC" />
+          </Pressable>
+        </Animated.View>
+
         <Animated.View entering={FadeInDown.delay(550).duration(400)}>
           <Text style={[st.sectionLabel, { fontFamily: "Inter_600SemiBold" }]}>{t("speakerTips")}</Text>
           {[
@@ -276,6 +307,31 @@ const st = StyleSheet.create({
     elevation: 5,
   },
   startBtnText: { fontSize: 18 },
+  rolesEntry: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    padding: 16,
+    borderRadius: 20,
+    overflow: "hidden",
+    marginTop: 16,
+    marginBottom: 8,
+    ...Platform.select({
+      ios: { shadowColor: "#8E5BFF", shadowOpacity: 0.4, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } },
+      android: { elevation: 6 },
+      default: {},
+    }),
+  },
+  rolesEntryIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.18)",
+  },
+  rolesEntryTitle: { fontSize: 18, color: "#fff" },
+  rolesEntrySub: { fontSize: 13, color: "rgba(255,255,255,0.85)", marginTop: 2 },
 
   tipRow: {
     flexDirection: "row",
