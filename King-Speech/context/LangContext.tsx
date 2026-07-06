@@ -49,7 +49,7 @@ const translations = {
     confirm: "Подтвердить",
 
     tabPath: "Путь",
-    tabInterview: "Interview",
+    tabInterview: "Шпаргалка",
     tabShowtime: "Show Time",
     tabProfile: "Профиль",
     tabSettings: "Настройки",
@@ -361,7 +361,7 @@ const translations = {
     confirm: "Confirm",
 
     tabPath: "Path",
-    tabInterview: "Interview",
+    tabInterview: "Cheat Sheet",
     tabShowtime: "Show Time",
     tabProfile: "Profile",
     tabSettings: "Settings",
