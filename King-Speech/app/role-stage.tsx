@@ -58,6 +58,7 @@ export default function RoleStageScreen() {
 
   const cameraRef = useRef<CameraView | null>(null);
   const videoUriRef = useRef<string | undefined>(undefined);
+  const audioUriRef = useRef<string | undefined>(undefined);
   const recordPromiseRef = useRef<Promise<any> | null>(null);
   const startTimeRef = useRef(0);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -164,6 +165,7 @@ export default function RoleStageScreen() {
       const type = mr?.mimeType || chunks[0]?.type || "audio/webm";
       const blob = new Blob(chunks, { type });
       if (!blob.size) return undefined;
+      try { audioUriRef.current = URL.createObjectURL(blob); } catch {}
       return await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve((reader.result as string).split(",")[1] ?? "");
@@ -179,6 +181,7 @@ export default function RoleStageScreen() {
         nativeRecRef.current = null;
         await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
         if (!uri) return undefined;
+        audioUriRef.current = uri;
         const FileSystem = require("expo-file-system/legacy");
         return await FileSystem.readAsStringAsync(uri, { encoding: "base64" });
       } catch (e) {
@@ -240,6 +243,7 @@ export default function RoleStageScreen() {
       mode,
       durationSeconds: duration,
       audioBase64,
+      audioUri: audioUriRef.current,
       videoUri: videoUriRef.current,
     });
 

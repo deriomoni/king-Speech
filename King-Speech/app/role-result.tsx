@@ -33,11 +33,13 @@ import { getApiUrl } from "@/lib/query-client";
 
 let Video: any = null;
 let ResizeMode: any = null;
+let AudioMod: any = null;
 if (Platform.OS !== "web") {
   try {
     const av = require("expo-av");
     Video = av.Video;
     ResizeMode = av.ResizeMode;
+    AudioMod = av.Audio;
   } catch {}
 }
 
@@ -91,6 +93,61 @@ export default function RoleResultScreen() {
   const mountedRef = useRef(true);
   const scanRot = useSharedValue(0);
   const scanStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${scanRot.value}deg` }] }));
+
+  // Local-only playback of the user's own take (watch + listen). Sources stay
+  // on-device; only audioBase64 is ever sent to the server (for scoring).
+  const [playing, setPlaying] = useState(false);
+  const videoRef = useRef<any>(null);
+  const soundRef = useRef<any>(null);
+  const webAudioRef = useRef<HTMLAudioElement | null>(null);
+  const canPlayback = !!(perf?.audioUri || perf?.videoUri);
+
+  const togglePlay = useCallback(async () => {
+    if (!perf) return;
+    if (Platform.OS === "web") {
+      if (!perf.audioUri) return;
+      let a = webAudioRef.current;
+      if (!a) {
+        a = new window.Audio(perf.audioUri);
+        a.onended = () => { if (mountedRef.current) setPlaying(false); };
+        webAudioRef.current = a;
+      }
+      if (playing) { a.pause(); setPlaying(false); }
+      else { try { a.currentTime = 0; } catch {} a.play().catch(() => {}); setPlaying(true); }
+      return;
+    }
+    try {
+      if (playing) {
+        try { await soundRef.current?.pauseAsync?.(); } catch {}
+        try { await videoRef.current?.pauseAsync?.(); } catch {}
+        setPlaying(false);
+        return;
+      }
+      if (!soundRef.current && perf.audioUri && AudioMod) {
+        try { await AudioMod.setAudioModeAsync?.({ playsInSilentModeIOS: true }); } catch {}
+        const { sound } = await AudioMod.Sound.createAsync({ uri: perf.audioUri }, { shouldPlay: false });
+        soundRef.current = sound;
+        sound.setOnPlaybackStatusUpdate?.((st: any) => {
+          if (st?.didJustFinish && mountedRef.current) setPlaying(false);
+        });
+      }
+      if (videoRef.current) {
+        try {
+          await videoRef.current.setPositionAsync(0);
+          await videoRef.current.playAsync();
+          videoRef.current.setOnPlaybackStatusUpdate?.((st: any) => {
+            if (st?.didJustFinish && !soundRef.current && mountedRef.current) setPlaying(false);
+          });
+        } catch {}
+      }
+      if (soundRef.current) {
+        try { await soundRef.current.setPositionAsync(0); await soundRef.current.playAsync(); } catch {}
+      }
+      if (mountedRef.current) setPlaying(true);
+    } catch (e) {
+      console.warn("role-result: playback failed", e);
+    }
+  }, [playing, perf]);
 
   // Fetch scoring from the server. Falls back internally; the endpoint always
   // returns a usable score even without AI keys.
@@ -153,7 +210,14 @@ export default function RoleResultScreen() {
     return () => {
       mountedRef.current = false;
       cancelAnimation(scanRot);
+      try { soundRef.current?.unloadAsync?.(); } catch {}
+      try { videoRef.current?.pauseAsync?.(); } catch {}
+      try { webAudioRef.current?.pause?.(); } catch {}
+      try {
+        if (Platform.OS === "web" && perf?.audioUri) URL.revokeObjectURL(perf.audioUri);
+      } catch {}
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!perf || !role) {
@@ -178,15 +242,14 @@ export default function RoleResultScreen() {
           <Ionicons name="close" size={24} color={TEXT} />
         </Pressable>
 
-        {/* Local video / role preview */}
+        {/* Local video / role preview — watch & listen to your own take. */}
         <View style={styles.previewWrap}>
           {Platform.OS !== "web" && Video && perf.videoUri ? (
             <Video
+              ref={videoRef}
               source={{ uri: perf.videoUri }}
               style={StyleSheet.absoluteFill}
               resizeMode={ResizeMode?.COVER ?? "cover"}
-              isLooping
-              shouldPlay
               isMuted
               useNativeControls={false}
             />
@@ -196,11 +259,28 @@ export default function RoleResultScreen() {
           {!(Platform.OS !== "web" && Video && perf.videoUri) && (
             <Text style={styles.previewEmoji}>{role.emoji}</Text>
           )}
+
+          {/* Play / pause the recorded take (video + separate audio). */}
+          {canPlayback && (
+            <Pressable onPress={togglePlay} style={styles.playOverlay} hitSlop={8}>
+              <View style={styles.playCircle}>
+                <Ionicons name={playing ? "pause" : "play"} size={30} color="#fff" style={{ marginLeft: playing ? 0 : 3 }} />
+              </View>
+              <Text style={styles.playHint}>
+                {playing
+                  ? (lang === "en" ? "Playing your take" : "Играет твой дубль")
+                  : (perf.videoUri
+                      ? (lang === "en" ? "Watch & listen" : "Смотреть и слушать")
+                      : (lang === "en" ? "Listen to your take" : "Послушать себя"))}
+              </Text>
+            </Pressable>
+          )}
+
           <View style={styles.previewTag}>
             <Text style={styles.previewTagEmoji}>{role.emoji}</Text>
             <Text style={styles.previewTagText}>{tx(role.title, lang)}</Text>
           </View>
-          {Platform.OS !== "web" && perf.videoUri && (
+          {canPlayback && (
             <View style={styles.localBadge}>
               <Ionicons name="lock-closed" size={11} color="#fff" />
               <Text style={styles.localBadgeText}>{lang === "en" ? "Stays on device" : "Только на устройстве"}</Text>
@@ -335,6 +415,9 @@ const styles = StyleSheet.create({
 
   previewWrap: { height: 260, borderRadius: 24, overflow: "hidden", backgroundColor: CARD_BG, alignItems: "center", justifyContent: "center", marginBottom: 18 },
   previewEmoji: { fontSize: 96 },
+  playOverlay: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center", gap: 10 },
+  playCircle: { width: 68, height: 68, borderRadius: 34, backgroundColor: "rgba(0,0,0,0.45)", borderWidth: 2, borderColor: "rgba(255,255,255,0.85)", alignItems: "center", justifyContent: "center" },
+  playHint: { color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 13, backgroundColor: "rgba(0,0,0,0.4)", paddingHorizontal: 12, paddingVertical: 5, borderRadius: 12, overflow: "hidden" },
   previewTag: { position: "absolute", bottom: 12, left: 12, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#00000066", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16 },
   previewTagEmoji: { fontSize: 16 },
   previewTagText: { color: "#fff", fontFamily: "Nunito_700Bold", fontSize: 14 },

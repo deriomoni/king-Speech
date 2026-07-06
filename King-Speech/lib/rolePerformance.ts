@@ -9,6 +9,8 @@ export interface RolePerformance {
   durationSeconds: number;
   /** Recorded audio (base64, no data: prefix). Sent to the server for scoring. */
   audioBase64?: string;
+  /** Local-only audio URI/blob for on-device playback ("listen to yourself"). NEVER uploaded. */
+  audioUri?: string;
   /** Local-only video URI for the on-device preview. NEVER uploaded. */
   videoUri?: string;
 }
