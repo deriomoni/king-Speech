@@ -15,12 +15,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  useAnimatedScrollHandler,
   withSpring,
   withTiming,
   withRepeat,
   withSequence,
   withDelay,
   cancelAnimation,
+  runOnJS,
+  type SharedValue,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -48,33 +51,76 @@ import FinalPortal from "@/components/path/FinalPortal";
 import { getRankTheme } from "@/components/path/rankTheme";
 import PathScrubber from "@/components/path/PathScrubber";
 
-function GlowRing({ color }: { color: string }) {
-  const scale = useSharedValue(1);
-  const opacity = useSharedValue(0.6);
+function GlowRing({ color, radius }: { color: string; radius: number }) {
+  // Soft, breathing halo behind the active tile. Rendered as a filled tile-
+  // sized view whose colored shadow bleeds out on all sides — no hard border,
+  // just a gentle diffuse glow that pulses in and out.
+  const opacity = useSharedValue(0.5);
   useEffect(() => {
-    scale.value = withRepeat(withTiming(1.1, { duration: 1400 }), -1, true);
-    opacity.value = withRepeat(withTiming(0.15, { duration: 1400 }), -1, true);
+    opacity.value = withRepeat(withTiming(0.95, { duration: 1500 }), -1, true);
     return () => {
-      cancelAnimation(scale);
       cancelAnimation(opacity);
     };
   }, []);
-  const s = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
+  const s = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return (
     <Animated.View
+      pointerEvents="none"
       style={[
+        styles.glow,
         s,
-        {
-          position: "absolute",
-          inset: -8,
-          borderRadius: 24,
-          backgroundColor: color,
-        },
+        { borderRadius: radius, backgroundColor: color, shadowColor: color },
       ]}
     />
+  );
+}
+
+// Scroll-driven perspective wrapper. Rows near the vertical center of the
+// viewport render at full size; rows toward the top/bottom edges shrink, fade,
+// and tilt slightly — so as the player swipes, tiles leaving the center recede
+// in perspective and the focused tiles pop forward.
+function AnimatedRow({
+  scrollY,
+  viewportH,
+  onLayoutY,
+  children,
+}: {
+  scrollY: SharedValue<number>;
+  viewportH: number;
+  onLayoutY: (y: number) => void;
+  children: React.ReactNode;
+}) {
+  const y = useSharedValue(0);
+  const h = useSharedValue(0);
+  const aStyle = useAnimatedStyle(() => {
+    if (viewportH <= 0 || h.value <= 0) return {};
+    const center = y.value + h.value / 2;
+    const viewportCenter = scrollY.value + viewportH / 2;
+    const norm = (center - viewportCenter) / (viewportH / 2);
+    const t = Math.min(Math.abs(norm), 1);
+    const scale = 1 - t * 0.16;
+    const opacity = 1 - t * 0.4;
+    const rotateX = Math.max(-1, Math.min(1, norm)) * -4;
+    return {
+      opacity,
+      transform: [
+        { perspective: 900 },
+        { rotateX: `${rotateX}deg` },
+        { scale },
+      ],
+    };
+  }, [viewportH]);
+  return (
+    <Animated.View
+      style={aStyle}
+      onLayout={(e) => {
+        y.value = e.nativeEvent.layout.y;
+        h.value = e.nativeEvent.layout.height;
+        onLayoutY(e.nativeEvent.layout.y);
+      }}
+    >
+      {children}
+    </Animated.View>
   );
 }
 
@@ -200,6 +246,11 @@ function StepBlock({
     transform: [{ translateY: pressY.value }, { scale: pressScale.value }],
   }));
 
+  const sideStyle = useAnimatedStyle(() => ({
+    opacity: 1 - pressY.value / 5,
+    transform: [{ scaleY: 1 - pressY.value / 12 }],
+  }));
+
   // Glow only on the single naturally-available step (never on overridden ones).
   const showGlow = isNaturallyAvailable && item.status === "available";
 
@@ -265,7 +316,7 @@ function StepBlock({
 
   return (
     <Animated.View style={[entryStyle, { position: "relative" }]}>
-      {showGlow && <GlowRing color={levelColor} />}
+      {showGlow && <GlowRing color={levelColor} radius={shapeR} />}
 
       <Pressable
         onPress={handlePress}
@@ -276,6 +327,18 @@ function StepBlock({
         accessibilityLabel={`${item.title}`}
         style={styles.stepOuter}
       >
+        <Animated.View
+          style={[
+            styles.step3dSide,
+            {
+              backgroundColor: sideColor,
+              borderBottomLeftRadius: shapeR,
+              borderBottomRightRadius: shapeR,
+            },
+            sideStyle,
+          ]}
+        />
+
         <Animated.View
           style={[styles.stepFace, { borderRadius: shapeR }, faceStyle]}
         >
@@ -456,7 +519,7 @@ export default function PathScreen() {
   } = useGame();
   const { isOpenTestingEnabled } = useDevTools();
   const { t, lang } = useLang();
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<React.ComponentRef<typeof Animated.ScrollView>>(null);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -607,6 +670,8 @@ export default function PathScreen() {
 
   const [scrollY, setScrollY] = useState(0);
   const [viewportH, setViewportH] = useState(0);
+  const scrollYSV = useSharedValue(0);
+  const lastReportedSV = useSharedValue(0);
   const [contentH, setContentH] = useState(0);
   // Bumped each time a new item Y is measured, so the visible-section
   // computation re-runs once the layout pass finishes for new rows.
@@ -737,15 +802,16 @@ export default function PathScreen() {
   // (~100px) so the anchor still flips on time, but cuts re-renders
   // by ~10× during a fling — which is the main cause of device heat.
   const lastReportedYRef = useRef(0);
-  const onScrollEvt = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const y = e.nativeEvent.contentOffset.y;
-      if (Math.abs(y - lastReportedYRef.current) < 40) return;
-      lastReportedYRef.current = y;
-      setScrollY(y);
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      scrollYSV.value = e.contentOffset.y;
+      const yy = e.contentOffset.y;
+      if (Math.abs(yy - lastReportedSV.value) >= 40) {
+        lastReportedSV.value = yy;
+        runOnJS(setScrollY)(yy);
+      }
     },
-    [],
-  );
+  });
   const onScrollEndEvt = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const y = e.nativeEvent.contentOffset.y;
@@ -860,7 +926,7 @@ export default function PathScreen() {
         </View>
       )}
 
-      <ScrollView
+      <Animated.ScrollView
         ref={scrollRef}
         onContentSizeChange={(_w, h) => {
           setContentH(h);
@@ -870,7 +936,7 @@ export default function PathScreen() {
           if (autoPinRef.current) scrollToActive(true, false);
           else scrollToActive(false);
         }}
-        onScroll={onScrollEvt}
+        onScroll={scrollHandler}
         onScrollBeginDrag={() => {
           // Player took control of the scroll — stop auto-pinning so we don't
           // fight their dragging. Pinning resumes next time the map is focused.
@@ -878,7 +944,7 @@ export default function PathScreen() {
         }}
         onScrollEndDrag={onScrollEndEvt}
         onMomentumScrollEnd={onScrollEndEvt}
-        scrollEventThrottle={64}
+        scrollEventThrottle={16}
         onLayout={onSvLayout}
         contentContainerStyle={[
           styles.scroll,
@@ -889,27 +955,27 @@ export default function PathScreen() {
         {renderItems.map((ri) => {
           if (ri.type === "divider") {
             return (
-              <View
+              <AnimatedRow
                 key={ri.key}
-                onLayout={(e) => {
-                  recordItemY(ri.key, e.nativeEvent.layout.y);
-                }}
+                scrollY={scrollYSV}
+                viewportH={viewportH}
+                onLayoutY={(y) => recordItemY(ri.key, y)}
               >
                 <ModuleDivider
                   moduleNum={ri.moduleNum ?? 1}
                   colors={colors}
                   lang={lang}
                 />
-              </View>
+              </AnimatedRow>
             );
           }
           if (ri.type === "portal") {
             return (
-              <View
+              <AnimatedRow
                 key={ri.key}
-                onLayout={(e) => {
-                  recordItemY(ri.key, e.nativeEvent.layout.y);
-                }}
+                scrollY={scrollYSV}
+                viewportH={viewportH}
+                onLayoutY={(y) => recordItemY(ri.key, y)}
               >
                 <View style={styles.portalRow}>
                   <FinalPortal
@@ -934,7 +1000,7 @@ export default function PathScreen() {
                     ]}
                   />
                 </View>
-              </View>
+              </AnimatedRow>
             );
           }
           const item = ri.step;
@@ -943,11 +1009,11 @@ export default function PathScreen() {
           const isLast = ri.isLast ?? false;
           const idx = ri.globalIndex ?? 0;
           return (
-            <View
+            <AnimatedRow
               key={ri.key}
-              onLayout={(e) => {
-                recordItemY(ri.key, e.nativeEvent.layout.y);
-              }}
+              scrollY={scrollYSV}
+              viewportH={viewportH}
+              onLayoutY={(y) => recordItemY(ri.key, y)}
             >
               <View
                 style={[
@@ -993,7 +1059,7 @@ export default function PathScreen() {
                   />
                 </View>
               )}
-            </View>
+            </AnimatedRow>
           );
         })}
 
@@ -1012,7 +1078,7 @@ export default function PathScreen() {
             {t("startFromBottom")}
           </Text>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       <PathScrubber
         contentH={contentH}
@@ -1057,8 +1123,8 @@ export default function PathScreen() {
   );
 }
 
-const STEP_W = 230;
-const STEP_H = 72;
+const STEP_W = 212;
+const STEP_H = 64;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -1073,7 +1139,7 @@ const styles = StyleSheet.create({
   },
   moduleDivider: {
     alignItems: "center",
-    marginVertical: 12,
+    marginVertical: 10,
     gap: 8,
   },
   moduleDividerLine: {
@@ -1082,14 +1148,14 @@ const styles = StyleSheet.create({
     borderRadius: 1,
   },
   moduleQuoteCard: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
     borderRadius: 16,
     borderWidth: 1,
     alignItems: "center",
     gap: 8,
     overflow: "hidden",
-    width: "90%",
+    width: "86%",
   },
   moduleNumBadge: {
     width: 28,
@@ -1115,6 +1181,28 @@ const styles = StyleSheet.create({
   stepOuter: {
     position: "relative",
     width: STEP_W,
+    paddingBottom: 6,
+  },
+  step3dSide: {
+    position: "absolute",
+    bottom: 0,
+    left: 3,
+    right: 3,
+    height: 14,
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
+    zIndex: 0,
+  },
+  glow: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: STEP_W,
+    height: STEP_H,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.85,
+    shadowRadius: 18,
+    elevation: 14,
   },
   stepFace: {
     width: STEP_W,
