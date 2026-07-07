@@ -26,6 +26,7 @@ import Animated, {
   type SharedValue,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Path } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
@@ -184,6 +185,42 @@ function shapeRadius(
   }
 }
 
+function SnakeConnector({
+  fromSide,
+  toSide,
+  color,
+}: {
+  fromSide: "left" | "right" | "center";
+  toSide: "left" | "right" | "center";
+  color: string;
+}) {
+  const [w, setW] = useState(0);
+  const H = 30;
+  const pos = (s: "left" | "right" | "center") =>
+    s === "right" ? w - STEP_W / 2 : s === "left" ? STEP_W / 2 : w / 2;
+  const sx = pos(fromSide);
+  const ex = pos(toSide);
+  const d = `M ${sx} 0 C ${sx} ${H * 0.55}, ${ex} ${H * 0.45}, ${ex} ${H}`;
+  return (
+    <View
+      style={{ width: "100%", height: H }}
+      onLayout={(e) => setW(e.nativeEvent.layout.width)}
+    >
+      {w > 0 && (
+        <Svg width={w} height={H}>
+          <Path
+            d={d}
+            stroke={color}
+            strokeWidth={3}
+            strokeLinecap="round"
+            fill="none"
+          />
+        </Svg>
+      )}
+    </View>
+  );
+}
+
 function StepBlock({
   item,
   index,
@@ -339,18 +376,6 @@ function StepBlock({
         style={styles.stepOuter}
       >
         <Animated.View
-          style={[
-            styles.step3dSide,
-            {
-              backgroundColor: sideColor,
-              borderBottomLeftRadius: shapeR,
-              borderBottomRightRadius: shapeR,
-            },
-            sideStyle,
-          ]}
-        />
-
-        <Animated.View
           style={[styles.stepFace, { borderRadius: shapeR }, faceStyle]}
         >
           {/* Per-rank accent outline (skipped when completed). */}
@@ -378,16 +403,21 @@ function StepBlock({
             style={[StyleSheet.absoluteFill, { borderRadius: shapeR }]}
           />
 
-          <View style={styles.stepHighlight} />
+          <LinearGradient
+            colors={["rgba(255,255,255,0.22)", "rgba(255,255,255,0)"]}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={[StyleSheet.absoluteFill, { borderRadius: shapeR }]}
+          />
 
           <LinearGradient
             colors={[
               "transparent",
-              isLocked ? "rgba(0,0,0,0.07)" : sideColor + "22",
+              isLocked ? "rgba(0,0,0,0.06)" : sideColor + "1E",
             ]}
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
-            style={styles.stepShadowOverlay}
+            style={[StyleSheet.absoluteFill, { borderRadius: shapeR }]}
           />
 
           <View style={styles.stepLeft}>
@@ -575,6 +605,7 @@ export default function PathScreen() {
     step?: StepItem;
     globalIndex?: number;
     side?: "left" | "right";
+    toSide?: "left" | "right" | "center";
     isLast?: boolean;
     key: string;
   }> = [];
@@ -616,6 +647,19 @@ export default function PathScreen() {
       key: item.id,
     });
     gIdx++;
+  }
+
+  // Point each connector's snake thread at the row that immediately follows it,
+  // so it curves toward the next step's side (or the centered divider/portal
+  // card when a module boundary comes next).
+  const rowSide = (
+    r: (typeof renderItems)[number],
+  ): "left" | "right" | "center" => (r.type === "step" ? r.side ?? "right" : "center");
+  for (let i = 0; i < renderItems.length; i++) {
+    const r = renderItems[i];
+    if (r.type !== "step" && r.type !== "portal") continue;
+    const next = renderItems[i + 1];
+    if (next) r.toSide = rowSide(next);
   }
 
   const activeStep = renderItems.find(
@@ -996,21 +1040,17 @@ export default function PathScreen() {
                     testID="rank-final-portal"
                   />
                 </View>
-                <View style={styles.connectorRow}>
-                  <View
-                    style={[
-                      styles.connectorLine,
-                      {
-                        borderColor:
-                          portalStatus === "available"
-                            ? rankTheme.accent
-                            : portalStatus === "completed"
-                              ? rankTheme.accent + "80"
-                              : colors.border,
-                      },
-                    ]}
-                  />
-                </View>
+                <SnakeConnector
+                  fromSide="center"
+                  toSide={ri.toSide ?? "right"}
+                  color={
+                    portalStatus === "available"
+                      ? rankTheme.accent
+                      : portalStatus === "completed"
+                        ? rankTheme.accent + "AA"
+                        : colors.border
+                  }
+                />
               </AnimatedRow>
             );
           }
@@ -1046,29 +1086,17 @@ export default function PathScreen() {
               </View>
 
               {!isLast && (
-                <View
-                  style={[
-                    styles.connectorRow,
-                    {
-                      justifyContent:
-                        side === "right" ? "flex-end" : "flex-start",
-                    },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.connectorLine,
-                      {
-                        borderColor:
-                          item.status === "completed"
-                            ? item.color
-                            : item.status === "available"
-                              ? item.color + "80"
-                              : colors.border,
-                      },
-                    ]}
-                  />
-                </View>
+                <SnakeConnector
+                  fromSide={side}
+                  toSide={ri.toSide ?? (side === "right" ? "left" : "right")}
+                  color={
+                    item.status === "completed"
+                      ? item.color
+                      : item.status === "available"
+                        ? item.color + "AA"
+                        : colors.border
+                  }
+                />
               )}
             </AnimatedRow>
           );
@@ -1192,7 +1220,7 @@ const styles = StyleSheet.create({
   stepOuter: {
     position: "relative",
     width: STEP_W,
-    paddingBottom: 6,
+    paddingBottom: 0,
   },
   step3dSide: {
     position: "absolute",
