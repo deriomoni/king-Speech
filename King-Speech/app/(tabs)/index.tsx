@@ -97,14 +97,21 @@ function AnimatedRow({
     const center = y.value + h.value / 2;
     const viewportCenter = scrollY.value + viewportH / 2;
     const norm = (center - viewportCenter) / (viewportH / 2);
-    const t = Math.min(Math.abs(norm), 1);
-    const scale = 1 - t * 0.16;
-    const opacity = 1 - t * 0.4;
-    const rotateX = Math.max(-1, Math.min(1, norm)) * -4;
+    const dist = Math.min(Math.abs(norm), 1);
+    // The middle band (~4 rows around the focus) stays fully opaque and
+    // full size; only tiles near the very top/bottom edges recede. This keeps
+    // the level names bright and readable instead of looking ghostly.
+    const DEAD = 0.55;
+    const raw = dist <= DEAD ? 0 : (dist - DEAD) / (1 - DEAD);
+    // Smoothstep easing → gentle, fluid falloff (no linear popping).
+    const t = raw * raw * (3 - 2 * raw);
+    const scale = 1 - t * 0.1;
+    const opacity = 1 - t * 0.12;
+    const rotateX = Math.max(-1, Math.min(1, norm)) * -2.5;
     return {
       opacity,
       transform: [
-        { perspective: 900 },
+        { perspective: 1000 },
         { rotateX: `${rotateX}deg` },
         { scale },
       ],
