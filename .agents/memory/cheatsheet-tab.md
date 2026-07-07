@@ -5,10 +5,8 @@ description: The "interview" tab slot was repurposed from Jenny interview to the
 
 The bottom-tab slot with route name `interview` (`app/(tabs)/interview.tsx`) no
 longer contains the Jenny AI interview studio. It now hosts «Шпаргалка» (Cheat
-Sheet) — a fully offline, static, guided pre-performance prep mode (breathing,
-chants, tongue twisters, tips/quick-fixes, final anchor) with a time-based entry
-(2/5/10 min routes) and a "Полная версия" reference. Content lives in
-`constants/cheatsheetData.ts`; UI in `components/cheatsheet/`.
+Sheet) — a fully offline, static, guided pre-performance prep mode with a
+time-based entry (2/5/10 min routes) and a "Полная версия" reference.
 
 **Why:** The route name was intentionally kept as `interview` (not renamed to
 `cheatsheet`) to avoid touching expo-router registration and any router refs.

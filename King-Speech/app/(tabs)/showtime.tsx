@@ -25,6 +25,7 @@ import { getSpeechThemes } from "@/app/showtime-stage";
 import { useLang } from "@/context/LangContext";
 import { VinylGallery } from "@/components/showtime/VinylGallery";
 import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
+import { SpeakerTipsBook } from "@/components/showtime/SpeakerTipsBook";
 
 const { width: SW, height: SH } = Dimensions.get("window");
 
@@ -194,25 +195,18 @@ export default function ShowTimeScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(550).duration(400)}>
-          <Text style={[st.sectionLabel, { fontFamily: "Inter_600SemiBold" }]}>{t("speakerTips")}</Text>
-          {[
-            { icon: "eye-outline" as const, tip: t("tipLookForward") },
-            { icon: "megaphone-outline" as const, tip: t("tipSpeakLouder") },
-            { icon: "pause-outline" as const, tip: t("tipPause") },
-            { icon: "body-outline" as const, tip: t("tipStandStraight") },
-            { icon: "happy-outline" as const, tip: t("tipSmile") },
-          ].map((item, i) => (
-            <Animated.View
-              key={i}
-              entering={FadeInDown.delay(600 + i * 60).duration(350)}
-              style={[st.tipRow, { borderColor: theme.accentColor + "15" }]}
-            >
-              <View style={[st.tipIcon, { backgroundColor: theme.accentColor + "15" }]}>
-                <Ionicons name={item.icon} size={18} color={theme.accentColor} />
-              </View>
-              <Text style={[st.tipText, { fontFamily: "Inter_400Regular" }]}>{item.tip}</Text>
-            </Animated.View>
-          ))}
+          <SpeakerTipsBook
+            title={t("speakerTips")}
+            accentColor={theme.accentColor}
+            lang={lang}
+            tips={[
+              { icon: "eye-outline", title: lang === "en" ? "Eye contact" : "Взгляд в зал", text: t("tipLookForward") },
+              { icon: "megaphone-outline", title: lang === "en" ? "Projection" : "Громкость", text: t("tipSpeakLouder") },
+              { icon: "pause-outline", title: lang === "en" ? "The pause" : "Сила паузы", text: t("tipPause") },
+              { icon: "body-outline", title: lang === "en" ? "Posture" : "Осанка", text: t("tipStandStraight") },
+              { icon: "happy-outline", title: lang === "en" ? "The smile" : "Улыбка", text: t("tipSmile") },
+            ]}
+          />
         </Animated.View>
       </Animated.ScrollView>
     </View>
@@ -294,19 +288,4 @@ const st = StyleSheet.create({
   rolesEntryTitle: { fontSize: 18, color: "#fff" },
   rolesEntrySub: { fontSize: 13, color: "rgba(255,255,255,0.85)", marginTop: 2 },
 
-  tipRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    backgroundColor: "rgba(255,255,255,0.03)",
-    marginBottom: 6,
-  },
-  tipIcon: {
-    width: 38, height: 38, borderRadius: 10,
-    alignItems: "center", justifyContent: "center",
-  },
-  tipText: { flex: 1, fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 20 },
 });
