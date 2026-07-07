@@ -1199,11 +1199,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     gap: 10,
     overflow: "hidden",
-    shadowColor: "rgba(0,0,0,0.25)",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    elevation: 8,
     zIndex: 1,
   },
   stepHighlight: {
