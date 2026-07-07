@@ -26,6 +26,7 @@ import { router } from "expo-router";
 import { getSpeechThemes } from "@/app/showtime-stage";
 import { useLang } from "@/context/LangContext";
 import { VinylGallery } from "@/components/showtime/VinylGallery";
+import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
 
 const { width: SW, height: SH } = Dimensions.get("window");
 
@@ -91,31 +92,7 @@ export default function ShowTimeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeIn.duration(400)} style={st.header}>
-          <View style={st.trainerBadge}>
-            <Ionicons name="barbell-outline" size={12} color="rgba(255,255,255,0.6)" />
-            <Text style={[st.trainerBadgeText, { fontFamily: "Inter_500Medium" }]}>{t("trainer")}</Text>
-          </View>
-          <View style={[st.headerIcon, { backgroundColor: theme.accentColor + "20" }]}>
-            <Ionicons name="videocam" size={22} color={theme.accentColor} />
-          </View>
-          <Text
-            style={[
-              st.headerTitle,
-              {
-                fontFamily: Platform.select({
-                  ios: "Times New Roman",
-                  android: "serif",
-                  default: "Times New Roman, Times, serif",
-                }),
-                fontWeight: "700" as const,
-              },
-            ]}
-          >
-            Show Time
-          </Text>
-          <Text style={[st.headerSub, { fontFamily: "Inter_400Regular" }]}>
-            {t("freeTraining")}
-          </Text>
+          <ShowTimeLogo width={Math.min(SW * 0.68, 300)} color="#F5A623" />
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(150).duration(400)}>
@@ -245,24 +222,7 @@ const st = StyleSheet.create({
   container: { flex: 1 },
   scroll: { padding: 20, gap: 18 },
 
-  header: { alignItems: "center", gap: 6 },
-  trainerBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    marginBottom: 6,
-  },
-  trainerBadgeText: { fontSize: 11, color: "rgba(255,255,255,0.6)", letterSpacing: 0.5 },
-  headerIcon: {
-    width: 52, height: 52, borderRadius: 26,
-    alignItems: "center", justifyContent: "center",
-  },
-  headerTitle: { fontSize: 28, color: "#fff" },
-  headerSub: { fontSize: 13, color: "rgba(255,255,255,0.4)", textAlign: "center", lineHeight: 18 },
+  header: { alignItems: "center", justifyContent: "center", paddingVertical: 4 },
 
   sectionLabel: { fontSize: 16, color: "#E8E4D8", marginBottom: 8, marginTop: 4 },
   galleryHeading: { textAlign: "center", marginBottom: 4 },
