@@ -1124,7 +1124,7 @@ export default function PathScreen() {
         >
           <Ionicons
             name={direction === "up" ? "chevron-up" : "chevron-down"}
-            size={22}
+            size={16}
             color="#FFFFFF"
           />
         </Pressable>
@@ -1274,9 +1274,9 @@ const styles = StyleSheet.create({
   fab: {
     position: "absolute",
     right: 16,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
@@ -1290,7 +1290,7 @@ const styles = StyleSheet.create({
     height: "100%",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 26,
+    borderRadius: 19,
   },
   devRankSwitcher: {
     position: "absolute",
