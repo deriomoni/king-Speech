@@ -69,7 +69,11 @@ function GlowRing({ color, radius }: { color: string; radius: number }) {
       style={[
         styles.glow,
         s,
-        { borderRadius: radius, backgroundColor: color, shadowColor: color },
+        {
+          borderRadius: radius,
+          backgroundColor: color,
+          boxShadow: `0px 0px 26px 8px ${color}`,
+        },
       ]}
     />
   );
@@ -1206,10 +1210,6 @@ const styles = StyleSheet.create({
     left: 0,
     width: STEP_W,
     height: STEP_H,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.85,
-    shadowRadius: 18,
-    elevation: 14,
   },
   stepFace: {
     width: STEP_W,
