@@ -1,23 +1,21 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
   Platform,
-  ScrollView,
   Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  withSequence,
+  useAnimatedScrollHandler,
+  interpolate,
+  Extrapolation,
   FadeIn,
   FadeInDown,
-  cancelAnimation,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -29,25 +27,6 @@ import { VinylGallery } from "@/components/showtime/VinylGallery";
 import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
 
 const { width: SW, height: SH } = Dimensions.get("window");
-
-function Spotlight() {
-  const opacity = useSharedValue(0.7);
-  useEffect(() => {
-    opacity.value = withRepeat(withTiming(1, { duration: 2500 }), -1, true);
-    return () => cancelAnimation(opacity);
-  }, []);
-  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  return (
-    <Animated.View style={[StyleSheet.absoluteFill, style]}>
-      <LinearGradient
-        colors={["transparent", "rgba(245,166,35,0.08)", "transparent"]}
-        style={{ position: "absolute", top: 0, left: "30%", width: "40%", height: "55%" }}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-      />
-    </Animated.View>
-  );
-}
 
 export default function ShowTimeScreen() {
   const insets = useSafeAreaInsets();
@@ -77,6 +56,26 @@ export default function ShowTimeScreen() {
     });
   };
 
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    scrollY.value = e.contentOffset.y;
+  });
+  const logoAnim = useAnimatedStyle(() => {
+    const scale = interpolate(scrollY.value, [0, 200], [1, 0.58], Extrapolation.CLAMP);
+    const rotateX = interpolate(scrollY.value, [0, 200], [0, 38], Extrapolation.CLAMP);
+    const translateY = interpolate(scrollY.value, [0, 200], [0, -18], Extrapolation.CLAMP);
+    const opacity = interpolate(scrollY.value, [0, 200], [1, 0.45], Extrapolation.CLAMP);
+    return {
+      opacity,
+      transform: [
+        { perspective: 600 },
+        { translateY },
+        { rotateX: `${rotateX}deg` },
+        { scale },
+      ],
+    };
+  });
+
   return (
     <View style={[st.container, { backgroundColor: "#070D1A" }]}>
       <LinearGradient
@@ -85,14 +84,16 @@ export default function ShowTimeScreen() {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       />
-      <Spotlight />
-
-      <ScrollView
+      <Animated.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={[st.scroll, { paddingTop: topPad + 12, paddingBottom: bottomPad + 100 }]}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeIn.duration(400)} style={st.header}>
-          <ShowTimeLogo width={Math.min(SW * 0.68, 300)} color="#F5A623" />
+          <Animated.View style={logoAnim}>
+            <ShowTimeLogo width={Math.min(SW * 0.46, 200)} color="#F5A623" />
+          </Animated.View>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(150).duration(400)}>
@@ -213,7 +214,7 @@ export default function ShowTimeScreen() {
             </Animated.View>
           ))}
         </Animated.View>
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 }
