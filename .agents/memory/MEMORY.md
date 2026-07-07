@@ -1,1 +1,2 @@
 - [Interview tab = Cheat Sheet](cheatsheet-tab.md) — the "interview" tab slot now hosts «Шпаргалка» (offline prep), NOT Jenny; portal-interview rank-up is a separate mechanic still using Jenny.
+- [RN-web transform blur](rn-web-transform-blur.md) — animate opacity only on Path tiles/rows; transform animations blur tiles on web, break the snake thread, and lag.

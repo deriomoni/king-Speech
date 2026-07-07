@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Pressable,
   Platform,
   type NativeSyntheticEvent,
@@ -16,10 +15,8 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   useAnimatedScrollHandler,
-  withSpring,
   withTiming,
   withRepeat,
-  withSequence,
   withDelay,
   cancelAnimation,
   runOnJS,
@@ -109,18 +106,12 @@ function AnimatedRow({
     const DEAD = 0.55;
     const raw = dist <= DEAD ? 0 : (dist - DEAD) / (1 - DEAD);
     // Smoothstep easing → gentle, fluid falloff (no linear popping).
+    // Opacity-only: geometric transforms (scale/rotate/perspective) were
+    // removed so the snake thread between tiles never visually disconnects
+    // at the screen edges, and the per-frame cost stays minimal.
     const t = raw * raw * (3 - 2 * raw);
-    const scale = 1 - t * 0.1;
     const opacity = 1 - t * 0.12;
-    const rotateX = Math.max(-1, Math.min(1, norm)) * -2.5;
-    return {
-      opacity,
-      transform: [
-        { perspective: 1000 },
-        { rotateX: `${rotateX}deg` },
-        { scale },
-      ],
-    };
+    return { opacity };
   }, [viewportH]);
   return (
     <Animated.View
@@ -252,51 +243,22 @@ function StepBlock({
   const isOverridden = isOpenTestingEnabled && item.status === "locked";
   const animateEntry = !isDone && !isOverridden && index < ENTRY_ANIM_MAX;
 
-  const entryScale = useSharedValue(animateEntry ? 0.85 : 1);
-  const entryTranslateY = useSharedValue(animateEntry ? 30 : 0);
+  // Entry animation is opacity-only: scale/translate transforms would detach
+  // the tile from the snake thread during mount and can leave the tile
+  // rasterized/blurry on web.
   const entryOpacity = useSharedValue(animateEntry ? 0 : 1);
-
-  const pressY = useSharedValue(0);
-  const pressScale = useSharedValue(1);
 
   useEffect(() => {
     if (!animateEntry) return;
     const delay = index * 40;
-    entryScale.value = withDelay(
-      delay,
-      withSpring(1, { damping: 14, stiffness: 100 }),
-    );
-    entryTranslateY.value = withDelay(delay, withTiming(0, { duration: 300 }));
     entryOpacity.value = withDelay(delay, withTiming(1, { duration: 260 }));
     return () => {
-      cancelAnimation(entryScale);
-      cancelAnimation(entryTranslateY);
       cancelAnimation(entryOpacity);
     };
   }, []);
 
-  useEffect(() => {
-    return () => {
-      cancelAnimation(pressY);
-      cancelAnimation(pressScale);
-    };
-  }, []);
-
   const entryStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: entryScale.value },
-      { translateY: entryTranslateY.value },
-    ],
     opacity: entryOpacity.value,
-  }));
-
-  const faceStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: pressY.value }, { scale: pressScale.value }],
-  }));
-
-  const sideStyle = useAnimatedStyle(() => ({
-    opacity: 1 - pressY.value / 5,
-    transform: [{ scaleY: 1 - pressY.value / 12 }],
   }));
 
   // Glow only on the single naturally-available step (never on overridden ones).
@@ -321,10 +283,12 @@ function StepBlock({
       : "#F2F2F6";
   const gradBot = faceColor;
 
+  // Press feedback is a plain opacity dim (see the Pressable style below).
+  // Transform-based press animations (translate/scale) rasterize the tile on
+  // web and leave it blurry/pixelated after the spring settles, so they were
+  // removed.
   const handlePressIn = () => {
     if (isLocked) return;
-    pressY.value = withTiming(4, { duration: 60 });
-    pressScale.value = withTiming(0.97, { duration: 60 });
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
     } else {
@@ -332,12 +296,6 @@ function StepBlock({
         (navigator as any).vibrate?.(20);
       } catch {}
     }
-  };
-
-  const handlePressOut = () => {
-    if (isLocked) return;
-    pressY.value = withSpring(0, { damping: 18, stiffness: 300 });
-    pressScale.value = withSpring(1, { damping: 18, stiffness: 300 });
   };
 
   const handlePress = () => {
@@ -369,33 +327,31 @@ function StepBlock({
       <Pressable
         onPress={handlePress}
         onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
         disabled={isLocked}
         accessibilityRole="button"
         accessibilityLabel={`${item.title}`}
-        style={styles.stepOuter}
+        style={({ pressed }) => [
+          styles.stepOuter,
+          pressed && !isLocked && { opacity: 0.82 },
+        ]}
       >
-        <Animated.View
-          style={[styles.stepFace, { borderRadius: shapeR }, faceStyle]}
-        >
-          {/* Per-rank accent outline (skipped when completed). */}
-          {!isDone && (
-            <View
-              pointerEvents="none"
-              style={[
-                StyleSheet.absoluteFillObject,
-                {
-                  borderRadius: shapeR,
-                  borderWidth: rankTheme.stepShape === "rect-glass" ? 1 : 1.5,
-                  borderColor:
-                    rankTheme.stepShape === "circle"
-                      ? "transparent"
-                      : rankTheme.accent + (isAvail ? "AA" : "55"),
-                  zIndex: 2,
-                },
-              ]}
-            />
-          )}
+        <View style={[styles.stepFace, { borderRadius: shapeR }]}>
+          {/* Per-rank accent outline — stays visible on completed levels too. */}
+          <View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFillObject,
+              {
+                borderRadius: shapeR,
+                borderWidth: rankTheme.stepShape === "rect-glass" ? 1 : 1.5,
+                borderColor:
+                  rankTheme.stepShape === "circle"
+                    ? "transparent"
+                    : rankTheme.accent + (isDone || isAvail ? "AA" : "55"),
+                zIndex: 2,
+              },
+            ]}
+          />
           <LinearGradient
             colors={[gradTop, gradBot]}
             start={{ x: 0.5, y: 0 }}
@@ -472,7 +428,7 @@ function StepBlock({
               {item.subtitle}
             </Text>
           </View>
-        </Animated.View>
+        </View>
       </Pressable>
     </Animated.View>
   );
@@ -1222,16 +1178,6 @@ const styles = StyleSheet.create({
     width: STEP_W,
     paddingBottom: 0,
   },
-  step3dSide: {
-    position: "absolute",
-    bottom: 0,
-    left: 3,
-    right: 3,
-    height: 14,
-    borderBottomLeftRadius: 18,
-    borderBottomRightRadius: 18,
-    zIndex: 0,
-  },
   glow: {
     position: "absolute",
     top: 0,
@@ -1250,25 +1196,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     zIndex: 1,
   },
-  stepHighlight: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: "45%",
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.18)",
-  },
-  stepShadowOverlay: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: "50%",
-    borderBottomLeftRadius: 18,
-    borderBottomRightRadius: 18,
-  },
   stepLeft: { alignItems: "center", justifyContent: "center" },
   stepIconCircle: {
     width: 38,
@@ -1280,17 +1207,6 @@ const styles = StyleSheet.create({
   stepCenter: { flex: 1, gap: 3 },
   stepTitle: { fontSize: 14 },
   stepSub: { fontSize: 11 },
-  connectorRow: {
-    flexDirection: "row",
-    height: 28,
-    paddingHorizontal: STEP_W * 0.2,
-  },
-  connectorLine: {
-    width: 2,
-    height: 28,
-    borderLeftWidth: 2,
-    borderStyle: "dashed",
-  },
   bottomHint: {
     flexDirection: "row",
     alignItems: "center",
