@@ -200,11 +200,6 @@ function StepBlock({
     transform: [{ translateY: pressY.value }, { scale: pressScale.value }],
   }));
 
-  const sideStyle = useAnimatedStyle(() => ({
-    opacity: 1 - pressY.value / 5,
-    transform: [{ scaleY: 1 - pressY.value / 12 }],
-  }));
-
   // Glow only on the single naturally-available step (never on overridden ones).
   const showGlow = isNaturallyAvailable && item.status === "available";
 
@@ -281,18 +276,6 @@ function StepBlock({
         accessibilityLabel={`${item.title}`}
         style={styles.stepOuter}
       >
-        <Animated.View
-          style={[
-            styles.step3dSide,
-            {
-              backgroundColor: sideColor,
-              borderBottomLeftRadius: shapeR,
-              borderBottomRightRadius: shapeR,
-            },
-            sideStyle,
-          ]}
-        />
-
         <Animated.View
           style={[styles.stepFace, { borderRadius: shapeR }, faceStyle]}
         >
@@ -384,52 +367,6 @@ function StepBlock({
             >
               {item.subtitle}
             </Text>
-
-            <View style={styles.pips}>
-              {[0, 1, 2].map((i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.pip,
-                    {
-                      backgroundColor:
-                        i < item.tasksDone
-                          ? isDone
-                            ? "rgba(255,255,255,0.9)"
-                            : "rgba(26,26,46,0.5)"
-                          : isDone
-                            ? "rgba(255,255,255,0.25)"
-                            : isAvail
-                              ? "rgba(26,26,46,0.18)"
-                              : "rgba(0,0,0,0.1)",
-                    },
-                  ]}
-                />
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.stepRight}>
-            {isDone ? (
-              <Ionicons name="star" size={16} color="rgba(255,255,255,0.9)" />
-            ) : isAvail ? (
-              <Ionicons
-                name="chevron-forward-circle"
-                size={20}
-                color="rgba(26,26,46,0.55)"
-              />
-            ) : (
-              <View style={styles.levelNumBadge}>
-                <Text
-                  style={[
-                    styles.levelNumText,
-                    { fontFamily: "Rubik_700Bold", color: "#B0B0C0" },
-                  ]}
-                >
-                  {item.levelNumber}
-                </Text>
-              </View>
-            )}
           </View>
         </Animated.View>
       </Pressable>
@@ -1178,17 +1115,6 @@ const styles = StyleSheet.create({
   stepOuter: {
     position: "relative",
     width: STEP_W,
-    paddingBottom: 6,
-  },
-  step3dSide: {
-    position: "absolute",
-    bottom: 0,
-    left: 3,
-    right: 3,
-    height: 14,
-    borderBottomLeftRadius: 18,
-    borderBottomRightRadius: 18,
-    zIndex: 0,
   },
   stepFace: {
     width: STEP_W,
@@ -1231,18 +1157,6 @@ const styles = StyleSheet.create({
   stepCenter: { flex: 1, gap: 3 },
   stepTitle: { fontSize: 14 },
   stepSub: { fontSize: 11 },
-  pips: { flexDirection: "row", gap: 4, marginTop: 2 },
-  pip: { width: 7, height: 7, borderRadius: 4 },
-  stepRight: { alignItems: "center", justifyContent: "center" },
-  levelNumBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "rgba(0,0,0,0.06)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  levelNumText: { fontSize: 12 },
   connectorRow: {
     flexDirection: "row",
     height: 28,
