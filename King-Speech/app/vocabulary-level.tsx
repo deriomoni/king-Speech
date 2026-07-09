@@ -308,16 +308,22 @@ function TutorialPhase({
 // deep-purple background, the whole word column tilted a few degrees, words
 // slide vertically; the centred word is crisp white, neighbours are lilac and
 // progressively blurred with distance.
-const ROW_SPACING = 78; // vertical distance between neighbouring words
+const ROW_SPACING = 78; // vertical distance between neighbouring words (at the centre)
 const REEL_LEN = 72; // long enough to keep sweeping for the full auto-stop window
 const SETTLE_COLS = 3; // slots to glide past after STOP for a natural landing
-const SPIN_SPEED = 2.6; // words per second while spinning (calm, like the reference)
+const SPIN_SPEED = 4.2; // words per second while spinning
 const REEL_TILT = "-8deg"; // tilt of the whole word column, as in the reference
 
-// Reference palette (sampled from the Lottie)
-const REEL_BG = "#3A0049";
+// Carousel drum geometry — words wrap around a semicircle, like a picker
+// wheel: each step away from the centre advances the word by STEP_ANGLE on
+// the drum, so the column visibly curls away at the top and bottom.
+const STEP_ANGLE = Math.PI / 10; // 18° per word
+const DRUM_R = ROW_SPACING / STEP_ANGLE; // keeps centre spacing = ROW_SPACING
+
+// Reference palette (darker variant, as requested)
+const REEL_BG = "#25002E";
 const REEL_NEAR = "#9E6CA9";
-const REEL_FAR = "#6C3575";
+const REEL_FAR = "#5C2B64";
 
 // One word of the vertical reel. Its position / colour / blur are derived
 // purely from its vertical distance to the live scroll position, so a single
@@ -339,11 +345,15 @@ function ReelRow({
   const style = useAnimatedStyle(() => {
     const rel = index - pos.value;
     const d = Math.abs(rel);
-    let scale = interpolate(d, [0, 1, 3], [1, 0.9, 0.84], Extrapolation.CLAMP);
+    // Angle of this word on the carousel drum (clamped to the half-circle).
+    const theta = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, rel * STEP_ANGLE));
+    const translateY = DRUM_R * Math.sin(theta);
+    const rotateX = -(theta * 180) / Math.PI;
+    let scale = interpolate(d, [0, 1, 3], [1, 0.92, 0.84], Extrapolation.CLAMP);
     if (landed) scale *= popScale.value;
     const opacity = interpolate(
       d,
-      [0, 3, 4.2],
+      [0, 3, 4.6],
       [1, 0.85, 0],
       Extrapolation.CLAMP,
     );
@@ -355,7 +365,12 @@ function ReelRow({
     const base = {
       opacity,
       color,
-      transform: [{ translateY: rel * ROW_SPACING }, { scale }],
+      transform: [
+        { perspective: 650 },
+        { translateY },
+        { rotateX: `${rotateX}deg` },
+        { scale },
+      ],
     };
     if (isWeb) {
       const blur = interpolate(d, [0, 0.5, 1, 2, 3], [0, 0.5, 2, 5, 8], Extrapolation.CLAMP);
@@ -503,6 +518,11 @@ function SpinPhase({
                 landed={landIndex === i}
               />
             ))}
+          </View>
+
+          {/* Centre pointer — marks the word the reel lands on */}
+          <View pointerEvents="none" style={styles.reelPointer}>
+            <Ionicons name="caret-forward" size={30} color={RED} />
           </View>
         </View>
 
@@ -1397,6 +1417,12 @@ const styles = StyleSheet.create({
     lineHeight: ROW_SPACING,
     textAlign: "center",
     fontFamily: "Nunito_800ExtraBold",
+  },
+  reelPointer: {
+    position: "absolute",
+    left: 6,
+    top: "50%",
+    marginTop: -15,
   },
   rouletteMeta: {
     color: "rgba(255,255,255,0.35)",
