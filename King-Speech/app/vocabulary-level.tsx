@@ -13,6 +13,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -27,15 +28,20 @@ import {
 import type { EventSubscription } from "expo-modules-core";
 import DevSkipButton from "@/components/DevSkipButton";
 import Animated, {
+  Easing,
+  Extrapolation,
   FadeInDown,
   FadeOut,
+  interpolate,
+  interpolateColor,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
   withSequence,
-  withSpring,
   withTiming,
   cancelAnimation,
+  type SharedValue,
 } from "react-native-reanimated";
 
 import {
@@ -298,6 +304,85 @@ function TutorialPhase({
 // PHASE 1 — SPIN
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Text Scroller reel geometry — VERTICAL list (like the Lottie reference):
+// deep-purple background, the whole word column tilted a few degrees, words
+// slide vertically; the centred word is crisp white, neighbours are lilac and
+// progressively blurred with distance.
+const ROW_SPACING = 56; // vertical distance between neighbouring words (at the centre)
+const REEL_LEN = 72; // long enough to keep sweeping for the full auto-stop window
+const SETTLE_COLS = 3; // slots to glide past after STOP for a natural landing
+const SPIN_SPEED = 4.2; // words per second while spinning
+
+// Hoop rail geometry — the words themselves stay perfectly level (no tilt,
+// no perspective), but they RIDE a curved rail: each word sits 7.5° further
+// along a big circle, so the column of words bends away to the LEFT at the
+// top and bottom while every word stays horizontal — like the reference.
+const STEP_ANGLE = Math.PI / 24; // 7.5° per word along the rail
+const HOOP_R = ROW_SPACING / STEP_ANGLE; // keeps centre spacing = ROW_SPACING
+
+// Reference palette (darker variant, as requested)
+const REEL_BG = "#25002E";
+const REEL_NEAR = "#9E6CA9";
+const REEL_FAR = "#5C2B64";
+
+// One word of the vertical reel. Its position / colour / blur are derived
+// purely from its vertical distance to the live scroll position, so a single
+// continuous animation drives the whole effect.
+function ReelRow({
+  word,
+  index,
+  pos,
+  popScale,
+  landed,
+}: {
+  word: string;
+  index: number;
+  pos: SharedValue<number>;
+  popScale: SharedValue<number>;
+  landed: boolean;
+}) {
+  const isWeb = Platform.OS === "web";
+  const style = useAnimatedStyle(() => {
+    const rel = index - pos.value;
+    const d = Math.abs(rel);
+    // Position of this word on the curved rail (clamped to the half-circle).
+    // Only the SPACE is curved: the word slides along the arc (down/up and
+    // away to the left) but stays perfectly level — no rotation, no
+    // perspective shrinking, exactly like the reference.
+    const theta = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, rel * STEP_ANGLE));
+    const translateY = HOOP_R * Math.sin(theta);
+    const translateX = -HOOP_R * (1 - Math.cos(theta));
+    const scale = landed ? popScale.value : 1;
+    const opacity = interpolate(
+      d,
+      [0, 5, 7.5],
+      [1, 0.8, 0],
+      Extrapolation.CLAMP,
+    );
+    const color = interpolateColor(
+      Math.min(d, 3),
+      [0, 1.5, 3],
+      ["#FFFFFF", REEL_NEAR, REEL_FAR],
+    );
+    const base = {
+      opacity,
+      color,
+      transform: [{ translateY }, { translateX }, { scale }],
+    };
+    if (isWeb) {
+      const blur = interpolate(d, [0, 0.5, 1, 2.5, 4], [0, 0.4, 1.5, 3.5, 5.5], Extrapolation.CLAMP);
+      return { ...base, filter: `blur(${blur.toFixed(2)}px)` } as any;
+    }
+    return base;
+  });
+
+  return (
+    <Animated.Text style={[styles.reelRow, style]} numberOfLines={1}>
+      {word.charAt(0).toUpperCase() + word.slice(1)}
+    </Animated.Text>
+  );
+}
+
 function SpinPhase({
   excludeIds,
   onPicked,
@@ -307,103 +392,89 @@ function SpinPhase({
   onPicked: (w: VocabWord) => void;
   onClose: () => void;
 }) {
-  // Frozen ONCE at mount. Previously this was a useMemo keyed on excludeIds —
-  // when the parent recorded the picked word (excludeIds changed) the pool
-  // reshuffled mid-stop, so the roulette flipped to a different word than the
-  // one the player landed on. Freezing keeps the landed word stable.
-  const [pool] = useState<VocabWord[]>(() => {
+  // A finite reel of Russian words, frozen ONCE at mount. Because the strip is
+  // built here (not derived from a live pool), the parent recording the picked
+  // word — which changes excludeIds — can never reshuffle it mid-spin, so the
+  // word you land on is exactly the word you play.
+  const [reel] = useState<VocabWord[]>(() => {
     const available = VOCAB_WORDS_RU.filter((w) => !excludeIds.includes(w.id));
     const base = available.length > 0 ? available : VOCAB_WORDS_RU;
-    return [...base].sort(() => Math.random() - 0.5);
+    const shuffled = [...base].sort(() => Math.random() - 0.5);
+    return Array.from(
+      { length: REEL_LEN },
+      (_, i) => shuffled[i % shuffled.length],
+    );
   });
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isSpinning, setIsSpinning] = useState(true);
-  const [pickedWord, setPickedWord] = useState<VocabWord | null>(null);
+  // Start near the END of the reel and count DOWN toward the start so the strip
+  // slides to the RIGHT — new words enter from the left edge (the direction the
+  // reference sweeps).
+  const START_POS = REEL_LEN - 2;
+  const pos = useSharedValue(START_POS);
+  const popScale = useSharedValue(1);
+  const [landIndex, setLandIndex] = useState<number | null>(null);
+  const stoppedRef = useRef(false);
 
-  useEffect(() => {
-    if (!isSpinning) return;
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % pool.length);
-    }, 120);
-    return () => clearInterval(interval);
-  }, [isSpinning, pool.length]);
+  const isSpinning = landIndex == null;
+  const center = landIndex != null ? reel[landIndex] : null;
 
-  const prev = pool[(currentIndex - 1 + pool.length) % pool.length];
-  const current = pool[currentIndex];
-  const next = pool[(currentIndex + 1) % pool.length];
-  // Once stopped, the centre always shows the FROZEN picked word — never a
-  // live tick — so what you land on is exactly what you play.
-  const center = pickedWord ?? current;
-
-  // Auto-stop the roulette after 6s if the player hasn't pressed STOP.
-  // Silent — no on-screen countdown — just picks whatever word is centered.
-  const isSpinningRef = useRef(isSpinning);
+  // Continuous constant-speed sweep while spinning. Runs a bit longer than the
+  // 6s auto-stop so the reel can never run dry before it stops.
   useEffect(() => {
-    isSpinningRef.current = isSpinning;
-  }, [isSpinning]);
-  const currentRef = useRef(current);
-  useEffect(() => {
-    currentRef.current = current;
-  }, [current]);
-  useEffect(() => {
-    const autoId = setTimeout(() => {
-      if (isSpinningRef.current) {
-        setIsSpinning(false);
-        setPickedWord(currentRef.current);
-        if (Platform.OS !== "web") {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(
-            () => {},
-          );
-        }
-        onPicked(currentRef.current);
-      }
-    }, 6000);
-    return () => clearTimeout(autoId);
+    const travel = SPIN_SPEED * 7.5;
+    const farTarget = Math.max(START_POS - travel, SETTLE_COLS + 1);
+    pos.value = withTiming(farTarget, {
+      duration: ((START_POS - farTarget) / SPIN_SPEED) * 1000,
+      easing: Easing.linear,
+    });
+    return () => cancelAnimation(pos);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Active word "snap" animation on every change while spinning.
-  const activeScale = useSharedValue(1);
-  useEffect(() => {
-    if (!isSpinning) return;
-    activeScale.value = 0.85;
-    activeScale.value = withSpring(1, {
-      damping: 18,
-      stiffness: 320,
-      mass: 0.4,
-    });
-  }, [currentIndex, isSpinning, activeScale]);
-
-  // Picked word "pop" animation after stop.
-  useEffect(() => {
-    if (pickedWord) {
-      activeScale.value = withSequence(
-        withTiming(1.2, { duration: 250 }),
-        withTiming(1.0, { duration: 250 }),
+  const finishPick = useCallback(
+    (idx: number) => {
+      setLandIndex(idx);
+      popScale.value = withSequence(
+        withTiming(1.16, { duration: 220 }),
+        withTiming(1, { duration: 260 }),
       );
-    }
-    return () => cancelAnimation(activeScale);
-  }, [pickedWord, activeScale]);
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+      }
+      onPicked(reel[idx]);
+    },
+    [popScale, onPicked, reel],
+  );
 
-  const activeStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: activeScale.value }],
-  }));
+  // Glide to a clean landing on STOP / auto-stop. Guarded so the button and the
+  // 6s timeout can't both trigger a landing. Continues in the same direction
+  // (counting down) for a natural deceleration.
+  const stop = useCallback(() => {
+    if (stoppedRef.current) return;
+    stoppedRef.current = true;
+    const land = Math.max(Math.round(pos.value) - SETTLE_COLS, 1);
+    cancelAnimation(pos);
+    pos.value = withTiming(
+      land,
+      { duration: 900, easing: Easing.out(Easing.cubic) },
+      (finished) => {
+        if (finished) runOnJS(finishPick)(land);
+      },
+    );
+  }, [pos, finishPick]);
 
-  const handleStop = () => {
-    if (!isSpinning) return;
-    setIsSpinning(false);
-    setPickedWord(current);
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
-    }
-    onPicked(current);
-  };
-
-  const diffLabel = DIFFICULTY_LABEL_RU[center.difficulty];
+  // Auto-stop after 6s if the player hasn't pressed STOP.
+  const stopRef = useRef(stop);
+  useEffect(() => {
+    stopRef.current = stop;
+  }, [stop]);
+  useEffect(() => {
+    const autoId = setTimeout(() => stopRef.current(), 6000);
+    return () => clearTimeout(autoId);
+  }, []);
 
   return (
-    <View style={styles.spinRoot}>
+    <View style={[styles.spinRoot, { backgroundColor: REEL_BG }]}>
       <View style={styles.topBar}>
         <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={12}>
           <Ionicons name="close" size={24} color="#fff" />
@@ -413,34 +484,40 @@ function SpinPhase({
       </View>
 
       <Text style={styles.spinSubtitle}>
-        Слова меняются — нажми, когда будешь готов
+        Слова крутятся — нажми СТОП, когда будешь готов
       </Text>
 
-      <View style={{ flex: 1, justifyContent: "center" }}>
-        <View style={styles.rouletteBox}>
-          <Text style={styles.rouletteEdge} numberOfLines={1}>
-            {prev.word}
-          </Text>
-          <Animated.Text
-            style={[styles.rouletteActive, activeStyle]}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-          >
-            {center.word.toUpperCase()}
-          </Animated.Text>
-          <Text style={styles.rouletteEdge} numberOfLines={1}>
-            {next.word}
-          </Text>
+      <View style={{ flex: 1 }}>
+        <View style={styles.reelWindow}>
+          <View style={styles.reelTilt}>
+            {reel.map((w, i) => (
+              <ReelRow
+                key={i}
+                word={w.word}
+                index={i}
+                pos={pos}
+                popScale={popScale}
+                landed={landIndex === i}
+              />
+            ))}
+          </View>
+
+          {/* Centre pointer — marks the word the reel lands on */}
+          <View pointerEvents="none" style={styles.reelPointer}>
+            <Ionicons name="caret-forward" size={30} color={RED} />
+          </View>
         </View>
 
         <Text style={styles.rouletteMeta}>
-          {POS_LABELS_RU[center.partOfSpeech]} · {diffLabel}
+          {center
+            ? `${POS_LABELS_RU[center.partOfSpeech]} · ${DIFFICULTY_LABEL_RU[center.difficulty]}`
+            : " "}
         </Text>
       </View>
 
       <View style={styles.stopBtnWrap}>
         <Pressable
-          onPress={handleStop}
+          onPress={() => stop()}
           disabled={!isSpinning}
           style={({ pressed }) => [
             styles.stopRound,
@@ -1301,30 +1378,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     marginTop: 4,
   },
-  rouletteBox: {
-    marginHorizontal: 24,
-    backgroundColor: "rgba(255,59,48,0.06)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,59,48,0.2)",
-    borderRadius: 16,
-    padding: 20,
-    alignItems: "center",
+  reelWindow: {
+    flex: 1,
+    width: "100%",
     overflow: "hidden",
   },
-  rouletteEdge: {
-    fontSize: 16,
-    color: "rgba(255,255,255,0.22)",
-    marginVertical: 6,
-    textAlign: "center",
+  reelTilt: {
+    flex: 1,
+    justifyContent: "center",
   },
-  rouletteActive: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: RED,
-    letterSpacing: 5,
-    textAlign: "center",
-    marginVertical: 6,
-    fontFamily: "Inter_700Bold",
+  reelRow: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: "50%",
+    marginTop: -ROW_SPACING / 2,
+    height: ROW_SPACING,
+    fontSize: 34,
+    lineHeight: ROW_SPACING,
+    textAlign: "left",
+    paddingLeft: 64,
+    fontFamily: "Nunito_800ExtraBold",
+  },
+  reelPointer: {
+    position: "absolute",
+    left: 6,
+    top: "50%",
+    marginTop: -15,
   },
   rouletteMeta: {
     color: "rgba(255,255,255,0.35)",

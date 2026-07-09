@@ -1,23 +1,22 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
   Platform,
-  ScrollView,
   Dimensions,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  withSequence,
+  useAnimatedScrollHandler,
+  interpolate,
+  Extrapolation,
   FadeIn,
   FadeInDown,
-  cancelAnimation,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -26,27 +25,9 @@ import { router } from "expo-router";
 import { getSpeechThemes } from "@/app/showtime-stage";
 import { useLang } from "@/context/LangContext";
 import { VinylGallery } from "@/components/showtime/VinylGallery";
+import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
 
-const { width: SW, height: SH } = Dimensions.get("window");
-
-function Spotlight() {
-  const opacity = useSharedValue(0.7);
-  useEffect(() => {
-    opacity.value = withRepeat(withTiming(1, { duration: 2500 }), -1, true);
-    return () => cancelAnimation(opacity);
-  }, []);
-  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  return (
-    <Animated.View style={[StyleSheet.absoluteFill, style]}>
-      <LinearGradient
-        colors={["transparent", "rgba(245,166,35,0.08)", "transparent"]}
-        style={{ position: "absolute", top: 0, left: "30%", width: "40%", height: "55%" }}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-      />
-    </Animated.View>
-  );
-}
+const { width: SW } = Dimensions.get("window");
 
 export default function ShowTimeScreen() {
   const insets = useSafeAreaInsets();
@@ -76,6 +57,30 @@ export default function ShowTimeScreen() {
     });
   };
 
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    scrollY.value = e.contentOffset.y;
+  });
+  const tipsAnim = useAnimatedStyle(() => {
+    const scale = interpolate(scrollY.value, [0, 220], [0.72, 1.05], Extrapolation.CLAMP);
+    return { transform: [{ scale }] };
+  });
+  const logoAnim = useAnimatedStyle(() => {
+    const scale = interpolate(scrollY.value, [0, 200], [1, 0.58], Extrapolation.CLAMP);
+    const rotateX = interpolate(scrollY.value, [0, 200], [0, 38], Extrapolation.CLAMP);
+    const translateY = interpolate(scrollY.value, [0, 200], [0, -18], Extrapolation.CLAMP);
+    const opacity = interpolate(scrollY.value, [0, 200], [1, 0.45], Extrapolation.CLAMP);
+    return {
+      opacity,
+      transform: [
+        { perspective: 600 },
+        { translateY },
+        { rotateX: `${rotateX}deg` },
+        { scale },
+      ],
+    };
+  });
+
   return (
     <View style={[st.container, { backgroundColor: "#070D1A" }]}>
       <LinearGradient
@@ -84,38 +89,16 @@ export default function ShowTimeScreen() {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       />
-      <Spotlight />
-
-      <ScrollView
+      <Animated.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={[st.scroll, { paddingTop: topPad + 12, paddingBottom: bottomPad + 100 }]}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeIn.duration(400)} style={st.header}>
-          <View style={st.trainerBadge}>
-            <Ionicons name="barbell-outline" size={12} color="rgba(255,255,255,0.6)" />
-            <Text style={[st.trainerBadgeText, { fontFamily: "Inter_500Medium" }]}>{t("trainer")}</Text>
-          </View>
-          <View style={[st.headerIcon, { backgroundColor: theme.accentColor + "20" }]}>
-            <Ionicons name="videocam" size={22} color={theme.accentColor} />
-          </View>
-          <Text
-            style={[
-              st.headerTitle,
-              {
-                fontFamily: Platform.select({
-                  ios: "Times New Roman",
-                  android: "serif",
-                  default: "Times New Roman, Times, serif",
-                }),
-                fontWeight: "700" as const,
-              },
-            ]}
-          >
-            Show Time
-          </Text>
-          <Text style={[st.headerSub, { fontFamily: "Inter_400Regular" }]}>
-            {t("freeTraining")}
-          </Text>
+          <Animated.View style={logoAnim}>
+            <ShowTimeLogo width={Math.min(SW * 0.46, 200)} color="#F5A623" />
+          </Animated.View>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(150).duration(400)}>
@@ -184,28 +167,63 @@ export default function ShowTimeScreen() {
           </Pressable>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(550).duration(400)}>
-          <Text style={[st.sectionLabel, { fontFamily: "Inter_600SemiBold" }]}>{t("speakerTips")}</Text>
-          {[
-            { icon: "eye-outline" as const, tip: t("tipLookForward") },
-            { icon: "megaphone-outline" as const, tip: t("tipSpeakLouder") },
-            { icon: "pause-outline" as const, tip: t("tipPause") },
-            { icon: "body-outline" as const, tip: t("tipStandStraight") },
-            { icon: "happy-outline" as const, tip: t("tipSmile") },
-          ].map((item, i) => (
-            <Animated.View
-              key={i}
-              entering={FadeInDown.delay(600 + i * 60).duration(350)}
-              style={[st.tipRow, { borderColor: theme.accentColor + "15" }]}
-            >
-              <View style={[st.tipIcon, { backgroundColor: theme.accentColor + "15" }]}>
-                <Ionicons name={item.icon} size={18} color={theme.accentColor} />
-              </View>
-              <Text style={[st.tipText, { fontFamily: "Inter_400Regular" }]}>{item.tip}</Text>
-            </Animated.View>
-          ))}
+        <Animated.View entering={FadeInDown.delay(500).duration(400)}>
+          <Pressable
+            onPress={() => {
+              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push("/roles");
+            }}
+            style={({ pressed }) => [st.rolesEntry, { opacity: pressed ? 0.9 : 1 }]}
+          >
+            <LinearGradient
+              colors={["#8E5BFF", "#E84393"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={st.rolesEntryIcon}>
+              <Ionicons name="happy" size={24} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[st.rolesEntryTitle, { fontFamily: "Nunito_800ExtraBold" }]}>
+                {lang === "en" ? "Roles" : "Роли"}
+              </Text>
+              <Text style={[st.rolesEntrySub, { fontFamily: "Inter_400Regular" }]}>
+                {lang === "en"
+                  ? "Play a character & train adaptability"
+                  : "Играй персонажа и тренируй адаптивность"}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color="#ffffffCC" />
+          </Pressable>
         </Animated.View>
-      </ScrollView>
+
+        {/* Speaker tips — Oscar reading a book, glued flush on top of the
+            purple button so mascot + button read as one single widget. */}
+        <Animated.View entering={FadeInDown.delay(550).duration(400)} style={[st.tipsUnit, tipsAnim]}>
+          <Image
+            source={require("@/assets/images/oscar-peek.png")}
+            style={st.tipsMascot}
+            resizeMode="contain"
+          />
+          <Pressable
+            onPress={() => {
+              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push("/speaker-tips");
+            }}
+            style={({ pressed }) => [st.tipsBtn, { opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
+            accessibilityRole="button"
+          >
+            <View style={st.tipsBtnIcon}>
+              <Ionicons name="bulb" size={18} color="#FFD230" />
+            </View>
+            <Text style={[st.tipsBtnText, { fontFamily: "Inter_600SemiBold" }]}>
+              {t("speakerTips")}
+            </Text>
+            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
+          </Pressable>
+        </Animated.View>
+      </Animated.ScrollView>
     </View>
   );
 }
@@ -214,24 +232,7 @@ const st = StyleSheet.create({
   container: { flex: 1 },
   scroll: { padding: 20, gap: 18 },
 
-  header: { alignItems: "center", gap: 6 },
-  trainerBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    marginBottom: 6,
-  },
-  trainerBadgeText: { fontSize: 11, color: "rgba(255,255,255,0.6)", letterSpacing: 0.5 },
-  headerIcon: {
-    width: 52, height: 52, borderRadius: 26,
-    alignItems: "center", justifyContent: "center",
-  },
-  headerTitle: { fontSize: 28, color: "#fff" },
-  headerSub: { fontSize: 13, color: "rgba(255,255,255,0.4)", textAlign: "center", lineHeight: 18 },
+  header: { alignItems: "center", justifyContent: "center", paddingVertical: 4 },
 
   sectionLabel: { fontSize: 16, color: "#E8E4D8", marginBottom: 8, marginTop: 4 },
   galleryHeading: { textAlign: "center", marginBottom: 4 },
@@ -263,6 +264,41 @@ const st = StyleSheet.create({
   previewLines: { gap: 3 },
   previewLine: { fontSize: 13, color: "rgba(255,255,255,0.5)", lineHeight: 19 },
 
+  tipsUnit: {
+    alignItems: "center",
+    marginTop: 6,
+  },
+  tipsMascot: {
+    width: 108,
+    height: 107,
+    marginBottom: -11,
+    zIndex: 2,
+  },
+  tipsBtn: {
+    alignSelf: "stretch",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderRadius: 15,
+    backgroundColor: "#7C4DFF",
+    shadowColor: "#7C4DFF",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  tipsBtnIcon: {
+    width: 29,
+    height: 29,
+    borderRadius: 15,
+    backgroundColor: "rgba(255,255,255,0.16)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tipsBtnText: { flex: 1, color: "#FFFFFF", fontSize: 14.5 },
+
   startBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -276,20 +312,30 @@ const st = StyleSheet.create({
     elevation: 5,
   },
   startBtnText: { fontSize: 18 },
-
-  tipRow: {
+  rolesEntry: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    backgroundColor: "rgba(255,255,255,0.03)",
-    marginBottom: 6,
+    gap: 14,
+    padding: 16,
+    borderRadius: 20,
+    overflow: "hidden",
+    marginTop: 16,
+    marginBottom: 8,
+    ...Platform.select({
+      ios: { shadowColor: "#8E5BFF", shadowOpacity: 0.4, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } },
+      android: { elevation: 6 },
+      default: {},
+    }),
   },
-  tipIcon: {
-    width: 38, height: 38, borderRadius: 10,
-    alignItems: "center", justifyContent: "center",
+  rolesEntryIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.18)",
   },
-  tipText: { flex: 1, fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 20 },
+  rolesEntryTitle: { fontSize: 18, color: "#fff" },
+  rolesEntrySub: { fontSize: 13, color: "rgba(255,255,255,0.85)", marginTop: 2 },
+
 });

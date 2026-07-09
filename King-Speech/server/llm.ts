@@ -19,9 +19,19 @@ import Anthropic from "@anthropic-ai/sdk";
 // change this constant (or pass `model` per call) if desired.
 export const CLAUDE_MODEL = "claude-opus-4-8";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+// Lazy init so a missing ANTHROPIC_API_KEY doesn't crash server startup at
+// import time (matches the pattern in replit_integrations/audio/client.ts).
+// The client is built on first use; Claude-backed features fail explicitly
+// only when actually invoked without a key.
+let _anthropic: Anthropic | null = null;
+function getAnthropic(): Anthropic {
+  if (!_anthropic) {
+    _anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+  }
+  return _anthropic;
+}
 
 export interface ChatOptions {
   system: string;
@@ -53,7 +63,7 @@ export async function chatComplete(opts: ChatOptions): Promise<string> {
     ? "\n\nOutput ONLY the raw JSON object — no markdown, no code fences, no commentary before or after."
     : "\n\nRespond with only the final answer — no preamble, no explanation of your reasoning.";
 
-  const resp = await anthropic.messages.create({
+  const resp = await getAnthropic().messages.create({
     model: opts.model ?? CLAUDE_MODEL,
     max_tokens: opts.maxTokens,
     system: opts.system + guard,

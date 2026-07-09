@@ -8,10 +8,10 @@ import {
   Platform,
   Modal,
   Alert,
-  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
+import { ROLES, tx as roleTx } from "@/constants/rolesData";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -34,8 +34,8 @@ import { useDevTools } from "@/context/DevToolsContext";
 import VoiceRecorder from "@/components/WaveformVoiceRecorder";
 import ReadingLevelView from "@/components/ReadingLevelView";
 import ReadingResultsView from "@/components/ReadingResultsView";
-import { aspectsFromScore10 } from "@/components/ScoreFlower";
-import ScoreLadder from "@/components/ScoreLadder";
+import { aspectsFromScore10, ASPECT_META } from "@/components/ScoreFlower";
+import OscarMascot from "@/components/OscarMascot";
 import TaskFlowView from "@/components/TaskFlowView";
 import { aggregateAnalyses } from "@/services/analyzeGenericTask";
 import WarmupLevelView from "@/components/warmup/WarmupLevelView";
@@ -63,14 +63,13 @@ import { ActivityIndicator } from "react-native";
 // purple-black canvas. Gold = strong, violet = good, coral = weak — the same
 // heat map the ScoreFlower petals use, so score screen + flower read as one.
 const RS_HIGH = "#FFD230";   // royal gold  (>=8)
+const RS_GREEN = "#4ADE80";  // glowing green for high metric values (>=8)
 const RS_MID  = "#B79BFF";   // light violet (>=6)
 const RS_LOW  = "#FB7185";   // coral        (<6) — honest "low" tone
 
 // Transcript display: collapse anything longer than this so the sheet stays
 // scannable at a glance. The user can tap to reveal the rest.
 const TRANSCRIPT_COLLAPSED_CHARS = 180;
-
-const SCREEN_W = Dimensions.get("window").width;
 
 // DEV preview data for the Skip button — showcases the score window (flower)
 // without a real recording. Scores deliberately span the colour tiers so every
@@ -336,6 +335,19 @@ export function FlowerResultWindow({
   const tone = (v: number) => (v >= 8 ? RS_HIGH : v >= 6 ? RS_MID : v >= 4 ? "#FF9E4A" : RS_LOW);
   const scoreColor = tone(overall);
 
+  // Oscar reacts to the result: thumbs-up for excellent, joy for good,
+  // honest sadness for a weak take. Rendered at a fixed size — never scaled.
+  const oscarEmotion: "thumbup" | "happy" | "sad" =
+    overall >= 8 ? "thumbup" : overall >= 6 ? "happy" : "sad";
+  const tierLabel =
+    overall >= 8
+      ? lang === "ru" ? "Отлично!" : "Excellent!"
+      : overall >= 6
+        ? lang === "ru" ? "Хорошо" : "Good"
+        : overall >= 4
+          ? lang === "ru" ? "Неплохо" : "Not bad"
+          : lang === "ru" ? "Есть над чем поработать" : "Room to grow";
+
   // Signature purple-black canvas to match the re-skinned flower.
   const bgColors = isDark
     ? (["#0F0E14", "#15121F", "#0F0E14"] as const)
@@ -354,7 +366,6 @@ export function FlowerResultWindow({
     .map((g) => g.trim())
     .filter((g) => g && g.toLowerCase() !== tipText.toLowerCase());
   const hasAdvice = !!tipText || growthLines.length > 0;
-  const strengthList = (strengths ?? []).filter(Boolean);
 
   return (
     <View style={{ flex: 1, backgroundColor: bgColors[0] }}>
@@ -364,28 +375,64 @@ export function FlowerResultWindow({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[rs.content, { paddingTop: topPad, paddingBottom: bottomPad + 8 }]}
       >
-        <Animated.Text
-          entering={FadeIn.duration(400)}
-          style={[rs.kicker, { color: scoreColor, fontFamily: "Rubik_600SemiBold" }]}
-        >
-          {(lang === "ru" ? "Оценка ИИ" : "AI score").toUpperCase()}
-        </Animated.Text>
-
-        {/* Score ladder — overall + criteria as one readable staircase,
-            revealed node-by-node, tier-coloured (lime / lemon / orange-red). */}
-        <Animated.View entering={FadeIn.duration(300)} style={rs.ladderSection}>
-          <ScoreLadder overall={overall} aspects={aspects} width={Math.min(420, SCREEN_W - 40)} lang={lang} />
+        {/* Oscar leads the screen — big, centered, no card around him */}
+        <Animated.View entering={FadeIn.duration(450)} style={rs.oscarSection}>
+          <OscarMascot emotion={oscarEmotion} size={260} />
         </Animated.View>
 
-        {/* Summary right under the flower */}
-        {summary ? (
-          <Animated.Text
-            entering={FadeInDown.delay(120).duration(400)}
-            style={[rs.summary, { color: fgText, fontFamily: "Nunito_700Bold" }]}
-          >
-            {summary}
-          </Animated.Text>
-        ) : null}
+        {/* Overall score right under the mascot — plain number, no circle */}
+        <Animated.View entering={FadeIn.delay(80).duration(350)} style={rs.heroSection}>
+          <View style={rs.scoreRow}>
+            <Text style={[rs.scoreHeroNum, { color: scoreColor, fontFamily: "Rubik_700Bold" }]}>
+              {overall.toFixed(1)}
+            </Text>
+            <Text style={[rs.scoreHeroDenom, { color: fgMuted, fontFamily: "Rubik_600SemiBold" }]}>
+              /10
+            </Text>
+          </View>
+          <Text style={[rs.tierLabel, { color: scoreColor, fontFamily: "Rubik_600SemiBold" }]}>
+            {tierLabel}
+          </Text>
+        </Animated.View>
+
+        {/* All six criteria in ONE compact widget: name + score, no bars.
+            High scores (>=8) glow green. */}
+        <Animated.View
+          entering={FadeInDown.delay(160).duration(350)}
+          style={[rs.metricsCard, { backgroundColor: cardBg, borderColor: cardBorder }]}
+        >
+          {aspects.map((a) => {
+            const high = a.score >= 8;
+            const c = high ? RS_GREEN : tone(a.score);
+            return (
+              <View key={a.key} style={rs.metricItem}>
+                <Ionicons name={ASPECT_META[a.key].icon} size={13} color={c} />
+                <Text
+                  numberOfLines={1}
+                  style={[rs.metricLabel, { color: fgMuted, fontFamily: "Inter_500Medium" }]}
+                >
+                  {a.label}
+                </Text>
+                <Text
+                  style={[
+                    rs.metricValue,
+                    { color: c, fontFamily: "Rubik_700Bold" },
+                    high &&
+                      (Platform.OS === "web"
+                        ? ({ textShadow: `0 0 10px ${RS_GREEN}B3` } as any)
+                        : {
+                            textShadowColor: RS_GREEN + "B3",
+                            textShadowOffset: { width: 0, height: 0 },
+                            textShadowRadius: 10,
+                          }),
+                  ]}
+                >
+                  {a.score.toFixed(1)}
+                </Text>
+              </View>
+            );
+          })}
+        </Animated.View>
 
         {/* One combined "what to improve" message (tip + growth merged) */}
         {hasAdvice ? (
@@ -408,24 +455,6 @@ export function FlowerResultWindow({
                 <Text style={[rs.adviceText, { color: fgMuted, fontFamily: "Nunito_400Regular" }]}>{g}</Text>
               </View>
             ))}
-          </Animated.View>
-        ) : null}
-
-        {/* Strengths — compact positive note */}
-        {strengthList.length > 0 ? (
-          <Animated.View
-            entering={FadeInDown.delay(300).duration(400)}
-            style={[rs.strengthCard, { backgroundColor: cardBg, borderColor: cardBorder }]}
-          >
-            <View style={rs.adviceHead}>
-              <Ionicons name="sparkles" size={15} color={RS_HIGH} />
-              <Text style={[rs.adviceTitle, { color: RS_HIGH, fontFamily: "Rubik_600SemiBold" }]}>
-                {t("strengths")}
-              </Text>
-            </View>
-            <Text style={[rs.adviceText, { color: fgMuted, fontFamily: "Nunito_400Regular" }]}>
-              {strengthList.join(" · ")}
-            </Text>
           </Animated.View>
         ) : null}
 
@@ -482,8 +511,10 @@ function EmptyRecordingSheet({
     <Modal visible={visible} animationType="fade" transparent presentationStyle="overFullScreen">
       <View style={ers.overlay}>
         <View style={[ers.card, { backgroundColor: cardBg }]}>
-          <View style={[ers.iconCircle, { backgroundColor: accent + "1A" }]}>
-            <Ionicons name="mic-off-outline" size={34} color={accent} />
+          {/* Oscar is puzzled — we didn't hear anything */}
+          <OscarMascot emotion="notsure" size={110} />
+          <View style={[ers.micBadge, { backgroundColor: accent + "1A" }]}>
+            <Ionicons name="mic-off-outline" size={18} color={accent} />
           </View>
           <Text style={[ers.title, { color: fg, fontFamily: "Inter_700Bold" }]}>
             {lang === "ru" ? "Кажется, мы тебя не услышали" : "We didn't quite hear you"}
@@ -511,7 +542,7 @@ function EmptyRecordingSheet({
 const ers = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "center", alignItems: "center", padding: 28 },
   card: { width: "100%", maxWidth: 380, borderRadius: 24, paddingVertical: 30, paddingHorizontal: 24, alignItems: "center", gap: 14 },
-  iconCircle: { width: 68, height: 68, borderRadius: 34, justifyContent: "center", alignItems: "center" },
+  micBadge: { width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center", marginTop: -26 },
   title: { fontSize: 19, textAlign: "center" },
   body: { fontSize: 15, lineHeight: 22, textAlign: "center" },
   btn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, alignSelf: "stretch", height: 52, borderRadius: 16, marginTop: 6 },
@@ -560,6 +591,7 @@ function LevelCompleteModal({
   isDark,
   t,
   lang,
+  roleBonus,
 }: {
   visible: boolean;
   levelTitle: string;
@@ -575,6 +607,7 @@ function LevelCompleteModal({
   isDark: boolean;
   t: (key: any) => string;
   lang: "ru" | "en";
+  roleBonus?: { emoji: string; title: string; onPlay: () => void } | null;
 }) {
   const scale = useSharedValue(0.7);
   const opacity = useSharedValue(0);
@@ -711,6 +744,30 @@ function LevelCompleteModal({
             </View>
           </View>
 
+          {roleBonus && (
+            <Pressable
+              onPress={roleBonus.onPlay}
+              style={({ pressed }) => [lc.roleBonus, { opacity: pressed ? 0.85 : 1 }]}
+            >
+              <LinearGradient
+                colors={["#8E5BFF", "#E84393"]}
+                style={StyleSheet.absoluteFill}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              />
+              <Text style={lc.roleBonusEmoji}>{roleBonus.emoji}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[lc.roleBonusLabel, { fontFamily: "Inter_600SemiBold" }]}>
+                  {lang === "en" ? "BONUS ROLE" : "БОНУС-РОЛЬ"}
+                </Text>
+                <Text style={[lc.roleBonusTitle, { fontFamily: "Inter_700Bold" }]} numberOfLines={1}>
+                  {roleBonus.title}
+                </Text>
+              </View>
+              <Ionicons name="arrow-forward-circle" size={22} color="#fff" />
+            </Pressable>
+          )}
+
           {!hasNext && (
             <Text style={[lc.allDone, { fontFamily: "Inter_600SemiBold" }]}>
               {t("allLevelsDone")}
@@ -818,6 +875,24 @@ export default function LevelScreen() {
     : null;
   const hasNext = !!nextLevel;
   const bestScore = scores.length > 0 ? Math.max(...scores) : 0;
+
+  // Bonus role — deterministically surfaced on a subset of «Путь» levels to add
+  // variety. Same level always maps to the same role/mode; ~1 in 3 levels show one.
+  const roleBonus = React.useMemo(() => {
+    let h = 0;
+    for (let i = 0; i < levelId.length; i++) h = (h * 31 + levelId.charCodeAt(i)) >>> 0;
+    if (h % 3 !== 0) return null;
+    const role = ROLES[h % ROLES.length];
+    const mode = h % 2 === 0 ? "scripted" : "improv";
+    return {
+      emoji: role.emoji,
+      title: roleTx(role.title, lang),
+      onPlay: () => {
+        setShowLevelComplete(false);
+        router.push({ pathname: "/role-stage", params: { roleId: role.id, mode } });
+      },
+    };
+  }, [levelId, lang]);
 
   const handleLevelCompleteNext = React.useCallback(() => {
     setShowLevelComplete(false);
@@ -1281,6 +1356,7 @@ export default function LevelScreen() {
           colors={colors}
           isDark={isDark}
           t={t}
+          roleBonus={roleBonus}
         />
         <DevSkipButton levelId={levelId} />
       </View>
@@ -1370,6 +1446,7 @@ export default function LevelScreen() {
           colors={colors}
           isDark={isDark}
           t={t}
+          roleBonus={roleBonus}
         />
 
         {/* Close X (top-right, above ReadingLevelView header) — hidden while
@@ -1461,6 +1538,7 @@ export default function LevelScreen() {
         colors={colors}
         isDark={colorScheme === "dark"}
         t={t}
+        roleBonus={roleBonus}
       />
 
       <DevSkipButton levelId={levelId} onPreviewResults={handlePreviewResults} />
@@ -1513,11 +1591,6 @@ const rs = StyleSheet.create({
     gap: 14,
     marginTop: 2,
     marginBottom: 4,
-  },
-  ladderSection: {
-    alignItems: "center",
-    marginTop: 6,
-    marginBottom: 8,
   },
   scoreBig: {
     width: 108,
@@ -1609,15 +1682,46 @@ const rs = StyleSheet.create({
   nextBtnText: { fontSize: 16 },
 
   // Flower result window
-  kicker: { fontSize: 12, letterSpacing: 2.5, textAlign: "center", marginBottom: 2 },
-  summary: { fontSize: 17, lineHeight: 24, textAlign: "center", marginTop: 2 },
+  heroSection: { alignItems: "center", gap: 4, marginTop: -4 },
+  scoreRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+  },
+  scoreHeroNum: { fontSize: 46 },
+  scoreHeroDenom: { fontSize: 17, marginTop: 16 },
+  tierLabel: { fontSize: 15, letterSpacing: 0.4 },
+  metricsCard: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    rowGap: 12,
+  },
+  metricItem: {
+    flexBasis: "50%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 4,
+  },
+  metricLabel: { flex: 1, fontSize: 12.5 },
+  metricValue: { fontSize: 14, marginLeft: 2 },
+  oscarSection: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: -6,
+    marginBottom: -6,
+  },
   adviceCard: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 9 },
   adviceHead: { flexDirection: "row", alignItems: "center", gap: 7 },
   adviceTitle: { fontSize: 13, letterSpacing: 0.6, textTransform: "uppercase" },
   adviceLead: { fontSize: 15.5, lineHeight: 22 },
   adviceRow: { flexDirection: "row", alignItems: "flex-start", gap: 9 },
   adviceText: { flex: 1, fontSize: 14, lineHeight: 20 },
-  strengthCard: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 8 },
 });
 
 // Level complete styles (modern celebration)
@@ -1760,6 +1864,20 @@ const lc = StyleSheet.create({
     elevation: 8,
   },
   nextBtnText: { fontSize: 16, color: "#1A1033", letterSpacing: 0.3 },
+  roleBonus: {
+    marginTop: 16,
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 18,
+    overflow: "hidden",
+  },
+  roleBonusEmoji: { fontSize: 26 },
+  roleBonusLabel: { fontSize: 10, color: "rgba(255,255,255,0.8)", letterSpacing: 1.2 },
+  roleBonusTitle: { fontSize: 15, color: "#fff", marginTop: 1 },
   mapLink: {
     marginTop: 12,
     paddingVertical: 6,

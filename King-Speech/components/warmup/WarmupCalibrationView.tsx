@@ -11,6 +11,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import OreoMascot from "@/components/OreoMascot";
 import { GlassCard, PrimaryButton } from "@/components/ds";
+import CelebrationBurst from "@/components/warmup/CelebrationBurst";
 import { usePitchDetection } from "@/hooks/usePitchDetection";
 import { warmupFonts, warmupSpring, warmupTheme } from "@/components/warmup/warmupTheme";
 import type { VoiceRange } from "@/services/warmupPitch";
@@ -109,6 +110,7 @@ export default function WarmupCalibrationView({ topPad, onComplete, onBack }: Pr
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.spotlight} pointerEvents="none" />
+      <CelebrationBurst play={step === "done"} />
 
       <Pressable onPress={onBack} style={styles.back}>
         <Text style={styles.backText}>←</Text>

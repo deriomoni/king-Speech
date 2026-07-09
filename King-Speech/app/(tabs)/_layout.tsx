@@ -16,7 +16,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { sonic } from "@/constants/colors";
 import {
   IconHome,
-  IconMic,
+  IconCheatSheet,
   IconClapperboard,
   IconAvatar,
   IconGear,
@@ -31,7 +31,7 @@ interface Slot {
 
 const SLOTS: Slot[] = [
   { routeName: "index", Icon: IconHome },
-  { routeName: "interview", Icon: IconMic },
+  { routeName: "interview", Icon: IconCheatSheet },
   { routeName: "showtime", Icon: IconClapperboard },
   { routeName: "profile", Icon: IconAvatar },
   { routeName: "settings", Icon: IconGear },

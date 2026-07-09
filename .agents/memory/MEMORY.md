@@ -1,0 +1,3 @@
+- [Interview tab = Cheat Sheet](cheatsheet-tab.md) — the "interview" tab slot now hosts «Шпаргалка» (offline prep), NOT Jenny; portal-interview rank-up is a separate mechanic still using Jenny.
+- [RN-web transform blur](rn-web-transform-blur.md) — animate opacity only on Path tiles/rows; transform animations blur tiles on web, break the snake thread, and lag.
+- [Oscar Rive mascot quirks](oscar-rive-mascot.md) — real timeline names differ from `strings` scan; artboard has baked demo button, cropped by OscarMascot; verify .riv via runtime rive.contents.

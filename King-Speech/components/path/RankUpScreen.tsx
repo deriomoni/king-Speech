@@ -27,6 +27,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { getRankTheme, pickLocalized, type RankTheme } from "./rankTheme";
 import { useLang } from "@/context/LangContext";
 import { useGame, type MetricTrend } from "@/context/GameContext";
+import OscarMascot from "@/components/OscarMascot";
 
 interface Props {
   fromRank: number;
@@ -663,6 +664,14 @@ export default function RankUpScreen({ fromRank, memento = false }: Props) {
               ? next.index === 2 ? "Amateur" : next.index === 3 ? "Confident" : next.index === 4 ? "Master" : "Pro"
               : next.index === 2 ? "Любитель" : next.index === 3 ? "Уверенный" : next.index === 4 ? "Мастер" : "Профи"}
           </Text>
+        </Animated.View>
+
+        {/* Oscar celebrates the new rank — cool & confident */}
+        <Animated.View
+          entering={FadeIn.duration(450).delay(520)}
+          style={{ alignItems: "center", marginTop: 4 }}
+        >
+          <OscarMascot emotion="cool" size={128} />
         </Animated.View>
       </ScrollView>
 

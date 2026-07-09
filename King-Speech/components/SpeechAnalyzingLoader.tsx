@@ -12,7 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import RiveAnim from "@/components/RiveAnim";
+import OscarMascot from "@/components/OscarMascot";
 
 const GOLD = "#FFD166";
 const GOLD_DEEP = "#FF9F43";
@@ -147,13 +147,8 @@ export default function SpeechAnalyzingLoader({ visible, lang }: Props) {
       testID="speech-analyzing-loader"
     >
       <View style={styles.center}>
-        <RiveAnim
-          source={require("@/assets/rive/loading.riv")}
-          style={styles.rive}
-          fit="contain"
-          alignment="center"
-          autoplay
-        />
+        {/* Oscar "thinks" over the recording while the AI analyzes it */}
+        <OscarMascot emotion="notsure" size={RIVE_SIZE} />
 
         <RotatingPhrase phrases={phrases} />
 
@@ -179,11 +174,6 @@ const styles = StyleSheet.create({
     gap: 28,
     width: "100%",
     maxWidth: 340,
-  },
-  rive: {
-    width: RIVE_SIZE,
-    height: RIVE_SIZE,
-    backgroundColor: "transparent",
   },
   phraseRow: {
     minHeight: 44,

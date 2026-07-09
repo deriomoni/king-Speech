@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Pressable,
   Platform,
   type NativeSyntheticEvent,
@@ -15,14 +14,16 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
+  useAnimatedScrollHandler,
   withTiming,
   withRepeat,
-  withSequence,
   withDelay,
   cancelAnimation,
+  runOnJS,
+  type SharedValue,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Path } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
@@ -48,33 +49,81 @@ import FinalPortal from "@/components/path/FinalPortal";
 import { getRankTheme } from "@/components/path/rankTheme";
 import PathScrubber from "@/components/path/PathScrubber";
 
-function GlowRing({ color }: { color: string }) {
-  const scale = useSharedValue(1);
-  const opacity = useSharedValue(0.6);
+function GlowRing({ color, radius }: { color: string; radius: number }) {
+  // Soft, breathing halo behind the active tile. Rendered as a filled tile-
+  // sized view whose colored shadow bleeds out on all sides — no hard border,
+  // just a gentle diffuse glow that pulses in and out.
+  const opacity = useSharedValue(0.5);
   useEffect(() => {
-    scale.value = withRepeat(withTiming(1.1, { duration: 1400 }), -1, true);
-    opacity.value = withRepeat(withTiming(0.15, { duration: 1400 }), -1, true);
+    opacity.value = withRepeat(withTiming(0.95, { duration: 1500 }), -1, true);
     return () => {
-      cancelAnimation(scale);
       cancelAnimation(opacity);
     };
   }, []);
-  const s = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
+  const s = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return (
     <Animated.View
+      pointerEvents="none"
       style={[
+        styles.glow,
         s,
         {
-          position: "absolute",
-          inset: -8,
-          borderRadius: 24,
+          borderRadius: radius,
           backgroundColor: color,
+          boxShadow: `0px 0px 26px 8px ${color}`,
         },
       ]}
     />
+  );
+}
+
+// Scroll-driven perspective wrapper. Rows near the vertical center of the
+// viewport render at full size; rows toward the top/bottom edges shrink, fade,
+// and tilt slightly — so as the player swipes, tiles leaving the center recede
+// in perspective and the focused tiles pop forward.
+function AnimatedRow({
+  scrollY,
+  viewportH,
+  onLayoutY,
+  children,
+}: {
+  scrollY: SharedValue<number>;
+  viewportH: number;
+  onLayoutY: (y: number) => void;
+  children: React.ReactNode;
+}) {
+  const y = useSharedValue(0);
+  const h = useSharedValue(0);
+  const aStyle = useAnimatedStyle(() => {
+    if (viewportH <= 0 || h.value <= 0) return {};
+    const center = y.value + h.value / 2;
+    const viewportCenter = scrollY.value + viewportH / 2;
+    const norm = (center - viewportCenter) / (viewportH / 2);
+    const dist = Math.min(Math.abs(norm), 1);
+    // The middle band (~4 rows around the focus) stays fully opaque and
+    // full size; only tiles near the very top/bottom edges recede. This keeps
+    // the level names bright and readable instead of looking ghostly.
+    const DEAD = 0.55;
+    const raw = dist <= DEAD ? 0 : (dist - DEAD) / (1 - DEAD);
+    // Smoothstep easing → gentle, fluid falloff (no linear popping).
+    // Opacity-only: geometric transforms (scale/rotate/perspective) were
+    // removed so the snake thread between tiles never visually disconnects
+    // at the screen edges, and the per-frame cost stays minimal.
+    const t = raw * raw * (3 - 2 * raw);
+    const opacity = 1 - t * 0.12;
+    return { opacity };
+  }, [viewportH]);
+  return (
+    <Animated.View
+      style={aStyle}
+      onLayout={(e) => {
+        y.value = e.nativeEvent.layout.y;
+        h.value = e.nativeEvent.layout.height;
+        onLayoutY(e.nativeEvent.layout.y);
+      }}
+    >
+      {children}
+    </Animated.View>
   );
 }
 
@@ -127,6 +176,42 @@ function shapeRadius(
   }
 }
 
+function SnakeConnector({
+  fromSide,
+  toSide,
+  color,
+}: {
+  fromSide: "left" | "right" | "center";
+  toSide: "left" | "right" | "center";
+  color: string;
+}) {
+  const [w, setW] = useState(0);
+  const H = 30;
+  const pos = (s: "left" | "right" | "center") =>
+    s === "right" ? w - STEP_W / 2 : s === "left" ? STEP_W / 2 : w / 2;
+  const sx = pos(fromSide);
+  const ex = pos(toSide);
+  const d = `M ${sx} 0 C ${sx} ${H * 0.55}, ${ex} ${H * 0.45}, ${ex} ${H}`;
+  return (
+    <View
+      style={{ width: "100%", height: H }}
+      onLayout={(e) => setW(e.nativeEvent.layout.width)}
+    >
+      {w > 0 && (
+        <Svg width={w} height={H}>
+          <Path
+            d={d}
+            stroke={color}
+            strokeWidth={3}
+            strokeLinecap="round"
+            fill="none"
+          />
+        </Svg>
+      )}
+    </View>
+  );
+}
+
 function StepBlock({
   item,
   index,
@@ -158,51 +243,22 @@ function StepBlock({
   const isOverridden = isOpenTestingEnabled && item.status === "locked";
   const animateEntry = !isDone && !isOverridden && index < ENTRY_ANIM_MAX;
 
-  const entryScale = useSharedValue(animateEntry ? 0.85 : 1);
-  const entryTranslateY = useSharedValue(animateEntry ? 30 : 0);
+  // Entry animation is opacity-only: scale/translate transforms would detach
+  // the tile from the snake thread during mount and can leave the tile
+  // rasterized/blurry on web.
   const entryOpacity = useSharedValue(animateEntry ? 0 : 1);
-
-  const pressY = useSharedValue(0);
-  const pressScale = useSharedValue(1);
 
   useEffect(() => {
     if (!animateEntry) return;
     const delay = index * 40;
-    entryScale.value = withDelay(
-      delay,
-      withSpring(1, { damping: 14, stiffness: 100 }),
-    );
-    entryTranslateY.value = withDelay(delay, withTiming(0, { duration: 300 }));
     entryOpacity.value = withDelay(delay, withTiming(1, { duration: 260 }));
     return () => {
-      cancelAnimation(entryScale);
-      cancelAnimation(entryTranslateY);
       cancelAnimation(entryOpacity);
     };
   }, []);
 
-  useEffect(() => {
-    return () => {
-      cancelAnimation(pressY);
-      cancelAnimation(pressScale);
-    };
-  }, []);
-
   const entryStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: entryScale.value },
-      { translateY: entryTranslateY.value },
-    ],
     opacity: entryOpacity.value,
-  }));
-
-  const faceStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: pressY.value }, { scale: pressScale.value }],
-  }));
-
-  const sideStyle = useAnimatedStyle(() => ({
-    opacity: 1 - pressY.value / 5,
-    transform: [{ scaleY: 1 - pressY.value / 12 }],
   }));
 
   // Glow only on the single naturally-available step (never on overridden ones).
@@ -227,10 +283,12 @@ function StepBlock({
       : "#F2F2F6";
   const gradBot = faceColor;
 
+  // Press feedback is a plain opacity dim (see the Pressable style below).
+  // Transform-based press animations (translate/scale) rasterize the tile on
+  // web and leave it blurry/pixelated after the spring settles, so they were
+  // removed.
   const handlePressIn = () => {
     if (isLocked) return;
-    pressY.value = withTiming(4, { duration: 60 });
-    pressScale.value = withTiming(0.97, { duration: 60 });
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
     } else {
@@ -238,12 +296,6 @@ function StepBlock({
         (navigator as any).vibrate?.(20);
       } catch {}
     }
-  };
-
-  const handlePressOut = () => {
-    if (isLocked) return;
-    pressY.value = withSpring(0, { damping: 18, stiffness: 300 });
-    pressScale.value = withSpring(1, { damping: 18, stiffness: 300 });
   };
 
   const handlePress = () => {
@@ -270,50 +322,36 @@ function StepBlock({
 
   return (
     <Animated.View style={[entryStyle, { position: "relative" }]}>
-      {showGlow && <GlowRing color={levelColor} />}
+      {showGlow && <GlowRing color={levelColor} radius={shapeR} />}
 
       <Pressable
         onPress={handlePress}
         onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
         disabled={isLocked}
         accessibilityRole="button"
         accessibilityLabel={`${item.title}`}
-        style={styles.stepOuter}
+        style={({ pressed }) => [
+          styles.stepOuter,
+          pressed && !isLocked && { opacity: 0.82 },
+        ]}
       >
-        <Animated.View
-          style={[
-            styles.step3dSide,
-            {
-              backgroundColor: sideColor,
-              borderBottomLeftRadius: shapeR,
-              borderBottomRightRadius: shapeR,
-            },
-            sideStyle,
-          ]}
-        />
-
-        <Animated.View
-          style={[styles.stepFace, { borderRadius: shapeR }, faceStyle]}
-        >
-          {/* Per-rank accent outline (skipped when completed). */}
-          {!isDone && (
-            <View
-              pointerEvents="none"
-              style={[
-                StyleSheet.absoluteFillObject,
-                {
-                  borderRadius: shapeR,
-                  borderWidth: rankTheme.stepShape === "rect-glass" ? 1 : 1.5,
-                  borderColor:
-                    rankTheme.stepShape === "circle"
-                      ? "transparent"
-                      : rankTheme.accent + (isAvail ? "AA" : "55"),
-                  zIndex: 2,
-                },
-              ]}
-            />
-          )}
+        <View style={[styles.stepFace, { borderRadius: shapeR }]}>
+          {/* Per-rank accent outline — stays visible on completed levels too. */}
+          <View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFillObject,
+              {
+                borderRadius: shapeR,
+                borderWidth: rankTheme.stepShape === "rect-glass" ? 1 : 1.5,
+                borderColor:
+                  rankTheme.stepShape === "circle"
+                    ? "transparent"
+                    : rankTheme.accent + (isDone || isAvail ? "AA" : "55"),
+                zIndex: 2,
+              },
+            ]}
+          />
           <LinearGradient
             colors={[gradTop, gradBot]}
             start={{ x: 0.5, y: 0 }}
@@ -321,16 +359,21 @@ function StepBlock({
             style={[StyleSheet.absoluteFill, { borderRadius: shapeR }]}
           />
 
-          <View style={styles.stepHighlight} />
+          <LinearGradient
+            colors={["rgba(255,255,255,0.22)", "rgba(255,255,255,0)"]}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={[StyleSheet.absoluteFill, { borderRadius: shapeR }]}
+          />
 
           <LinearGradient
             colors={[
               "transparent",
-              isLocked ? "rgba(0,0,0,0.07)" : sideColor + "22",
+              isLocked ? "rgba(0,0,0,0.06)" : sideColor + "1E",
             ]}
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
-            style={styles.stepShadowOverlay}
+            style={[StyleSheet.absoluteFill, { borderRadius: shapeR }]}
           />
 
           <View style={styles.stepLeft}>
@@ -384,54 +427,8 @@ function StepBlock({
             >
               {item.subtitle}
             </Text>
-
-            <View style={styles.pips}>
-              {[0, 1, 2].map((i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.pip,
-                    {
-                      backgroundColor:
-                        i < item.tasksDone
-                          ? isDone
-                            ? "rgba(255,255,255,0.9)"
-                            : "rgba(26,26,46,0.5)"
-                          : isDone
-                            ? "rgba(255,255,255,0.25)"
-                            : isAvail
-                              ? "rgba(26,26,46,0.18)"
-                              : "rgba(0,0,0,0.1)",
-                    },
-                  ]}
-                />
-              ))}
-            </View>
           </View>
-
-          <View style={styles.stepRight}>
-            {isDone ? (
-              <Ionicons name="star" size={16} color="rgba(255,255,255,0.9)" />
-            ) : isAvail ? (
-              <Ionicons
-                name="chevron-forward-circle"
-                size={20}
-                color="rgba(26,26,46,0.55)"
-              />
-            ) : (
-              <View style={styles.levelNumBadge}>
-                <Text
-                  style={[
-                    styles.levelNumText,
-                    { fontFamily: "Rubik_700Bold", color: "#B0B0C0" },
-                  ]}
-                >
-                  {item.levelNumber}
-                </Text>
-              </View>
-            )}
-          </View>
-        </Animated.View>
+        </View>
       </Pressable>
     </Animated.View>
   );
@@ -519,7 +516,7 @@ export default function PathScreen() {
   } = useGame();
   const { isOpenTestingEnabled } = useDevTools();
   const { t, lang } = useLang();
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<React.ComponentRef<typeof Animated.ScrollView>>(null);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -564,6 +561,7 @@ export default function PathScreen() {
     step?: StepItem;
     globalIndex?: number;
     side?: "left" | "right";
+    toSide?: "left" | "right" | "center";
     isLast?: boolean;
     key: string;
   }> = [];
@@ -605,6 +603,19 @@ export default function PathScreen() {
       key: item.id,
     });
     gIdx++;
+  }
+
+  // Point each connector's snake thread at the row that immediately follows it,
+  // so it curves toward the next step's side (or the centered divider/portal
+  // card when a module boundary comes next).
+  const rowSide = (
+    r: (typeof renderItems)[number],
+  ): "left" | "right" | "center" => (r.type === "step" ? r.side ?? "right" : "center");
+  for (let i = 0; i < renderItems.length; i++) {
+    const r = renderItems[i];
+    if (r.type !== "step" && r.type !== "portal") continue;
+    const next = renderItems[i + 1];
+    if (next) r.toSide = rowSide(next);
   }
 
   const activeStep = renderItems.find(
@@ -670,6 +681,8 @@ export default function PathScreen() {
 
   const [scrollY, setScrollY] = useState(0);
   const [viewportH, setViewportH] = useState(0);
+  const scrollYSV = useSharedValue(0);
+  const lastReportedSV = useSharedValue(0);
   const [contentH, setContentH] = useState(0);
   // Bumped each time a new item Y is measured, so the visible-section
   // computation re-runs once the layout pass finishes for new rows.
@@ -800,15 +813,16 @@ export default function PathScreen() {
   // (~100px) so the anchor still flips on time, but cuts re-renders
   // by ~10× during a fling — which is the main cause of device heat.
   const lastReportedYRef = useRef(0);
-  const onScrollEvt = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const y = e.nativeEvent.contentOffset.y;
-      if (Math.abs(y - lastReportedYRef.current) < 40) return;
-      lastReportedYRef.current = y;
-      setScrollY(y);
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      scrollYSV.value = e.contentOffset.y;
+      const yy = e.contentOffset.y;
+      if (Math.abs(yy - lastReportedSV.value) >= 40) {
+        lastReportedSV.value = yy;
+        runOnJS(setScrollY)(yy);
+      }
     },
-    [],
-  );
+  });
   const onScrollEndEvt = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const y = e.nativeEvent.contentOffset.y;
@@ -923,7 +937,7 @@ export default function PathScreen() {
         </View>
       )}
 
-      <ScrollView
+      <Animated.ScrollView
         ref={scrollRef}
         onContentSizeChange={(_w, h) => {
           setContentH(h);
@@ -933,7 +947,7 @@ export default function PathScreen() {
           if (autoPinRef.current) scrollToActive(true, false);
           else scrollToActive(false);
         }}
-        onScroll={onScrollEvt}
+        onScroll={scrollHandler}
         onScrollBeginDrag={() => {
           // Player took control of the scroll — stop auto-pinning so we don't
           // fight their dragging. Pinning resumes next time the map is focused.
@@ -941,7 +955,7 @@ export default function PathScreen() {
         }}
         onScrollEndDrag={onScrollEndEvt}
         onMomentumScrollEnd={onScrollEndEvt}
-        scrollEventThrottle={64}
+        scrollEventThrottle={16}
         onLayout={onSvLayout}
         contentContainerStyle={[
           styles.scroll,
@@ -952,27 +966,27 @@ export default function PathScreen() {
         {renderItems.map((ri) => {
           if (ri.type === "divider") {
             return (
-              <View
+              <AnimatedRow
                 key={ri.key}
-                onLayout={(e) => {
-                  recordItemY(ri.key, e.nativeEvent.layout.y);
-                }}
+                scrollY={scrollYSV}
+                viewportH={viewportH}
+                onLayoutY={(y) => recordItemY(ri.key, y)}
               >
                 <ModuleDivider
                   moduleNum={ri.moduleNum ?? 1}
                   colors={colors}
                   lang={lang}
                 />
-              </View>
+              </AnimatedRow>
             );
           }
           if (ri.type === "portal") {
             return (
-              <View
+              <AnimatedRow
                 key={ri.key}
-                onLayout={(e) => {
-                  recordItemY(ri.key, e.nativeEvent.layout.y);
-                }}
+                scrollY={scrollYSV}
+                viewportH={viewportH}
+                onLayoutY={(y) => recordItemY(ri.key, y)}
               >
                 <View style={styles.portalRow}>
                   <FinalPortal
@@ -982,22 +996,18 @@ export default function PathScreen() {
                     testID="rank-final-portal"
                   />
                 </View>
-                <View style={styles.connectorRow}>
-                  <View
-                    style={[
-                      styles.connectorLine,
-                      {
-                        borderColor:
-                          portalStatus === "available"
-                            ? rankTheme.accent
-                            : portalStatus === "completed"
-                              ? rankTheme.accent + "80"
-                              : colors.border,
-                      },
-                    ]}
-                  />
-                </View>
-              </View>
+                <SnakeConnector
+                  fromSide="center"
+                  toSide={ri.toSide ?? "right"}
+                  color={
+                    portalStatus === "available"
+                      ? rankTheme.accent
+                      : portalStatus === "completed"
+                        ? rankTheme.accent + "AA"
+                        : colors.border
+                  }
+                />
+              </AnimatedRow>
             );
           }
           const item = ri.step;
@@ -1006,11 +1016,11 @@ export default function PathScreen() {
           const isLast = ri.isLast ?? false;
           const idx = ri.globalIndex ?? 0;
           return (
-            <View
+            <AnimatedRow
               key={ri.key}
-              onLayout={(e) => {
-                recordItemY(ri.key, e.nativeEvent.layout.y);
-              }}
+              scrollY={scrollYSV}
+              viewportH={viewportH}
+              onLayoutY={(y) => recordItemY(ri.key, y)}
             >
               <View
                 style={[
@@ -1032,31 +1042,19 @@ export default function PathScreen() {
               </View>
 
               {!isLast && (
-                <View
-                  style={[
-                    styles.connectorRow,
-                    {
-                      justifyContent:
-                        side === "right" ? "flex-end" : "flex-start",
-                    },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.connectorLine,
-                      {
-                        borderColor:
-                          item.status === "completed"
-                            ? item.color
-                            : item.status === "available"
-                              ? item.color + "80"
-                              : colors.border,
-                      },
-                    ]}
-                  />
-                </View>
+                <SnakeConnector
+                  fromSide={side}
+                  toSide={ri.toSide ?? (side === "right" ? "left" : "right")}
+                  color={
+                    item.status === "completed"
+                      ? item.color
+                      : item.status === "available"
+                        ? item.color + "AA"
+                        : colors.border
+                  }
+                />
               )}
-            </View>
+            </AnimatedRow>
           );
         })}
 
@@ -1075,7 +1073,7 @@ export default function PathScreen() {
             {t("startFromBottom")}
           </Text>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       <PathScrubber
         contentH={contentH}
@@ -1110,7 +1108,7 @@ export default function PathScreen() {
         >
           <Ionicons
             name={direction === "up" ? "chevron-up" : "chevron-down"}
-            size={22}
+            size={16}
             color="#FFFFFF"
           />
         </Pressable>
@@ -1120,8 +1118,8 @@ export default function PathScreen() {
   );
 }
 
-const STEP_W = 230;
-const STEP_H = 72;
+const STEP_W = 212;
+const STEP_H = 64;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -1136,7 +1134,7 @@ const styles = StyleSheet.create({
   },
   moduleDivider: {
     alignItems: "center",
-    marginVertical: 12,
+    marginVertical: 10,
     gap: 8,
   },
   moduleDividerLine: {
@@ -1145,14 +1143,14 @@ const styles = StyleSheet.create({
     borderRadius: 1,
   },
   moduleQuoteCard: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
     borderRadius: 16,
     borderWidth: 1,
     alignItems: "center",
     gap: 8,
     overflow: "hidden",
-    width: "90%",
+    width: "86%",
   },
   moduleNumBadge: {
     width: 28,
@@ -1178,17 +1176,14 @@ const styles = StyleSheet.create({
   stepOuter: {
     position: "relative",
     width: STEP_W,
-    paddingBottom: 6,
+    paddingBottom: 0,
   },
-  step3dSide: {
+  glow: {
     position: "absolute",
-    bottom: 0,
-    left: 3,
-    right: 3,
-    height: 14,
-    borderBottomLeftRadius: 18,
-    borderBottomRightRadius: 18,
-    zIndex: 0,
+    top: 0,
+    left: 0,
+    width: STEP_W,
+    height: STEP_H,
   },
   stepFace: {
     width: STEP_W,
@@ -1199,31 +1194,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     gap: 10,
     overflow: "hidden",
-    shadowColor: "rgba(0,0,0,0.25)",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    elevation: 8,
     zIndex: 1,
-  },
-  stepHighlight: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: "45%",
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.18)",
-  },
-  stepShadowOverlay: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: "50%",
-    borderBottomLeftRadius: 18,
-    borderBottomRightRadius: 18,
   },
   stepLeft: { alignItems: "center", justifyContent: "center" },
   stepIconCircle: {
@@ -1236,29 +1207,6 @@ const styles = StyleSheet.create({
   stepCenter: { flex: 1, gap: 3 },
   stepTitle: { fontSize: 14 },
   stepSub: { fontSize: 11 },
-  pips: { flexDirection: "row", gap: 4, marginTop: 2 },
-  pip: { width: 7, height: 7, borderRadius: 4 },
-  stepRight: { alignItems: "center", justifyContent: "center" },
-  levelNumBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "rgba(0,0,0,0.06)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  levelNumText: { fontSize: 12 },
-  connectorRow: {
-    flexDirection: "row",
-    height: 28,
-    paddingHorizontal: STEP_W * 0.2,
-  },
-  connectorLine: {
-    width: 2,
-    height: 28,
-    borderLeftWidth: 2,
-    borderStyle: "dashed",
-  },
   bottomHint: {
     flexDirection: "row",
     alignItems: "center",
@@ -1270,9 +1218,9 @@ const styles = StyleSheet.create({
   fab: {
     position: "absolute",
     right: 16,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
@@ -1286,7 +1234,7 @@ const styles = StyleSheet.create({
     height: "100%",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 26,
+    borderRadius: 19,
   },
   devRankSwitcher: {
     position: "absolute",

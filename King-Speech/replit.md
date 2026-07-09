@@ -17,10 +17,18 @@ King Speech is a mobile application designed as an educational game, inspired by
 - Authentication is now live (Firebase + Google + Apple). Edits to auth/onboarding files are allowed.
 - Ensure animations are optimized and stop when not in focus to preserve performance.
 
+### GitHub sync (consent required)
+- The project is linked to GitHub: `origin` → https://github.com/deriomoni/king-Speech (branch `main`).
+- **Push to GitHub ONLY after my explicit consent.** Never push automatically/silently.
+- At the **end of each session** (when work is wrapped up), proactively ask me "Запушить изменения на GitHub?" and push only if I say yes.
+- Replit's checkpoint system creates the commits automatically; pushing only uploads that already-committed history.
+- To push (after I approve): run `bash scripts/push-to-github.sh` (pushes the current branch to `origin`). I can also push myself anytime from the workspace **Git** pane ("Commit & Push").
+
 ## System Architecture
 The application uses a hybrid architecture:
 - **Frontend**: Built with Expo Router (React Native) on port 8081, providing a cross-platform mobile experience.
 - **Backend**: Developed with Express and TypeScript, running on port 5000, handling API requests and business logic.
+- **Web preview (dev)**: `npm run server:dev` runs the Express server on port 5000, which spawns the Expo web dev server (Metro, `npm run web:metro` → `expo start --web --port 8081`) as a child process and proxies every non-`/api` request — including the Metro HMR websocket — to it (`server/index.ts` → `startMetroWeb` + `setupWebProxy`). This renders the unmodified app in the browser (react-native-web) on the same origin that serves `/api/*`, and pins the web API base via `EXPO_PUBLIC_API_URL=https://$REPLIT_DEV_DOMAIN`. The first web bundle is ~16MB and can take ~30s; until Metro is ready the proxy returns a 503 auto-refresh warmup page. Dev-only: it also strips `x-frame-options`/`content-security-policy` so the app embeds in the Replit preview iframe. **Phone preview is preserved:** the Expo Go manifest still responds on the `expo-platform: ios|android` header at `/` and `/manifest` (browsers never send that header), and the browser-facing QR landing page is available at `/mobile` (since `/` now serves the web app). **Production is unchanged** — `configureExpoAndLanding` serves the pre-built `static-build` + QR landing page at `/` (no Metro spawn, no header stripping).
 - **AI Integration**: Leverages OpenAI services through Replit AI Integrations for advanced features like speech analysis and AI interviewing.
 - **Data Storage**: User progress and game state are persistently stored using AsyncStorage.
 

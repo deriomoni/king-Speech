@@ -15,6 +15,7 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle } from "react-native-svg";
 import { GlassCard, PrimaryButton } from "@/components/ds";
+import CelebrationBurst from "@/components/warmup/CelebrationBurst";
 import type { WarmupMouth } from "@/constants/contentLoader";
 import { warmupFonts, warmupTheme } from "@/components/warmup/warmupTheme";
 
@@ -115,6 +116,7 @@ export default function MouthExerciseView({
         colors={[warmupTheme.bg, "#101015", warmupTheme.bg]}
         style={StyleSheet.absoluteFill}
       />
+      <CelebrationBurst play={phase === "done"} />
 
       <Pressable onPress={onBack} style={styles.back}>
         <Text style={styles.backText}>←</Text>

@@ -651,6 +651,160 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ---------------------------------------------------------------------
+  // Roles («Роли») performance scoring. Scores a role scenario on 5
+  // role-specific criteria (1-5): role fit, emotion, clarity, confidence,
+  // grammar. Degrades gracefully: if transcription or the AI is unavailable
+  // (missing keys in dev), we still return an honest deterministic score
+  // grounded in the measured loudness / tempo so the flow never breaks.
+  // ---------------------------------------------------------------------
+  app.post("/api/analyze-role", async (req: Request, res: Response) => {
+    const lang = getLang(req.body);
+    const roleLabels = lang === "en"
+      ? { roleFit: "Role fit", emotion: "Emotion", clarity: "Diction", confidence: "Confidence", grammar: "Grammar" }
+      : { roleFit: "Соответствие роли", emotion: "Эмоции", clarity: "Чёткость произношения", confidence: "Уверенность", grammar: "Грамматика" };
+
+    const {
+      audioBase64,
+      roleTitle,
+      roleScene,
+      scriptedText,
+      mode,
+      durationSeconds,
+    } = req.body || {};
+
+    // Deterministic fallback used whenever the AI can't be reached. Grounded
+    // in whatever we did manage to measure (loudness, tempo, word count).
+    const buildFallback = (
+      opts: {
+        transcript?: string;
+        wpm?: number | null;
+        wordCount?: number;
+        loudnessOk?: boolean;
+        aiUnavailable?: boolean;
+      } = {},
+    ) => {
+      const { transcript = "", wpm = null, wordCount = 0, loudnessOk = true } = opts;
+      // Base everything around a solid, encouraging middle score.
+      const paceGood = wpm == null ? true : wpm >= 95 && wpm <= 175;
+      const enough = wordCount === 0 ? true : wordCount >= 12;
+      const s = (base: number, ok: boolean) => Math.min(5, Math.max(1, ok ? base : base - 1));
+      const roleFit = s(4, enough);
+      const emotion = s(4, loudnessOk);
+      const clarity = s(4, loudnessOk && enough);
+      const confidence = s(4, paceGood && loudnessOk);
+      const grammar = s(4, enough);
+      const avg = (roleFit + emotion + clarity + confidence + grammar) / 5;
+      const stars = avg >= 4.4 ? 3 : avg >= 3.2 ? 2 : 1;
+      const summary = lang === "en"
+        ? "Nice work stepping into the role! Keep leaning into the character — a bit more emotion and energy will make it shine."
+        : "Отличный заход в роль! Продолжай вживаться в персонажа — чуть больше эмоций и энергии, и будет блестяще.";
+      const tip = lang === "en"
+        ? "Try exaggerating the emotion a little more than feels natural — on camera it reads as just right."
+        : "Попробуй сыграть эмоцию чуть ярче, чем кажется естественным — на камере это смотрится как раз в меру.";
+      return {
+        stars,
+        transcript,
+        feedback: summary,
+        tip,
+        metrics: { roleFit, emotion, clarity, confidence, grammar },
+        categories: {
+          roleFit:    { score: roleFit,    label: roleLabels.roleFit },
+          emotion:    { score: emotion,    label: roleLabels.emotion },
+          clarity:    { score: clarity,    label: roleLabels.clarity },
+          confidence: { score: confidence, label: roleLabels.confidence },
+          grammar:    { score: grammar,    label: roleLabels.grammar },
+        },
+        aiUnavailable: !!opts.aiUnavailable,
+      };
+    };
+
+    try {
+      if (!audioBase64) {
+        // No audio at all (e.g. mic unavailable on web preview). Still return
+        // a graceful, encouraging result instead of an error.
+        return res.json({ ...buildFallback({ aiUnavailable: true }), silent: true });
+      }
+
+      const rawBuffer = Buffer.from(audioBase64, "base64");
+      let transcript = "";
+      try {
+        const { buffer, format } = await ensureCompatibleFormat(rawBuffer);
+        transcript = await speechToText(buffer, format);
+      } catch (e) {
+        console.warn("analyze-role: transcription unavailable:", e);
+      }
+
+      // Measured signals (best-effort).
+      let loudnessOk = true;
+      try {
+        const { buffer } = await ensureCompatibleFormat(rawBuffer);
+        const loud = await computeLoudness(buffer);
+        loudnessOk = loud.ok ? loud.meanVolumeDb >= -30 : true;
+      } catch {}
+
+      const tokens = transcript.toLowerCase().split(/[^a-zа-яё0-9]+/i).filter(Boolean);
+      const wordCount = tokens.length;
+      const dur = typeof durationSeconds === "number" && durationSeconds > 0 ? durationSeconds : null;
+      const wpm = dur && wordCount > 0 ? Math.round(wordCount / (dur / 60)) : null;
+
+      if (!transcript || transcript.trim().length < 6) {
+        // Couldn't hear enough — deterministic, still encouraging.
+        return res.json(buildFallback({ transcript, wpm, wordCount, loudnessOk, aiUnavailable: false }));
+      }
+
+      const modeLabel = mode === "scripted"
+        ? (lang === "en" ? "reading a scripted line for the role" : "читает заготовленную реплику для роли")
+        : (lang === "en" ? "improvising in the role" : "импровизирует в роли");
+
+      const systemPrompt = lang === "en"
+        ? `You are a warm, playful acting coach helping someone train adaptability by performing life ROLES (a salesperson, a blogger, a barista, a showman...). The player is ${modeLabel}. Rate how well they INHABITED THE ROLE on 5 criteria, each 1-5:\n1. roleFit — did the delivery match the character & situation? Energy, vocabulary and attitude of the role.\n2. emotion — vividness and emotional colour of the voice; playing it flat scores low.\n3. clarity — articulation & intelligibility.\n4. confidence — steady, believable, no hesitation.\n5. grammar — correctness & fluency of speech (in improv judge phrasing; in scripted mode be lenient on wording).\nCalibration: 5 = a natural performer, 3 = decent, 1 = barely in character. Be honest but kind and fun.\nstars: 1 if average < 2.6; 2 if 2.6-3.9; 3 if >= 4.0.\nTONE: write "summary" and "tip" like an excited coach cheering a friend on — plain, warm language, no technical terms, no numbers/units. End the player feeling like a star who wants to play again.\nReturn ONLY JSON: {"roleFit":n,"emotion":n,"clarity":n,"confidence":n,"grammar":n,"stars":n,"summary":"...","tip":"..."}`
+        : `Ты — тёплый, игривый тренер по актёрскому мастерству. Игрок тренирует адаптивность, играя жизненные РОЛИ (продажник, блогер, бариста, шоумен...). Игрок ${modeLabel}. Оцени, насколько он ВЖИЛСЯ В РОЛЬ, по 5 критериям, каждый 1-5:\n1. roleFit — Соответствие роли: попала ли подача в характер и ситуацию? Энергия, лексика и настрой роли.\n2. emotion — Эмоции: яркость и эмоциональная окраска голоса; плоская подача — низкий балл.\n3. clarity — Чёткость произношения: артикуляция и разборчивость.\n4. confidence — Уверенность: ровно, убедительно, без колебаний.\n5. grammar — Грамматика: правильность и плавность речи (в импровизации суди построение фраз; в режиме чтения будь снисходителен к формулировкам).\nКалибровка: 5 = прирождённый артист, 3 = неплохо, 1 = почти не в образе. Честно, но по-доброму и с азартом.\nstars: 1 если среднее < 2.6; 2 если 2.6-3.9; 3 если >= 4.0.\nТОН: пиши "summary" и "tip" как воодушевлённый тренер, который болеет за друга — простым тёплым языком, без технических терминов, без чисел и единиц. После фидбэка игрок должен чувствовать себя звездой и хотеть сыграть ещё.\nВерни ТОЛЬКО JSON: {"roleFit":n,"emotion":n,"clarity":n,"confidence":n,"grammar":n,"stars":n,"summary":"...","tip":"..."}`;
+
+      const roleCtx = lang === "en"
+        ? `Role: "${roleTitle ?? "a life role"}"\nScene: ${roleScene ?? "-"}${mode === "scripted" && scriptedText ? `\nScript they read: "${scriptedText}"` : ""}\n\nWhat they actually said:\n${transcript}`
+        : `Роль: "${roleTitle ?? "жизненная роль"}"\nСцена: ${roleScene ?? "-"}${mode === "scripted" && scriptedText ? `\nТекст, который читали: "${scriptedText}"` : ""}\n\nЧто игрок реально сказал:\n${transcript}`;
+
+      let parsed: any = null;
+      try {
+        const out = await chatComplete({ system: systemPrompt, user: roleCtx, maxTokens: 400, json: true });
+        parsed = JSON.parse(out || "{}");
+      } catch (e) {
+        console.warn("analyze-role: AI scoring unavailable, using fallback:", e);
+        return res.json(buildFallback({ transcript, wpm, wordCount, loudnessOk, aiUnavailable: true }));
+      }
+
+      const clamp = (v: any) => Math.min(5, Math.max(1, Math.round(v ?? 3)));
+      const roleFit    = clamp(parsed.roleFit);
+      const emotion    = clamp(parsed.emotion);
+      const clarity    = clamp(parsed.clarity);
+      const confidence = clamp(parsed.confidence);
+      const grammar    = clamp(parsed.grammar);
+      const stars = Math.min(3, Math.max(1, Math.round(parsed.stars ?? 2)));
+
+      return res.json({
+        stars,
+        transcript,
+        feedback: typeof parsed.summary === "string" && parsed.summary.trim()
+          ? parsed.summary
+          : (lang === "en" ? "Great job in the role!" : "Отличная работа в роли!"),
+        tip: typeof parsed.tip === "string" ? parsed.tip : undefined,
+        metrics: { roleFit, emotion, clarity, confidence, grammar },
+        categories: {
+          roleFit:    { score: roleFit,    label: roleLabels.roleFit },
+          emotion:    { score: emotion,    label: roleLabels.emotion },
+          clarity:    { score: clarity,    label: roleLabels.clarity },
+          confidence: { score: confidence, label: roleLabels.confidence },
+          grammar:    { score: grammar,    label: roleLabels.grammar },
+        },
+        aiUnavailable: false,
+      });
+    } catch (err) {
+      console.error("analyze-role error:", err);
+      return res.json(buildFallback({ aiUnavailable: true }));
+    }
+  });
+
   app.get("/api/interview/daily-plan", (req: Request, res: Response) => {
     const lang: Lang = req.query.lang === "en" ? "en" : "ru";
     const { topics, dateKey } = getDailyTopics(lang);

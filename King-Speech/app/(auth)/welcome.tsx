@@ -12,7 +12,7 @@ import { useRouter } from "expo-router";
 import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useLang, Lang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
-import OreoMascot from "@/components/OreoMascot";
+import OscarMascot from "@/components/OscarMascot";
 
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
@@ -47,9 +47,9 @@ export default function WelcomeScreen() {
         </Pressable>
       </Animated.View>
 
-      {/* Oreo mascot with starburst */}
+      {/* Oscar waves hello to the player */}
       <Animated.View entering={FadeIn.delay(100)} style={s.videoWrap}>
-        <OreoMascot size={240} shouldPlay />
+        <OscarMascot emotion="hi" size={240} />
       </Animated.View>
 
       {/* Title + subtitle */}

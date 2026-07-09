@@ -75,6 +75,31 @@ export function IconMic({ size = 30, color = "#FCF6E6" }: IconProps) {
   );
 }
 
+// Flame — «Шпаргалка» / emergency warm-up. Single stroke-only silhouette
+// matching the other tab icons (viewBox 32, stroke 1.9).
+export function IconCheatSheet({ size = 30, color = "#FCF6E6" }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <Path
+        d="M16 27 c 5 0 8.5 -3.4 8.5 -8.5 c 0 -3.6 -2.6 -6.8 -4.4 -8.8 c -0.6 2 -2.2 3 -3.1 1.2 C 16.2 8.2 17 5.4 14 4 c 0.5 3.6 -1.6 5.5 -3.4 7.5 C 8.9 13.3 7.5 15.4 7.5 18.5 C 7.5 23.6 11 27 16 27 Z"
+        stroke={color}
+        strokeWidth={STROKE}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <Path
+        d="M16 27 c 2.7 0 4.6 -1.9 4.6 -4.7 c 0 -2 -1.5 -3.4 -2.6 -4.9 c -0.7 1.4 -1.9 1.7 -3 2.9 c -0.9 1 -1.6 1.9 -1.6 3.4 C 13.4 25.3 14.4 27 16 27 Z"
+        stroke={color}
+        strokeWidth={STROKE}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </Svg>
+  );
+}
+
 // Clapperboard — direct port of user-provided SVG.
 export function IconClapperboard({ size = 30, color = "#FCF6E6" }: IconProps) {
   return (

@@ -6,13 +6,24 @@ import { randomUUID } from "crypto";
 import { tmpdir } from "os";
 import { join } from "path";
 
-// Prefer a direct OpenAI key (OPENAI_API_KEY → default api.openai.com).
-// Falls back to the legacy Replit AI Integrations proxy if only those vars
-// are set, so existing Replit deploys keep working.
-const useDirectOpenAI = !!process.env.OPENAI_API_KEY;
-export const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY ?? process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: useDirectOpenAI ? undefined : process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+let _openai: OpenAI | null = null;
+export function getOpenAI(): OpenAI {
+  if (!_openai) {
+    // Prefer a direct OpenAI key (OPENAI_API_KEY → default api.openai.com).
+    // Falls back to the legacy Replit AI Integrations proxy if only those vars
+    // are set, so existing Replit deploys keep working.
+    const useDirectOpenAI = !!process.env.OPENAI_API_KEY;
+    _openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY ?? process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+      baseURL: useDirectOpenAI ? undefined : process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+    });
+  }
+  return _openai;
+}
+export const openai = new Proxy({} as OpenAI, {
+  get(_target, prop) {
+    return (getOpenAI() as any)[prop];
+  },
 });
 
 export type AudioFormat = "wav" | "mp3" | "webm" | "mp4" | "ogg" | "unknown";
