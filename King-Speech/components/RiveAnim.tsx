@@ -43,7 +43,89 @@ type RiveAnimProps = {
   autoplay?: boolean;
   fit?: RiveFit;
   alignment?: RiveAlignment;
+  /**
+   * Post-process each drawn frame: make the artboard's baked-in white
+   * background transparent. Uses a flood fill from the canvas borders, so
+   * enclosed white areas (eyes, teeth) are preserved. Web + Expo Go WebView
+   * only — a true native build renders the artboard as authored.
+   */
+  removeWhiteBg?: boolean;
 };
+
+// Flood-fills near-white pixels reachable from the canvas borders and makes
+// them transparent. Called after every Rive draw.
+function keyOutWhiteBg(canvas: HTMLCanvasElement) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  const w = canvas.width;
+  const h = canvas.height;
+  if (!w || !h) return;
+  const img = ctx.getImageData(0, 0, w, h);
+  const d = img.data;
+  const n = w * h;
+  const visited = new Uint8Array(n);
+  const stack: number[] = [];
+  // Background = near-white OR already transparent. With fit=contain the
+  // artboard's white rect is inset from the canvas border by transparent
+  // margins, so the flood must be able to travel through transparency.
+  const isBg = (i: number) => {
+    const o = i * 4;
+    if (d[o + 3] < 16) return true;
+    return d[o] > 232 && d[o + 1] > 232 && d[o + 2] > 232;
+  };
+  // Seed from all four borders.
+  for (let x = 0; x < w; x++) {
+    if (isBg(x)) stack.push(x);
+    const b = (h - 1) * w + x;
+    if (isBg(b)) stack.push(b);
+  }
+  for (let y = 0; y < h; y++) {
+    const l = y * w;
+    if (isBg(l)) stack.push(l);
+    const r = y * w + (w - 1);
+    if (isBg(r)) stack.push(r);
+  }
+  while (stack.length) {
+    const i = stack.pop()!;
+    if (visited[i]) continue;
+    visited[i] = 1;
+    d[i * 4 + 3] = 0;
+    const x = i % w;
+    if (x > 0 && !visited[i - 1] && isBg(i - 1)) stack.push(i - 1);
+    if (x < w - 1 && !visited[i + 1] && isBg(i + 1)) stack.push(i + 1);
+    if (i >= w && !visited[i - w] && isBg(i - w)) stack.push(i - w);
+    if (i < n - w && !visited[i + w] && isBg(i + w)) stack.push(i + w);
+  }
+  // Soften the 1px halo: fade light pixels that touch a keyed-out pixel.
+  for (let i = 0; i < n; i++) {
+    if (visited[i]) continue;
+    const x = i % w;
+    const nearKeyed =
+      (x > 0 && visited[i - 1]) ||
+      (x < w - 1 && visited[i + 1]) ||
+      (i >= w && visited[i - w]) ||
+      (i < n - w && visited[i + w]);
+    if (!nearKeyed) continue;
+    const o = i * 4;
+    const minC = Math.min(d[o], d[o + 1], d[o + 2]);
+    if (minC > 190) {
+      const t = (minC - 190) / 42; // 190..232 → 0..1
+      d[o + 3] = Math.round(d[o + 3] * (1 - Math.min(1, t)));
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  const dbg = ((keyOutWhiteBg as any)._n = ((keyOutWhiteBg as any)._n || 0) + 1);
+  if (dbg <= 3 || dbg % 60 === 0) {
+    let keyed = 0;
+    for (let i = 0; i < n; i++) if (visited[i]) keyed++;
+    const mid = ((h >> 1) * w + (w >> 1)) * 4;
+    console.log(
+      "[RiveAnim DEBUG key]", "call#", dbg, w, h, "keyed=", keyed,
+      "centerPx=", d[mid], d[mid + 1], d[mid + 2], d[mid + 3],
+      "connected=", (canvas as any).isConnected,
+    );
+  }
+}
 
 const isExpoGo =
   (Constants as any)?.appOwnership === "expo" ||
@@ -171,7 +253,9 @@ function WebRiveCanvas({
   autoplay = true,
   fit = "contain",
   alignment = "center",
+  removeWhiteBg = false,
 }: RiveAnimProps & { src: string }) {
+  const containerRef = React.useRef<any>(null);
   let layoutInstance: any = undefined;
   try {
     if (WebRiveLayout && WebRiveFit && WebRiveAlign) {
@@ -186,7 +270,7 @@ function WebRiveCanvas({
     console.warn("[RiveAnim] failed to build Layout:", e);
     layoutInstance = undefined;
   }
-  const { RiveComponent } = useRiveHook({
+  const { rive, RiveComponent } = useRiveHook({
     src,
     artboard,
     stateMachines: stateMachine,
@@ -194,8 +278,51 @@ function WebRiveCanvas({
     autoplay,
     ...(layoutInstance ? { layout: layoutInstance } : {}),
   });
+
+  useEffect(() => {
+    if (!removeWhiteBg || !rive) return;
+    const node: HTMLElement | null = containerRef.current as any;
+    const canvas = node?.querySelector?.("canvas") ?? null;
+    if (!canvas) return;
+    try {
+      const all = node!.querySelectorAll("canvas");
+      const cs = (window as any).getComputedStyle(canvas);
+      let p: any = canvas.parentElement;
+      const bgs: string[] = [];
+      while (p && p !== node!.parentElement) {
+        bgs.push((window as any).getComputedStyle(p).backgroundColor);
+        p = p.parentElement;
+      }
+      console.log(
+        "[RiveAnim DEBUG dom] canvases=", all.length,
+        "canvasBg=", cs.backgroundColor,
+        "parentBgs=", JSON.stringify(bgs),
+      );
+    } catch {}
+    const onDraw = () => {
+      try {
+        keyOutWhiteBg(canvas as HTMLCanvasElement);
+      } catch {}
+    };
+    try {
+      // The web runtime reports "advance" right after each frame is drawn
+      // and flushed (it never emits "draw"), so this is the post-frame hook.
+      rive.on("advance", onDraw);
+      // Key the current frame too (e.g. a one-shot animation that already
+      // finished before this effect ran).
+      onDraw();
+    } catch (e) {
+      console.warn("[RiveAnim] advance hook failed:", e);
+    }
+    return () => {
+      try {
+        rive.off("advance", onDraw);
+      } catch {}
+    };
+  }, [removeWhiteBg, rive]);
+
   return (
-    <View style={[styles.box, style]}>
+    <View ref={containerRef} style={[styles.box, style]}>
       <RiveComponent />
     </View>
   );
@@ -228,6 +355,7 @@ function buildExpoGoHtml(
   artboard?: string,
   stateMachine?: string,
   animation?: string,
+  removeWhiteBg?: boolean,
 ): string {
   const fitKey = FIT_MAP_WEB[fit] ?? "Contain";
   const alignKey = ALIGN_MAP_WEB[alignment] ?? "Center";
@@ -259,6 +387,44 @@ canvas{display:block;width:100vw;height:100vh;background:transparent;}
       onLoad: function(){ try { r.resizeDrawingSurfaceToCanvas(); } catch(e){} log("loaded"); },
       onLoadError: function(e){ log("loadError "+(e && e.message || e)); },
     });
+    ${
+      removeWhiteBg
+        ? `var cv = document.getElementById("c");
+    function keyWhite(){
+      try {
+        var ctx = cv.getContext("2d");
+        var w = cv.width, h = cv.height;
+        if (!w || !h) return;
+        var img = ctx.getImageData(0, 0, w, h), d = img.data, n = w * h;
+        var visited = new Uint8Array(n), stack = [];
+        function isBg(i){ var o = i * 4; return d[o+3] < 16 || (d[o] > 232 && d[o+1] > 232 && d[o+2] > 232); }
+        for (var x = 0; x < w; x++) { if (isBg(x)) stack.push(x); var b = (h-1)*w + x; if (isBg(b)) stack.push(b); }
+        for (var y = 0; y < h; y++) { var l = y*w; if (isBg(l)) stack.push(l); var rr = y*w + w-1; if (isBg(rr)) stack.push(rr); }
+        while (stack.length) {
+          var i = stack.pop();
+          if (visited[i]) continue;
+          visited[i] = 1; d[i*4+3] = 0;
+          var xx = i % w;
+          if (xx > 0 && !visited[i-1] && isBg(i-1)) stack.push(i-1);
+          if (xx < w-1 && !visited[i+1] && isBg(i+1)) stack.push(i+1);
+          if (i >= w && !visited[i-w] && isBg(i-w)) stack.push(i-w);
+          if (i < n-w && !visited[i+w] && isBg(i+w)) stack.push(i+w);
+        }
+        for (var j = 0; j < n; j++) {
+          if (visited[j]) continue;
+          var xj = j % w;
+          var near = (xj > 0 && visited[j-1]) || (xj < w-1 && visited[j+1]) || (j >= w && visited[j-w]) || (j < n-w && visited[j+w]);
+          if (!near) continue;
+          var o2 = j * 4;
+          var mc = Math.min(d[o2], d[o2+1], d[o2+2]);
+          if (mc > 190) { var t = Math.min(1, (mc - 190) / 42); d[o2+3] = Math.round(d[o2+3] * (1 - t)); }
+        }
+        ctx.putImageData(img, 0, 0);
+      } catch(e) {}
+    }
+    try { r.on("advance", keyWhite); } catch(e) { log("advance hook "+(e && e.message || e)); }`
+        : ""
+    }
     window.addEventListener("resize", function(){ try{ r.resizeDrawingSurfaceToCanvas(); }catch(e){} });
   } catch(e) { log("ctor "+(e && e.message || e)); }
 })();
@@ -274,6 +440,7 @@ function ExpoGoRiveView({
   autoplay = true,
   fit = "contain",
   alignment = "center",
+  removeWhiteBg = false,
 }: RiveAnimProps) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -359,6 +526,7 @@ function ExpoGoRiveView({
     artboard,
     stateMachine,
     animation,
+    removeWhiteBg,
   );
   return (
     <View style={[styles.box, style]}>

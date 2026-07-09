@@ -6,10 +6,10 @@ import RiveAnim from "@/components/RiveAnim";
 // OscarMascot — the game's face. A thin wrapper around RiveAnim that plays a
 // named emotion timeline from assets/rive/oscar.riv.
 //
-// The .riv artboard ("OSCAR mascot") ships with a baked-in white background
-// and a demo "Click me" button in its bottom ~25%. We render the full square
-// canvas and clip the bottom strip with overflow:hidden, so the button never
-// shows. The white background is embraced as a rounded "sticker" card.
+// The .riv artboard ("OSCAR mascot") ships with a demo "Click me" button in
+// its bottom ~25%. We render the full square canvas and clip the bottom strip
+// with overflow:hidden, so the button never shows. The canvas itself is
+// transparent, so Oscar sits directly on the app background.
 //
 // Quality rules:
 //  - Fixed pixel size, no transform scaling — the canvas rasterizes once at
@@ -57,9 +57,7 @@ export default function OscarMascot({ emotion = "idle", size = 150, style }: Pro
         {
           width: size,
           height: Math.round(size * CROP),
-          borderRadius: Math.round(size * 0.13),
           overflow: "hidden",
-          backgroundColor: "#FFFFFF",
         },
         style,
       ]}
@@ -74,6 +72,7 @@ export default function OscarMascot({ emotion = "idle", size = 150, style }: Pro
         alignment="topCenter"
         autoplay
         animation={EMOTION_ANIMATION[emotion]}
+        removeWhiteBg
       />
     </View>
   );

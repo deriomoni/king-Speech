@@ -436,21 +436,13 @@ export function FlowerResultWindow({
           })}
         </Animated.View>
 
-        {/* Oscar reacts to the score; the AI summary becomes his speech bubble */}
+        {/* Oscar reacts to the score — centered, no card around him */}
         <Animated.View entering={FadeIn.delay(160).duration(450)} style={rs.oscarSection}>
-          <OscarMascot emotion={oscarEmotion} size={132} />
+          <OscarMascot emotion={oscarEmotion} size={200} />
           {summary ? (
-            <View style={[rs.oscarBubble, { backgroundColor: cardBg, borderColor: cardBorder }]}>
-              <View
-                style={[
-                  rs.oscarBubbleTail,
-                  { backgroundColor: cardBg, borderColor: cardBorder },
-                ]}
-              />
-              <Text style={[rs.oscarBubbleText, { color: fgText, fontFamily: "Nunito_700Bold" }]}>
-                {summary}
-              </Text>
-            </View>
+            <Text style={[rs.oscarSummary, { color: fgText, fontFamily: "Nunito_700Bold" }]}>
+              {summary}
+            </Text>
           ) : null}
         </Animated.View>
 
@@ -1761,34 +1753,18 @@ const rs = StyleSheet.create({
   metricBarBg: { height: 4, borderRadius: 2, overflow: "hidden" },
   metricBarFill: { height: 4, borderRadius: 2 },
   oscarSection: {
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
+    gap: 10,
     marginTop: -2,
     marginBottom: -2,
   },
-  oscarBubble: {
-    flex: 1,
-    maxWidth: 230,
-    borderWidth: 1,
-    borderRadius: 16,
-    borderBottomLeftRadius: 4,
-    paddingHorizontal: 13,
-    paddingVertical: 11,
+  oscarSummary: {
+    fontSize: 14.5,
+    lineHeight: 21,
+    textAlign: "center",
+    maxWidth: 320,
   },
-  oscarBubbleTail: {
-    position: "absolute",
-    left: -5,
-    bottom: 12,
-    width: 10,
-    height: 10,
-    borderWidth: 1,
-    borderTopWidth: 0,
-    borderRightWidth: 0,
-    transform: [{ rotate: "45deg" }],
-  },
-  oscarBubbleText: { fontSize: 14, lineHeight: 20 },
   adviceCard: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 9 },
   adviceHead: { flexDirection: "row", alignItems: "center", gap: 7 },
   adviceTitle: { fontSize: 13, letterSpacing: 0.6, textTransform: "uppercase" },
