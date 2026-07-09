@@ -62,7 +62,7 @@ export default function ShowTimeScreen() {
     scrollY.value = e.contentOffset.y;
   });
   const tipsAnim = useAnimatedStyle(() => {
-    const scale = interpolate(scrollY.value, [0, 220], [0.9, 1.08], Extrapolation.CLAMP);
+    const scale = interpolate(scrollY.value, [0, 220], [0.72, 1.05], Extrapolation.CLAMP);
     return { transform: [{ scale }] };
   });
   const logoAnim = useAnimatedStyle(() => {
@@ -278,10 +278,10 @@ const st = StyleSheet.create({
     alignSelf: "stretch",
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingVertical: 15,
-    paddingHorizontal: 16,
-    borderRadius: 18,
+    gap: 10,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderRadius: 15,
     backgroundColor: "#7C4DFF",
     shadowColor: "#7C4DFF",
     shadowOffset: { width: 0, height: 6 },
@@ -290,14 +290,14 @@ const st = StyleSheet.create({
     elevation: 8,
   },
   tipsBtnIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 29,
+    height: 29,
+    borderRadius: 15,
     backgroundColor: "rgba(255,255,255,0.16)",
     alignItems: "center",
     justifyContent: "center",
   },
-  tipsBtnText: { flex: 1, color: "#FFFFFF", fontSize: 15.5 },
+  tipsBtnText: { flex: 1, color: "#FFFFFF", fontSize: 14.5 },
 
   startBtn: {
     flexDirection: "row",
