@@ -308,7 +308,7 @@ function TutorialPhase({
 // deep-purple background, the whole word column tilted a few degrees, words
 // slide vertically; the centred word is crisp white, neighbours are lilac and
 // progressively blurred with distance.
-const ROW_SPACING = 78; // vertical distance between neighbouring words (at the centre)
+const ROW_SPACING = 56; // vertical distance between neighbouring words (at the centre)
 const REEL_LEN = 72; // long enough to keep sweeping for the full auto-stop window
 const SETTLE_COLS = 3; // slots to glide past after STOP for a natural landing
 const SPIN_SPEED = 4.2; // words per second while spinning
@@ -355,7 +355,7 @@ function ReelRow({
     if (landed) scale *= popScale.value;
     const opacity = interpolate(
       d,
-      [0, 4, 6],
+      [0, 5, 7.5],
       [1, 0.8, 0],
       Extrapolation.CLAMP,
     );
@@ -375,7 +375,7 @@ function ReelRow({
       ],
     };
     if (isWeb) {
-      const blur = interpolate(d, [0, 0.5, 1, 2, 3], [0, 0.5, 2, 5, 8], Extrapolation.CLAMP);
+      const blur = interpolate(d, [0, 0.5, 1, 2.5, 4], [0, 0.4, 1.5, 3.5, 5.5], Extrapolation.CLAMP);
       return { ...base, filter: `blur(${blur.toFixed(2)}px)` } as any;
     }
     return base;
@@ -1412,9 +1412,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: "50%",
-    marginTop: -39,
+    marginTop: -ROW_SPACING / 2,
     height: ROW_SPACING,
-    fontSize: 38,
+    fontSize: 32,
     lineHeight: ROW_SPACING,
     textAlign: "center",
     fontFamily: "Nunito_800ExtraBold",
