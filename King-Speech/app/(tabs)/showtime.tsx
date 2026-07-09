@@ -6,6 +6,7 @@ import {
   Pressable,
   Platform,
   Dimensions,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
@@ -193,22 +194,29 @@ export default function ShowTimeScreen() {
           </Pressable>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(550).duration(400)}>
+        {/* Speaker tips — Oscar reading a book, glued flush on top of the
+            purple button so mascot + button read as one single widget. */}
+        <Animated.View entering={FadeInDown.delay(550).duration(400)} style={st.tipsUnit}>
+          <Image
+            source={require("@/assets/images/oscar-peek.png")}
+            style={st.tipsMascot}
+            resizeMode="contain"
+          />
           <Pressable
             onPress={() => {
               if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push("/speaker-tips");
             }}
-            style={({ pressed }) => [st.tipsBtn, { opacity: pressed ? 0.85 : 1 }]}
+            style={({ pressed }) => [st.tipsBtn, { opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
             accessibilityRole="button"
           >
             <View style={st.tipsBtnIcon}>
-              <Ionicons name="bulb-outline" size={18} color="#F5A623" />
+              <Ionicons name="bulb" size={18} color="#FFD230" />
             </View>
             <Text style={[st.tipsBtnText, { fontFamily: "Inter_600SemiBold" }]}>
               {t("speakerTips")}
             </Text>
-            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.45)" />
+            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
           </Pressable>
         </Animated.View>
       </Animated.ScrollView>
@@ -252,28 +260,40 @@ const st = StyleSheet.create({
   previewLines: { gap: 3 },
   previewLine: { fontSize: 13, color: "rgba(255,255,255,0.5)", lineHeight: 19 },
 
+  tipsUnit: {
+    alignItems: "center",
+    marginTop: 6,
+  },
+  tipsMascot: {
+    width: 132,
+    height: 131,
+    marginBottom: -1,
+    zIndex: 2,
+  },
   tipsBtn: {
+    alignSelf: "stretch",
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    paddingVertical: 14,
+    paddingVertical: 15,
     paddingHorizontal: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(245,166,35,0.25)",
-    backgroundColor: "rgba(255,255,255,0.03)",
+    borderRadius: 18,
+    backgroundColor: "#7C4DFF",
+    shadowColor: "#7C4DFF",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    elevation: 8,
   },
   tipsBtnIcon: {
     width: 34,
     height: 34,
     borderRadius: 17,
-    borderWidth: 1,
-    borderColor: "rgba(245,166,35,0.4)",
-    backgroundColor: "rgba(245,166,35,0.10)",
+    backgroundColor: "rgba(255,255,255,0.16)",
     alignItems: "center",
     justifyContent: "center",
   },
-  tipsBtnText: { flex: 1, color: "#E8E4D8", fontSize: 15 },
+  tipsBtnText: { flex: 1, color: "#FFFFFF", fontSize: 15.5 },
 
   startBtn: {
     flexDirection: "row",
