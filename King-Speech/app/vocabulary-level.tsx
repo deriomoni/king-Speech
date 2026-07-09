@@ -312,13 +312,12 @@ const ROW_SPACING = 78; // vertical distance between neighbouring words (at the 
 const REEL_LEN = 72; // long enough to keep sweeping for the full auto-stop window
 const SETTLE_COLS = 3; // slots to glide past after STOP for a natural landing
 const SPIN_SPEED = 4.2; // words per second while spinning
-const REEL_TILT = "-8deg"; // tilt of the whole word column, as in the reference
 
-// Carousel drum geometry — words wrap around a semicircle, like a picker
-// wheel: each step away from the centre advances the word by STEP_ANGLE on
-// the drum, so the column visibly curls away at the top and bottom.
-const STEP_ANGLE = Math.PI / 10; // 18° per word
-const DRUM_R = ROW_SPACING / STEP_ANGLE; // keeps centre spacing = ROW_SPACING
+// Carousel hoop geometry — the words ride a big circle like train cars on
+// curved rails: each word sits 7.5° further along the hoop than the previous
+// one and is tilted by its own angle, so the column bends into a semicircle.
+const STEP_ANGLE = Math.PI / 24; // 7.5° per word
+const HOOP_R = ROW_SPACING / STEP_ANGLE; // keeps centre spacing = ROW_SPACING (~596px)
 
 // Reference palette (darker variant, as requested)
 const REEL_BG = "#25002E";
@@ -345,30 +344,33 @@ function ReelRow({
   const style = useAnimatedStyle(() => {
     const rel = index - pos.value;
     const d = Math.abs(rel);
-    // Angle of this word on the carousel drum (clamped to the half-circle).
+    // Angle of this word on the hoop (clamped to the half-circle). The word
+    // is placed ON the circle and tilted by the same angle — exactly like a
+    // train car following curved rails.
     const theta = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, rel * STEP_ANGLE));
-    const translateY = DRUM_R * Math.sin(theta);
-    const rotateX = -(theta * 180) / Math.PI;
-    let scale = interpolate(d, [0, 1, 3], [1, 0.92, 0.84], Extrapolation.CLAMP);
+    const translateY = HOOP_R * Math.sin(theta);
+    const translateX = HOOP_R * (1 - Math.cos(theta));
+    const rotate = (theta * 180) / Math.PI;
+    let scale = interpolate(d, [0, 2, 5], [1, 0.92, 0.84], Extrapolation.CLAMP);
     if (landed) scale *= popScale.value;
     const opacity = interpolate(
       d,
-      [0, 3, 4.6],
-      [1, 0.85, 0],
+      [0, 4, 6],
+      [1, 0.8, 0],
       Extrapolation.CLAMP,
     );
     const color = interpolateColor(
-      Math.min(d, 2),
-      [0, 1, 2],
+      Math.min(d, 3),
+      [0, 1.5, 3],
       ["#FFFFFF", REEL_NEAR, REEL_FAR],
     );
     const base = {
       opacity,
       color,
       transform: [
-        { perspective: 650 },
         { translateY },
-        { rotateX: `${rotateX}deg` },
+        { translateX },
+        { rotate: `${rotate}deg` },
         { scale },
       ],
     };
@@ -1404,7 +1406,6 @@ const styles = StyleSheet.create({
   reelTilt: {
     flex: 1,
     justifyContent: "center",
-    transform: [{ rotate: REEL_TILT }],
   },
   reelRow: {
     position: "absolute",
