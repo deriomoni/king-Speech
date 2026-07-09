@@ -313,11 +313,12 @@ const REEL_LEN = 72; // long enough to keep sweeping for the full auto-stop wind
 const SETTLE_COLS = 3; // slots to glide past after STOP for a natural landing
 const SPIN_SPEED = 4.2; // words per second while spinning
 
-// Carousel hoop geometry — the words ride a big circle like train cars on
-// curved rails: each word sits 7.5° further along the hoop than the previous
-// one and is tilted by its own angle, so the column bends into a semicircle.
-const STEP_ANGLE = Math.PI / 24; // 7.5° per word
-const HOOP_R = ROW_SPACING / STEP_ANGLE; // keeps centre spacing = ROW_SPACING (~596px)
+// Hoop rail geometry — the words themselves stay perfectly level (no tilt,
+// no perspective), but they RIDE a curved rail: each word sits 7.5° further
+// along a big circle, so the column of words bends away to the LEFT at the
+// top and bottom while every word stays horizontal — like the reference.
+const STEP_ANGLE = Math.PI / 24; // 7.5° per word along the rail
+const HOOP_R = ROW_SPACING / STEP_ANGLE; // keeps centre spacing = ROW_SPACING
 
 // Reference palette (darker variant, as requested)
 const REEL_BG = "#25002E";
@@ -344,15 +345,14 @@ function ReelRow({
   const style = useAnimatedStyle(() => {
     const rel = index - pos.value;
     const d = Math.abs(rel);
-    // Angle of this word on the hoop (clamped to the half-circle). The word
-    // is placed ON the circle and tilted by the same angle — exactly like a
-    // train car following curved rails.
+    // Position of this word on the curved rail (clamped to the half-circle).
+    // Only the SPACE is curved: the word slides along the arc (down/up and
+    // away to the left) but stays perfectly level — no rotation, no
+    // perspective shrinking, exactly like the reference.
     const theta = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, rel * STEP_ANGLE));
     const translateY = HOOP_R * Math.sin(theta);
-    const translateX = HOOP_R * (1 - Math.cos(theta));
-    const rotate = (theta * 180) / Math.PI;
-    let scale = interpolate(d, [0, 2, 5], [1, 0.92, 0.84], Extrapolation.CLAMP);
-    if (landed) scale *= popScale.value;
+    const translateX = -HOOP_R * (1 - Math.cos(theta));
+    const scale = landed ? popScale.value : 1;
     const opacity = interpolate(
       d,
       [0, 5, 7.5],
@@ -367,12 +367,7 @@ function ReelRow({
     const base = {
       opacity,
       color,
-      transform: [
-        { translateY },
-        { translateX },
-        { rotate: `${rotate}deg` },
-        { scale },
-      ],
+      transform: [{ translateY }, { translateX }, { scale }],
     };
     if (isWeb) {
       const blur = interpolate(d, [0, 0.5, 1, 2.5, 4], [0, 0.4, 1.5, 3.5, 5.5], Extrapolation.CLAMP);
@@ -382,12 +377,7 @@ function ReelRow({
   });
 
   return (
-    <Animated.Text
-      style={[styles.reelRow, style]}
-      numberOfLines={1}
-      adjustsFontSizeToFit
-      minimumFontScale={0.5}
-    >
+    <Animated.Text style={[styles.reelRow, style]} numberOfLines={1}>
       {word.charAt(0).toUpperCase() + word.slice(1)}
     </Animated.Text>
   );
@@ -402,8 +392,6 @@ function SpinPhase({
   onPicked: (w: VocabWord) => void;
   onClose: () => void;
 }) {
-  const { width: SCREEN_W } = useWindowDimensions();
-
   // A finite reel of Russian words, frozen ONCE at mount. Because the strip is
   // built here (not derived from a live pool), the parent recording the picked
   // word — which changes excludeIds — can never reshuffle it mid-spin, so the
@@ -501,15 +489,7 @@ function SpinPhase({
 
       <View style={{ flex: 1 }}>
         <View style={styles.reelWindow}>
-          {/* The whole word column is tilted a few degrees, like the
-              reference. It is wider than the screen so the tilt never
-              exposes the window edges. */}
-          <View
-            style={[
-              styles.reelTilt,
-              { width: SCREEN_W * 1.4, marginLeft: -SCREEN_W * 0.2 },
-            ]}
-          >
+          <View style={styles.reelTilt}>
             {reel.map((w, i) => (
               <ReelRow
                 key={i}
@@ -1414,9 +1394,10 @@ const styles = StyleSheet.create({
     top: "50%",
     marginTop: -ROW_SPACING / 2,
     height: ROW_SPACING,
-    fontSize: 32,
+    fontSize: 34,
     lineHeight: ROW_SPACING,
-    textAlign: "center",
+    textAlign: "left",
+    paddingLeft: 64,
     fontFamily: "Nunito_800ExtraBold",
   },
   reelPointer: {
