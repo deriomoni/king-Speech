@@ -19,7 +19,6 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   getSpeechRecognitionModule,
@@ -305,70 +304,74 @@ function TutorialPhase({
 // PHASE 1 — SPIN
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Text Scroller reel geometry — HORIZONTAL sweep (words travel left → right,
-// entering from the left edge like the Lottie reference), decelerating to land
-// on the centred word.
-const ROW_H = 130; // height of the reel window (a single tall row)
+// Text Scroller reel geometry — VERTICAL list (like the Lottie reference):
+// deep-purple background, the whole word column tilted a few degrees, words
+// slide vertically; the centred word is crisp white, neighbours are lilac and
+// progressively blurred with distance.
+const ROW_SPACING = 78; // vertical distance between neighbouring words
 const REEL_LEN = 72; // long enough to keep sweeping for the full auto-stop window
 const SETTLE_COLS = 3; // slots to glide past after STOP for a natural landing
-const SPIN_SPEED = 4.2; // words per second while spinning (calm, like the reference)
+const SPIN_SPEED = 2.6; // words per second while spinning (calm, like the reference)
+const REEL_TILT = "-8deg"; // tilt of the whole word column, as in the reference
 
-// One sweeping word. Its size / opacity / colour are derived purely from its
-// horizontal distance to the live scroll position, so a single continuous
-// animation drives the whole effect — the centred word is big & red, the
-// neighbours peeking at the edges fade out.
-function ReelCol({
+// Reference palette (sampled from the Lottie)
+const REEL_BG = "#3A0049";
+const REEL_NEAR = "#9E6CA9";
+const REEL_FAR = "#6C3575";
+
+// One word of the vertical reel. Its position / colour / blur are derived
+// purely from its vertical distance to the live scroll position, so a single
+// continuous animation drives the whole effect.
+function ReelRow({
   word,
   index,
   pos,
   popScale,
   landed,
-  itemW,
-  centerLeft,
 }: {
   word: string;
   index: number;
   pos: SharedValue<number>;
   popScale: SharedValue<number>;
   landed: boolean;
-  itemW: number;
-  centerLeft: number;
 }) {
-  // Each word positions ITSELF, absolutely, centred in the window and then
-  // offset horizontally by its distance to the live position. This avoids a
-  // single giant translated flex-row (which React Native Web mis-lays when the
-  // row is far wider than its container, leaving the visible window empty).
+  const isWeb = Platform.OS === "web";
   const style = useAnimatedStyle(() => {
     const rel = index - pos.value;
     const d = Math.abs(rel);
-    let scale = interpolate(d, [0, 1, 2], [1, 0.58, 0.44], Extrapolation.CLAMP);
+    let scale = interpolate(d, [0, 1, 3], [1, 0.9, 0.84], Extrapolation.CLAMP);
     if (landed) scale *= popScale.value;
     const opacity = interpolate(
       d,
-      [0, 0.6, 1.4, 2],
-      [1, 0.6, 0.18, 0],
+      [0, 3, 4.2],
+      [1, 0.85, 0],
       Extrapolation.CLAMP,
     );
     const color = interpolateColor(
-      d > 1 ? 1 : d,
-      [0, 1],
-      [RED, "rgba(255,255,255,0.9)"],
+      Math.min(d, 2),
+      [0, 1, 2],
+      ["#FFFFFF", REEL_NEAR, REEL_FAR],
     );
-    return {
+    const base = {
       opacity,
       color,
-      transform: [{ translateX: rel * itemW }, { scale }],
+      transform: [{ translateY: rel * ROW_SPACING }, { scale }],
     };
+    if (isWeb) {
+      const blur = interpolate(d, [0, 0.5, 1, 2, 3], [0, 0.5, 2, 5, 8], Extrapolation.CLAMP);
+      return { ...base, filter: `blur(${blur.toFixed(2)}px)` } as any;
+    }
+    return base;
   });
 
   return (
     <Animated.Text
-      style={[styles.reelCol, { width: itemW, left: centerLeft }, style]}
+      style={[styles.reelRow, style]}
       numberOfLines={1}
       adjustsFontSizeToFit
       minimumFontScale={0.5}
     >
-      {word.toUpperCase()}
+      {word.charAt(0).toUpperCase() + word.slice(1)}
     </Animated.Text>
   );
 }
@@ -383,9 +386,6 @@ function SpinPhase({
   onClose: () => void;
 }) {
   const { width: SCREEN_W } = useWindowDimensions();
-  // Centre word occupies ~55% of the width so its neighbours peek in from the
-  // left and right edges, selling the horizontal "sweep".
-  const itemW = Math.min(320, Math.max(200, SCREEN_W * 0.55));
 
   // A finite reel of Russian words, frozen ONCE at mount. Because the strip is
   // built here (not derived from a live pool), the parent recording the picked
@@ -468,10 +468,8 @@ function SpinPhase({
     return () => clearTimeout(autoId);
   }, []);
 
-  const centerLeft = (SCREEN_W - itemW) / 2;
-
   return (
-    <View style={styles.spinRoot}>
+    <View style={[styles.spinRoot, { backgroundColor: REEL_BG }]}>
       <View style={styles.topBar}>
         <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={12}>
           <Ionicons name="close" size={24} color="#fff" />
@@ -484,42 +482,28 @@ function SpinPhase({
         Слова крутятся — нажми СТОП, когда будешь готов
       </Text>
 
-      <View style={{ flex: 1, justifyContent: "center" }}>
-        <View style={[styles.reelWindow, { height: ROW_H }]}>
-          {reel.map((w, i) => (
-            <ReelCol
-              key={i}
-              word={w.word}
-              index={i}
-              pos={pos}
-              popScale={popScale}
-              landed={landIndex === i}
-              itemW={itemW}
-              centerLeft={centerLeft}
-            />
-          ))}
-
+      <View style={{ flex: 1 }}>
+        <View style={styles.reelWindow}>
+          {/* The whole word column is tilted a few degrees, like the
+              reference. It is wider than the screen so the tilt never
+              exposes the window edges. */}
           <View
-            pointerEvents="none"
             style={[
-              styles.reelCenterFrame,
-              { left: (SCREEN_W - itemW) / 2, width: itemW, height: ROW_H },
+              styles.reelTilt,
+              { width: SCREEN_W * 1.4, marginLeft: -SCREEN_W * 0.2 },
             ]}
-          />
-          <LinearGradient
-            pointerEvents="none"
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            colors={[BG, "rgba(10,15,40,0)"]}
-            style={[styles.reelFade, styles.reelFadeLeft]}
-          />
-          <LinearGradient
-            pointerEvents="none"
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            colors={["rgba(10,15,40,0)", BG]}
-            style={[styles.reelFade, styles.reelFadeRight]}
-          />
+          >
+            {reel.map((w, i) => (
+              <ReelRow
+                key={i}
+                word={w.word}
+                index={i}
+                pos={pos}
+                popScale={popScale}
+                landed={landIndex === i}
+              />
+            ))}
+          </View>
         </View>
 
         <Text style={styles.rouletteMeta}>
@@ -1393,37 +1377,27 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   reelWindow: {
-    position: "relative",
+    flex: 1,
     width: "100%",
-    justifyContent: "center",
     overflow: "hidden",
   },
-  reelCol: {
+  reelTilt: {
+    flex: 1,
+    justifyContent: "center",
+    transform: [{ rotate: REEL_TILT }],
+  },
+  reelRow: {
     position: "absolute",
-    top: 0,
-    height: ROW_H,
-    fontSize: 34,
-    lineHeight: ROW_H,
-    letterSpacing: 1,
+    left: 0,
+    right: 0,
+    top: "50%",
+    marginTop: -39,
+    height: ROW_SPACING,
+    fontSize: 38,
+    lineHeight: ROW_SPACING,
     textAlign: "center",
-    fontFamily: "Fredoka_700Bold",
+    fontFamily: "Nunito_800ExtraBold",
   },
-  reelCenterFrame: {
-    position: "absolute",
-    top: 0,
-    borderRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,59,48,0.3)",
-    backgroundColor: "rgba(255,59,48,0.06)",
-  },
-  reelFade: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    width: 90,
-  },
-  reelFadeLeft: { left: 0 },
-  reelFadeRight: { right: 0 },
   rouletteMeta: {
     color: "rgba(255,255,255,0.35)",
     fontSize: 12,
