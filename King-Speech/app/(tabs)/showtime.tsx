@@ -25,9 +25,8 @@ import { getSpeechThemes } from "@/app/showtime-stage";
 import { useLang } from "@/context/LangContext";
 import { VinylGallery } from "@/components/showtime/VinylGallery";
 import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
-import { SpeakerTipsBook } from "@/components/showtime/SpeakerTipsBook";
 
-const { width: SW, height: SH } = Dimensions.get("window");
+const { width: SW } = Dimensions.get("window");
 
 export default function ShowTimeScreen() {
   const insets = useSafeAreaInsets();
@@ -195,18 +194,22 @@ export default function ShowTimeScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(550).duration(400)}>
-          <SpeakerTipsBook
-            title={t("speakerTips")}
-            accentColor={theme.accentColor}
-            lang={lang}
-            tips={[
-              { icon: "eye-outline", title: lang === "en" ? "Eye contact" : "Взгляд в зал", text: t("tipLookForward") },
-              { icon: "megaphone-outline", title: lang === "en" ? "Projection" : "Громкость", text: t("tipSpeakLouder") },
-              { icon: "pause-outline", title: lang === "en" ? "The pause" : "Сила паузы", text: t("tipPause") },
-              { icon: "body-outline", title: lang === "en" ? "Posture" : "Осанка", text: t("tipStandStraight") },
-              { icon: "happy-outline", title: lang === "en" ? "The smile" : "Улыбка", text: t("tipSmile") },
-            ]}
-          />
+          <Pressable
+            onPress={() => {
+              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push("/speaker-tips");
+            }}
+            style={({ pressed }) => [st.tipsBtn, { opacity: pressed ? 0.85 : 1 }]}
+            accessibilityRole="button"
+          >
+            <View style={st.tipsBtnIcon}>
+              <Ionicons name="bulb-outline" size={18} color="#F5A623" />
+            </View>
+            <Text style={[st.tipsBtnText, { fontFamily: "Inter_600SemiBold" }]}>
+              {t("speakerTips")}
+            </Text>
+            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.45)" />
+          </Pressable>
         </Animated.View>
       </Animated.ScrollView>
     </View>
@@ -248,6 +251,29 @@ const st = StyleSheet.create({
   previewSpeechTitle: { fontSize: 14, color: "rgba(255,255,255,0.7)" },
   previewLines: { gap: 3 },
   previewLine: { fontSize: 13, color: "rgba(255,255,255,0.5)", lineHeight: 19 },
+
+  tipsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(245,166,35,0.25)",
+    backgroundColor: "rgba(255,255,255,0.03)",
+  },
+  tipsBtnIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: "rgba(245,166,35,0.4)",
+    backgroundColor: "rgba(245,166,35,0.10)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tipsBtnText: { flex: 1, color: "#E8E4D8", fontSize: 15 },
 
   startBtn: {
     flexDirection: "row",
