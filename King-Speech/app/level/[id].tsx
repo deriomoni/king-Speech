@@ -63,6 +63,7 @@ import { ActivityIndicator } from "react-native";
 // purple-black canvas. Gold = strong, violet = good, coral = weak — the same
 // heat map the ScoreFlower petals use, so score screen + flower read as one.
 const RS_HIGH = "#FFD230";   // royal gold  (>=8)
+const RS_GREEN = "#4ADE80";  // glowing green for high metric values (>=8)
 const RS_MID  = "#B79BFF";   // light violet (>=6)
 const RS_LOW  = "#FB7185";   // coral        (<6) — honest "low" tone
 
@@ -365,7 +366,6 @@ export function FlowerResultWindow({
     .map((g) => g.trim())
     .filter((g) => g && g.toLowerCase() !== tipText.toLowerCase());
   const hasAdvice = !!tipText || growthLines.length > 0;
-  const strengthList = (strengths ?? []).filter(Boolean);
 
   return (
     <View style={{ flex: 1, backgroundColor: bgColors[0] }}>
@@ -375,25 +375,14 @@ export function FlowerResultWindow({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[rs.content, { paddingTop: topPad, paddingBottom: bottomPad + 8 }]}
       >
-        <Animated.Text
-          entering={FadeIn.duration(400)}
-          style={[rs.kicker, { color: scoreColor, fontFamily: "Rubik_600SemiBold" }]}
-        >
-          {(lang === "ru" ? "Оценка ИИ" : "AI score").toUpperCase()}
-        </Animated.Text>
+        {/* Oscar leads the screen — big, centered, no card around him */}
+        <Animated.View entering={FadeIn.duration(450)} style={rs.oscarSection}>
+          <OscarMascot emotion={oscarEmotion} size={260} />
+        </Animated.View>
 
-        {/* Hero — one prominent overall score, the headline of the screen */}
-        <Animated.View entering={FadeIn.duration(300)} style={rs.heroSection}>
-          <View
-            style={[
-              rs.scoreHero,
-              {
-                borderColor: scoreColor,
-                backgroundColor: scoreColor + "14",
-                shadowColor: scoreColor,
-              },
-            ]}
-          >
+        {/* Overall score right under the mascot — plain number, no circle */}
+        <Animated.View entering={FadeIn.delay(80).duration(350)} style={rs.heroSection}>
+          <View style={rs.scoreRow}>
             <Text style={[rs.scoreHeroNum, { color: scoreColor, fontFamily: "Rubik_700Bold" }]}>
               {overall.toFixed(1)}
             </Text>
@@ -406,44 +395,43 @@ export function FlowerResultWindow({
           </Text>
         </Animated.View>
 
-        {/* Criteria — compact two-column grid instead of the tall ladder */}
-        <Animated.View entering={FadeInDown.delay(80).duration(350)} style={rs.metricsGrid}>
+        {/* All six criteria in ONE compact widget: name + score, no bars.
+            High scores (>=8) glow green. */}
+        <Animated.View
+          entering={FadeInDown.delay(160).duration(350)}
+          style={[rs.metricsCard, { backgroundColor: cardBg, borderColor: cardBorder }]}
+        >
           {aspects.map((a) => {
-            const c = tone(a.score);
-            const pct = Math.max(0.04, Math.min(1, a.score / 10));
+            const high = a.score >= 8;
+            const c = high ? RS_GREEN : tone(a.score);
             return (
-              <View
-                key={a.key}
-                style={[rs.metricCell, { backgroundColor: cardBg, borderColor: cardBorder }]}
-              >
-                <View style={rs.metricTop}>
-                  <Ionicons name={ASPECT_META[a.key].icon} size={13} color={c} />
-                  <Text
-                    numberOfLines={1}
-                    style={[rs.metricLabel, { color: fgMuted, fontFamily: "Inter_500Medium" }]}
-                  >
-                    {a.label}
-                  </Text>
-                  <Text style={[rs.metricValue, { color: c, fontFamily: "Rubik_600SemiBold" }]}>
-                    {a.score.toFixed(1)}
-                  </Text>
-                </View>
-                <View style={[rs.metricBarBg, { backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(30,20,50,0.08)" }]}>
-                  <View style={[rs.metricBarFill, { width: `${pct * 100}%`, backgroundColor: c }]} />
-                </View>
+              <View key={a.key} style={rs.metricItem}>
+                <Ionicons name={ASPECT_META[a.key].icon} size={13} color={c} />
+                <Text
+                  numberOfLines={1}
+                  style={[rs.metricLabel, { color: fgMuted, fontFamily: "Inter_500Medium" }]}
+                >
+                  {a.label}
+                </Text>
+                <Text
+                  style={[
+                    rs.metricValue,
+                    { color: c, fontFamily: "Rubik_700Bold" },
+                    high &&
+                      (Platform.OS === "web"
+                        ? ({ textShadow: `0 0 10px ${RS_GREEN}B3` } as any)
+                        : {
+                            textShadowColor: RS_GREEN + "B3",
+                            textShadowOffset: { width: 0, height: 0 },
+                            textShadowRadius: 10,
+                          }),
+                  ]}
+                >
+                  {a.score.toFixed(1)}
+                </Text>
               </View>
             );
           })}
-        </Animated.View>
-
-        {/* Oscar reacts to the score — centered, no card around him */}
-        <Animated.View entering={FadeIn.delay(160).duration(450)} style={rs.oscarSection}>
-          <OscarMascot emotion={oscarEmotion} size={200} />
-          {summary ? (
-            <Text style={[rs.oscarSummary, { color: fgText, fontFamily: "Nunito_700Bold" }]}>
-              {summary}
-            </Text>
-          ) : null}
         </Animated.View>
 
         {/* One combined "what to improve" message (tip + growth merged) */}
@@ -467,24 +455,6 @@ export function FlowerResultWindow({
                 <Text style={[rs.adviceText, { color: fgMuted, fontFamily: "Nunito_400Regular" }]}>{g}</Text>
               </View>
             ))}
-          </Animated.View>
-        ) : null}
-
-        {/* Strengths — compact positive note */}
-        {strengthList.length > 0 ? (
-          <Animated.View
-            entering={FadeInDown.delay(300).duration(400)}
-            style={[rs.strengthCard, { backgroundColor: cardBg, borderColor: cardBorder }]}
-          >
-            <View style={rs.adviceHead}>
-              <Ionicons name="sparkles" size={15} color={RS_HIGH} />
-              <Text style={[rs.adviceTitle, { color: RS_HIGH, fontFamily: "Rubik_600SemiBold" }]}>
-                {t("strengths")}
-              </Text>
-            </View>
-            <Text style={[rs.adviceText, { color: fgMuted, fontFamily: "Nunito_400Regular" }]}>
-              {strengthList.join(" · ")}
-            </Text>
           </Animated.View>
         ) : null}
 
@@ -1712,58 +1682,39 @@ const rs = StyleSheet.create({
   nextBtnText: { fontSize: 16 },
 
   // Flower result window
-  kicker: { fontSize: 12, letterSpacing: 2.5, textAlign: "center", marginBottom: 2 },
-  heroSection: { alignItems: "center", gap: 8, marginTop: 2 },
-  scoreHero: {
-    width: 118,
-    height: 118,
-    borderRadius: 59,
-    borderWidth: 3,
+  heroSection: { alignItems: "center", gap: 4, marginTop: -4 },
+  scoreRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 2,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.55,
-    shadowRadius: 26,
-    ...(Platform.OS === "web" ? { boxShadow: "0 0 26px 2px rgba(255,210,48,0.28)" } : null),
-  } as any,
-  scoreHeroNum: { fontSize: 42 },
-  scoreHeroDenom: { fontSize: 17, marginTop: 14 },
+    gap: 3,
+  },
+  scoreHeroNum: { fontSize: 46 },
+  scoreHeroDenom: { fontSize: 17, marginTop: 16 },
   tierLabel: { fontSize: 15, letterSpacing: 0.4 },
-  metricsGrid: {
+  metricsCard: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
-    justifyContent: "center",
-  },
-  metricCell: {
-    flexBasis: "47%",
-    flexGrow: 1,
-    maxWidth: 210,
     borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 7,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    rowGap: 12,
   },
-  metricTop: { flexDirection: "row", alignItems: "center", gap: 6 },
-  metricLabel: { flex: 1, fontSize: 12 },
-  metricValue: { fontSize: 13 },
-  metricBarBg: { height: 4, borderRadius: 2, overflow: "hidden" },
-  metricBarFill: { height: 4, borderRadius: 2 },
+  metricItem: {
+    flexBasis: "50%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 4,
+  },
+  metricLabel: { flex: 1, fontSize: 12.5 },
+  metricValue: { fontSize: 14, marginLeft: 2 },
   oscarSection: {
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
-    marginTop: -2,
-    marginBottom: -2,
-  },
-  oscarSummary: {
-    fontSize: 14.5,
-    lineHeight: 21,
-    textAlign: "center",
-    maxWidth: 320,
+    marginTop: -6,
+    marginBottom: -6,
   },
   adviceCard: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 9 },
   adviceHead: { flexDirection: "row", alignItems: "center", gap: 7 },
@@ -1771,7 +1722,6 @@ const rs = StyleSheet.create({
   adviceLead: { fontSize: 15.5, lineHeight: 22 },
   adviceRow: { flexDirection: "row", alignItems: "flex-start", gap: 9 },
   adviceText: { flex: 1, fontSize: 14, lineHeight: 20 },
-  strengthCard: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 8 },
 });
 
 // Level complete styles (modern celebration)
