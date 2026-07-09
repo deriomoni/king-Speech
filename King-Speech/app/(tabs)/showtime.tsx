@@ -61,6 +61,10 @@ export default function ShowTimeScreen() {
   const onScroll = useAnimatedScrollHandler((e) => {
     scrollY.value = e.contentOffset.y;
   });
+  const tipsAnim = useAnimatedStyle(() => {
+    const scale = interpolate(scrollY.value, [0, 220], [0.9, 1.08], Extrapolation.CLAMP);
+    return { transform: [{ scale }] };
+  });
   const logoAnim = useAnimatedStyle(() => {
     const scale = interpolate(scrollY.value, [0, 200], [1, 0.58], Extrapolation.CLAMP);
     const rotateX = interpolate(scrollY.value, [0, 200], [0, 38], Extrapolation.CLAMP);
@@ -196,7 +200,7 @@ export default function ShowTimeScreen() {
 
         {/* Speaker tips — Oscar reading a book, glued flush on top of the
             purple button so mascot + button read as one single widget. */}
-        <Animated.View entering={FadeInDown.delay(550).duration(400)} style={st.tipsUnit}>
+        <Animated.View entering={FadeInDown.delay(550).duration(400)} style={[st.tipsUnit, tipsAnim]}>
           <Image
             source={require("@/assets/images/oscar-peek.png")}
             style={st.tipsMascot}
@@ -265,9 +269,9 @@ const st = StyleSheet.create({
     marginTop: 6,
   },
   tipsMascot: {
-    width: 132,
-    height: 131,
-    marginBottom: -1,
+    width: 108,
+    height: 107,
+    marginBottom: -11,
     zIndex: 2,
   },
   tipsBtn: {
