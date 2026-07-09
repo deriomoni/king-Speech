@@ -8,7 +8,6 @@ import {
   Platform,
   Modal,
   Alert,
-  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
@@ -35,8 +34,8 @@ import { useDevTools } from "@/context/DevToolsContext";
 import VoiceRecorder from "@/components/WaveformVoiceRecorder";
 import ReadingLevelView from "@/components/ReadingLevelView";
 import ReadingResultsView from "@/components/ReadingResultsView";
-import { aspectsFromScore10 } from "@/components/ScoreFlower";
-import ScoreLadder from "@/components/ScoreLadder";
+import { aspectsFromScore10, ASPECT_META } from "@/components/ScoreFlower";
+import OscarMascot from "@/components/OscarMascot";
 import TaskFlowView from "@/components/TaskFlowView";
 import { aggregateAnalyses } from "@/services/analyzeGenericTask";
 import WarmupLevelView from "@/components/warmup/WarmupLevelView";
@@ -70,8 +69,6 @@ const RS_LOW  = "#FB7185";   // coral        (<6) — honest "low" tone
 // Transcript display: collapse anything longer than this so the sheet stays
 // scannable at a glance. The user can tap to reveal the rest.
 const TRANSCRIPT_COLLAPSED_CHARS = 180;
-
-const SCREEN_W = Dimensions.get("window").width;
 
 // DEV preview data for the Skip button — showcases the score window (flower)
 // without a real recording. Scores deliberately span the colour tiers so every
@@ -337,6 +334,19 @@ export function FlowerResultWindow({
   const tone = (v: number) => (v >= 8 ? RS_HIGH : v >= 6 ? RS_MID : v >= 4 ? "#FF9E4A" : RS_LOW);
   const scoreColor = tone(overall);
 
+  // Oscar reacts to the result: thumbs-up for excellent, joy for good,
+  // honest sadness for a weak take. Rendered at a fixed size — never scaled.
+  const oscarEmotion: "thumbup" | "happy" | "sad" =
+    overall >= 8 ? "thumbup" : overall >= 6 ? "happy" : "sad";
+  const tierLabel =
+    overall >= 8
+      ? lang === "ru" ? "Отлично!" : "Excellent!"
+      : overall >= 6
+        ? lang === "ru" ? "Хорошо" : "Good"
+        : overall >= 4
+          ? lang === "ru" ? "Неплохо" : "Not bad"
+          : lang === "ru" ? "Есть над чем поработать" : "Room to grow";
+
   // Signature purple-black canvas to match the re-skinned flower.
   const bgColors = isDark
     ? (["#0F0E14", "#15121F", "#0F0E14"] as const)
@@ -372,21 +382,77 @@ export function FlowerResultWindow({
           {(lang === "ru" ? "Оценка ИИ" : "AI score").toUpperCase()}
         </Animated.Text>
 
-        {/* Score ladder — overall + criteria as one readable staircase,
-            revealed node-by-node, tier-coloured (lime / lemon / orange-red). */}
-        <Animated.View entering={FadeIn.duration(300)} style={rs.ladderSection}>
-          <ScoreLadder overall={overall} aspects={aspects} width={Math.min(420, SCREEN_W - 40)} lang={lang} />
+        {/* Hero — one prominent overall score, the headline of the screen */}
+        <Animated.View entering={FadeIn.duration(300)} style={rs.heroSection}>
+          <View
+            style={[
+              rs.scoreHero,
+              {
+                borderColor: scoreColor,
+                backgroundColor: scoreColor + "14",
+                shadowColor: scoreColor,
+              },
+            ]}
+          >
+            <Text style={[rs.scoreHeroNum, { color: scoreColor, fontFamily: "Rubik_700Bold" }]}>
+              {overall.toFixed(1)}
+            </Text>
+            <Text style={[rs.scoreHeroDenom, { color: fgMuted, fontFamily: "Rubik_600SemiBold" }]}>
+              /10
+            </Text>
+          </View>
+          <Text style={[rs.tierLabel, { color: scoreColor, fontFamily: "Rubik_600SemiBold" }]}>
+            {tierLabel}
+          </Text>
         </Animated.View>
 
-        {/* Summary right under the flower */}
-        {summary ? (
-          <Animated.Text
-            entering={FadeInDown.delay(120).duration(400)}
-            style={[rs.summary, { color: fgText, fontFamily: "Nunito_700Bold" }]}
-          >
-            {summary}
-          </Animated.Text>
-        ) : null}
+        {/* Criteria — compact two-column grid instead of the tall ladder */}
+        <Animated.View entering={FadeInDown.delay(80).duration(350)} style={rs.metricsGrid}>
+          {aspects.map((a) => {
+            const c = tone(a.score);
+            const pct = Math.max(0.04, Math.min(1, a.score / 10));
+            return (
+              <View
+                key={a.key}
+                style={[rs.metricCell, { backgroundColor: cardBg, borderColor: cardBorder }]}
+              >
+                <View style={rs.metricTop}>
+                  <Ionicons name={ASPECT_META[a.key].icon} size={13} color={c} />
+                  <Text
+                    numberOfLines={1}
+                    style={[rs.metricLabel, { color: fgMuted, fontFamily: "Inter_500Medium" }]}
+                  >
+                    {a.label}
+                  </Text>
+                  <Text style={[rs.metricValue, { color: c, fontFamily: "Rubik_600SemiBold" }]}>
+                    {a.score.toFixed(1)}
+                  </Text>
+                </View>
+                <View style={[rs.metricBarBg, { backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(30,20,50,0.08)" }]}>
+                  <View style={[rs.metricBarFill, { width: `${pct * 100}%`, backgroundColor: c }]} />
+                </View>
+              </View>
+            );
+          })}
+        </Animated.View>
+
+        {/* Oscar reacts to the score; the AI summary becomes his speech bubble */}
+        <Animated.View entering={FadeIn.delay(160).duration(450)} style={rs.oscarSection}>
+          <OscarMascot emotion={oscarEmotion} size={132} />
+          {summary ? (
+            <View style={[rs.oscarBubble, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+              <View
+                style={[
+                  rs.oscarBubbleTail,
+                  { backgroundColor: cardBg, borderColor: cardBorder },
+                ]}
+              />
+              <Text style={[rs.oscarBubbleText, { color: fgText, fontFamily: "Nunito_700Bold" }]}>
+                {summary}
+              </Text>
+            </View>
+          ) : null}
+        </Animated.View>
 
         {/* One combined "what to improve" message (tip + growth merged) */}
         {hasAdvice ? (
@@ -483,8 +549,10 @@ function EmptyRecordingSheet({
     <Modal visible={visible} animationType="fade" transparent presentationStyle="overFullScreen">
       <View style={ers.overlay}>
         <View style={[ers.card, { backgroundColor: cardBg }]}>
-          <View style={[ers.iconCircle, { backgroundColor: accent + "1A" }]}>
-            <Ionicons name="mic-off-outline" size={34} color={accent} />
+          {/* Oscar is puzzled — we didn't hear anything */}
+          <OscarMascot emotion="notsure" size={110} />
+          <View style={[ers.micBadge, { backgroundColor: accent + "1A" }]}>
+            <Ionicons name="mic-off-outline" size={18} color={accent} />
           </View>
           <Text style={[ers.title, { color: fg, fontFamily: "Inter_700Bold" }]}>
             {lang === "ru" ? "Кажется, мы тебя не услышали" : "We didn't quite hear you"}
@@ -512,7 +580,7 @@ function EmptyRecordingSheet({
 const ers = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "center", alignItems: "center", padding: 28 },
   card: { width: "100%", maxWidth: 380, borderRadius: 24, paddingVertical: 30, paddingHorizontal: 24, alignItems: "center", gap: 14 },
-  iconCircle: { width: 68, height: 68, borderRadius: 34, justifyContent: "center", alignItems: "center" },
+  micBadge: { width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center", marginTop: -26 },
   title: { fontSize: 19, textAlign: "center" },
   body: { fontSize: 15, lineHeight: 22, textAlign: "center" },
   btn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, alignSelf: "stretch", height: 52, borderRadius: 16, marginTop: 6 },
@@ -1562,11 +1630,6 @@ const rs = StyleSheet.create({
     marginTop: 2,
     marginBottom: 4,
   },
-  ladderSection: {
-    alignItems: "center",
-    marginTop: 6,
-    marginBottom: 8,
-  },
   scoreBig: {
     width: 108,
     height: 108,
@@ -1658,7 +1721,74 @@ const rs = StyleSheet.create({
 
   // Flower result window
   kicker: { fontSize: 12, letterSpacing: 2.5, textAlign: "center", marginBottom: 2 },
-  summary: { fontSize: 17, lineHeight: 24, textAlign: "center", marginTop: 2 },
+  heroSection: { alignItems: "center", gap: 8, marginTop: 2 },
+  scoreHero: {
+    width: 118,
+    height: 118,
+    borderRadius: 59,
+    borderWidth: 3,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.55,
+    shadowRadius: 26,
+    ...(Platform.OS === "web" ? { boxShadow: "0 0 26px 2px rgba(255,210,48,0.28)" } : null),
+  } as any,
+  scoreHeroNum: { fontSize: 42 },
+  scoreHeroDenom: { fontSize: 17, marginTop: 14 },
+  tierLabel: { fontSize: 15, letterSpacing: 0.4 },
+  metricsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    justifyContent: "center",
+  },
+  metricCell: {
+    flexBasis: "47%",
+    flexGrow: 1,
+    maxWidth: 210,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 7,
+  },
+  metricTop: { flexDirection: "row", alignItems: "center", gap: 6 },
+  metricLabel: { flex: 1, fontSize: 12 },
+  metricValue: { fontSize: 13 },
+  metricBarBg: { height: 4, borderRadius: 2, overflow: "hidden" },
+  metricBarFill: { height: 4, borderRadius: 2 },
+  oscarSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    marginTop: -2,
+    marginBottom: -2,
+  },
+  oscarBubble: {
+    flex: 1,
+    maxWidth: 230,
+    borderWidth: 1,
+    borderRadius: 16,
+    borderBottomLeftRadius: 4,
+    paddingHorizontal: 13,
+    paddingVertical: 11,
+  },
+  oscarBubbleTail: {
+    position: "absolute",
+    left: -5,
+    bottom: 12,
+    width: 10,
+    height: 10,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderRightWidth: 0,
+    transform: [{ rotate: "45deg" }],
+  },
+  oscarBubbleText: { fontSize: 14, lineHeight: 20 },
   adviceCard: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 9 },
   adviceHead: { flexDirection: "row", alignItems: "center", gap: 7 },
   adviceTitle: { fontSize: 13, letterSpacing: 0.6, textTransform: "uppercase" },
