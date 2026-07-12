@@ -1,0 +1,17 @@
+{
+  "transcript": "карл у клары украл кораллы а клара у карла украла кларнет",
+  "onDevice": true,
+  "words": [
+    { "text": "карл", "startMs": 0, "endMs": 300, "confidence": 0.95 },
+    { "text": "у", "startMs": 400, "endMs": 500, "confidence": 0.92 },
+    { "text": "клары", "startMs": 600, "endMs": 900, "confidence": 0.95 },
+    { "text": "украл", "startMs": 1000, "endMs": 1300, "confidence": 0.9 },
+    { "text": "кораллы", "startMs": 1400, "endMs": 1800, "confidence": 0.93 },
+    { "text": "а", "startMs": 1900, "endMs": 2000, "confidence": 0.9 },
+    { "text": "клара", "startMs": 2100, "endMs": 2400, "confidence": 0.95 },
+    { "text": "у", "startMs": 2500, "endMs": 2600, "confidence": 0.9 },
+    { "text": "карла", "startMs": 2700, "endMs": 3000, "confidence": 0.94 },
+    { "text": "украла", "startMs": 3100, "endMs": 3500, "confidence": 0.92 },
+    { "text": "кларнет", "startMs": 3600, "endMs": 4000, "confidence": 0.95 }
+  ]
+}
