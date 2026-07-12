@@ -304,6 +304,14 @@ async function generateStructuredSummary(session: InterviewSession): Promise<Fin
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
+  // Lightweight health probe. Used by start-expo-dev.ps1 to detect whether the
+  // API is already up before spawning another instance. Kept on /api so it works
+  // even when this process runs as a pure API server (KS_EXTERNAL_METRO=1) and
+  // doesn't serve the web landing page at "/".
+  app.get("/api/health", (_req: Request, res: Response) => {
+    res.json({ ok: true });
+  });
+
   // Vocabulary level — synonym checker. Used by the native fallback path of
   // app/vocabulary-level.tsx (a text input — no native STT engine is bundled
   // in this build); web validates synonyms client-side via the SpeechRecognition
@@ -490,6 +498,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) {
       console.error("analyze-interview error:", err);
       return res.status(500).json({ error: "Interview analysis failed" });
+    }
+  });
+
+  // Show Time PAID feedback formatter (speech-engine §7.4). The client sends
+  // ONLY metrics + short worst-case quotes (never audio or the full transcript).
+  // Claude acts strictly as an EDITOR: it turns numbers into supportive prose,
+  // it does NOT analyze. On any failure the client falls back to templates.
+  app.post("/api/feedback/showtime", async (req: Request, res: Response) => {
+    try {
+      const { metrics, worstQuotes, rank } = req.body ?? {};
+      const lang = getLang(req.body);
+      if (!metrics || typeof metrics !== "object") {
+        return res.status(400).json({ error: "metrics required" });
+      }
+      const quotes: string[] = Array.isArray(worstQuotes)
+        ? worstQuotes.filter((q: unknown) => typeof q === "string").slice(0, 4)
+        : [];
+      const systemPrompt = lang === "en"
+        ? `You are an editor for a speech-training app, NOT an analyzer. You are given already-computed metrics (0..1 unless noted) and up to 4 short quotes. Turn them into exactly 3 short, supportive paragraphs of coaching. Rules: invent NO facts beyond the metrics; name at most ONE growth area; always open with genuine praise; warm, concrete, second person. No lists, no scores, no markdown.`
+        : `Ты — редактор приложения для тренировки речи, а НЕ аналитик. Тебе даны уже посчитанные метрики (0..1, если не указано иное) и до 4 коротких цитат. Преврати их РОВНО в 3 коротких поддерживающих абзаца разбора. Правила: не придумывай фактов сверх метрик; называй не больше ОДНОЙ зоны роста; всегда начинай с искренней похвалы; тепло, конкретно, на «ты». Без списков, без баллов, без разметки.`;
+      const feedback = await chatComplete({
+        system: systemPrompt,
+        user: JSON.stringify({ metrics, worstQuotes: quotes, rank }).slice(0, 4000),
+        maxTokens: 500,
+      });
+      return res.json({ feedback: feedback.trim() });
+    } catch (err) {
+      console.error("feedback/showtime error:", err);
+      return res.status(500).json({ error: "Feedback formatting failed" });
     }
   });
 

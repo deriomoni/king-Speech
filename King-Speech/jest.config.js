@@ -16,5 +16,8 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
+  // babel-preset-expo rewrites `process.env.EXPO_PUBLIC_*` to an ESM import from
+  // `expo/virtual/env`; allow jest to transform that (and other expo ESM).
+  transformIgnorePatterns: ['node_modules/(?!(expo|expo-modules-core|@expo)/)'],
   clearMocks: true,
 };

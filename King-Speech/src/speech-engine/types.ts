@@ -79,4 +79,6 @@ export type AnalysisResult =
       status: 'scored';
       shown: { score: number; stars: Stars; feedback: Feedback };
       raw: RawMetrics;
+      /** True when only acoustic analysis ran (no STT pack, §9). UI shows a disclaimer. */
+      liteMode?: boolean;
     };
