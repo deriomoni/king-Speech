@@ -24,12 +24,20 @@ export const STOP_LEMMAS = new Set([
   'мой', 'твой', 'свой', 'весь', 'себя', 'кто', 'все', 'его', 'её', 'их',
 ]);
 
+export interface LemmaStat {
+  total: number;
+  windows: number;
+  sample: string;
+  /** STT confidences of this lemma's occurrences (for the §8.4.1 guard). */
+  confs: (number | null)[];
+}
+
 export interface TautologyResult {
   incidents: number;
   incidentsPerMin: number;
   tautScore: number;
   /** Per-lemma stats for the tautology_word insight (§8.4.1). */
-  byLemma: Map<string, { total: number; windows: number; sample: string }>;
+  byLemma: Map<string, LemmaStat>;
 }
 
 export interface TautologyInput {
@@ -37,21 +45,24 @@ export interface TautologyInput {
   tokens: readonly string[];
   speechDurationMs: number;
   locale: 'ru' | 'en';
+  /** Per-token STT confidence, parallel to `tokens` (optional). */
+  confidences?: readonly (number | null)[];
 }
 
 export function computeTautology(input: TautologyInput): TautologyResult {
-  const { tokens, speechDurationMs, locale } = input;
+  const { tokens, speechDurationMs, locale, confidences } = input;
   const n = tokens.length;
 
   // Precompute lemma + stop flag per position.
   const lemmas = tokens.map((t) => stem(t, locale));
   const isStop = lemmas.map((l, i) => STOP_LEMMAS.has(l) || STOP_LEMMAS.has(tokens[i]));
 
-  const byLemma = new Map<string, { total: number; windows: number; sample: string }>();
+  const byLemma = new Map<string, LemmaStat>();
   for (let i = 0; i < n; i++) {
     if (isStop[i]) continue;
-    const entry = byLemma.get(lemmas[i]) ?? { total: 0, windows: 0, sample: tokens[i] };
+    const entry = byLemma.get(lemmas[i]) ?? { total: 0, windows: 0, sample: tokens[i], confs: [] };
     entry.total++;
+    entry.confs.push(confidences ? confidences[i] ?? null : null);
     byLemma.set(lemmas[i], entry);
   }
 
