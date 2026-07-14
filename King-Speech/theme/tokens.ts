@@ -124,7 +124,7 @@ export const reading = {
     heroSizeLg: 52,
     heroSizeMd: 46,
     heroSizeSm: 40,
-    heroLineRatio: 0.95,
+    heroLineRatio: 1.02,
     heroTracking: -1.2,
     // Kicker — the "АВТОР · ЖАНР" line under the hero.
     kickerFont: "Rubik_700Bold",
@@ -156,34 +156,30 @@ export const reading = {
     to: "#FF9E2C",
     on: "#2A2003", // text/icon on the gold fill — never pure black
   },
+  // Paced reading guide — words per minute for slow / normal / fast. The guide
+  // highlights one word at a time so the reader can pace along unhurried.
+  pace: {
+    wpm: [78, 104, 132] as const, // slow · normal · fast
+    labels: ["0.75×", "1×", "1.25×"] as const,
+    defaultIndex: 1,
+    leadInMs: 650, // pause before the first word after the transition settles
+    commaPauseMs: 190, // extra dwell after , ; : and line ends
+    stopPauseMs: 440, // extra dwell after . ! ? …
+  },
+  // Karaoke: the body stays one calm readable tone; only the CURRENT word lights
+  // up (a single moving spark), so it never reads as a highlighted line.
   dark: {
-    quote: "rgba(245,245,247,0.12)",
-    quoteReading: "rgba(245,245,247,0.05)",
     word: {
-      unread: "#6E6E78", // ahead — in shadow
-      read: "#C9C9D1", // behind — lit and settled
-      active: "#F7F3EA", // the moving spark — warm brightest white
-    },
-    seg: {
-      empty: "#2A2A2E",
-      fill: "#F2F2F5",
-      crown: "#FFCF34", // the one gold on the screen, only at 100%
-      crownOn: "#2A2003",
+      unread: "#8C8C97", // whole poem — calm, readable
+      read: "#8C8C97", // same tone once passed (no bright trail)
+      active: "#FBF7EC", // the one bright word — warm white
     },
   },
   light: {
-    quote: "rgba(20,20,22,0.12)",
-    quoteReading: "rgba(20,20,22,0.05)",
     word: {
-      unread: "#A8A8A2",
-      read: "#4A4A44",
+      unread: "#7C7C76",
+      read: "#7C7C76",
       active: "#141414",
-    },
-    seg: {
-      empty: "rgba(20,20,22,0.10)",
-      fill: "#1A1A1A",
-      crown: "#FFCF34",
-      crownOn: "#3A2C00",
     },
   },
 } as const;

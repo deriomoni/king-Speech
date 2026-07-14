@@ -1,5 +1,5 @@
 import React from "react";
-import { Text, StyleSheet, type TextLayoutLine } from "react-native";
+import { Text, type TextLayoutLine } from "react-native";
 import type { ReadingToken } from "@/src/speech-engine/core/text/reading";
 
 export type { ReadingToken };
@@ -74,16 +74,13 @@ function ReadingTextInner({
       onTextLayout={
         onTextLayout ? (e) => onTextLayout(e.nativeEvent.lines) : undefined
       }
-      style={[
-        s.base,
-        {
-          fontFamily,
-          fontSize,
-          lineHeight,
-          textAlign: align,
-          maxWidth,
-        },
-      ]}
+      style={{
+        fontFamily,
+        fontSize,
+        lineHeight,
+        textAlign: align,
+        maxWidth,
+      }}
     >
       {tokens.map((tk, i) => (
         <Span key={i} text={tk.text} color={colorFor(tk.wordIndex)} />
@@ -97,7 +94,3 @@ function ReadingTextInner({
 // colors repaint.
 const ReadingText = React.memo(ReadingTextInner);
 export default ReadingText;
-
-const s = StyleSheet.create({
-  base: { includeFontPadding: false as unknown as undefined },
-});

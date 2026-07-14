@@ -5,6 +5,7 @@ import {
   Pressable,
   StyleSheet,
   ScrollView,
+  Modal,
   type LayoutChangeEvent,
   type TextLayoutLine,
 } from "react-native";
@@ -14,8 +15,6 @@ import Animated, {
   withTiming,
   withSpring,
   withDelay,
-  withRepeat,
-  cancelAnimation,
   interpolate,
   Easing,
   FadeIn,
@@ -26,7 +25,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useLang } from "@/context/LangContext";
-import { getRankForSection } from "@/context/GameContext";
 import { reading as R } from "@/theme/tokens";
 import ReadingText, { tokenizeReading } from "@/components/ReadingText";
 import { useReadingCapture } from "@/hooks/useReadingCapture";
@@ -52,16 +50,16 @@ interface Props {
   author?: string;
   workTitle?: string;
   category?: ReadingCategory;
-  /** Section/module number for the footer meta ("ЧТЕНИЕ · NN") + rank. */
-  moduleNumber?: number;
+  /** "1825 год" — shown in the "Узнать больше" sheet. */
+  year?: string;
+  /** Short "what it's about" blurb for the "Узнать больше" sheet. */
+  about?: string;
 }
 
 type Phase = "idle" | "countdown" | "recording" | "saving";
 
 const BEZ = Easing.bezier(0.22, 1, 0.36, 1);
-const ROMAN = ["", "I", "II", "III", "IV", "V"];
 
-// Adaptive hero size: long titles step down instead of being clipped.
 function heroSizeFor(title: string): number {
   const n = title.length;
   if (n > 18) return R.type.heroSizeSm;
@@ -69,7 +67,6 @@ function heroSizeFor(title: string): number {
   return R.type.heroSizeLg;
 }
 
-// Rough luminance test so we pick the reading token theme without a new prop.
 function isDarkBg(hex: string): boolean {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
   if (!m) return true;
@@ -80,7 +77,6 @@ function isDarkBg(hex: string): boolean {
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.5;
 }
 
-// Count words on a laid-out line so we can map word index → line for autoscroll.
 const WORD_RE = /[\p{L}\p{N}]+(?:[’'\-][\p{L}\p{N}]+)*/gu;
 function wordsIn(text: string): number {
   return (text.match(WORD_RE) ?? []).length;
@@ -99,9 +95,10 @@ export default function ReadingLevelView({
   author,
   workTitle,
   category = "poetry",
-  moduleNumber,
+  year,
+  about,
 }: Props) {
-  const { t, lang } = useLang();
+  const { lang } = useLang();
 
   const dark = isDarkBg(colors.background);
   const theme = dark ? R.dark : R.light;
@@ -110,7 +107,6 @@ export default function ReadingLevelView({
   const heroSize = heroSizeFor(displayTitle);
   const heroLine = Math.round(heroSize * R.type.heroLineRatio);
 
-  // Author · genre kicker.
   const genre =
     category === "poetry"
       ? lang === "ru"
@@ -125,74 +121,82 @@ export default function ReadingLevelView({
           : "Prose";
   const kicker = [author, genre].filter(Boolean).join("  ·  ");
 
-  // Tokenize once — the karaoke canvas and word count both read from this.
   const { tokens, wordCount } = useMemo(
     () => tokenizeReading(fullText),
     [fullText],
   );
 
+  // Per-word pacing metadata: length + an extra dwell after punctuation / line
+  // ends so the guide breathes at natural stops.
+  const wordMeta = useMemo(() => {
+    const arr: Array<{ len: number; pause: number }> = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const tk = tokens[i];
+      if (!tk.isWord) continue;
+      const next = tokens[i + 1];
+      let pause = 0;
+      if (next && !next.isWord) {
+        if (/[.!?…]/.test(next.text)) pause = R.pace.stopPauseMs;
+        else if (/[,;:\n]/.test(next.text)) pause = R.pace.commaPauseMs;
+      }
+      arr[tk.wordIndex] = { len: tk.text.length, pause };
+    }
+    return arr;
+  }, [tokens]);
+
   const [phase, setPhase] = useState<Phase>("idle");
   const [countdown, setCountdown] = useState<number>(3);
+  const [currentIndex, setCurrentIndex] = useState<number>(-1);
+  const [speedIdx, setSpeedIdx] = useState<number>(R.pace.defaultIndex);
+  const [showInfo, setShowInfo] = useState(false);
   const isRecording = phase === "recording";
   const showCountdown = phase === "countdown";
+  const busy = isRecording || showCountdown;
 
-  // Single audio source: one capture that both drives the karaoke word index
-  // (live STT, or a dev mock) and yields the recorded audio for scoring.
-  const { currentIndex, begin, finish, cancel, reset } = useReadingCapture({
-    expectedText: fullText,
-    locale: lang === "ru" ? "ru-RU" : "en-US",
-  });
+  const speedRef = useRef(speedIdx);
+  useEffect(() => {
+    speedRef.current = speedIdx;
+  }, [speedIdx]);
 
-  const progress = wordCount > 0 ? (currentIndex + 1) / wordCount : 0;
+  const { begin, finish, cancel } = useReadingCapture();
 
-  // ── Mirror Type Transition — one shared value per layer for the stagger ─────
-  const phaseP = useSharedValue(0); // hero title 1→caption
+  // ── Mirror Type Transition (smoother; fires once the countdown ends) ────────
+  const phaseP = useSharedValue(0);
   const authorP = useSharedValue(0);
-  const bodyP = useSharedValue(0); // preview 0.72 → reading 1
-  const quoteP = useSharedValue(0);
-  const btnP = useSharedValue(0); // start button 0 shown → 1 gone
-  const stopP = useSharedValue(0); // stop control 0 hidden → 1 shown
-  const heroH = useSharedValue(0); // measured hero title height
+  const bodyP = useSharedValue(0);
+  const btnP = useSharedValue(0);
+  const stopP = useSharedValue(0);
+  const heroH = useSharedValue(0);
 
   const enterReading = () => {
-    btnP.value = withTiming(1, { duration: 140, easing: BEZ });
-    phaseP.value = withDelay(40, withTiming(1, { duration: 520, easing: BEZ }));
-    authorP.value = withDelay(60, withTiming(1, { duration: 480, easing: BEZ }));
-    bodyP.value = withDelay(110, withTiming(1, { duration: 560, easing: BEZ }));
-    quoteP.value = withDelay(140, withTiming(1, { duration: 400, easing: BEZ }));
-    stopP.value = withDelay(
-      260,
-      withSpring(1, { damping: 14, stiffness: 140 }),
-    );
+    btnP.value = withTiming(1, { duration: 220, easing: BEZ });
+    phaseP.value = withDelay(60, withTiming(1, { duration: 760, easing: BEZ }));
+    authorP.value = withDelay(90, withTiming(1, { duration: 700, easing: BEZ }));
+    bodyP.value = withDelay(150, withTiming(1, { duration: 820, easing: BEZ }));
+    stopP.value = withDelay(360, withSpring(1, { damping: 15, stiffness: 120 }));
   };
   const exitReading = (instant = false) => {
     if (instant) {
       phaseP.value = 0;
       authorP.value = 0;
       bodyP.value = 0;
-      quoteP.value = 0;
       btnP.value = 0;
       stopP.value = 0;
       return;
     }
-    stopP.value = withTiming(0, { duration: 160, easing: BEZ });
-    quoteP.value = withTiming(0, { duration: 300, easing: BEZ });
-    bodyP.value = withTiming(0, { duration: 360, easing: BEZ });
-    authorP.value = withTiming(0, { duration: 360, easing: BEZ });
-    phaseP.value = withTiming(0, { duration: 380, easing: BEZ });
-    btnP.value = withDelay(120, withTiming(0, { duration: 220, easing: BEZ }));
+    stopP.value = withTiming(0, { duration: 200, easing: BEZ });
+    bodyP.value = withTiming(0, { duration: 460, easing: BEZ });
+    authorP.value = withTiming(0, { duration: 460, easing: BEZ });
+    phaseP.value = withTiming(0, { duration: 480, easing: BEZ });
+    btnP.value = withDelay(160, withTiming(0, { duration: 280, easing: BEZ }));
   };
 
-  // ── Countdown / lifecycle ───────────────────────────────────────────────────
   const countdownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const generationRef = useRef<number>(0);
 
-  const heroGlow = useSharedValue(0);
-
-  // Autoscroll plumbing.
   const scrollRef = useRef<ScrollView>(null);
-  const lineOffsetsRef = useRef<number[]>([]); // cumulative word count per line
-  const lineYRef = useRef<number[]>([]); // y of each line
+  const lineOffsetsRef = useRef<number[]>([]);
+  const lineYRef = useRef<number[]>([]);
   const viewportHRef = useRef<number>(0);
   const lastScrolledLineRef = useRef<number>(-1);
   const canvasTopRef = useRef<number>(0);
@@ -201,28 +205,51 @@ export default function ReadingLevelView({
     return () => {
       generationRef.current += 1;
       if (countdownTimerRef.current) clearTimeout(countdownTimerRef.current);
-      cancelAnimation(heroGlow);
       cancel();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Reset on entry / resetSignal — settle the transition back to IDLE.
   useEffect(() => {
     generationRef.current += 1;
     setPhase("idle");
     setCountdown(3);
+    setCurrentIndex(-1);
     if (countdownTimerRef.current) clearTimeout(countdownTimerRef.current);
     cancel();
-    reset();
     exitReading(true);
     lastScrolledLineRef.current = -1;
     scrollRef.current?.scrollTo({ y: 0, animated: false });
-    cancelAnimation(heroGlow);
-    heroGlow.value = 0;
-    heroGlow.value = withRepeat(withTiming(1, { duration: 850 }), 4, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetSignal]);
+
+  // ── Paced reading guide: advance one word at a time at the chosen speed ─────
+  const delayForWord = (i: number): number => {
+    const wpm = R.pace.wpm[speedRef.current] ?? R.pace.wpm[1];
+    const base = 60000 / wpm;
+    const m = wordMeta[i] ?? { len: 5, pause: 0 };
+    const lenFactor = Math.min(1.8, Math.max(0.72, 0.55 + m.len / 7));
+    return base * lenFactor + m.pause;
+  };
+
+  useEffect(() => {
+    if (phase !== "recording" || wordCount === 0) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const advance = (i: number) => {
+      if (cancelled) return;
+      setCurrentIndex(i);
+      if (i >= wordCount - 1) return;
+      timer = setTimeout(() => advance(i + 1), delayForWord(i));
+    };
+    setCurrentIndex(-1);
+    timer = setTimeout(() => advance(0), R.pace.leadInMs);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, wordCount]);
 
   const beginRecording = async () => {
     setPhase("recording");
@@ -259,7 +286,12 @@ export default function ReadingLevelView({
     onRecordingComplete(durationSec, audioBase64, audioUri);
   };
 
-  // ── Autoscroll: keep the active line in the 35–50% comfort band ─────────────
+  const cycleSpeed = () => {
+    Haptics.selectionAsync();
+    setSpeedIdx((s) => (s + 1) % R.pace.wpm.length);
+  };
+
+  // ── Autoscroll ──────────────────────────────────────────────────────────────
   const onCanvasTextLayout = (lines: TextLayoutLine[]) => {
     const cum: number[] = [];
     const ys: number[] = [];
@@ -277,7 +309,6 @@ export default function ReadingLevelView({
     if (!isRecording || currentIndex < 0) return;
     const cum = lineOffsetsRef.current;
     if (cum.length === 0) return;
-    // First line whose cumulative word count exceeds the active word index.
     let line = cum.findIndex((c) => currentIndex < c);
     if (line === -1) line = cum.length - 1;
     if (line === lastScrolledLineRef.current) return;
@@ -289,10 +320,6 @@ export default function ReadingLevelView({
   }, [currentIndex, isRecording]);
 
   // ── Animated styles ─────────────────────────────────────────────────────────
-  const quoteStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(quoteP.value, [0, 1], [1, 0.42]),
-    transform: [{ scale: interpolate(quoteP.value, [0, 1], [1, 0.92]) }],
-  }));
   const heroWrapStyle = useAnimatedStyle(() => ({
     height:
       heroH.value > 0
@@ -336,64 +363,20 @@ export default function ReadingLevelView({
     opacity: stopP.value,
     transform: [{ scale: interpolate(stopP.value, [0, 1], [0.9, 1]) }],
   }));
-  const heroGlowStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(phaseP.value, [0, 1], [0.14 + heroGlow.value * 0.16, 0]),
-  }));
 
-  const filledSegs = Math.max(
-    0,
-    Math.min(6, Math.round(progress * 6)),
-  );
-  const crownLit = progress >= 0.999;
-
-  const rank = moduleNumber ? getRankForSection(moduleNumber) : null;
-  const rankLabel = rank ? `${lang === "ru" ? "Ранг" : "Rank"} ${ROMAN[rank.index] ?? rank.index}` : null;
-  const moduleLabel = `${lang === "ru" ? "Чтение" : "Reading"} · ${moduleNumber ? String(moduleNumber).padStart(2, "0") : "—"}`;
+  const speedLabel = R.pace.labels[speedIdx] ?? "1×";
 
   return (
     <View style={[st.container, { backgroundColor: colors.background }]}>
-      {/* Top row: swatch strip (left) + decorative quote glyph (right) */}
+      {/* Top: just back — no progress board, no quote glyph */}
       <View style={[st.topRow, { paddingTop: topPad + 10 }]}>
-        <Animated.View entering={FadeIn.delay(120).duration(400)} style={st.swatch}>
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <View
-              key={i}
-              style={[
-                st.seg,
-                { backgroundColor: i < filledSegs ? theme.seg.fill : theme.seg.empty },
-              ]}
-            />
-          ))}
-          <View
-            style={[
-              st.crown,
-              { backgroundColor: crownLit ? theme.seg.crown : theme.seg.empty },
-            ]}
-          >
-            <Ionicons
-              name="sparkles"
-              size={10}
-              color={crownLit ? theme.seg.crownOn : theme.word.unread}
-            />
-          </View>
-        </Animated.View>
-
-        <Animated.Text
-          pointerEvents="none"
-          entering={FadeIn.duration(500)}
-          style={[st.quote, { color: theme.quote }, quoteStyle]}
-        >
-          {"”"}
-        </Animated.Text>
-
-        {/* Back — subtle, disabled while recording */}
         <Pressable
           onPress={onBack}
-          disabled={isRecording || showCountdown}
+          disabled={busy}
           hitSlop={12}
           style={({ pressed }) => [
             st.backBtn,
-            { opacity: pressed ? 0.6 : isRecording || showCountdown ? 0 : 0.7 },
+            { opacity: pressed ? 0.6 : busy ? 0 : 0.7 },
           ]}
         >
           <Ionicons name="chevron-back" size={24} color={colors.text} />
@@ -404,21 +387,16 @@ export default function ReadingLevelView({
       <ScrollView
         ref={scrollRef}
         style={st.scroll}
-        contentContainerStyle={[st.scrollContent, { paddingBottom: bottomPad + 140 }]}
+        contentContainerStyle={[st.scrollContent, { paddingBottom: bottomPad + 150 }]}
         showsVerticalScrollIndicator={false}
-        scrollEnabled={!isRecording && !showCountdown}
+        scrollEnabled={!busy}
         onLayout={(e: LayoutChangeEvent) => {
           viewportHRef.current = e.nativeEvent.layout.height;
         }}
       >
-        {/* Hero title — shrinks to a caption in READING (origin left-top) */}
         <Animated.View style={[st.heroWrap, heroWrapStyle]}>
           <Animated.View
-            pointerEvents="none"
-            style={[st.heroGlow, { backgroundColor: accentColor }, heroGlowStyle]}
-          />
-          <Animated.View
-            entering={FadeInDown.delay(200).duration(480)}
+            entering={FadeInDown.delay(120).duration(460)}
             onLayout={(e) => {
               if (heroH.value === 0) heroH.value = e.nativeEvent.layout.height;
             }}
@@ -438,10 +416,9 @@ export default function ReadingLevelView({
           </Animated.View>
         </Animated.View>
 
-        {/* Kicker → author caption */}
         {kicker ? (
           <Animated.Text
-            entering={FadeInDown.delay(260).duration(460)}
+            entering={FadeInDown.delay(200).duration(440)}
             numberOfLines={1}
             style={[
               st.kicker,
@@ -458,9 +435,8 @@ export default function ReadingLevelView({
           </Animated.Text>
         ) : null}
 
-        {/* Body: dim preview → crisp reading canvas */}
         <Animated.View
-          entering={FadeInDown.delay(320).duration(520)}
+          entering={FadeInDown.delay(280).duration(520)}
           onLayout={(e) => {
             canvasTopRef.current = e.nativeEvent.layout.y;
           }}
@@ -486,32 +462,50 @@ export default function ReadingLevelView({
         />
       </Animated.View>
 
-      {/* Footer meta */}
-      <View style={[st.footer, { bottom: bottomPad + 22 }]}>
-        <Text
-          style={[
-            st.meta,
-            { fontFamily: R.type.metaFont, fontSize: R.type.metaSize, letterSpacing: R.type.metaTracking, color: colors.text, opacity: R.type.metaOpacity },
+      {/* Footer controls: reading speed + learn more (disabled while reading) */}
+      <View
+        style={[st.footer, { bottom: bottomPad + 20 }]}
+        pointerEvents={busy ? "none" : "auto"}
+      >
+        <Pressable
+          onPress={cycleSpeed}
+          disabled={busy}
+          style={({ pressed }) => [
+            st.chip,
+            {
+              backgroundColor: colors.backgroundSecondary,
+              opacity: busy ? 0.28 : pressed ? 0.7 : 1,
+            },
           ]}
         >
-          {moduleLabel.toUpperCase()}
-        </Text>
-        {rankLabel ? (
-          <Text
-            style={[
-              st.meta,
-              { fontFamily: R.type.metaFont, fontSize: R.type.metaSize, letterSpacing: R.type.metaTracking, color: colors.text, opacity: R.type.metaOpacity },
-            ]}
-          >
-            {rankLabel.toUpperCase()}
+          <Ionicons name="speedometer-outline" size={13} color={colors.textSecondary} />
+          <Text style={[st.chipText, { color: colors.textSecondary, fontFamily: R.type.metaFont }]}>
+            {speedLabel}
           </Text>
-        ) : null}
+        </Pressable>
+
+        <Pressable
+          onPress={() => setShowInfo(true)}
+          disabled={busy}
+          style={({ pressed }) => [
+            st.chip,
+            {
+              backgroundColor: colors.backgroundSecondary,
+              opacity: busy ? 0.28 : pressed ? 0.7 : 1,
+            },
+          ]}
+        >
+          <Ionicons name="book-outline" size={13} color={colors.textSecondary} />
+          <Text style={[st.chipText, { color: colors.textSecondary, fontFamily: R.type.metaFont }]}>
+            {(lang === "ru" ? "Узнать больше" : "Learn more").toUpperCase()}
+          </Text>
+        </Pressable>
       </View>
 
-      {/* Start button (IDLE) — an object, not a bar */}
+      {/* Start button — centered (IDLE) */}
       <Animated.View
-        style={[st.btnDock, { bottom: bottomPad + 64 }, startBtnStyle]}
-        pointerEvents={isRecording || showCountdown ? "none" : "auto"}
+        style={[st.centerDock, { bottom: bottomPad + 68 }, startBtnStyle]}
+        pointerEvents={busy ? "none" : "auto"}
       >
         <Pressable
           onPress={startCountdown}
@@ -532,9 +526,9 @@ export default function ReadingLevelView({
         </Pressable>
       </Animated.View>
 
-      {/* Stop control (READING) — a circle with a warm halo */}
+      {/* Stop control — centered (READING) */}
       <Animated.View
-        style={[st.stopDock, { bottom: bottomPad + 52 }, stopStyle]}
+        style={[st.centerDock, { bottom: bottomPad + 60 }, stopStyle]}
         pointerEvents={isRecording ? "auto" : "none"}
       >
         <Pressable
@@ -548,8 +542,8 @@ export default function ReadingLevelView({
             },
           ]}
         >
-          <View style={[st.stopHalo, { borderColor: theme.seg.crown }]} />
-          <View style={[st.stopSquare, { backgroundColor: theme.seg.crown }]} />
+          <View style={[st.stopHalo, { borderColor: accentColor }]} />
+          <View style={[st.stopSquare, { backgroundColor: accentColor }]} />
         </Pressable>
       </Animated.View>
 
@@ -557,7 +551,7 @@ export default function ReadingLevelView({
       {showCountdown && (
         <Animated.View
           entering={FadeIn.duration(180)}
-          exiting={FadeOut.duration(180)}
+          exiting={FadeOut.duration(220)}
           style={[st.overlay, { backgroundColor: colors.background + "F2" }]}
           pointerEvents="none"
         >
@@ -576,56 +570,74 @@ export default function ReadingLevelView({
           </Text>
         </Animated.View>
       )}
+
+      {/* "Узнать больше" sheet */}
+      <Modal
+        visible={showInfo}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowInfo(false)}
+      >
+        <Pressable style={st.infoOverlay} onPress={() => setShowInfo(false)}>
+          <Pressable
+            style={[st.infoCard, { backgroundColor: colors.backgroundSecondary }]}
+            onPress={() => {}}
+          >
+            <Text style={[st.infoKicker, { color: accentColor, fontFamily: R.type.kickerFont }]}>
+              {(author ? `${author}  ·  ${genre}` : genre).toUpperCase()}
+            </Text>
+            <Text style={[st.infoTitle, { color: colors.text, fontFamily: R.type.kickerFont }]}>
+              {displayTitle}
+            </Text>
+            {year ? (
+              <View style={st.infoRow}>
+                <Ionicons name="calendar-outline" size={15} color={colors.textMuted} />
+                <Text style={[st.infoMeta, { color: colors.textSecondary, fontFamily: R.type.bodyFont }]}>
+                  {year}
+                </Text>
+              </View>
+            ) : null}
+            {about ? (
+              <Text style={[st.infoBody, { color: colors.textSecondary, fontFamily: R.type.bodyFont }]}>
+                {about}
+              </Text>
+            ) : (
+              <Text style={[st.infoBody, { color: colors.textMuted, fontFamily: R.type.bodyFont }]}>
+                {lang === "ru"
+                  ? "Описание появится позже."
+                  : "Description coming soon."}
+              </Text>
+            )}
+            <Pressable
+              onPress={() => setShowInfo(false)}
+              style={({ pressed }) => [
+                st.infoClose,
+                { backgroundColor: colors.background, opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <Text style={[st.infoCloseText, { color: colors.text, fontFamily: R.type.kickerFont }]}>
+                {(lang === "ru" ? "Закрыть" : "Close").toUpperCase()}
+              </Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
 
 const st = StyleSheet.create({
   container: { flex: 1 },
-  topRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    paddingHorizontal: 30,
-  },
-  swatch: { flexDirection: "row", alignItems: "center", gap: 3 },
-  seg: { width: 24, height: 10, borderRadius: 3 },
-  crown: {
-    width: 16,
-    height: 16,
-    borderRadius: 4,
-    marginLeft: 3,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  quote: {
-    position: "absolute",
-    right: 26,
-    top: 4,
-    fontSize: R.quoteSize,
-    lineHeight: R.quoteSize * 0.9,
-  },
+  topRow: { paddingHorizontal: 22, minHeight: 44 },
   backBtn: {
-    position: "absolute",
-    left: 22,
-    top: 46,
     width: 34,
     height: 34,
     alignItems: "center",
     justifyContent: "center",
   },
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 30, paddingTop: 56 },
-  heroWrap: { justifyContent: "flex-start", overflow: "hidden" },
-  heroGlow: {
-    position: "absolute",
-    left: -10,
-    right: -10,
-    top: 4,
-    bottom: 4,
-    borderRadius: 26,
-    opacity: 0.14,
-  },
+  scrollContent: { paddingHorizontal: 30, paddingTop: 40 },
+  heroWrap: { justifyContent: "flex-start" },
   titleLayer: { transformOrigin: "left top" },
   kicker: { marginTop: 20 },
   bodyWrap: { marginTop: 34, transformOrigin: "left top" },
@@ -642,14 +654,28 @@ const st = StyleSheet.create({
     right: 30,
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
   },
-  meta: {},
-  btnDock: { position: "absolute", right: 30, alignItems: "flex-end" },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  chipText: { fontSize: R.type.metaSize, letterSpacing: R.type.metaTracking },
+  centerDock: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+  },
   startBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingHorizontal: 30,
+    paddingHorizontal: 34,
     paddingVertical: 16,
     borderRadius: 18,
     overflow: "hidden",
@@ -664,7 +690,6 @@ const st = StyleSheet.create({
     opacity: 0.28,
   },
   startLabel: { fontSize: 16, letterSpacing: 0.3 },
-  stopDock: { position: "absolute", left: 0, right: 0, alignItems: "center" },
   stopBtn: {
     width: 64,
     height: 64,
@@ -688,4 +713,24 @@ const st = StyleSheet.create({
   },
   countdownNum: { fontSize: 140, lineHeight: 150 },
   countdownHint: { fontSize: 12, marginTop: 8, letterSpacing: 2 },
+  infoOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
+    padding: 28,
+  },
+  infoCard: { borderRadius: 22, padding: 24, gap: 12 },
+  infoKicker: { fontSize: 11, letterSpacing: 1.4 },
+  infoTitle: { fontSize: 26, letterSpacing: 0.2, marginTop: -2 },
+  infoRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  infoMeta: { fontSize: 15 },
+  infoBody: { fontSize: 16, lineHeight: 25 },
+  infoClose: {
+    alignSelf: "flex-start",
+    marginTop: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 11,
+    borderRadius: 14,
+  },
+  infoCloseText: { fontSize: 12, letterSpacing: 1.2 },
 });

@@ -1021,7 +1021,9 @@ export default function LevelScreen() {
         ? lang === "ru" ? m.titleRu : m.titleEn
         : undefined;
     const category = lit ? literatureCategory(lit.kind) : m?.category;
-    return { fullText, author, workTitle, category };
+    const year = lit?.meta || undefined;
+    const about = lit?.teaser || undefined;
+    return { fullText, author, workTitle, category, year, about };
   })();
 
   const activeTask = activeTaskIndex !== null ? level.tasks[activeTaskIndex] : null;
@@ -1395,7 +1397,8 @@ export default function LevelScreen() {
           author={author}
           workTitle={workTitle}
           category={category}
-          moduleNumber={level.module}
+          year={readingMeta?.year}
+          about={readingMeta?.about}
           onBack={() => router.back()}
           onRecordingComplete={handleRecordingComplete}
           resetSignal={readingResetSignal}
