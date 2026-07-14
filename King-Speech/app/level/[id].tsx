@@ -1395,6 +1395,7 @@ export default function LevelScreen() {
           author={author}
           workTitle={workTitle}
           category={category}
+          moduleNumber={level.module}
           onBack={() => router.back()}
           onRecordingComplete={handleRecordingComplete}
           resetSignal={readingResetSignal}

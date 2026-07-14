@@ -6,32 +6,37 @@ import {
   StyleSheet,
   Platform,
   ScrollView,
+  type LayoutChangeEvent,
+  type TextLayoutLine,
 } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withRepeat,
   withTiming,
   withSpring,
-  withSequence,
+  withDelay,
+  withRepeat,
   cancelAnimation,
+  interpolate,
+  Easing,
   FadeIn,
   FadeOut,
+  FadeInDown,
 } from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import MicButton from "@/components/MicButton";
-import WaveformStrip from "@/components/WaveformStrip";
 import * as Haptics from "expo-haptics";
-import Colors from "@/constants/colors";
 import { useLang } from "@/context/LangContext";
-import { typography } from "@/theme/tokens";
+import { getRankForSection } from "@/context/GameContext";
+import { reading as R } from "@/theme/tokens";
+import ReadingText, { tokenizeReading } from "@/components/ReadingText";
+import { useReadingAlignment } from "@/hooks/useReadingAlignment";
+import type { AppColors } from "@/constants/colors";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
   Audio = require("expo-av").Audio;
 }
-
-import type { AppColors } from "@/constants/colors";
 
 type ReadingCategory = "prose" | "poetry" | "fable";
 
@@ -44,12 +49,6 @@ interface Props {
   title: string;
   subtitle: string;
   onBack: () => void;
-  /**
-   * Called when the reader finishes. `audioBase64` is the recorded audio
-   * encoded as base64 (no data: prefix); empty when the mic was blocked.
-   * `audioUri` is a directly playable URI (native file path, or a web
-   * object URL) so the self-review screen can play the take back.
-   */
   onRecordingComplete: (
     durationSeconds: number,
     audioBase64?: string,
@@ -59,17 +58,38 @@ interface Props {
   author?: string;
   workTitle?: string;
   category?: ReadingCategory;
+  /** Section/module number for the footer meta ("ЧТЕНИЕ · NN") + rank. */
+  moduleNumber?: number;
 }
 
 type Phase = "idle" | "countdown" | "recording" | "saving";
 
-function estimateLineDurations(lines: string[]): number[] {
-  return lines.map((line) => {
-    const trimmed = line.trim();
-    if (!trimmed) return 0.6;
-    const words = trimmed.split(/\s+/).length;
-    return Math.max(2.0, Math.min(7.0, words * 0.55));
-  });
+const BEZ = Easing.bezier(0.22, 1, 0.36, 1);
+const ROMAN = ["", "I", "II", "III", "IV", "V"];
+
+// Adaptive hero size: long titles step down instead of being clipped.
+function heroSizeFor(title: string): number {
+  const n = title.length;
+  if (n > 18) return R.type.heroSizeSm;
+  if (n > 12) return R.type.heroSizeMd;
+  return R.type.heroSizeLg;
+}
+
+// Rough luminance test so we pick the reading token theme without a new prop.
+function isDarkBg(hex: string): boolean {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return true;
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 255,
+    g = (n >> 8) & 255,
+    b = n & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.5;
+}
+
+// Count words on a laid-out line so we can map word index → line for autoscroll.
+const WORD_RE = /[\p{L}\p{N}]+(?:[’'\-][\p{L}\p{N}]+)*/gu;
+function wordsIn(text: string): number {
+  return (text.match(WORD_RE) ?? []).length;
 }
 
 export default function ReadingLevelView({
@@ -79,88 +99,128 @@ export default function ReadingLevelView({
   topPad,
   bottomPad,
   title,
-  subtitle,
   onBack,
   onRecordingComplete,
   resetSignal,
   author,
   workTitle,
   category = "poetry",
+  moduleNumber,
 }: Props) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
 
-  const isPoetry = category === "poetry";
+  const dark = isDarkBg(colors.background);
+  const theme = dark ? R.dark : R.light;
 
-  // Poetry uses karaoke (per-line). Prose/fable render as paragraphs split
-  // on blank lines — no per-line highlight, no past-line dimming.
-  const lines = useMemo(
-    () => fullText.split("\n").map((l) => l.trim()),
-    [fullText]
+  const displayTitle = workTitle ?? title;
+  const heroSize = heroSizeFor(displayTitle);
+  const heroLine = Math.round(heroSize * R.type.heroLineRatio);
+
+  // Author · genre kicker.
+  const genre =
+    category === "poetry"
+      ? lang === "ru"
+        ? "Поэзия"
+        : "Poetry"
+      : category === "fable"
+        ? lang === "ru"
+          ? "Басня"
+          : "Fable"
+        : lang === "ru"
+          ? "Проза"
+          : "Prose";
+  const kicker = [author, genre].filter(Boolean).join("  ·  ");
+
+  // Tokenize once — the karaoke canvas and word count both read from this.
+  const { tokens, wordCount } = useMemo(
+    () => tokenizeReading(fullText),
+    [fullText],
   );
-  const paragraphs = useMemo(
-    () =>
-      fullText
-        .split(/\n\s*\n/)
-        .map((p) => p.replace(/\s+/g, " ").trim())
-        .filter((p) => p.length > 0),
-    [fullText]
-  );
-  const durations = useMemo(() => estimateLineDurations(lines), [lines]);
-  const cumulative = useMemo(() => {
-    const arr: number[] = [];
-    let acc = 0;
-    for (const d of durations) {
-      acc += d;
-      arr.push(acc);
-    }
-    return arr;
-  }, [durations]);
-  const totalEstimate = cumulative[cumulative.length - 1] ?? 8;
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [countdown, setCountdown] = useState<number>(3);
-  const [elapsedMs, setElapsedMs] = useState<number>(0);
-  const [activeLine, setActiveLine] = useState<number>(-1);
-  // Live recording handles for the WaveformStrip visualization.
-  const [activeRecording, setActiveRecording] = useState<any | null>(null);
-  const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
+  const isRecording = phase === "recording";
+  const showCountdown = phase === "countdown";
 
+  // Word index comes from the speech pipeline (or dev mock) — never invented.
+  const { currentIndex } = useReadingAlignment({
+    expectedText: fullText,
+    active: isRecording,
+    locale: lang === "ru" ? "ru-RU" : "en-US",
+    resetSignal,
+  });
+
+  const progress = wordCount > 0 ? (currentIndex + 1) / wordCount : 0;
+
+  // ── Mirror Type Transition — one shared value per layer for the stagger ─────
+  const phaseP = useSharedValue(0); // hero title 1→caption
+  const authorP = useSharedValue(0);
+  const bodyP = useSharedValue(0); // preview 0.72 → reading 1
+  const quoteP = useSharedValue(0);
+  const btnP = useSharedValue(0); // start button 0 shown → 1 gone
+  const stopP = useSharedValue(0); // stop control 0 hidden → 1 shown
+  const heroH = useSharedValue(0); // measured hero title height
+
+  const enterReading = () => {
+    btnP.value = withTiming(1, { duration: 140, easing: BEZ });
+    phaseP.value = withDelay(40, withTiming(1, { duration: 520, easing: BEZ }));
+    authorP.value = withDelay(60, withTiming(1, { duration: 480, easing: BEZ }));
+    bodyP.value = withDelay(110, withTiming(1, { duration: 560, easing: BEZ }));
+    quoteP.value = withDelay(140, withTiming(1, { duration: 400, easing: BEZ }));
+    stopP.value = withDelay(
+      260,
+      withSpring(1, { damping: 14, stiffness: 140 }),
+    );
+  };
+  const exitReading = (instant = false) => {
+    if (instant) {
+      phaseP.value = 0;
+      authorP.value = 0;
+      bodyP.value = 0;
+      quoteP.value = 0;
+      btnP.value = 0;
+      stopP.value = 0;
+      return;
+    }
+    stopP.value = withTiming(0, { duration: 160, easing: BEZ });
+    quoteP.value = withTiming(0, { duration: 300, easing: BEZ });
+    bodyP.value = withTiming(0, { duration: 360, easing: BEZ });
+    authorP.value = withTiming(0, { duration: 360, easing: BEZ });
+    phaseP.value = withTiming(0, { duration: 380, easing: BEZ });
+    btnP.value = withDelay(120, withTiming(0, { duration: 220, easing: BEZ }));
+  };
+
+  // ── Recording engine (unchanged behavior) ──────────────────────────────────
   const recordingRef = useRef<any>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
-  // Captured audio for the analyzer. Web collects chunks → blob; native
-  // gets a file URI from expo-av.
   const audioChunksRef = useRef<Blob[]>([]);
   const audioBlobRef = useRef<Blob | null>(null);
   const audioUriRef = useRef<string | null>(null);
-  // Deterministic wait for MediaRecorder.onstop on web — see VoiceRecorder.
   const stopPromiseRef = useRef<Promise<void> | null>(null);
   const stopResolveRef = useRef<(() => void) | null>(null);
-  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTsRef = useRef<number>(0);
   const countdownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const scrollRef = useRef<ScrollView>(null);
-  const lineYRef = useRef<Record<number, number>>({});
-  // Bumped on unmount or reset so any in-flight countdown / async start aborts.
   const generationRef = useRef<number>(0);
 
-  const pulse = useSharedValue(1);
-  const micPress = useSharedValue(1);
-  // Entry highlight behind the work title + author so the player notices and
-  // memorizes them before reading. Pulses a couple of times on enter / reset.
   const heroGlow = useSharedValue(0);
+
+  // Autoscroll plumbing.
+  const scrollRef = useRef<ScrollView>(null);
+  const lineOffsetsRef = useRef<number[]>([]); // cumulative word count per line
+  const lineYRef = useRef<number[]>([]); // y of each line
+  const viewportHRef = useRef<number>(0);
+  const lastScrolledLineRef = useRef<number>(-1);
+  const canvasTopRef = useRef<number>(0);
 
   useEffect(() => {
     return () => {
       generationRef.current += 1;
-      if (tickRef.current) clearInterval(tickRef.current);
       if (countdownTimerRef.current) clearTimeout(countdownTimerRef.current);
-      cancelAnimation(pulse);
+      cancelAnimation(heroGlow);
       try {
         audioStreamRef.current?.getTracks().forEach((tr) => tr.stop());
       } catch {}
-      // Abort any in-flight native recording so the mic doesn't stay hot
-      // when the user navigates away mid-record.
       if (recordingRef.current) {
         try {
           recordingRef.current.stopAndUnloadAsync?.();
@@ -168,62 +228,36 @@ export default function ReadingLevelView({
         recordingRef.current = null;
       }
       try {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        if (
+          mediaRecorderRef.current &&
+          mediaRecorderRef.current.state !== "inactive"
+        ) {
           mediaRecorderRef.current.stop();
         }
       } catch {}
     };
   }, []);
 
+  // Reset on entry / resetSignal — settle the transition back to IDLE.
   useEffect(() => {
     generationRef.current += 1;
     setPhase("idle");
-    setElapsedMs(0);
-    setActiveLine(-1);
     setCountdown(3);
-    if (tickRef.current) clearInterval(tickRef.current);
     if (countdownTimerRef.current) clearTimeout(countdownTimerRef.current);
-    cancelAnimation(pulse);
-    pulse.value = 1;
-    // Re-trigger the title/author highlight on entry and on every reset.
+    exitReading(true);
+    lastScrolledLineRef.current = -1;
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
     cancelAnimation(heroGlow);
     heroGlow.value = 0;
-    // Pulse twice (4 reps, reversing) then settle back to 0 → a gentle, steady
-    // highlight pill stays behind the title/author so it remains memorable.
     heroGlow.value = withRepeat(withTiming(1, { duration: 850 }), 4, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetSignal]);
-
-  useEffect(() => {
-    if (phase !== "recording" || !isPoetry) return;
-    const elapsedSec = elapsedMs / 1000;
-    let idx = -1;
-    for (let i = 0; i < cumulative.length; i++) {
-      if (elapsedSec < cumulative[i]) {
-        idx = i;
-        break;
-      }
-    }
-    if (idx === -1) idx = lines.length - 1;
-    if (idx !== activeLine) {
-      setActiveLine(idx);
-      const y = lineYRef.current[idx];
-      if (typeof y === "number" && scrollRef.current) {
-        scrollRef.current.scrollTo({ y: Math.max(0, y - 80), animated: true });
-      }
-    }
-  }, [elapsedMs, phase, cumulative, lines.length, activeLine]);
 
   const beginRecording = async () => {
     setPhase("recording");
     startTsRef.current = Date.now();
-    setElapsedMs(0);
-    setActiveLine(isPoetry ? 0 : -1);
-    pulse.value = withRepeat(withTiming(1.12, { duration: 700 }), -1, true);
+    enterReading();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-
-    tickRef.current = setInterval(() => {
-      setElapsedMs(Date.now() - startTsRef.current);
-    }, 100);
 
     if (Platform.OS === "web") {
       try {
@@ -239,15 +273,16 @@ export default function ReadingLevelView({
           if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
         };
         mr.onstop = () => {
-          audioBlobRef.current = new Blob(audioChunksRef.current, { type: "audio/webm" });
+          audioBlobRef.current = new Blob(audioChunksRef.current, {
+            type: "audio/webm",
+          });
           stopResolveRef.current?.();
           stopResolveRef.current = null;
         };
         mr.start();
         mediaRecorderRef.current = mr;
-        setActiveStream(stream);
       } catch {
-        // Mic blocked — keep visual flow so user can still practice
+        // Mic blocked — keep the visual flow so the user can still practice.
       }
     } else {
       try {
@@ -266,7 +301,6 @@ export default function ReadingLevelView({
         };
         const { recording } = await Audio.Recording.createAsync(meteringOpts);
         recordingRef.current = recording;
-        setActiveRecording(recording);
       } catch {}
     }
   };
@@ -276,11 +310,7 @@ export default function ReadingLevelView({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setPhase("countdown");
     setCountdown(3);
-
-    // Snapshot the current generation; if it changes mid-countdown (unmount
-    // or reset), abort instead of starting the recording.
     const myGen = generationRef.current;
-
     const tick = (n: number) => {
       if (myGen !== generationRef.current) return;
       if (n === 0) {
@@ -296,23 +326,23 @@ export default function ReadingLevelView({
 
   const stopRecording = async () => {
     if (phase !== "recording") return;
-    cancelAnimation(pulse);
-    pulse.value = withSpring(1);
-    if (tickRef.current) {
-      clearInterval(tickRef.current);
-      tickRef.current = null;
-    }
+    exitReading();
     setPhase("saving");
-    const durationSec = Math.max(1, Math.round((Date.now() - startTsRef.current) / 1000));
+    const durationSec = Math.max(
+      1,
+      Math.round((Date.now() - startTsRef.current) / 1000),
+    );
 
     if (Platform.OS === "web") {
       try {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        if (
+          mediaRecorderRef.current &&
+          mediaRecorderRef.current.state !== "inactive"
+        ) {
           mediaRecorderRef.current.stop();
         }
         audioStreamRef.current?.getTracks().forEach((tr) => tr.stop());
       } catch {}
-      setActiveStream(null);
     } else {
       try {
         if (recordingRef.current) {
@@ -322,15 +352,10 @@ export default function ReadingLevelView({
         }
         await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
       } catch {}
-      setActiveRecording(null);
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-    // Wait deterministically for the web MediaRecorder.onstop to flush the
-    // blob (with a 1.5s safety cap), then read the audio into base64 for
-    // the analyzer. Errors are swallowed: the caller gets duration only and
-    // falls back to neutral scoring.
     if (Platform.OS === "web") {
       try {
         await Promise.race([
@@ -342,8 +367,6 @@ export default function ReadingLevelView({
     }
 
     let audioBase64: string | undefined;
-    // A directly playable URI for the self-review screen. On native it's the
-    // recorded file; on web we wrap the captured blob in an object URL.
     let playableUri: string | undefined;
     try {
       if (Platform.OS === "web") {
@@ -367,7 +390,9 @@ export default function ReadingLevelView({
         if (uri) {
           playableUri = uri;
           const FileSystem = require("expo-file-system/legacy");
-          audioBase64 = await FileSystem.readAsStringAsync(uri, { encoding: "base64" });
+          audioBase64 = await FileSystem.readAsStringAsync(uri, {
+            encoding: "base64",
+          });
         }
       }
     } catch (e) {
@@ -376,245 +401,320 @@ export default function ReadingLevelView({
     onRecordingComplete(durationSec, audioBase64, playableUri);
   };
 
-  const handleMicPress = () => {
-    micPress.value = withSequence(withSpring(0.9, { damping: 12 }), withSpring(1));
-    if (phase === "idle") startCountdown();
-    else if (phase === "recording") stopRecording();
+  // ── Autoscroll: keep the active line in the 35–50% comfort band ─────────────
+  const onCanvasTextLayout = (lines: TextLayoutLine[]) => {
+    const cum: number[] = [];
+    const ys: number[] = [];
+    let acc = 0;
+    for (const ln of lines) {
+      acc += wordsIn(ln.text);
+      cum.push(acc);
+      ys.push(ln.y);
+    }
+    lineOffsetsRef.current = cum;
+    lineYRef.current = ys;
   };
 
-  const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulse.value * micPress.value }],
+  useEffect(() => {
+    if (!isRecording || currentIndex < 0) return;
+    const cum = lineOffsetsRef.current;
+    if (cum.length === 0) return;
+    // First line whose cumulative word count exceeds the active word index.
+    let line = cum.findIndex((c) => currentIndex < c);
+    if (line === -1) line = cum.length - 1;
+    if (line === lastScrolledLineRef.current) return;
+    lastScrolledLineRef.current = line;
+    const y = lineYRef.current[line] ?? 0;
+    const vp = viewportHRef.current || 600;
+    const target = Math.max(0, canvasTopRef.current + y - vp * 0.42);
+    scrollRef.current?.scrollTo({ y: target, animated: true });
+  }, [currentIndex, isRecording]);
+
+  // ── Animated styles ─────────────────────────────────────────────────────────
+  const quoteStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(quoteP.value, [0, 1], [1, 0.42]),
+    transform: [{ scale: interpolate(quoteP.value, [0, 1], [1, 0.92]) }],
+  }));
+  const heroWrapStyle = useAnimatedStyle(() => ({
+    height:
+      heroH.value > 0
+        ? interpolate(
+            phaseP.value,
+            [0, 1],
+            [heroH.value, heroH.value * R.heroToCaptionScale],
+          )
+        : undefined,
+  }));
+  const titleStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(phaseP.value, [0, 1], [1, R.captionOpacity]),
+    transform: [
+      { scale: interpolate(phaseP.value, [0, 1], [1, R.heroToCaptionScale]) },
+    ],
+  }));
+  const authorStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      authorP.value,
+      [0, 1],
+      [R.type.kickerOpacity, R.type.metaOpacity],
+    ),
+  }));
+  const bodyStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(bodyP.value, [0, 1], [R.idleBodyOpacity, 1]),
+    transform: [
+      { scale: interpolate(bodyP.value, [0, 1], [R.idleBodyScale, 1]) },
+    ],
+  }));
+  const fadeMaskStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(bodyP.value, [0, 1], [1, 0]),
+  }));
+  const startBtnStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(btnP.value, [0, 1], [1, 0]),
+    transform: [
+      { scale: interpolate(btnP.value, [0, 1], [1, 0.9]) },
+      { translateY: interpolate(btnP.value, [0, 1], [0, 10]) },
+    ],
+  }));
+  const stopStyle = useAnimatedStyle(() => ({
+    opacity: stopP.value,
+    transform: [{ scale: interpolate(stopP.value, [0, 1], [0.9, 1]) }],
   }));
   const heroGlowStyle = useAnimatedStyle(() => ({
-    opacity: 0.16 + heroGlow.value * 0.4,
-    transform: [{ scaleX: 0.96 + heroGlow.value * 0.04 }],
+    opacity: interpolate(phaseP.value, [0, 1], [0.14 + heroGlow.value * 0.16, 0]),
   }));
 
-  const elapsedSec = Math.floor(elapsedMs / 1000);
-  const fmt = (s: number) =>
-    `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60)
-      .toString()
-      .padStart(2, "0")}`;
+  const filledSegs = Math.max(
+    0,
+    Math.min(6, Math.round(progress * 6)),
+  );
+  const crownLit = progress >= 0.999;
 
-  const isRecording = phase === "recording";
-  const showCountdown = phase === "countdown";
+  const rank = moduleNumber ? getRankForSection(moduleNumber) : null;
+  const rankLabel = rank ? `${lang === "ru" ? "Ранг" : "Rank"} ${ROMAN[rank.index] ?? rank.index}` : null;
+  const moduleLabel = `${lang === "ru" ? "Чтение" : "Reading"} · ${moduleNumber ? String(moduleNumber).padStart(2, "0") : "—"}`;
 
   return (
-    <View style={[s.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[s.header, { paddingTop: topPad + 8 }]}>
+    <View style={[st.container, { backgroundColor: colors.background }]}>
+      {/* Top row: swatch strip (left) + decorative quote glyph (right) */}
+      <View style={[st.topRow, { paddingTop: topPad + 10 }]}>
+        <Animated.View entering={FadeIn.delay(120).duration(400)} style={st.swatch}>
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <View
+              key={i}
+              style={[
+                st.seg,
+                { backgroundColor: i < filledSegs ? theme.seg.fill : theme.seg.empty },
+              ]}
+            />
+          ))}
+          <View
+            style={[
+              st.crown,
+              { backgroundColor: crownLit ? theme.seg.crown : theme.seg.empty },
+            ]}
+          >
+            <Ionicons
+              name="sparkles"
+              size={10}
+              color={crownLit ? (dark ? "#2A2003" : "#3A2C00") : theme.word.unread}
+            />
+          </View>
+        </Animated.View>
+
+        <Animated.Text
+          pointerEvents="none"
+          entering={FadeIn.duration(500)}
+          style={[st.quote, { color: theme.quote }, quoteStyle]}
+        >
+          {"”"}
+        </Animated.Text>
+
+        {/* Back — subtle, disabled while recording */}
         <Pressable
           onPress={onBack}
           disabled={isRecording || showCountdown}
-          style={({ pressed }) => [
-            s.backBtn,
-            { opacity: pressed ? 0.7 : isRecording || showCountdown ? 0.35 : 1 },
-          ]}
           hitSlop={12}
+          style={({ pressed }) => [
+            st.backBtn,
+            { opacity: pressed ? 0.6 : isRecording || showCountdown ? 0 : 0.7 },
+          ]}
         >
-          <Ionicons name="chevron-back" size={26} color={colors.text} />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
-        <View style={s.headerCenter}>
-          {author ? (
-            <Text
-              numberOfLines={1}
-              style={[
-                s.author,
-                {
-                  color: colors.textMuted,
-                  fontFamily: "Nunito_400Regular",
-                  fontStyle: "italic",
-                },
-              ]}
-            >
-              {author}
-            </Text>
-          ) : null}
-          <Text
-            numberOfLines={1}
-            style={[
-              s.workTitle,
-              {
-                color: colors.text,
-                fontFamily: "Rubik_700Bold",
-                letterSpacing: 0.3,
-              },
-            ]}
-          >
-            {workTitle ?? title}
-          </Text>
-        </View>
-        <View style={s.headerSide} />
       </View>
 
-      {/* Body — karaoke for poetry, paragraphs for prose/fable */}
+      {/* Scrollable stage */}
       <ScrollView
         ref={scrollRef}
-        style={s.textScroll}
-        contentContainerStyle={[s.textContent, { paddingBottom: 24 }]}
+        style={st.scroll}
+        contentContainerStyle={[st.scrollContent, { paddingBottom: bottomPad + 140 }]}
         showsVerticalScrollIndicator={false}
         scrollEnabled={!isRecording && !showCountdown}
+        onLayout={(e: LayoutChangeEvent) => {
+          viewportHRef.current = e.nativeEvent.layout.height;
+        }}
       >
-        {!isRecording && !showCountdown && (
-          <Animated.View entering={FadeIn.duration(450)} style={s.hero}>
-            <Animated.View
-              pointerEvents="none"
-              style={[s.heroGlow, { backgroundColor: accentColor }, heroGlowStyle]}
-            />
-            <Text
-              style={[s.heroKicker, { color: accentColor, fontFamily: "Nunito_700Bold" }]}
-            >
-              {t("memorizeWork").toUpperCase()}
-            </Text>
-            <Text
-              style={[s.heroTitle, { color: colors.text, fontFamily: "Rubik_700Bold" }]}
-            >
-              {workTitle ?? title}
-            </Text>
-            {author ? (
-              <Text
-                style={[s.heroAuthor, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}
-              >
-                {author}
-              </Text>
-            ) : null}
-          </Animated.View>
-        )}
-
-        {!isRecording && !showCountdown && (
-          <Text
-            style={[s.hint, { color: colors.textMuted, fontFamily: "Nunito_400Regular" }]}
+        {/* Hero title — shrinks to a caption in READING (origin left-top) */}
+        <Animated.View style={[st.heroWrap, heroWrapStyle]}>
+          <Animated.View
+            pointerEvents="none"
+            style={[st.heroGlow, { backgroundColor: accentColor }, heroGlowStyle]}
+          />
+          <Animated.View
+            entering={FadeInDown.delay(200).duration(480)}
+            onLayout={(e) => {
+              if (heroH.value === 0) heroH.value = e.nativeEvent.layout.height;
+            }}
+            style={[st.titleLayer, titleStyle]}
           >
-            {isPoetry ? t("readingHint") : t("readingPrepHint")}
-          </Text>
-        )}
+            <Text
+              style={{
+                fontFamily: R.type.heroFont,
+                fontSize: heroSize,
+                lineHeight: heroLine,
+                letterSpacing: R.type.heroTracking,
+                color: colors.text,
+              }}
+            >
+              {displayTitle}
+            </Text>
+          </Animated.View>
+        </Animated.View>
 
-        {isPoetry
-          ? lines.map((line, i) => {
-              const isEmpty = line.length === 0;
-              if (isEmpty) {
-                return <View key={i} style={{ height: 12 }} />;
-              }
-              const isActive = isRecording && i === activeLine;
-              const isPast = isRecording && i < activeLine;
-              const colorVal = isActive
-                ? accentColor
-                : isPast
-                ? colors.textMuted
-                : colors.text;
-              return (
-                <View
-                  key={i}
-                  onLayout={(e) => {
-                    lineYRef.current[i] = e.nativeEvent.layout.y;
-                  }}
-                  style={s.lineWrap}
-                >
-                  <Text
-                    style={[
-                      s.line,
-                      {
-                        color: colorVal,
-                        fontFamily: typography.reading.fontFamily,
-                        fontSize: isActive ? 20 : typography.reading.fontSize,
-                        lineHeight: typography.reading.lineHeight,
-                        opacity: isPast ? 0.45 : 1,
-                      },
-                    ]}
-                  >
-                    {line}
-                  </Text>
-                </View>
-              );
-            })
-          : paragraphs.map((para, i) => (
-              <Text
-                key={i}
-                style={[
-                  s.paragraph,
-                  {
-                    color: colors.text,
-                    fontFamily: typography.reading.fontFamily,
-                    fontSize: typography.reading.fontSize,
-                    lineHeight: typography.reading.lineHeight,
-                  },
-                ]}
-              >
-                {para}
-              </Text>
-            ))}
+        {/* Kicker → author caption */}
+        {kicker ? (
+          <Animated.Text
+            entering={FadeInDown.delay(260).duration(460)}
+            numberOfLines={1}
+            style={[
+              st.kicker,
+              {
+                fontFamily: R.type.kickerFont,
+                fontSize: R.type.kickerSize,
+                letterSpacing: R.type.kickerTracking,
+                color: colors.text,
+              },
+              authorStyle,
+            ]}
+          >
+            {kicker.toUpperCase()}
+          </Animated.Text>
+        ) : null}
+
+        {/* Body: dim preview → crisp reading canvas */}
+        <Animated.View
+          entering={FadeInDown.delay(320).duration(520)}
+          onLayout={(e) => {
+            canvasTopRef.current = e.nativeEvent.layout.y;
+          }}
+          style={[st.bodyWrap, bodyStyle]}
+        >
+          <ReadingText
+            tokens={tokens}
+            currentIndex={currentIndex}
+            colors={theme.word}
+            fontFamily={R.type.bodyFont}
+            fontSize={R.type.bodySize}
+            lineHeight={Math.round(R.type.bodySize * R.type.bodyLineRatio)}
+            onTextLayout={onCanvasTextLayout}
+          />
+        </Animated.View>
       </ScrollView>
 
-      {/* Bottom mic dock */}
-      <View style={[s.dock, { paddingBottom: bottomPad + 18, borderTopColor: colors.border }]}>
+      {/* Fade mask — hides the long text in IDLE, lifts as reading begins */}
+      <Animated.View pointerEvents="none" style={[st.fadeMask, fadeMaskStyle]}>
+        <LinearGradient
+          colors={["transparent", colors.background]}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+
+      {/* Footer meta */}
+      <View style={[st.footer, { bottom: bottomPad + 22 }]}>
         <Text
           style={[
-            s.timer,
+            st.meta,
+            { fontFamily: R.type.metaFont, fontSize: R.type.metaSize, letterSpacing: R.type.metaTracking, color: colors.text, opacity: R.type.metaOpacity },
+          ]}
+        >
+          {moduleLabel.toUpperCase()}
+        </Text>
+        {rankLabel ? (
+          <Text
+            style={[
+              st.meta,
+              { fontFamily: R.type.metaFont, fontSize: R.type.metaSize, letterSpacing: R.type.metaTracking, color: colors.text, opacity: R.type.metaOpacity },
+            ]}
+          >
+            {rankLabel.toUpperCase()}
+          </Text>
+        ) : null}
+      </View>
+
+      {/* Start button (IDLE) — an object, not a bar */}
+      <Animated.View
+        style={[st.btnDock, { bottom: bottomPad + 64 }, startBtnStyle]}
+        pointerEvents={isRecording || showCountdown ? "none" : "auto"}
+      >
+        <Pressable
+          onPress={startCountdown}
+          disabled={phase !== "idle"}
+          style={({ pressed }) => [st.startBtn, { transform: [{ scale: pressed ? 0.96 : 1 }] }]}
+        >
+          <View style={[st.startGlow, { backgroundColor: accentColor }]} />
+          <LinearGradient
+            colors={["#FFD84D", "#FF9E2C"]}
+            start={{ x: 0.1, y: 0 }}
+            end={{ x: 0.9, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          <Ionicons name="play" size={15} color="#2A2003" />
+          <Text style={[st.startLabel, { fontFamily: R.type.heroFont }]}>
+            {lang === "ru" ? "Читать" : "Read"}
+          </Text>
+        </Pressable>
+      </Animated.View>
+
+      {/* Stop control (READING) — a circle with a warm halo */}
+      <Animated.View
+        style={[st.stopDock, { bottom: bottomPad + 52 }, stopStyle]}
+        pointerEvents={isRecording ? "auto" : "none"}
+      >
+        <Pressable
+          onPress={stopRecording}
+          disabled={!isRecording}
+          style={({ pressed }) => [
+            st.stopBtn,
             {
-              color: isRecording ? accentColor : colors.textMuted,
-              fontFamily: "Nunito_700Bold",
+              backgroundColor: colors.backgroundSecondary,
+              transform: [{ scale: pressed ? 0.94 : 1 }],
             },
           ]}
         >
-          {fmt(elapsedSec)} {isRecording ? `· ~${fmt(Math.round(totalEstimate))}` : ""}
-        </Text>
-        {isRecording && (
-          <View style={{ width: "100%", paddingHorizontal: 16, marginBottom: 8 }}>
-            <WaveformStrip
-              isRecording={isRecording}
-              recording={activeRecording}
-              webStream={activeStream}
-              color={colors.alert}
-              height={48}
-            />
-          </View>
-        )}
-        <Animated.View style={pulseStyle}>
-          <MicButton
-            phase={isRecording ? "recording" : phase === "saving" ? "done" : "idle"}
-            onPress={handleMicPress}
-            disabled={phase === "countdown" || phase === "saving"}
-            size={96}
-            accentColor={accentColor}
-            recordingColor={colors.alert}
-          />
-        </Animated.View>
-        <Text
-          style={[s.micHint, { color: colors.textMuted, fontFamily: "Nunito_400Regular" }]}
-        >
-          {phase === "saving"
-            ? "..."
-            : isRecording
-            ? t("tapToStop")
-            : showCountdown
-            ? t("getReady")
-            : t("tapToRecord")}
-        </Text>
-      </View>
+          <View style={[st.stopHalo, { borderColor: theme.seg.crown }]} />
+          <View style={[st.stopSquare, { backgroundColor: theme.seg.crown }]} />
+        </Pressable>
+      </Animated.View>
 
       {/* Countdown overlay */}
       {showCountdown && (
         <Animated.View
           entering={FadeIn.duration(180)}
           exiting={FadeOut.duration(180)}
-          style={[s.overlay, { backgroundColor: colors.background + "F2" }]}
+          style={[st.overlay, { backgroundColor: colors.background + "F2" }]}
           pointerEvents="none"
         >
           <Animated.Text
             key={`cd-${countdown}`}
             entering={FadeIn.duration(200)}
             exiting={FadeOut.duration(200)}
-            style={[s.countdownNum, { color: accentColor, fontFamily: "Rubik_700Bold" }]}
+            style={[st.countdownNum, { color: colors.text, fontFamily: R.type.heroFont }]}
           >
             {countdown}
           </Animated.Text>
           <Text
-            style={[
-              s.countdownHint,
-              { color: colors.textMuted, fontFamily: "Nunito_400Regular" },
-            ]}
+            style={[st.countdownHint, { color: colors.textMuted, fontFamily: R.type.kickerFont }]}
           >
-            {t("getReady")}
+            {(lang === "ru" ? "Приготовься" : "Get ready").toUpperCase()}
           </Text>
         </Animated.View>
       )}
@@ -622,68 +722,112 @@ export default function ReadingLevelView({
   );
 }
 
-const s = StyleSheet.create({
+const st = StyleSheet.create({
   container: { flex: 1 },
-  header: {
+  topRow: {
     flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingBottom: 10,
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    paddingHorizontal: 30,
   },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  swatch: { flexDirection: "row", alignItems: "center", gap: 3 },
+  seg: { width: 24, height: 10, borderRadius: 3 },
+  crown: {
+    width: 16,
+    height: 16,
+    borderRadius: 4,
+    marginLeft: 3,
     alignItems: "center",
     justifyContent: "center",
   },
-  headerCenter: { flex: 1, alignItems: "center", paddingHorizontal: 8 },
-  headerSide: { width: 40 },
-  author: { fontSize: 11, marginBottom: 2, letterSpacing: 0.4, opacity: 0.85 },
-  workTitle: { fontSize: 17 },
-  textScroll: { flex: 1 },
-  textContent: { paddingHorizontal: 24, paddingTop: 18 },
-  hero: { alignItems: "center", marginBottom: 20, paddingVertical: 12 },
+  quote: {
+    position: "absolute",
+    right: 26,
+    top: 4,
+    fontSize: R.quoteSize,
+    lineHeight: R.quoteSize * 0.9,
+  },
+  backBtn: {
+    position: "absolute",
+    left: 22,
+    top: 46,
+    width: 34,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 30, paddingTop: 56 },
+  heroWrap: { justifyContent: "flex-start", overflow: "hidden" },
   heroGlow: {
     position: "absolute",
+    left: -10,
+    right: -10,
     top: 4,
-    left: 8,
-    right: 8,
     bottom: 4,
-    borderRadius: 22,
+    borderRadius: 26,
+    opacity: 0.14,
   },
-  heroKicker: { fontSize: 11, letterSpacing: 2, marginBottom: 10 },
-  heroTitle: { fontSize: 28, textAlign: "center", letterSpacing: 0.3, lineHeight: 34 },
-  heroAuthor: { fontSize: 16, fontStyle: "italic", marginTop: 8 },
-  hint: {
-    fontSize: 13,
-    textAlign: "center",
-    marginBottom: 18,
-    lineHeight: 18,
+  titleLayer: { transformOrigin: "left top" },
+  kicker: { marginTop: 20 },
+  bodyWrap: { marginTop: 34, transformOrigin: "left top" },
+  fadeMask: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 240,
   },
-  lineWrap: { paddingVertical: 4 },
-  line: { lineHeight: 30, textAlign: "center" },
-  paragraph: {
-    fontSize: 17,
-    lineHeight: 28,
-    textAlign: "left",
-    marginBottom: 16,
+  footer: {
+    position: "absolute",
+    left: 30,
+    right: 30,
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
-  dock: {
+  meta: {},
+  btnDock: { position: "absolute", right: 30, alignItems: "flex-end" },
+  startBtn: {
+    flexDirection: "row",
     alignItems: "center",
-    paddingTop: 14,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    gap: 10,
+    paddingHorizontal: 30,
+    paddingVertical: 16,
+    borderRadius: 18,
+    overflow: "hidden",
   },
-  timer: { fontSize: 14, marginBottom: 12, letterSpacing: 0.5 },
-  micHint: { fontSize: 13, marginTop: 12, letterSpacing: 0.3 },
+  startGlow: {
+    position: "absolute",
+    left: 6,
+    right: 6,
+    top: 10,
+    bottom: -8,
+    borderRadius: 20,
+    opacity: 0.28,
+  },
+  startLabel: { fontSize: 16, letterSpacing: 0.3, color: "#2A2003" },
+  stopDock: { position: "absolute", left: 0, right: 0, alignItems: "center" },
+  stopBtn: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stopHalo: {
+    position: "absolute",
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 1,
+    opacity: 0.4,
+  },
+  stopSquare: { width: 20, height: 20, borderRadius: 5 },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
   },
-  countdownNum: {
-    fontSize: 140,
-    lineHeight: 150,
-  },
-  countdownHint: { fontSize: 16, marginTop: 8, letterSpacing: 1 },
+  countdownNum: { fontSize: 140, lineHeight: 150 },
+  countdownHint: { fontSize: 12, marginTop: 8, letterSpacing: 2 },
 });
