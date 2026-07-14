@@ -515,7 +515,7 @@ export default function ReadingLevelView({
             <Ionicons
               name="sparkles"
               size={10}
-              color={crownLit ? (dark ? "#2A2003" : "#3A2C00") : theme.word.unread}
+              color={crownLit ? theme.seg.crownOn : theme.word.unread}
             />
           </View>
         </Animated.View>
@@ -662,13 +662,13 @@ export default function ReadingLevelView({
         >
           <View style={[st.startGlow, { backgroundColor: accentColor }]} />
           <LinearGradient
-            colors={["#FFD84D", "#FF9E2C"]}
+            colors={[R.button.from, R.button.to]}
             start={{ x: 0.1, y: 0 }}
             end={{ x: 0.9, y: 1 }}
             style={StyleSheet.absoluteFill}
           />
-          <Ionicons name="play" size={15} color="#2A2003" />
-          <Text style={[st.startLabel, { fontFamily: R.type.heroFont }]}>
+          <Ionicons name="play" size={15} color={R.button.on} />
+          <Text style={[st.startLabel, { fontFamily: R.type.heroFont, color: R.button.on }]}>
             {lang === "ru" ? "Читать" : "Read"}
           </Text>
         </Pressable>
@@ -805,7 +805,7 @@ const st = StyleSheet.create({
     borderRadius: 20,
     opacity: 0.28,
   },
-  startLabel: { fontSize: 16, letterSpacing: 0.3, color: "#2A2003" },
+  startLabel: { fontSize: 16, letterSpacing: 0.3 },
   stopDock: { position: "absolute", left: 0, right: 0, alignItems: "center" },
   stopBtn: {
     width: 64,

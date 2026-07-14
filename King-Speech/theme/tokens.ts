@@ -150,6 +150,12 @@ export const reading = {
   captionOpacity: 0.5,
   // Decorative quote glyph size (relative to screen width handled in-component).
   quoteSize: 96,
+  // Start CTA — the one warm gold object on the IDLE screen.
+  button: {
+    from: "#FFD84D",
+    to: "#FF9E2C",
+    on: "#2A2003", // text/icon on the gold fill — never pure black
+  },
   dark: {
     quote: "rgba(245,245,247,0.12)",
     quoteReading: "rgba(245,245,247,0.05)",
@@ -162,6 +168,7 @@ export const reading = {
       empty: "#2A2A2E",
       fill: "#F2F2F5",
       crown: "#FFCF34", // the one gold on the screen, only at 100%
+      crownOn: "#2A2003",
     },
   },
   light: {
@@ -176,6 +183,7 @@ export const reading = {
       empty: "rgba(20,20,22,0.10)",
       fill: "#1A1A1A",
       crown: "#FFCF34",
+      crownOn: "#3A2C00",
     },
   },
 } as const;
