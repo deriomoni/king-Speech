@@ -104,6 +104,82 @@ export const typography = {
   reading: { fontFamily: "Literata_400Regular", fontSize: 18, lineHeight: 30 },
 } as const;
 
+// ───────────────────────────────────────────────────────────────────────────
+// Reading level — "Обложка → Полотно". One screen, two states (IDLE / READING)
+// that mirror their hierarchy: the work title is the hero in IDLE and shrinks
+// to a caption in READING, while the body preview grows from a dim thumbnail
+// into the crisp reading canvas.
+//
+// The karaoke palette is drawn straight from the reference swatch strip (a
+// gradient of greys): an unread word sits back in shadow, a read word is lit,
+// and the active word is the single brightest point of light travelling across
+// the text — "накопление света", not a highlight pill. Gold appears exactly
+// ONCE on the whole screen: the crown segment of the progress strip at 100%.
+// ───────────────────────────────────────────────────────────────────────────
+export const reading = {
+  type: {
+    // IDLE hero (work title). The component picks the size adaptively
+    // (lg → md → sm as the title gets longer); lineHeight = size * heroLineRatio.
+    heroFont: "Rubik_800ExtraBold",
+    heroSizeLg: 52,
+    heroSizeMd: 46,
+    heroSizeSm: 40,
+    heroLineRatio: 0.95,
+    heroTracking: -1.2,
+    // Kicker — the "АВТОР · ЖАНР" line under the hero.
+    kickerFont: "Rubik_700Bold",
+    kickerSize: 11,
+    kickerTracking: 1.6,
+    kickerOpacity: 0.55,
+    // Reading body (the "полотно"). Rendered at its FINAL reading size and
+    // scaled down in IDLE, so the READING end-state is pixel-crisp.
+    bodyFont: "Literata_400Regular",
+    bodySize: 23,
+    bodyLineRatio: 1.55,
+    // Footer meta ("ЧТЕНИЕ · 04" / "РАНГ II").
+    metaFont: "Rubik_700Bold",
+    metaSize: 10,
+    metaTracking: 1.2,
+    metaOpacity: 0.35,
+  },
+  // Body preview transform in IDLE (dim thumbnail that grows to 1 in READING).
+  idleBodyScale: 0.72,
+  idleBodyOpacity: 0.32,
+  // Hero title shrinks to this scale when it becomes the READING caption.
+  heroToCaptionScale: 0.38,
+  captionOpacity: 0.5,
+  // Decorative quote glyph size (relative to screen width handled in-component).
+  quoteSize: 96,
+  dark: {
+    quote: "rgba(245,245,247,0.12)",
+    quoteReading: "rgba(245,245,247,0.05)",
+    word: {
+      unread: "#6E6E78", // ahead — in shadow
+      read: "#C9C9D1", // behind — lit and settled
+      active: "#F7F3EA", // the moving spark — warm brightest white
+    },
+    seg: {
+      empty: "#2A2A2E",
+      fill: "#F2F2F5",
+      crown: "#FFCF34", // the one gold on the screen, only at 100%
+    },
+  },
+  light: {
+    quote: "rgba(20,20,22,0.12)",
+    quoteReading: "rgba(20,20,22,0.05)",
+    word: {
+      unread: "#A8A8A2",
+      read: "#4A4A44",
+      active: "#141414",
+    },
+    seg: {
+      empty: "rgba(20,20,22,0.10)",
+      fill: "#1A1A1A",
+      crown: "#FFCF34",
+    },
+  },
+} as const;
+
 /** Ordered level hues for MODULE_PALETTE cycling (12 entries). */
 export const LEVEL_PALETTE_ORDER = [
   colors.level.coral,

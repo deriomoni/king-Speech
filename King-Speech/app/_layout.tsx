@@ -41,6 +41,7 @@ import {
   Rubik_500Medium,
   Rubik_600SemiBold,
   Rubik_700Bold,
+  Rubik_800ExtraBold,
 } from "@expo-google-fonts/rubik";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
@@ -300,6 +301,7 @@ export default function RootLayout() {
     Rubik_500Medium,
     Rubik_600SemiBold,
     Rubik_700Bold,
+    Rubik_800ExtraBold,
   });
 
   const fontsReady = fontsLoaded || !!fontError;
