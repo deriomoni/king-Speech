@@ -3,6 +3,7 @@ import {
   splitReadingWords,
   normalizeReadingWord,
   computeAlignmentIndex,
+  readingLines,
 } from '../core/text/reading';
 
 describe('tokenizeReading', () => {
@@ -40,6 +41,38 @@ describe('tokenizeReading', () => {
       'кто-то',
       'о’кей',
     ]);
+  });
+
+  it('assigns line indices that increment across newlines', () => {
+    const { tokens } = tokenizeReading('На берегу\nстоял он\nи вдаль');
+    const words = tokens.filter((t) => t.isWord);
+    // line 0: На берегу | line 1: стоял он | line 2: и вдаль
+    expect(words.map((w) => w.lineIndex)).toEqual([0, 0, 1, 1, 2, 2]);
+  });
+
+  it('counts blank lines so a stanza break bumps the line index', () => {
+    const { tokens } = tokenizeReading('раз\n\nдва');
+    const words = tokens.filter((t) => t.isWord);
+    expect(words[0].lineIndex).toBe(0);
+    expect(words[1].lineIndex).toBe(2); // blank line in between
+  });
+});
+
+describe('readingLines', () => {
+  it('returns non-empty lines with word counts + first word index', () => {
+    const { tokens } = tokenizeReading('На берегу пустынных\nстоял он');
+    const ls = readingLines(tokens);
+    expect(ls).toEqual([
+      { line: 0, wordCount: 3, firstWordIndex: 0 },
+      { line: 1, wordCount: 2, firstWordIndex: 3 },
+    ]);
+  });
+
+  it('skips blank lines entirely', () => {
+    const { tokens } = tokenizeReading('раз\n\nдва три');
+    const ls = readingLines(tokens);
+    expect(ls.map((l) => l.line)).toEqual([0, 2]);
+    expect(ls[1].wordCount).toBe(2);
   });
 });
 

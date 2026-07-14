@@ -144,7 +144,7 @@ export const reading = {
   },
   // Body preview transform in IDLE (dim thumbnail that grows to 1 in READING).
   idleBodyScale: 0.72,
-  idleBodyOpacity: 0.32,
+  idleBodyOpacity: 0.384, // +20% brighter than the original 0.32 preview
   // Hero title shrinks to this scale when it becomes the READING caption.
   heroToCaptionScale: 0.38,
   captionOpacity: 0.5,

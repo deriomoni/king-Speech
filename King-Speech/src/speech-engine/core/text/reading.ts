@@ -15,6 +15,8 @@ export interface ReadingToken {
    * first word.
    */
   wordIndex: number;
+  /** 0-based source line (increments after each newline) — drives per-line highlight. */
+  lineIndex: number;
 }
 
 export interface TokenizeResult {
@@ -28,21 +30,36 @@ export interface TokenizeResult {
 // is preserved verbatim so the text reproduces exactly.
 const WORD_RE = /[\p{L}\p{N}]+(?:[’'\-][\p{L}\p{N}]+)*/gu;
 
+function countNewlines(s: string): number {
+  let n = 0;
+  for (let i = 0; i < s.length; i++) if (s[i] === "\n") n++;
+  return n;
+}
+
 export function tokenizeReading(text: string): TokenizeResult {
   const tokens: ReadingToken[] = [];
   let lastIndex = 0;
   let wordOrdinal = 0;
+  let line = 0;
   let match: RegExpExecArray | null;
   WORD_RE.lastIndex = 0;
   while ((match = WORD_RE.exec(text)) !== null) {
     if (match.index > lastIndex) {
+      const gap = text.slice(lastIndex, match.index);
       tokens.push({
-        text: text.slice(lastIndex, match.index),
+        text: gap,
         isWord: false,
         wordIndex: wordOrdinal - 1,
+        lineIndex: line,
       });
+      line += countNewlines(gap);
     }
-    tokens.push({ text: match[0], isWord: true, wordIndex: wordOrdinal });
+    tokens.push({
+      text: match[0],
+      isWord: true,
+      wordIndex: wordOrdinal,
+      lineIndex: line,
+    });
     wordOrdinal += 1;
     lastIndex = match.index + match[0].length;
   }
@@ -51,9 +68,33 @@ export function tokenizeReading(text: string): TokenizeResult {
       text: text.slice(lastIndex),
       isWord: false,
       wordIndex: wordOrdinal - 1,
+      lineIndex: line,
     });
   }
   return { tokens, wordCount: wordOrdinal };
+}
+
+export interface ReadingLine {
+  /** Source line index (matches token.lineIndex). */
+  line: number;
+  /** How many words are on this line (drives the reading pace). */
+  wordCount: number;
+  /** Index of the line's first word (for autoscroll mapping). */
+  firstWordIndex: number;
+}
+
+/** Ordered non-empty source lines with their word counts. */
+export function readingLines(tokens: readonly ReadingToken[]): ReadingLine[] {
+  const map = new Map<number, { wordCount: number; firstWordIndex: number }>();
+  for (const tk of tokens) {
+    if (!tk.isWord) continue;
+    const e = map.get(tk.lineIndex);
+    if (e) e.wordCount += 1;
+    else map.set(tk.lineIndex, { wordCount: 1, firstWordIndex: tk.wordIndex });
+  }
+  return [...map.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([line, e]) => ({ line, wordCount: e.wordCount, firstWordIndex: e.firstWordIndex }));
 }
 
 /** Normalize a word for alignment: lowercase, strip punctuation, ё→е. */

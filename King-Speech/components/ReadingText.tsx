@@ -8,15 +8,15 @@ export { tokenizeReading } from "@/src/speech-engine/core/text/reading";
 // ─────────────────────────────────────────────────────────────────────────────
 // ReadingText — the karaoke "полотно".
 //
-// The ONLY thing that changes on a word is its COLOR. No pill, no border, no
-// weight/size change (those shift metrics and make the text "breathe"). Words
-// light up as they are read: ahead = shadow, behind = lit, the current word is
-// the single brightest spark travelling across the text.
+// The ONLY thing that changes is COLOR. No pill, no border, no weight/size
+// change (those shift metrics and make the text "breathe"). The CURRENT LINE
+// lights up as a whole — the reader has time to read the full line — while the
+// rest of the poem stays one calm readable tone.
 //
 // Rendering is one flat <Text> with nested <Text> per token so the natural line
 // wrapping of prose/poetry is preserved (a View+flexWrap would break it). Each
-// word span is React.memo'd on (text, color), so advancing the index only
-// repaints the 2–3 spans whose status actually changed — silent on 300+ words.
+// span is React.memo'd on (text, color), so advancing the line only repaints
+// the spans whose line-status actually changed — silent on long poems.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface WordColors {
@@ -37,8 +37,8 @@ const Span = React.memo(function Span({ text, color }: SpanProps) {
 
 interface Props {
   tokens: ReadingToken[];
-  /** Index of the word currently being read. -1 = nothing lit yet (idle). */
-  currentIndex: number;
+  /** Source line currently being read. -1 = nothing lit yet (idle). */
+  activeLine: number;
   colors: WordColors;
   fontFamily: string;
   fontSize: number;
@@ -46,14 +46,14 @@ interface Props {
   /** Cap line length (≤ ~60 chars) — set by the screen, not stretched full width. */
   maxWidth?: number;
   /** Fired with the reference line array whenever text layout changes, so the
-   *  screen can map the active word → a scroll offset for autoscroll. */
+   *  screen can map the active line → a scroll offset for autoscroll. */
   onTextLayout?: (lines: TextLayoutLine[]) => void;
   align?: "left" | "center";
 }
 
 function ReadingTextInner({
   tokens,
-  currentIndex,
+  activeLine,
   colors,
   fontFamily,
   fontSize,
@@ -62,12 +62,8 @@ function ReadingTextInner({
   onTextLayout,
   align = "left",
 }: Props) {
-  const colorFor = (wordIndex: number): string => {
-    if (wordIndex < 0) return colors.unread;
-    if (wordIndex < currentIndex) return colors.read;
-    if (wordIndex === currentIndex) return colors.active;
-    return colors.unread;
-  };
+  const colorFor = (lineIndex: number): string =>
+    lineIndex === activeLine ? colors.active : colors.unread;
 
   return (
     <Text
@@ -83,7 +79,7 @@ function ReadingTextInner({
       }}
     >
       {tokens.map((tk, i) => (
-        <Span key={i} text={tk.text} color={colorFor(tk.wordIndex)} />
+        <Span key={i} text={tk.text} color={colorFor(tk.lineIndex)} />
       ))}
     </Text>
   );
