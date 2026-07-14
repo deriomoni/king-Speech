@@ -191,11 +191,27 @@ export default function ReadingLevelView({
   const viewportHRef = useRef<number>(0);
   const lastScrolledLineRef = useRef<number>(-1);
   const canvasTopRef = useRef<number>(0);
+  // While the reader scrolls by hand, pause autoscroll so it doesn't fight them;
+  // it resumes a few seconds after they let go.
+  const autoscrollPausedRef = useRef(false);
+  const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const onUserScrollStart = () => {
+    autoscrollPausedRef.current = true;
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+  };
+  const onUserScrollEnd = () => {
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    resumeTimerRef.current = setTimeout(() => {
+      autoscrollPausedRef.current = false;
+    }, 3500);
+  };
 
   useEffect(() => {
     return () => {
       generationRef.current += 1;
       if (countdownTimerRef.current) clearTimeout(countdownTimerRef.current);
+      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
       cancel();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -296,7 +312,7 @@ export default function ReadingLevelView({
   };
 
   useEffect(() => {
-    if (!isRecording || activeK < 0) return;
+    if (!isRecording || activeK < 0 || autoscrollPausedRef.current) return;
     const firstWord = lines[activeK]?.firstWordIndex ?? 0;
     const cum = lineOffsetsRef.current;
     if (cum.length === 0) return;
@@ -360,7 +376,10 @@ export default function ReadingLevelView({
           { paddingTop: topPad + 52, paddingBottom: bottomPad + 150 },
         ]}
         showsVerticalScrollIndicator={false}
-        scrollEnabled={!busy}
+        scrollEnabled={!showCountdown}
+        onScrollBeginDrag={onUserScrollStart}
+        onScrollEndDrag={onUserScrollEnd}
+        onMomentumScrollEnd={onUserScrollEnd}
         onLayout={(e: LayoutChangeEvent) => {
           viewportHRef.current = e.nativeEvent.layout.height;
         }}

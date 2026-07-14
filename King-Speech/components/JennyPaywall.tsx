@@ -35,7 +35,7 @@ const COPY: Record<Lang, {
   ru: {
     badge: "PREMIUM",
     title: "Интервью с Дженни",
-    subtitle: "Живой разговор с ИИ-интервьюером, который слушает и отвечает голосом.",
+    subtitle: "Живой разговор с интервьюером, который слушает и отвечает голосом.",
     benefits: [
       { icon: "mic", title: "Живой голос", desc: "Дженни говорит как человек, а не робот" },
       { icon: "sparkles", title: "Умные вопросы", desc: "Настоящая беседа — она слышит твои ответы" },
@@ -49,7 +49,7 @@ const COPY: Record<Lang, {
   en: {
     badge: "PREMIUM",
     title: "Interview with Jenny",
-    subtitle: "A living conversation with an AI interviewer who listens and replies with a real voice.",
+    subtitle: "A living conversation with an interviewer who listens and replies with a real voice.",
     benefits: [
       { icon: "mic", title: "Human voice", desc: "Jenny speaks like a person, not a robot" },
       { icon: "sparkles", title: "Smart questions", desc: "A real dialogue — she hears your answers" },

@@ -224,7 +224,7 @@ export default function RoleResultScreen() {
     return (
       <View style={[styles.root, { alignItems: "center", justifyContent: "center" }]}>
         <Text style={styles.title}>{lang === "en" ? "Nothing to show" : "Нечего показать"}</Text>
-        <Pressable onPress={() => router.replace("/roles")} style={styles.secondaryBtn}>
+        <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/roles"))} style={styles.secondaryBtn}>
           <Text style={styles.secondaryBtnText}>{lang === "en" ? "Back to roles" : "К ролям"}</Text>
         </Pressable>
       </View>
@@ -238,7 +238,7 @@ export default function RoleResultScreen() {
     <View style={styles.root}>
       <LinearGradient colors={[BG2, BG]} style={StyleSheet.absoluteFill} />
       <ScrollView contentContainerStyle={{ padding: 20, paddingTop: topPad, paddingBottom: bottomPad }} showsVerticalScrollIndicator={false}>
-        <Pressable onPress={() => router.replace("/roles")} hitSlop={12} style={styles.closeBtn}>
+        <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/roles"))} hitSlop={12} style={styles.closeBtn}>
           <Ionicons name="close" size={24} color={TEXT} />
         </Pressable>
 
@@ -307,7 +307,7 @@ export default function RoleResultScreen() {
             >
               <LinearGradient colors={["#7AF0FF", "#4DA3FF"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
               <Ionicons name="sparkles" size={20} color="#08243A" />
-              <Text style={styles.primaryBtnText}>{lang === "en" ? "Get AI feedback" : "Оценка ИИ"}</Text>
+              <Text style={styles.primaryBtnText}>{lang === "en" ? "Get feedback" : "Оценить"}</Text>
             </Pressable>
           </Animated.View>
         )}
@@ -345,6 +345,14 @@ export default function RoleResultScreen() {
               ))}
             </View>
 
+            {/* Self-rating recap — reflect the user's own assessment back so the
+                input they gave before analysis isn't silently discarded. */}
+            {selfStars > 0 && (
+              <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, textAlign: "center", marginTop: 4 }}>
+                {lang === "en" ? `Your self-rating: ${selfStars}/5` : `Твоя самооценка: ${selfStars}/5`}
+              </Text>
+            )}
+
             {/* Metrics */}
             <View style={styles.block}>
               {METRIC_ORDER.map((key, i) => {
@@ -365,13 +373,13 @@ export default function RoleResultScreen() {
               )}
               {score.aiUnavailable && (
                 <Text style={styles.aiNote}>
-                  {lang === "en" ? "AI scoring is offline right now — this is a quick estimate." : "Оценка ИИ сейчас недоступна — это быстрая прикидка."}
+                  {lang === "en" ? "Scoring is offline right now — this is a quick estimate." : "Оценка сейчас недоступна — это быстрая прикидка."}
                 </Text>
               )}
             </View>
 
             {/* Actions */}
-            <Pressable onPress={() => router.replace("/roles")} style={({ pressed }) => [styles.primaryBtn, { opacity: pressed ? 0.9 : 1 }]}>
+            <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/roles"))} style={({ pressed }) => [styles.primaryBtn, { opacity: pressed ? 0.9 : 1 }]}>
               <LinearGradient colors={["#FF7AC4", "#8E5BFF"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
               <Ionicons name="repeat" size={20} color="#fff" />
               <Text style={[styles.primaryBtnText, { color: "#fff" }]}>{lang === "en" ? "Play another role" : "Ещё роль"}</Text>
