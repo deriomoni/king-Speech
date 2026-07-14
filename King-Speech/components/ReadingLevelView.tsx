@@ -4,7 +4,6 @@ import {
   Text,
   Pressable,
   StyleSheet,
-  Platform,
   ScrollView,
   type LayoutChangeEvent,
   type TextLayoutLine,
@@ -30,13 +29,8 @@ import { useLang } from "@/context/LangContext";
 import { getRankForSection } from "@/context/GameContext";
 import { reading as R } from "@/theme/tokens";
 import ReadingText, { tokenizeReading } from "@/components/ReadingText";
-import { useReadingAlignment } from "@/hooks/useReadingAlignment";
+import { useReadingCapture } from "@/hooks/useReadingCapture";
 import type { AppColors } from "@/constants/colors";
-
-let Audio: any = null;
-if (Platform.OS !== "web") {
-  Audio = require("expo-av").Audio;
-}
 
 type ReadingCategory = "prose" | "poetry" | "fable";
 
@@ -142,12 +136,11 @@ export default function ReadingLevelView({
   const isRecording = phase === "recording";
   const showCountdown = phase === "countdown";
 
-  // Word index comes from the speech pipeline (or dev mock) — never invented.
-  const { currentIndex } = useReadingAlignment({
+  // Single audio source: one capture that both drives the karaoke word index
+  // (live STT, or a dev mock) and yields the recorded audio for scoring.
+  const { currentIndex, begin, finish, cancel, reset } = useReadingCapture({
     expectedText: fullText,
-    active: isRecording,
     locale: lang === "ru" ? "ru-RU" : "en-US",
-    resetSignal,
   });
 
   const progress = wordCount > 0 ? (currentIndex + 1) / wordCount : 0;
@@ -190,16 +183,7 @@ export default function ReadingLevelView({
     btnP.value = withDelay(120, withTiming(0, { duration: 220, easing: BEZ }));
   };
 
-  // ── Recording engine (unchanged behavior) ──────────────────────────────────
-  const recordingRef = useRef<any>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioStreamRef = useRef<MediaStream | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const audioBlobRef = useRef<Blob | null>(null);
-  const audioUriRef = useRef<string | null>(null);
-  const stopPromiseRef = useRef<Promise<void> | null>(null);
-  const stopResolveRef = useRef<(() => void) | null>(null);
-  const startTsRef = useRef<number>(0);
+  // ── Countdown / lifecycle ───────────────────────────────────────────────────
   const countdownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const generationRef = useRef<number>(0);
 
@@ -218,24 +202,9 @@ export default function ReadingLevelView({
       generationRef.current += 1;
       if (countdownTimerRef.current) clearTimeout(countdownTimerRef.current);
       cancelAnimation(heroGlow);
-      try {
-        audioStreamRef.current?.getTracks().forEach((tr) => tr.stop());
-      } catch {}
-      if (recordingRef.current) {
-        try {
-          recordingRef.current.stopAndUnloadAsync?.();
-        } catch {}
-        recordingRef.current = null;
-      }
-      try {
-        if (
-          mediaRecorderRef.current &&
-          mediaRecorderRef.current.state !== "inactive"
-        ) {
-          mediaRecorderRef.current.stop();
-        }
-      } catch {}
+      cancel();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Reset on entry / resetSignal — settle the transition back to IDLE.
@@ -244,6 +213,8 @@ export default function ReadingLevelView({
     setPhase("idle");
     setCountdown(3);
     if (countdownTimerRef.current) clearTimeout(countdownTimerRef.current);
+    cancel();
+    reset();
     exitReading(true);
     lastScrolledLineRef.current = -1;
     scrollRef.current?.scrollTo({ y: 0, animated: false });
@@ -255,54 +226,9 @@ export default function ReadingLevelView({
 
   const beginRecording = async () => {
     setPhase("recording");
-    startTsRef.current = Date.now();
     enterReading();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-
-    if (Platform.OS === "web") {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        audioStreamRef.current = stream;
-        const mr = new MediaRecorder(stream);
-        audioChunksRef.current = [];
-        audioBlobRef.current = null;
-        stopPromiseRef.current = new Promise<void>((resolve) => {
-          stopResolveRef.current = resolve;
-        });
-        mr.ondataavailable = (e) => {
-          if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
-        };
-        mr.onstop = () => {
-          audioBlobRef.current = new Blob(audioChunksRef.current, {
-            type: "audio/webm",
-          });
-          stopResolveRef.current?.();
-          stopResolveRef.current = null;
-        };
-        mr.start();
-        mediaRecorderRef.current = mr;
-      } catch {
-        // Mic blocked — keep the visual flow so the user can still practice.
-      }
-    } else {
-      try {
-        await Audio.requestPermissionsAsync();
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
-        });
-        const baseOpts = Audio.RecordingOptionsPresets.HIGH_QUALITY;
-        const meteringOpts = {
-          ...baseOpts,
-          isMeteringEnabled: true,
-          ios: { ...(baseOpts.ios ?? {}), meteringEnabled: true },
-          android: { ...(baseOpts.android ?? {}) },
-          web: { ...(baseOpts.web ?? {}) },
-        };
-        const { recording } = await Audio.Recording.createAsync(meteringOpts);
-        recordingRef.current = recording;
-      } catch {}
-    }
+    await begin();
   };
 
   const startCountdown = () => {
@@ -328,77 +254,9 @@ export default function ReadingLevelView({
     if (phase !== "recording") return;
     exitReading();
     setPhase("saving");
-    const durationSec = Math.max(
-      1,
-      Math.round((Date.now() - startTsRef.current) / 1000),
-    );
-
-    if (Platform.OS === "web") {
-      try {
-        if (
-          mediaRecorderRef.current &&
-          mediaRecorderRef.current.state !== "inactive"
-        ) {
-          mediaRecorderRef.current.stop();
-        }
-        audioStreamRef.current?.getTracks().forEach((tr) => tr.stop());
-      } catch {}
-    } else {
-      try {
-        if (recordingRef.current) {
-          await recordingRef.current.stopAndUnloadAsync();
-          audioUriRef.current = recordingRef.current.getURI?.() ?? null;
-          recordingRef.current = null;
-        }
-        await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
-      } catch {}
-    }
-
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-    if (Platform.OS === "web") {
-      try {
-        await Promise.race([
-          stopPromiseRef.current ?? Promise.resolve(),
-          new Promise<void>((resolve) => setTimeout(resolve, 1500)),
-        ]);
-      } catch {}
-      stopPromiseRef.current = null;
-    }
-
-    let audioBase64: string | undefined;
-    let playableUri: string | undefined;
-    try {
-      if (Platform.OS === "web") {
-        const blob = audioBlobRef.current;
-        if (blob) {
-          try {
-            playableUri = URL.createObjectURL(blob);
-          } catch {}
-          audioBase64 = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-              const result = reader.result as string;
-              resolve(result.split(",")[1] ?? "");
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-        }
-      } else {
-        const uri = audioUriRef.current;
-        if (uri) {
-          playableUri = uri;
-          const FileSystem = require("expo-file-system/legacy");
-          audioBase64 = await FileSystem.readAsStringAsync(uri, {
-            encoding: "base64",
-          });
-        }
-      }
-    } catch (e) {
-      console.warn("ReadingLevelView: could not read audio", e);
-    }
-    onRecordingComplete(durationSec, audioBase64, playableUri);
+    const { durationSec, audioBase64, audioUri } = await finish();
+    onRecordingComplete(durationSec, audioBase64, audioUri);
   };
 
   // ── Autoscroll: keep the active line in the 35–50% comfort band ─────────────
