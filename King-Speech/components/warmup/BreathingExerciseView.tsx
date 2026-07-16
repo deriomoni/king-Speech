@@ -130,7 +130,14 @@ export default function BreathingExerciseView({
     <View style={styles.root}>
       {/* Full-bleed animated background — behind everything, no white gaps */}
       <Animated.View style={[StyleSheet.absoluteFill, waveStyle]} pointerEvents="none">
-        <RiveAnim source={WAVES} style={styles.wave} stateMachine="State Machine 1" autoplay fit="cover" />
+        <RiveAnim
+          source={WAVES}
+          style={styles.wave}
+          stateMachine="State Machine 1"
+          autoplay
+          fit="cover"
+          paused={running && phase?.type === "hold"}
+        />
       </Animated.View>
 
       <View style={[styles.content, { paddingTop: topPad + 8 }]}>
