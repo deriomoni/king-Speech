@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Platform, StyleSheet, Text, View, ViewStyle } from "react-native";
 import Constants from "expo-constants";
 
@@ -43,12 +43,6 @@ type RiveAnimProps = {
   autoplay?: boolean;
   fit?: RiveFit;
   alignment?: RiveAlignment;
-  /**
-   * Optional playback control. When provided, the animation is paused/resumed
-   * to match — used to sync waves.riv to the breathing exercise (freeze on
-   * hold). Undefined = untouched (existing callers behave exactly as before).
-   */
-  paused?: boolean;
 };
 
 const isExpoGo =
@@ -177,7 +171,6 @@ function WebRiveCanvas({
   autoplay = true,
   fit = "contain",
   alignment = "center",
-  paused,
 }: RiveAnimProps & { src: string }) {
   let layoutInstance: any = undefined;
   try {
@@ -193,7 +186,7 @@ function WebRiveCanvas({
     console.warn("[RiveAnim] failed to build Layout:", e);
     layoutInstance = undefined;
   }
-  const { RiveComponent, rive } = useRiveHook({
+  const { RiveComponent } = useRiveHook({
     src,
     artboard,
     stateMachines: stateMachine,
@@ -201,13 +194,6 @@ function WebRiveCanvas({
     autoplay,
     ...(layoutInstance ? { layout: layoutInstance } : {}),
   });
-  useEffect(() => {
-    if (paused === undefined || !rive) return;
-    try {
-      if (paused) rive.pause();
-      else rive.play();
-    } catch {}
-  }, [paused, rive]);
   return (
     <View style={[styles.box, style]}>
       <RiveComponent />
@@ -242,7 +228,6 @@ function buildExpoGoHtml(
   artboard?: string,
   stateMachine?: string,
   animation?: string,
-  initialPaused?: boolean,
 ): string {
   const fitKey = FIT_MAP_WEB[fit] ?? "Contain";
   const alignKey = ALIGN_MAP_WEB[alignment] ?? "Center";
@@ -271,17 +256,9 @@ canvas{display:block;width:100vw;height:100vh;background:transparent;}
       stateMachines: ${safeSM},
       animations: ${safeAnim},
       layout: new R.Layout({ fit: R.Fit.${fitKey}, alignment: R.Alignment.${alignKey} }),
-      onLoad: function(){
-        try { r.resizeDrawingSurfaceToCanvas(); } catch(e){}
-        if (${initialPaused ? "true" : "false"}) { try { r.pause(); } catch(e){} }
-        log("loaded");
-      },
+      onLoad: function(){ try { r.resizeDrawingSurfaceToCanvas(); } catch(e){} log("loaded"); },
       onLoadError: function(e){ log("loadError "+(e && e.message || e)); },
     });
-    // Control channel: RN injects window.__riveSetPaused(true/false) to sync
-    // the animation to the breathing phases.
-    window.__r = r;
-    window.__riveSetPaused = function(p){ try { p ? r.pause() : r.play(); } catch(e){} };
     window.addEventListener("resize", function(){ try{ r.resizeDrawingSurfaceToCanvas(); }catch(e){} });
   } catch(e) { log("ctor "+(e && e.message || e)); }
 })();
@@ -297,22 +274,9 @@ function ExpoGoRiveView({
   autoplay = true,
   fit = "contain",
   alignment = "center",
-  paused,
 }: RiveAnimProps) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const webRef = useRef<any>(null);
-  // Capture the paused state at first mount for the (stable) HTML; live changes
-  // are pushed via injectJavaScript so the WebView never reloads mid-exercise.
-  const initialPausedRef = useRef(paused);
-
-  // Push paused changes into the already-loaded WebView.
-  useEffect(() => {
-    if (paused === undefined || !dataUrl) return;
-    webRef.current?.injectJavaScript(
-      `window.__riveSetPaused && window.__riveSetPaused(${paused ? "true" : "false"}); true;`,
-    );
-  }, [paused, dataUrl]);
 
   useEffect(() => {
     let cancelled = false;
@@ -371,26 +335,6 @@ function ExpoGoRiveView({
     };
   }, [source]);
 
-  // Stable HTML — must NOT depend on live `paused` (that would reload the
-  // WebView on every phase). Initial paused is baked in once; changes are
-  // injected instead.
-  const html = useMemo(
-    () =>
-      dataUrl
-        ? buildExpoGoHtml(
-            dataUrl,
-            fit,
-            alignment,
-            autoplay,
-            artboard,
-            stateMachine,
-            animation,
-            initialPausedRef.current,
-          )
-        : "",
-    [dataUrl, fit, alignment, autoplay, artboard, stateMachine, animation],
-  );
-
   if (!WebViewComp) {
     return (
       <Placeholder
@@ -407,10 +351,18 @@ function ExpoGoRiveView({
     return <View style={[styles.box, style]} />;
   }
 
+  const html = buildExpoGoHtml(
+    dataUrl,
+    fit,
+    alignment,
+    autoplay,
+    artboard,
+    stateMachine,
+    animation,
+  );
   return (
     <View style={[styles.box, style]}>
       <WebViewComp
-        ref={webRef}
         originWhitelist={["*"]}
         source={{ html }}
         style={{ flex: 1, backgroundColor: "transparent" }}
@@ -445,17 +397,7 @@ function NativeRiveView({
   autoplay = true,
   fit = "contain",
   alignment = "center",
-  paused,
 }: RiveAnimProps) {
-  const riveRef = useRef<any>(null);
-  useEffect(() => {
-    if (paused === undefined) return;
-    try {
-      if (paused) riveRef.current?.pause?.();
-      else riveRef.current?.play?.();
-    } catch {}
-  }, [paused]);
-
   if (!NativeRive) {
     return (
       <Placeholder
@@ -474,7 +416,6 @@ function NativeRiveView({
   // resolved asset URI works the same way.
   return (
     <NativeRive
-      ref={riveRef}
       style={[styles.box, style]}
       url={src ?? undefined}
       artboardName={artboard}
