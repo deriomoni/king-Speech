@@ -45,9 +45,10 @@ const PATTERN: Phase[] = [
 ];
 const PHASES = Array.from({ length: CYCLES }).flatMap(() => PATTERN);
 
-// The wave breathes within a natural range — never a full balloon.
-const MIN_SCALE = 0.66;
-const MAX_SCALE = 1;
+// The wave is a full-bleed background (fit "cover"). It breathes by zooming
+// UP from a full fill — never below 1.0 — so no white edges ever appear.
+const MIN_SCALE = 1;
+const MAX_SCALE = 1.14;
 
 function haptic() {
   if (Platform.OS !== "web") {
@@ -120,17 +121,19 @@ export default function BreathingExerciseView({
   }, [scale]);
 
   const waveStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  const haloStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: 0.06 + (scale.value - MIN_SCALE) * 0.28,
-  }));
 
   const phase = running ? PHASES[Math.min(idx, PHASES.length - 1)] : null;
   const cycle = Math.min(CYCLES, Math.floor(idx / PATTERN.length) + 1);
   const phaseColor = phase?.color ?? C_INHALE;
 
   return (
-    <View style={[styles.root, { paddingTop: topPad + 8 }]}>
+    <View style={styles.root}>
+      {/* Full-bleed animated background — behind everything, no white gaps */}
+      <Animated.View style={[StyleSheet.absoluteFill, waveStyle]} pointerEvents="none">
+        <RiveAnim source={WAVES} style={styles.wave} stateMachine="State Machine 1" autoplay fit="cover" />
+      </Animated.View>
+
+      <View style={[styles.content, { paddingTop: topPad + 8 }]}>
       {/* Top bar: subtle back (left) + title + help (right) */}
       <View style={styles.header}>
         <Pressable onPress={onBack} hitSlop={12} style={styles.iconBtn}>
@@ -154,43 +157,26 @@ export default function BreathingExerciseView({
         <View style={styles.cyclePlaceholder} />
       )}
 
-      {/* The wave — breathes with the exercise */}
-      <View style={styles.center}>
-        <Animated.View
-          pointerEvents="none"
-          style={[styles.halo, { backgroundColor: phaseColor }, haloStyle]}
-        />
-        <Animated.View style={[styles.waveWrap, waveStyle]} pointerEvents="none">
-          <RiveAnim
-            source={WAVES}
-            style={styles.wave}
-            stateMachine="State Machine 1"
-            autoplay
-            fit="contain"
-          />
-        </Animated.View>
+      {/* Phase readout — centered over the animated background */}
+      <View style={styles.center} pointerEvents="none">
+        {running && phase ? (
+          <Animated.View
+            key={`ph-${idx}`}
+            entering={FadeInDown.duration(320)}
+            exiting={FadeOut.duration(160)}
+            style={styles.readout}
+          >
+            <View style={styles.phaseRow}>
+              <View style={[styles.dot, { backgroundColor: phaseColor }]} />
+              <Text style={[styles.phaseLabel, { color: phaseColor }]}>
+                {phase.label.toUpperCase()}
+              </Text>
+            </View>
+            <Text style={styles.count}>{count}</Text>
+            <Text style={styles.via}>{phase.via}</Text>
+          </Animated.View>
+        ) : null}
       </View>
-
-      {/* Phase readout (running) */}
-      {running && phase ? (
-        <Animated.View
-          key={`ph-${idx}`}
-          entering={FadeInDown.duration(320)}
-          exiting={FadeOut.duration(160)}
-          style={styles.readout}
-        >
-          <View style={styles.phaseRow}>
-            <View style={[styles.dot, { backgroundColor: phaseColor }]} />
-            <Text style={[styles.phaseLabel, { color: phaseColor }]}>
-              {phase.label.toUpperCase()}
-            </Text>
-          </View>
-          <Text style={styles.count}>{count}</Text>
-          <Text style={styles.via}>{phase.via}</Text>
-        </Animated.View>
-      ) : (
-        <View style={styles.readoutPlaceholder} />
-      )}
 
       {/* Footer: glass Start (idle) / skip (running) */}
       <View style={styles.footer}>
@@ -209,6 +195,7 @@ export default function BreathingExerciseView({
             <Text style={styles.skipText}>Пропустить →</Text>
           </Pressable>
         )}
+      </View>
       </View>
 
       {/* How-to-play instructions */}
@@ -252,7 +239,8 @@ export default function BreathingExerciseView({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FFFFFF", paddingHorizontal: 22 },
+  root: { flex: 1, backgroundColor: "#FFFFFF" },
+  content: { flex: 1, paddingHorizontal: 22 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -271,16 +259,8 @@ const styles = StyleSheet.create({
   },
   cyclePlaceholder: { height: 23, marginTop: 10 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  halo: {
-    position: "absolute",
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-  },
-  waveWrap: { width: 300, height: 300, alignItems: "center", justifyContent: "center" },
-  wave: { width: 300, height: 300 },
-  readout: { alignItems: "center", minHeight: 118 },
-  readoutPlaceholder: { minHeight: 118 },
+  wave: { flex: 1 },
+  readout: { alignItems: "center" },
   phaseRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   phaseLabel: { fontSize: 14, letterSpacing: 2, fontFamily: warmupFonts.label },
