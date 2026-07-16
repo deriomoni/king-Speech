@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, Pressable, StyleSheet, Platform, Modal } from "react-native";
 import Animated, {
   useSharedValue,
-  useAnimatedStyle,
   withTiming,
   Easing,
   cancelAnimation,
@@ -13,13 +12,8 @@ import Animated, {
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import RiveAnim from "@/components/RiveAnim";
+import BreathingWaves from "@/components/warmup/BreathingWaves";
 import { warmupFonts } from "@/components/warmup/warmupTheme";
-
-// Ambient wave animation — the breathing "circle". We drive its SCALE with the
-// breath (inhale expands, exhale contracts, hold freezes), so the wave reacts
-// to the exercise on every platform without needing a Rive control API.
-const WAVES = require("@/assets/rive/waves.riv");
 
 const CYCLES = 3;
 type PhaseType = "inhale" | "hold" | "exhale";
@@ -45,10 +39,9 @@ const PATTERN: Phase[] = [
 ];
 const PHASES = Array.from({ length: CYCLES }).flatMap(() => PATTERN);
 
-// The wave is a full-bleed background (fit "cover"). It breathes by zooming
-// UP from a full fill — never below 1.0 — so no white edges ever appear.
-const MIN_SCALE = 1;
-const MAX_SCALE = 1.14;
+// Water level (0 = exhaled/low, 1 = inhaled/high) — drives BreathingWaves.
+const LEVEL_LOW = 0;
+const LEVEL_HIGH = 1;
 
 function haptic() {
   if (Platform.OS !== "web") {
@@ -70,7 +63,7 @@ export default function BreathingExerciseView({
   const [idx, setIdx] = useState(0);
   const [count, setCount] = useState(PATTERN[0].sec);
   const [showHelp, setShowHelp] = useState(false);
-  const scale = useSharedValue(MIN_SCALE);
+  const level = useSharedValue(LEVEL_LOW);
 
   const onCompleteRef = useRef(onComplete);
   useEffect(() => {
@@ -88,15 +81,15 @@ export default function BreathingExerciseView({
     const phase = PHASES[idx];
     setCount(phase.sec);
     haptic();
-    // Inhale expands the wave; exhale runs it back down; hold leaves the scale
-    // frozen where it is — the wave visibly pauses.
+    // Inhale raises the water; exhale lowers it; hold leaves the level frozen
+    // where it is — the water visibly pauses.
     if (phase.type === "inhale") {
-      scale.value = withTiming(MAX_SCALE, {
+      level.value = withTiming(LEVEL_HIGH, {
         duration: phase.sec * 1000,
         easing: Easing.inOut(Easing.ease),
       });
     } else if (phase.type === "exhale") {
-      scale.value = withTiming(MIN_SCALE, {
+      level.value = withTiming(LEVEL_LOW, {
         duration: phase.sec * 1000,
         easing: Easing.inOut(Easing.ease),
       });
@@ -110,17 +103,15 @@ export default function BreathingExerciseView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running, idx]);
 
-  useEffect(() => () => cancelAnimation(scale), [scale]);
+  useEffect(() => () => cancelAnimation(level), [level]);
 
   const start = useCallback(() => {
     setIdx(0);
     setCount(PATTERN[0].sec);
-    scale.value = MIN_SCALE;
+    level.value = LEVEL_LOW;
     setRunning(true);
     haptic();
-  }, [scale]);
-
-  const waveStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  }, [level]);
 
   const phase = running ? PHASES[Math.min(idx, PHASES.length - 1)] : null;
   const cycle = Math.min(CYCLES, Math.floor(idx / PATTERN.length) + 1);
@@ -128,17 +119,8 @@ export default function BreathingExerciseView({
 
   return (
     <View style={styles.root}>
-      {/* Full-bleed animated background — behind everything, no white gaps */}
-      <Animated.View style={[StyleSheet.absoluteFill, waveStyle]} pointerEvents="none">
-        <RiveAnim
-          source={WAVES}
-          style={styles.wave}
-          stateMachine="State Machine 1"
-          autoplay
-          fit="cover"
-          paused={running && phase?.type === "hold"}
-        />
-      </Animated.View>
+      {/* Full-bleed animated water — behind everything, driven by the breath */}
+      <BreathingWaves level={level} />
 
       <View style={[styles.content, { paddingTop: topPad + 8 }]}>
       {/* Top bar: subtle back (left) + title + help (right) */}
@@ -266,7 +248,6 @@ const styles = StyleSheet.create({
   },
   cyclePlaceholder: { height: 23, marginTop: 10 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  wave: { flex: 1 },
   readout: { alignItems: "center" },
   phaseRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   dot: { width: 8, height: 8, borderRadius: 4 },
