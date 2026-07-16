@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, StyleSheet, Platform, Image } from "react-native";
+import { View, Text, Pressable, StyleSheet, Platform, Modal } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -7,56 +7,46 @@ import Animated, {
   Easing,
   cancelAnimation,
   FadeIn,
+  FadeInDown,
+  FadeOut,
 } from "react-native-reanimated";
+import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { warmupTheme, warmupFonts } from "@/components/warmup/warmupTheme";
+import RiveAnim from "@/components/RiveAnim";
+import { warmupFonts } from "@/components/warmup/warmupTheme";
 
-// Custom breathing cue illustrations — inhale through the nose (gold airflow),
-// exhale through the mouth (mint airflow). Unified neon line-art set.
-const IMG_NOSE = require("@/assets/warmup/breathe-nose.png");
-const IMG_MOUTH = require("@/assets/warmup/breathe-mouth.png");
-
-/**
- * Breathing warm-up — the first Разагрев task. A guided breathing drill
- * (inhale through the nose → short hold → exhale through the mouth) that
- * prepares the voice and calms nerves. Pure animation + timers; works on every
- * platform (no microphone, no native module).
- *
- * Timing is deliberately in a comfortable HUMAN range — a 3s nasal inhale, a
- * light 2s hold, and a longer 4s mouth exhale (longer exhale = calming). A
- * clear per-phase cue tells the player exactly HOW to breathe (nose vs mouth),
- * and the circle only grows within a realistic range so it never feels like you
- * must over-inflate your lungs.
- */
+// Ambient wave animation — the breathing "circle". We drive its SCALE with the
+// breath (inhale expands, exhale contracts, hold freezes), so the wave reacts
+// to the exercise on every platform without needing a Rive control API.
+const WAVES = require("@/assets/rive/waves.riv");
 
 const CYCLES = 3;
 type PhaseType = "inhale" | "hold" | "exhale";
 interface Phase {
   type: PhaseType;
   label: string;
-  sec: number;
   via: string;
-  cue: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  sec: number;
   color: string;
 }
 
-// Distinct colour per phase so it's instantly obvious where you are: warm gold
-// to breathe IN, calm violet to HOLD, cool mint to breathe OUT.
-const C_INHALE = warmupTheme.gold;
-const C_HOLD = "#B7A6FF";
-const C_EXHALE = "#5FD3C4";
+// Refined tones that read on a white canvas (light gold would vanish).
+const C_INHALE = "#E0A020"; // warm amber — breathe in
+const C_HOLD = "#7C4DFF"; // violet — hold
+const C_EXHALE = "#22A79A"; // teal — breathe out
+const INK = "#15151B";
+const MUTED = "rgba(21,21,27,0.5)";
 
 const PATTERN: Phase[] = [
-  { type: "inhale", label: "Вдох", sec: 3, via: "носом", cue: "Вдохни через нос", icon: "arrow-down", color: C_INHALE },
-  { type: "hold", label: "Задержка", sec: 2, via: "держи", cue: "Задержи дыхание", icon: "pause", color: C_HOLD },
-  { type: "exhale", label: "Выдох", sec: 4, via: "ртом", cue: "Выдохни через рот", icon: "arrow-up", color: C_EXHALE },
+  { type: "inhale", label: "Вдох", via: "через нос", sec: 3, color: C_INHALE },
+  { type: "hold", label: "Задержка", via: "держи", sec: 2, color: C_HOLD },
+  { type: "exhale", label: "Выдох", via: "через рот", sec: 4, color: C_EXHALE },
 ];
 const PHASES = Array.from({ length: CYCLES }).flatMap(() => PATTERN);
 
-// Circle scale stays within a realistic breathing range (never a full balloon).
-const MIN_SCALE = 0.62;
+// The wave breathes within a natural range — never a full balloon.
+const MIN_SCALE = 0.66;
 const MAX_SCALE = 1;
 
 function haptic() {
@@ -67,7 +57,6 @@ function haptic() {
 
 export default function BreathingExerciseView({
   topPad,
-  moduleColor,
   onComplete,
   onBack,
 }: {
@@ -79,6 +68,7 @@ export default function BreathingExerciseView({
   const [running, setRunning] = useState(false);
   const [idx, setIdx] = useState(0);
   const [count, setCount] = useState(PATTERN[0].sec);
+  const [showHelp, setShowHelp] = useState(false);
   const scale = useSharedValue(MIN_SCALE);
 
   const onCompleteRef = useRef(onComplete);
@@ -97,10 +87,18 @@ export default function BreathingExerciseView({
     const phase = PHASES[idx];
     setCount(phase.sec);
     haptic();
+    // Inhale expands the wave; exhale runs it back down; hold leaves the scale
+    // frozen where it is — the wave visibly pauses.
     if (phase.type === "inhale") {
-      scale.value = withTiming(MAX_SCALE, { duration: phase.sec * 1000, easing: Easing.inOut(Easing.ease) });
+      scale.value = withTiming(MAX_SCALE, {
+        duration: phase.sec * 1000,
+        easing: Easing.inOut(Easing.ease),
+      });
     } else if (phase.type === "exhale") {
-      scale.value = withTiming(MIN_SCALE, { duration: phase.sec * 1000, easing: Easing.inOut(Easing.ease) });
+      scale.value = withTiming(MIN_SCALE, {
+        duration: phase.sec * 1000,
+        easing: Easing.inOut(Easing.ease),
+      });
     }
     const ci = setInterval(() => setCount((c) => Math.max(0, c - 1)), 1000);
     const to = setTimeout(() => setIdx((i) => i + 1), phase.sec * 1000);
@@ -118,156 +116,228 @@ export default function BreathingExerciseView({
     setCount(PATTERN[0].sec);
     scale.value = MIN_SCALE;
     setRunning(true);
+    haptic();
   }, [scale]);
 
-  const circleStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const waveStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const haloStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: 0.06 + (scale.value - MIN_SCALE) * 0.28,
+  }));
 
   const phase = running ? PHASES[Math.min(idx, PHASES.length - 1)] : null;
   const cycle = Math.min(CYCLES, Math.floor(idx / PATTERN.length) + 1);
-  const phaseColor = phase?.color ?? warmupTheme.gold;
+  const phaseColor = phase?.color ?? C_INHALE;
 
   return (
     <View style={[styles.root, { paddingTop: topPad + 8 }]}>
+      {/* Top bar: subtle back (left) + title + help (right) */}
       <View style={styles.header}>
         <Pressable onPress={onBack} hitSlop={12} style={styles.iconBtn}>
-          <Ionicons name="chevron-back" size={26} color="#fff" />
+          <Ionicons name="chevron-back" size={24} color="rgba(21,21,27,0.55)" />
         </Pressable>
         <Text style={styles.headerTitle}>Дыхательная разминка</Text>
-        <View style={styles.iconBtn} />
+        <Pressable onPress={() => setShowHelp(true)} hitSlop={12} style={styles.iconBtn}>
+          <Ionicons name="help-circle-outline" size={24} color="rgba(21,21,27,0.55)" />
+        </Pressable>
       </View>
 
-      <Text style={styles.subtitle}>
-        {running
-          ? `Цикл ${cycle} из ${CYCLES}`
-          : "Дыши вместе с кругом: вдох носом — короткая задержка — выдох ртом. Медленно и без напряжения."}
-      </Text>
-
-      {/* Per-phase cue — an illustration + text telling you HOW to breathe
-          right now (in through the nose, out through the mouth). */}
-      {running && phase ? (
-        <Animated.View
-          key={`cue-${idx}`}
-          entering={FadeIn.duration(280)}
-          style={[styles.cue, { backgroundColor: phaseColor + "1A", borderColor: phaseColor + "4D" }]}
+      {running ? (
+        <Animated.Text
+          key={`cyc-${cycle}`}
+          entering={FadeIn.duration(300)}
+          style={styles.cycle}
         >
-          {phase.type === "hold" ? (
-            <Ionicons name={phase.icon} size={26} color={phaseColor} />
-          ) : (
-            <Image
-              source={phase.type === "inhale" ? IMG_NOSE : IMG_MOUTH}
-              style={styles.cueImg}
-              resizeMode="contain"
-            />
-          )}
-          <Text style={[styles.cueText, { color: phaseColor }]}>{phase.cue}</Text>
-        </Animated.View>
+          Цикл {cycle} из {CYCLES}
+        </Animated.Text>
       ) : (
-        <View style={styles.cuePlaceholder} />
+        <View style={styles.cyclePlaceholder} />
       )}
 
+      {/* The wave — breathes with the exercise */}
       <View style={styles.center}>
-        <View style={[styles.ring, { borderColor: phaseColor + "2E" }]} />
         <Animated.View
-          style={[
-            styles.circle,
-            circleStyle,
-            { backgroundColor: phaseColor + "22", borderColor: phaseColor },
-          ]}
-        >
-          {running && phase ? (
-            <>
-              <Text style={[styles.phaseLabel, { color: phaseColor }]}>{phase.label}</Text>
-              <Text style={styles.phaseCount}>{count}</Text>
-              <Text style={[styles.phaseVia, { color: phaseColor }]}>{phase.via}</Text>
-            </>
-          ) : (
-            <Ionicons name="leaf-outline" size={52} color={warmupTheme.gold} />
-          )}
+          pointerEvents="none"
+          style={[styles.halo, { backgroundColor: phaseColor }, haloStyle]}
+        />
+        <Animated.View style={[styles.waveWrap, waveStyle]} pointerEvents="none">
+          <RiveAnim
+            source={WAVES}
+            style={styles.wave}
+            stateMachine="State Machine 1"
+            autoplay
+            fit="contain"
+          />
         </Animated.View>
       </View>
 
+      {/* Phase readout (running) */}
+      {running && phase ? (
+        <Animated.View
+          key={`ph-${idx}`}
+          entering={FadeInDown.duration(320)}
+          exiting={FadeOut.duration(160)}
+          style={styles.readout}
+        >
+          <View style={styles.phaseRow}>
+            <View style={[styles.dot, { backgroundColor: phaseColor }]} />
+            <Text style={[styles.phaseLabel, { color: phaseColor }]}>
+              {phase.label.toUpperCase()}
+            </Text>
+          </View>
+          <Text style={styles.count}>{count}</Text>
+          <Text style={styles.via}>{phase.via}</Text>
+        </Animated.View>
+      ) : (
+        <View style={styles.readoutPlaceholder} />
+      )}
+
+      {/* Footer: glass Start (idle) / skip (running) */}
       <View style={styles.footer}>
         {!running ? (
-          <Pressable
-            onPress={start}
-            style={({ pressed }) => [styles.cta, { backgroundColor: warmupTheme.gold, opacity: pressed ? 0.9 : 1 }]}
-          >
-            <Text style={styles.ctaText}>Начать</Text>
-          </Pressable>
+          <Animated.View entering={FadeInDown.delay(120).duration(420)}>
+            <Pressable onPress={start} style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}>
+              <View style={styles.glassBtn}>
+                <BlurView intensity={28} tint="light" style={StyleSheet.absoluteFill} />
+                <View style={styles.glassSheen} />
+                <Text style={styles.glassText}>Начать</Text>
+              </View>
+            </Pressable>
+          </Animated.View>
         ) : (
           <Pressable onPress={onComplete} hitSlop={8} style={styles.skip}>
             <Text style={styles.skipText}>Пропустить →</Text>
           </Pressable>
         )}
       </View>
+
+      {/* How-to-play instructions */}
+      <Modal visible={showHelp} transparent animationType="fade" onRequestClose={() => setShowHelp(false)}>
+        <Pressable style={styles.helpOverlay} onPress={() => setShowHelp(false)}>
+          <Pressable style={styles.helpCard} onPress={() => {}}>
+            <Pressable
+              onPress={() => setShowHelp(false)}
+              hitSlop={12}
+              style={styles.helpClose}
+            >
+              <Ionicons name="close" size={22} color={MUTED} />
+            </Pressable>
+            <Text style={styles.helpTitle}>Как проходить</Text>
+            <Text style={styles.helpLead}>Дыши вместе с волной — она подсказывает ритм.</Text>
+
+            <View style={styles.helpStep}>
+              <View style={[styles.dot, { backgroundColor: C_INHALE }]} />
+              <Text style={styles.helpStepText}>
+                <Text style={styles.helpStepBold}>Вдох</Text> через нос, пока волна растёт — 3 секунды.
+              </Text>
+            </View>
+            <View style={styles.helpStep}>
+              <View style={[styles.dot, { backgroundColor: C_HOLD }]} />
+              <Text style={styles.helpStepText}>
+                <Text style={styles.helpStepBold}>Задержка</Text> — волна замирает, держи дыхание 2 секунды.
+              </Text>
+            </View>
+            <View style={styles.helpStep}>
+              <View style={[styles.dot, { backgroundColor: C_EXHALE }]} />
+              <Text style={styles.helpStepText}>
+                <Text style={styles.helpStepBold}>Выдох</Text> через рот, пока волна опадает — 4 секунды.
+              </Text>
+            </View>
+            <Text style={styles.helpFoot}>Повтори {CYCLES} цикла, медленно и без напряжения.</Text>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: warmupTheme.bg, paddingHorizontal: 22 },
+  root: { flex: 1, backgroundColor: "#FFFFFF", paddingHorizontal: 22 },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   iconBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
-  headerTitle: {
-    color: "#fff",
-    fontSize: 17,
-    fontFamily: warmupFonts.title,
-  },
-  subtitle: {
-    color: "rgba(255,255,255,0.6)",
-    fontSize: 14,
+  headerTitle: { color: INK, fontSize: 17, fontFamily: warmupFonts.title },
+  cycle: {
+    color: MUTED,
+    fontSize: 13,
+    letterSpacing: 1.2,
     textAlign: "center",
-    marginTop: 6,
-    paddingHorizontal: 10,
-    fontFamily: warmupFonts.body,
+    marginTop: 10,
+    textTransform: "uppercase",
+    fontFamily: warmupFonts.label,
   },
-  cue: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    alignSelf: "center",
-    marginTop: 14,
-    paddingLeft: 10,
-    paddingRight: 20,
-    paddingVertical: 8,
-    borderRadius: 26,
-    borderWidth: 1,
-  },
-  cueImg: { width: 44, height: 44 },
-  cueText: { fontSize: 16, fontFamily: warmupFonts.label },
-  cuePlaceholder: { height: 60 },
+  cyclePlaceholder: { height: 23, marginTop: 10 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  ring: {
+  halo: {
     position: "absolute",
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    borderWidth: 1.5,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
   },
-  circle: {
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    borderWidth: 2,
+  waveWrap: { width: 300, height: 300, alignItems: "center", justifyContent: "center" },
+  wave: { width: 300, height: 300 },
+  readout: { alignItems: "center", minHeight: 118 },
+  readoutPlaceholder: { minHeight: 118 },
+  phaseRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  phaseLabel: { fontSize: 14, letterSpacing: 2, fontFamily: warmupFonts.label },
+  count: { color: INK, fontSize: 60, fontFamily: warmupFonts.digit, marginTop: 2 },
+  via: { color: MUTED, fontSize: 15, fontFamily: warmupFonts.body, marginTop: -2 },
+  footer: { paddingBottom: 30, alignItems: "center", minHeight: 96, justifyContent: "center" },
+  glassBtn: {
+    minWidth: 220,
+    paddingHorizontal: 44,
+    height: 58,
+    borderRadius: 29,
+    overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.45)",
+    borderWidth: 1,
+    borderColor: "rgba(21,21,27,0.08)",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#141419",
+        shadowOpacity: 0.12,
+        shadowRadius: 24,
+        shadowOffset: { width: 0, height: 10 },
+      },
+      android: { elevation: 6 },
+      default: {},
+    }),
   },
-  phaseLabel: { fontSize: 20, fontFamily: warmupFonts.label },
-  phaseCount: { color: "#fff", fontSize: 54, fontFamily: warmupFonts.digit, marginTop: 2 },
-  phaseVia: { fontSize: 15, fontFamily: warmupFonts.body, marginTop: 2, textTransform: "lowercase" },
-  footer: { paddingBottom: 28, alignItems: "center" },
-  cta: {
-    width: "100%",
-    height: 54,
-    borderRadius: 27,
-    alignItems: "center",
+  glassSheen: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "50%",
+    backgroundColor: "rgba(255,255,255,0.35)",
+  },
+  glassText: { color: INK, fontSize: 17, fontFamily: warmupFonts.title, letterSpacing: 0.3 },
+  skip: { padding: 12 },
+  skipText: { color: MUTED, fontSize: 14, fontFamily: warmupFonts.body },
+  helpOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(10,10,14,0.32)",
     justifyContent: "center",
+    padding: 28,
   },
-  ctaText: { color: warmupTheme.onGold, fontSize: 16, fontFamily: warmupFonts.title },
-  skip: { padding: 10 },
-  skipText: { color: "rgba(255,255,255,0.45)", fontSize: 14, fontFamily: warmupFonts.body },
+  helpCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 24,
+    paddingTop: 26,
+    gap: 12,
+  },
+  helpClose: { position: "absolute", top: 14, right: 14, padding: 4, zIndex: 2 },
+  helpTitle: { color: INK, fontSize: 22, fontFamily: warmupFonts.title },
+  helpLead: { color: MUTED, fontSize: 15, lineHeight: 21, fontFamily: warmupFonts.body },
+  helpStep: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginTop: 2 },
+  helpStepText: { flex: 1, color: "rgba(21,21,27,0.75)", fontSize: 15, lineHeight: 22, fontFamily: warmupFonts.body },
+  helpStepBold: { color: INK, fontFamily: warmupFonts.label },
+  helpFoot: { color: MUTED, fontSize: 14, lineHeight: 20, marginTop: 6, fontFamily: warmupFonts.body },
 });
