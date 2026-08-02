@@ -122,7 +122,7 @@ export default function SpeakerTipsScreen() {
         <Pressable onPress={goBack} style={({ pressed }) => [st.backBtn, { opacity: pressed ? 0.7 : 1 }]} accessibilityRole="button">
           <Ionicons name="chevron-back" size={22} color={TEXT} />
         </Pressable>
-        <Text style={[st.headerTitle, { fontFamily: "Inter_700Bold" }]}>{t("speakerTips")}</Text>
+        <Text style={[st.headerTitle, { fontFamily: "Inter_700Bold" }]} numberOfLines={1}>{t("speakerTips")}</Text>
         <View style={st.backBtn} />
       </View>
 
@@ -184,7 +184,7 @@ const st = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  headerTitle: { color: TEXT, fontSize: 17, letterSpacing: 0.2 },
+  headerTitle: { color: TEXT, fontSize: 17, letterSpacing: 0.2, flex: 1, textAlign: "center" },
   scroll: { paddingHorizontal: 20, paddingTop: 4, gap: 24 },
   lead: { color: MUTED, fontSize: 14, lineHeight: 21 },
   section: { gap: 14 },

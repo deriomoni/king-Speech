@@ -86,10 +86,17 @@ function asGradient(colors: readonly string[]): GradientColors {
   return colors as GradientColors;
 }
 
-function SonicTabBar({ state, navigation }: BottomTabBarProps) {
+function SonicTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { themeMode } = useTheme();
   const tk = TAB_TOKENS[themeMode];
+
+  // A screen can hide the whole tab bar by setting
+  // tabBarStyle: { display: "none" } (e.g. the Cheat Sheet warm-up runner).
+  const focusedOptions = descriptors[state.routes[state.index]?.key]?.options;
+  const tabBarHidden =
+    (focusedOptions?.tabBarStyle as { display?: string } | undefined)?.display ===
+    "none";
   const isWeb = Platform.OS === "web";
   const bottomInset = isWeb ? 18 : Math.max(insets.bottom, 12);
 
@@ -124,6 +131,8 @@ function SonicTabBar({ state, navigation }: BottomTabBarProps) {
     opacity: pillOpacity.value,
     width: pillWidth,
   }));
+
+  if (tabBarHidden) return null;
 
   const press = (slot: Slot) => {
     if (Platform.OS !== "web") {

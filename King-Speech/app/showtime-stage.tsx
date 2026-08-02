@@ -4720,21 +4720,26 @@ export default function ShowtimeStageScreen() {
           {Array.from({ length: 12 }).map((_, i) => (
             <View key={i} style={{ position: "absolute", left: `${i * 8.5}%` as any, top: 0, bottom: 0, width: 1, backgroundColor: theme.accentColor + "30" }} />
           ))}
-          <View style={s.curtainContent}>
+          <ScrollView
+            style={StyleSheet.absoluteFill}
+            contentContainerStyle={s.curtainScroll}
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          >
             <Ionicons name="videocam" size={44} color={theme.accentColor} />
-            <Text style={[s.curtainTitle, { fontFamily: "Inter_700Bold", color: theme.accentColor }]}>{theme.curtainTitle}</Text>
+            <Text style={[s.curtainTitle, { fontFamily: "Inter_700Bold", color: theme.accentColor }]} numberOfLines={1} adjustsFontSizeToFit>{theme.curtainTitle}</Text>
             <View style={s.curtainThemeWrap}>
               <Text style={[s.curtainThemeLabel, { fontFamily: "Inter_500Medium", color: theme.accentColor + "99" }]}>{t("speechTopic")}</Text>
-              <Text style={[s.curtainThemeName, { fontFamily: "Inter_700Bold", color: theme.accentColor }]}>{theme.title}</Text>
+              <Text style={[s.curtainThemeName, { fontFamily: "Inter_700Bold", color: theme.accentColor }]} numberOfLines={2}>{theme.title}</Text>
             </View>
-            <Text style={[s.curtainSub, { fontFamily: "Inter_600SemiBold" }]}>«{speech.title}»</Text>
+            <Text style={[s.curtainSub, { fontFamily: "Inter_600SemiBold" }]} numberOfLines={2}>«{speech.title}»</Text>
             <Text style={[s.curtainHint, { fontFamily: "Inter_400Regular" }]}>
               {theme.audienceDesc}{"\n"}{t("recordingStartsAuto")}
               {theme.timerSeconds !== null ? `\n${t("timerLabel")}: ${theme.timerSeconds} ${t("sec")}` : ""}
             </Text>
             <View style={s.previewBox}>
               {speech.lines.slice(0, 4).map((line, i) => (
-                <Text key={i} style={[s.previewLine, { fontFamily: "Inter_400Regular", opacity: 0.5 - i * 0.08 }]}>{line}</Text>
+                <Text key={i} style={[s.previewLine, { fontFamily: "Inter_400Regular", opacity: 0.5 - i * 0.08 }]} numberOfLines={1}>{line}</Text>
               ))}
               <Text style={[s.previewLine, { fontFamily: "Inter_400Regular", opacity: 0.18 }]}>...</Text>
             </View>
@@ -4773,7 +4778,7 @@ export default function ShowtimeStageScreen() {
               <Ionicons name="arrow-back" size={16} color="rgba(255,255,255,0.6)" />
               <Text style={[s.curtainExitTxt, { fontFamily: "Inter_500Medium" }]}>{t("exit")}</Text>
             </Pressable>
-          </View>
+          </ScrollView>
         </Animated.View>
       )}
 
@@ -4810,7 +4815,7 @@ export default function ShowtimeStageScreen() {
               <Text style={[s.liveText, { fontFamily: "Inter_700Bold" }]}>LIVE</Text>
             </Animated.View>
           )}
-          <Text style={[s.speechTitle, { fontFamily: "Inter_500Medium" }]}>{speech.title}</Text>
+          <Text style={[s.speechTitle, { fontFamily: "Inter_500Medium" }]} numberOfLines={1} ellipsizeMode="tail">{speech.title}</Text>
         </View>
         <View style={s.headerRight}>
           {isRecording && <RecDot />}
@@ -4994,12 +4999,15 @@ const s = StyleSheet.create({
   liveDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: "#fff" },
   liveText: { fontSize: 10, color: "#fff", letterSpacing: 1.5 },
   speechTitle: { fontSize: 13, color: "rgba(255,255,255,0.55)" },
-  headerRight: { width: 52, alignItems: "flex-end", gap: 4 },
+  headerRight: { minWidth: 52, alignItems: "flex-end", gap: 4 },
   timerBadge: { flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 8 },
   timerText: { fontSize: 12 },
   lineCounter: { fontSize: 13, color: "rgba(255,255,255,0.4)" },
   // Curtain
   curtainContent: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 28 },
+  // Scrollable variant so tall curtain content can't clip top/bottom on small
+  // screens (flexGrow keeps short content vertically centered).
+  curtainScroll: { flexGrow: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 28, paddingVertical: 44 },
   curtainTitle: { fontSize: 34, color: "#FFD166", letterSpacing: 1 },
   curtainSub: { fontSize: 18, color: "rgba(255,255,255,0.8)" },
   curtainHint: { fontSize: 14, color: "rgba(255,255,255,0.4)", textAlign: "center", lineHeight: 20 },

@@ -44,6 +44,7 @@ import Animated, {
   type SharedValue,
 } from "react-native-reanimated";
 
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   POS_LABELS_RU,
   DIFFICULTY_LABEL_RU,
@@ -247,6 +248,8 @@ function TutorialPhase({
   onDone: () => void;
   onClose: () => void;
 }) {
+  const insets = useSafeAreaInsets();
+  const topPad = Platform.OS === "web" ? 80 : insets.top + 12;
   const rules: { n: number; text: string }[] = [
     { n: 1, text: "Нажми Стоп — получишь слово" },
     { n: 2, text: "Нажми Старт и говори синонимы" },
@@ -256,7 +259,7 @@ function TutorialPhase({
 
   return (
     <View style={styles.tutorialRoot}>
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { paddingTop: topPad }]}>
         <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={12}>
           <Ionicons name="close" size={24} color="#fff" />
         </Pressable>
@@ -473,9 +476,11 @@ function SpinPhase({
     return () => clearTimeout(autoId);
   }, []);
 
+  const insets = useSafeAreaInsets();
+  const topPad = Platform.OS === "web" ? 80 : insets.top + 12;
   return (
     <View style={[styles.spinRoot, { backgroundColor: REEL_BG }]}>
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { paddingTop: topPad }]}>
         <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={12}>
           <Ionicons name="close" size={24} color="#fff" />
         </Pressable>
@@ -515,7 +520,7 @@ function SpinPhase({
         </Text>
       </View>
 
-      <View style={styles.stopBtnWrap}>
+      <View style={[styles.stopBtnWrap, { paddingBottom: (Platform.OS === "web" ? 32 : 24) + insets.bottom }]}>
         <Pressable
           onPress={() => stop()}
           disabled={!isSpinning}
@@ -631,22 +636,25 @@ function PlayPhase({
   useEffect(() => {
     if (stage !== "active") return;
     const id = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1) {
-          clearInterval(id);
-          if (!finishedRef.current) {
-            finishedRef.current = true;
-            stopRecognition();
-            onFinish();
-          }
-          return 0;
-        }
-        return t - 1;
-      });
+      // Pure updater — NO side effects. Calling onFinish() (a parent setter)
+      // from inside a setState updater fires "Cannot update a component while
+      // rendering a different component". Finishing is handled by the effect
+      // below, which reacts to timeLeft hitting zero.
+      setTimeLeft((t) => (t <= 1 ? 0 : t - 1));
     }, 1000);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
+
+  // Time's up → finish. Side effects live here, outside the setTimeLeft updater.
+  useEffect(() => {
+    if (stage === "active" && timeLeft <= 0 && !finishedRef.current) {
+      finishedRef.current = true;
+      stopRecognition();
+      onFinish();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeLeft, stage]);
 
   // ── Real microphone capture for the waveform ──────────────────────────────
   // On web we grab a getUserMedia stream — Web Speech API is happy to share it.
@@ -1005,14 +1013,16 @@ function PlayPhase({
     feedScrollRef.current?.scrollToEnd({ animated: true });
   }, [feed.length]);
 
+  const insets = useSafeAreaInsets();
+  const topPad = Platform.OS === "web" ? 80 : insets.top + 12;
   return (
-    <View style={styles.playRoot}>
+    <View style={[styles.playRoot, { paddingBottom: 24 + insets.bottom }]}>
       <Animated.View
         pointerEvents="none"
         style={[StyleSheet.absoluteFillObject, bgStyle]}
       />
 
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { paddingTop: topPad }]}>
         <Pressable
           onPress={handleExitPress}
           style={styles.closeBtn}
@@ -1215,10 +1225,13 @@ function ResultPhase({
   const foundCount = word.synonyms.filter(isFound).length;
   const missedCount = Math.max(0, total - foundCount);
 
+  const insets = useSafeAreaInsets();
+  const topPad = Platform.OS === "web" ? 80 : insets.top + 12;
+
   return (
     <ScrollView
       style={{ flex: 1 }}
-      contentContainerStyle={styles.resultContent}
+      contentContainerStyle={[styles.resultContent, { paddingTop: topPad, paddingBottom: 48 + insets.bottom }]}
       showsVerticalScrollIndicator={false}
     >
       <Text style={styles.resultTitle}>Время вышло!</Text>

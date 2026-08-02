@@ -279,7 +279,13 @@ function startMetroWeb(): ChildProcess {
   log(`Starting Expo web (Metro) dev server on port ${METRO_WEB_PORT}...`);
   if (publicUrl) log(`Web API base (EXPO_PUBLIC_API_URL): ${publicUrl}`);
 
-  const metro = spawn("npm", ["run", "web:metro"], {
+  // On Windows the npm launcher is `npm.cmd`; spawning bare "npm" throws ENOENT.
+  // Node >=20 also refuses to spawn a `.cmd` without `shell:true` (throws EINVAL
+  // synchronously), so enable the shell on Windows.
+  const isWin = process.platform === "win32";
+  const npmCmd = isWin ? "npm.cmd" : "npm";
+  const metro = spawn(npmCmd, ["run", "web:metro"], {
+    shell: isWin,
     stdio: ["ignore", "pipe", "pipe"],
     // Own process group so shutdown can tear down the whole Metro tree
     // (npm -> expo -> metro) instead of orphaning a process holding :8081.
@@ -300,6 +306,11 @@ function startMetroWeb(): ChildProcess {
   metro.stdout?.on("data", (d) => process.stdout.write(`[Metro] ${d}`));
   metro.stderr?.on("data", (d) => process.stderr.write(`[Metro] ${d}`));
   metro.on("exit", (code) => log(`[Metro] exited with code ${code}`));
+  // A spawn failure (e.g. npm not on PATH) emits 'error'; without a handler Node
+  // rethrows it and takes the whole API server down. Log and keep serving /api.
+  metro.on("error", (err) =>
+    log(`[Metro] failed to start (${(err as Error).message}); API stays up`),
+  );
 
   const cleanup = () => {
     if (metro.killed || metro.pid === undefined) return;
@@ -400,13 +411,30 @@ function listen(server: Server) {
   // here on /api/*, the mobile (Expo Go) manifest stays on the expo-platform
   // header with its QR landing moved to /mobile, and everything else is proxied
   // to the Expo web dev server.
-  startMetroWeb();
-  configureExpoAndLanding(app, {
-    landingPath: "/mobile",
-    serveManifestFromStatic: false,
-  });
+  //
+  // Local Windows runs start Metro separately (scripts/start-expo-dev.ps1) and
+  // set KS_EXTERNAL_METRO=1. In that case this process is a pure API server on
+  // :5000 — it must NOT spawn its own Metro (Windows npm quirks + :8081 clash)
+  // and there's no need to proxy web traffic (the browser hits :8081 directly).
+  // Trim: cmd.exe's `set VAR=1 && ...` stores "1 " (trailing space), so compare
+  // against a trimmed value.
+  const externalMetro = (process.env.KS_EXTERNAL_METRO ?? "").trim() === "1";
+  if (!externalMetro) {
+    // A spawn failure here must never take the API server down.
+    try {
+      startMetroWeb();
+    } catch (e) {
+      log(`[Metro] spawn failed (${(e as Error).message}); API stays up`);
+    }
+    configureExpoAndLanding(app, {
+      landingPath: "/mobile",
+      serveManifestFromStatic: false,
+    });
+  }
   const server = await registerRoutes(app);
-  setupWebProxy(app, server);
+  if (!externalMetro) {
+    setupWebProxy(app, server);
+  }
   setupErrorHandler(app);
   listen(server);
 })();

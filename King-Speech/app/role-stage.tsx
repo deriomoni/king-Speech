@@ -290,7 +290,7 @@ export default function RoleStageScreen() {
         </Pressable>
         <View style={styles.roleTag}>
           <Text style={styles.roleTagEmoji}>{role.emoji}</Text>
-          <Text style={styles.roleTagText}>{tx(role.title, lang)}</Text>
+          <Text style={styles.roleTagText} numberOfLines={1}>{tx(role.title, lang)}</Text>
         </View>
         {phase === "recording" ? (
           <View style={styles.recPill}>
@@ -316,6 +316,10 @@ export default function RoleStageScreen() {
           <Text style={styles.scanText}>{lang === "en" ? "Getting into character..." : "Вживаемся в образ..."}</Text>
         </Animated.View>
       )}
+
+      {/* Flex spacer keeps the bottom card anchored: without it, when the
+          scan overlay (flex:1) unmounts the card snaps up under the top bar. */}
+      {phase !== "scan" && <View style={{ flex: 1 }} />}
 
       {/* Bottom content */}
       <View style={[styles.bottom, { paddingBottom: (Platform.OS === "web" ? 24 : insets.bottom) + 18 }]}>
@@ -379,7 +383,7 @@ const styles = StyleSheet.create({
   closeBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "#00000055" },
   roleTag: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#00000055", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 18, maxWidth: 200 },
   roleTagEmoji: { fontSize: 15 },
-  roleTagText: { color: "#fff", fontFamily: "Nunito_700Bold", fontSize: 13 },
+  roleTagText: { color: "#fff", fontFamily: "Nunito_700Bold", fontSize: 13, flexShrink: 1 },
   recPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#E8384FCC", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 18 },
   recDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#fff" },
   recTime: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 13 },

@@ -199,7 +199,7 @@ function SpinOverlay({
 
   const rarity = RARITY_META[current.rarity];
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={done ? onClose : undefined}>
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.spinBackdrop}>
         <Text style={styles.spinLabel}>
           {done

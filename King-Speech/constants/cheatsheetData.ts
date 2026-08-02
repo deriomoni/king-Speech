@@ -345,7 +345,7 @@ const finalStep: FinalStep = {
 // ── Routes ──────────────────────────────────────────────────────────────────
 
 export interface CheatRoute {
-  id: "quick" | "balanced" | "full";
+  id: "warmup" | "quick" | "balanced" | "full";
   minutes: number;
   accent: string;
   icon: IconName;
@@ -355,6 +355,15 @@ export interface CheatRoute {
 }
 
 export const ROUTES: CheatRoute[] = [
+  {
+    id: "warmup",
+    minutes: 1,
+    accent: "#4FD9A0",
+    icon: "flame",
+    title: { ru: "Разминка", en: "Warm-up" },
+    subtitle: { ru: "Быстрая разминка за минуту", en: "A one-minute warm-up" },
+    steps: [physiologicalSigh, chant, finalStep],
+  },
   {
     id: "quick",
     minutes: 2,

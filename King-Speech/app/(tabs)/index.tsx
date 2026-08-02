@@ -40,11 +40,8 @@ import { useLang, Lang } from "@/context/LangContext";
 import { getModuleName } from "@/constants/showtimeLoader";
 import { useAppColors } from "@/hooks/useAppColors";
 import { useDevTools } from "@/context/DevToolsContext";
-import { RankBackground } from "@/components/path/RankBackground";
-import {
-  PathPaintingBackground,
-  PATH_LANDSCAPE_BG_EXPERIMENT,
-} from "@/components/path/PathPaintingBackground";
+import { PathGradientBackground } from "@/components/path/PathGradientBackground";
+import { getPathColors, darkenHex, readableText } from "@/constants/pathPalette";
 import FinalPortal from "@/components/path/FinalPortal";
 import { getRankTheme } from "@/components/path/rankTheme";
 import PathScrubber from "@/components/path/PathScrubber";
@@ -219,6 +216,7 @@ function StepBlock({
   colors,
   isNaturallyAvailable,
   rankTheme,
+  themeMode,
 }: {
   item: StepItem;
   index: number;
@@ -226,6 +224,7 @@ function StepBlock({
   colors: import("@/constants/colors").AppColors;
   isNaturallyAvailable: boolean;
   rankTheme: import("@/components/path/rankTheme").RankTheme;
+  themeMode: import("@/context/ThemeContext").ThemeMode;
 }) {
   const { isOpenTestingEnabled } = useDevTools();
   const shapeR = shapeRadius(rankTheme.stepShape);
@@ -236,6 +235,7 @@ function StepBlock({
   const isAvail = effectiveStatus === "available";
   const isDone = effectiveStatus === "completed";
   const isLocked = effectiveStatus === "locked";
+  const isDark = themeMode === "dark";
 
   // Skip entry animation for: completed rows, rows beyond the first few,
   // and any row that is only "available" because of the Open Testing override
@@ -273,8 +273,10 @@ function StepBlock({
     : isAvail
       ? levelColorDark
       : "#CACAD4";
-  const textColor = isDone ? "#fff" : isAvail ? "#1A1A2E" : "#A0A0B0";
-  const iconColor = isDone ? "#fff" : isAvail ? "#1A1A2E" : "#B0B0C0";
+  // Ink adapts to the brick's lightness so text/icons read on any palette tile.
+  const onFace = readableText(faceColor);
+  const textColor = isLocked ? "#A0A0B0" : onFace;
+  const iconColor = isLocked ? "#B0B0C0" : onFace;
 
   const gradTop = isDone
     ? lightenColor(levelColor, 18)
@@ -336,67 +338,23 @@ function StepBlock({
         ]}
       >
         <View style={[styles.stepFace, { borderRadius: shapeR }]}>
-          {/* Per-rank accent outline — stays visible on completed levels too. */}
+          {/* Solid color fill — flat, no glass, no gradient. */}
           <View
             pointerEvents="none"
             style={[
-              StyleSheet.absoluteFillObject,
-              {
-                borderRadius: shapeR,
-                borderWidth: rankTheme.stepShape === "rect-glass" ? 1 : 1.5,
-                borderColor:
-                  rankTheme.stepShape === "circle"
-                    ? "transparent"
-                    : rankTheme.accent + (isDone || isAvail ? "AA" : "55"),
-                zIndex: 2,
-              },
+              StyleSheet.absoluteFill,
+              { borderRadius: shapeR, backgroundColor: faceColor },
             ]}
-          />
-          <LinearGradient
-            colors={[gradTop, gradBot]}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-            style={[StyleSheet.absoluteFill, { borderRadius: shapeR }]}
-          />
-
-          <LinearGradient
-            colors={["rgba(255,255,255,0.22)", "rgba(255,255,255,0)"]}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-            style={[StyleSheet.absoluteFill, { borderRadius: shapeR }]}
-          />
-
-          <LinearGradient
-            colors={[
-              "transparent",
-              isLocked ? "rgba(0,0,0,0.06)" : sideColor + "1E",
-            ]}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-            style={[StyleSheet.absoluteFill, { borderRadius: shapeR }]}
           />
 
           <View style={styles.stepLeft}>
-            <View
-              style={[
-                styles.stepIconCircle,
-                {
-                  backgroundColor: isDone
-                    ? "rgba(255,255,255,0.25)"
-                    : isAvail
-                      ? "rgba(26,26,46,0.12)"
-                      : "rgba(0,0,0,0.06)",
-                },
-              ]}
-            >
-              {isLocked ? (
-                <Ionicons name="lock-closed" size={16} color={iconColor} />
-              ) : isDone ? (
-                <Ionicons name="checkmark" size={18} color="#fff" />
-              ) : (
-                <Ionicons name={item.icon as any} size={18} color={iconColor} />
-              )}
-            </View>
+            {isLocked ? (
+              <Ionicons name="lock-closed" size={20} color={iconColor} />
+            ) : isDone ? (
+              <Ionicons name="checkmark" size={22} color={iconColor} />
+            ) : (
+              <Ionicons name={item.icon as any} size={22} color={iconColor} />
+            )}
           </View>
 
           <View style={styles.stepCenter}>
@@ -413,11 +371,11 @@ function StepBlock({
               style={[
                 styles.stepSub,
                 {
-                  color: isDone
-                    ? "rgba(255,255,255,0.75)"
-                    : isAvail
-                      ? "rgba(26,26,46,0.6)"
-                      : "#B8B8C8",
+                  color: isLocked
+                    ? "#B8B8C8"
+                    : onFace === "#FFFFFF"
+                      ? "rgba(255,255,255,0.78)"
+                      : "rgba(26,26,46,0.62)",
                   fontFamily: rankTheme.fontFamily,
                 },
               ]}
@@ -507,6 +465,7 @@ function ModuleDivider({
 
 export default function PathScreen() {
   const { colors, colorScheme, themeMode } = useAppColors();
+  const isDark = themeMode === "dark";
   const insets = useSafeAreaInsets();
   const {
     levels: allLevels,
@@ -540,18 +499,22 @@ export default function PathScreen() {
 
   const stepsBottomToTop: StepItem[] = [...levels]
     .sort((a, b) => a.levelNumber - b.levelNumber)
-    .map((l) => ({
-      id: l.id,
-      levelNumber: l.levelNumber,
-      title: l.title,
-      subtitle: l.subtitle,
-      icon: l.icon,
-      status: l.status,
-      tasksDone: l.tasks.filter((t) => t.status === "completed").length,
-      color: l.color,
-      colorDark: l.colorDark,
-      module: l.module,
-    }));
+    .map((l) => {
+      // Tile ("brick") colour comes from the curated Path palette, per module.
+      const brick = getPathColors(l.module, isDark).brick;
+      return {
+        id: l.id,
+        levelNumber: l.levelNumber,
+        title: l.title,
+        subtitle: l.subtitle,
+        icon: l.icon,
+        status: l.status,
+        tasksDone: l.tasks.filter((t) => t.status === "completed").length,
+        color: brick,
+        colorDark: darkenHex(brick, 0.3),
+        module: l.module,
+      };
+    });
 
   const stepsTopToBottom = [...stepsBottomToTop].reverse();
 
@@ -622,6 +585,11 @@ export default function PathScreen() {
     (ri) => ri.type === "step" && ri.step?.status === "available",
   )?.step;
   const activeKey = activeStep?.id;
+
+  // The module the active level belongs to — the default anchor for the
+  // background gradient (see the bgModule computation further down, after the
+  // in-view module is known).
+  const activeModule = activeStep?.module ?? rankBounds.toSection;
 
   const itemYRef = useRef<Record<string, number>>({});
   const lastScrolledCount = useRef(-1);
@@ -729,6 +697,15 @@ export default function PathScreen() {
   if (tintAnchorModule === null) tintAnchorModule = visibleSectionNum;
   // Reference measureTick so the React Compiler doesn't strip the dependency.
   void measureTick;
+
+  // --- Path background (solid module color) ---------------------------------
+  // Which module drives the full-screen background color.
+  //   • Normal play: pinned to the ACTIVE level's module — the background stays
+  //     put while scrolling and only shifts when the player advances a module.
+  //   • Open Testing: follows the module currently IN VIEW, so a tester can
+  //     scroll through the map and preview every module's color in turn.
+  const bgModule = isOpenTestingEnabled ? tintAnchorModule : activeModule;
+  const curBgColor = getPathColors(bgModule, isDark).bg;
 
   // Tactile "lock-in" — when the tint anchor module flips (i.e. the
   // previous module has fully scrolled off the viewport), fire a chunky
@@ -842,52 +819,21 @@ export default function PathScreen() {
         () => {},
       );
     }
-    // If the user already finished the interview but never advanced (e.g.
-    // they backed out of the rank-up screen), let them resume directly at
-    // the rank-up CTA so progression can never get stranded.
-    if (portalStatus === "completed") {
-      router.push("/rank-up");
-      return;
-    }
-    router.push("/portal-interview");
+    // Jenny's interview was removed from the game, so the portal no longer
+    // gates on it — pressing an unlocked portal goes straight to the rank-up
+    // screen where the player advances to the next rank.
+    router.push("/rank-up");
   }, [portalStatus]);
 
-  const rank1BaseBg = themeMode === "dark" ? "#07070A" : "#FAFAFC";
-  const containerBg = PATH_LANDSCAPE_BG_EXPERIMENT
-    ? "transparent"
-    : rankTheme.index === 1
-      ? rank1BaseBg
-      : rankTheme.bgColors[0];
-  // Rank 1 tint follows the module the user is currently looking at, but
-  // only when that module has been visited (completed or currently active).
-  // Locked modules above show a clean theme background (no tint at all).
-  // Yellow `#FFD166` is replaced with a richer amber that doesn't read as
-  // muddy on dark.
-  const RANK1_YELLOW_REPLACEMENT = "#F5A623";
-  const rank1ActiveModule = Math.min(
-    rankBounds.toSection,
-    Math.max(rankBounds.fromSection, tintAnchorModule || rankBounds.fromSection),
-  );
-  const rawRank1Color = MODULE_COLORS[rank1ActiveModule]?.color;
-  const rank1Tint: string | null =
-    !PATH_LANDSCAPE_BG_EXPERIMENT && rankTheme.index === 1
-      ? rawRank1Color === "#FFD166"
-        ? RANK1_YELLOW_REPLACEMENT
-        : (rawRank1Color ?? rankTheme.accent)
-      : null;
+  // Base color sits under the full-screen gradient (only visible for the split
+  // second before it mounts). The gradient itself carries the level colors.
+  const containerBg = themeMode === "dark" ? "#07070A" : "#FAFAFC";
 
   return (
     <View style={[styles.container, { backgroundColor: containerBg }]}>
-      {PATH_LANDSCAPE_BG_EXPERIMENT ? (
-        <PathPaintingBackground themeMode={themeMode} />
-      ) : (
-        <RankBackground
-          theme={rankTheme}
-          themeMode={themeMode}
-          tintColor={rank1Tint}
-        />
-      )}
+      <PathGradientBackground color={curBgColor} themeMode={themeMode} />
       {isOpenTestingEnabled && (
+        <>
         <View
           style={[
             styles.devRankSwitcher,
@@ -935,6 +881,33 @@ export default function PathScreen() {
             <Ionicons name="chevron-forward" size={16} color="#fff" />
           </Pressable>
         </View>
+        {/* Background preview readout — in Open Testing the background follows
+            the module currently in view, so scrolling the map cycles through
+            every module's color. */}
+        <View
+          style={[
+            styles.devBgReadout,
+            { top: topPad + 50 },
+          ]}
+          pointerEvents="none"
+        >
+          <Text
+            style={[styles.devRankKicker, { fontFamily: "Rubik_600SemiBold" }]}
+          >
+            DEV · ФОН · прокрути карту
+          </Text>
+          <View style={styles.devBgReadoutRow}>
+            <View
+              style={[styles.devBgSwatch, { backgroundColor: curBgColor }]}
+            />
+            <Text
+              style={[styles.devRankValue, { fontFamily: "Rubik_700Bold" }]}
+            >
+              модуль {bgModule} · {curBgColor}
+            </Text>
+          </View>
+        </View>
+        </>
       )}
 
       <Animated.ScrollView
@@ -1038,6 +1011,7 @@ export default function PathScreen() {
                   colors={colors}
                   isNaturallyAvailable={ri.key === activeKey}
                   rankTheme={rankTheme}
+                  themeMode={themeMode}
                 />
               </View>
 
@@ -1215,6 +1189,7 @@ const styles = StyleSheet.create({
     marginTop: 28,
   },
   bottomHintText: { fontSize: 13 },
+  illustrationCredit: { fontSize: 10, textAlign: "right", opacity: 0.55, marginTop: 12 },
   fab: {
     position: "absolute",
     right: 16,
@@ -1261,6 +1236,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(0,0,0,0.25)",
+  },
+  devBgReadout: {
+    position: "absolute",
+    alignSelf: "center",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 999,
+    zIndex: 20,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.22)",
+  },
+  devBgReadoutRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  devBgSwatch: {
+    width: 12,
+    height: 12,
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.5)",
   },
   devRankLabelCol: {
     alignItems: "center",

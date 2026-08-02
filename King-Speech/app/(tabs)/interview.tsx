@@ -1,170 +1,100 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  Platform,
-  ScrollView,
-  Dimensions,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, Pressable, Platform } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
+import { useNavigation } from "expo-router";
+import Animated, { FadeIn } from "react-native-reanimated";
 import { useLang } from "@/context/LangContext";
+import { useAppColors } from "@/hooks/useAppColors";
 import { fonts } from "@/constants/colors";
-import {
-  ROUTES,
-  REFERENCE,
-  BLOCK_META,
-  DIFFICULTY_LABEL,
-  tx,
-  type CheatRoute,
-  type CheatStep,
-} from "@/constants/cheatsheetData";
+import { ROUTES, type CheatRoute } from "@/constants/cheatsheetData";
 import CheatSheetRunner from "@/components/cheatsheet/CheatSheetRunner";
+import CheatSheetWheel from "@/components/cheatsheet/CheatSheetWheel";
+import GetReadyLogo from "@/components/cheatsheet/GetReadyLogo";
 
-const { width: SW } = Dimensions.get("window");
-const BG = "#0E0E10";
-const BG2 = "#171320";
-const GOLD = "#FFCF34";
-const PURPLE = "#9468FB";
+// Encouraging one-liners shown under the title; rotates once per day so the
+// screen feels fresh. Source: тексты для Шпаргалки.docx (updates daily).
+const DAILY_TEXTS = [
+  "Глубокий вдох, выдох — и шпаргалка под рукой.",
+  "Волнуешься перед выступлением? Пройди быстрые задания и подготовься.",
+  "Нервничаешь? Давай разомнёмся — и страх отступит.",
+  "Разогреем связки и разомнёмся.",
+  "Голос звучит увереннее, когда связки разогреты. Начнём?",
+  "Пара минут на разминку — и вперёд.",
+  "Короткий тренажёр к уверенному выходу.",
+  "Экспресс-подготовка к ответственному выступлению.",
+  "Быстрый способ подготовиться к важному выступлению.",
+  "Твой выход, маэстро — не забудь разогреться.",
+  "Разминка голоса не помешает.",
+  "Оратор, вам не помешает размяться.",
+  "Всё главное — в одном месте.",
+  "Соберись за пару минут.",
+  "Для уверенного старта.",
+  "Освежись перед выходом на сцену.",
+  "Быстрая подготовка — коротко и по делу.",
+  "Минута пошла — собери мысли в порядок.",
+  "Спокоен как удав.",
+  "Перед выходом загляни сюда.",
+  "Оратор рождается из подготовки.",
+  "Поэтами рождаются, ораторами становятся.",
+  "Сначала разогрейся — слова придут сами.",
+  "Волнение — это твоя энергия. Направь её в голос.",
+  "Говори не идеально — говори честно.",
+];
+
+function useDailyText(): string {
+  // Day index since epoch → same line for the whole calendar day, rotates daily.
+  const day = Math.floor(Date.now() / 86_400_000);
+  return DAILY_TEXTS[day % DAILY_TEXTS.length];
+}
 
 function haptic() {
-  if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-}
-
-// ── Route card ────────────────────────────────────────────────────────────────
-function RouteCard({ route, lang, onPress, delay }: {
-  route: CheatRoute; lang: string; onPress: () => void; delay: number;
-}) {
-  return (
-    <Animated.View entering={FadeInDown.delay(delay).duration(400)}>
-      <Pressable onPress={onPress} style={({ pressed }) => [rc.card, pressed && { transform: [{ scale: 0.98 }] }]}>
-        <LinearGradient
-          colors={[route.accent + "26", "transparent"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <View style={[rc.iconWrap, { backgroundColor: route.accent + "22", borderColor: route.accent + "55" }]}>
-          <Ionicons name={route.icon} size={26} color={route.accent} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={rc.title}>{tx(route.title, lang)}</Text>
-          <Text style={rc.subtitle}>{tx(route.subtitle, lang)}</Text>
-        </View>
-        <View style={[rc.go, { backgroundColor: route.accent }]}>
-          <Ionicons name="arrow-forward" size={18} color="#0E0E10" />
-        </View>
-      </Pressable>
-    </Animated.View>
-  );
-}
-const rc = StyleSheet.create({
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-    padding: 18,
-    borderRadius: 24,
-    overflow: "hidden",
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.10)",
-  },
-  iconWrap: { width: 56, height: 56, borderRadius: 18, alignItems: "center", justifyContent: "center", borderWidth: 1 },
-  title: { color: "#fff", fontSize: 22, fontFamily: fonts.display },
-  subtitle: { color: "rgba(255,255,255,0.6)", fontSize: 14, lineHeight: 19, fontFamily: fonts.body, marginTop: 2 },
-  go: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
-});
-
-// ── Reference (Полная версия) row per step ───────────────────────────────────
-function RefRow({ step, lang }: { step: CheatStep; lang: string }) {
-  let title = "";
-  let sub = "";
-  let right = "";
-
-  switch (step.kind) {
-    case "breathing":
-      title = tx(step.title, lang); sub = tx(step.intro, lang); break;
-    case "action":
-      title = `${step.emoji}  ${tx(step.title, lang)}`; sub = step.moves.map((m) => tx(m, lang)).join(" · "); break;
-    case "articulation":
-      title = tx(step.title, lang); sub = step.moves.map((m) => `${m.emoji} ${tx(m.label, lang)}`).join(" · "); break;
-    case "chant":
-      title = tx(step.title, lang); sub = step.syllables.join(" – "); break;
-    case "twister":
-      title = tx(step.text, lang); sub = tx(step.sound, lang); right = tx(DIFFICULTY_LABEL[step.difficulty], lang); break;
-    case "tip":
-      title = tx(step.title, lang); sub = tx(step.text, lang); break;
-    case "final":
-      title = tx(step.title, lang); sub = tx(step.mantra, lang); break;
-  }
-
-  return (
-    <View style={styles.row}>
-      <View style={styles.bullet} />
-      <View style={{ flex: 1 }}>
-        <Text style={styles.rowTitle}>{title}</Text>
-        {!!sub && <Text style={styles.rowSub}>{sub}</Text>}
-      </View>
-      {!!right && (
-        <View style={styles.rightChip}>
-          <Text style={styles.rightTxt}>{right}</Text>
-        </View>
-      )}
-    </View>
-  );
-}
-
-// ── Full reference screen ─────────────────────────────────────────────────────
-function FullReference({ lang, topPad, bottomPad, onBack }: {
-  lang: string; topPad: number; bottomPad: number; onBack: () => void;
-}) {
-  return (
-    <View style={styles.root}>
-      <LinearGradient colors={[BG2, BG]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
-      <View style={[styles.refTop, { paddingTop: topPad + 10 }]}>
-        <Pressable onPress={onBack} hitSlop={10} style={styles.iconBtn}>
-          <Ionicons name="chevron-back" size={22} color="#fff" />
-        </Pressable>
-        <Text style={styles.refTopTitle}>{lang === "en" ? "Full version" : "Полная версия"}</Text>
-        <View style={styles.iconBtn} />
-      </View>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: bottomPad + 40, gap: 22 }} showsVerticalScrollIndicator={false}>
-        {REFERENCE.map((section) => {
-          const meta = BLOCK_META[section.block];
-          return (
-            <View key={section.block} style={{ gap: 12 }}>
-              <View style={styles.secHead}>
-                <Ionicons name={meta.icon} size={18} color={GOLD} />
-                <Text style={styles.secTitle}>{tx(meta.title, lang)}</Text>
-              </View>
-              <View style={styles.secCard}>
-                {section.steps.map((s, i) => (
-                  <React.Fragment key={s.id}>
-                    {i > 0 && <View style={styles.rowDivider} />}
-                    <RefRow step={s} lang={lang} />
-                  </React.Fragment>
-                ))}
-              </View>
-            </View>
-          );
-        })}
-      </ScrollView>
-    </View>
-  );
+  if (Platform.OS !== "web")
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 }
 
 // ── Main screen ────────────────────────────────────────────────────────────────
 export default function CheatSheetScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   const { lang } = useLang();
+  const { colors, isDark } = useAppColors();
+  const dailyText = useDailyText();
   const [activeRoute, setActiveRoute] = useState<CheatRoute | null>(null);
-  const [showFull, setShowFull] = useState(false);
+  // The warm-up chosen on the wheel, held during the 5-second countdown.
+  const [pending, setPending] = useState<CheatRoute | null>(null);
+  const [count, setCount] = useState(5);
+
+  // Hide the bottom tab bar while the countdown or the warm-up itself is on —
+  // the runner is a full-screen flow and the nav bar shouldn't show through.
+  const immersive = !!pending || !!activeRoute;
+  useEffect(() => {
+    navigation.setOptions({
+      tabBarStyle: immersive ? { display: "none" } : undefined,
+    });
+  }, [immersive, navigation]);
+
+  // 5-second countdown → then the warm-up starts.
+  useEffect(() => {
+    if (!pending) return;
+    let n = 5;
+    setCount(n);
+    if (Platform.OS !== "web")
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    const id = setInterval(() => {
+      n -= 1;
+      if (n <= 0) {
+        clearInterval(id);
+        setActiveRoute(pending);
+        setPending(null);
+      } else {
+        setCount(n);
+        if (Platform.OS !== "web")
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [pending]);
 
   if (activeRoute) {
     return (
@@ -176,128 +106,72 @@ export default function CheatSheetScreen() {
     );
   }
 
-  if (showFull) {
-    return (
-      <FullReference
-        lang={lang}
-        topPad={insets.top}
-        bottomPad={insets.bottom}
-        onBack={() => setShowFull(false)}
-      />
-    );
-  }
-
   return (
-    <View style={styles.root}>
-      <LinearGradient colors={[BG2, BG]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
-      <View pointerEvents="none" style={[styles.glow, { backgroundColor: PURPLE + "22", top: -SW * 0.3, right: -SW * 0.3 }]} />
-      <View pointerEvents="none" style={[styles.glow, { backgroundColor: GOLD + "14", bottom: -SW * 0.25, left: -SW * 0.3 }]} />
-
-      <ScrollView
-        contentContainerStyle={{
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <View
+        style={{
+          flex: 1,
           paddingHorizontal: 22,
-          paddingTop: insets.top + 26,
-          paddingBottom: insets.bottom + 120,
-          gap: 26,
+          paddingTop: insets.top + 22,
+          paddingBottom: insets.bottom + 14,
         }}
-        showsVerticalScrollIndicator={false}
       >
         {/* Hero */}
         <Animated.View entering={FadeIn.duration(400)} style={{ gap: 10 }}>
-          <View style={styles.kickerRow}>
-            <Ionicons name="flame" size={15} color={GOLD} />
-            <Text style={styles.kicker}>{lang === "en" ? "EMERGENCY PREP" : "ЭКСТРЕННАЯ ПОДГОТОВКА"}</Text>
-          </View>
-          <Text style={styles.hero}>{lang === "en" ? "Cheat Sheet" : "Шпаргалка"}</Text>
-          <Text style={styles.heroSub}>
-            {lang === "en"
-              ? "Little time, shaky hands? Let's settle your nerves, voice and diction — step by step."
-              : "Мало времени, дрожат руки? Быстро успокоим нервы, голос и дикцию — шаг за шагом."}
+          <GetReadyLogo width={210} color={colors.text} />
+          <Text style={[styles.heroSub, { color: colors.textSecondary }]}>
+            {lang === "en" ? "Your quick prep before you speak." : dailyText}
           </Text>
         </Animated.View>
 
-        {/* Question */}
-        <Animated.View entering={FadeInDown.delay(80).duration(400)} style={styles.qRow}>
-          <Ionicons name="time-outline" size={18} color="rgba(255,255,255,0.7)" />
-          <Text style={styles.question}>{lang === "en" ? "How much time do you have?" : "Сколько у тебя времени?"}</Text>
-        </Animated.View>
+        {/* Minutes wheel — scroll to pick how long a warm-up you want. */}
+        <CheatSheetWheel
+          routes={ROUTES}
+          lang={lang}
+          colors={colors}
+          isDark={isDark}
+          onStart={(route) => {
+            haptic();
+            setPending(route);
+          }}
+        />
+      </View>
 
-        <View style={{ gap: 14 }}>
-          {ROUTES.map((route, i) => (
-            <RouteCard
-              key={route.id}
-              route={route}
-              lang={lang}
-              delay={140 + i * 80}
-              onPress={() => {
-                haptic();
-                setActiveRoute(route);
-              }}
-            />
-          ))}
-        </View>
-
-        {/* Full version */}
-        <Animated.View entering={FadeInDown.delay(420).duration(400)}>
-          <Pressable
-            onPress={() => {
-              haptic();
-              setShowFull(true);
-            }}
-            style={({ pressed }) => [styles.fullBtn, pressed && { opacity: 0.85 }]}
-          >
-            <Ionicons name="list-outline" size={18} color="rgba(255,255,255,0.75)" />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.fullTitle}>{lang === "en" ? "Full version" : "Полная версия"}</Text>
-              <Text style={styles.fullSub}>
-                {lang === "en" ? "Browse every exercise calmly, on your own" : "Листай все упражнения сам, спокойно"}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.4)" />
-          </Pressable>
-        </Animated.View>
-      </ScrollView>
+      {/* Countdown before the warm-up begins. Tap to cancel. */}
+      {pending && (
+        <Pressable
+          style={[styles.countdown, { backgroundColor: colors.background }]}
+          onPress={() => setPending(null)}
+        >
+          <Text style={[styles.countKicker, { color: colors.textSecondary }]}>
+            {lang === "en" ? "Get ready" : "Приготовьтесь"}
+          </Text>
+          <Text style={[styles.countNum, { color: pending.accent }]}>
+            {count}
+          </Text>
+          <Text style={[styles.countHint, { color: colors.textMuted }]}>
+            {lang === "en" ? "Tap to cancel" : "Нажмите, чтобы отменить"}
+          </Text>
+        </Pressable>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: BG },
-  glow: { position: "absolute", width: SW, height: SW, borderRadius: SW / 2, ...(Platform.OS === "web" ? ({ filter: "blur(120px)" } as any) : { opacity: 0.45 }) },
+  root: { flex: 1 },
+  // Handwritten title (Caveat Bold — already loaded in _layout).
+  hero: { fontSize: 58, fontFamily: "Caveat_700Bold", lineHeight: 62, marginTop: -4 },
+  heroSub: { fontSize: 16, lineHeight: 23, fontFamily: fonts.body },
 
-  kickerRow: { flexDirection: "row", alignItems: "center", gap: 7 },
-  kicker: { color: GOLD, fontSize: 12, fontFamily: fonts.bodyBold, letterSpacing: 2 },
-  hero: { color: "#fff", fontSize: 40, fontFamily: fonts.display, lineHeight: 46 },
-  heroSub: { color: "rgba(255,255,255,0.66)", fontSize: 16, lineHeight: 23, fontFamily: fonts.body },
-
-  qRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  question: { color: "rgba(255,255,255,0.85)", fontSize: 17, fontFamily: fonts.bodyBold },
-
-  fullBtn: {
-    flexDirection: "row",
+  countdown: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: "center",
+    justifyContent: "center",
     gap: 12,
-    padding: 16,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    zIndex: 50,
   },
-  fullTitle: { color: "#fff", fontSize: 16, fontFamily: fonts.bodyBold },
-  fullSub: { color: "rgba(255,255,255,0.5)", fontSize: 13, fontFamily: fonts.body, marginTop: 1 },
-
-  // full reference
-  refTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 14 },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.08)" },
-  refTopTitle: { color: "#fff", fontSize: 18, fontFamily: fonts.serifBold },
-  secHead: { flexDirection: "row", alignItems: "center", gap: 8 },
-  secTitle: { color: "#fff", fontSize: 18, fontFamily: fonts.serifBold },
-  secCard: { backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", padding: 16 },
-  row: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
-  bullet: { width: 8, height: 8, borderRadius: 4, backgroundColor: PURPLE, marginTop: 6 },
-  rowTitle: { color: "rgba(255,255,255,0.92)", fontSize: 15, lineHeight: 21, fontFamily: fonts.bodySemibold },
-  rowSub: { color: "rgba(255,255,255,0.55)", fontSize: 13, lineHeight: 18, fontFamily: fonts.body, marginTop: 2 },
-  rowDivider: { height: 1, backgroundColor: "rgba(255,255,255,0.06)", marginVertical: 12 },
-  rightChip: { backgroundColor: "rgba(255,207,52,0.14)", borderWidth: 1, borderColor: "rgba(255,207,52,0.3)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  rightTxt: { color: GOLD, fontSize: 12, fontFamily: fonts.bodyBold },
+  countKicker: { fontSize: 16, fontFamily: fonts.bodySemibold, letterSpacing: 1 },
+  countNum: { fontSize: 150, lineHeight: 158, fontFamily: fonts.display },
+  countHint: { fontSize: 13, fontFamily: fonts.body, marginTop: 10 },
 });

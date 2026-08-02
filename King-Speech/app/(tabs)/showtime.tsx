@@ -24,14 +24,28 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { getSpeechThemes } from "@/app/showtime-stage";
 import { useLang } from "@/context/LangContext";
+import { useTheme } from "@/context/ThemeContext";
 import { VinylGallery } from "@/components/showtime/VinylGallery";
-import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
+import { ShowTimeLogo, ShowTimeLogoLight } from "@/components/showtime/ShowTimeLogo";
 
 const { width: SW } = Dimensions.get("window");
 
 export default function ShowTimeScreen() {
   const insets = useSafeAreaInsets();
   const { t, lang } = useLang();
+  const { themeMode } = useTheme();
+  const isLight = themeMode === "light";
+  // Light theme: white paper interface with the colorful wordmark. Dark theme
+  // keeps the original navy stage look.
+  const bgGradient: [string, string, string] = isLight
+    ? ["#FFFFFF", "#F5F7FB", "#FFFFFF"]
+    : ["#070D1A", "#0D1830", "#070D1A"];
+  const bgColor = isLight ? "#FFFFFF" : "#070D1A";
+  const ink = isLight ? "#241934" : "#E8E4D8"; // section heading
+  const inkSub = isLight ? "rgba(36,25,52,0.62)" : "rgba(255,255,255,0.7)";
+  const inkFaint = isLight ? "rgba(36,25,52,0.45)" : "rgba(255,255,255,0.35)";
+  const cardBg = isLight ? "rgba(36,25,52,0.035)" : "rgba(255,255,255,0.03)";
+  const chipBg = isLight ? "rgba(36,25,52,0.06)" : "rgba(255,255,255,0.06)";
   const [selectedIdx, setSelectedIdx] = useState(0);
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -82,9 +96,9 @@ export default function ShowTimeScreen() {
   });
 
   return (
-    <View style={[st.container, { backgroundColor: "#070D1A" }]}>
+    <View style={[st.container, { backgroundColor: bgColor }]}>
       <LinearGradient
-        colors={["#070D1A", "#0D1830", "#070D1A"]}
+        colors={bgGradient}
         style={StyleSheet.absoluteFill}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -97,23 +111,28 @@ export default function ShowTimeScreen() {
       >
         <Animated.View entering={FadeIn.duration(400)} style={st.header}>
           <Animated.View style={logoAnim}>
-            <ShowTimeLogo width={Math.min(SW * 0.46, 200)} color="#F5A623" />
+            {isLight ? (
+              <ShowTimeLogoLight width={Math.min(SW * 0.46, 210)} />
+            ) : (
+              <ShowTimeLogo width={Math.min(SW * 0.46, 200)} color="#F5A623" />
+            )}
           </Animated.View>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(150).duration(400)}>
-          <Text style={[st.sectionLabel, st.galleryHeading, { fontFamily: "Inter_600SemiBold" }]}>
+          <Text style={[st.sectionLabel, st.galleryHeading, { fontFamily: "Inter_600SemiBold", color: ink }]}>
             {t("chooseTopic")}
           </Text>
           <VinylGallery
             themes={THEME_KEYS.map((k) => speechThemes[k])}
             selectedIdx={safeIdx}
             onSelect={handleThemeSelect}
+            isLight={isLight}
           />
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(350).duration(400)}>
-          <View style={[st.previewCard, { borderColor: theme.accentColor + "25" }]}>
+          <View style={[st.previewCard, { borderColor: theme.accentColor + "25", backgroundColor: cardBg }]}>
             <LinearGradient
               colors={[theme.accentColor + "0A", "transparent"]}
               style={StyleSheet.absoluteFill}
@@ -126,28 +145,29 @@ export default function ShowTimeScreen() {
                 {theme.title}
               </Text>
               {theme.timerSeconds !== null && (
-                <View style={st.previewTimerBadge}>
-                  <Ionicons name="time-outline" size={12} color="rgba(255,255,255,0.5)" />
-                  <Text style={[st.previewTimerText, { fontFamily: "Inter_400Regular" }]}>{theme.timerSeconds} {t("sec")}</Text>
+                <View style={[st.previewTimerBadge, { backgroundColor: chipBg }]}>
+                  <Ionicons name="time-outline" size={12} color={inkFaint} />
+                  <Text style={[st.previewTimerText, { fontFamily: "Inter_400Regular", color: inkFaint }]}>{theme.timerSeconds} {t("sec")}</Text>
                 </View>
               )}
             </View>
-            <Text style={[st.previewInterior, { fontFamily: "Inter_400Regular" }]}>{theme.interior}</Text>
-            <View style={st.previewDivider} />
-            <Text style={[st.previewSpeechTitle, { fontFamily: "Inter_600SemiBold" }]}>
+            <Text style={[st.previewInterior, { fontFamily: "Inter_400Regular", color: inkFaint }]}>{theme.interior}</Text>
+            <View style={[st.previewDivider, isLight && { backgroundColor: "rgba(36,25,52,0.10)" }]} />
+            <Text style={[st.previewSpeechTitle, { fontFamily: "Inter_600SemiBold", color: inkSub }]}>
               {randomSpeech.title}
             </Text>
             <View style={st.previewLines}>
               {randomSpeech.lines.slice(0, 4).map((line, i) => (
                 <Text
                   key={i}
-                  style={[st.previewLine, { fontFamily: "Inter_400Regular", opacity: 0.6 - i * 0.1 }]}
-                  numberOfLines={1}
+                  style={[st.previewLine, { fontFamily: "Inter_400Regular", opacity: 0.6 - i * 0.1, color: isLight ? "#241934" : "#fff" }]}
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
                 >
                   {line}
                 </Text>
               ))}
-              <Text style={[st.previewLine, { fontFamily: "Inter_400Regular", opacity: 0.2 }]}>...</Text>
+              <Text style={[st.previewLine, { fontFamily: "Inter_400Regular", opacity: 0.2, color: isLight ? "#241934" : "#fff" }]}>...</Text>
             </View>
           </View>
         </Animated.View>

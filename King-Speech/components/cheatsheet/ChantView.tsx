@@ -7,10 +7,11 @@ import Animated, {
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { fonts } from "@/constants/colors";
+import { useAppColors } from "@/hooks/useAppColors";
 
 const ACCENT = "#FFCF34";
 
-function Syllable({ text, active }: { text: string; active: boolean }) {
+function Syllable({ text, active, muted }: { text: string; active: boolean; muted: string }) {
   const p = useSharedValue(active ? 1 : 0);
   useEffect(() => {
     p.value = withTiming(active ? 1 : 0, { duration: 200 });
@@ -21,7 +22,7 @@ function Syllable({ text, active }: { text: string; active: boolean }) {
   }));
   return (
     <Animated.View style={style}>
-      <Text style={[styles.syl, active && styles.sylActive]}>{text}</Text>
+      <Text style={[styles.syl, { color: muted }, active && styles.sylActive]}>{text}</Text>
     </Animated.View>
   );
 }
@@ -38,6 +39,7 @@ export default function ChantView({
   tempoMs: number;
 }) {
   const [active, setActive] = useState(0);
+  const { colors, isDark } = useAppColors();
 
   useEffect(() => {
     if (!syllables.length) return;
@@ -57,12 +59,19 @@ export default function ChantView({
     <View style={styles.wrap}>
       <View style={styles.row}>
         {syllables.map((s, i) => (
-          <Syllable key={`${s}-${i}`} text={s} active={i === active} />
+          <Syllable key={`${s}-${i}`} text={s} active={i === active} muted={colors.textMuted} />
         ))}
       </View>
       <View style={styles.dots}>
         {syllables.map((_, i) => (
-          <View key={i} style={[styles.dot, i === active && styles.dotActive]} />
+          <View
+            key={i}
+            style={[
+              styles.dot,
+              { backgroundColor: isDark ? "rgba(255,255,255,0.18)" : "rgba(14,14,16,0.16)" },
+              i === active && styles.dotActive,
+            ]}
+          />
         ))}
       </View>
     </View>

@@ -24,6 +24,7 @@ type Props = {
   themes: SpeechTheme[];
   selectedIdx: number;
   onSelect: (idx: number) => void;
+  isLight?: boolean;
 };
 
 function clamp(v: number, lo: number, hi: number) {
@@ -31,7 +32,7 @@ function clamp(v: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, v));
 }
 
-export function VinylGallery({ themes, selectedIdx, onSelect }: Props) {
+export function VinylGallery({ themes, selectedIdx, onSelect, isLight }: Props) {
   const { width: winW } = useWindowDimensions();
 
   // Sizing — center 180×180; sides reach ~120 via scale 0.65.
@@ -165,10 +166,12 @@ export function VinylGallery({ themes, selectedIdx, onSelect }: Props) {
             { color: centerTheme.accentColor, fontFamily: "Inter_600SemiBold" },
           ]}
           numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
         >
           {centerTheme.title}
         </Text>
-        <Text style={[styles.counter, { fontFamily: "Inter_400Regular" }]}>
+        <Text style={[styles.counter, { fontFamily: "Inter_400Regular" }, isLight && { color: "rgba(36,25,52,0.45)" }]}>
           {selectedIdx + 1} / {themes.length}
         </Text>
       </Animated.View>

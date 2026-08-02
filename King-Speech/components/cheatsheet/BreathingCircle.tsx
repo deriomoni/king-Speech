@@ -11,6 +11,7 @@ import Animated, {
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { fonts } from "@/constants/colors";
+import { useAppColors } from "@/hooks/useAppColors";
 import { tx, type BreathingStep, type PhaseType } from "@/constants/cheatsheetData";
 
 // Distinct colour per phase so it's instantly obvious where you are.
@@ -53,6 +54,7 @@ export default function BreathingCircle({
   lang: string;
   onDone?: () => void;
 }) {
+  const { colors } = useAppColors();
   const phases = React.useMemo(
     () => Array.from({ length: step.cycles }).flatMap(() => step.pattern),
     [step],
@@ -109,7 +111,7 @@ export default function BreathingCircle({
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.cycle}>
+      <Text style={[styles.cycle, { color: colors.textMuted }]}>
         {finished
           ? lang === "en" ? "Done — nicely breathed" : "Готово — отлично подышал"
           : lang === "en"
@@ -143,7 +145,7 @@ export default function BreathingCircle({
           {phase ? (
             <>
               <Text style={[styles.phaseLabel, { color }]}>{tx(phase.label, lang)}</Text>
-              <Text style={styles.phaseCount}>{count}</Text>
+              <Text style={[styles.phaseCount, { color: colors.text }]}>{count}</Text>
             </>
           ) : (
             <Ionicons name="leaf-outline" size={52} color={C_INHALE} />

@@ -559,7 +559,7 @@ export default function RankUpScreen({ fromRank, memento = false }: Props) {
   const { lang } = useLang();
   const { themeMode } = useTheme();
   const insets = useSafeAreaInsets();
-  const { showTimeRecordings, getWorstMetricsForRank, getMetricTrendForRank, advanceRank, portalCompleted } = useGame();
+  const { showTimeRecordings, getWorstMetricsForRank, getMetricTrendForRank, advanceRank } = useGame();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
@@ -586,9 +586,6 @@ export default function RankUpScreen({ fromRank, memento = false }: Props) {
     // getMetricTrendForRank closes over metricSeries from context which
     // updates the provider value; safe to depend on the function ref.
   }, [surfacedMetrics, fromRank, getMetricTrendForRank]);
-  // Only allow advance when the portal is actually completed.
-  const portalDone = !!portalCompleted[fromRank];
-
   const handleStart = () => {
     if (memento) {
       if (Platform.OS !== "web") {
@@ -598,10 +595,8 @@ export default function RankUpScreen({ fromRank, memento = false }: Props) {
       else router.replace("/worlds");
       return;
     }
-    if (!portalDone) {
-      router.replace("/portal-interview");
-      return;
-    }
+    // Jenny's interview was the old rank-up gate; it's been removed, so advancing
+    // no longer routes through /portal-interview — the player advances directly.
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     }

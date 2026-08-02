@@ -33,7 +33,9 @@ function Test-MetroStatusRunning() {
 }
 
 function Test-BackendRunning() {
-  $code = curl.exe -s -o NUL -w "%{http_code}" --max-time 3 "http://localhost:5000/" 2>$null
+  # Hit /api/health, not "/": with KS_EXTERNAL_METRO=1 the API server doesn't
+  # serve the web landing page, so "/" would 404 and falsely report "down".
+  $code = curl.exe -s -o NUL -w "%{http_code}" --max-time 3 "http://localhost:5000/api/health" 2>$null
   return ($code -eq "200")
 }
 
@@ -47,7 +49,11 @@ function Ensure-Backend() {
   }
   $serverLog = Join-Path $cursorDir "server.log"
   if (Test-Path $serverLog) { Remove-Item $serverLog -Force -ErrorAction SilentlyContinue }
-  $serverCmd = "cd /d `"$ProjectRoot`" && npx tsx server/index.ts >> `"$serverLog`" 2>&1"
+  # KS_EXTERNAL_METRO=1: Metro is started separately below, so the API server
+  # must stay a pure :5000 API and not spawn its own Metro (see server/index.ts).
+  # Quote the set assignment so cmd doesn't fold the trailing space into the
+  # value ("1 " != "1"); server/index.ts trims defensively too.
+  $serverCmd = "cd /d `"$ProjectRoot`" && set `"KS_EXTERNAL_METRO=1`" && npx tsx server/index.ts >> `"$serverLog`" 2>&1"
   Start-Process -FilePath "cmd.exe" -ArgumentList @("/c", $serverCmd) -WorkingDirectory $ProjectRoot -WindowStyle Minimized
   Write-Status "Backend (AI) starting on :5000 - log: $serverLog"
   Write-DebugLog "H4" "backend_start" @{ log = $serverLog }
@@ -176,7 +182,13 @@ Remove-Item Env:REACT_NATIVE_PACKAGER_HOSTNAME -ErrorAction SilentlyContinue
 $clearFlag = if ($Fresh) { "--clear" } else { "" }
 if (Test-Path $logFile) { Remove-Item $logFile -Force -ErrorAction SilentlyContinue }
 
-$startCmd = "cd /d `"$ProjectRoot`" && npx expo start --lan --web $clearFlag >> `"$logFile`" 2>&1"
+# Pin the app's API base to THIS machine's current LAN IP so both the web
+# preview and Expo Go (phone) reach the :5000 backend regardless of DHCP churn.
+# process.env wins over the .env file (dotenv won't override), so this is the
+# source of truth for EXPO_PUBLIC_API_URL at bundle time.
+$apiBase = "http://${lanIp}:5000"
+$startCmd = "cd /d `"$ProjectRoot`" && set `"EXPO_PUBLIC_API_URL=$apiBase`" && npx expo start --lan --web $clearFlag >> `"$logFile`" 2>&1"
+Write-Status "API base pinned: $apiBase"
 Start-Process -FilePath "cmd.exe" -ArgumentList @("/c", $startCmd) -WorkingDirectory $ProjectRoot -WindowStyle Minimized
 
 Write-Status "Starting Metro..."

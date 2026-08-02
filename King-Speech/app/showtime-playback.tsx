@@ -635,14 +635,16 @@ export default function ShowtimePlaybackScreen() {
   // player back on the map. Trainer mode (free play) still returns to map.
   const goAfterShowTime = () => {
     if (isTrainer) {
-      router.push("/");
+      // replace (not push) — pushing "/" stacks a second copy of the tab
+      // navigator on top of the existing map, duplicating the whole game.
+      router.replace("/(tabs)");
       return;
     }
     const all = getLevelsData(lang);
     const idx = all.findIndex((l) => l.id === levelId);
     const next = idx >= 0 && idx < all.length - 1 ? all[idx + 1] : null;
     if (!next) {
-      router.push("/");
+      router.replace("/(tabs)");
       return;
     }
     if (next.id.startsWith("showtime")) {
@@ -862,7 +864,11 @@ export default function ShowtimePlaybackScreen() {
                   return;
                 }
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.push({ pathname: "/showtime-stage", params: { levelId, mode: isTrainer ? "trainer" : "game" } });
+                // replace (not push): playback sits on top of the stage we came
+                // from, so pushing a new stage would stack stage+playback pairs
+                // without bound and leak recorder/timer resources. Replace swaps
+                // in a fresh stage and keeps the stack depth flat.
+                router.replace({ pathname: "/showtime-stage", params: { levelId, mode: isTrainer ? "trainer" : "game" } });
               }}
               style={({ pressed }) => [pb.retryBtn, { backgroundColor: "rgba(255,209,102,0.12)", borderColor: "#FFD166", opacity: pressed ? 0.8 : 1 }]}
             >
