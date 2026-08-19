@@ -52,7 +52,15 @@ function layout(p: PathPattern, width: number, height: number): Clone[] {
     for (let row = rowFrom; row <= rowTo; row++) {
       const y0 = p.phaseY + row * p.pitchY + dropped;
       if (y0 + compH < 0 || y0 > height) continue;
-      out.push({ key: `${col}.${row}`, x: x0 - p.bx, y: y0 - p.by });
+      // The <G> below is translate-then-scale, so the offset that lands the
+      // composition's top-left corner on (x0, y0) is measured in scaled units.
+      // No rotation is involved, so no transform origin is needed — which also
+      // keeps react-native-svg's web build from warning about transform-origin.
+      out.push({
+        key: `${col}.${row}`,
+        x: x0 - p.bx * p.scale,
+        y: y0 - p.by * p.scale,
+      });
     }
   }
   return out;
@@ -87,14 +95,7 @@ function PathPatternBackgroundBase({
       pointerEvents="none"
     >
       {clones.map((c) => (
-        <G
-          key={c.key}
-          x={c.x}
-          y={c.y}
-          scale={pattern.scale}
-          originX={pattern.bx}
-          originY={pattern.by}
-        >
+        <G key={c.key} x={c.x} y={c.y} scale={pattern.scale}>
           {pattern.paths.map((d, i) => (
             <Path key={i} d={d} fill={ink} />
           ))}
