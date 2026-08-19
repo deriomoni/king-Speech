@@ -21,7 +21,11 @@
 const fs = require("fs");
 const path = require("path");
 
-const SRC_DIR = process.argv[2] || "C:/Users/bekka/OneDrive";
+// The artboards live in two folders, and the names COLLIDE across them —
+// "Group 5.svg" exists in both and is different artwork in each. So every spec
+// names its folder explicitly; never resolve an artboard by filename alone.
+const SRC_ROOT = process.argv[2] || "C:/Users/bekka/OneDrive";
+const SRC_DIRS = { one: SRC_ROOT, pa: path.join(SRC_ROOT, "PA") };
 const OUT = path.join(__dirname, "..", "constants", "pathPatterns.ts");
 
 // ── bbox — control points included, so it is a touch generous; that is fine
@@ -76,8 +80,8 @@ function bbox(d) {
 
 const round = (v, p = 2) => Number(v.toFixed(p));
 
-function readPaths(file) {
-  const svg = fs.readFileSync(path.join(SRC_DIR, file + ".svg"), "utf8");
+function readPaths(dir, file) {
+  const svg = fs.readFileSync(path.join(SRC_DIRS[dir], file + ".svg"), "utf8");
   return [...svg.matchAll(/ d="([^"]+)"/g)].map((m) => m[1]);
 }
 
@@ -91,18 +95,40 @@ function readPaths(file) {
 // composition's own size. Compositions that already carry a lot of internal
 // air get less; tight ones get more.
 const SPECS = [
-  { module: 1, file: "Group 1", note: "облако • звезда • цветок",
+  // Первая партия — папка OneDrive, артборды Group 1/2/4/5/6/7.
+  { module: 1, dir: "one", file: "Group 1", note: "облако • звезда • цветок",
     symbolMass: 66, gutter: 0.06 },
-  { module: 2, file: "Group 2", note: "рыба • краб",
+  { module: 2, dir: "one", file: "Group 2", note: "рыба • краб",
     symbolMass: 78, gutter: 0.1 },
-  { module: 3, file: "Group 4", note: "косяк рыбок ×4",
+  { module: 3, dir: "one", file: "Group 4", note: "косяк рыбок ×4",
     symbolMass: 55, gutter: 0.12 },
-  { module: 4, file: "Group 5", note: "цветок из лепестков ×2",
+  { module: 4, dir: "one", file: "Group 5", note: "цветок из лепестков ×2",
     symbolMass: 62, gutter: 0.06 },
-  { module: 5, file: "Group 6", note: "свеча • цветок-звезда",
+  { module: 5, dir: "one", file: "Group 6", note: "свеча • цветок-звезда",
     symbolMass: 66, gutter: 0.08 },
-  { module: 6, file: "Group 7", note: "звезда • клевер • цветок",
+  { module: 6, dir: "one", file: "Group 7", note: "звезда • клевер • цветок",
     symbolMass: 68, gutter: 0.08 },
+
+  // Вторая партия — папка OneDrive/PA, артборды Group 5…21 по номерам.
+  // Имена 5/6/7 совпадают с первой партией, но это ДРУГИЕ рисунки — отсюда
+  // поле `dir` у каждой записи.
+  { module: 7, dir: "pa", file: "Group 5", note: "лошадь ×2", symbolMass: 68, gutter: 0.08 },
+  { module: 8, dir: "pa", file: "Group 6", note: "лис • тюльпан", symbolMass: 68, gutter: 0.08 },
+  { module: 9, dir: "pa", file: "Group 7", note: "звезда ×2", symbolMass: 68, gutter: 0.08 },
+  { module: 10, dir: "pa", file: "Group 8", note: "жук ×2", symbolMass: 68, gutter: 0.08 },
+  { module: 11, dir: "pa", file: "Group 9", note: "облако ×2", symbolMass: 68, gutter: 0.08 },
+  { module: 12, dir: "pa", file: "Group 10", note: "цветок ×2", symbolMass: 68, gutter: 0.08 },
+  { module: 13, dir: "pa", file: "Group 11", note: "кит ×2", symbolMass: 68, gutter: 0.08 },
+  { module: 14, dir: "pa", file: "Group 12", note: "вспышка ×2", symbolMass: 68, gutter: 0.08 },
+  { module: 15, dir: "pa", file: "Group 13", note: "звезда ×2", symbolMass: 68, gutter: 0.08 },
+  { module: 16, dir: "pa", file: "Group 14", note: "клевер • цветок", symbolMass: 68, gutter: 0.08 },
+  { module: 17, dir: "pa", file: "Group 15", note: "цветок ×2", symbolMass: 68, gutter: 0.08 },
+  { module: 18, dir: "pa", file: "Group 16", note: "цветок • трилистник", symbolMass: 68, gutter: 0.08 },
+  { module: 19, dir: "pa", file: "Group 17", note: "звезда ×2", symbolMass: 68, gutter: 0.08 },
+  { module: 20, dir: "pa", file: "Group 18", note: "клевер • цветок", symbolMass: 68, gutter: 0.08 },
+  { module: 21, dir: "pa", file: "Group 19", note: "цветок • клякса • ромашка", symbolMass: 68, gutter: 0.08 },
+  { module: 22, dir: "pa", file: "Group 20", note: "яблоко ×2", symbolMass: 68, gutter: 0.08 },
+  { module: 23, dir: "pa", file: "Group 21", note: "яблоко ×2", symbolMass: 68, gutter: 0.08 },
 ];
 
 // A composition is never drawn bigger than this on its long side. Past it a
@@ -113,7 +139,7 @@ const SPECS = [
 const MAX_COMPOSITION = 240;
 
 const built = SPECS.map((spec) => {
-  const paths = readPaths(spec.file);
+  const paths = readPaths(spec.dir, spec.file);
   const boxes = paths.map(bbox);
 
   // Content box of the WHOLE composition — the artboard's own viewBox is not
@@ -217,7 +243,7 @@ for (const b of built) {
   w("  {");
   w("    module: " + b.spec.module + ",");
   w("    note: " + JSON.stringify(b.spec.note) + ",");
-  w("    source: " + JSON.stringify(b.spec.file + ".svg") + ",");
+  w("    source: " + JSON.stringify((b.spec.dir === "pa" ? "PA/" : "") + b.spec.file + ".svg") + ",");
   w("    bx: " + b.bx + ", by: " + b.by + ", bw: " + b.bw + ", bh: " + b.bh + ",");
   w("    scale: " + b.scale + ",");
   w("    pitchX: " + b.pitchX + ", pitchY: " + b.pitchY + ",");
