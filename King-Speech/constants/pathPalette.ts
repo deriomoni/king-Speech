@@ -21,7 +21,7 @@ export interface PathPair {
 
 export const PATH_PALETTE: PathPair[] = [
   // 1-24 — user's palette (square = bg, centre circle = brick)
-  { bg: "#0172B4", brick: "#F5DF4E" },
+  { bg: "#D7EFFF", brick: "#FF5C34" },
   { bg: "#822049", brick: "#B9CF2E" },
   { bg: "#FD8143", brick: "#343B45" },
   { bg: "#A0DCA8", brick: "#FDAC53" },
@@ -34,14 +34,14 @@ export const PATH_PALETTE: PathPair[] = [
   { bg: "#00492C", brick: "#D3B6D4" },
   { bg: "#EECE7B", brick: "#2B2B23" },
   { bg: "#C4DCAA", brick: "#E04C26" },
-  { bg: "#E22028", brick: "#7569E9" },
+  { bg: "#9ED6DF", brick: "#ED773C" },
   { bg: "#40A0AE", brick: "#202A57" },
   { bg: "#F5AF96", brick: "#275440" },
   { bg: "#9BCCD0", brick: "#DB2231" },
   { bg: "#ABCE98", brick: "#6C1F41" },
   { bg: "#EECE7B", brick: "#849E17" },
   { bg: "#1F295A", brick: "#FAEB86" },
-  { bg: "#E22028", brick: "#7AC2D7" },
+  { bg: "#4A2E27", brick: "#A5BCD6" },
   { bg: "#E3B2B5", brick: "#AFAB26" },
   { bg: "#1F4381", brick: "#FF7BAC" },
   { bg: "#275440", brick: "#E1903E" },
@@ -205,4 +205,27 @@ export function getPathColors(
     bg: isDark ? darkBg(p.bg) : p.bg,
     brick: isDark ? darkBrick(p.brick) : p.brick,
   };
+}
+
+// ── background pattern ink ─────────────────────────────────────────────────
+// The symbol pattern drawn over the Path background is TONE-ON-TONE: it is the
+// module's own background colour pushed a step darker (on light fills) or a
+// step lighter (on dark fills). Never flat black — black over a saturated fill
+// reads as dirt; a shade of the fill itself reads as printed paper.
+//
+// These two numbers are the only knob: raise them to make the pattern louder,
+// lower them to make it whisper.
+const PATTERN_SHIFT_ON_LIGHT = 0.15; // toward black
+const PATTERN_SHIFT_ON_DARK = 0.13; // toward white
+
+/** Ink for the background symbol pattern sitting ON a given Path background. */
+export function patternInk(bg: string): string {
+  const [r, g, b] = hexToRgb(bg);
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  if (lum > 0.5) {
+    const f = 1 - PATTERN_SHIFT_ON_LIGHT;
+    return rgbToHex(r * f, g * f, b * f);
+  }
+  const f = PATTERN_SHIFT_ON_DARK;
+  return rgbToHex(r + (255 - r) * f, g + (255 - g) * f, b + (255 - b) * f);
 }

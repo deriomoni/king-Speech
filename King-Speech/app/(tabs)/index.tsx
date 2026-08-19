@@ -41,6 +41,7 @@ import { getModuleName } from "@/constants/showtimeLoader";
 import { useAppColors } from "@/hooks/useAppColors";
 import { useDevTools } from "@/context/DevToolsContext";
 import { PathGradientBackground } from "@/components/path/PathGradientBackground";
+import { PathPatternBackground } from "@/components/path/PathPatternBackground";
 import { getPathColors, darkenHex, readableText } from "@/constants/pathPalette";
 import FinalPortal from "@/components/path/FinalPortal";
 import { getRankTheme } from "@/components/path/rankTheme";
@@ -832,6 +833,7 @@ export default function PathScreen() {
   return (
     <View style={[styles.container, { backgroundColor: containerBg }]}>
       <PathGradientBackground color={curBgColor} themeMode={themeMode} />
+      <PathPatternBackground moduleNum={bgModule} bg={curBgColor} />
       {isOpenTestingEnabled && (
         <>
         <View
