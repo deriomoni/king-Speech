@@ -25,6 +25,19 @@ import { patternInk } from "@/constants/pathPalette";
  * ladder scrolls and only changes when the module changes.
  */
 
+/**
+ * Master switch for the symbol pattern.
+ *
+ * OFF right now — we are looking at the Path with nothing but the flat module
+ * colour, to judge the palette on its own. Everything the pattern needs is
+ * still here and still generated: the compositions for modules 1-23 live in
+ * constants/pathPatterns.ts, the layout maths is untouched below, and
+ * scripts/genPathPatterns.js still rebuilds it all from the artboards.
+ *
+ * Flip this back to `true` to bring the pattern back. Nothing else to change.
+ */
+export const PATH_PATTERN_BG = false;
+
 /** One stamp of the composition, resolved to viewport coordinates. */
 interface Clone {
   key: string;
@@ -77,14 +90,15 @@ function PathPatternBackgroundBase({
 }) {
   const { width, height } = useWindowDimensions();
 
-  const pattern = getPathPattern(moduleNum);
+  const pattern = PATH_PATTERN_BG ? getPathPattern(moduleNum) : null;
   const clones = useMemo(
     () => (pattern ? layout(pattern, width, height) : []),
     [pattern, width, height],
   );
   const ink = useMemo(() => patternInk(bg), [bg]);
 
-  // Modules past the drawn set keep the plain background.
+  // Nothing to draw when the pattern is switched off, and likewise for modules
+  // past the drawn set — both fall back to the plain module colour.
   if (!pattern || clones.length === 0) return null;
 
   return (
