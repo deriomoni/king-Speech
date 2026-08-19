@@ -1,24 +1,23 @@
 import React, { useMemo } from "react";
 import { StyleSheet, useWindowDimensions } from "react-native";
 import Svg, { G, Path } from "react-native-svg";
-import {
-  getPathPattern,
-  type PathPattern,
-  type PatternSymbol,
-} from "@/constants/pathPatterns";
+import { getPathPattern, type PathPattern } from "@/constants/pathPatterns";
 import { patternInk } from "@/constants/pathPalette";
 
 /**
  * The symbol pattern that sits on top of the flat Path background.
  *
- * The motifs are the user's hand-drawn symbol groups; constants/pathPatterns.ts
- * holds one repeat tile per module (see that file for how the spacing is
- * derived). This component only lays that tile out over the viewport:
+ * The artwork is the user's hand-drawn composition for that module, kept
+ * exactly as drawn; constants/pathPatterns.ts holds it verbatim together with
+ * the scale and the clone pitch (see that file for how those are derived).
+ * This component only stamps the composition across the viewport:
  *
- *   • the tile repeats in both axes, starting one ring outside the screen so
- *     motifs that overhang a tile edge are still drawn by their neighbour;
- *   • every clone is culled if it cannot touch the viewport, so a phone screen
- *     costs ~25-35 paths instead of the full grid;
+ *   • clones sit pitchX / pitchY apart, with every other column dropped half
+ *     a row so the field reads as wallpaper rather than as a grid;
+ *   • the field is nudged off the corner by phaseX / phaseY, so the first
+ *     clone is cropped mid-composition instead of sitting flush;
+ *   • clones that cannot touch the viewport are skipped, so a phone screen
+ *     costs only the handful of stamps it can actually show;
  *   • the ink is the module's own background pushed one step darker/lighter,
  *     so the pattern is felt more than it is read.
  *
@@ -26,69 +25,34 @@ import { patternInk } from "@/constants/pathPalette";
  * ladder scrolls and only changes when the module changes.
  */
 
-/** A single clone, already resolved to viewport coordinates. */
-interface Placed {
+/** One stamp of the composition, resolved to viewport coordinates. */
+interface Clone {
   key: string;
-  sym: PatternSymbol;
   /** G transform props */
   x: number;
   y: number;
-  rotation: number;
-  originX: number;
-  originY: number;
-  scaleX: number;
-  scaleY: number;
 }
 
-function layout(
-  pattern: PathPattern,
-  width: number,
-  height: number,
-): Placed[] {
-  const { tile, symbols, items } = pattern;
+function layout(p: PathPattern, width: number, height: number): Clone[] {
+  const compW = p.bw * p.scale;
+  const compH = p.bh * p.scale;
 
-  // How far a clone can stick out from its centre once rotated: half of its
-  // longest edge, times the diagonal factor. Used both to size the ring of
-  // off-screen tiles and to cull clones that cannot reach the viewport.
-  const reach = (i: (typeof items)[number]) =>
-    (symbols[i.s].size * i.scale * Math.SQRT2) / 2;
-  const maxReach = items.reduce((m, i) => Math.max(m, reach(i)), 0);
+  const colFrom = Math.floor((-compW - p.phaseX) / p.pitchX);
+  const colTo = Math.ceil((width - p.phaseX) / p.pitchX);
+  // The half-drop can push a column up by `drop`, so start one row earlier.
+  const rowFrom = Math.floor((-compH - p.drop - p.phaseY) / p.pitchY);
+  const rowTo = Math.ceil((height - p.phaseY) / p.pitchY);
 
-  const colFrom = Math.floor(-maxReach / tile);
-  const colTo = Math.ceil((width + maxReach) / tile);
-  const rowFrom = Math.floor(-maxReach / tile);
-  const rowTo = Math.ceil((height + maxReach) / tile);
-
-  const out: Placed[] = [];
+  const out: Clone[] = [];
   for (let col = colFrom; col <= colTo; col++) {
+    const x0 = p.phaseX + col * p.pitchX;
+    if (x0 + compW < 0 || x0 > width) continue;
+    // Modulo that stays correct for negative columns.
+    const dropped = ((col % 2) + 2) % 2 === 1 ? p.drop : 0;
     for (let row = rowFrom; row <= rowTo; row++) {
-      for (let n = 0; n < items.length; n++) {
-        const it = items[n];
-        const cx = col * tile + it.x;
-        const cy = row * tile + it.y;
-        const r = reach(it);
-        if (cx + r < 0 || cx - r > width) continue;
-        if (cy + r < 0 || cy - r > height) continue;
-
-        const sym = symbols[it.s];
-        // Scale so the motif's longest edge lands on its target size.
-        const k = (sym.size * it.scale) / Math.max(sym.w, sym.h);
-        // Rotate + scale around the motif's own bbox centre, then move that
-        // centre onto (cx, cy).
-        const bcx = sym.x + sym.w / 2;
-        const bcy = sym.y + sym.h / 2;
-        out.push({
-          key: `${col}.${row}.${n}`,
-          sym,
-          x: cx - bcx,
-          y: cy - bcy,
-          rotation: it.rot,
-          originX: bcx,
-          originY: bcy,
-          scaleX: it.flipX ? -k : k,
-          scaleY: it.flipY ? -k : k,
-        });
-      }
+      const y0 = p.phaseY + row * p.pitchY + dropped;
+      if (y0 + compH < 0 || y0 > height) continue;
+      out.push({ key: `${col}.${row}`, x: x0 - p.bx, y: y0 - p.by });
     }
   }
   return out;
@@ -98,7 +62,7 @@ function PathPatternBackgroundBase({
   moduleNum,
   bg,
 }: {
-  /** module whose motif set + spacing to draw */
+  /** module whose composition to stamp */
   moduleNum: number;
   /** the flat Path background colour underneath, already theme-resolved */
   bg: string;
@@ -106,14 +70,14 @@ function PathPatternBackgroundBase({
   const { width, height } = useWindowDimensions();
 
   const pattern = getPathPattern(moduleNum);
-  const placed = useMemo(
+  const clones = useMemo(
     () => (pattern ? layout(pattern, width, height) : []),
     [pattern, width, height],
   );
   const ink = useMemo(() => patternInk(bg), [bg]);
 
   // Modules past the drawn set keep the plain background.
-  if (!pattern || placed.length === 0) return null;
+  if (!pattern || clones.length === 0) return null;
 
   return (
     <Svg
@@ -122,18 +86,18 @@ function PathPatternBackgroundBase({
       height={height}
       pointerEvents="none"
     >
-      {placed.map((p) => (
+      {clones.map((c) => (
         <G
-          key={p.key}
-          x={p.x}
-          y={p.y}
-          rotation={p.rotation}
-          originX={p.originX}
-          originY={p.originY}
-          scaleX={p.scaleX}
-          scaleY={p.scaleY}
+          key={c.key}
+          x={c.x}
+          y={c.y}
+          scale={pattern.scale}
+          originX={pattern.bx}
+          originY={pattern.by}
         >
-          <Path d={p.sym.d} fill={ink} />
+          {pattern.paths.map((d, i) => (
+            <Path key={i} d={d} fill={ink} />
+          ))}
         </G>
       ))}
     </Svg>
