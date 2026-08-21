@@ -19,6 +19,12 @@ export interface WarmupMouth {
   instruction: string;
   durationSec: number;
   gesture: string;
+  /** Guided step prompts shown one-by-one with a short timer each (optional). */
+  steps?: string[];
+  /** Seconds per step (default 2). */
+  stepSec?: number;
+  /** How many times to repeat the step list (default 2). */
+  rounds?: number;
 }
 
 export interface WarmupModule {

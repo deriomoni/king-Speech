@@ -1,33 +1,64 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, Pressable, Image } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  Modal,
+  Dimensions,
+} from "react-native";
 import Animated, {
   FadeIn,
   FadeInDown,
+  FadeOut,
   useSharedValue,
   useAnimatedStyle,
-  withRepeat,
   withTiming,
+  interpolate,
   cancelAnimation,
   Easing,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Circle } from "react-native-svg";
-import { GlassCard, PrimaryButton } from "@/components/ds";
 import CelebrationBurst from "@/components/warmup/CelebrationBurst";
 import type { WarmupMouth } from "@/constants/contentLoader";
 import { warmupFonts, warmupTheme } from "@/components/warmup/warmupTheme";
+import { useAppColors } from "@/hooks/useAppColors";
 
-// Mouth warm-up illustration — stylised articulating lips (same neon line-art
-// set as the breathing cues), so the drill reads as a clear mouth movement.
-const IMG_MOUTH_WARMUP = require("@/assets/warmup/mouth-warmup.png");
+const { height: SH } = Dimensions.get("window");
+const BEZ = Easing.bezier(0.22, 1, 0.36, 1);
 
-type Phase = "intro" | "countdown" | "running" | "done";
+// Guided step prompts per articulation exercise (keyed by name). Each plays as
+// short alternating cues (2s each), repeated a couple of rounds — a follow-along
+// drill instead of a flat "instruction + one timer". Wording is a faithful
+// shortening of each exercise's content instruction; edit here to tune prompts.
+interface MouthSteps {
+  steps: string[];
+  stepSec: number;
+  rounds: number;
+}
+const MOUTH_STEPS: Record<string, MouthSteps> = {
+  "Трубочка — Улыбка": { steps: ["Вытяни губы вперёд трубочкой", "Теперь сделай широкую улыбку"], stepSec: 2, rounds: 2 },
+  "Часики": { steps: ["Тянись языком к левому уголку", "Теперь к правому уголку"], stepSec: 2, rounds: 2 },
+  "Лошадка": { steps: ["Медленно поцокай языком", "А теперь быстрее"], stepSec: 2, rounds: 2 },
+  "Иголочка": { steps: ["Высуни узкий острый язык вперёд", "Расслабь язык"], stepSec: 2, rounds: 2 },
+  "Лопаточка": { steps: ["Положи широкий язык на нижнюю губу", "Держи ровно, не напрягай"], stepSec: 2, rounds: 2 },
+  "Качели": { steps: ["Тянись кончиком языка к носу", "Теперь к подбородку"], stepSec: 2, rounds: 2 },
+  "Надуть — сдуть щёки": { steps: ["Набери воздух и надуй щёки", "Плавно сдуй"], stepSec: 2, rounds: 2 },
+  "Чистим зубки": { steps: ["Проведи языком по зубам вправо", "Теперь влево"], stepSec: 2, rounds: 2 },
+  "Вкусное варенье": { steps: ["Оближи верхнюю губу сверху вниз", "И ещё раз, будто пробуешь варенье"], stepSec: 2, rounds: 2 },
+  "Маятник": { steps: ["Веди нижнюю челюсть влево", "Теперь вправо"], stepSec: 2, rounds: 2 },
+  "Заборчик": { steps: ["Сомкни зубы, растяни губы «заборчиком»", "Удержи и расслабь"], stepSec: 2, rounds: 2 },
+  "Барабанчик": { steps: ["Постучи языком за верхними зубами: «д-д-д»", "Ускоряйся: «д-д-д-д»"], stepSec: 2, rounds: 2 },
+};
+function resolveMouthSteps(ex: WarmupMouth): MouthSteps {
+  if (ex.steps && ex.steps.length) {
+    return { steps: ex.steps, stepSec: ex.stepSec ?? 2, rounds: ex.rounds ?? 2 };
+  }
+  return MOUTH_STEPS[ex.name?.trim()] ?? { steps: [ex.instruction], stepSec: 3, rounds: 1 };
+}
 
-const COUNTDOWN_SEC = 3;
-const RING = 140;
-const STROKE = 8;
+type Phase = "idle" | "name" | "running" | "done";
 
 interface Props {
   exercise: WarmupMouth;
@@ -42,300 +73,288 @@ export default function MouthExerciseView({
   onComplete,
   onBack,
 }: Props) {
-  const [phase, setPhase] = useState<Phase>("intro");
-  const [countdown, setCountdown] = useState(COUNTDOWN_SEC);
-  const [remaining, setRemaining] = useState(exercise.durationSec);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { colors } = useAppColors();
+  const accent = warmupTheme.gold;
 
-  // Gentle "keep going" pacer — a slow breathing pulse behind the timer that
-  // signals the exercise is active. Smooth, low-amplitude (never jittery).
-  const pulse = useSharedValue(0);
+  const { steps, stepSec, rounds } = resolveMouthSteps(exercise);
+  const total = steps.length * rounds;
+
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [stepIdx, setStepIdx] = useState(0);
+  const [count, setCount] = useState(stepSec);
+  const [showHelp, setShowHelp] = useState(false);
+
+  const nameP = useSharedValue(0); // 0 = big centered, 1 = small caption up top
+  const barP = useSharedValue(0);
+
+  const stepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countIntRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const nameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearTimers = () => {
+    if (stepTimerRef.current) clearTimeout(stepTimerRef.current);
+    if (countIntRef.current) clearInterval(countIntRef.current);
+    if (nameTimerRef.current) clearTimeout(nameTimerRef.current);
+  };
+
+  useEffect(
+    () => () => {
+      clearTimers();
+      cancelAnimation(nameP);
+      cancelAnimation(barP);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  const start = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    nameP.value = 0;
+    setPhase("name");
+  };
+
+  // Name intro → after 2s it shrinks, fades and lifts into a caption; steps begin.
   useEffect(() => {
-    if (phase === "running") {
-      pulse.value = withRepeat(
-        withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.quad) }),
-        -1,
-        true,
+    if (phase !== "name") return;
+    nameTimerRef.current = setTimeout(() => {
+      nameP.value = withTiming(1, { duration: 520, easing: BEZ });
+      setPhase("running");
+    }, 2000);
+    return () => {
+      if (nameTimerRef.current) clearTimeout(nameTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  // Guided step sequence — each prompt with its own short timer.
+  useEffect(() => {
+    if (phase !== "running") return;
+    let cancelled = false;
+    const runStep = (i: number) => {
+      if (cancelled) return;
+      setStepIdx(i);
+      setCount(stepSec);
+      Haptics.selectionAsync().catch(() => {});
+      barP.value = 0;
+      barP.value = withTiming(1, { duration: stepSec * 1000, easing: Easing.linear });
+      countIntRef.current = setInterval(
+        () => setCount((c) => Math.max(0, c - 1)),
+        1000,
       );
-    } else {
-      cancelAnimation(pulse);
-      pulse.value = 0;
-    }
-  }, [phase, pulse]);
-  const pulseStyle = useAnimatedStyle(() => ({
-    opacity: 0.18 + pulse.value * 0.22,
-    transform: [{ scale: 0.9 + pulse.value * 0.22 }],
-  }));
-
-  useEffect(() => () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    cancelAnimation(pulse);
-  }, [pulse]);
-
-  const startCountdown = () => {
-    setPhase("countdown");
-    setCountdown(COUNTDOWN_SEC);
-    let n = COUNTDOWN_SEC;
-    timerRef.current = setInterval(() => {
-      n -= 1;
-      setCountdown(n);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      if (n <= 0) {
-        if (timerRef.current) clearInterval(timerRef.current);
-        startTimer();
-      }
-    }, 1000);
-  };
-
-  const startTimer = () => {
-    setPhase("running");
-    setRemaining(exercise.durationSec);
-    timerRef.current = setInterval(() => {
-      setRemaining((r) => {
-        if (r <= 1) {
-          if (timerRef.current) clearInterval(timerRef.current);
+      stepTimerRef.current = setTimeout(() => {
+        if (countIntRef.current) clearInterval(countIntRef.current);
+        if (cancelled) return;
+        if (i + 1 < total) {
+          runStep(i + 1);
+        } else {
           setPhase("done");
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          return 0;
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
         }
-        return r - 1;
-      });
-    }, 1000);
-  };
+      }, stepSec * 1000);
+    };
+    runStep(0);
+    return () => {
+      cancelled = true;
+      clearTimers();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
-  const progress =
-    exercise.durationSec > 0
-      ? (exercise.durationSec - remaining) / exercise.durationSec
-      : 1;
-  const circumference = 2 * Math.PI * ((RING - STROKE) / 2);
-  const dashOffset = circumference * (1 - progress);
+  const nameStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(nameP.value, [0, 1], [1, 0.4]),
+    transform: [
+      { translateY: interpolate(nameP.value, [0, 1], [0, -SH * 0.3]) },
+      { scale: interpolate(nameP.value, [0, 1], [1, 0.52]) },
+    ],
+  }));
+  const barStyle = useAnimatedStyle(() => ({ width: `${barP.value * 100}%` }));
+
+  const stepText = steps[stepIdx % steps.length];
 
   return (
-    <View style={[styles.root, { paddingTop: topPad + 8 }]}>
-      <LinearGradient
-        colors={[warmupTheme.bg, "#101015", warmupTheme.bg]}
-        style={StyleSheet.absoluteFill}
-      />
+    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: topPad + 8 }]}>
       <CelebrationBurst play={phase === "done"} />
 
-      <Pressable onPress={onBack} style={styles.back}>
-        <Text style={styles.backText}>←</Text>
-      </Pressable>
-
-      <Text style={styles.heading}>Разминка полости рта</Text>
-      <Text style={styles.taskBadge}>Задание 2 из 2</Text>
-
-      <View style={styles.noMic}>
-        <Ionicons name="mic-off-outline" size={16} color="#888" />
-        <Text style={styles.noMicText}>Микрофон не используется</Text>
+      {/* Header: back + help */}
+      <View style={styles.header}>
+        <Pressable onPress={onBack} hitSlop={12} style={styles.iconBtn}>
+          <Ionicons name="chevron-back" size={24} color={colors.textSecondary} />
+        </Pressable>
+        {phase === "idle" || phase === "done" ? (
+          <Pressable onPress={() => setShowHelp(true)} hitSlop={12} style={styles.iconBtn}>
+            <Ionicons name="help-circle-outline" size={24} color={colors.textSecondary} />
+          </Pressable>
+        ) : (
+          <View style={styles.iconBtn} />
+        )}
       </View>
 
-      {(phase === "intro" || phase === "countdown") && (
-        <>
-          <GlassCard style={styles.card}>
-            <Image source={IMG_MOUTH_WARMUP} style={styles.cardImg} resizeMode="contain" />
-            <Text style={styles.name}>{exercise.name}</Text>
-            <Text style={styles.instruction}>{exercise.instruction}</Text>
-          </GlassCard>
-
-          <View style={styles.gestureRow}>
-            <Ionicons name="hand-left-outline" size={20} color={warmupTheme.gold} />
-            <Text style={styles.gesture}>{exercise.gesture}</Text>
-          </View>
-        </>
-      )}
-
-      {phase === "intro" && (
-        <Animated.View entering={FadeInDown.duration(300)} style={styles.center}>
-          <PrimaryButton
-            label={`Запустить таймер (${exercise.durationSec} сек)`}
-            onPress={startCountdown}
-          />
-        </Animated.View>
-      )}
-
-      {phase === "countdown" && (
+      {/* IDLE — clean: title + start */}
+      {phase === "idle" && (
         <View style={styles.center}>
-          <Text style={styles.countdown}>{countdown || "Старт"}</Text>
+          <Text style={[styles.idleTitle, { color: colors.text }]}>Разминка полости рта</Text>
+          <Animated.View entering={FadeInDown.delay(120).duration(420)} style={{ marginTop: 34 }}>
+            <Pressable onPress={start} style={({ pressed }) => [styles.cta, { backgroundColor: accent, opacity: pressed ? 0.9 : 1 }]}>
+              <Ionicons name="play" size={16} color={warmupTheme.onGold} />
+              <Text style={styles.ctaText}>Старт</Text>
+            </Pressable>
+          </Animated.View>
         </View>
       )}
 
-      {(phase === "running" || phase === "done") && (
+      {/* Exercise name — big → caption */}
+      {(phase === "name" || phase === "running") && (
+        <Animated.Text
+          entering={FadeIn.duration(320)}
+          style={[styles.exName, { color: accent }, nameStyle]}
+        >
+          {exercise.name}
+        </Animated.Text>
+      )}
+
+      {/* RUNNING — one prompt + its timer */}
+      {phase === "running" && (
+        <View style={styles.center} pointerEvents="none">
+          <Animated.Text
+            key={`step-${stepIdx}`}
+            entering={FadeInDown.duration(300)}
+            exiting={FadeOut.duration(160)}
+            style={[styles.stepText, { color: colors.text }]}
+          >
+            {stepText}
+          </Animated.Text>
+          <View style={[styles.track, { backgroundColor: colors.border }]}>
+            <Animated.View style={[styles.fill, { backgroundColor: accent }, barStyle]} />
+          </View>
+          <Text style={[styles.count, { color: colors.textMuted }]}>{count}</Text>
+        </View>
+      )}
+
+      {/* Step progress dots */}
+      {phase === "running" && (
+        <View style={styles.dots}>
+          {Array.from({ length: total }).map((_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.dot,
+                { backgroundColor: i <= stepIdx ? accent : colors.border },
+              ]}
+            />
+          ))}
+        </View>
+      )}
+
+      {/* DONE */}
+      {phase === "done" && (
         <View style={styles.center}>
-          <View style={styles.ringWrap}>
-            {/* Soft "keep going" pacer behind the ring */}
-            {phase === "running" && (
-              <Animated.View
-                pointerEvents="none"
-                style={[styles.pacer, { backgroundColor: warmupTheme.gold + "22" }, pulseStyle]}
-              />
-            )}
-            <Svg width={RING} height={RING}>
-              <Circle
-                cx={RING / 2}
-                cy={RING / 2}
-                r={(RING - STROKE) / 2}
-                stroke="#ffffff22"
-                strokeWidth={STROKE}
-                fill="none"
-              />
-              <Circle
-                cx={RING / 2}
-                cy={RING / 2}
-                r={(RING - STROKE) / 2}
-                stroke={warmupTheme.gold}
-                strokeWidth={STROKE}
-                fill="none"
-                strokeDasharray={`${circumference}`}
-                strokeDashoffset={dashOffset}
-                strokeLinecap="round"
-                rotation={-90}
-                origin={`${RING / 2}, ${RING / 2}`}
-              />
-            </Svg>
-            <Text style={styles.ringNum}>
-              {phase === "done" ? "✓" : remaining}
+          <Animated.View entering={FadeIn.duration(360)} style={[styles.doneBadge, { backgroundColor: accent }]}>
+            <Ionicons name="checkmark" size={54} color={warmupTheme.onGold} />
+          </Animated.View>
+          <Text style={[styles.doneText, { color: colors.text }]}>Отлично!</Text>
+          <Animated.View entering={FadeInDown.delay(200).duration(400)} style={{ marginTop: 26 }}>
+            <Pressable onPress={onComplete} style={({ pressed }) => [styles.cta, { backgroundColor: accent, opacity: pressed ? 0.9 : 1 }]}>
+              <Text style={styles.ctaText}>Далее</Text>
+              <Ionicons name="arrow-forward" size={16} color={warmupTheme.onGold} />
+            </Pressable>
+          </Animated.View>
+        </View>
+      )}
+
+      {/* Skip (running) */}
+      {phase === "running" && (
+        <View style={styles.footer}>
+          <Pressable onPress={onComplete} hitSlop={8} style={styles.skip}>
+            <Text style={[styles.skipText, { color: colors.textMuted }]}>Пропустить →</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {/* Help */}
+      <Modal visible={showHelp} transparent animationType="fade" onRequestClose={() => setShowHelp(false)}>
+        <Pressable style={styles.helpOverlay} onPress={() => setShowHelp(false)}>
+          <Pressable style={[styles.helpCard, { backgroundColor: colors.backgroundSecondary }]} onPress={() => {}}>
+            <Pressable onPress={() => setShowHelp(false)} hitSlop={12} style={styles.helpClose}>
+              <Ionicons name="close" size={22} color={colors.textMuted} />
+            </Pressable>
+            <Text style={[styles.helpTitle, { color: colors.text }]}>Как выполнять</Text>
+            <Text style={[styles.helpText, { color: colors.textSecondary }]}>
+              {exercise.name}: следуй подсказкам на экране и повторяй движение вместе с таймером. Спокойно, без напряжения.
             </Text>
-          </View>
-
-          {/* Keep the "how to do it" right next to the timer so the player
-              doesn't have to look away from the ring to stay oriented. */}
-          {phase === "running" && (
-            <Animated.View entering={FadeIn.duration(300)} style={styles.doHint}>
-              <Image source={IMG_MOUTH_WARMUP} style={styles.doHintImg} resizeMode="contain" />
-              <Text style={styles.doHintTitle}>{exercise.name}</Text>
-              <Text style={styles.doHintText}>{exercise.instruction}</Text>
-              <View style={styles.doHintGestureRow}>
-                <Ionicons name="repeat-outline" size={15} color={warmupTheme.gold} />
-                <Text style={styles.doHintGesture}>{exercise.gesture}</Text>
-              </View>
-            </Animated.View>
-          )}
-
-          {phase === "done" && (
-            <Animated.View entering={FadeIn.duration(300)} style={{ marginTop: 28 }}>
-              <PrimaryButton label="Далее" onPress={onComplete} />
-            </Animated.View>
-          )}
-        </View>
-      )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: warmupTheme.bg, paddingHorizontal: 24 },
-  back: { marginBottom: 8 },
-  backText: { color: "#fff", fontSize: 24 },
-  heading: {
+  root: { flex: 1, paddingHorizontal: 24 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  iconBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  idleTitle: { fontFamily: warmupFonts.title, fontSize: 30, textAlign: "center", letterSpacing: -0.3 },
+  cta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    paddingHorizontal: 40,
+    height: 56,
+    borderRadius: 28,
+  },
+  ctaText: { color: warmupTheme.onGold, fontSize: 17, fontFamily: warmupFonts.title },
+  exName: {
+    position: "absolute",
+    left: 24,
+    right: 24,
+    top: SH * 0.42,
+    textAlign: "center",
+    fontFamily: warmupFonts.title,
+    fontSize: 32,
+    letterSpacing: -0.3,
+  },
+  stepText: {
     fontFamily: warmupFonts.title,
     fontSize: 26,
-    color: "#fff",
     textAlign: "center",
-    marginBottom: 4,
+    lineHeight: 34,
+    maxWidth: 320,
   },
-  taskBadge: {
-    fontFamily: warmupFonts.body,
-    color: "#888",
-    textAlign: "center",
-    marginBottom: 12,
+  track: {
+    width: 220,
+    height: 6,
+    borderRadius: 3,
+    marginTop: 26,
+    overflow: "hidden",
   },
-  noMic: {
+  fill: { height: 6, borderRadius: 3 },
+  count: { fontFamily: warmupFonts.digit, fontSize: 20, marginTop: 12 },
+  dots: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    marginBottom: 16,
-  },
-  noMicText: {
-    fontFamily: warmupFonts.body,
-    color: "#888",
-    fontSize: 13,
-  },
-  card: { marginBottom: 16, alignItems: "center" },
-  cardImg: { width: 104, height: 104, marginBottom: 6 },
-  name: {
-    fontFamily: warmupFonts.title,
-    fontSize: 22,
-    color: warmupTheme.gold,
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  instruction: {
-    fontFamily: warmupFonts.body,
-    fontSize: 16,
-    color: "#ddd",
-    lineHeight: 24,
-    textAlign: "center",
-  },
-  gestureRow: {
-    flexDirection: "row",
     gap: 8,
-    alignItems: "flex-start",
-    marginBottom: 24,
+    paddingBottom: 8,
   },
-  gesture: {
-    flex: 1,
-    fontFamily: warmupFonts.body,
-    color: "#aaa",
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  center: { alignItems: "center", marginTop: 12 },
-  countdown: {
-    fontFamily: warmupFonts.digit,
-    fontSize: 72,
-    color: warmupTheme.gold,
-  },
-  ringWrap: {
-    width: RING,
-    height: RING,
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  doneBadge: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     alignItems: "center",
     justifyContent: "center",
   },
-  pacer: {
-    position: "absolute",
-    width: RING,
-    height: RING,
-    borderRadius: RING / 2,
+  doneText: { fontFamily: warmupFonts.title, fontSize: 26, marginTop: 20 },
+  footer: { paddingBottom: 24, alignItems: "center" },
+  skip: { padding: 10 },
+  skipText: { fontFamily: warmupFonts.body, fontSize: 14 },
+  helpOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(10,10,14,0.4)",
+    justifyContent: "center",
+    padding: 28,
   },
-  ringNum: {
-    position: "absolute",
-    fontFamily: warmupFonts.digit,
-    fontSize: 44,
-    color: "#fff",
-  },
-  doHint: {
-    marginTop: 20,
-    maxWidth: 340,
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 8,
-  },
-  doHintImg: { width: 66, height: 66, marginBottom: 2 },
-  doHintTitle: {
-    fontFamily: warmupFonts.title,
-    fontSize: 18,
-    color: warmupTheme.gold,
-    textAlign: "center",
-  },
-  doHintText: {
-    fontFamily: warmupFonts.body,
-    fontSize: 15,
-    color: "#ddd",
-    lineHeight: 22,
-    textAlign: "center",
-  },
-  doHintGestureRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 2,
-  },
-  doHintGesture: {
-    fontFamily: warmupFonts.body,
-    color: "#aaa",
-    fontSize: 13.5,
-    lineHeight: 19,
-  },
+  helpCard: { borderRadius: 22, padding: 24, paddingTop: 26 },
+  helpClose: { position: "absolute", top: 14, right: 14, padding: 4, zIndex: 2 },
+  helpTitle: { fontFamily: warmupFonts.title, fontSize: 20 },
+  helpText: { fontFamily: warmupFonts.body, fontSize: 15, lineHeight: 23, marginTop: 10 },
 });

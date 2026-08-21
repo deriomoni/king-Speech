@@ -4,9 +4,10 @@ import { router } from "expo-router";
 import BreathingExerciseView from "@/components/warmup/BreathingExerciseView";
 import MouthExerciseView from "@/components/warmup/MouthExerciseView";
 import { getNormalizedWarmup } from "@/constants/contentLoader";
-import { MODULE_COLORS } from "@/context/GameContext";
 import type { WarmupScoreResult } from "@/services/warmupScoring";
 import { warmupFonts, warmupTheme } from "@/components/warmup/warmupTheme";
+import { getPathColors } from "@/constants/pathPalette";
+import { useAppColors } from "@/hooks/useAppColors";
 
 export interface WarmupCompletePayload {
   scores: number[];
@@ -33,7 +34,11 @@ export default function WarmupLevelView({
   onAllComplete,
 }: Props) {
   const data = getNormalizedWarmup(moduleId);
-  const moduleColor = MODULE_COLORS[moduleId]?.color ?? warmupTheme.gold;
+  const { colors } = useAppColors();
+  // Background follows the app theme (light in light mode, dark in dark mode);
+  // the module hue is used only as a small accent.
+  const pal = getPathColors(moduleId, true);
+  const moduleColor = pal.brick;
 
   const [step, setStep] = useState<Step>("breathing");
   const levelStartRef = useRef(Date.now());
@@ -68,7 +73,7 @@ export default function WarmupLevelView({
   }, [onTaskComplete, finishAll]);
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
       {step === "breathing" && (
         <BreathingExerciseView
           topPad={topPad}
@@ -79,8 +84,8 @@ export default function WarmupLevelView({
       )}
 
       {step === "transition" && (
-        <View style={[styles.transition, { paddingTop: topPad }]}>
-          <Text style={styles.transitionText}>Задание 2 из 2</Text>
+        <View style={[styles.transition, { paddingTop: topPad, backgroundColor: colors.background }]}>
+          <Text style={[styles.transitionText, { color: moduleColor }]}>Задание 2 из 2</Text>
         </View>
       )}
 
