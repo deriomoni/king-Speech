@@ -18,6 +18,8 @@ import Animated, {
   withSpring,
   withTiming,
   withSequence,
+  withRepeat,
+  cancelAnimation,
   Easing,
   FadeIn,
   FadeInDown,
@@ -636,101 +638,109 @@ function LevelCompleteModal({
   lang: "ru" | "en";
   roleBonus?: { emoji: string; title: string; onPlay: () => void } | null;
 }) {
-  const scale = useSharedValue(0.7);
-  const opacity = useSharedValue(0);
-  const trophyScale = useSharedValue(0.4);
+  // Everything is static (scaling the SVG trophy rasterizes it). Only the
+  // "level complete" title gently pulses.
+  const pulse = useSharedValue(1);
 
   useEffect(() => {
     if (visible) {
-      scale.value = withSpring(1, { damping: 13 });
-      opacity.value = withTiming(1, { duration: 300 });
-      trophyScale.value = withSpring(1, { damping: 9, stiffness: 120 });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      pulse.value = withRepeat(
+        withTiming(1.05, { duration: 900, easing: Easing.inOut(Easing.ease) }),
+        -1,
+        true,
+      );
     } else {
-      scale.value = 0.7;
-      opacity.value = 0;
-      trophyScale.value = 0.4;
+      cancelAnimation(pulse);
+      pulse.value = 1;
     }
   }, [visible]);
 
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
-  const trophyStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: trophyScale.value }],
-  }));
+  const titlePulse = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }] }));
 
   // Line/column: black on light, white on dark. Cup keeps its yellow gradient.
   const lineColor = isDark ? "#F5F5F7" : "#141414";
+  const yellow = "#FFC62D"; // solid trophy gold for the CTA
   const scoreStr = Number.isInteger(bestScore) ? String(bestScore) : bestScore.toFixed(1);
   const timeStr = `${Math.floor(durationSec / 60)}:${String(Math.floor(durationSec % 60)).padStart(2, "0")}`;
 
+  const statLabel = {
+    fontFamily: "Rubik_600SemiBold" as const,
+    fontSize: 11,
+    letterSpacing: 1.4,
+    textTransform: "uppercase" as const,
+    color: colors.textMuted,
+    marginBottom: 6,
+  };
+
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <Animated.View
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.background,
+          alignItems: "center",
+          justifyContent: "center",
+          paddingHorizontal: 30,
+        }}
+      >
+        <Animated.Text
           style={[
-            { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 30 },
-            animStyle,
+            { fontFamily: "Rubik_700Bold", fontSize: 26, color: colors.text, marginBottom: 26, textAlign: "center" },
+            titlePulse,
           ]}
         >
-          <Text style={{ fontFamily: "Rubik_700Bold", fontSize: 26, color: colors.text, marginBottom: 26 }}>
-            {t("levelComplete")}
-          </Text>
+          {t("levelComplete")}
+        </Animated.Text>
 
-          <Animated.View style={trophyStyle}>
-            <TrophyColumn lineColor={lineColor} width={148} />
-          </Animated.View>
+        <TrophyColumn lineColor={lineColor} width={148} />
 
-          {/* Score · time */}
-          <View style={{ flexDirection: "row", alignItems: "baseline", gap: 16, marginTop: 26 }}>
+        {/* Score + time, labelled */}
+        <View style={{ flexDirection: "row", marginTop: 28, gap: 46 }}>
+          <View style={{ alignItems: "center" }}>
+            <Text style={statLabel}>{lang === "en" ? "Score" : "Оценка"}</Text>
             <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-              <Text style={{ fontFamily: "Rubik_700Bold", fontSize: 42, color: colors.text }}>{scoreStr}</Text>
-              <Text style={{ fontFamily: "Rubik_600SemiBold", fontSize: 22, color: colors.textSecondary }}>/10</Text>
+              <Text style={{ fontFamily: "Rubik_700Bold", fontSize: 40, color: colors.text }}>{scoreStr}</Text>
+              <Text style={{ fontFamily: "Rubik_600SemiBold", fontSize: 20, color: colors.textSecondary }}>/10</Text>
             </View>
-            <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.textMuted, alignSelf: "center" }} />
-            <Text style={{ fontFamily: "Rubik_600SemiBold", fontSize: 22, color: colors.textSecondary }}>{timeStr}</Text>
           </View>
+          <View style={{ alignItems: "center" }}>
+            <Text style={statLabel}>{lang === "en" ? "Time" : "Время"}</Text>
+            <Text style={{ fontFamily: "Rubik_700Bold", fontSize: 40, color: colors.text }}>{timeStr}</Text>
+          </View>
+        </View>
 
-          <Pressable
-            onPress={onNext}
-            style={({ pressed }) => [
-              {
-                marginTop: 40,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-                paddingHorizontal: 32,
-                height: 48,
-                borderRadius: 24,
-                overflow: "hidden",
-                transform: [{ scale: pressed ? 0.98 : 1 }],
-              },
-            ]}
-          >
-            <LinearGradient
-              colors={["#FFD166", "#F5A623"]}
-              style={StyleSheet.absoluteFill}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            />
-            <Text style={{ fontFamily: "Rubik_700Bold", fontSize: 16, color: "#3A2C00" }}>
-              {t("nextLevel")}
-            </Text>
-            <Ionicons name="arrow-forward" size={17} color="#3A2C00" />
-          </Pressable>
+        <Pressable
+          onPress={onNext}
+          style={({ pressed }) => [
+            {
+              marginTop: 44,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              paddingHorizontal: 32,
+              height: 48,
+              borderRadius: 24,
+              backgroundColor: yellow,
+              opacity: pressed ? 0.9 : 1,
+            },
+          ]}
+        >
+          <Text style={{ fontFamily: "Rubik_700Bold", fontSize: 16, color: "#3A2C00" }}>
+            {t("nextLevel")}
+          </Text>
+          <Ionicons name="arrow-forward" size={17} color="#3A2C00" />
+        </Pressable>
 
-          <Pressable
-            onPress={onMap}
-            hitSlop={8}
-            style={({ pressed }) => [{ marginTop: 16, opacity: pressed ? 0.6 : 1 }]}
-          >
-            <Text style={{ fontFamily: "Rubik_500Medium", fontSize: 15, color: colors.textMuted }}>
-              {lang === "en" ? "Exit" : "Выход"}
-            </Text>
-          </Pressable>
-        </Animated.View>
+        <Pressable
+          onPress={onMap}
+          hitSlop={8}
+          style={({ pressed }) => [{ marginTop: 16, opacity: pressed ? 0.6 : 1 }]}
+        >
+          <Text style={{ fontFamily: "Rubik_500Medium", fontSize: 15, color: colors.textMuted }}>
+            {lang === "en" ? "Exit" : "Выход"}
+          </Text>
+        </Pressable>
       </View>
     </Modal>
   );
