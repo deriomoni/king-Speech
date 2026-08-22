@@ -261,26 +261,33 @@ export default function SettingsScreen() {
           <Text style={[styles.pageTitle, { color: theme.text }]}>{t("settings")}</Text>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(40).duration(400)}>
-          <Section theme={theme} title={t("theme")}>
-            <View style={styles.themeRow}>
-              <ThemeOption
+        {user && (
+          <Animated.View entering={FadeInDown.delay(40).duration(400)}>
+            <Section theme={theme} title={t("account")}>
+              <Row
                 theme={theme}
-                mode="light"
-                selected={themeMode === "light"}
-                label={t("light")}
-                onSelect={setTheme}
+                icon="person-circle-outline"
+                label={user.name || t("profile")}
+                value={
+                  user.authMethod === "google"
+                    ? "Google"
+                    : user.authMethod === "apple"
+                    ? "Apple"
+                    : "Email"
+                }
               />
-              <ThemeOption
+              <Row
                 theme={theme}
-                mode="dark"
-                selected={themeMode === "dark"}
-                label={t("dark")}
-                onSelect={setTheme}
+                icon="log-out-outline"
+                label={t("logout")}
+                onPress={handleLogout}
+                destructive
+                rightChevron={false}
+                isLast
               />
-            </View>
-          </Section>
-        </Animated.View>
+            </Section>
+          </Animated.View>
+        )}
 
         <Animated.View entering={FadeInDown.delay(80).duration(400)}>
           <Section theme={theme} title={t("language")}>
@@ -348,7 +355,28 @@ export default function SettingsScreen() {
           </Section>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(140).duration(400)}>
+        <Animated.View entering={FadeInDown.delay(120).duration(400)}>
+          <Section theme={theme} title={t("theme")}>
+            <View style={styles.themeRow}>
+              <ThemeOption
+                theme={theme}
+                mode="light"
+                selected={themeMode === "light"}
+                label={t("light")}
+                onSelect={setTheme}
+              />
+              <ThemeOption
+                theme={theme}
+                mode="dark"
+                selected={themeMode === "dark"}
+                label={t("dark")}
+                onSelect={setTheme}
+              />
+            </View>
+          </Section>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(160).duration(400)}>
           <Section theme={theme} title={t("soundAndVibration")}>
             <Row
               theme={theme}
@@ -399,35 +427,7 @@ export default function SettingsScreen() {
           </Section>
         </Animated.View>
 
-        {user && (
-          <Animated.View entering={FadeInDown.delay(260).duration(400)}>
-            <Section theme={theme} title={t("account")}>
-              <Row
-                theme={theme}
-                icon="person-circle-outline"
-                label={user.name || t("profile")}
-                value={
-                  user.authMethod === "google"
-                    ? "Google"
-                    : user.authMethod === "apple"
-                    ? "Apple"
-                    : "Email"
-                }
-              />
-              <Row
-                theme={theme}
-                icon="log-out-outline"
-                label={t("logout")}
-                onPress={handleLogout}
-                destructive
-                rightChevron={false}
-                isLast
-              />
-            </Section>
-          </Animated.View>
-        )}
-
-        <Animated.View entering={FadeInDown.delay(290).duration(400)}>
+        <Animated.View entering={FadeInDown.delay(250).duration(400)}>
           <Section theme={theme} title={t("devTools")}>
             <Row
               theme={theme}
@@ -488,10 +488,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   sectionLabel: {
-    fontSize: 15,
-    fontFamily: "Nunito_400Regular",
+    fontSize: 13,
+    fontFamily: "Nunito_700Bold",
     paddingLeft: 4,
-    letterSpacing: -0.1,
+    letterSpacing: 1,
+    textTransform: "uppercase",
   },
   listWrap: {
     borderRadius: 20,
