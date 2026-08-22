@@ -1,12 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  Modal,
-  Dimensions,
-} from "react-native";
+import { View, Text, StyleSheet, Pressable, Modal } from "react-native";
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -14,51 +7,107 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  interpolate,
-  cancelAnimation,
   Easing,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import CelebrationBurst from "@/components/warmup/CelebrationBurst";
 import type { WarmupMouth } from "@/constants/contentLoader";
 import { warmupFonts, warmupTheme } from "@/components/warmup/warmupTheme";
 import { useAppColors } from "@/hooks/useAppColors";
 
-const { height: SH } = Dimensions.get("window");
-const BEZ = Easing.bezier(0.22, 1, 0.36, 1);
+// Timing model:
+//  · NAME_SEC   — the exercise name + short description are shown with a
+//                 visible 5s countdown so the player knows what's coming.
+//  · READ_SEC   — a hidden 10s window on the *first* task only: the prompt and
+//                 its form-tip are on screen with no timer, so there's time to
+//                 read. Following tasks start their cycles right away.
+//  · CYCLE_SECS — every task is performed over two cycles: 15s then 20s.
+const NAME_SEC = 5;
+const READ_SEC = 10;
+const CYCLE_SECS = [15, 20];
 
-// Guided step prompts per articulation exercise (keyed by name). Each plays as
-// short alternating cues (2s each), repeated a couple of rounds — a follow-along
-// drill instead of a flat "instruction + one timer". Wording is a faithful
-// shortening of each exercise's content instruction; edit here to tune prompts.
-interface MouthSteps {
+// Per-exercise content: the step prompts, a one-line "what & why" description
+// (shown under the name), and a short form-tip (shown under each prompt). Edit
+// the copy here to tune wording.
+interface MouthInfo {
   steps: string[];
-  stepSec: number;
-  rounds: number;
+  desc: string;
+  tip: string;
 }
-const MOUTH_STEPS: Record<string, MouthSteps> = {
-  "Трубочка — Улыбка": { steps: ["Вытяни губы вперёд трубочкой", "Теперь сделай широкую улыбку"], stepSec: 2, rounds: 2 },
-  "Часики": { steps: ["Тянись языком к левому уголку", "Теперь к правому уголку"], stepSec: 2, rounds: 2 },
-  "Лошадка": { steps: ["Медленно поцокай языком", "А теперь быстрее"], stepSec: 2, rounds: 2 },
-  "Иголочка": { steps: ["Высуни узкий острый язык вперёд", "Расслабь язык"], stepSec: 2, rounds: 2 },
-  "Лопаточка": { steps: ["Положи широкий язык на нижнюю губу", "Держи ровно, не напрягай"], stepSec: 2, rounds: 2 },
-  "Качели": { steps: ["Тянись кончиком языка к носу", "Теперь к подбородку"], stepSec: 2, rounds: 2 },
-  "Надуть — сдуть щёки": { steps: ["Набери воздух и надуй щёки", "Плавно сдуй"], stepSec: 2, rounds: 2 },
-  "Чистим зубки": { steps: ["Проведи языком по зубам вправо", "Теперь влево"], stepSec: 2, rounds: 2 },
-  "Вкусное варенье": { steps: ["Оближи верхнюю губу сверху вниз", "И ещё раз, будто пробуешь варенье"], stepSec: 2, rounds: 2 },
-  "Маятник": { steps: ["Веди нижнюю челюсть влево", "Теперь вправо"], stepSec: 2, rounds: 2 },
-  "Заборчик": { steps: ["Сомкни зубы, растяни губы «заборчиком»", "Удержи и расслабь"], stepSec: 2, rounds: 2 },
-  "Барабанчик": { steps: ["Постучи языком за верхними зубами: «д-д-д»", "Ускоряйся: «д-д-д-д»"], stepSec: 2, rounds: 2 },
+const MOUTH_INFO: Record<string, MouthInfo> = {
+  "Трубочка — Улыбка": {
+    steps: ["Вытяни губы вперёд трубочкой", "Теперь сделай широкую улыбку"],
+    desc: "Разминает губы, переключая их между двумя формами.",
+    tip: "Губы напряжены, зубы сомкнуты — работают только губы.",
+  },
+  "Часики": {
+    steps: ["Тянись языком к левому уголку", "Теперь к правому уголку"],
+    desc: "Растягивает и разогревает мышцы языка в стороны.",
+    tip: "Рот приоткрыт, двигается только язык — челюсть неподвижна.",
+  },
+  "Лошадка": {
+    steps: ["Медленно поцокай языком", "А теперь быстрее"],
+    desc: "Разрабатывает кончик языка и укрепляет его мышцы.",
+    tip: "Рот широко раскрыт в улыбке, нижняя челюсть неподвижна.",
+  },
+  "Иголочка": {
+    steps: ["Высуни узкий острый язык вперёд", "Расслабь язык"],
+    desc: "Учит собирать язык в узкий и напряжённый.",
+    tip: "Язык узкий и острый, тянется строго вперёд.",
+  },
+  "Лопаточка": {
+    steps: ["Положи широкий язык на нижнюю губу", "Держи ровно, не напрягай"],
+    desc: "Учит расслаблять и удерживать язык широким.",
+    tip: "Язык широкий и спокойный, лежит на нижней губе.",
+  },
+  "Качели": {
+    steps: ["Тянись кончиком языка к носу", "Теперь к подбородку"],
+    desc: "Разминает язык вверх-вниз, развивает подвижность.",
+    tip: "Рот открыт, тянемся кончиком языка вверх и вниз.",
+  },
+  "Надуть — сдуть щёки": {
+    steps: ["Набери воздух и надуй щёки", "Плавно сдуй"],
+    desc: "Разогревает щёки и тренирует контроль дыхания.",
+    tip: "Щёки надуваем плотно, воздух выпускаем плавно.",
+  },
+  "Чистим зубки": {
+    steps: ["Проведи языком по зубам вправо", "Теперь влево"],
+    desc: "Разминает язык по зубам, улучшает артикуляцию.",
+    tip: "Рот закрыт, язык скользит по зубам — челюсть неподвижна.",
+  },
+  "Вкусное варенье": {
+    steps: ["Оближи верхнюю губу сверху вниз", "И ещё раз, будто пробуешь варенье"],
+    desc: "Разрабатывает подъём и гибкость языка.",
+    tip: "Широким языком облизываем верхнюю губу сверху вниз.",
+  },
+  "Маятник": {
+    steps: ["Веди нижнюю челюсть влево", "Теперь вправо"],
+    desc: "Разминает нижнюю челюсть в стороны.",
+    tip: "Губы расслаблены, плавно ведём челюсть влево-вправо.",
+  },
+  "Заборчик": {
+    steps: ["Сомкни зубы, растяни губы «заборчиком»", "Удержи и расслабь"],
+    desc: "Разогревает губы и мышцы улыбки.",
+    tip: "Зубы сомкнуты, губы широко растянуты в улыбке.",
+  },
+  "Барабанчик": {
+    steps: ["Постучи языком за верхними зубами: «д-д-д»", "Ускоряйся: «д-д-д-д»"],
+    desc: "Тренирует кончик языка и чёткость звуков.",
+    tip: "Язык стучит за верхними зубами — челюсть неподвижна.",
+  },
 };
-function resolveMouthSteps(ex: WarmupMouth): MouthSteps {
-  if (ex.steps && ex.steps.length) {
-    return { steps: ex.steps, stepSec: ex.stepSec ?? 2, rounds: ex.rounds ?? 2 };
-  }
-  return MOUTH_STEPS[ex.name?.trim()] ?? { steps: [ex.instruction], stepSec: 3, rounds: 1 };
+
+function resolveMouth(ex: WarmupMouth): MouthInfo {
+  const info = MOUTH_INFO[ex.name?.trim()];
+  const steps = ex.steps && ex.steps.length ? ex.steps : info?.steps ?? [ex.instruction];
+  return {
+    steps,
+    desc: info?.desc ?? "",
+    tip: info?.tip ?? ex.instruction ?? "",
+  };
 }
 
-type Phase = "idle" | "name" | "running" | "done";
+type Phase = "idle" | "name" | "running";
 
 interface Props {
   exercise: WarmupMouth;
@@ -76,111 +125,109 @@ export default function MouthExerciseView({
   const { colors } = useAppColors();
   const accent = warmupTheme.gold;
 
-  const { steps, stepSec, rounds } = resolveMouthSteps(exercise);
-  const total = steps.length * rounds;
+  const { steps, desc, tip } = resolveMouth(exercise);
 
   const [phase, setPhase] = useState<Phase>("idle");
-  const [stepIdx, setStepIdx] = useState(0);
-  const [count, setCount] = useState(stepSec);
+  const [nameCount, setNameCount] = useState(NAME_SEC);
+  const [taskIdx, setTaskIdx] = useState(0);
+  const [reading, setReading] = useState(false);
+  const [count, setCount] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
 
-  const nameP = useSharedValue(0); // 0 = big centered, 1 = small caption up top
   const barP = useSharedValue(0);
-
-  const stepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const countIntRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const nameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clearTimers = () => {
-    if (stepTimerRef.current) clearTimeout(stepTimerRef.current);
-    if (countIntRef.current) clearInterval(countIntRef.current);
-    if (nameTimerRef.current) clearTimeout(nameTimerRef.current);
-  };
-
-  useEffect(
-    () => () => {
-      clearTimers();
-      cancelAnimation(nameP);
-      cancelAnimation(barP);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   const start = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    nameP.value = 0;
     setPhase("name");
   };
 
-  // Name intro → after 2s it shrinks, fades and lifts into a caption; steps begin.
+  // Name + description intro with a visible 5s countdown, then run the tasks.
   useEffect(() => {
     if (phase !== "name") return;
-    nameTimerRef.current = setTimeout(() => {
-      nameP.value = withTiming(1, { duration: 520, easing: BEZ });
+    setNameCount(NAME_SEC);
+    const ci = setInterval(() => setNameCount((c) => Math.max(0, c - 1)), 1000);
+    const to = setTimeout(() => {
+      clearInterval(ci);
       setPhase("running");
-    }, 2000);
+    }, NAME_SEC * 1000);
     return () => {
-      if (nameTimerRef.current) clearTimeout(nameTimerRef.current);
+      clearInterval(ci);
+      clearTimeout(to);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  // Guided step sequence — each prompt with its own short timer.
+  // Task/cycle driver. Flat schedule: a 10s hidden read window before the first
+  // task, then two timed cycles (15s / 20s) per task. When the schedule is
+  // exhausted we jump straight to the victory screen — no interstitial.
   useEffect(() => {
     if (phase !== "running") return;
     let cancelled = false;
-    const runStep = (i: number) => {
+    const timers: Array<ReturnType<typeof setTimeout>> = [];
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    type Seg = { task: number; kind: "read" | "cycle"; sec: number };
+    const schedule: Seg[] = [];
+    for (let t = 0; t < steps.length; t++) {
+      if (t === 0) schedule.push({ task: 0, kind: "read", sec: READ_SEC });
+      CYCLE_SECS.forEach((sec) => schedule.push({ task: t, kind: "cycle", sec }));
+    }
+
+    const runSeg = (k: number) => {
       if (cancelled) return;
-      setStepIdx(i);
-      setCount(stepSec);
-      Haptics.selectionAsync().catch(() => {});
-      barP.value = 0;
-      barP.value = withTiming(1, { duration: stepSec * 1000, easing: Easing.linear });
-      countIntRef.current = setInterval(
-        () => setCount((c) => Math.max(0, c - 1)),
-        1000,
-      );
-      stepTimerRef.current = setTimeout(() => {
-        if (countIntRef.current) clearInterval(countIntRef.current);
-        if (cancelled) return;
-        if (i + 1 < total) {
-          runStep(i + 1);
-        } else {
-          setPhase("done");
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-        }
-      }, stepSec * 1000);
+      if (k >= schedule.length) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        onCompleteRef.current();
+        return;
+      }
+      const seg = schedule[k];
+      setTaskIdx(seg.task);
+      if (seg.kind === "read") {
+        setReading(true);
+        setCount(0);
+        barP.value = 0;
+        timers.push(setTimeout(() => runSeg(k + 1), seg.sec * 1000));
+      } else {
+        setReading(false);
+        setCount(seg.sec);
+        Haptics.selectionAsync().catch(() => {});
+        barP.value = 0;
+        barP.value = withTiming(1, { duration: seg.sec * 1000, easing: Easing.linear });
+        interval = setInterval(() => setCount((c) => Math.max(0, c - 1)), 1000);
+        timers.push(
+          setTimeout(() => {
+            if (interval) clearInterval(interval);
+            runSeg(k + 1);
+          }, seg.sec * 1000),
+        );
+      }
     };
-    runStep(0);
+    runSeg(0);
+
     return () => {
       cancelled = true;
-      clearTimers();
+      timers.forEach(clearTimeout);
+      if (interval) clearInterval(interval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  const nameStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(nameP.value, [0, 1], [1, 0.4]),
-    transform: [
-      { translateY: interpolate(nameP.value, [0, 1], [0, -SH * 0.3]) },
-      { scale: interpolate(nameP.value, [0, 1], [1, 0.52]) },
-    ],
-  }));
   const barStyle = useAnimatedStyle(() => ({ width: `${barP.value * 100}%` }));
 
-  const stepText = steps[stepIdx % steps.length];
+  const stepText = steps[taskIdx % steps.length];
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: topPad + 8 }]}>
-      <CelebrationBurst play={phase === "done"} />
-
       {/* Header: back + help */}
       <View style={styles.header}>
         <Pressable onPress={onBack} hitSlop={12} style={styles.iconBtn}>
           <Ionicons name="chevron-back" size={24} color={colors.textSecondary} />
         </Pressable>
-        {phase === "idle" || phase === "done" ? (
+        {phase === "idle" ? (
           <Pressable onPress={() => setShowHelp(true)} hitSlop={12} style={styles.iconBtn}>
             <Ionicons name="help-circle-outline" size={24} color={colors.textSecondary} />
           </Pressable>
@@ -189,85 +236,84 @@ export default function MouthExerciseView({
         )}
       </View>
 
-      {/* IDLE — clean: title + start */}
+      {/* IDLE — title + start + "back" link */}
       {phase === "idle" && (
         <View style={styles.center}>
           <Text style={[styles.idleTitle, { color: colors.text }]}>Разминка полости рта</Text>
-          <Animated.View entering={FadeInDown.delay(120).duration(420)} style={{ marginTop: 34 }}>
-            <Pressable onPress={start} style={({ pressed }) => [styles.cta, { backgroundColor: accent, opacity: pressed ? 0.9 : 1 }]}>
+          <Animated.View entering={FadeInDown.delay(120).duration(420)} style={styles.idleActions}>
+            <Pressable
+              onPress={start}
+              style={({ pressed }) => [styles.cta, { backgroundColor: accent, opacity: pressed ? 0.9 : 1 }]}
+            >
               <Ionicons name="play" size={16} color={warmupTheme.onGold} />
               <Text style={styles.ctaText}>Старт</Text>
             </Pressable>
-          </Animated.View>
-        </View>
-      )}
-
-      {/* Exercise name — big → caption */}
-      {(phase === "name" || phase === "running") && (
-        <Animated.Text
-          entering={FadeIn.duration(320)}
-          style={[styles.exName, { color: accent }, nameStyle]}
-        >
-          {exercise.name}
-        </Animated.Text>
-      )}
-
-      {/* RUNNING — one prompt + its timer */}
-      {phase === "running" && (
-        <View style={styles.center} pointerEvents="none">
-          <Animated.Text
-            key={`step-${stepIdx}`}
-            entering={FadeInDown.duration(300)}
-            exiting={FadeOut.duration(160)}
-            style={[styles.stepText, { color: colors.text }]}
-          >
-            {stepText}
-          </Animated.Text>
-          <View style={[styles.track, { backgroundColor: colors.border }]}>
-            <Animated.View style={[styles.fill, { backgroundColor: accent }, barStyle]} />
-          </View>
-          <Text style={[styles.count, { color: colors.textMuted }]}>{count}</Text>
-        </View>
-      )}
-
-      {/* Step progress dots */}
-      {phase === "running" && (
-        <View style={styles.dots}>
-          {Array.from({ length: total }).map((_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.dot,
-                { backgroundColor: i <= stepIdx ? accent : colors.border },
-              ]}
-            />
-          ))}
-        </View>
-      )}
-
-      {/* DONE */}
-      {phase === "done" && (
-        <View style={styles.center}>
-          <Animated.View entering={FadeIn.duration(360)} style={[styles.doneBadge, { backgroundColor: accent }]}>
-            <Ionicons name="checkmark" size={54} color={warmupTheme.onGold} />
-          </Animated.View>
-          <Text style={[styles.doneText, { color: colors.text }]}>Отлично!</Text>
-          <Animated.View entering={FadeInDown.delay(200).duration(400)} style={{ marginTop: 26 }}>
-            <Pressable onPress={onComplete} style={({ pressed }) => [styles.cta, { backgroundColor: accent, opacity: pressed ? 0.9 : 1 }]}>
-              <Text style={styles.ctaText}>Далее</Text>
-              <Ionicons name="arrow-forward" size={16} color={warmupTheme.onGold} />
+            <Pressable onPress={onBack} hitSlop={8} style={styles.backLink}>
+              <Text style={[styles.backLinkText, { color: colors.textMuted }]}>Вернуться назад</Text>
             </Pressable>
           </Animated.View>
         </View>
       )}
 
-      {/* Skip (running) */}
+      {/* NAME intro — countdown above, name, description below */}
+      {phase === "name" && (
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          exiting={FadeOut.duration(160)}
+          style={styles.center}
+        >
+          <Text style={[styles.nameCount, { color: colors.textMuted }]}>{nameCount}</Text>
+          <Text style={[styles.exNameBig, { color: accent }]}>{exercise.name}</Text>
+          {!!desc && (
+            <Text style={[styles.desc, { color: colors.textSecondary }]}>{desc}</Text>
+          )}
+        </Animated.View>
+      )}
+
+      {/* RUNNING — name caption + small countdown on top, prompt + tip + bar */}
       {phase === "running" && (
-        <View style={styles.footer}>
-          <Pressable onPress={onComplete} hitSlop={8} style={styles.skip}>
-            <Text style={[styles.skipText, { color: colors.textMuted }]}>Пропустить →</Text>
-          </Pressable>
-        </View>
+        <>
+          <View style={styles.topInfo}>
+            <Text style={[styles.nameCaption, { color: accent }]}>{exercise.name}</Text>
+            {!reading && (
+              <Text style={[styles.topCount, { color: colors.textMuted }]}>{count}</Text>
+            )}
+          </View>
+
+          <View style={styles.center} pointerEvents="none">
+            <Animated.Text
+              key={`task-${taskIdx}`}
+              entering={FadeInDown.duration(300)}
+              exiting={FadeOut.duration(160)}
+              style={[styles.stepText, { color: colors.text }]}
+            >
+              {stepText}
+            </Animated.Text>
+            {!!tip && <Text style={[styles.tip, { color: colors.textSecondary }]}>{tip}</Text>}
+            {!reading && (
+              <View style={[styles.track, { backgroundColor: colors.border }]}>
+                <Animated.View style={[styles.fill, { backgroundColor: accent }, barStyle]} />
+              </View>
+            )}
+          </View>
+
+          {/* Task progress dots */}
+          <View style={styles.dots}>
+            {steps.map((_, i) => (
+              <View
+                key={i}
+                style={[styles.dot, { backgroundColor: i <= taskIdx ? accent : colors.border }]}
+              />
+            ))}
+          </View>
+
+          {/* Skip */}
+          <View style={styles.footer}>
+            <Pressable onPress={onComplete} hitSlop={8} style={styles.skip}>
+              <Text style={[styles.skipText, { color: colors.textMuted }]}>Пропустить →</Text>
+            </Pressable>
+          </View>
+        </>
       )}
 
       {/* Help */}
@@ -277,9 +323,9 @@ export default function MouthExerciseView({
             <Pressable onPress={() => setShowHelp(false)} hitSlop={12} style={styles.helpClose}>
               <Ionicons name="close" size={22} color={colors.textMuted} />
             </Pressable>
-            <Text style={[styles.helpTitle, { color: colors.text }]}>Как выполнять</Text>
+            <Text style={[styles.helpTitle, { color: colors.text }]}>Как выполнять?</Text>
             <Text style={[styles.helpText, { color: colors.textSecondary }]}>
-              {exercise.name}: следуй подсказкам на экране и повторяй движение вместе с таймером. Спокойно, без напряжения.
+              Сначала появится название упражнения и короткое описание. Затем — задание и подсказка, как его выполнять. Повторяй движение вместе с таймером, спокойно и без напряжения.
             </Text>
           </Pressable>
         </Pressable>
@@ -294,6 +340,7 @@ const styles = StyleSheet.create({
   iconBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   idleTitle: { fontFamily: warmupFonts.title, fontSize: 30, textAlign: "center", letterSpacing: -0.3 },
+  idleActions: { marginTop: 34, alignItems: "center" },
   cta: {
     flexDirection: "row",
     alignItems: "center",
@@ -303,22 +350,43 @@ const styles = StyleSheet.create({
     borderRadius: 28,
   },
   ctaText: { color: warmupTheme.onGold, fontSize: 17, fontFamily: warmupFonts.title },
-  exName: {
-    position: "absolute",
-    left: 24,
-    right: 24,
-    top: SH * 0.42,
+  backLink: { marginTop: 18, padding: 8 },
+  backLinkText: { fontFamily: warmupFonts.body, fontSize: 15 },
+
+  nameCount: { fontFamily: warmupFonts.digit, fontSize: 34, marginBottom: 14 },
+  exNameBig: {
     textAlign: "center",
     fontFamily: warmupFonts.title,
-    fontSize: 32,
+    fontSize: 34,
     letterSpacing: -0.3,
   },
+  desc: {
+    fontFamily: warmupFonts.body,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: "center",
+    marginTop: 14,
+    maxWidth: 320,
+  },
+
+  topInfo: { alignItems: "center", marginTop: 4, gap: 6 },
+  nameCaption: { fontFamily: warmupFonts.title, fontSize: 17, letterSpacing: -0.2 },
+  topCount: { fontFamily: warmupFonts.digit, fontSize: 15 },
+
   stepText: {
     fontFamily: warmupFonts.title,
     fontSize: 26,
     textAlign: "center",
     lineHeight: 34,
     maxWidth: 320,
+  },
+  tip: {
+    fontFamily: warmupFonts.body,
+    fontSize: 14.5,
+    lineHeight: 21,
+    textAlign: "center",
+    marginTop: 12,
+    maxWidth: 300,
   },
   track: {
     width: 220,
@@ -328,7 +396,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   fill: { height: 6, borderRadius: 3 },
-  count: { fontFamily: warmupFonts.digit, fontSize: 20, marginTop: 12 },
   dots: {
     flexDirection: "row",
     justifyContent: "center",
@@ -336,14 +403,6 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  doneBadge: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  doneText: { fontFamily: warmupFonts.title, fontSize: 26, marginTop: 20 },
   footer: { paddingBottom: 24, alignItems: "center" },
   skip: { padding: 10 },
   skipText: { fontFamily: warmupFonts.body, fontSize: 14 },

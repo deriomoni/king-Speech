@@ -63,7 +63,15 @@ const BUTTERFLY_PATH =
 function Butterfly({ color, size }: { color: string; size: number }) {
   return (
     <Svg width={size} height={Math.round(size * (455 / 496))} viewBox="0 0 496 455">
-      <Path d={BUTTERFLY_PATH} fill={color} fillRule="evenodd" clipRule="evenodd" />
+      <Path
+        d={BUTTERFLY_PATH}
+        fill={color}
+        fillRule="evenodd"
+        clipRule="evenodd"
+        stroke={color}
+        strokeWidth={5}
+        strokeLinejoin="round"
+      />
     </Svg>
   );
 }
@@ -249,7 +257,7 @@ export default function BreathingExerciseView({
               <Text style={[styles.phaseVia, { color: phaseColor }]}>{phase.via}</Text>
             </>
           ) : (
-            <Butterfly color={phaseColor} size={94} />
+            <Butterfly color={phaseColor} size={113} />
           )}
         </Animated.View>
       </View>
@@ -276,20 +284,20 @@ export default function BreathingExerciseView({
             <Pressable onPress={() => setShowHelp(false)} hitSlop={12} style={styles.helpClose}>
               <Ionicons name="close" size={22} color={colors.textMuted} />
             </Pressable>
-            <Text style={[styles.helpTitle, { color: colors.text }]}>Как выполнять</Text>
-            <View style={styles.helpRow}>
-              <View style={[styles.dot, { backgroundColor: C_INHALE }]} />
-              <Text style={[styles.helpText, { color: colors.textSecondary }]}>Вдохни через нос, пока круг растёт — 3 секунды.</Text>
-            </View>
-            <View style={styles.helpRow}>
-              <View style={[styles.dot, { backgroundColor: C_HOLD }]} />
-              <Text style={[styles.helpText, { color: colors.textSecondary }]}>Задержи дыхание — 2 секунды.</Text>
-            </View>
-            <View style={styles.helpRow}>
-              <View style={[styles.dot, { backgroundColor: C_EXHALE }]} />
-              <Text style={[styles.helpText, { color: colors.textSecondary }]}>Выдохни через рот, пока круг опадает — 4 секунды.</Text>
-            </View>
-            <Text style={[styles.helpFoot, { color: colors.textMuted }]}>Повтори {CYCLES} цикла, спокойно и без напряжения.</Text>
+            <Text style={[styles.helpTitle, { color: colors.text }]}>Как выполнять?</Text>
+            <Text style={[styles.helpText, { color: colors.textSecondary }]}>
+              Дышите вместе с кругом: расширяется — вдох, сжимается — выдох. Текст на круге подскажет ритм.
+            </Text>
+            <Text style={[styles.helpText, { color: colors.textSecondary }]}>
+              Дыхательная разминка — базовое упражнение перед выступлением. Успокаивает дыхание, снимает напряжение и готовит связки к работе.
+            </Text>
+            <Text style={[styles.helpSub, { color: colors.text }]}>Разминка рта</Text>
+            <Text style={[styles.helpText, { color: colors.textSecondary }]}>
+              Простые упражнения для мышц языка, губ и голосовых связок. Подсказки по выполнению задания появятся на экране.
+            </Text>
+            <Text style={[styles.helpFoot, { color: colors.textMuted }]}>
+              Уровень не требует микрофона. За выполнение задания начисляется 10 баллов. При желании уровень можно пройти повторно.
+            </Text>
           </Pressable>
         </Pressable>
       </Modal>
@@ -357,6 +365,7 @@ const styles = StyleSheet.create({
   helpTitle: { fontSize: 20, fontFamily: warmupFonts.title, marginBottom: 2 },
   helpRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   dot: { width: 8, height: 8, borderRadius: 4, marginTop: 7 },
-  helpText: { flex: 1, fontSize: 15, lineHeight: 22, fontFamily: warmupFonts.body },
-  helpFoot: { fontSize: 14, lineHeight: 20, marginTop: 4, fontFamily: warmupFonts.body },
+  helpText: { fontSize: 15, lineHeight: 22, fontFamily: warmupFonts.body },
+  helpSub: { fontSize: 16, marginTop: 4, fontFamily: warmupFonts.title },
+  helpFoot: { fontSize: 13.5, lineHeight: 20, marginTop: 4, fontFamily: warmupFonts.body },
 });
