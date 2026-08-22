@@ -15,6 +15,7 @@ import WaveformVoiceRecorder from "@/components/WaveformVoiceRecorder";
 import OscarMascot from "@/components/OscarMascot";
 import { toneFor } from "@/components/ScoreFlower";
 import { analyzeGenericTask, type TaskAnalysisResult } from "@/services/analyzeGenericTask";
+import { scoreLiteracy, type LiteracyResult } from "@/services/literacyScore";
 import type { SpeechAnalysis } from "@/services/speechAnalysis";
 import type { Task } from "@/context/GameContext";
 import { brand } from "@/constants/colors";
@@ -70,6 +71,24 @@ interface DevRow {
   transcript: string;
   durationSec: number;
   analysis: SpeechAnalysis;
+  literacy: LiteracyResult;
+  overall10: number; // v2-weighted per-answer score (0..10)
+}
+
+// v2 weights: literacy dominates. Tempo & pauses are NOT scored (they feed other
+// aspects as internal signals per the spec).
+const V2_WEIGHTS = { literacy: 0.4, confidence: 0.2, expressiveness: 0.18, clarity: 0.14, volume: 0.08 };
+
+function v2Overall(a: SpeechAnalysis, lit: LiteracyResult): number {
+  const s = a.score;
+  const litPart = lit.available ? lit.overall10 : s.overall; // fall back if no transcript
+  return (
+    V2_WEIGHTS.literacy * litPart +
+    V2_WEIGHTS.confidence * (s.confidence ?? 0) +
+    V2_WEIGHTS.expressiveness * (s.expressiveness ?? 0) +
+    V2_WEIGHTS.clarity * (s.clarity ?? 0) +
+    V2_WEIGHTS.volume * (s.volume ?? 0)
+  );
 }
 
 // Recorded answer audio is kept ONLY in memory for the duration of the level so
@@ -300,13 +319,20 @@ export default function TaskFlowView({
     );
     const analyses = results.map((r) => (r.kind === "empty" ? emptyAnalysis() : r.analysis));
     analysesRef.current = analyses;
-    scoresRef.current = analyses.map((a) => a.score.overall);
-    const rows: DevRow[] = tasks.map((t, i) => ({
-      question: t.content || t.title || "",
-      transcript: analyses[i]?.transcript || "",
-      durationSec: audioRef.current[i]?.durationSec ?? 0,
-      analysis: analyses[i] ?? emptyAnalysis(),
-    }));
+    const rows: DevRow[] = tasks.map((t, i) => {
+      const analysis = analyses[i] ?? emptyAnalysis();
+      const literacy = scoreLiteracy(analysis.transcript || "");
+      return {
+        question: t.content || t.title || "",
+        transcript: analysis.transcript || "",
+        durationSec: audioRef.current[i]?.durationSec ?? 0,
+        analysis,
+        literacy,
+        overall10: v2Overall(analysis, literacy),
+      };
+    });
+    // Level score is the v2-weighted blend (literacy-first), not the raw mean.
+    scoresRef.current = rows.map((r) => r.overall10);
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     }
@@ -603,28 +629,24 @@ function DevReport({
   onPlay: (index: number) => void;
   onContinue: () => void;
 }) {
-  const overalls = rows.map((r) => r.analysis.score.overall);
+  const overalls = rows.map((r) => r.overall10);
   const avg = overalls.reduce((s, v) => s + v, 0) / Math.max(1, overalls.length);
   const border = isDark ? "rgba(255,255,255,0.08)" : "rgba(20,22,26,0.08)";
 
-  // Per-aspect meaning. Tempo & pauses are kept as internal signals (they feed
-  // clarity / confidence) rather than standalone scores — flagged "внутр.".
+  // Scored aspects (v2). Grammar/literacy is rendered separately above these as
+  // the weight-40 core. Tempo & pauses are NOT here — they are internal signals.
   const ASPECTS: AspectInfo[] = ru
     ? [
-        { key: "clarity", label: "Чёткость", desc: "Разборчивость дикции: чистота согласных и уверенность распознавания." },
-        { key: "confidence", label: "Уверенность", desc: "Устойчивость голоса, завершённость интонации, беглость без запинок." },
-        { key: "volume", label: "Громкость", desc: "Фактическая громкость голоса — не тихо и без перегруза." },
-        { key: "tempo", label: "Темп", desc: "Скорость речи. Вспомогательный сигнал для чёткости, не отдельный балл.", internal: true },
-        { key: "expressiveness", label: "Выразительность", desc: "Интонационный диапазон и эмоциональная вовлечённость." },
-        { key: "pauses", label: "Паузы", desc: "Паузы и заминки. Вспомогательный сигнал для уверенности, не отдельный балл.", internal: true },
+        { key: "confidence", label: "Уверенность", desc: "Устойчивость голоса, завершённость интонации, беглость без запинок. (вес 20)" },
+        { key: "expressiveness", label: "Выразительность", desc: "Интонационный диапазон и эмоциональная вовлечённость. (вес 18)" },
+        { key: "clarity", label: "Чёткость", desc: "Разборчивость дикции: чистота согласных и уверенность распознавания. (вес 14)" },
+        { key: "volume", label: "Громкость", desc: "Фактическая громкость голоса — не тихо и без перегруза. (вес 8)" },
       ]
     : [
-        { key: "clarity", label: "Clarity", desc: "How intelligible your diction is: clean consonants and recognition confidence." },
-        { key: "confidence", label: "Confidence", desc: "Voice stability, finished intonation, fluency without stumbles." },
-        { key: "volume", label: "Volume", desc: "Actual loudness of your voice — not too quiet, no clipping." },
-        { key: "tempo", label: "Tempo", desc: "Speaking speed. A support signal for clarity, not a standalone score.", internal: true },
-        { key: "expressiveness", label: "Expressiveness", desc: "Pitch range and emotional engagement." },
-        { key: "pauses", label: "Pauses", desc: "Pauses and hesitations. A support signal for confidence, not a standalone score.", internal: true },
+        { key: "confidence", label: "Confidence", desc: "Voice stability, finished intonation, fluency without stumbles. (w 20)" },
+        { key: "expressiveness", label: "Expressiveness", desc: "Pitch range and emotional engagement. (w 18)" },
+        { key: "clarity", label: "Clarity", desc: "Diction intelligibility: clean consonants and recognition confidence. (w 14)" },
+        { key: "volume", label: "Volume", desc: "Actual loudness of your voice — not too quiet, no clipping. (w 8)" },
       ];
 
   return (
@@ -649,8 +671,8 @@ function DevReport({
           </Text>
           <Text style={[st.devAggNote, { color: colors.textSecondary, fontFamily: "Nunito_600SemiBold" }]}>
             {ru
-              ? `Итог = среднее из ${rows.length} ответов (${overalls.map((v) => v.toFixed(1)).join(" + ")}) ÷ ${rows.length}.`
-              : `Total = average of ${rows.length} answers (${overalls.map((v) => v.toFixed(1)).join(" + ")}) ÷ ${rows.length}.`}
+              ? `Средняя из ${rows.length} ответов (${overalls.map((v) => v.toFixed(1)).join(" + ")}) ÷ ${rows.length}. Каждый ответ = грамотность 40% + уверенность 20% + выразительность 18% + чёткость 14% + громкость 8%.`
+              : `Average of ${rows.length} answers (${overalls.map((v) => v.toFixed(1)).join(" + ")}) ÷ ${rows.length}. Each answer = literacy 40% + confidence 20% + expressiveness 18% + clarity 14% + volume 8%.`}
           </Text>
         </View>
 
@@ -666,8 +688,8 @@ function DevReport({
                 <Text style={[st.devQNum, { color: colors.textMuted, fontFamily: "Rubik_600SemiBold" }]}>
                   {(ru ? "ВОПРОС " : "QUESTION ") + (i + 1) + (hasAudio ? " · " + fmtDuration(r.durationSec) : "")}
                 </Text>
-                <Text style={[st.devScore, { color: toneFor(a.score.overall), fontFamily: "Rubik_700Bold" }]}>
-                  {a.score.overall.toFixed(1)}
+                <Text style={[st.devScore, { color: toneFor(r.overall10), fontFamily: "Rubik_700Bold" }]}>
+                  {r.overall10.toFixed(1)}
                 </Text>
               </View>
               <Text style={[st.devQ, { color: colors.text, fontFamily: "Nunito_700Bold" }]}>{r.question}</Text>
@@ -693,6 +715,60 @@ function DevReport({
               <Text style={[st.devTranscript, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
                 {r.transcript ? `«${r.transcript}»` : ru ? "— пусто (не распознано / нет связи с сервером) —" : "— empty (not recognized / no server) —"}
               </Text>
+
+              {/* Грамотность — ядро оценки (вес 40) */}
+              <View style={[st.litCard, { borderColor: toneFor(r.literacy.overall10) + "44", backgroundColor: toneFor(r.literacy.overall10) + (isDark ? "1E" : "12") }]}>
+                <View style={st.litHead}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[st.litTitle, { color: colors.text, fontFamily: "Nunito_800ExtraBold" }]}>
+                      {ru ? "Грамотность" : "Literacy"}
+                      <Text style={[st.aspTag, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>{ru ? "  · вес 40" : "  · w 40"}</Text>
+                    </Text>
+                    <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
+                      {ru
+                        ? "Слова-паразиты и грамматика словоформ. Главный параметр речи."
+                        : "Filler words and word-form grammar. The core of the score."}
+                    </Text>
+                  </View>
+                  <Text style={[st.litScore, { color: toneFor(r.literacy.overall10), fontFamily: "Rubik_700Bold" }]}>
+                    {r.literacy.available ? r.literacy.overall10.toFixed(1) : "—"}
+                  </Text>
+                </View>
+
+                {r.literacy.available ? (
+                  <>
+                    <Text style={[st.litSub, { color: colors.textMuted, fontFamily: "Nunito_700Bold" }]}>
+                      {ru
+                        ? `Паразиты ${(r.literacy.g1 / 10).toFixed(1)} · Словоформы ${(r.literacy.g2 / 10).toFixed(1)} · Построение — фаза 3`
+                        : `Fillers ${(r.literacy.g1 / 10).toFixed(1)} · Word forms ${(r.literacy.g2 / 10).toFixed(1)} · Syntax — phase 3`}
+                    </Text>
+                    {r.literacy.habit ? (
+                      <Text style={[st.litHabit, { color: colors.text, fontFamily: "Nunito_800ExtraBold" }]}>
+                        {ru ? `Твоё слово-паразит: «${r.literacy.habit.lemma}» ×${r.literacy.habit.count}` : `Your filler word: “${r.literacy.habit.lemma}” ×${r.literacy.habit.count}`}
+                      </Text>
+                    ) : null}
+                    {r.literacy.violations.length ? (
+                      <View style={st.litViolWrap}>
+                        {r.literacy.violations.map((v) => (
+                          <View key={v.lemma} style={[st.litChip, { backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(20,22,26,0.05)" }]}>
+                            <Text style={[st.litChipText, { color: colors.textSecondary, fontFamily: "Nunito_700Bold" }]}>
+                              «{v.lemma}» ×{v.count}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : (
+                      <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
+                        {ru ? "Паразитов и грубых форм не найдено — чисто." : "No fillers or bad forms found — clean."}
+                      </Text>
+                    )}
+                  </>
+                ) : (
+                  <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
+                    {ru ? "Недостаточно распознанного текста для оценки грамотности." : "Not enough recognized text to score literacy."}
+                  </Text>
+                )}
+              </View>
 
               {/* Per-aspect rows with a short explanation each */}
               <View style={st.aspList}>
@@ -844,6 +920,15 @@ const st = StyleSheet.create({
   playText: { fontSize: 13.5 },
   devSubLabel: { fontSize: 10.5, letterSpacing: 1.2, marginTop: 6 },
   devTranscript: { fontSize: 14, lineHeight: 21 },
+  litCard: { borderRadius: 14, borderWidth: 1, padding: 13, gap: 8, marginTop: 8 },
+  litHead: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+  litTitle: { fontSize: 16 },
+  litScore: { fontSize: 30, lineHeight: 32 },
+  litSub: { fontSize: 12.5, lineHeight: 18 },
+  litHabit: { fontSize: 14, lineHeight: 19 },
+  litViolWrap: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 2 },
+  litChip: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 9 },
+  litChipText: { fontSize: 12.5 },
   aspList: { gap: 12, marginTop: 8 },
   aspRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   aspVal: { fontSize: 20, minWidth: 34, textAlign: "right" },

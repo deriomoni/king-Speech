@@ -1,0 +1,3337 @@
+{
+  "version": "2.0.0-seed",
+  "language": "ru",
+  "scoring": {
+    "weights": {
+      "literacy": 0.4,
+      "confidence": 0.2,
+      "expressiveness": 0.18,
+      "clarity": 0.14,
+      "volume": 0.08
+    },
+    "literacy_sub_weights": {
+      "g1_parasites": 0.3,
+      "g2_forms": 0.35,
+      "g3_structure": 0.35
+    },
+    "decay_tau": {
+      "G1": 14,
+      "G2": 8,
+      "G3": 10
+    },
+    "k_ctx_coeffs": {
+      "f_pos": 0.2,
+      "f_pause": 0.2,
+      "f_sem": 0.35,
+      "f_prosody": 0.15,
+      "f_rep": 0.1,
+      "clamp": [
+        0,
+        1.3
+      ]
+    },
+    "weight_modifiers": {
+      "interview_type": {
+        "job_formal": 1.2,
+        "media_press": 1.1,
+        "casual_podcast": 0.7,
+        "startup_pitch": 1.0
+      },
+      "rank": {
+        "rank_1": 0.6,
+        "rank_2": 0.8,
+        "rank_3": 1.0,
+        "rank_4": 1.15,
+        "rank_5": 1.3
+      }
+    }
+  },
+  "categories": {
+    "filler_voc": {
+      "block": "G1",
+      "w": 2.0,
+      "theta": 3.0,
+      "ctx": false,
+      "note": "Вокализованные хезитативы. Легитимных контекстов нет."
+    },
+    "filler_verbal": {
+      "block": "G1",
+      "w": 2.5,
+      "theta": 2.5,
+      "ctx": true,
+      "note": "Вербальные хезитативы. Часто имеют легитимную дискурсивную функцию."
+    },
+    "approximator": {
+      "block": "G1",
+      "w": 4.0,
+      "theta": 1.0,
+      "ctx": true,
+      "note": "Размывают утверждение до предположения."
+    },
+    "search_marker": {
+      "block": "G1",
+      "w": 4.5,
+      "theta": 0.5,
+      "ctx": false,
+      "note": "Маркеры поиска слова. Сигнал невладения темой."
+    },
+    "reflexive": {
+      "block": "G1",
+      "w": 3.5,
+      "theta": 1.0,
+      "ctx": true,
+      "note": "Метакоммуникация и самодискредитация."
+    },
+    "xeno": {
+      "block": "G1",
+      "w": 3.0,
+      "theta": 1.0,
+      "ctx": true,
+      "note": "Ксенопоказатели — пересказ чужой речи вместо формулировки."
+    },
+    "colloquial_low": {
+      "block": "G1",
+      "w": 5.0,
+      "theta": 0.3,
+      "ctx": false,
+      "note": "Регистровый провал в деловом контексте."
+    },
+    "empty_intensifier": {
+      "block": "G1",
+      "w": 2.5,
+      "theta": 2.0,
+      "ctx": true,
+      "note": "Усилители без содержания."
+    },
+    "cliche_office": {
+      "block": "G1",
+      "w": 4.0,
+      "theta": 0.5,
+      "ctx": true,
+      "note": "Канцелярит и речевые штампы (ФИПИ К10)."
+    },
+    "barbarism": {
+      "block": "G1",
+      "w": 3.5,
+      "theta": 0.5,
+      "ctx": true,
+      "note": "Варваризмы-затычки. Профлексика вынесена в белый список."
+    },
+    "hedge": {
+      "block": "U",
+      "w": 0.0,
+      "theta": 0.0,
+      "ctx": true,
+      "note": "Служебная: не штрафует грамотность, снижает Уверенность."
+    },
+    "confidence_pos": {
+      "block": "U",
+      "w": -1.0,
+      "theta": 0.0,
+      "ctx": false,
+      "note": "Служебная: положительный вклад в Уверенность."
+    }
+  },
+  "lexicon": [
+    {
+      "id": "FIL-e",
+      "surface": [
+        "э"
+      ],
+      "lemma": "э",
+      "block": "G1",
+      "category": "filler_voc",
+      "base_weight": 2.0,
+      "tolerance_per_100": 3.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Вокализованные хезитативы. Легитимных контекстов нет."
+    },
+    {
+      "id": "FIL-ee",
+      "surface": [
+        "ээ"
+      ],
+      "lemma": "ээ",
+      "block": "G1",
+      "category": "filler_voc",
+      "base_weight": 2.0,
+      "tolerance_per_100": 3.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Вокализованные хезитативы. Легитимных контекстов нет."
+    },
+    {
+      "id": "FIL-e-e-e",
+      "surface": [
+        "э-э-э"
+      ],
+      "lemma": "э-э-э",
+      "block": "G1",
+      "category": "filler_voc",
+      "base_weight": 2.0,
+      "tolerance_per_100": 3.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Вокализованные хезитативы. Легитимных контекстов нет."
+    },
+    {
+      "id": "FIL-a-a",
+      "surface": [
+        "а-а"
+      ],
+      "lemma": "а-а",
+      "block": "G1",
+      "category": "filler_voc",
+      "base_weight": 2.0,
+      "tolerance_per_100": 3.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Вокализованные хезитативы. Легитимных контекстов нет."
+    },
+    {
+      "id": "FIL-m",
+      "surface": [
+        "м"
+      ],
+      "lemma": "м",
+      "block": "G1",
+      "category": "filler_voc",
+      "base_weight": 2.0,
+      "tolerance_per_100": 3.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Вокализованные хезитативы. Легитимных контекстов нет."
+    },
+    {
+      "id": "FIL-mm",
+      "surface": [
+        "мм"
+      ],
+      "lemma": "мм",
+      "block": "G1",
+      "category": "filler_voc",
+      "base_weight": 2.0,
+      "tolerance_per_100": 3.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Вокализованные хезитативы. Легитимных контекстов нет."
+    },
+    {
+      "id": "FIL-m-m-m",
+      "surface": [
+        "м-м-м"
+      ],
+      "lemma": "м-м-м",
+      "block": "G1",
+      "category": "filler_voc",
+      "base_weight": 2.0,
+      "tolerance_per_100": 3.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Вокализованные хезитативы. Легитимных контекстов нет."
+    },
+    {
+      "id": "FIL-em",
+      "surface": [
+        "эм"
+      ],
+      "lemma": "эм",
+      "block": "G1",
+      "category": "filler_voc",
+      "base_weight": 2.0,
+      "tolerance_per_100": 3.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Вокализованные хезитативы. Легитимных контекстов нет."
+    },
+    {
+      "id": "FIL-nu-u",
+      "surface": [
+        "ну-у"
+      ],
+      "lemma": "ну-у",
+      "block": "G1",
+      "category": "filler_voc",
+      "base_weight": 2.0,
+      "tolerance_per_100": 3.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Вокализованные хезитативы. Легитимных контекстов нет."
+    },
+    {
+      "id": "FIL-i-i",
+      "surface": [
+        "и-и"
+      ],
+      "lemma": "и-и",
+      "block": "G1",
+      "category": "filler_voc",
+      "base_weight": 2.0,
+      "tolerance_per_100": 3.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Вокализованные хезитативы. Легитимных контекстов нет."
+    },
+    {
+      "id": "FIL-ta-ak",
+      "surface": [
+        "та-ак"
+      ],
+      "lemma": "та-ак",
+      "block": "G1",
+      "category": "filler_voc",
+      "base_weight": 2.0,
+      "tolerance_per_100": 3.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Вокализованные хезитативы. Легитимных контекстов нет."
+    },
+    {
+      "id": "FIL-nu",
+      "surface": [
+        "ну"
+      ],
+      "lemma": "ну",
+      "block": "G1",
+      "category": "filler_verbal",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.5,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "в начале реплики как маркер старта — допустимо один раз"
+      ],
+      "category_note": "Вербальные хезитативы. Часто имеют легитимную дискурсивную функцию."
+    },
+    {
+      "id": "FIL-vot",
+      "surface": [
+        "вот"
+      ],
+      "lemma": "вот",
+      "block": "G1",
+      "category": "filler_verbal",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.5,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "указательное: 'вот этот случай'"
+      ],
+      "category_note": "Вербальные хезитативы. Часто имеют легитимную дискурсивную функцию."
+    },
+    {
+      "id": "FIL-eto",
+      "surface": [
+        "это"
+      ],
+      "lemma": "это",
+      "block": "G1",
+      "category": "filler_verbal",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.5,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "полноценное местоимение: 'это моя задача'"
+      ],
+      "category_note": "Вербальные хезитативы. Часто имеют легитимную дискурсивную функцию."
+    },
+    {
+      "id": "FIL-tak",
+      "surface": [
+        "так"
+      ],
+      "lemma": "так",
+      "block": "G1",
+      "category": "filler_verbal",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.5,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "союз/наречие образа действия"
+      ],
+      "category_note": "Вербальные хезитативы. Часто имеют легитимную дискурсивную функцию."
+    },
+    {
+      "id": "FIL-znacit",
+      "surface": [
+        "значит"
+      ],
+      "lemma": "значит",
+      "block": "G1",
+      "category": "filler_verbal",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.5,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "вывод: 'значит, решение такое'"
+      ],
+      "category_note": "Вербальные хезитативы. Часто имеют легитимную дискурсивную функцию."
+    },
+    {
+      "id": "FIL-v-obsem",
+      "surface": [
+        "в общем"
+      ],
+      "lemma": "в общем",
+      "block": "G1",
+      "category": "filler_verbal",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.5,
+      "detector": "phrase",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "реальное обобщение в конце мысли"
+      ],
+      "category_note": "Вербальные хезитативы. Часто имеют легитимную дискурсивную функцию."
+    },
+    {
+      "id": "FIL-v-principe",
+      "surface": [
+        "в принципе"
+      ],
+      "lemma": "в принципе",
+      "block": "G1",
+      "category": "filler_verbal",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.5,
+      "detector": "phrase",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "противопоставление принципа частности"
+      ],
+      "category_note": "Вербальные хезитативы. Часто имеют легитимную дискурсивную функцию."
+    },
+    {
+      "id": "FIL-sobstvenno",
+      "surface": [
+        "собственно"
+      ],
+      "lemma": "собственно",
+      "block": "G1",
+      "category": "filler_verbal",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.5,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "уточнение: 'собственно проект начался в марте'"
+      ],
+      "category_note": "Вербальные хезитативы. Часто имеют легитимную дискурсивную функцию."
+    },
+    {
+      "id": "FIL-dopustim",
+      "surface": [
+        "допустим"
+      ],
+      "lemma": "допустим",
+      "block": "G1",
+      "category": "filler_verbal",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.5,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "введение гипотезы"
+      ],
+      "category_note": "Вербальные хезитативы. Часто имеют легитимную дискурсивную функцию."
+    },
+    {
+      "id": "FIL-skajem",
+      "surface": [
+        "скажем"
+      ],
+      "lemma": "скажем",
+      "block": "G1",
+      "category": "filler_verbal",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.5,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "введение примера"
+      ],
+      "category_note": "Вербальные хезитативы. Часто имеют легитимную дискурсивную функцию."
+    },
+    {
+      "id": "FIL-tam",
+      "surface": [
+        "там"
+      ],
+      "lemma": "там",
+      "block": "G1",
+      "category": "filler_verbal",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.5,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "обстоятельство места"
+      ],
+      "category_note": "Вербальные хезитативы. Часто имеют легитимную дискурсивную функцию."
+    },
+    {
+      "id": "APP-kak-by",
+      "surface": [
+        "как бы"
+      ],
+      "lemma": "как бы",
+      "block": "G1",
+      "category": "approximator",
+      "base_weight": 4.0,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "сравнение ('как бы невзначай'); союз ('боялся, как бы не опоздать')"
+      ],
+      "category_note": "Размывают утверждение до предположения."
+    },
+    {
+      "id": "APP-tipa",
+      "surface": [
+        "типа"
+      ],
+      "lemma": "типа",
+      "block": "G1",
+      "category": "approximator",
+      "base_weight": 4.0,
+      "tolerance_per_100": 1.0,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "только как существительное: 'человек такого типа'"
+      ],
+      "category_note": "Размывают утверждение до предположения."
+    },
+    {
+      "id": "APP-vrode",
+      "surface": [
+        "вроде"
+      ],
+      "lemma": "вроде",
+      "block": "G1",
+      "category": "approximator",
+      "base_weight": 4.0,
+      "tolerance_per_100": 1.0,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "сравнительный оборот: 'нечто вроде отчёта'"
+      ],
+      "category_note": "Размывают утверждение до предположения."
+    },
+    {
+      "id": "APP-vrode-by",
+      "surface": [
+        "вроде бы"
+      ],
+      "lemma": "вроде бы",
+      "block": "G1",
+      "category": "approximator",
+      "base_weight": 4.0,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "маркер сомнения при реальной неуверенности в факте"
+      ],
+      "category_note": "Размывают утверждение до предположения."
+    },
+    {
+      "id": "APP-cto-to-okolo",
+      "surface": [
+        "что-то около"
+      ],
+      "lemma": "что-то около",
+      "block": "G1",
+      "category": "approximator",
+      "base_weight": 4.0,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "перед числом при реальной приблизительности"
+      ],
+      "category_note": "Размывают утверждение до предположения."
+    },
+    {
+      "id": "APP-gde-to",
+      "surface": [
+        "где-то"
+      ],
+      "lemma": "где-то",
+      "block": "G1",
+      "category": "approximator",
+      "base_weight": 4.0,
+      "tolerance_per_100": 1.0,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "обстоятельство места"
+      ],
+      "category_note": "Размывают утверждение до предположения."
+    },
+    {
+      "id": "APP-primerno-tak",
+      "surface": [
+        "примерно так"
+      ],
+      "lemma": "примерно так",
+      "block": "G1",
+      "category": "approximator",
+      "base_weight": 4.0,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Размывают утверждение до предположения."
+    },
+    {
+      "id": "APP-bolee-menee",
+      "surface": [
+        "более-менее"
+      ],
+      "lemma": "более-менее",
+      "block": "G1",
+      "category": "approximator",
+      "base_weight": 4.0,
+      "tolerance_per_100": 1.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Размывают утверждение до предположения."
+    },
+    {
+      "id": "APP-v-rajone",
+      "surface": [
+        "в районе"
+      ],
+      "lemma": "в районе",
+      "block": "G1",
+      "category": "approximator",
+      "base_weight": 4.0,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "перед числом или названием района"
+      ],
+      "category_note": "Размывают утверждение до предположения."
+    },
+    {
+      "id": "APP-tak-skajem",
+      "surface": [
+        "так скажем"
+      ],
+      "lemma": "так скажем",
+      "block": "G1",
+      "category": "approximator",
+      "base_weight": 4.0,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Размывают утверждение до предположения."
+    },
+    {
+      "id": "APP-skajem-tak",
+      "surface": [
+        "скажем так"
+      ],
+      "lemma": "скажем так",
+      "block": "G1",
+      "category": "approximator",
+      "base_weight": 4.0,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Размывают утверждение до предположения."
+    },
+    {
+      "id": "APP-v-nekotorom-rode",
+      "surface": [
+        "в некотором роде"
+      ],
+      "lemma": "в некотором роде",
+      "block": "G1",
+      "category": "approximator",
+      "base_weight": 4.0,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Размывают утверждение до предположения."
+    },
+    {
+      "id": "APP-kak-to-tak",
+      "surface": [
+        "как-то так"
+      ],
+      "lemma": "как-то так",
+      "block": "G1",
+      "category": "approximator",
+      "base_weight": 4.0,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Размывают утверждение до предположения."
+    },
+    {
+      "id": "SEA-eto-samoe",
+      "surface": [
+        "это самое"
+      ],
+      "lemma": "это самое",
+      "block": "G1",
+      "category": "search_marker",
+      "base_weight": 4.5,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Маркеры поиска слова. Сигнал невладения темой."
+    },
+    {
+      "id": "SEA-kak-ego",
+      "surface": [
+        "как его"
+      ],
+      "lemma": "как его",
+      "block": "G1",
+      "category": "search_marker",
+      "base_weight": 4.5,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Маркеры поиска слова. Сигнал невладения темой."
+    },
+    {
+      "id": "SEA-kak-eto",
+      "surface": [
+        "как это"
+      ],
+      "lemma": "как это",
+      "block": "G1",
+      "category": "search_marker",
+      "base_weight": 4.5,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Маркеры поиска слова. Сигнал невладения темой."
+    },
+    {
+      "id": "SEA-kak-nazyvaetsa",
+      "surface": [
+        "как называется"
+      ],
+      "lemma": "как называется",
+      "block": "G1",
+      "category": "search_marker",
+      "base_weight": 4.5,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Маркеры поиска слова. Сигнал невладения темой."
+    },
+    {
+      "id": "SEA-nu-eto",
+      "surface": [
+        "ну это"
+      ],
+      "lemma": "ну это",
+      "block": "G1",
+      "category": "search_marker",
+      "base_weight": 4.5,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Маркеры поиска слова. Сигнал невладения темой."
+    },
+    {
+      "id": "SEA-cto-to-tam",
+      "surface": [
+        "что-то там"
+      ],
+      "lemma": "что-то там",
+      "block": "G1",
+      "category": "search_marker",
+      "base_weight": 4.5,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Маркеры поиска слова. Сигнал невладения темой."
+    },
+    {
+      "id": "SEA-to-se",
+      "surface": [
+        "то-сё"
+      ],
+      "lemma": "то-сё",
+      "block": "G1",
+      "category": "search_marker",
+      "base_weight": 4.5,
+      "tolerance_per_100": 0.5,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Маркеры поиска слова. Сигнал невладения темой."
+    },
+    {
+      "id": "SEA-kak-tam",
+      "surface": [
+        "как там"
+      ],
+      "lemma": "как там",
+      "block": "G1",
+      "category": "search_marker",
+      "base_weight": 4.5,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Маркеры поиска слова. Сигнал невладения темой."
+    },
+    {
+      "id": "SEA-sejcas-skaju",
+      "surface": [
+        "сейчас скажу"
+      ],
+      "lemma": "сейчас скажу",
+      "block": "G1",
+      "category": "search_marker",
+      "base_weight": 4.5,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Маркеры поиска слова. Сигнал невладения темой."
+    },
+    {
+      "id": "SEA-zabyl-slovo",
+      "surface": [
+        "забыл слово"
+      ],
+      "lemma": "забыл слово",
+      "block": "G1",
+      "category": "search_marker",
+      "base_weight": 4.5,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Маркеры поиска слова. Сигнал невладения темой."
+    },
+    {
+      "id": "REF-a-ne-znau",
+      "surface": [
+        "я не знаю"
+      ],
+      "lemma": "я не знаю",
+      "block": "G1",
+      "category": "reflexive",
+      "base_weight": 3.5,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "прямой ответ на вопрос о факте, которого не знаешь"
+      ],
+      "category_note": "Метакоммуникация и самодискредитация."
+    },
+    {
+      "id": "REF-ne-znau",
+      "surface": [
+        "не знаю"
+      ],
+      "lemma": "не знаю",
+      "block": "G1",
+      "category": "reflexive",
+      "base_weight": 3.5,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Метакоммуникация и самодискредитация."
+    },
+    {
+      "id": "REF-kak-vam-skazat",
+      "surface": [
+        "как вам сказать"
+      ],
+      "lemma": "как вам сказать",
+      "block": "G1",
+      "category": "reflexive",
+      "base_weight": 3.5,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Метакоммуникация и самодискредитация."
+    },
+    {
+      "id": "REF-kak-by-skazat",
+      "surface": [
+        "как бы сказать"
+      ],
+      "lemma": "как бы сказать",
+      "block": "G1",
+      "category": "reflexive",
+      "base_weight": 3.5,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Метакоммуникация и самодискредитация."
+    },
+    {
+      "id": "REF-cestno-govora",
+      "surface": [
+        "честно говоря"
+      ],
+      "lemma": "честно говоря",
+      "block": "G1",
+      "category": "reflexive",
+      "base_weight": 3.5,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "один раз как риторический ход"
+      ],
+      "category_note": "Метакоммуникация и самодискредитация."
+    },
+    {
+      "id": "REF-esli-cestno",
+      "surface": [
+        "если честно"
+      ],
+      "lemma": "если честно",
+      "block": "G1",
+      "category": "reflexive",
+      "base_weight": 3.5,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "один раз"
+      ],
+      "category_note": "Метакоммуникация и самодискредитация."
+    },
+    {
+      "id": "REF-ne-budu-vrat",
+      "surface": [
+        "не буду врать"
+      ],
+      "lemma": "не буду врать",
+      "block": "G1",
+      "category": "reflexive",
+      "base_weight": 3.5,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Метакоммуникация и самодискредитация."
+    },
+    {
+      "id": "REF-a-ne-specialist",
+      "surface": [
+        "я не специалист"
+      ],
+      "lemma": "я не специалист",
+      "block": "G1",
+      "category": "reflexive",
+      "base_weight": 3.5,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "корректная оговорка вне своей области"
+      ],
+      "category_note": "Метакоммуникация и самодискредитация."
+    },
+    {
+      "id": "REF-mogu-osibatsa",
+      "surface": [
+        "могу ошибаться"
+      ],
+      "lemma": "могу ошибаться",
+      "block": "G1",
+      "category": "reflexive",
+      "base_weight": 3.5,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "при озвучивании цифры по памяти"
+      ],
+      "category_note": "Метакоммуникация и самодискредитация."
+    },
+    {
+      "id": "XEN-mol",
+      "surface": [
+        "мол"
+      ],
+      "lemma": "мол",
+      "block": "G1",
+      "category": "xeno",
+      "base_weight": 3.0,
+      "tolerance_per_100": 1.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Ксенопоказатели — пересказ чужой речи вместо формулировки."
+    },
+    {
+      "id": "XEN-deskat",
+      "surface": [
+        "дескать"
+      ],
+      "lemma": "дескать",
+      "block": "G1",
+      "category": "xeno",
+      "base_weight": 3.0,
+      "tolerance_per_100": 1.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Ксенопоказатели — пересказ чужой речи вместо формулировки."
+    },
+    {
+      "id": "XEN-on-takoj",
+      "surface": [
+        "он такой"
+      ],
+      "lemma": "он такой",
+      "block": "G1",
+      "category": "xeno",
+      "base_weight": 3.0,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Ксенопоказатели — пересказ чужой речи вместо формулировки."
+    },
+    {
+      "id": "XEN-a-takoj",
+      "surface": [
+        "я такой"
+      ],
+      "lemma": "я такой",
+      "block": "G1",
+      "category": "xeno",
+      "base_weight": 3.0,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Ксенопоказатели — пересказ чужой речи вместо формулировки."
+    },
+    {
+      "id": "XEN-ona-takaa",
+      "surface": [
+        "она такая"
+      ],
+      "lemma": "она такая",
+      "block": "G1",
+      "category": "xeno",
+      "base_weight": 3.0,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Ксенопоказатели — пересказ чужой речи вместо формулировки."
+    },
+    {
+      "id": "XEN-govorit-mne",
+      "surface": [
+        "говорит мне"
+      ],
+      "lemma": "говорит мне",
+      "block": "G1",
+      "category": "xeno",
+      "base_weight": 3.0,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Ксенопоказатели — пересказ чужой речи вместо формулировки."
+    },
+    {
+      "id": "XEN-takoj-tipa",
+      "surface": [
+        "такой типа"
+      ],
+      "lemma": "такой типа",
+      "block": "G1",
+      "category": "xeno",
+      "base_weight": 3.0,
+      "tolerance_per_100": 1.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Ксенопоказатели — пересказ чужой речи вместо формулировки."
+    },
+    {
+      "id": "COL-blin",
+      "surface": [
+        "блин"
+      ],
+      "lemma": "блин",
+      "block": "G1",
+      "category": "colloquial_low",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.3,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Регистровый провал в деловом контексте."
+    },
+    {
+      "id": "COL-elki",
+      "surface": [
+        "ёлки"
+      ],
+      "lemma": "ёлки",
+      "block": "G1",
+      "category": "colloquial_low",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.3,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Регистровый провал в деловом контексте."
+    },
+    {
+      "id": "COL-fig",
+      "surface": [
+        "фиг"
+      ],
+      "lemma": "фиг",
+      "block": "G1",
+      "category": "colloquial_low",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.3,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Регистровый провал в деловом контексте."
+    },
+    {
+      "id": "COL-na-fig",
+      "surface": [
+        "на фиг"
+      ],
+      "lemma": "на фиг",
+      "block": "G1",
+      "category": "colloquial_low",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.3,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Регистровый провал в деловом контексте."
+    },
+    {
+      "id": "COL-kapec",
+      "surface": [
+        "капец"
+      ],
+      "lemma": "капец",
+      "block": "G1",
+      "category": "colloquial_low",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.3,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Регистровый провал в деловом контексте."
+    },
+    {
+      "id": "COL-jest",
+      "surface": [
+        "жесть"
+      ],
+      "lemma": "жесть",
+      "block": "G1",
+      "category": "colloquial_low",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.3,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Регистровый провал в деловом контексте."
+    },
+    {
+      "id": "COL-prikin",
+      "surface": [
+        "прикинь"
+      ],
+      "lemma": "прикинь",
+      "block": "G1",
+      "category": "colloquial_low",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.3,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Регистровый провал в деловом контексте."
+    },
+    {
+      "id": "COL-pohodu",
+      "surface": [
+        "походу"
+      ],
+      "lemma": "походу",
+      "block": "G1",
+      "category": "colloquial_low",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.3,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Регистровый провал в деловом контексте."
+    },
+    {
+      "id": "COL-ce",
+      "surface": [
+        "чё"
+      ],
+      "lemma": "чё",
+      "block": "G1",
+      "category": "colloquial_low",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.3,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Регистровый провал в деловом контексте."
+    },
+    {
+      "id": "COL-cet",
+      "surface": [
+        "чёт"
+      ],
+      "lemma": "чёт",
+      "block": "G1",
+      "category": "colloquial_low",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.3,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Регистровый провал в деловом контексте."
+    },
+    {
+      "id": "COL-sas",
+      "surface": [
+        "щас"
+      ],
+      "lemma": "щас",
+      "block": "G1",
+      "category": "colloquial_low",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.3,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Регистровый провал в деловом контексте."
+    },
+    {
+      "id": "COL-vase",
+      "surface": [
+        "ваще"
+      ],
+      "lemma": "ваще",
+      "block": "G1",
+      "category": "colloquial_low",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.3,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Регистровый провал в деловом контексте."
+    },
+    {
+      "id": "COL-nifiga",
+      "surface": [
+        "нифига"
+      ],
+      "lemma": "нифига",
+      "block": "G1",
+      "category": "colloquial_low",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.3,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Регистровый провал в деловом контексте."
+    },
+    {
+      "id": "COL-ofiget",
+      "surface": [
+        "офигеть"
+      ],
+      "lemma": "офигеть",
+      "block": "G1",
+      "category": "colloquial_low",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.3,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Регистровый провал в деловом контексте."
+    },
+    {
+      "id": "COL-po-lubomu",
+      "surface": [
+        "по-любому"
+      ],
+      "lemma": "по-любому",
+      "block": "G1",
+      "category": "colloquial_low",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.3,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Регистровый провал в деловом контексте."
+    },
+    {
+      "id": "COL-dvijuha",
+      "surface": [
+        "движуха"
+      ],
+      "lemma": "движуха",
+      "block": "G1",
+      "category": "colloquial_low",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.3,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Регистровый провал в деловом контексте."
+    },
+    {
+      "id": "COL-figna",
+      "surface": [
+        "фигня"
+      ],
+      "lemma": "фигня",
+      "block": "G1",
+      "category": "colloquial_low",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.3,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Регистровый провал в деловом контексте."
+    },
+    {
+      "id": "COL-tusit",
+      "surface": [
+        "тусить"
+      ],
+      "lemma": "тусить",
+      "block": "G1",
+      "category": "colloquial_low",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.3,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Регистровый провал в деловом контексте."
+    },
+    {
+      "id": "EMP-ocen-ocen",
+      "surface": [
+        "очень-очень"
+      ],
+      "lemma": "очень-очень",
+      "block": "G1",
+      "category": "empty_intensifier",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Усилители без содержания."
+    },
+    {
+      "id": "EMP-pram",
+      "surface": [
+        "прям"
+      ],
+      "lemma": "прям",
+      "block": "G1",
+      "category": "empty_intensifier",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Усилители без содержания."
+    },
+    {
+      "id": "EMP-pramo",
+      "surface": [
+        "прямо"
+      ],
+      "lemma": "прямо",
+      "block": "G1",
+      "category": "empty_intensifier",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.0,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "наречие направления: 'идти прямо'"
+      ],
+      "category_note": "Усилители без содержания."
+    },
+    {
+      "id": "EMP-realno",
+      "surface": [
+        "реально"
+      ],
+      "lemma": "реально",
+      "block": "G1",
+      "category": "empty_intensifier",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.0,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "антоним 'номинально': 'реально работает, а не на бумаге'"
+      ],
+      "category_note": "Усилители без содержания."
+    },
+    {
+      "id": "EMP-konkretno",
+      "surface": [
+        "конкретно"
+      ],
+      "lemma": "конкретно",
+      "block": "G1",
+      "category": "empty_intensifier",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.0,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "'конкретно этот пункт' — уточнение"
+      ],
+      "category_note": "Усилители без содержания."
+    },
+    {
+      "id": "EMP-absolutno",
+      "surface": [
+        "абсолютно"
+      ],
+      "lemma": "абсолютно",
+      "block": "G1",
+      "category": "empty_intensifier",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.0,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "в паре с абсолютным признаком: 'абсолютно новый'"
+      ],
+      "category_note": "Усилители без содержания."
+    },
+    {
+      "id": "EMP-stoprocentno",
+      "surface": [
+        "стопроцентно"
+      ],
+      "lemma": "стопроцентно",
+      "block": "G1",
+      "category": "empty_intensifier",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Усилители без содержания."
+    },
+    {
+      "id": "EMP-super",
+      "surface": [
+        "супер"
+      ],
+      "lemma": "супер",
+      "block": "G1",
+      "category": "empty_intensifier",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Усилители без содержания."
+    },
+    {
+      "id": "EMP-maksimalno",
+      "surface": [
+        "максимально"
+      ],
+      "lemma": "максимально",
+      "block": "G1",
+      "category": "empty_intensifier",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Усилители без содержания."
+    },
+    {
+      "id": "EMP-dostatocno",
+      "surface": [
+        "достаточно"
+      ],
+      "lemma": "достаточно",
+      "block": "G1",
+      "category": "empty_intensifier",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.0,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "'достаточно денег' — значение достаточности"
+      ],
+      "category_note": "Усилители без содержания."
+    },
+    {
+      "id": "EMP-prosto",
+      "surface": [
+        "просто"
+      ],
+      "lemma": "просто",
+      "block": "G1",
+      "category": "empty_intensifier",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.0,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "'просто решение' — прилагательное"
+      ],
+      "category_note": "Усилители без содержания."
+    },
+    {
+      "id": "EMP-bukvalno",
+      "surface": [
+        "буквально"
+      ],
+      "lemma": "буквально",
+      "block": "G1",
+      "category": "empty_intensifier",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.0,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "при реальной буквальности"
+      ],
+      "category_note": "Усилители без содержания."
+    },
+    {
+      "id": "EMP-na-samom-dele",
+      "surface": [
+        "на самом деле"
+      ],
+      "lemma": "на самом деле",
+      "block": "G1",
+      "category": "empty_intensifier",
+      "base_weight": 2.5,
+      "tolerance_per_100": 2.0,
+      "detector": "phrase",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "реальное противопоставление: 'думают X, а на самом деле Y'"
+      ],
+      "category_note": "Усилители без содержания."
+    },
+    {
+      "id": "CLI-imeet-mesto-byt",
+      "surface": [
+        "имеет место быть"
+      ],
+      "lemma": "имеет место быть",
+      "block": "G1",
+      "category": "cliche_office",
+      "base_weight": 4.0,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Канцелярит и речевые штампы (ФИПИ К10)."
+    },
+    {
+      "id": "CLI-na-segodnasnij-den",
+      "surface": [
+        "на сегодняшний день"
+      ],
+      "lemma": "на сегодняшний день",
+      "block": "G1",
+      "category": "cliche_office",
+      "base_weight": 4.0,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Канцелярит и речевые штампы (ФИПИ К10)."
+    },
+    {
+      "id": "CLI-v-plane-togo-cto",
+      "surface": [
+        "в плане того что"
+      ],
+      "lemma": "в плане того что",
+      "block": "G1",
+      "category": "cliche_office",
+      "base_weight": 4.0,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Канцелярит и речевые штампы (ФИПИ К10)."
+    },
+    {
+      "id": "CLI-v-casti",
+      "surface": [
+        "в части"
+      ],
+      "lemma": "в части",
+      "block": "G1",
+      "category": "cliche_office",
+      "base_weight": 4.0,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Канцелярит и речевые штампы (ФИПИ К10)."
+    },
+    {
+      "id": "CLI-po-faktu",
+      "surface": [
+        "по факту"
+      ],
+      "lemma": "по факту",
+      "block": "G1",
+      "category": "cliche_office",
+      "base_weight": 4.0,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Канцелярит и речевые штампы (ФИПИ К10)."
+    },
+    {
+      "id": "CLI-dannyj",
+      "surface": [
+        "данный"
+      ],
+      "lemma": "данный",
+      "block": "G1",
+      "category": "cliche_office",
+      "base_weight": 4.0,
+      "tolerance_per_100": 0.5,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "в юридическом тексте"
+      ],
+      "category_note": "Канцелярит и речевые штампы (ФИПИ К10)."
+    },
+    {
+      "id": "CLI-vyseukazannyj",
+      "surface": [
+        "вышеуказанный"
+      ],
+      "lemma": "вышеуказанный",
+      "block": "G1",
+      "category": "cliche_office",
+      "base_weight": 4.0,
+      "tolerance_per_100": 0.5,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Канцелярит и речевые штампы (ФИПИ К10)."
+    },
+    {
+      "id": "CLI-osusestvlat",
+      "surface": [
+        "осуществлять"
+      ],
+      "lemma": "осуществлять",
+      "block": "G1",
+      "category": "cliche_office",
+      "base_weight": 4.0,
+      "tolerance_per_100": 0.5,
+      "detector": "token",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "в терминологическом сочетании: 'осуществлять надзор'"
+      ],
+      "category_note": "Канцелярит и речевые штампы (ФИПИ К10)."
+    },
+    {
+      "id": "CLI-v-celah",
+      "surface": [
+        "в целях"
+      ],
+      "lemma": "в целях",
+      "block": "G1",
+      "category": "cliche_office",
+      "base_weight": 4.0,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Канцелярит и речевые штампы (ФИПИ К10)."
+    },
+    {
+      "id": "CLI-v-ramkah",
+      "surface": [
+        "в рамках"
+      ],
+      "lemma": "в рамках",
+      "block": "G1",
+      "category": "cliche_office",
+      "base_weight": 4.0,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": true,
+      "legit_contexts": [
+        "'в рамках проекта' — допустимо однократно"
+      ],
+      "category_note": "Канцелярит и речевые штампы (ФИПИ К10)."
+    },
+    {
+      "id": "CLI-proizvodit-raboty",
+      "surface": [
+        "производить работы"
+      ],
+      "lemma": "производить работы",
+      "block": "G1",
+      "category": "cliche_office",
+      "base_weight": 4.0,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Канцелярит и речевые штампы (ФИПИ К10)."
+    },
+    {
+      "id": "CLI-ne-predstavlaetsa-vozmojnym",
+      "surface": [
+        "не представляется возможным"
+      ],
+      "lemma": "не представляется возможным",
+      "block": "G1",
+      "category": "cliche_office",
+      "base_weight": 4.0,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Канцелярит и речевые штампы (ФИПИ К10)."
+    },
+    {
+      "id": "CLI-imeet-bolsoe-znacenie",
+      "surface": [
+        "имеет большое значение"
+      ],
+      "lemma": "имеет большое значение",
+      "block": "G1",
+      "category": "cliche_office",
+      "base_weight": 4.0,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Канцелярит и речевые штампы (ФИПИ К10)."
+    },
+    {
+      "id": "CLI-igraet-vajnuu-rol",
+      "surface": [
+        "играет важную роль"
+      ],
+      "lemma": "играет важную роль",
+      "block": "G1",
+      "category": "cliche_office",
+      "base_weight": 4.0,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Канцелярит и речевые штампы (ФИПИ К10)."
+    },
+    {
+      "id": "BAR-okej",
+      "surface": [
+        "окей"
+      ],
+      "lemma": "окей",
+      "block": "G1",
+      "category": "barbarism",
+      "base_weight": 3.5,
+      "tolerance_per_100": 0.5,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Варваризмы-затычки. Профлексика вынесена в белый список."
+    },
+    {
+      "id": "BAR-vau",
+      "surface": [
+        "вау"
+      ],
+      "lemma": "вау",
+      "block": "G1",
+      "category": "barbarism",
+      "base_weight": 3.5,
+      "tolerance_per_100": 0.5,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Варваризмы-затычки. Профлексика вынесена в белый список."
+    },
+    {
+      "id": "BAR-lajk",
+      "surface": [
+        "лайк"
+      ],
+      "lemma": "лайк",
+      "block": "G1",
+      "category": "barbarism",
+      "base_weight": 3.5,
+      "tolerance_per_100": 0.5,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Варваризмы-затычки. Профлексика вынесена в белый список."
+    },
+    {
+      "id": "BAR-sorri",
+      "surface": [
+        "сорри"
+      ],
+      "lemma": "сорри",
+      "block": "G1",
+      "category": "barbarism",
+      "base_weight": 3.5,
+      "tolerance_per_100": 0.5,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Варваризмы-затычки. Профлексика вынесена в белый список."
+    },
+    {
+      "id": "BAR-izi",
+      "surface": [
+        "изи"
+      ],
+      "lemma": "изи",
+      "block": "G1",
+      "category": "barbarism",
+      "base_weight": 3.5,
+      "tolerance_per_100": 0.5,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Варваризмы-затычки. Профлексика вынесена в белый список."
+    },
+    {
+      "id": "BAR-frendli",
+      "surface": [
+        "френдли"
+      ],
+      "lemma": "френдли",
+      "block": "G1",
+      "category": "barbarism",
+      "base_weight": 3.5,
+      "tolerance_per_100": 0.5,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Варваризмы-затычки. Профлексика вынесена в белый список."
+    },
+    {
+      "id": "BAR-hajp",
+      "surface": [
+        "хайп"
+      ],
+      "lemma": "хайп",
+      "block": "G1",
+      "category": "barbarism",
+      "base_weight": 3.5,
+      "tolerance_per_100": 0.5,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Варваризмы-затычки. Профлексика вынесена в белый список."
+    },
+    {
+      "id": "BAR-rofl",
+      "surface": [
+        "рофл"
+      ],
+      "lemma": "рофл",
+      "block": "G1",
+      "category": "barbarism",
+      "base_weight": 3.5,
+      "tolerance_per_100": 0.5,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Варваризмы-затычки. Профлексика вынесена в белый список."
+    },
+    {
+      "id": "BAR-krinj",
+      "surface": [
+        "кринж"
+      ],
+      "lemma": "кринж",
+      "block": "G1",
+      "category": "barbarism",
+      "base_weight": 3.5,
+      "tolerance_per_100": 0.5,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Варваризмы-затычки. Профлексика вынесена в белый список."
+    },
+    {
+      "id": "BAR-go",
+      "surface": [
+        "го"
+      ],
+      "lemma": "го",
+      "block": "G1",
+      "category": "barbarism",
+      "base_weight": 3.5,
+      "tolerance_per_100": 0.5,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Варваризмы-затычки. Профлексика вынесена в белый список."
+    },
+    {
+      "id": "BAR-nou-problem",
+      "surface": [
+        "ноу проблем"
+      ],
+      "lemma": "ноу проблем",
+      "block": "G1",
+      "category": "barbarism",
+      "base_weight": 3.5,
+      "tolerance_per_100": 0.5,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Варваризмы-затычки. Профлексика вынесена в белый список."
+    },
+    {
+      "id": "HED-navernoe",
+      "surface": [
+        "наверное"
+      ],
+      "lemma": "наверное",
+      "block": "U",
+      "category": "hedge",
+      "base_weight": 0.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Служебная: не штрафует грамотность, снижает Уверенность."
+    },
+    {
+      "id": "HED-vozmojno",
+      "surface": [
+        "возможно"
+      ],
+      "lemma": "возможно",
+      "block": "U",
+      "category": "hedge",
+      "base_weight": 0.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Служебная: не штрафует грамотность, снижает Уверенность."
+    },
+    {
+      "id": "HED-mojet-byt",
+      "surface": [
+        "может быть"
+      ],
+      "lemma": "может быть",
+      "block": "U",
+      "category": "hedge",
+      "base_weight": 0.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Служебная: не штрафует грамотность, снижает Уверенность."
+    },
+    {
+      "id": "HED-kak-to",
+      "surface": [
+        "как-то"
+      ],
+      "lemma": "как-то",
+      "block": "U",
+      "category": "hedge",
+      "base_weight": 0.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Служебная: не штрафует грамотность, снижает Уверенность."
+    },
+    {
+      "id": "HED-nemnogo",
+      "surface": [
+        "немного"
+      ],
+      "lemma": "немного",
+      "block": "U",
+      "category": "hedge",
+      "base_weight": 0.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Служебная: не штрафует грамотность, снижает Уверенность."
+    },
+    {
+      "id": "HED-cut-cut",
+      "surface": [
+        "чуть-чуть"
+      ],
+      "lemma": "чуть-чуть",
+      "block": "U",
+      "category": "hedge",
+      "base_weight": 0.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Служебная: не штрафует грамотность, снижает Уверенность."
+    },
+    {
+      "id": "HED-skoree-da",
+      "surface": [
+        "скорее да"
+      ],
+      "lemma": "скорее да",
+      "block": "U",
+      "category": "hedge",
+      "base_weight": 0.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Служебная: не штрафует грамотность, снижает Уверенность."
+    },
+    {
+      "id": "HED-a-dumau",
+      "surface": [
+        "я думаю"
+      ],
+      "lemma": "я думаю",
+      "block": "U",
+      "category": "hedge",
+      "base_weight": 0.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Служебная: не штрафует грамотность, снижает Уверенность."
+    },
+    {
+      "id": "HED-po-moemu",
+      "surface": [
+        "по-моему"
+      ],
+      "lemma": "по-моему",
+      "block": "U",
+      "category": "hedge",
+      "base_weight": 0.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Служебная: не штрафует грамотность, снижает Уверенность."
+    },
+    {
+      "id": "HED-esli-a-pravilno-ponimau",
+      "surface": [
+        "если я правильно понимаю"
+      ],
+      "lemma": "если я правильно понимаю",
+      "block": "U",
+      "category": "hedge",
+      "base_weight": 0.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Служебная: не штрафует грамотность, снижает Уверенность."
+    },
+    {
+      "id": "HED-mne-kajetsa",
+      "surface": [
+        "мне кажется"
+      ],
+      "lemma": "мне кажется",
+      "block": "U",
+      "category": "hedge",
+      "base_weight": 0.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Служебная: не штрафует грамотность, снижает Уверенность."
+    },
+    {
+      "id": "CON-a-ubejden",
+      "surface": [
+        "я убеждён"
+      ],
+      "lemma": "я убеждён",
+      "block": "U",
+      "category": "confidence_pos",
+      "base_weight": -1.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Служебная: положительный вклад в Уверенность."
+    },
+    {
+      "id": "CON-moj-opyt-pokazyvaet",
+      "surface": [
+        "мой опыт показывает"
+      ],
+      "lemma": "мой опыт показывает",
+      "block": "U",
+      "category": "confidence_pos",
+      "base_weight": -1.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Служебная: положительный вклад в Уверенность."
+    },
+    {
+      "id": "CON-a-otvecau-za",
+      "surface": [
+        "я отвечаю за"
+      ],
+      "lemma": "я отвечаю за",
+      "block": "U",
+      "category": "confidence_pos",
+      "base_weight": -1.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Служебная: положительный вклад в Уверенность."
+    },
+    {
+      "id": "CON-a-sdelal",
+      "surface": [
+        "я сделал"
+      ],
+      "lemma": "я сделал",
+      "block": "U",
+      "category": "confidence_pos",
+      "base_weight": -1.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Служебная: положительный вклад в Уверенность."
+    },
+    {
+      "id": "CON-a-zapustil",
+      "surface": [
+        "я запустил"
+      ],
+      "lemma": "я запустил",
+      "block": "U",
+      "category": "confidence_pos",
+      "base_weight": -1.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Служебная: положительный вклад в Уверенность."
+    },
+    {
+      "id": "CON-na-praktike",
+      "surface": [
+        "на практике"
+      ],
+      "lemma": "на практике",
+      "block": "U",
+      "category": "confidence_pos",
+      "base_weight": -1.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Служебная: положительный вклад в Уверенность."
+    },
+    {
+      "id": "CON-rezultat-byl",
+      "surface": [
+        "результат был"
+      ],
+      "lemma": "результат был",
+      "block": "U",
+      "category": "confidence_pos",
+      "base_weight": -1.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Служебная: положительный вклад в Уверенность."
+    },
+    {
+      "id": "CON-a-resil",
+      "surface": [
+        "я решил"
+      ],
+      "lemma": "я решил",
+      "block": "U",
+      "category": "confidence_pos",
+      "base_weight": -1.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Служебная: положительный вклад в Уверенность."
+    },
+    {
+      "id": "CON-a-predlojil",
+      "surface": [
+        "я предложил"
+      ],
+      "lemma": "я предложил",
+      "block": "U",
+      "category": "confidence_pos",
+      "base_weight": -1.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Служебная: положительный вклад в Уверенность."
+    },
+    {
+      "id": "WOR-podskolznutsa",
+      "surface": [
+        "подскользнуться"
+      ],
+      "lemma": "подскользнуться",
+      "block": "G2",
+      "category": "wordform_derivation",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-nadsmehatsa",
+      "surface": [
+        "надсмехаться"
+      ],
+      "lemma": "надсмехаться",
+      "block": "G2",
+      "category": "wordform_derivation",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-blagorodnost",
+      "surface": [
+        "благородность"
+      ],
+      "lemma": "благородность",
+      "block": "G2",
+      "category": "wordform_derivation",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-vkusnovatyj",
+      "surface": [
+        "вкусноватый"
+      ],
+      "lemma": "вкусноватый",
+      "block": "G2",
+      "category": "wordform_derivation",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-ulybcivost",
+      "surface": [
+        "улыбчивость"
+      ],
+      "lemma": "улыбчивость",
+      "block": "G2",
+      "category": "wordform_derivation",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-zamesto",
+      "surface": [
+        "заместо"
+      ],
+      "lemma": "заместо",
+      "block": "G2",
+      "category": "wordform_derivation",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-vovnutr",
+      "surface": [
+        "вовнутрь"
+      ],
+      "lemma": "вовнутрь",
+      "block": "G2",
+      "category": "wordform_derivation",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-navrad",
+      "surface": [
+        "навряд"
+      ],
+      "lemma": "навряд",
+      "block": "G2",
+      "category": "wordform_derivation",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-oboi",
+      "surface": [
+        "обои"
+      ],
+      "lemma": "обои",
+      "block": "G2",
+      "category": "wordform_derivation",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-mnogo-vrema",
+      "surface": [
+        "много время"
+      ],
+      "lemma": "много время",
+      "block": "G2",
+      "category": "wordform_noun",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-cuda-tehniki",
+      "surface": [
+        "чуда техники"
+      ],
+      "lemma": "чуда техники",
+      "block": "G2",
+      "category": "wordform_noun",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-net-mestov",
+      "surface": [
+        "нет местов"
+      ],
+      "lemma": "нет местов",
+      "block": "G2",
+      "category": "wordform_noun",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-delov",
+      "surface": [
+        "делов"
+      ],
+      "lemma": "делов",
+      "block": "G2",
+      "category": "wordform_noun",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-tuflej",
+      "surface": [
+        "туфлей"
+      ],
+      "lemma": "туфлей",
+      "block": "G2",
+      "category": "wordform_noun",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-polotencev",
+      "surface": [
+        "полотенцев"
+      ],
+      "lemma": "полотенцев",
+      "block": "G2",
+      "category": "wordform_noun",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-bolee-patista",
+      "surface": [
+        "более пятиста"
+      ],
+      "lemma": "более пятиста",
+      "block": "G2",
+      "category": "wordform_noun",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-s-oboih-storon",
+      "surface": [
+        "с обоих сторон"
+      ],
+      "lemma": "с обоих сторон",
+      "block": "G2",
+      "category": "wordform_noun",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-v-dvuhtysac",
+      "surface": [
+        "в двухтысяч"
+      ],
+      "lemma": "в двухтысяч",
+      "block": "G2",
+      "category": "wordform_noun",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-bolee-lucse",
+      "surface": [
+        "более лучше"
+      ],
+      "lemma": "более лучше",
+      "block": "G2",
+      "category": "wordform_adj_adv",
+      "base_weight": 6.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-samyj-nailucsij",
+      "surface": [
+        "самый наилучший"
+      ],
+      "lemma": "самый наилучший",
+      "block": "G2",
+      "category": "wordform_adj_adv",
+      "base_weight": 6.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-bolee-interesnee",
+      "surface": [
+        "более интереснее"
+      ],
+      "lemma": "более интереснее",
+      "block": "G2",
+      "category": "wordform_adj_adv",
+      "base_weight": 6.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-krasivse",
+      "surface": [
+        "красивше"
+      ],
+      "lemma": "красивше",
+      "block": "G2",
+      "category": "wordform_adj_adv",
+      "base_weight": 6.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-bolee-legce",
+      "surface": [
+        "более легче"
+      ],
+      "lemma": "более легче",
+      "block": "G2",
+      "category": "wordform_adj_adv",
+      "base_weight": 6.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-samyj-bystrejsij",
+      "surface": [
+        "самый быстрейший"
+      ],
+      "lemma": "самый быстрейший",
+      "block": "G2",
+      "category": "wordform_adj_adv",
+      "base_weight": 6.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-bolee-hudsij",
+      "surface": [
+        "более худший"
+      ],
+      "lemma": "более худший",
+      "block": "G2",
+      "category": "wordform_adj_adv",
+      "base_weight": 6.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-plohee",
+      "surface": [
+        "плохее"
+      ],
+      "lemma": "плохее",
+      "block": "G2",
+      "category": "wordform_adj_adv",
+      "base_weight": 6.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-s-patistami",
+      "surface": [
+        "с пятистами"
+      ],
+      "lemma": "с пятистами",
+      "block": "G2",
+      "category": "wordform_numeral",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-s-vosmistami",
+      "surface": [
+        "с восьмистами"
+      ],
+      "lemma": "с восьмистами",
+      "block": "G2",
+      "category": "wordform_numeral",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-dvoe-devusek",
+      "surface": [
+        "двое девушек"
+      ],
+      "lemma": "двое девушек",
+      "block": "G2",
+      "category": "wordform_numeral",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-oboe",
+      "surface": [
+        "обое"
+      ],
+      "lemma": "обое",
+      "block": "G2",
+      "category": "wordform_numeral",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-v-dvuh-tysac-dvadcat-patom",
+      "surface": [
+        "в двух тысяч двадцать пятом"
+      ],
+      "lemma": "в двух тысяч двадцать пятом",
+      "block": "G2",
+      "category": "wordform_numeral",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-ihnij",
+      "surface": [
+        "ихний"
+      ],
+      "lemma": "ихний",
+      "block": "G2",
+      "category": "wordform_pronoun",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-ihnie",
+      "surface": [
+        "ихние"
+      ],
+      "lemma": "ихние",
+      "block": "G2",
+      "category": "wordform_pronoun",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-ejnyj",
+      "surface": [
+        "ейный"
+      ],
+      "lemma": "ейный",
+      "block": "G2",
+      "category": "wordform_pronoun",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-evonyj",
+      "surface": [
+        "евоный"
+      ],
+      "lemma": "евоный",
+      "block": "G2",
+      "category": "wordform_pronoun",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-u-nej",
+      "surface": [
+        "у ней"
+      ],
+      "lemma": "у ней",
+      "block": "G2",
+      "category": "wordform_pronoun",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-ihi",
+      "surface": [
+        "ихи"
+      ],
+      "lemma": "ихи",
+      "block": "G2",
+      "category": "wordform_pronoun",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-skolko-vrema",
+      "surface": [
+        "сколько время"
+      ],
+      "lemma": "сколько время",
+      "block": "G2",
+      "category": "wordform_pronoun",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-lojit",
+      "surface": [
+        "ложить"
+      ],
+      "lemma": "ложить",
+      "block": "G2",
+      "category": "wordform_verb",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-lojat",
+      "surface": [
+        "ложат"
+      ],
+      "lemma": "ложат",
+      "block": "G2",
+      "category": "wordform_verb",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-loji",
+      "surface": [
+        "ложи"
+      ],
+      "lemma": "ложи",
+      "block": "G2",
+      "category": "wordform_verb",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-ed",
+      "surface": [
+        "едь"
+      ],
+      "lemma": "едь",
+      "block": "G2",
+      "category": "wordform_verb",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-ehaj",
+      "surface": [
+        "ехай"
+      ],
+      "lemma": "ехай",
+      "block": "G2",
+      "category": "wordform_verb",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-ezdiut",
+      "surface": [
+        "ездиют"
+      ],
+      "lemma": "ездиют",
+      "block": "G2",
+      "category": "wordform_verb",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-hocut",
+      "surface": [
+        "хочут"
+      ],
+      "lemma": "хочут",
+      "block": "G2",
+      "category": "wordform_verb",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-moget",
+      "surface": [
+        "могёт"
+      ],
+      "lemma": "могёт",
+      "block": "G2",
+      "category": "wordform_verb",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-pobedu",
+      "surface": [
+        "победю"
+      ],
+      "lemma": "победю",
+      "block": "G2",
+      "category": "wordform_verb",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-ubedu",
+      "surface": [
+        "убедю"
+      ],
+      "lemma": "убедю",
+      "block": "G2",
+      "category": "wordform_verb",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-bejat",
+      "surface": [
+        "бежат"
+      ],
+      "lemma": "бежат",
+      "block": "G2",
+      "category": "wordform_verb",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-mahaet",
+      "surface": [
+        "махает"
+      ],
+      "lemma": "махает",
+      "block": "G2",
+      "category": "wordform_verb",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-laj",
+      "surface": [
+        "ляжь"
+      ],
+      "lemma": "ляжь",
+      "block": "G2",
+      "category": "wordform_verb",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-pokladi",
+      "surface": [
+        "поклади"
+      ],
+      "lemma": "поклади",
+      "block": "G2",
+      "category": "wordform_verb",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-zvonat",
+      "surface": [
+        "звонят"
+      ],
+      "lemma": "звонят",
+      "block": "G2",
+      "category": "wordform_verb",
+      "base_weight": 7.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-pisa",
+      "surface": [
+        "пиша"
+      ],
+      "lemma": "пиша",
+      "block": "G2",
+      "category": "wordform_participle",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-jda",
+      "surface": [
+        "ждя"
+      ],
+      "lemma": "ждя",
+      "block": "G2",
+      "category": "wordform_participle",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-beja",
+      "surface": [
+        "бежа"
+      ],
+      "lemma": "бежа",
+      "block": "G2",
+      "category": "wordform_participle",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-mogusij",
+      "surface": [
+        "могущий"
+      ],
+      "lemma": "могущий",
+      "block": "G2",
+      "category": "wordform_participle",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "token",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    },
+    {
+      "id": "WOR-hotevsij-by",
+      "surface": [
+        "хотевший бы"
+      ],
+      "lemma": "хотевший бы",
+      "block": "G2",
+      "category": "wordform_participle",
+      "base_weight": 5.0,
+      "tolerance_per_100": 0.0,
+      "detector": "phrase",
+      "requires_context_check": false,
+      "legit_contexts": [],
+      "category_note": "Грамматическое искажение формы слова. Контекст не требуется (ФИПИ К9)."
+    }
+  ],
+  "rules": [
+    {
+      "id": "SYN-DEEPR-SUBJ",
+      "block": "G3",
+      "type": "syntactic",
+      "weight": 7.0,
+      "layer": "L2",
+      "title": "Деепричастие относится не к подлежащему",
+      "condition": "advcl(VERB, GERUND) AND subj(VERB) != implied_subj(GERUND)",
+      "guards": [
+        "безличное с инфинитивом: 'Читая, можно узнать' — НЕ ошибка",
+        "'судя по', 'начиная с', 'несмотря на' — предлоги, не деепричастия"
+      ],
+      "bad": "Читая текст, возникает странное чувство",
+      "good": "Читая текст, я испытываю странное чувство"
+    },
+    {
+      "id": "SYN-SOGL-ROD",
+      "block": "G3",
+      "type": "syntactic",
+      "weight": 6.0,
+      "layer": "L2",
+      "title": "Нарушение согласования в роде/числе/падеже",
+      "condition": "amod(NOUN, ADJ) AND feats_mismatch(NOUN, ADJ)",
+      "guards": [
+        "несклоняемые заимствования с колеблющимся родом (кофе, виски)"
+      ],
+      "bad": "она повесила новую тюль",
+      "good": "она повесила новый тюль"
+    },
+    {
+      "id": "SYN-PRED-SUBJ",
+      "block": "G3",
+      "type": "syntactic",
+      "weight": 6.0,
+      "layer": "L2",
+      "title": "Нарушение связи подлежащего и сказуемого",
+      "condition": "nsubj(VERB, N) AND number_mismatch(N, VERB)",
+      "guards": [
+        "'все, кто...' допускает ед. и мн. ч. (Розенталь)",
+        "собирательные с количественным значением: 'большинство пришли' — вариант нормы"
+      ],
+      "bad": "группа художников возражали",
+      "good": "группа художников возражала"
+    },
+    {
+      "id": "SYN-ODNOROD-UPR",
+      "block": "G3",
+      "type": "syntactic",
+      "weight": 5.0,
+      "layer": "L2",
+      "title": "Однородные члены с разным управлением",
+      "condition": "conj(V1,V2) AND shared_obj(V1,V2) AND case_model(V1)!=case_model(V2)",
+      "guards": [],
+      "bad": "страна любила и гордилась поэтом",
+      "good": "страна любила поэта и гордилась им"
+    },
+    {
+      "id": "SYN-NANIZ-ROD",
+      "block": "G3",
+      "type": "syntactic",
+      "weight": 3.0,
+      "layer": "L2",
+      "title": "Нанизывание родительных падежей",
+      "condition": "chain_len(case=gen) >= 4",
+      "guards": [],
+      "bad": "в целях улучшения качества обслуживания клиентов компании",
+      "good": "чтобы клиентам компании стало удобнее"
+    },
+    {
+      "id": "SYN-BROKEN-CLAUSE",
+      "block": "G3",
+      "type": "syntactic",
+      "weight": 4.0,
+      "layer": "L2",
+      "title": "Незавершённая конструкция",
+      "condition": "clause has no root predicate AND next_pause > 700ms",
+      "guards": [
+        "эллипсис в ответе на вопрос — норма устной речи"
+      ],
+      "bad": "Я считал, что вот эта задача… и потом мы",
+      "good": "—"
+    },
+    {
+      "id": "LEX-PLEONASM",
+      "block": "G3",
+      "type": "lexical",
+      "weight": 4.0,
+      "layer": "L1",
+      "title": "Плеоназм",
+      "condition": "match(pleonasm_dict)",
+      "guards": [
+        "устоявшиеся термины: 'информационные технологии'"
+      ],
+      "bad": "самый оптимальный вариант",
+      "good": "оптимальный вариант"
+    },
+    {
+      "id": "LEX-TAUTOLOGY",
+      "block": "G3",
+      "type": "lexical",
+      "weight": 3.0,
+      "layer": "L1",
+      "title": "Тавтология",
+      "condition": "same_root_lemmas within window=7",
+      "guards": [
+        "терминологическая необходимость: 'словарь словарных форм'"
+      ],
+      "bad": "в рассказе рассказывается",
+      "good": "в рассказе говорится"
+    },
+    {
+      "id": "LEX-PARONYM",
+      "block": "G3",
+      "type": "lexical",
+      "weight": 6.0,
+      "layer": "L1+L3",
+      "title": "Смешение паронимов",
+      "condition": "match(paronym_dict) AND llm_verdict",
+      "guards": [
+        "оба варианта допустимы в части контекстов"
+      ],
+      "bad": "были приняты эффектные меры",
+      "good": "были приняты эффективные меры"
+    },
+    {
+      "id": "LEX-COLLOC",
+      "block": "G3",
+      "type": "lexical",
+      "weight": 6.0,
+      "layer": "L1+L3",
+      "title": "Нарушение лексической сочетаемости",
+      "condition": "match(colloc_dict) OR llm_free_scan (cap 8 penalty points)",
+      "guards": [
+        "авторская метафора — не ошибка, проверять намеренность"
+      ],
+      "bad": "в магазине дешёвые цены",
+      "good": "в магазине низкие цены"
+    },
+    {
+      "id": "LEX-FRAZ",
+      "block": "G3",
+      "type": "lexical",
+      "weight": 5.0,
+      "layer": "L1",
+      "title": "Искажение фразеологизма",
+      "condition": "fuzzy_match(idiom_dict, dist<=2)",
+      "guards": [
+        "намеренная языковая игра"
+      ],
+      "bad": "довёл до белого колена",
+      "good": "довёл до белого каления"
+    },
+    {
+      "id": "LEX-AMBIG-PRON",
+      "block": "G3",
+      "type": "lexical",
+      "weight": 4.0,
+      "layer": "L2",
+      "title": "Неснятая двусмысленность местоимения",
+      "condition": "coref_candidates(PRON) >= 2 AND no_disambiguator",
+      "guards": [
+        "однозначность из широкого контекста"
+      ],
+      "bad": "Автор анализирует поступок героя. Ему кажется…",
+      "good": "—"
+    },
+    {
+      "id": "UPR-CASE-MODEL",
+      "block": "G3",
+      "type": "syntactic",
+      "weight": 6.0,
+      "layer": "L1+L2",
+      "title": "Нарушение падежного управления",
+      "condition": "match(government_dict) case != required",
+      "guards": [
+        "'отзыв на диссертацию' — офиц. норма"
+      ],
+      "bad": "согласно плана",
+      "good": "согласно плану"
+    }
+  ],
+  "not_evaluable": [
+    "орфография",
+    "пунктуация",
+    "слитно-раздельно",
+    "заглавные буквы",
+    "фактические ошибки",
+    "ударение (до фазы 3)",
+    "редукция окончаний",
+    "диалектизмы"
+  ],
+  "whitelist_professional": [
+    "дедлайн",
+    "фидбэк",
+    "кейс",
+    "митинг",
+    "бэклог",
+    "релиз",
+    "спринт",
+    "churn",
+    "конверсия",
+    "юнит-экономика",
+    "питч",
+    "оффер",
+    "онбординг"
+  ]
+}
