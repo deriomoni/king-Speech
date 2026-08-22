@@ -27,6 +27,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop } from "react-native-svg";
+import RiveAnim from "@/components/RiveAnim";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
@@ -580,6 +581,10 @@ function ConfettiSpark({ delay, x, color }: { delay: number; x: number; color: s
   );
 }
 
+// Confetti burst over the victory title. Only the lower ~half is shown (the
+// container clips the top); the .riv renders on a transparent background.
+const CONFETTI_RIVE = require("@/assets/rive/confetti.riv");
+
 // ── Trophy-on-a-column mark for the level-complete screen ────────────────────
 // Line + column are black in light mode, white in dark; the cup keeps its
 // yellow gradient in both. Inline SVG (Victory DRAW).
@@ -684,6 +689,18 @@ function LevelCompleteModal({
           paddingHorizontal: 30,
         }}
       >
+        {/* Confetti — only the lower ~half is visible (top clipped), transparent */}
+        {visible && (
+          <View style={{ width: "100%", height: 120, overflow: "hidden", marginBottom: -8 }} pointerEvents="none">
+            <RiveAnim
+              source={CONFETTI_RIVE}
+              autoplay
+              fit="cover"
+              style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 240, backgroundColor: "transparent" }}
+            />
+          </View>
+        )}
+
         <Animated.Text
           style={[
             { fontFamily: "Rubik_700Bold", fontSize: 26, color: colors.text, marginBottom: 26, textAlign: "center" },
