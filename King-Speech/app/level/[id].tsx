@@ -24,6 +24,7 @@ import Animated, {
   SlideInUp,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
@@ -577,6 +578,31 @@ function ConfettiSpark({ delay, x, color }: { delay: number; x: number; color: s
   );
 }
 
+// ── Trophy-on-a-column mark for the level-complete screen ────────────────────
+// Line + column are black in light mode, white in dark; the cup keeps its
+// yellow gradient in both. Inline SVG (Victory DRAW).
+const TROPHY_COLUMN_PATH =
+  "M337.005 1040C336.705 1039.98 336.405 1039.89 335.875 1039.73C333.416 1038.99 331.317 1037.78 330.747 1036.79C329.997 1035.46 329.567 1030.07 329.308 1018.46C329.138 1011.32 329.228 984.854 329.447 973.3C329.537 968.7 329.567 918.19 329.557 819.191C329.537 717.393 329.577 671.347 329.667 670.025C329.797 668.169 329.807 668.078 330.237 667.309C330.837 666.213 331.577 665.489 333.246 664.357C333.716 664.031 334.186 663.714 334.656 663.397C335.435 663.397 336.225 663.397 337.005 663.397C337.785 663.397 338.564 663.397 339.344 663.397C339.814 663.714 340.284 664.031 340.754 664.357C342.423 665.489 343.163 666.213 343.763 667.309C344.192 668.078 344.212 668.169 344.342 670.025C344.432 671.347 344.462 717.393 344.452 819.191C344.432 918.19 344.472 968.7 344.552 973.3C344.782 984.854 344.862 1011.32 344.702 1018.46C344.442 1030.07 344.012 1035.46 343.253 1036.79C342.683 1037.78 340.584 1038.99 338.124 1039.73C337.605 1039.89 337.305 1039.98 337.005 1040ZM250.005 1037.45C246.696 1035.22 246.336 1034.55 245.986 1029.84C245.546 1024.14 245.486 997.251 245.856 980.146C246.026 972.44 246.016 954.04 245.836 898.541C245.646 843.25 245.646 740.103 245.826 717.32C246.026 692.563 246.266 679.759 246.606 674.824C246.716 673.222 246.776 672.869 247.046 672.371C247.735 671.058 249.255 669.971 251.544 669.165C251.984 669.011 252.424 668.848 252.854 668.694C253.184 668.776 253.513 668.848 253.843 668.93C256.172 669.473 257.942 670.224 259.082 671.157C260.121 671.999 260.241 672.316 260.351 674.426C260.531 677.622 260.711 683.318 260.851 689.648C261.021 697.87 260.901 1030.81 260.731 1032.07C260.481 1033.82 259.991 1034.8 258.872 1035.82C257.492 1037.08 255.473 1037.77 251.694 1038.31C251.424 1038.34 251.084 1038.16 250.005 1037.45ZM423.995 1037.45C422.926 1038.16 422.576 1038.34 422.306 1038.31C418.527 1037.77 416.508 1037.08 415.128 1035.82C414.009 1034.8 413.529 1033.82 413.279 1032.07C413.099 1030.81 412.979 697.87 413.159 689.648C413.289 683.318 413.479 677.622 413.649 674.426C413.769 672.316 413.889 671.999 414.928 671.157C416.068 670.224 417.827 669.473 420.156 668.93C420.486 668.848 420.816 668.776 421.146 668.694C421.586 668.848 422.026 669.011 422.466 669.165C424.745 669.971 426.264 671.058 426.964 672.371C427.224 672.869 427.284 673.222 427.404 674.824C427.744 679.759 427.974 692.563 428.174 717.32C428.364 740.103 428.354 843.25 428.174 898.541C427.984 954.04 427.974 972.44 428.144 980.146C428.524 997.251 428.454 1024.14 428.024 1029.84C427.664 1034.55 427.314 1035.22 423.995 1037.45ZM337.005 481.389C249.665 481.389 162.345 481.343 155.437 481.253C115.67 480.755 104.104 481.452 90.689 485.128C57.8702 494.12 30.3296 520.715 19.4234 553.938C14.4751 569.006 13.4754 585.296 16.5543 600.853C19.2634 614.508 25.0215 627.529 33.2986 638.713C50.7027 662.211 78.6331 678.102 108.333 681.389C114.751 682.105 122.948 682.141 129.446 681.489C155.417 678.899 178.909 666.023 193.324 646.464C200.262 637.065 205.06 626.035 206.729 615.631C207.629 610.089 207.739 603.597 207.029 597.964C205.74 587.651 201.491 577.074 195.333 568.816C191.105 563.147 185.647 557.941 179.559 553.757C163.584 542.801 143.231 539.043 125.137 543.715C111.262 547.292 99.8159 554.989 93.0182 565.33C86.1306 575.797 84.2412 587.46 87.5901 598.942C90.739 609.754 98.3664 618.882 107.733 623.047C118.829 627.982 131.115 625.519 141.392 616.301C143.121 614.753 143.291 614.553 145.44 611.33C149.399 605.39 151.378 603.533 154.247 603.062C156.377 602.709 159.266 604.122 160.415 606.078C162.305 609.301 161.025 615.015 157.006 621.336C155.597 623.554 155.047 624.188 152.708 626.316C143.521 634.665 132.915 638.866 121.079 638.857C97.4067 638.83 76.114 621.336 71.7255 598.299C68.7265 582.544 73.285 565.828 84.1113 552.933C99.7759 534.271 125.047 525.261 151.938 528.756C181.218 532.55 206.22 551.321 217.026 577.618C225.963 599.359 223.564 625.827 210.738 647.034C203.71 658.652 193.294 669.572 181.918 677.269C167.673 686.904 151.018 692.446 128.276 695.135C126.937 695.289 125.827 695.434 125.807 695.452C125.787 695.47 125.757 761.808 125.737 842.861C125.717 982.554 125.727 990.595 125.937 997.296C126.187 1004.96 126.157 1016.27 125.897 1019.76C125.277 1027.87 124.158 1032.48 122.338 1034.39C121.499 1035.26 119.869 1035.73 118.639 1035.45C115.69 1034.77 112.652 1031.71 111.402 1028.14C110.732 1026.24 110.742 1026.41 110.882 1014.55C110.972 1007.31 111.012 951.187 111.012 849.453C111.012 798.083 111.012 746.704 111.012 695.325C110.822 695.307 110.622 695.289 110.422 695.262C83.9013 692.337 65.4276 685.663 47.1039 672.38C21.9825 654.17 5.61808 628.218 1.18959 599.549C0.299897 593.772 0 589.516 0 582.851C0 576.748 0.239918 573.199 0.999659 567.747C4.9683 539.441 20.1731 512.964 43.2952 494.093C63.3284 477.739 88.0099 468.73 116.83 467.235C118.06 467.172 119.479 467.091 119.969 467.054C120.549 467.018 228.762 467 337.005 467C445.238 467 553.461 467.018 554.041 467.054C554.531 467.091 555.94 467.172 557.18 467.235C586 468.73 610.671 477.739 630.715 494.093C653.837 512.964 669.031 539.441 673 567.747C673.77 573.199 674 576.748 674 582.851C674.01 589.516 673.7 593.772 672.81 599.549C668.382 628.218 652.017 654.17 626.906 672.38C608.582 685.663 590.108 692.337 563.578 695.262C563.388 695.289 563.188 695.307 562.988 695.325C562.988 746.704 562.988 798.083 562.988 849.453C562.988 951.187 563.038 1007.31 563.118 1014.55C563.268 1026.41 563.268 1026.24 562.598 1028.14C561.348 1031.71 558.309 1034.77 555.37 1035.45C554.131 1035.73 552.501 1035.26 551.672 1034.39C549.852 1032.48 548.723 1027.87 548.113 1019.76C547.843 1016.27 547.823 1004.96 548.063 997.296C548.283 990.595 548.293 982.554 548.263 842.861C548.253 761.808 548.223 695.47 548.193 695.452C548.173 695.434 547.063 695.289 545.734 695.135C522.981 692.446 506.327 686.904 492.082 677.269C480.706 669.572 470.299 658.652 463.262 647.034C450.436 625.827 448.037 599.359 456.974 577.618C467.79 551.321 492.782 532.55 522.062 528.756C548.952 525.261 574.224 534.271 589.889 552.933C600.715 565.828 605.273 582.544 602.274 598.299C597.896 621.336 576.603 638.83 552.931 638.857C541.085 638.866 530.489 634.665 521.302 626.316C518.963 624.188 518.413 623.554 517.003 621.336C512.975 615.015 511.705 609.301 513.595 606.078C514.744 604.122 517.623 602.709 519.752 603.062C522.631 603.533 524.601 605.39 528.569 611.33C530.719 614.553 530.879 614.753 532.608 616.301C542.895 625.519 555.18 627.982 566.277 623.047C575.633 618.882 583.261 609.754 586.41 598.942C589.759 587.46 587.879 575.797 580.992 565.33C574.184 554.989 562.748 547.292 548.863 543.715C530.769 539.043 510.426 542.801 494.451 553.757C488.363 557.941 482.905 563.147 478.666 568.816C472.509 577.074 468.26 587.651 466.97 597.964C466.271 603.597 466.381 610.089 467.27 615.631C468.95 626.035 473.748 637.065 480.676 646.464C495.101 666.023 518.583 678.899 544.554 681.489C551.062 682.141 559.249 682.105 565.677 681.389C595.367 678.102 623.307 662.211 640.701 638.713C648.978 627.529 654.746 614.508 657.445 600.853C660.524 585.296 659.535 569.006 654.586 553.938C643.68 520.715 616.13 494.12 583.311 485.128C569.905 481.452 558.339 480.755 518.563 481.253C511.665 481.343 424.345 481.389 337.005 481.389ZM180.388 998.192C177.289 997.83 175.63 996.517 174.87 993.846C174.49 992.506 174.38 990.659 174.25 983.541C174.101 975.89 174.041 721.712 174.181 716.08C174.27 712.286 174.35 711.733 174.98 710.619C175.36 709.931 176.49 708.537 177.419 707.595C177.599 707.405 177.789 707.224 177.969 707.034C178.859 707.034 179.749 707.034 180.638 707.034C182.858 707.025 183.437 707.061 184.117 707.233C187.406 708.075 188.666 709.859 189.015 714.196C189.195 716.351 189.305 978.887 189.125 987.39C188.975 994.742 189.035 994.525 186.496 996.861C186.016 997.296 185.537 997.731 185.057 998.174C184.767 998.192 184.467 998.22 184.177 998.247C183.057 998.337 181.398 998.31 180.388 998.192ZM493.611 998.192C492.602 998.31 490.942 998.337 489.823 998.247C489.533 998.22 489.243 998.192 488.953 998.174C488.473 997.731 487.993 997.296 487.513 996.861C484.964 994.525 485.024 994.742 484.874 987.39C484.704 978.887 484.814 716.351 484.984 714.196C485.344 709.859 486.604 708.075 489.883 707.233C490.562 707.061 491.152 707.025 493.371 707.034C494.261 707.034 495.151 707.034 496.041 707.034C496.22 707.224 496.4 707.405 496.59 707.595C497.52 708.537 498.64 709.931 499.03 710.619C499.649 711.733 499.729 712.286 499.829 716.08C499.969 721.712 499.899 975.89 499.759 983.541C499.629 990.659 499.509 992.506 499.139 993.846C498.38 996.517 496.72 997.83 493.611 998.192Z";
+const TROPHY_CUP_PATH =
+  "M334.885 517C375.38 517 414.448 513.104 444.595 506.059C474.742 499.015 493.844 489.318 498.236 478.829C502.627 468.341 492 457.8 468.392 449.226C444.784 440.654 409.858 434.656 370.316 432.38V432.183V336.745C400.741 326.976 429.621 300.343 448.079 275.248C459.967 276.002 470.593 276.291 482.508 275.024C609.524 275.024 638.626 124.65 609.524 79.8567C586.516 44.4453 514.34 59.6527 514.34 59.6527C514.355 50.0776 514.503 40.1647 514.042 30.6282C514.042 30.6282 443.173 7 334.885 7C226.597 7 155.728 30.6282 155.728 30.6282C155.266 40.1647 155.414 50.0776 155.43 59.6527C155.43 59.6527 83.2537 44.4453 60.2458 79.8567C31.1433 124.65 60.2458 275.024 187.262 275.024C199.176 276.291 209.802 276.002 221.69 275.248C240.148 300.343 269.028 326.976 299.453 336.745V432.183V432.38C259.911 434.656 224.986 440.654 201.378 449.226C177.77 457.8 167.142 468.341 171.533 478.829C175.926 489.318 195.027 499.015 225.174 506.059C255.321 513.104 294.389 517 334.885 517ZM90.3326 147.456C78.9182 68.5904 147.354 87.2019 152.821 104.48C152.821 104.48 152.821 128.622 166.707 172.937C180.593 217.253 193.771 230.238 199.108 241.18C109.38 257.946 90.3326 147.456 90.3326 147.456ZM579.437 147.456C579.437 147.456 560.39 257.946 470.661 241.18C475.998 230.238 489.176 217.253 503.063 172.937C516.949 128.622 516.949 104.48 516.949 104.48C522.415 87.2019 590.851 68.5904 579.437 147.456Z";
+
+function TrophyColumn({ lineColor, width }: { lineColor: string; width: number }) {
+  const height = Math.round(width * (1040 / 674));
+  return (
+    <Svg width={width} height={height} viewBox="0 0 674 1040">
+      <Defs>
+        <SvgLinearGradient id="lcTrophy" x1="334.885" y1="7" x2="334.885" y2="517" gradientUnits="userSpaceOnUse">
+          <Stop stopColor="#FFEB56" />
+          <Stop offset="0.524038" stopColor="#FFC62D" />
+          <Stop offset="1" stopColor="#FFC62D" />
+        </SvgLinearGradient>
+      </Defs>
+      <Path d={TROPHY_COLUMN_PATH} fill={lineColor} fillRule="evenodd" clipRule="evenodd" />
+      <Path d={TROPHY_CUP_PATH} fill="url(#lcTrophy)" stroke={lineColor} strokeWidth={14} />
+    </Svg>
+  );
+}
+
 function LevelCompleteModal({
   visible,
   levelTitle,
@@ -613,27 +639,17 @@ function LevelCompleteModal({
   const scale = useSharedValue(0.7);
   const opacity = useSharedValue(0);
   const trophyScale = useSharedValue(0.4);
-  const trophyRot = useSharedValue(-12);
-  const ringPulse = useSharedValue(0.6);
 
   useEffect(() => {
     if (visible) {
       scale.value = withSpring(1, { damping: 13 });
       opacity.value = withTiming(1, { duration: 300 });
-      trophyScale.value = withSpring(1, { damping: 8, stiffness: 110 });
-      trophyRot.value = withSequence(
-        withTiming(8, { duration: 220 }),
-        withTiming(-4, { duration: 180 }),
-        withTiming(0, { duration: 160 }),
-      );
-      ringPulse.value = withTiming(1, { duration: 900, easing: Easing.out(Easing.cubic) });
+      trophyScale.value = withSpring(1, { damping: 9, stiffness: 120 });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
       scale.value = 0.7;
       opacity.value = 0;
       trophyScale.value = 0.4;
-      trophyRot.value = -12;
-      ringPulse.value = 0.6;
     }
   }, [visible]);
 
@@ -642,144 +658,55 @@ function LevelCompleteModal({
     opacity: opacity.value,
   }));
   const trophyStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: trophyScale.value }, { rotate: `${trophyRot.value}deg` }],
-  }));
-  const ringStyle = useAnimatedStyle(() => ({
-    opacity: 1 - ringPulse.value,
-    transform: [{ scale: 0.7 + ringPulse.value * 0.9 }],
+    transform: [{ scale: trophyScale.value }],
   }));
 
-  // Eye-catching gradient: deep amethyst → indigo → midnight
-  const cardGradient = isDark
-    ? (["#1A1033", "#241544", "#0F0820"] as const)
-    : (["#5B21B6", "#7C3AED", "#312E81"] as const);
-  const sparkColors = ["#FFD166", "#5EEAD4", "#C4B5FD", "#F5A623", "#A78BFA"];
-  const sparkXs = [40, 90, 150, 210, 260, 310, 70, 200, 130, 280];
+  // Line/column: black on light, white on dark. Cup keeps its yellow gradient.
+  const lineColor = isDark ? "#F5F5F7" : "#141414";
+  const scoreStr = Number.isInteger(bestScore) ? String(bestScore) : bestScore.toFixed(1);
+  const timeStr = `${Math.floor(durationSec / 60)}:${String(Math.floor(durationSec % 60)).padStart(2, "0")}`;
 
   return (
-    <Modal visible={visible} transparent animationType="none">
-      <View style={lc.overlay}>
-        <Animated.View style={[lc.card, animStyle]}>
-          <LinearGradient
-            colors={cardGradient}
-            style={StyleSheet.absoluteFill}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          />
-          {/* Confetti above content */}
-          <View pointerEvents="none" style={lc.confetti}>
-            {visible && sparkXs.map((x, i) => (
-              <ConfettiSpark key={i} delay={i * 80} x={x} color={sparkColors[i % sparkColors.length]} />
-            ))}
-          </View>
-
-          {/* Trophy with pulsing rings */}
-          <View style={lc.trophyWrap}>
-            <Animated.View style={[lc.ring, ringStyle]} />
-            <View style={lc.trophyBubble}>
-              <Animated.View style={trophyStyle}>
-                <Ionicons name="trophy" size={56} color="#FFD166" />
-              </Animated.View>
-            </View>
-          </View>
-
-          {/* Close button */}
-          <Pressable
-            onPress={onClose}
-            hitSlop={12}
-            style={({ pressed }) => [lc.closeBtn, { opacity: pressed ? 0.6 : 1 }]}
-          >
-            <Ionicons name="close" size={22} color="rgba(255,255,255,0.85)" />
-          </Pressable>
-
-          <Text style={[lc.title, { fontFamily: "Nunito_700Bold" }]}>
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <Animated.View
+          style={[
+            { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 30 },
+            animStyle,
+          ]}
+        >
+          <Text style={{ fontFamily: "Rubik_700Bold", fontSize: 26, color: colors.text, marginBottom: 26 }}>
             {t("levelComplete")}
           </Text>
-          <Text style={[lc.levelName, { fontFamily: "Nunito_500Medium" }]}>
-            {levelTitle}
-          </Text>
 
-          {/* Stars */}
-          <View style={lc.starsRow}>
-            {[1, 2, 3].map((i) => {
-              const stars = avgScore < 5 ? 1 : avgScore < 8 ? 2 : 3;
-              const filled = i <= stars;
-              return (
-                <Ionicons
-                  key={i}
-                  name={filled ? "star" : "star-outline"}
-                  size={28}
-                  color={filled ? "#FFD166" : "rgba(255,255,255,0.3)"}
-                  style={{ marginHorizontal: 4 }}
-                />
-              );
-            })}
+          <Animated.View style={trophyStyle}>
+            <TrophyColumn lineColor={lineColor} width={148} />
+          </Animated.View>
+
+          {/* Score · time */}
+          <View style={{ flexDirection: "row", alignItems: "baseline", gap: 16, marginTop: 26 }}>
+            <View style={{ flexDirection: "row", alignItems: "baseline" }}>
+              <Text style={{ fontFamily: "Rubik_700Bold", fontSize: 42, color: colors.text }}>{scoreStr}</Text>
+              <Text style={{ fontFamily: "Rubik_600SemiBold", fontSize: 22, color: colors.textSecondary }}>/10</Text>
+            </View>
+            <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.textMuted, alignSelf: "center" }} />
+            <Text style={{ fontFamily: "Rubik_600SemiBold", fontSize: 22, color: colors.textSecondary }}>{timeStr}</Text>
           </View>
-
-          {/* Stats card */}
-          <View style={lc.statsCard}>
-            <View style={lc.statBox}>
-              <View style={[lc.statIcon, { backgroundColor: "rgba(255,209,102,0.18)" }]}>
-                <Ionicons name="flash" size={16} color="#FFD166" />
-              </View>
-              <Text style={[lc.statValue, { fontFamily: "Nunito_700Bold" }]}>+{xpEarned}</Text>
-              <Text style={[lc.statLabel, { fontFamily: "Nunito_500Medium" }]}>XP</Text>
-            </View>
-            <View style={lc.statDivider} />
-            <View style={lc.statBox}>
-              <View style={[lc.statIcon, { backgroundColor: "rgba(94,234,212,0.18)" }]}>
-                <Ionicons name="trophy" size={16} color="#5EEAD4" />
-              </View>
-              <Text style={[lc.statValue, { fontFamily: "Nunito_700Bold" }]}>{bestScore.toFixed(1)}</Text>
-              <Text style={[lc.statLabel, { fontFamily: "Nunito_500Medium" }]}>/ 10</Text>
-            </View>
-            <View style={lc.statDivider} />
-            <View style={lc.statBox}>
-              <View style={[lc.statIcon, { backgroundColor: "rgba(196,181,253,0.18)" }]}>
-                <Ionicons name="time-outline" size={16} color="#C4B5FD" />
-              </View>
-              <Text style={[lc.statValue, { fontFamily: "Nunito_700Bold" }]}>
-                {Math.floor(durationSec / 60)}:{String(Math.floor(durationSec % 60)).padStart(2, "0")}
-              </Text>
-              <Text style={[lc.statLabel, { fontFamily: "Nunito_500Medium" }]}>{t("timeLabel")}</Text>
-            </View>
-          </View>
-
-          {roleBonus && (
-            <Pressable
-              onPress={roleBonus.onPlay}
-              style={({ pressed }) => [lc.roleBonus, { opacity: pressed ? 0.85 : 1 }]}
-            >
-              <LinearGradient
-                colors={["#8E5BFF", "#E84393"]}
-                style={StyleSheet.absoluteFill}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              />
-              <Text style={lc.roleBonusEmoji}>{roleBonus.emoji}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={[lc.roleBonusLabel, { fontFamily: "Nunito_600SemiBold" }]}>
-                  {lang === "en" ? "BONUS ROLE" : "БОНУС-РОЛЬ"}
-                </Text>
-                <Text style={[lc.roleBonusTitle, { fontFamily: "Nunito_700Bold" }]} numberOfLines={1}>
-                  {roleBonus.title}
-                </Text>
-              </View>
-              <Ionicons name="arrow-forward-circle" size={22} color="#fff" />
-            </Pressable>
-          )}
-
-          {!hasNext && (
-            <Text style={[lc.allDone, { fontFamily: "Nunito_600SemiBold" }]}>
-              {t("allLevelsDone")}
-            </Text>
-          )}
 
           <Pressable
             onPress={onNext}
             style={({ pressed }) => [
-              lc.nextBtn,
-              { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+              {
+                marginTop: 40,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                paddingHorizontal: 32,
+                height: 48,
+                borderRadius: 24,
+                overflow: "hidden",
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+              },
             ]}
           >
             <LinearGradient
@@ -788,23 +715,21 @@ function LevelCompleteModal({
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
             />
-            <Text style={[lc.nextBtnText, { fontFamily: "Nunito_700Bold" }]}>
+            <Text style={{ fontFamily: "Rubik_700Bold", fontSize: 16, color: "#3A2C00" }}>
               {t("nextLevel")}
             </Text>
-            <Ionicons name="arrow-forward" size={18} color="#1A1033" />
+            <Ionicons name="arrow-forward" size={17} color="#3A2C00" />
           </Pressable>
 
-          {hasNext && (
-            <Pressable
-              onPress={onMap}
-              hitSlop={8}
-              style={({ pressed }) => [lc.mapLink, { opacity: pressed ? 0.6 : 1 }]}
-            >
-              <Text style={[lc.mapLinkText, { fontFamily: "Nunito_500Medium" }]}>
-                {t("toMap")}
-              </Text>
-            </Pressable>
-          )}
+          <Pressable
+            onPress={onMap}
+            hitSlop={8}
+            style={({ pressed }) => [{ marginTop: 16, opacity: pressed ? 0.6 : 1 }]}
+          >
+            <Text style={{ fontFamily: "Rubik_500Medium", fontSize: 15, color: colors.textMuted }}>
+              {lang === "en" ? "Exit" : "Выход"}
+            </Text>
+          </Pressable>
         </Animated.View>
       </View>
     </Modal>
