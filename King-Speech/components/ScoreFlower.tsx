@@ -312,7 +312,7 @@ function AspectLabel({
 
 const st = StyleSheet.create({
   center: { position: "absolute", alignItems: "center", justifyContent: "center" },
-  scoreNum: { fontSize: 40, fontFamily: "Fredoka_700Bold", letterSpacing: 0.5, lineHeight: 46 },
+  scoreNum: { fontSize: 40, fontFamily: "Rubik_700Bold", letterSpacing: 0.5, lineHeight: 46 },
   scoreUnderline: { width: 22, height: 3, borderRadius: 2, marginTop: 3, opacity: 0.85 },
   labelBox: { position: "absolute", alignItems: "center", gap: 0 },
   labelText: {
@@ -322,5 +322,5 @@ const st = StyleSheet.create({
     textAlign: "center",
     lineHeight: 13,
   },
-  labelScore: { fontSize: 18, fontFamily: "Fredoka_700Bold", letterSpacing: 0.3, marginTop: 1 },
+  labelScore: { fontSize: 18, fontFamily: "Rubik_700Bold", letterSpacing: 0.3, marginTop: 1 },
 });

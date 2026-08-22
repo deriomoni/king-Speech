@@ -38,6 +38,8 @@ type ReadingCategory = "prose" | "poetry" | "fable";
 interface Props {
   fullText: string;
   accentColor: string;
+  /** Per-module Path background color (already theme-resolved). */
+  bgColor: string;
   colors: AppColors;
   topPad: number;
   bottomPad: number;
@@ -50,6 +52,8 @@ interface Props {
     audioUri?: string,
   ) => void;
   resetSignal: number;
+  /** Bumped to restart the reading from the top (countdown → read again). */
+  restartSignal: number;
   author?: string;
   workTitle?: string;
   category?: ReadingCategory;
@@ -90,12 +94,14 @@ function wordsIn(text: string): number {
 export default function ReadingLevelView({
   fullText,
   accentColor,
+  bgColor,
   colors,
   topPad,
   bottomPad,
   title,
   onRecordingComplete,
   resetSignal,
+  restartSignal,
   author,
   workTitle,
   category = "poetry",
@@ -104,8 +110,22 @@ export default function ReadingLevelView({
 }: Props) {
   const { lang } = useLang();
 
-  const dark = isDarkBg(colors.background);
-  const theme = dark ? R.dark : R.light;
+  // Everything is keyed to the MODULE background now, so text/karaoke/button
+  // stay readable whether that colour is light or dark.
+  const dark = isDarkBg(bgColor);
+  const ink = dark ? "#FFFFFF" : "#1A1A2E";
+  const inkSoft = dark ? "rgba(255,255,255,0.70)" : "rgba(20,22,26,0.66)";
+  const inkFaint = dark ? "rgba(255,255,255,0.46)" : "rgba(20,22,26,0.42)";
+  // "Читать" button: black on a light background, white on a dark one. Flat, no
+  // gradient; label/icon take the opposite ink.
+  const btnBg = dark ? "#FFFFFF" : "#000000";
+  const btnInk = dark ? "#000000" : "#FFFFFF";
+  // Reading canvas ("полотно") word colours, readable on the module background.
+  const wordColors = {
+    unread: dark ? "rgba(255,255,255,0.42)" : "rgba(20,22,26,0.40)",
+    read: dark ? "rgba(255,255,255,0.42)" : "rgba(20,22,26,0.40)",
+    active: ink,
+  };
 
   const displayTitle = workTitle ?? title;
   const heroSize = heroSizeFor(displayTitle);
@@ -245,7 +265,14 @@ export default function ReadingLevelView({
     const advance = (k: number) => {
       if (cancelled) return;
       setActiveK(k);
-      if (k >= lines.length - 1) return;
+      if (k >= lines.length - 1) {
+        // Reached the end of the poem — auto-finish once the last line has had
+        // its reading time (there's no manual Stop button anymore).
+        timer = setTimeout(() => {
+          if (!cancelled) stopRecording();
+        }, delayForLine(k));
+        return;
+      }
       timer = setTimeout(() => advance(k + 1), delayForLine(k));
     };
     setActiveK(-1);
@@ -264,8 +291,7 @@ export default function ReadingLevelView({
     await begin();
   };
 
-  const startCountdown = () => {
-    if (phase !== "idle") return;
+  const runCountdown = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setPhase("countdown");
     setCountdown(3);
@@ -282,6 +308,26 @@ export default function ReadingLevelView({
     };
     tick(3);
   };
+
+  const startCountdown = () => {
+    if (phase !== "idle") return;
+    runCountdown();
+  };
+
+  // Restart from the top (the ✕ "exit?" prompt → "No, keep reading"): reset the
+  // canvas, then immediately run the countdown and read again from line 1.
+  useEffect(() => {
+    if (!restartSignal) return;
+    generationRef.current += 1;
+    setActiveK(-1);
+    if (countdownTimerRef.current) clearTimeout(countdownTimerRef.current);
+    cancel();
+    exitReading(true);
+    lastScrolledLineRef.current = -1;
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+    runCountdown();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restartSignal]);
 
   const stopRecording = async () => {
     if (phase !== "recording") return;
@@ -366,7 +412,7 @@ export default function ReadingLevelView({
   const bio = getAuthorBio(author);
 
   return (
-    <View style={[st.container, { backgroundColor: colors.background }]}>
+    <View style={[st.container, { backgroundColor: bgColor }]}>
       {/* Scrollable stage — no left arrow; the top-right ✕ lives in level/[id]. */}
       <ScrollView
         ref={scrollRef}
@@ -399,7 +445,7 @@ export default function ReadingLevelView({
                 fontSize: heroSize,
                 lineHeight: heroLine,
                 letterSpacing: R.type.heroTracking,
-                color: colors.text,
+                color: ink,
               }}
             >
               {displayTitle}
@@ -412,7 +458,7 @@ export default function ReadingLevelView({
                   fontFamily: R.type.kickerFont,
                   fontSize: R.type.kickerSize,
                   letterSpacing: R.type.kickerTracking,
-                  color: colors.text,
+                  color: ink,
                   opacity: R.type.kickerOpacity,
                 }}
               >
@@ -428,7 +474,7 @@ export default function ReadingLevelView({
                 fontFamily: R.type.kickerFont,
                 fontSize: 20,
                 letterSpacing: 0.2,
-                color: colors.text,
+                color: ink,
                 opacity: 0.85,
               }}
             >
@@ -442,7 +488,7 @@ export default function ReadingLevelView({
                   fontFamily: R.type.metaFont,
                   fontSize: R.type.metaSize,
                   letterSpacing: R.type.metaTracking,
-                  color: colors.text,
+                  color: ink,
                   opacity: R.type.metaOpacity,
                 }}
               >
@@ -463,7 +509,7 @@ export default function ReadingLevelView({
           <ReadingText
             tokens={tokens}
             activeLine={activeLine}
-            colors={theme.word}
+            colors={wordColors}
             fontFamily={R.type.bodyFont}
             fontSize={R.type.bodySize}
             lineHeight={Math.round(R.type.bodySize * R.type.bodyLineRatio)}
@@ -471,14 +517,6 @@ export default function ReadingLevelView({
           />
         </Animated.View>
       </ScrollView>
-
-      {/* Fade mask — hides the long text in IDLE, lifts as reading begins */}
-      <Animated.View pointerEvents="none" style={[st.fadeMask, fadeMaskStyle]}>
-        <LinearGradient
-          colors={["transparent", colors.background]}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
 
       {/* Footer: reading speed + learn more — plain text, fade out while reading */}
       <Animated.View
@@ -491,7 +529,7 @@ export default function ReadingLevelView({
           hitSlop={10}
           style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
         >
-          <Text style={[st.speedText, { color: colors.textSecondary, fontFamily: R.type.metaFont }]}>
+          <Text style={[st.speedText, { color: inkSoft, fontFamily: R.type.metaFont }]}>
             {speedLabel}
           </Text>
         </Pressable>
@@ -502,7 +540,7 @@ export default function ReadingLevelView({
           hitSlop={10}
           style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
         >
-          <Text style={[st.learnText, { color: colors.textSecondary, fontFamily: R.type.metaFont }]}>
+          <Text style={[st.learnText, { color: inkSoft, fontFamily: R.type.metaFont }]}>
             {(lang === "ru" ? "Узнать больше" : "Learn more").toUpperCase()}
           </Text>
         </Pressable>
@@ -516,40 +554,15 @@ export default function ReadingLevelView({
         <Pressable
           onPress={startCountdown}
           disabled={phase !== "idle"}
-          style={({ pressed }) => [st.startBtn, { transform: [{ scale: pressed ? 0.96 : 1 }] }]}
-        >
-          <View style={[st.startGlow, { backgroundColor: accentColor }]} />
-          <LinearGradient
-            colors={[R.button.from, R.button.to]}
-            start={{ x: 0.1, y: 0 }}
-            end={{ x: 0.9, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
-          <Ionicons name="play" size={15} color={R.button.on} />
-          <Text style={[st.startLabel, { fontFamily: R.type.heroFont, color: R.button.on }]}>
-            {lang === "ru" ? "Читать" : "Read"}
-          </Text>
-        </Pressable>
-      </Animated.View>
-
-      {/* Stop control — centered (READING) */}
-      <Animated.View
-        style={[st.centerDock, { bottom: bottomPad + 62 }, stopStyle]}
-        pointerEvents={isRecording ? "auto" : "none"}
-      >
-        <Pressable
-          onPress={stopRecording}
-          disabled={!isRecording}
           style={({ pressed }) => [
-            st.stopBtn,
-            {
-              backgroundColor: colors.backgroundSecondary,
-              transform: [{ scale: pressed ? 0.94 : 1 }],
-            },
+            st.startBtn,
+            { backgroundColor: btnBg, transform: [{ scale: pressed ? 0.96 : 1 }] },
           ]}
         >
-          <View style={[st.stopHalo, { borderColor: accentColor }]} />
-          <View style={[st.stopSquare, { backgroundColor: accentColor }]} />
+          <Ionicons name="play" size={15} color={btnInk} />
+          <Text style={[st.startLabel, { fontFamily: R.type.heroFont, color: btnInk }]}>
+            {lang === "ru" ? "Читать" : "Read"}
+          </Text>
         </Pressable>
       </Animated.View>
 
@@ -558,19 +571,19 @@ export default function ReadingLevelView({
         <Animated.View
           entering={FadeIn.duration(180)}
           exiting={FadeOut.duration(220)}
-          style={[st.overlay, { backgroundColor: colors.background + "F2" }]}
+          style={[st.overlay, { backgroundColor: bgColor + "F2" }]}
           pointerEvents="none"
         >
           <Animated.Text
             key={`cd-${countdown}`}
             entering={FadeIn.duration(200)}
             exiting={FadeOut.duration(200)}
-            style={[st.countdownNum, { color: colors.text, fontFamily: R.type.heroFont }]}
+            style={[st.countdownNum, { color: ink, fontFamily: R.type.heroFont }]}
           >
             {countdown}
           </Animated.Text>
           <Text
-            style={[st.countdownHint, { color: colors.textMuted, fontFamily: R.type.kickerFont }]}
+            style={[st.countdownHint, { color: inkFaint, fontFamily: R.type.kickerFont }]}
           >
             {(lang === "ru" ? "Приготовься" : "Get ready").toUpperCase()}
           </Text>
@@ -581,15 +594,15 @@ export default function ReadingLevelView({
       {loading && (
         <Animated.View
           exiting={FadeOut.duration(420)}
-          style={[st.overlay, { backgroundColor: colors.background }]}
+          style={[st.overlay, { backgroundColor: bgColor }]}
         >
           <OscarMascot emotion="happy" size={150} />
-          <Text style={[st.loadQuote, { color: colors.text, fontFamily: R.type.bodyFont }]}>
+          <Text style={[st.loadQuote, { color: ink, fontFamily: R.type.bodyFont }]}>
             {lang === "ru"
               ? "Речь — это сцена. Выходи и говори."
               : "Speech is a stage. Step up and speak."}
           </Text>
-          <Text style={[st.loadHint, { color: colors.textMuted, fontFamily: R.type.kickerFont }]}>
+          <Text style={[st.loadHint, { color: inkFaint, fontFamily: R.type.kickerFont }]}>
             {(lang === "ru" ? "Готовим полотно" : "Preparing the canvas").toUpperCase()}
           </Text>
         </Animated.View>

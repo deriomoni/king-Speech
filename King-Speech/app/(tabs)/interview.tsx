@@ -161,7 +161,7 @@ export default function CheatSheetScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   // Handwritten title (Caveat Bold — already loaded in _layout).
-  hero: { fontSize: 58, fontFamily: "Caveat_700Bold", lineHeight: 62, marginTop: -4 },
+  hero: { fontSize: 58, fontFamily: "Rubik_700Bold", lineHeight: 62, marginTop: -4 },
   heroSub: { fontSize: 16, lineHeight: 23, fontFamily: fonts.body },
 
   countdown: {

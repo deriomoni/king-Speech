@@ -17,6 +17,7 @@ import { analyzeGenericTask } from "@/services/analyzeGenericTask";
 import type { SpeechAnalysis } from "@/services/speechAnalysis";
 import type { Task } from "@/context/GameContext";
 import { brand } from "@/constants/colors";
+import { readableText } from "@/constants/pathPalette";
 
 // ───────────────────────────────────────────────────────────────────────────
 // One-task-per-screen flow for generic "speak this" levels (tongue twisters,
@@ -34,6 +35,8 @@ interface Props {
   title: string;
   subtitle?: string;
   accent: string;
+  /** Full-screen background behind the flow (module palette). Text on it adapts. */
+  screenBg?: string;
   colors: import("@/constants/colors").AppColors;
   isDark: boolean;
   lang: "ru" | "en";
@@ -57,6 +60,7 @@ export default function TaskFlowView({
   title,
   subtitle,
   accent,
+  screenBg,
   colors,
   isDark,
   lang,
@@ -67,6 +71,10 @@ export default function TaskFlowView({
   onExit,
 }: Props) {
   const ru = lang === "ru";
+  // Ink that reads on the palette background (which may be light OR dark,
+  // independent of theme). Falls back to the theme text color.
+  const ink = screenBg ? readableText(screenBg) : colors.text;
+  const inkSoft = ink === "#FFFFFF" ? "rgba(255,255,255,0.62)" : "rgba(20,22,26,0.6)";
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("record");
   const [current, setCurrent] = useState<SpeechAnalysis | null>(null);
@@ -147,7 +155,7 @@ export default function TaskFlowView({
       {/* Header: exit + progress segments */}
       <View style={[st.header, { paddingTop: topPad + 8 }]}>
         <Pressable onPress={onExit} hitSlop={12} style={({ pressed }) => [st.exitBtn, { opacity: pressed ? 0.6 : 1 }]}>
-          <Ionicons name="close" size={24} color={colors.text} />
+          <Ionicons name="close" size={24} color={ink} />
         </Pressable>
         <View style={st.dotsRow}>
           {tasks.map((_, i) => {
@@ -178,10 +186,10 @@ export default function TaskFlowView({
 
       {/* Level title (small) */}
       <View style={st.titleWrap}>
-        <Text style={[st.kicker, { color: brand.violet, fontFamily: "Rubik_600SemiBold" }]}>
+        <Text style={[st.kicker, { color: accent, fontFamily: "Rubik_600SemiBold" }]}>
           {kindLabel.toUpperCase()} · {index + 1}/{total}
         </Text>
-        <Text numberOfLines={1} style={[st.levelTitle, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>
+        <Text numberOfLines={1} style={[st.levelTitle, { color: ink, fontFamily: "Rubik_700Bold" }]}>
           {title}
         </Text>
       </View>
@@ -218,7 +226,7 @@ export default function TaskFlowView({
         {emptyTake ? (
           <Animated.Text
             entering={FadeIn}
-            style={[st.emptyHint, { color: colors.textSecondary, fontFamily: "Nunito_600SemiBold" }]}
+            style={[st.emptyHint, { color: inkSoft, fontFamily: "Nunito_600SemiBold" }]}
           >
             {ru
               ? "Кажется, мы тебя не услышали — попробуй ещё раз, чуть увереннее."
@@ -252,8 +260,8 @@ export default function TaskFlowView({
               </Pressable>
             </Animated.View>
             <Pressable onPress={retryTake} hitSlop={8} style={({ pressed }) => [st.retryLink, { opacity: pressed ? 0.5 : 1 }]}>
-              <Ionicons name="refresh" size={14} color={colors.textMuted} />
-              <Text style={[st.retryText, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>
+              <Ionicons name="refresh" size={14} color={inkSoft} />
+              <Text style={[st.retryText, { color: inkSoft, fontFamily: "Nunito_600SemiBold" }]}>
                 {ru ? "Переписать" : "Re-record"}
               </Text>
             </Pressable>
@@ -282,7 +290,7 @@ function MiniScore({ analysis, ru }: { analysis: SpeechAnalysis; ru: boolean }) 
   const verdict = s >= 8 ? (ru ? "Отлично!" : "Excellent!") : s >= 6 ? (ru ? "Хорошо" : "Good") : s >= 4 ? (ru ? "Неплохо" : "Not bad") : (ru ? "Ещё разок" : "Keep trying");
   return (
     <Animated.View entering={ZoomIn.duration(320)} style={[st.mini, { borderColor: tone + "55", backgroundColor: tone + "14" }]}>
-      <Text style={[st.miniScore, { color: tone, fontFamily: "Fredoka_700Bold" }]}>{s.toFixed(1)}</Text>
+      <Text style={[st.miniScore, { color: tone, fontFamily: "Rubik_700Bold" }]}>{s.toFixed(1)}</Text>
       <View style={{ flex: 1 }}>
         <Text style={[st.miniVerdict, { color: tone, fontFamily: "Nunito_800ExtraBold" }]}>{verdict}</Text>
         <View style={st.starsRow}>

@@ -120,7 +120,7 @@ export default function ShowTimeScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(150).duration(400)}>
-          <Text style={[st.sectionLabel, st.galleryHeading, { fontFamily: "Inter_600SemiBold", color: ink }]}>
+          <Text style={[st.sectionLabel, st.galleryHeading, { fontFamily: "Nunito_600SemiBold", color: ink }]}>
             {t("chooseTopic")}
           </Text>
           <VinylGallery
@@ -141,33 +141,33 @@ export default function ShowTimeScreen() {
             />
             <View style={st.previewHeader}>
               <View style={[st.previewThemeDot, { backgroundColor: theme.accentColor }]} />
-              <Text style={[st.previewThemeName, { fontFamily: "Inter_600SemiBold", color: theme.accentColor }]}>
+              <Text style={[st.previewThemeName, { fontFamily: "Nunito_600SemiBold", color: theme.accentColor }]}>
                 {theme.title}
               </Text>
               {theme.timerSeconds !== null && (
                 <View style={[st.previewTimerBadge, { backgroundColor: chipBg }]}>
                   <Ionicons name="time-outline" size={12} color={inkFaint} />
-                  <Text style={[st.previewTimerText, { fontFamily: "Inter_400Regular", color: inkFaint }]}>{theme.timerSeconds} {t("sec")}</Text>
+                  <Text style={[st.previewTimerText, { fontFamily: "Nunito_400Regular", color: inkFaint }]}>{theme.timerSeconds} {t("sec")}</Text>
                 </View>
               )}
             </View>
-            <Text style={[st.previewInterior, { fontFamily: "Inter_400Regular", color: inkFaint }]}>{theme.interior}</Text>
+            <Text style={[st.previewInterior, { fontFamily: "Nunito_400Regular", color: inkFaint }]}>{theme.interior}</Text>
             <View style={[st.previewDivider, isLight && { backgroundColor: "rgba(36,25,52,0.10)" }]} />
-            <Text style={[st.previewSpeechTitle, { fontFamily: "Inter_600SemiBold", color: inkSub }]}>
+            <Text style={[st.previewSpeechTitle, { fontFamily: "Nunito_600SemiBold", color: inkSub }]}>
               {randomSpeech.title}
             </Text>
             <View style={st.previewLines}>
               {randomSpeech.lines.slice(0, 4).map((line, i) => (
                 <Text
                   key={i}
-                  style={[st.previewLine, { fontFamily: "Inter_400Regular", opacity: 0.6 - i * 0.1, color: isLight ? "#241934" : "#fff" }]}
+                  style={[st.previewLine, { fontFamily: "Nunito_400Regular", opacity: 0.6 - i * 0.1, color: isLight ? "#241934" : "#fff" }]}
                   numberOfLines={2}
                   ellipsizeMode="tail"
                 >
                   {line}
                 </Text>
               ))}
-              <Text style={[st.previewLine, { fontFamily: "Inter_400Regular", opacity: 0.2, color: isLight ? "#241934" : "#fff" }]}>...</Text>
+              <Text style={[st.previewLine, { fontFamily: "Nunito_400Regular", opacity: 0.2, color: isLight ? "#241934" : "#fff" }]}>...</Text>
             </View>
           </View>
         </Animated.View>
@@ -181,7 +181,7 @@ export default function ShowTimeScreen() {
             ]}
           >
             <Ionicons name="play-circle" size={22} color="#1A1A2E" />
-            <Text style={[st.startBtnText, { color: "#1A1A2E", fontFamily: "Inter_700Bold" }]}>
+            <Text style={[st.startBtnText, { color: "#1A1A2E", fontFamily: "Nunito_700Bold" }]}>
               {t("startTraining")}
             </Text>
           </Pressable>
@@ -208,7 +208,7 @@ export default function ShowTimeScreen() {
               <Text style={[st.rolesEntryTitle, { fontFamily: "Nunito_800ExtraBold" }]}>
                 {lang === "en" ? "Roles" : "Роли"}
               </Text>
-              <Text style={[st.rolesEntrySub, { fontFamily: "Inter_400Regular" }]}>
+              <Text style={[st.rolesEntrySub, { fontFamily: "Nunito_400Regular" }]}>
                 {lang === "en"
                   ? "Play a character & train adaptability"
                   : "Играй персонажа и тренируй адаптивность"}
@@ -237,7 +237,7 @@ export default function ShowTimeScreen() {
             <View style={st.tipsBtnIcon}>
               <Ionicons name="bulb" size={18} color="#FFD230" />
             </View>
-            <Text style={[st.tipsBtnText, { fontFamily: "Inter_600SemiBold" }]}>
+            <Text style={[st.tipsBtnText, { fontFamily: "Nunito_600SemiBold" }]}>
               {t("speakerTips")}
             </Text>
             <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />

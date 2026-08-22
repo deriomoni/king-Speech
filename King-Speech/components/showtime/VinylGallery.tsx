@@ -163,7 +163,7 @@ export function VinylGallery({ themes, selectedIdx, onSelect, isLight }: Props) 
         <Text
           style={[
             styles.title,
-            { color: centerTheme.accentColor, fontFamily: "Inter_600SemiBold" },
+            { color: centerTheme.accentColor, fontFamily: "Nunito_600SemiBold" },
           ]}
           numberOfLines={1}
           adjustsFontSizeToFit
@@ -171,7 +171,7 @@ export function VinylGallery({ themes, selectedIdx, onSelect, isLight }: Props) 
         >
           {centerTheme.title}
         </Text>
-        <Text style={[styles.counter, { fontFamily: "Inter_400Regular" }, isLight && { color: "rgba(36,25,52,0.45)" }]}>
+        <Text style={[styles.counter, { fontFamily: "Nunito_400Regular" }, isLight && { color: "rgba(36,25,52,0.45)" }]}>
           {selectedIdx + 1} / {themes.length}
         </Text>
       </Animated.View>

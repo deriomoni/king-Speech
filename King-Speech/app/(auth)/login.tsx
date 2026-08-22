@@ -254,14 +254,14 @@ const s = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
     textAlign: "center",
     marginBottom: 8,
     letterSpacing: -0.3,
   },
   sub: {
     fontSize: 15,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Nunito_400Regular",
     textAlign: "center",
     lineHeight: 22,
   },
@@ -286,7 +286,7 @@ const s = StyleSheet.create({
   },
   skipBtnTxt: {
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Nunito_500Medium",
     textDecorationLine: "underline",
   },
   appleBtn: {
@@ -307,7 +307,7 @@ const s = StyleSheet.create({
   notConfiguredTxt: {
     flex: 1,
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Nunito_500Medium",
     lineHeight: 18,
   },
   authBtnInner: {
@@ -328,12 +328,12 @@ const s = StyleSheet.create({
   },
   googleG: {
     fontSize: 18,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
     color: "#4285F4",
   },
   authBtnTxt: {
     fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Nunito_600SemiBold",
   },
   dividerRow: {
     flexDirection: "row",
@@ -347,7 +347,7 @@ const s = StyleSheet.create({
   },
   dividerTxt: {
     fontSize: 13,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Nunito_400Regular",
   },
   emailBtn: {
     flexDirection: "row",
@@ -359,7 +359,7 @@ const s = StyleSheet.create({
   },
   emailBtnTxt: {
     fontSize: 15,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Nunito_500Medium",
   },
   footer: {
     alignItems: "center",
@@ -367,7 +367,7 @@ const s = StyleSheet.create({
   },
   footerTxt: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Nunito_400Regular",
     letterSpacing: 0.5,
   },
 });

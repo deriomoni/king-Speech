@@ -4211,7 +4211,7 @@ function NoiseBubbleView({ bubble }: { bubble: NoiseBubble }) {
   const style = useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ translateY: translateY.value }] }));
   return (
     <Animated.View style={[style, { position: "absolute", left: bubble.x, top: bubble.y, backgroundColor: "rgba(255,255,255,0.09)", borderRadius: 10, paddingHorizontal: 7, paddingVertical: 3 }]}>
-      <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 10, fontFamily: "Inter_400Regular" }}>{bubble.text}</Text>
+      <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 10, fontFamily: "Nunito_400Regular" }}>{bubble.text}</Text>
     </Animated.View>
   );
 }
@@ -4323,7 +4323,7 @@ function RecDot() {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
       <Animated.View style={[style, { width: 8, height: 8, borderRadius: 4, backgroundColor: "#0EA5E9" }]} />
-      <Text style={{ color: "#0EA5E9", fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 1 }}>REC</Text>
+      <Text style={{ color: "#0EA5E9", fontSize: 11, fontFamily: "Nunito_700Bold", letterSpacing: 1 }}>REC</Text>
     </View>
   );
 }
@@ -4337,8 +4337,8 @@ function SpeechLine({ text, isActive, isDone }: { text: string; isActive: boolea
   );
 }
 const sl = StyleSheet.create({
-  line: { fontSize: 16, lineHeight: 28, color: "rgba(255,255,255,0.25)", fontFamily: "Inter_400Regular", textAlign: "center", paddingVertical: 2 },
-  lineActive: { fontSize: 21, color: "#FFFFFF", fontFamily: "Inter_700Bold", lineHeight: 32 },
+  line: { fontSize: 16, lineHeight: 28, color: "rgba(255,255,255,0.25)", fontFamily: "Nunito_400Regular", textAlign: "center", paddingVertical: 2 },
+  lineActive: { fontSize: 21, color: "#FFFFFF", fontFamily: "Nunito_700Bold", lineHeight: 32 },
   lineDone: { color: "rgba(255,255,255,0.35)", textDecorationLine: "line-through", textDecorationColor: "rgba(255,255,255,0.2)" },
 });
 
@@ -4409,7 +4409,7 @@ function StartButton({ accentColor, onPress, label }: { accentColor: string; onP
           style={sb.shadowOverlay}
         />
         <Ionicons name="mic" size={22} color="#1A1A2E" />
-        <Text style={[sb.label, { fontFamily: "Inter_700Bold" }]}>{label}</Text>
+        <Text style={[sb.label, { fontFamily: "Nunito_700Bold" }]}>{label}</Text>
       </Animated.View>
     </Pressable>
   );
@@ -4727,21 +4727,21 @@ export default function ShowtimeStageScreen() {
             bounces={false}
           >
             <Ionicons name="videocam" size={44} color={theme.accentColor} />
-            <Text style={[s.curtainTitle, { fontFamily: "Inter_700Bold", color: theme.accentColor }]} numberOfLines={1} adjustsFontSizeToFit>{theme.curtainTitle}</Text>
+            <Text style={[s.curtainTitle, { fontFamily: "Nunito_700Bold", color: theme.accentColor }]} numberOfLines={1} adjustsFontSizeToFit>{theme.curtainTitle}</Text>
             <View style={s.curtainThemeWrap}>
-              <Text style={[s.curtainThemeLabel, { fontFamily: "Inter_500Medium", color: theme.accentColor + "99" }]}>{t("speechTopic")}</Text>
-              <Text style={[s.curtainThemeName, { fontFamily: "Inter_700Bold", color: theme.accentColor }]} numberOfLines={2}>{theme.title}</Text>
+              <Text style={[s.curtainThemeLabel, { fontFamily: "Nunito_500Medium", color: theme.accentColor + "99" }]}>{t("speechTopic")}</Text>
+              <Text style={[s.curtainThemeName, { fontFamily: "Nunito_700Bold", color: theme.accentColor }]} numberOfLines={2}>{theme.title}</Text>
             </View>
-            <Text style={[s.curtainSub, { fontFamily: "Inter_600SemiBold" }]} numberOfLines={2}>«{speech.title}»</Text>
-            <Text style={[s.curtainHint, { fontFamily: "Inter_400Regular" }]}>
+            <Text style={[s.curtainSub, { fontFamily: "Nunito_600SemiBold" }]} numberOfLines={2}>«{speech.title}»</Text>
+            <Text style={[s.curtainHint, { fontFamily: "Nunito_400Regular" }]}>
               {theme.audienceDesc}{"\n"}{t("recordingStartsAuto")}
               {theme.timerSeconds !== null ? `\n${t("timerLabel")}: ${theme.timerSeconds} ${t("sec")}` : ""}
             </Text>
             <View style={s.previewBox}>
               {speech.lines.slice(0, 4).map((line, i) => (
-                <Text key={i} style={[s.previewLine, { fontFamily: "Inter_400Regular", opacity: 0.5 - i * 0.08 }]} numberOfLines={1}>{line}</Text>
+                <Text key={i} style={[s.previewLine, { fontFamily: "Nunito_400Regular", opacity: 0.5 - i * 0.08 }]} numberOfLines={1}>{line}</Text>
               ))}
-              <Text style={[s.previewLine, { fontFamily: "Inter_400Regular", opacity: 0.18 }]}>...</Text>
+              <Text style={[s.previewLine, { fontFamily: "Nunito_400Regular", opacity: 0.18 }]}>...</Text>
             </View>
             {/* Scroll-mode selector */}
             <View style={s.modeRow}>
@@ -4764,7 +4764,7 @@ export default function ShowtimeStageScreen() {
                       size={18}
                       color={active ? theme.accentColor : "rgba(255,255,255,0.6)"}
                     />
-                    <Text style={[s.modeBtnText, { fontFamily: "Inter_600SemiBold", color: active ? theme.accentColor : "rgba(255,255,255,0.6)" }]}>
+                    <Text style={[s.modeBtnText, { fontFamily: "Nunito_600SemiBold", color: active ? theme.accentColor : "rgba(255,255,255,0.6)" }]}>
                       {m === "manual"
                         ? (lang === "en" ? "Manual" : "Механический")
                         : (lang === "en" ? "Auto-scroll" : "Авто-свайп")}
@@ -4776,7 +4776,7 @@ export default function ShowtimeStageScreen() {
             <StartButton accentColor={theme.accentColor} onPress={handleStart} label={t("goOnStage")} />
             <Pressable onPress={() => router.back()} style={({ pressed }) => [s.curtainExitBtn, { opacity: pressed ? 0.6 : 1 }]}>
               <Ionicons name="arrow-back" size={16} color="rgba(255,255,255,0.6)" />
-              <Text style={[s.curtainExitTxt, { fontFamily: "Inter_500Medium" }]}>{t("exit")}</Text>
+              <Text style={[s.curtainExitTxt, { fontFamily: "Nunito_500Medium" }]}>{t("exit")}</Text>
             </Pressable>
           </ScrollView>
         </Animated.View>
@@ -4812,20 +4812,20 @@ export default function ShowtimeStageScreen() {
           {started && (
             <Animated.View style={[s.liveTag, liveStyle]}>
               <View style={s.liveDot} />
-              <Text style={[s.liveText, { fontFamily: "Inter_700Bold" }]}>LIVE</Text>
+              <Text style={[s.liveText, { fontFamily: "Nunito_700Bold" }]}>LIVE</Text>
             </Animated.View>
           )}
-          <Text style={[s.speechTitle, { fontFamily: "Inter_500Medium" }]} numberOfLines={1} ellipsizeMode="tail">{speech.title}</Text>
+          <Text style={[s.speechTitle, { fontFamily: "Nunito_500Medium" }]} numberOfLines={1} ellipsizeMode="tail">{speech.title}</Text>
         </View>
         <View style={s.headerRight}>
           {isRecording && <RecDot />}
           {!isRecording && started && !finished && (
-            <Text style={[s.lineCounter, { fontFamily: "Inter_400Regular" }]}>{currentLine + 1}/{speech.lines.length}</Text>
+            <Text style={[s.lineCounter, { fontFamily: "Nunito_400Regular" }]}>{currentLine + 1}/{speech.lines.length}</Text>
           )}
           {started && !finished && timeLeft !== null && (
             <View style={[s.timerBadge, { backgroundColor: timeLeft <= 10 ? "#0EA5E940" : "rgba(255,255,255,0.1)" }]}>
               <Ionicons name="timer-outline" size={14} color={timeLeft <= 10 ? "#0EA5E9" : "rgba(255,255,255,0.7)"} />
-              <Text style={[s.timerText, { fontFamily: "Inter_700Bold", color: timeLeft <= 10 ? "#0EA5E9" : "rgba(255,255,255,0.7)" }]}>
+              <Text style={[s.timerText, { fontFamily: "Nunito_700Bold", color: timeLeft <= 10 ? "#0EA5E9" : "rgba(255,255,255,0.7)" }]}>
                 {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, "0")}
               </Text>
             </View>
@@ -4842,16 +4842,16 @@ export default function ShowtimeStageScreen() {
             <View style={s.tutorialIconWrap}>
               <Ionicons name="bulb" size={28} color="#FFD166" />
             </View>
-            <Text style={[s.tutorialTitle, { fontFamily: "Inter_700Bold" }]}>
+            <Text style={[s.tutorialTitle, { fontFamily: "Nunito_700Bold" }]}>
               {t("hint")}
             </Text>
-            <Text style={[s.tutorialText, { fontFamily: "Inter_400Regular" }]}>
+            <Text style={[s.tutorialText, { fontFamily: "Nunito_400Regular" }]}>
               {t("tutorialText")}
             </Text>
             <View style={s.tutorialArrow}>
               <Ionicons name="arrow-down" size={32} color="#FFD166" />
             </View>
-            <Text style={[s.tutorialDismiss, { fontFamily: "Inter_400Regular" }]}>
+            <Text style={[s.tutorialDismiss, { fontFamily: "Nunito_400Regular" }]}>
               {t("tapAnywhere")}
             </Text>
           </View>
@@ -4863,14 +4863,14 @@ export default function ShowtimeStageScreen() {
         <View style={s.exitOverlay}>
           <View style={s.exitCard}>
             <Ionicons name="warning-outline" size={32} color={theme.accentColor} />
-            <Text style={[s.exitTitle, { fontFamily: "Inter_700Bold" }]}>{t("exitConfirmTitle")}</Text>
-            <Text style={[s.exitMsg, { fontFamily: "Inter_400Regular" }]}>{t("exitConfirmMsg")}</Text>
+            <Text style={[s.exitTitle, { fontFamily: "Nunito_700Bold" }]}>{t("exitConfirmTitle")}</Text>
+            <Text style={[s.exitMsg, { fontFamily: "Nunito_400Regular" }]}>{t("exitConfirmMsg")}</Text>
             <View style={s.exitBtns}>
               <Pressable onPress={() => setShowExitConfirm(false)} style={({ pressed }) => [s.exitBtn, s.exitBtnStay, { opacity: pressed ? 0.8 : 1 }]}>
-                <Text style={[s.exitBtnStayText, { fontFamily: "Inter_600SemiBold" }]}>{t("stayBtn")}</Text>
+                <Text style={[s.exitBtnStayText, { fontFamily: "Nunito_600SemiBold" }]}>{t("stayBtn")}</Text>
               </Pressable>
               <Pressable onPress={() => { setShowExitConfirm(false); router.replace("/(tabs)"); }} style={({ pressed }) => [s.exitBtn, s.exitBtnLeave, { opacity: pressed ? 0.8 : 1 }]}>
-                <Text style={[s.exitBtnLeaveText, { fontFamily: "Inter_600SemiBold" }]}>{t("leaveBtn")}</Text>
+                <Text style={[s.exitBtnLeaveText, { fontFamily: "Nunito_600SemiBold" }]}>{t("leaveBtn")}</Text>
               </Pressable>
             </View>
           </View>
@@ -4882,8 +4882,8 @@ export default function ShowtimeStageScreen() {
         <Animated.View entering={FadeIn.duration(600)} style={s.finishOverlay}>
           <View style={s.finishContent}>
             <Ionicons name="trophy" size={44} color={theme.accentColor} />
-            <Text style={[s.finishTitle, { fontFamily: "Inter_700Bold" }]}>{t("bravo")}</Text>
-            <Text style={[s.finishSub, { fontFamily: "Inter_400Regular" }]}>{t("openingPlayback")}</Text>
+            <Text style={[s.finishTitle, { fontFamily: "Nunito_700Bold" }]}>{t("bravo")}</Text>
+            <Text style={[s.finishSub, { fontFamily: "Nunito_400Regular" }]}>{t("openingPlayback")}</Text>
           </View>
         </Animated.View>
       )}
@@ -4920,13 +4920,13 @@ export default function ShowtimeStageScreen() {
             <View style={s.autoRow}>
               <Pressable onPress={toggleAutoPause} style={({ pressed }) => [s.autoChip, { borderColor: theme.accentColor + "55", opacity: pressed ? 0.7 : 1 }]}>
                 <Ionicons name={autoPaused ? "play" : "pause"} size={16} color={theme.accentColor} />
-                <Text style={[s.autoChipText, { fontFamily: "Inter_600SemiBold", color: theme.accentColor }]}>
+                <Text style={[s.autoChipText, { fontFamily: "Nunito_600SemiBold", color: theme.accentColor }]}>
                   {autoPaused ? (lang === "en" ? "Play" : "Старт") : (lang === "en" ? "Pause" : "Пауза")}
                 </Text>
               </Pressable>
               <Pressable onPress={cycleSpeed} style={({ pressed }) => [s.autoChip, { borderColor: theme.accentColor + "55", opacity: pressed ? 0.7 : 1 }]}>
                 <Ionicons name="speedometer-outline" size={16} color={theme.accentColor} />
-                <Text style={[s.autoChipText, { fontFamily: "Inter_700Bold", color: theme.accentColor }]}>
+                <Text style={[s.autoChipText, { fontFamily: "Nunito_700Bold", color: theme.accentColor }]}>
                   {AUTO_SPEEDS[speedIdx]}×
                 </Text>
               </Pressable>

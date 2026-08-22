@@ -136,7 +136,7 @@ export function StepBlock({ stepNumber, title, status, onPress, colorScheme }: S
             <View style={{ alignItems: "center", gap: 2 }}>
               <Text
                 style={{
-                  fontFamily: "Inter_700Bold",
+                  fontFamily: "Nunito_700Bold",
                   fontSize: 11,
                   color: colorScheme === "dark" ? "#1A1A2E" : "#1A1A2E",
                   opacity: 0.7,
@@ -148,7 +148,7 @@ export function StepBlock({ stepNumber, title, status, onPress, colorScheme }: S
               </Text>
               <Text
                 style={{
-                  fontFamily: "Inter_600SemiBold",
+                  fontFamily: "Nunito_600SemiBold",
                   fontSize: 12,
                   color: "#1A1A2E",
                   textAlign: "center",

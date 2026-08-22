@@ -136,7 +136,7 @@ export default function ReadingResultsView({
       >
         {/* Hero — work + author */}
         <Animated.View entering={FadeInDown.duration(500)} style={st.hero}>
-          <Text style={[st.kicker, { color: accent, fontFamily: "Inter_600SemiBold" }]}>
+          <Text style={[st.kicker, { color: accent, fontFamily: "Nunito_600SemiBold" }]}>
             {t("readingReviewTitle").toUpperCase()}
           </Text>
           <Text style={[st.workTitle, { color: fg, fontFamily: "Rubik_700Bold" }]}>{title}</Text>
@@ -149,7 +149,7 @@ export default function ReadingResultsView({
         <Animated.View entering={FadeInDown.delay(120).duration(500)} style={st.section}>
           <View style={st.sectionHead}>
             <Ionicons name="headset" size={16} color={accent} />
-            <Text style={[st.sectionLabel, { color: accent, fontFamily: "Inter_600SemiBold" }]}>
+            <Text style={[st.sectionLabel, { color: accent, fontFamily: "Nunito_600SemiBold" }]}>
               {t("listenYourself")}
             </Text>
           </View>
@@ -164,7 +164,7 @@ export default function ReadingResultsView({
           {!listenedFully ? (
             <View style={[st.hintRow, { backgroundColor: accent + "14", borderColor: accent + "33" }]}>
               <Ionicons name="information-circle-outline" size={15} color={accent} />
-              <Text style={[st.hintText, { color: fgMuted, fontFamily: "Inter_400Regular" }]}>
+              <Text style={[st.hintText, { color: fgMuted, fontFamily: "Nunito_400Regular" }]}>
                 {t("listenBackHint")}
               </Text>
             </View>
@@ -178,7 +178,7 @@ export default function ReadingResultsView({
         >
           <View style={st.sectionHead}>
             <Ionicons name={listenedFully ? "ribbon" : "lock-closed"} size={16} color={listenedFully ? accent : fgFaint} />
-            <Text style={[st.sectionLabel, { color: listenedFully ? accent : fgFaint, fontFamily: "Inter_600SemiBold" }]}>
+            <Text style={[st.sectionLabel, { color: listenedFully ? accent : fgFaint, fontFamily: "Nunito_600SemiBold" }]}>
               {t("rateYourself")}
             </Text>
           </View>
@@ -197,7 +197,7 @@ export default function ReadingResultsView({
             ))}
           </View>
 
-          <Text style={[st.rateHint, { color: fgMuted, fontFamily: "Inter_400Regular" }]}>
+          <Text style={[st.rateHint, { color: fgMuted, fontFamily: "Nunito_400Regular" }]}>
             {listenedFully ? t("rateUnlockedHint") : t("rateLockedHint")}
           </Text>
 
@@ -207,7 +207,7 @@ export default function ReadingResultsView({
           {/* AI verdict — runs in the background while the player listens */}
           <View style={st.aiHead}>
             <Ionicons name="sparkles" size={14} color={accent} />
-            <Text style={[st.aiLabel, { color: fgMuted, fontFamily: "Inter_600SemiBold" }]}>
+            <Text style={[st.aiLabel, { color: fgMuted, fontFamily: "Nunito_600SemiBold" }]}>
               {t("aiVerdict")}
             </Text>
           </View>
@@ -219,7 +219,7 @@ export default function ReadingResultsView({
                   <LoadingDot key={i} index={i} color={accent} />
                 ))}
               </View>
-              <Text style={[st.aiLoadingText, { color: fgFaint, fontFamily: "Inter_400Regular" }]}>
+              <Text style={[st.aiLoadingText, { color: fgFaint, fontFamily: "Nunito_400Regular" }]}>
                 {t("aiListening")}
               </Text>
             </Animated.View>
@@ -233,21 +233,21 @@ export default function ReadingResultsView({
                 />
               </View>
               {analysis.summary ? (
-                <Text style={[st.aiSummary, { color: fg, fontFamily: "Inter_500Medium" }]}>
+                <Text style={[st.aiSummary, { color: fg, fontFamily: "Nunito_500Medium" }]}>
                   {analysis.summary}
                 </Text>
               ) : null}
               {analysis.tip ? (
                 <View style={[st.tipCard, { backgroundColor: accent + "12", borderColor: accent + "33" }]}>
                   <Ionicons name="bulb" size={14} color={accent} />
-                  <Text style={[st.tipText, { color: fgMuted, fontFamily: "Inter_400Regular" }]}>
+                  <Text style={[st.tipText, { color: fgMuted, fontFamily: "Nunito_400Regular" }]}>
                     {analysis.tip}
                   </Text>
                 </View>
               ) : null}
             </Animated.View>
           ) : (
-            <Text style={[st.aiLoadingText, { color: fgFaint, fontFamily: "Inter_400Regular" }]}>
+            <Text style={[st.aiLoadingText, { color: fgFaint, fontFamily: "Nunito_400Regular" }]}>
               {t("aiListening")}
             </Text>
           )}
@@ -264,7 +264,7 @@ export default function ReadingResultsView({
             ]}
           >
             <Ionicons name="refresh" size={18} color={fgMuted} />
-            <Text style={[st.retryText, { color: fgMuted, fontFamily: "Inter_600SemiBold" }]}>
+            <Text style={[st.retryText, { color: fgMuted, fontFamily: "Nunito_600SemiBold" }]}>
               {t("replay")}
             </Text>
           </Pressable>
@@ -276,7 +276,7 @@ export default function ReadingResultsView({
               { backgroundColor: accent, opacity: !canSave ? 0.4 : pressed ? 0.88 : 1 },
             ]}
           >
-            <Text style={[st.saveText, { color: "#1A1404", fontFamily: "Inter_700Bold" }]}>
+            <Text style={[st.saveText, { color: "#1A1404", fontFamily: "Nunito_700Bold" }]}>
               {t("saveAndContinue")}
             </Text>
             <Ionicons name="arrow-forward" size={18} color="#1A1404" />

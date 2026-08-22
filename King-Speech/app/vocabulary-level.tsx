@@ -1306,7 +1306,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Nunito_600SemiBold",
   },
   closeBtn: {
     width: 36,
@@ -1343,7 +1343,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 22,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
   },
   tutorialH2: {
     color: "rgba(255,255,255,0.5)",
@@ -1373,7 +1373,7 @@ const styles = StyleSheet.create({
     color: RED,
     fontSize: 11,
     fontWeight: "600",
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Nunito_600SemiBold",
   },
   ruleText: {
     flex: 1,
@@ -1452,7 +1452,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     letterSpacing: 3,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
   },
 
   // Play
@@ -1460,7 +1460,7 @@ const styles = StyleSheet.create({
   playTimer: {
     fontSize: 18,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
     letterSpacing: 1.5,
   },
   playWordBlock: { alignItems: "center", marginTop: 18, marginBottom: 8 },
@@ -1471,7 +1471,7 @@ const styles = StyleSheet.create({
     letterSpacing: 6,
     textAlign: "center",
     paddingHorizontal: 20,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
   },
   playMeta: {
     color: "rgba(255,255,255,0.5)",
@@ -1490,7 +1490,7 @@ const styles = StyleSheet.create({
     fontSize: 96,
     fontWeight: "800",
     textAlign: "center",
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
     letterSpacing: 2,
   },
   countdownHint: {
@@ -1548,7 +1548,7 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.8)",
     fontSize: 14,
     fontWeight: "600",
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Nunito_600SemiBold",
   },
   feedScroll: {
     flexGrow: 0,
@@ -1570,7 +1570,7 @@ const styles = StyleSheet.create({
     color: GREEN_TEXT,
     fontSize: 14,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
   },
   feedContent: { paddingVertical: 4, gap: 6 },
   feedCorrect: {
@@ -1641,7 +1641,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 20,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
   },
   resultWord: {
     color: "rgba(255,255,255,0.5)",
@@ -1654,14 +1654,14 @@ const styles = StyleSheet.create({
     fontSize: 64,
     fontWeight: "800",
     marginTop: 28,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
   },
   resultScore: {
     color: RED,
     fontSize: 28,
     fontWeight: "700",
     marginTop: 12,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
   },
   resultSubtitle: {
     color: "rgba(255,255,255,0.55)",
@@ -1669,7 +1669,7 @@ const styles = StyleSheet.create({
     marginTop: 28,
     marginBottom: 12,
     alignSelf: "flex-start",
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Nunito_500Medium",
   },
   resultEncourage: {
     color: "rgba(255,255,255,0.65)",
@@ -1696,7 +1696,7 @@ const styles = StyleSheet.create({
     color: "#C0DD97",
     fontSize: 13,
     fontWeight: "500",
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Nunito_500Medium",
   },
   missedChip: {
     paddingHorizontal: 12,
@@ -1710,7 +1710,7 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.5)",
     fontSize: 13,
     fontWeight: "500",
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Nunito_500Medium",
   },
   progressTrack: {
     width: "100%",
@@ -1731,13 +1731,13 @@ const styles = StyleSheet.create({
     marginTop: 28,
     marginBottom: 14,
     alignSelf: "flex-start",
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Nunito_600SemiBold",
   },
   statsLine: {
     color: "rgba(255,255,255,0.6)",
     fontSize: 14,
     marginTop: 18,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Nunito_500Medium",
   },
 
   // Shared primary button
@@ -1753,6 +1753,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 15,
     fontWeight: "600",
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Nunito_600SemiBold",
   },
 });

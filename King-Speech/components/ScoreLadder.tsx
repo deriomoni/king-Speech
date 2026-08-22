@@ -257,7 +257,7 @@ const st = StyleSheet.create({
   rowTop: { flexDirection: "row", alignItems: "center", gap: 8 },
   label: { fontSize: 14.5, fontFamily: "Rubik_500Medium" },
   labelOverall: { fontSize: 16.5, fontFamily: "Rubik_600SemiBold" },
-  score: { fontSize: 22, fontFamily: "Fredoka_700Bold", letterSpacing: 0.3 },
+  score: { fontSize: 22, fontFamily: "Rubik_700Bold", letterSpacing: 0.3 },
   scoreOverall: { fontSize: 38, lineHeight: 42 },
   track: {
     backgroundColor: "rgba(255,255,255,0.09)",

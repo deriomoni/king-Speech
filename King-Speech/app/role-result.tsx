@@ -425,22 +425,22 @@ const styles = StyleSheet.create({
   previewEmoji: { fontSize: 96 },
   playOverlay: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center", gap: 10 },
   playCircle: { width: 68, height: 68, borderRadius: 34, backgroundColor: "rgba(0,0,0,0.45)", borderWidth: 2, borderColor: "rgba(255,255,255,0.85)", alignItems: "center", justifyContent: "center" },
-  playHint: { color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 13, backgroundColor: "rgba(0,0,0,0.4)", paddingHorizontal: 12, paddingVertical: 5, borderRadius: 12, overflow: "hidden" },
+  playHint: { color: "#fff", fontFamily: "Nunito_600SemiBold", fontSize: 13, backgroundColor: "rgba(0,0,0,0.4)", paddingHorizontal: 12, paddingVertical: 5, borderRadius: 12, overflow: "hidden" },
   previewTag: { position: "absolute", bottom: 12, left: 12, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#00000066", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16 },
   previewTagEmoji: { fontSize: 16 },
   previewTagText: { color: "#fff", fontFamily: "Nunito_700Bold", fontSize: 14 },
   localBadge: { position: "absolute", top: 12, right: 12, flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#00000077", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14 },
-  localBadgeText: { color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 10 },
+  localBadgeText: { color: "#fff", fontFamily: "Nunito_600SemiBold", fontSize: 10 },
 
   block: { backgroundColor: CARD_BG, borderRadius: 22, padding: 20, marginBottom: 16 },
   blockTitle: { color: TEXT, fontFamily: "Nunito_800ExtraBold", fontSize: 20 },
-  blockSub: { color: MUTED, fontFamily: "Inter_400Regular", fontSize: 14, marginTop: 6 },
+  blockSub: { color: MUTED, fontFamily: "Nunito_400Regular", fontSize: 14, marginTop: 6 },
   starsRow: { flexDirection: "row", justifyContent: "center", gap: 10, marginVertical: 22 },
 
   primaryBtn: { height: 56, borderRadius: 18, overflow: "hidden", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 4 },
   primaryBtnText: { color: "#08243A", fontFamily: "Nunito_800ExtraBold", fontSize: 16 },
   secondaryBtn: { alignItems: "center", paddingVertical: 16, marginTop: 6 },
-  secondaryBtnText: { color: MUTED, fontFamily: "Inter_600SemiBold", fontSize: 15 },
+  secondaryBtnText: { color: MUTED, fontFamily: "Nunito_600SemiBold", fontSize: 15 },
 
   scanner: { width: 120, height: 120, borderRadius: 60, opacity: 0.8 },
 
@@ -450,14 +450,14 @@ const styles = StyleSheet.create({
 
   metricRow: { marginBottom: 16 },
   metricHead: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 7 },
-  metricLabel: { color: TEXT, fontFamily: "Inter_600SemiBold", fontSize: 14, flex: 1 },
-  metricVal: { fontFamily: "Inter_700Bold", fontSize: 13 },
+  metricLabel: { color: TEXT, fontFamily: "Nunito_600SemiBold", fontSize: 14, flex: 1 },
+  metricVal: { fontFamily: "Nunito_700Bold", fontSize: 13 },
   metricTrack: { height: 10, borderRadius: 5, backgroundColor: "#0E0A1F", overflow: "hidden" },
   metricFill: { height: "100%", borderRadius: 5 },
 
   feedbackCard: { backgroundColor: CARD_BG, borderRadius: 22, padding: 20, marginBottom: 16 },
-  feedbackText: { color: TEXT, fontFamily: "Inter_400Regular", fontSize: 15, lineHeight: 22 },
+  feedbackText: { color: TEXT, fontFamily: "Nunito_400Regular", fontSize: 15, lineHeight: 22 },
   tipRow: { flexDirection: "row", gap: 8, marginTop: 14, backgroundColor: "#FFC01E12", borderRadius: 14, padding: 12 },
-  tipText: { color: "#FFE9A8", fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19, flex: 1 },
-  aiNote: { color: MUTED, fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 12, fontStyle: "italic" },
+  tipText: { color: "#FFE9A8", fontFamily: "Nunito_400Regular", fontSize: 13, lineHeight: 19, flex: 1 },
+  aiNote: { color: MUTED, fontFamily: "Nunito_400Regular", fontSize: 12, marginTop: 12, fontStyle: "italic" },
 });

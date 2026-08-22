@@ -299,5 +299,5 @@ const s = StyleSheet.create({
     borderWidth: 2,
   },
   timeRow: { flexDirection: "row", justifyContent: "space-between" },
-  time: { fontSize: 11, fontFamily: "Inter_500Medium", letterSpacing: 0.5 },
+  time: { fontSize: 11, fontFamily: "Nunito_500Medium", letterSpacing: 0.5 },
 });

@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
   },
   startPillText: {
     color: "#3A2C00",
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
     fontSize: 16,
     letterSpacing: 0.4,
   },

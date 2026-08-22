@@ -324,12 +324,12 @@ const styles = StyleSheet.create({
   caption: {
     letterSpacing: 12,
     fontSize: 18,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
     marginBottom: 6,
     textShadowRadius: 10,
   },
   num: {
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
     color: "#FFFFFF",
     textAlign: "center",
     textShadowRadius: 30,
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   floor: { height: 4, borderRadius: 4, shadowOpacity: 0.95, shadowRadius: 18, shadowOffset: { width: 0, height: 0 }, elevation: 8 },
   footer: { alignItems: "center", gap: 18 },
   quote: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Nunito_500Medium",
     fontSize: 17,
     lineHeight: 25,
     textAlign: "center",
@@ -363,5 +363,5 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 10,
   },
-  nextText: { fontFamily: "Inter_700Bold", fontSize: 17 },
+  nextText: { fontFamily: "Nunito_700Bold", fontSize: 17 },
 });

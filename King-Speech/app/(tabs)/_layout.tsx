@@ -174,15 +174,6 @@ function SonicTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
           style={[StyleSheet.absoluteFill, styles.barFill]}
           pointerEvents="none"
         />
-        {/* Layer 2 — purple wash from sides */}
-        <LinearGradient
-          colors={asGradient(tk.purpleWash)}
-          locations={[0, 0.5, 1]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[StyleSheet.absoluteFill, styles.barFill]}
-          pointerEvents="none"
-        />
         {/* Top inner highlight line */}
         <View
           pointerEvents="none"

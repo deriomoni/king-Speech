@@ -122,7 +122,7 @@ export default function SpeakerTipsScreen() {
         <Pressable onPress={goBack} style={({ pressed }) => [st.backBtn, { opacity: pressed ? 0.7 : 1 }]} accessibilityRole="button">
           <Ionicons name="chevron-back" size={22} color={TEXT} />
         </Pressable>
-        <Text style={[st.headerTitle, { fontFamily: "Inter_700Bold" }]} numberOfLines={1}>{t("speakerTips")}</Text>
+        <Text style={[st.headerTitle, { fontFamily: "Nunito_700Bold" }]} numberOfLines={1}>{t("speakerTips")}</Text>
         <View style={st.backBtn} />
       </View>
 
@@ -130,7 +130,7 @@ export default function SpeakerTipsScreen() {
         contentContainerStyle={[st.scroll, { paddingBottom: bottomPad + 32 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[st.lead, { fontFamily: "Inter_400Regular" }]}>
+        <Text style={[st.lead, { fontFamily: "Nunito_400Regular" }]}>
           {lang === "en"
             ? "Nine simple rules. Glance through them before you go on stage."
             : "Девять простых правил. Пробеги глазами перед выходом на сцену."}
@@ -140,7 +140,7 @@ export default function SpeakerTipsScreen() {
           <Animated.View key={si} entering={FadeInDown.delay(100 + si * 80).duration(350)} style={st.section}>
             <View style={st.sectionHeader}>
               <Ionicons name={section.icon} size={15} color={GOLD} />
-              <Text style={[st.sectionTitle, { fontFamily: "Inter_600SemiBold" }]}>
+              <Text style={[st.sectionTitle, { fontFamily: "Nunito_600SemiBold" }]}>
                 {(lang === "en" ? section.en : section.ru).toUpperCase()}
               </Text>
               <View style={st.sectionRule} />
@@ -152,11 +152,11 @@ export default function SpeakerTipsScreen() {
               return (
                 <View key={ti} style={st.tipRow}>
                   <View style={st.tipNum}>
-                    <Text style={[st.tipNumText, { fontFamily: "Inter_700Bold" }]}>{n}</Text>
+                    <Text style={[st.tipNumText, { fontFamily: "Nunito_700Bold" }]}>{n}</Text>
                   </View>
                   <View style={st.tipBody}>
-                    <Text style={[st.tipTitle, { fontFamily: "Inter_600SemiBold" }]}>{c.title}</Text>
-                    <Text style={[st.tipText, { fontFamily: "Inter_400Regular" }]}>{c.text}</Text>
+                    <Text style={[st.tipTitle, { fontFamily: "Nunito_600SemiBold" }]}>{c.title}</Text>
+                    <Text style={[st.tipText, { fontFamily: "Nunito_400Regular" }]}>{c.text}</Text>
                   </View>
                 </View>
               );

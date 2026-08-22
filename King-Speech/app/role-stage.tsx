@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: BG },
   errText: { color: TEXT, fontFamily: "Nunito_800ExtraBold", fontSize: 20, marginBottom: 16 },
   errBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 16, backgroundColor: "#FFFFFF1A" },
-  errBtnText: { color: TEXT, fontFamily: "Inter_600SemiBold", fontSize: 15 },
+  errBtnText: { color: TEXT, fontFamily: "Nunito_600SemiBold", fontSize: 15 },
 
   topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 10 },
   closeBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "#00000055" },
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   roleTagText: { color: "#fff", fontFamily: "Nunito_700Bold", fontSize: 13, flexShrink: 1 },
   recPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#E8384FCC", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 18 },
   recDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#fff" },
-  recTime: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 13 },
+  recTime: { color: "#fff", fontFamily: "Nunito_700Bold", fontSize: 13 },
 
   scanWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 20 },
   scanFrame: { width: FRAME, height: FRAME, borderRadius: 28, overflow: "hidden", alignItems: "center", justifyContent: "center" },
@@ -401,12 +401,12 @@ const styles = StyleSheet.create({
 
   bottom: { paddingHorizontal: 18, gap: 14 },
   noCamNote: { flexDirection: "row", alignItems: "center", gap: 8, alignSelf: "center", backgroundColor: "#00000066", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 14 },
-  noCamText: { color: MUTED, fontFamily: "Inter_400Regular", fontSize: 12 },
+  noCamText: { color: MUTED, fontFamily: "Nunito_400Regular", fontSize: 12 },
 
   prompterCard: { backgroundColor: "#0B0718D9", borderRadius: 20, padding: 18, borderWidth: 1, borderColor: "#6C5CE740" },
   sceneCard: { backgroundColor: "#0B0718D9", borderRadius: 20, padding: 18, borderWidth: 1, borderColor: "#E8439340" },
-  prompterLabel: { color: "#FFC01E", fontFamily: "Inter_700Bold", fontSize: 11, letterSpacing: 1.5, marginBottom: 8 },
-  prompterText: { color: TEXT, fontFamily: "PTSerif_400Regular", fontSize: 22, lineHeight: 32 },
+  prompterLabel: { color: "#FFC01E", fontFamily: "Nunito_700Bold", fontSize: 11, letterSpacing: 1.5, marginBottom: 8 },
+  prompterText: { color: TEXT, fontFamily: "Literata_400Regular", fontSize: 22, lineHeight: 32 },
   sceneText: { color: TEXT, fontFamily: "Nunito_700Bold", fontSize: 20, lineHeight: 28 },
 
   recordBtn: { height: 60, borderRadius: 20, overflow: "hidden", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
@@ -416,5 +416,5 @@ const styles = StyleSheet.create({
   stopSquare: { width: 18, height: 18, borderRadius: 4, backgroundColor: "#E8384F" },
   stopBtnText: { color: "#1A1230", fontFamily: "Nunito_800ExtraBold", fontSize: 17 },
   processing: { height: 60, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12 },
-  processingText: { color: TEXT, fontFamily: "Inter_600SemiBold", fontSize: 15 },
+  processingText: { color: TEXT, fontFamily: "Nunito_600SemiBold", fontSize: 15 },
 });

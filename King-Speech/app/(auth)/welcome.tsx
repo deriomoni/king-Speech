@@ -94,7 +94,7 @@ const s = StyleSheet.create({
   },
   langTxt: {
     fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Nunito_600SemiBold",
     letterSpacing: 0.5,
   },
   videoWrap: {
@@ -115,14 +115,14 @@ const s = StyleSheet.create({
   },
   title: {
     fontSize: 34,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
     textAlign: "center",
     marginBottom: 10,
     letterSpacing: -0.5,
   },
   sub: {
     fontSize: 16,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Nunito_400Regular",
     textAlign: "center",
     lineHeight: 24,
   },
@@ -143,7 +143,7 @@ const s = StyleSheet.create({
   },
   primaryBtnTxt: {
     fontSize: 17,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
     letterSpacing: 0.3,
   },
 });

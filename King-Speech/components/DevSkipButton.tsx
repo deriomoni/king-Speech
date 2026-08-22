@@ -103,5 +103,5 @@ const styles = StyleSheet.create({
     zIndex: 9999,
     elevation: 12,
   },
-  txt: { color: "#fff", fontSize: 13, fontFamily: "Inter_700Bold" },
+  txt: { color: "#fff", fontSize: 13, fontFamily: "Nunito_700Bold" },
 });

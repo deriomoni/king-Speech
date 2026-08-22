@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
     color: "#F0EDE8",
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Nunito_400Regular",
     fontStyle: "italic",
     textAlign: "center",
   },

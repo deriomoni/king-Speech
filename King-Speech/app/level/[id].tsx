@@ -41,6 +41,7 @@ import { aggregateAnalyses } from "@/services/analyzeGenericTask";
 import WarmupLevelView from "@/components/warmup/WarmupLevelView";
 import DevSkipButton from "@/components/DevSkipButton";
 import { getModuleFromLevelId } from "@/constants/contentLoader";
+import { getPathColors, readableText } from "@/constants/pathPalette";
 import SpeechAnalyzingLoader from "@/components/SpeechAnalyzingLoader";
 import { getReadingMeta, getLevelsData } from "@/constants/gameContent";
 import {
@@ -183,7 +184,7 @@ const TranscriptBlock = React.memo(function TranscriptBlock({
     >
       <View style={rs.transcriptHeader}>
         <Ionicons name="ear-outline" size={16} color={fgMuted} />
-        <Text style={[rs.feedbackTitle, { color: fgText, fontFamily: "Inter_600SemiBold" }]}>
+        <Text style={[rs.feedbackTitle, { color: fgText, fontFamily: "Nunito_600SemiBold" }]}>
           {lang === "ru" ? "Что мы услышали" : "What we heard"}
         </Text>
       </View>
@@ -204,7 +205,7 @@ const TranscriptBlock = React.memo(function TranscriptBlock({
           },
         ]}
       >
-        <Text style={[rs.transcriptText, { color: fgText, fontFamily: "Inter_400Regular" }]}>
+        <Text style={[rs.transcriptText, { color: fgText, fontFamily: "Nunito_400Regular" }]}>
           {segments.map((seg, i) =>
             seg.isFiller ? (
               <Text
@@ -212,7 +213,7 @@ const TranscriptBlock = React.memo(function TranscriptBlock({
                 style={{
                   color: accent,
                   backgroundColor: fillerBg,
-                  fontFamily: "Inter_600SemiBold",
+                  fontFamily: "Nunito_600SemiBold",
                 }}
               >
                 {seg.text}
@@ -224,7 +225,7 @@ const TranscriptBlock = React.memo(function TranscriptBlock({
         </Text>
         {isLong ? (
           <View style={rs.transcriptToggleRow}>
-            <Text style={[rs.transcriptToggleText, { color: fgMuted, fontFamily: "Inter_500Medium" }]}>
+            <Text style={[rs.transcriptToggleText, { color: fgMuted, fontFamily: "Nunito_500Medium" }]}>
               {expandLabel}
             </Text>
             <Ionicons
@@ -409,7 +410,7 @@ export function FlowerResultWindow({
                 <Ionicons name={ASPECT_META[a.key].icon} size={13} color={c} />
                 <Text
                   numberOfLines={1}
-                  style={[rs.metricLabel, { color: fgMuted, fontFamily: "Inter_500Medium" }]}
+                  style={[rs.metricLabel, { color: fgMuted, fontFamily: "Nunito_500Medium" }]}
                 >
                   {a.label}
                 </Text>
@@ -516,10 +517,10 @@ function EmptyRecordingSheet({
           <View style={[ers.micBadge, { backgroundColor: accent + "1A" }]}>
             <Ionicons name="mic-off-outline" size={18} color={accent} />
           </View>
-          <Text style={[ers.title, { color: fg, fontFamily: "Inter_700Bold" }]}>
+          <Text style={[ers.title, { color: fg, fontFamily: "Nunito_700Bold" }]}>
             {lang === "ru" ? "Кажется, мы тебя не услышали" : "We didn't quite hear you"}
           </Text>
-          <Text style={[ers.body, { color: muted, fontFamily: "Inter_400Regular" }]}>
+          <Text style={[ers.body, { color: muted, fontFamily: "Nunito_400Regular" }]}>
             {lang === "ru"
               ? "Чтобы пройти уровень, нужно говорить вслух. Ничего страшного — попробуй ещё раз, чуть увереннее и ближе к микрофону."
               : "To pass this level you need to speak out loud. No worries — give it another go, a little louder and closer to the mic."}
@@ -529,7 +530,7 @@ function EmptyRecordingSheet({
             style={({ pressed }) => [ers.btn, { backgroundColor: btnBg, opacity: pressed ? 0.85 : 1 }]}
           >
             <Ionicons name="refresh" size={18} color={btnFg} />
-            <Text style={[ers.btnText, { color: btnFg, fontFamily: "Inter_700Bold" }]}>
+            <Text style={[ers.btnText, { color: btnFg, fontFamily: "Nunito_700Bold" }]}>
               {lang === "ru" ? "Записать снова" : "Record again"}
             </Text>
           </Pressable>
@@ -691,10 +692,10 @@ function LevelCompleteModal({
             <Ionicons name="close" size={22} color="rgba(255,255,255,0.85)" />
           </Pressable>
 
-          <Text style={[lc.title, { fontFamily: "Inter_700Bold" }]}>
+          <Text style={[lc.title, { fontFamily: "Nunito_700Bold" }]}>
             {t("levelComplete")}
           </Text>
-          <Text style={[lc.levelName, { fontFamily: "Inter_500Medium" }]}>
+          <Text style={[lc.levelName, { fontFamily: "Nunito_500Medium" }]}>
             {levelTitle}
           </Text>
 
@@ -721,26 +722,26 @@ function LevelCompleteModal({
               <View style={[lc.statIcon, { backgroundColor: "rgba(255,209,102,0.18)" }]}>
                 <Ionicons name="flash" size={16} color="#FFD166" />
               </View>
-              <Text style={[lc.statValue, { fontFamily: "Inter_700Bold" }]}>+{xpEarned}</Text>
-              <Text style={[lc.statLabel, { fontFamily: "Inter_500Medium" }]}>XP</Text>
+              <Text style={[lc.statValue, { fontFamily: "Nunito_700Bold" }]}>+{xpEarned}</Text>
+              <Text style={[lc.statLabel, { fontFamily: "Nunito_500Medium" }]}>XP</Text>
             </View>
             <View style={lc.statDivider} />
             <View style={lc.statBox}>
               <View style={[lc.statIcon, { backgroundColor: "rgba(94,234,212,0.18)" }]}>
                 <Ionicons name="trophy" size={16} color="#5EEAD4" />
               </View>
-              <Text style={[lc.statValue, { fontFamily: "Inter_700Bold" }]}>{bestScore.toFixed(1)}</Text>
-              <Text style={[lc.statLabel, { fontFamily: "Inter_500Medium" }]}>/ 10</Text>
+              <Text style={[lc.statValue, { fontFamily: "Nunito_700Bold" }]}>{bestScore.toFixed(1)}</Text>
+              <Text style={[lc.statLabel, { fontFamily: "Nunito_500Medium" }]}>/ 10</Text>
             </View>
             <View style={lc.statDivider} />
             <View style={lc.statBox}>
               <View style={[lc.statIcon, { backgroundColor: "rgba(196,181,253,0.18)" }]}>
                 <Ionicons name="time-outline" size={16} color="#C4B5FD" />
               </View>
-              <Text style={[lc.statValue, { fontFamily: "Inter_700Bold" }]}>
+              <Text style={[lc.statValue, { fontFamily: "Nunito_700Bold" }]}>
                 {Math.floor(durationSec / 60)}:{String(Math.floor(durationSec % 60)).padStart(2, "0")}
               </Text>
-              <Text style={[lc.statLabel, { fontFamily: "Inter_500Medium" }]}>{t("timeLabel")}</Text>
+              <Text style={[lc.statLabel, { fontFamily: "Nunito_500Medium" }]}>{t("timeLabel")}</Text>
             </View>
           </View>
 
@@ -757,10 +758,10 @@ function LevelCompleteModal({
               />
               <Text style={lc.roleBonusEmoji}>{roleBonus.emoji}</Text>
               <View style={{ flex: 1 }}>
-                <Text style={[lc.roleBonusLabel, { fontFamily: "Inter_600SemiBold" }]}>
+                <Text style={[lc.roleBonusLabel, { fontFamily: "Nunito_600SemiBold" }]}>
                   {lang === "en" ? "BONUS ROLE" : "БОНУС-РОЛЬ"}
                 </Text>
-                <Text style={[lc.roleBonusTitle, { fontFamily: "Inter_700Bold" }]} numberOfLines={1}>
+                <Text style={[lc.roleBonusTitle, { fontFamily: "Nunito_700Bold" }]} numberOfLines={1}>
                   {roleBonus.title}
                 </Text>
               </View>
@@ -769,7 +770,7 @@ function LevelCompleteModal({
           )}
 
           {!hasNext && (
-            <Text style={[lc.allDone, { fontFamily: "Inter_600SemiBold" }]}>
+            <Text style={[lc.allDone, { fontFamily: "Nunito_600SemiBold" }]}>
               {t("allLevelsDone")}
             </Text>
           )}
@@ -787,7 +788,7 @@ function LevelCompleteModal({
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
             />
-            <Text style={[lc.nextBtnText, { fontFamily: "Inter_700Bold" }]}>
+            <Text style={[lc.nextBtnText, { fontFamily: "Nunito_700Bold" }]}>
               {t("nextLevel")}
             </Text>
             <Ionicons name="arrow-forward" size={18} color="#1A1033" />
@@ -799,7 +800,7 @@ function LevelCompleteModal({
               hitSlop={8}
               style={({ pressed }) => [lc.mapLink, { opacity: pressed ? 0.6 : 1 }]}
             >
-              <Text style={[lc.mapLinkText, { fontFamily: "Inter_500Medium" }]}>
+              <Text style={[lc.mapLinkText, { fontFamily: "Nunito_500Medium" }]}>
                 {t("toMap")}
               </Text>
             </Pressable>
@@ -853,6 +854,8 @@ export default function LevelScreen() {
   const [levelFlower, setLevelFlower] = useState<SpeechAnalysis | null>(null);
   const [scores, setScores] = useState<number[]>([]);
   const [readingResetSignal, setReadingResetSignal] = useState(0);
+  const [readingRestartSignal, setReadingRestartSignal] = useState(0);
+  const [readingExitConfirm, setReadingExitConfirm] = useState(false);
   const [levelStartTime] = useState(() => Date.now());
   const [levelDurationSec, setLevelDurationSec] = useState(0);
   // Reading self-review (poetry/prose levels): instead of the AI results
@@ -927,6 +930,21 @@ export default function LevelScreen() {
       setLevelDurationSec(Math.max(1, Math.floor((Date.now() - levelStartTime) / 1000)));
     }
   }, [showLevelComplete, levelStartTime]);
+
+  // Reading exit flow: the ✕ is the only way out. It asks "Sure you want to
+  // leave?" — Yes → back to the map; No → restart the reading from the top.
+  const openReadingExit = React.useCallback(() => {
+    setReadingResetSignal((n) => n + 1); // stop the mic, drop to idle behind the prompt
+    setReadingExitConfirm(true);
+  }, []);
+  const confirmReadingExit = React.useCallback(() => {
+    setReadingExitConfirm(false);
+    router.replace("/(tabs)");
+  }, []);
+  const cancelReadingExit = React.useCallback(() => {
+    setReadingExitConfirm(false);
+    setReadingRestartSignal((n) => n + 1); // countdown → read again from line 1
+  }, []);
 
   const handleExitPress = React.useCallback(() => {
     const inTask = activeTaskIndex !== null || showResults || analyzing;
@@ -1374,21 +1392,15 @@ export default function LevelScreen() {
     const author = readingMeta?.author;
     const workTitle = readingMeta?.workTitle;
     const category = readingMeta?.category;
+    // Reading wears the module's Path background (light theme = the raw palette
+    // color, dark theme = the muted variant), same as the map.
+    const readingBg = getPathColors(level.module, isDark).bg;
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <LinearGradient
-          colors={
-            isDark
-              ? [colors.background, colors.backgroundSecondary]
-              : ["#F0ECE3", "#EDE8DC"]
-          }
-          style={StyleSheet.absoluteFill}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
-        />
+      <View style={[styles.container, { backgroundColor: readingBg }]}>
         <ReadingLevelView
           fullText={fullText}
           accentColor={accent}
+          bgColor={readingBg}
           colors={colors}
           topPad={topPad}
           bottomPad={bottomPad}
@@ -1402,6 +1414,7 @@ export default function LevelScreen() {
           onBack={() => router.back()}
           onRecordingComplete={handleRecordingComplete}
           resetSignal={readingResetSignal}
+          restartSignal={readingRestartSignal}
         />
 
         {/* Reading self-review — listen back, self-rate, AI verdict streams
@@ -1457,29 +1470,78 @@ export default function LevelScreen() {
             the self-review overlay is up so it doesn't sit over the hero. */}
         {!showReadingReview && (
         <Pressable
-          onPress={handleExitPress}
+          onPress={openReadingExit}
           hitSlop={12}
           style={({ pressed }) => [
             styles.closeBtnAbs,
             { top: topPad + 8, opacity: pressed ? 0.6 : 1 },
           ]}
         >
-          <Ionicons name="close" size={24} color={colors.text} />
+          <Ionicons name="close" size={24} color={readableText(readingBg)} />
         </Pressable>
         )}
+
+        {/* Exit confirmation — Yes → map, No → restart reading from the top. */}
+        <Modal
+          visible={readingExitConfirm}
+          transparent
+          animationType="fade"
+          onRequestClose={cancelReadingExit}
+        >
+          <View style={styles.readingExitBackdrop}>
+            <View
+              style={[
+                styles.readingExitCard,
+                { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
+              ]}
+            >
+              <Text style={[styles.readingExitTitle, { color: colors.text }]}>
+                {lang === "ru" ? "Выйти из чтения?" : "Leave the reading?"}
+              </Text>
+              <Text style={[styles.readingExitMsg, { color: colors.textSecondary }]}>
+                {lang === "ru"
+                  ? "Прогресс этого чтения не сохранится — придётся читать заново."
+                  : "This reading won't be saved — you'll have to read it again."}
+              </Text>
+              <Pressable
+                onPress={confirmReadingExit}
+                style={({ pressed }) => [
+                  styles.readingExitLeave,
+                  { opacity: pressed ? 0.85 : 1 },
+                ]}
+              >
+                <Text style={styles.readingExitLeaveTxt}>
+                  {lang === "ru" ? "Да, выйти" : "Yes, leave"}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={cancelReadingExit}
+                style={({ pressed }) => [
+                  styles.readingExitStay,
+                  { borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Text style={[styles.readingExitStayTxt, { color: colors.text }]}>
+                  {lang === "ru" ? "Нет, читать заново" : "No, read again"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+
         <DevSkipButton levelId={levelId} onPreviewResults={handlePreviewResults} />
       </View>
     );
   }
 
+  // Interview & tongue-twister levels wear the SAME palette as the Path map for
+  // their module: background = module bg, accent = module brick.
+  const pathCols = getPathColors(level.module, isDark);
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: pathCols.bg }]}>
       <LinearGradient
-        colors={
-          isDark
-            ? [colors.background, colors.backgroundSecondary]
-            : [colors.background, colors.backgroundSecondary]
-        }
+        colors={[pathCols.bg, pathCols.bg]}
         style={StyleSheet.absoluteFill}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.5, y: 1 }}
@@ -1494,7 +1556,8 @@ export default function LevelScreen() {
         levelNumber={level.levelNumber}
         title={level.title}
         subtitle={level.subtitle}
-        accent={level.color || colors.gold}
+        accent={pathCols.brick}
+        screenBg={pathCols.bg}
         colors={colors}
         isDark={isDark}
         lang={lang}
@@ -1928,6 +1991,55 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "rgba(0,0,0,0.04)",
     zIndex: 50,
+  },
+  readingExitBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 28,
+  },
+  readingExitCard: {
+    width: "100%",
+    maxWidth: 380,
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 22,
+    gap: 12,
+  },
+  readingExitTitle: {
+    fontSize: 20,
+    fontFamily: "Nunito_700Bold",
+    letterSpacing: -0.3,
+  },
+  readingExitMsg: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: "Nunito_400Regular",
+    marginBottom: 6,
+  },
+  readingExitLeave: {
+    height: 50,
+    borderRadius: 15,
+    backgroundColor: "#E5484D",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  readingExitLeaveTxt: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontFamily: "Nunito_700Bold",
+  },
+  readingExitStay: {
+    height: 50,
+    borderRadius: 15,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  readingExitStayTxt: {
+    fontSize: 16,
+    fontFamily: "Nunito_600SemiBold",
   },
   levelTitle: { fontSize: 20 },
   levelSubtitle: { fontSize: 13, marginTop: 2 },

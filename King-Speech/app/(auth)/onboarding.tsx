@@ -206,7 +206,7 @@ const s = StyleSheet.create({
   },
   skipTxt: {
     fontSize: 15,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Nunito_500Medium",
   },
   dots: {
     flexDirection: "row",
@@ -253,14 +253,14 @@ const s = StyleSheet.create({
   },
   slideTitle: {
     fontSize: 30,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
     textAlign: "center",
     marginBottom: 12,
     letterSpacing: -0.4,
   },
   slideSub: {
     fontSize: 16,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Nunito_400Regular",
     textAlign: "center",
     lineHeight: 25,
     maxWidth: 300,
@@ -283,7 +283,7 @@ const s = StyleSheet.create({
   },
   nextBtnTxt: {
     fontSize: 17,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
     letterSpacing: 0.2,
   },
 });

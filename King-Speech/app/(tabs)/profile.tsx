@@ -727,7 +727,7 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20, gap: 24 },
   pageTitle: {
     fontSize: 20,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Nunito_600SemiBold",
     letterSpacing: -0.2,
     marginBottom: 4,
   },
@@ -757,7 +757,7 @@ const styles = StyleSheet.create({
   avatarText: {
     color: "#FFFFFF",
     fontSize: 46,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
     letterSpacing: 1,
   },
   avatarUploading: {
@@ -798,7 +798,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 16,
     fontSize: 16,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Nunito_500Medium",
   },
   nameSaveBtn: {
     height: 50,
@@ -810,7 +810,7 @@ const styles = StyleSheet.create({
   nameSaveTxt: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
   },
   swatchGrid: {
     flexDirection: "row",
@@ -836,7 +836,7 @@ const styles = StyleSheet.create({
   },
   resetColorTxt: {
     fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Nunito_600SemiBold",
   },
 
   // Progress card
@@ -853,12 +853,12 @@ const styles = StyleSheet.create({
   },
   progressTitle: {
     fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Nunito_600SemiBold",
     letterSpacing: -0.1,
   },
   progressPct: {
     fontSize: 16,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
   },
   progBar: {
     height: 10,
@@ -881,21 +881,21 @@ const styles = StyleSheet.create({
   },
   progMetricVal: {
     fontSize: 18,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
     letterSpacing: -0.4,
   },
   progMetricLbl: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Nunito_400Regular",
   },
   progSummary: {
     fontSize: 13,
     lineHeight: 19,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Nunito_400Regular",
   },
   nameBig: {
     fontSize: 22,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
     letterSpacing: -0.3,
     textAlign: "center",
   },
@@ -912,18 +912,18 @@ const styles = StyleSheet.create({
   },
   statVal: {
     fontSize: 20,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
     letterSpacing: -0.4,
   },
   statLbl: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Nunito_400Regular",
   },
 
   // Section / lists
   sectionLabel: {
     fontSize: 15,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Nunito_500Medium",
     paddingLeft: 4,
     marginBottom: 12,
     letterSpacing: -0.1,
@@ -942,17 +942,17 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     fontSize: 15,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Nunito_500Medium",
     letterSpacing: -0.1,
   },
   rowSub: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Nunito_400Regular",
     marginTop: 2,
   },
   rowValue: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Nunito_400Regular",
   },
 
   // Avatar action menu
@@ -977,7 +977,7 @@ const styles = StyleSheet.create({
   },
   menuTitle: {
     fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Nunito_600SemiBold",
     letterSpacing: 0.2,
     textAlign: "center",
     marginBottom: 8,
@@ -992,7 +992,7 @@ const styles = StyleSheet.create({
   },
   menuRowLabel: {
     fontSize: 16,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Nunito_500Medium",
   },
 
   // Rank progress slider
@@ -1017,24 +1017,24 @@ const styles = StyleSheet.create({
   rankCardIcon: { fontSize: 26 },
   rankCardName: {
     fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Nunito_600SemiBold",
     letterSpacing: -0.2,
   },
   rankCardSub: {
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Nunito_500Medium",
     marginTop: 2,
     letterSpacing: 0.3,
   },
   rankCardRight: { alignItems: "flex-end", flexShrink: 1, maxWidth: 140 },
   rankCardNextLabel: {
     fontSize: 10,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Nunito_500Medium",
     letterSpacing: 1.2,
   },
   rankCardNext: {
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Nunito_500Medium",
     marginTop: 2,
   },
 
@@ -1116,7 +1116,7 @@ const styles = StyleSheet.create({
   },
   rankFooterText: {
     fontSize: 11,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Nunito_500Medium",
     letterSpacing: 0.2,
     flexShrink: 1,
   },

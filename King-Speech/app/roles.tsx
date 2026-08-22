@@ -417,10 +417,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20,
     backgroundColor: "#FFFFFF10", borderWidth: 1, borderColor: "#FFFFFF1A",
   },
-  trophyText: { color: "#FFC01E", fontFamily: "Inter_700Bold", fontSize: 13 },
-  kicker: { color: MUTED, fontFamily: "Inter_700Bold", fontSize: 12, letterSpacing: 2, marginTop: 6 },
+  trophyText: { color: "#FFC01E", fontFamily: "Nunito_700Bold", fontSize: 13 },
+  kicker: { color: MUTED, fontFamily: "Nunito_700Bold", fontSize: 12, letterSpacing: 2, marginTop: 6 },
   title: { color: TEXT, fontFamily: "Nunito_800ExtraBold", fontSize: 30, marginTop: 6, lineHeight: 34 },
-  subtitle: { color: MUTED, fontFamily: "Inter_400Regular", fontSize: 14, marginTop: 8, lineHeight: 20 },
+  subtitle: { color: MUTED, fontFamily: "Nunito_400Regular", fontSize: 14, marginTop: 8, lineHeight: 20 },
 
   spinCta: {
     marginTop: 20, height: 56, borderRadius: 18, overflow: "hidden",
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF08",
   },
   chipEmoji: { fontSize: 14 },
-  chipText: { color: MUTED, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  chipText: { color: MUTED, fontFamily: "Nunito_600SemiBold", fontSize: 13 },
 
   grid: { flexDirection: "row", flexWrap: "wrap", gap: CARD_GAP, marginTop: 18 },
   card: {
@@ -447,14 +447,14 @@ const styles = StyleSheet.create({
     backgroundColor: CARD_BG, borderWidth: 1.5, overflow: "hidden",
   },
   lockedCard: { alignItems: "center", justifyContent: "center", borderColor: "#FFFFFF14", borderStyle: "dashed", gap: 8 },
-  lockedText: { color: MUTED, fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  lockedText: { color: MUTED, fontFamily: "Nunito_600SemiBold", fontSize: 13 },
   cardTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 22 },
   rarityPill: { alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, borderWidth: 1 },
-  rarityText: { fontFamily: "Inter_700Bold", fontSize: 10, letterSpacing: 0.4 },
+  rarityText: { fontFamily: "Nunito_700Bold", fontSize: 10, letterSpacing: 0.4 },
   collectedBadge: {},
   cardEmoji: { fontSize: 38, marginTop: 6 },
   cardTitle: { color: TEXT, fontFamily: "Nunito_800ExtraBold", fontSize: 16, marginTop: 6 },
-  cardDesc: { color: MUTED, fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 4, lineHeight: 16 },
+  cardDesc: { color: MUTED, fontFamily: "Nunito_400Regular", fontSize: 12, marginTop: 4, lineHeight: 16 },
 
   // Mode picker
   sheetBackdrop: { flex: 1, backgroundColor: "#00000099", justifyContent: "flex-end" },
@@ -466,17 +466,17 @@ const styles = StyleSheet.create({
   sheetHandle: { alignSelf: "center", width: 44, height: 5, borderRadius: 3, backgroundColor: "#FFFFFF33", marginBottom: 14 },
   sheetEmoji: { fontSize: 44, textAlign: "center" },
   sheetTitle: { color: TEXT, fontFamily: "Nunito_800ExtraBold", fontSize: 22, textAlign: "center", marginTop: 6 },
-  sheetScene: { color: MUTED, fontFamily: "Inter_400Regular", fontSize: 14, textAlign: "center", marginTop: 8, lineHeight: 20 },
-  sheetChoose: { color: TEXT, fontFamily: "Inter_700Bold", fontSize: 13, marginTop: 20, marginBottom: 10, letterSpacing: 0.5 },
+  sheetScene: { color: MUTED, fontFamily: "Nunito_400Regular", fontSize: 14, textAlign: "center", marginTop: 8, lineHeight: 20 },
+  sheetChoose: { color: TEXT, fontFamily: "Nunito_700Bold", fontSize: 13, marginTop: 20, marginBottom: 10, letterSpacing: 0.5 },
   modeBtn: {
     height: 66, borderRadius: 18, overflow: "hidden", flexDirection: "row", alignItems: "center",
     paddingHorizontal: 18, gap: 14, marginBottom: 12,
   },
   modeBtnTextWrap: { flex: 1 },
   modeBtnTitle: { color: "#fff", fontFamily: "Nunito_800ExtraBold", fontSize: 16 },
-  modeBtnSub: { color: "#FFFFFFCC", fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 2 },
+  modeBtnSub: { color: "#FFFFFFCC", fontFamily: "Nunito_400Regular", fontSize: 12, marginTop: 2 },
   sheetCancel: { alignItems: "center", paddingVertical: 12, marginTop: 2 },
-  sheetCancelText: { color: MUTED, fontFamily: "Inter_600SemiBold", fontSize: 15 },
+  sheetCancelText: { color: MUTED, fontFamily: "Nunito_600SemiBold", fontSize: 15 },
 
   // Spin overlay
   spinBackdrop: { flex: 1, backgroundColor: "#0B0718F2", alignItems: "center", justifyContent: "center", padding: 28 },
@@ -491,12 +491,12 @@ const styles = StyleSheet.create({
   },
   spinEmoji: { fontSize: 74 },
   spinTitle: { color: TEXT, fontFamily: "Nunito_800ExtraBold", fontSize: 22, textAlign: "center", marginTop: 10 },
-  spinDesc: { color: MUTED, fontFamily: "Inter_400Regular", fontSize: 13, textAlign: "center", marginTop: 8, lineHeight: 18 },
+  spinDesc: { color: MUTED, fontFamily: "Nunito_400Regular", fontSize: 13, textAlign: "center", marginTop: 8, lineHeight: 18 },
   spinPlayBtn: {
     marginTop: 28, height: 56, minWidth: 240, borderRadius: 28, overflow: "hidden",
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 28,
   },
   spinPlayText: { color: "#3A2C00", fontFamily: "Nunito_800ExtraBold", fontSize: 16 },
   spinSkip: { paddingVertical: 14, marginTop: 4 },
-  spinSkipText: { color: MUTED, fontFamily: "Inter_600SemiBold", fontSize: 15 },
+  spinSkipText: { color: MUTED, fontFamily: "Nunito_600SemiBold", fontSize: 15 },
 });

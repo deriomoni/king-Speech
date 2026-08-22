@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     backgroundColor: RED,
   },
   timerText: {
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
     fontSize: 18,
     color: RED,
     letterSpacing: 1.5,
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
   },
   stopPillText: {
     color: "#fff",
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
     fontSize: 16,
     letterSpacing: 0.5,
   },

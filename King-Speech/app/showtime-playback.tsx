@@ -288,7 +288,7 @@ function AudioPlayer({ uri, onPlaybackComplete }: { uri: string; onPlaybackCompl
             <WaveBar key={i} index={i} isPlaying={isPlaying} progress={progress} />
           ))}
         </View>
-        <Text style={[ap.time, { color: "#6B6880", fontFamily: "Inter_400Regular" }]}>
+        <Text style={[ap.time, { color: "#6B6880", fontFamily: "Nunito_400Regular" }]}>
           {fmt(position)}{duration > 0 ? ` / ${fmt(duration)}` : ""}
         </Text>
       </View>
@@ -296,7 +296,7 @@ function AudioPlayer({ uri, onPlaybackComplete }: { uri: string; onPlaybackCompl
         <View style={[ap.progressFill, { backgroundColor: "#FFD166", width: `${progress * 100}%` as any }]} />
       </View>
       {!uri && (
-        <Text style={{ fontSize: 12, color: "#6B6880", textAlign: "center", fontFamily: "Inter_400Regular" }}>
+        <Text style={{ fontSize: 12, color: "#6B6880", textAlign: "center", fontFamily: "Nunito_400Regular" }}>
           {t("recordingNotSaved")}
         </Text>
       )}
@@ -367,11 +367,11 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
     return (
       <Animated.View entering={FadeInUp.delay(100).duration(500)} style={[ac.card, { borderColor: "#0EA5E944" }]}>
         <LinearGradient colors={["#0EA5E908", "transparent"]} style={StyleSheet.absoluteFill} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} />
-        <Text style={[ac.label, { color: "#0EA5E9", fontFamily: "Inter_600SemiBold" }]}>{t("notCounted")}</Text>
+        <Text style={[ac.label, { color: "#0EA5E9", fontFamily: "Nunito_600SemiBold" }]}>{t("notCounted")}</Text>
         <View style={ac.starsRow}>
           {[1, 2, 3].map((n) => <AnimatedStar key={n} filled={false} delay={n * 150} />)}
         </View>
-        <Animated.Text entering={FadeIn.delay(500).duration(400)} style={[ac.feedback, { color: "rgba(240,80,80,0.9)", fontFamily: "Inter_500Medium", textAlign: "center" }]}>
+        <Animated.Text entering={FadeIn.delay(500).duration(400)} style={[ac.feedback, { color: "rgba(240,80,80,0.9)", fontFamily: "Nunito_500Medium", textAlign: "center" }]}>
           {feedback}
         </Animated.Text>
       </Animated.View>
@@ -394,7 +394,7 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
     <Animated.View entering={FadeInUp.delay(100).duration(500)} style={[ac.card, { borderColor: SCORE_COLOR + "44" }]}>
       <LinearGradient colors={[SCORE_COLOR + "0D", "transparent"]} style={StyleSheet.absoluteFill} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} />
 
-      <Text style={[ac.label, { color: SCORE_COLOR, fontFamily: "Inter_600SemiBold" }]}>{t("aiAnalysis")}</Text>
+      <Text style={[ac.label, { color: SCORE_COLOR, fontFamily: "Nunito_600SemiBold" }]}>{t("aiAnalysis")}</Text>
 
       {/* Flower (per-aspect petals) when we have full metrics; else stars. */}
       {metrics ? (
@@ -409,12 +409,12 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
 
       {/* Score badge */}
       <Animated.View entering={ZoomIn.delay(800).duration(400)} style={[ac.scoreBadge, { backgroundColor: SCORE_COLOR + "20", borderColor: SCORE_COLOR + "60" }]}>
-        <Text style={[ac.scoreText, { color: SCORE_COLOR, fontFamily: "Inter_700Bold" }]}>{SCORE_LABEL}</Text>
-        <Text style={[ac.xpText, { color: SCORE_COLOR, fontFamily: "Inter_500Medium" }]}>+{score} XP</Text>
+        <Text style={[ac.scoreText, { color: SCORE_COLOR, fontFamily: "Nunito_700Bold" }]}>{SCORE_LABEL}</Text>
+        <Text style={[ac.xpText, { color: SCORE_COLOR, fontFamily: "Nunito_500Medium" }]}>+{score} XP</Text>
       </Animated.View>
 
       {/* Summary */}
-      <Animated.Text entering={FadeIn.delay(900).duration(400)} style={[ac.feedback, { color: "rgba(240,237,232,0.85)", fontFamily: "Inter_400Regular" }]}>
+      <Animated.Text entering={FadeIn.delay(900).duration(400)} style={[ac.feedback, { color: "rgba(240,237,232,0.85)", fontFamily: "Nunito_400Regular" }]}>
         {feedback}
       </Animated.Text>
 
@@ -423,10 +423,10 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
       {tip ? (
         <Animated.View entering={FadeIn.delay(1500).duration(400)} style={ac.errorsSection}>
           <View style={[ac.divider, { backgroundColor: "#2A3348" }]} />
-          <Text style={[ac.errorsTitle, { color: SCORE_COLOR, fontFamily: "Inter_600SemiBold" }]}>
+          <Text style={[ac.errorsTitle, { color: SCORE_COLOR, fontFamily: "Nunito_600SemiBold" }]}>
             {lang === "ru" ? "Совет на следующий раз" : "Tip for next take"}
           </Text>
-          <Text style={[ac.feedback, { color: "rgba(240,237,232,0.85)", fontFamily: "Inter_500Medium" }]}>
+          <Text style={[ac.feedback, { color: "rgba(240,237,232,0.85)", fontFamily: "Nunito_500Medium" }]}>
             {tip}
           </Text>
         </Animated.View>
@@ -436,13 +436,13 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
       {errors && errors.length > 0 && (
         <Animated.View entering={FadeIn.delay(1600).duration(400)} style={ac.errorsSection}>
           <View style={[ac.divider, { backgroundColor: "#2A3348" }]} />
-          <Text style={[ac.errorsTitle, { color: "#F5A623", fontFamily: "Inter_600SemiBold" }]}>
+          <Text style={[ac.errorsTitle, { color: "#F5A623", fontFamily: "Nunito_600SemiBold" }]}>
             {t("payAttention")}
           </Text>
           {errors.map((err, i) => (
             <View key={i} style={ac.errorRow}>
               <View style={[ac.errorDot, { backgroundColor: "#F5A623" }]} />
-              <Text style={[ac.errorText, { color: "rgba(240,237,232,0.7)", fontFamily: "Inter_400Regular" }]}>{err}</Text>
+              <Text style={[ac.errorText, { color: "rgba(240,237,232,0.7)", fontFamily: "Nunito_400Regular" }]}>{err}</Text>
             </View>
           ))}
         </Animated.View>
@@ -634,25 +634,24 @@ export default function ShowtimePlaybackScreen() {
   // After Show Time, advance to the next path level instead of dumping the
   // player back on the map. Trainer mode (free play) still returns to map.
   const goAfterShowTime = () => {
-    if (isTrainer) {
-      // replace (not push) — pushing "/" stacks a second copy of the tab
-      // navigator on top of the existing map, duplicating the whole game.
-      router.replace("/(tabs)");
-      return;
-    }
+    // Show Time is a TWO-screen modal stack: showtime-stage → showtime-playback.
+    // Replacing only the top (playback) leaves showtime-stage mounted underneath,
+    // so the next level (e.g. Reading) renders as a window ON TOP of the lingering
+    // Show Time screen. Collapse the whole Show Time flow back to the map first,
+    // then open the next level fresh — exactly like tapping its tile on the map.
+    router.dismissAll();
+
+    if (isTrainer) return; // dismissAll already returned to the map
     const all = getLevelsData(lang);
     const idx = all.findIndex((l) => l.id === levelId);
     const next = idx >= 0 && idx < all.length - 1 ? all[idx + 1] : null;
-    if (!next) {
-      router.replace("/(tabs)");
-      return;
-    }
+    if (!next) return;
     if (next.id.startsWith("showtime")) {
-      router.replace({ pathname: "/showtime-stage", params: { levelId: next.id, mode: "game" } });
+      router.push({ pathname: "/showtime-stage", params: { levelId: next.id, mode: "game" } });
     } else if (next.id.startsWith("vocabulary")) {
-      router.replace({ pathname: "/vocabulary-level", params: { levelId: next.id, moduleId: String(next.module) } });
+      router.push({ pathname: "/vocabulary-level", params: { levelId: next.id, moduleId: String(next.module) } });
     } else {
-      router.replace({ pathname: "/level/[id]", params: { id: next.id } });
+      router.push({ pathname: "/level/[id]", params: { id: next.id } });
     }
   };
 
@@ -762,8 +761,8 @@ export default function ShowtimePlaybackScreen() {
           <Ionicons name="chevron-down" size={22} color="rgba(255,255,255,0.7)" />
         </Pressable>
         <View style={pb.headerCenter}>
-          <Text style={[pb.headerTitle, { fontFamily: "Inter_700Bold" }]}>{t("yourPerformance")}</Text>
-          {title ? <Text style={[pb.headerSub, { fontFamily: "Inter_400Regular" }]}>«{title}»</Text> : null}
+          <Text style={[pb.headerTitle, { fontFamily: "Nunito_700Bold" }]}>{t("yourPerformance")}</Text>
+          {title ? <Text style={[pb.headerSub, { fontFamily: "Nunito_400Regular" }]}>«{title}»</Text> : null}
         </View>
         <Pressable
           onPress={() => router.replace("/(tabs)")}
@@ -795,14 +794,14 @@ export default function ShowtimePlaybackScreen() {
           <AudienceSeats />
           <View style={pb.youAreHere}>
             <View style={[pb.youDot, { backgroundColor: "#FFD166" }]} />
-            <Text style={[pb.youText, { color: "#FFD166", fontFamily: "Inter_600SemiBold" }]}>{t("youAreHere")}</Text>
+            <Text style={[pb.youText, { color: "#FFD166", fontFamily: "Nunito_600SemiBold" }]}>{t("youAreHere")}</Text>
           </View>
         </Animated.View>
 
         <Animated.View style={[contentStyle, pb.content]}>
           <View style={pb.sectionLabel}>
             <Ionicons name="headset-outline" size={16} color="#FFD166" />
-            <Text style={[pb.sectionLabelText, { color: "#FFD166", fontFamily: "Inter_600SemiBold" }]}>
+            <Text style={[pb.sectionLabelText, { color: "#FFD166", fontFamily: "Nunito_600SemiBold" }]}>
               {t("performanceRecording")}
             </Text>
           </View>
@@ -812,7 +811,7 @@ export default function ShowtimePlaybackScreen() {
           {!hasListenedFully && recordingUri && (
             <View style={pb.listenHint}>
               <Ionicons name="headset" size={14} color="rgba(255,209,102,0.7)" />
-              <Text style={[pb.listenHintText, { fontFamily: "Inter_400Regular" }]}>
+              <Text style={[pb.listenHintText, { fontFamily: "Nunito_400Regular" }]}>
                 {t("listenToEnd")}
               </Text>
             </View>
@@ -822,7 +821,7 @@ export default function ShowtimePlaybackScreen() {
           {analyzing && (
             <Animated.View entering={FadeIn.duration(300)} style={pb.analyzingCard}>
               <ActivityIndicator color="#FFD166" size="small" />
-              <Text style={[pb.analyzingText, { color: "rgba(240,237,232,0.7)", fontFamily: "Inter_400Regular" }]}>
+              <Text style={[pb.analyzingText, { color: "rgba(240,237,232,0.7)", fontFamily: "Nunito_400Regular" }]}>
                 {t("aiAnalyzing")}
               </Text>
             </Animated.View>
@@ -835,7 +834,7 @@ export default function ShowtimePlaybackScreen() {
           {/* Tips card */}
           {!analysisResult && !analyzing && (
             <View style={[pb.tipsCard, { borderColor: "#2A3348" }]}>
-              <Text style={[pb.tipsTitle, { color: "#F0EDE8", fontFamily: "Inter_600SemiBold" }]}>
+              <Text style={[pb.tipsTitle, { color: "#F0EDE8", fontFamily: "Nunito_600SemiBold" }]}>
                 {t("whatToEvaluate")}
               </Text>
               {[
@@ -847,9 +846,9 @@ export default function ShowtimePlaybackScreen() {
               ].map((tip, i) => (
                 <Animated.View key={i} entering={FadeInDown.delay(600 + i * 80).duration(350)} style={pb.tipRow}>
                   <View style={[pb.tipNum, { backgroundColor: "#0B1426" }]}>
-                    <Text style={[pb.tipNumText, { color: "#FFD166", fontFamily: "Inter_700Bold" }]}>{i + 1}</Text>
+                    <Text style={[pb.tipNumText, { color: "#FFD166", fontFamily: "Nunito_700Bold" }]}>{i + 1}</Text>
                   </View>
-                  <Text style={[pb.tipText, { color: "rgba(240,237,232,0.75)", fontFamily: "Inter_400Regular" }]}>{tip}</Text>
+                  <Text style={[pb.tipText, { color: "rgba(240,237,232,0.75)", fontFamily: "Nunito_400Regular" }]}>{tip}</Text>
                 </Animated.View>
               ))}
             </View>
@@ -873,7 +872,7 @@ export default function ShowtimePlaybackScreen() {
               style={({ pressed }) => [pb.retryBtn, { backgroundColor: "rgba(255,209,102,0.12)", borderColor: "#FFD166", opacity: pressed ? 0.8 : 1 }]}
             >
               <Ionicons name="refresh" size={18} color="#FFD166" />
-              <Text style={[pb.retryBtnText, { color: "#FFD166", fontFamily: "Inter_600SemiBold" }]}>{t("again")}</Text>
+              <Text style={[pb.retryBtnText, { color: "#FFD166", fontFamily: "Nunito_600SemiBold" }]}>{t("again")}</Text>
             </Pressable>
             <Pressable
               onPress={handleDone}
@@ -893,12 +892,12 @@ export default function ShowtimePlaybackScreen() {
               ) : isSilent ? (
                 <>
                   <Ionicons name="mic-off-outline" size={18} color="#666" />
-                  <Text style={[pb.doneBtnText, { color: "#555", fontFamily: "Inter_700Bold" }]}>{t("noSound")}</Text>
+                  <Text style={[pb.doneBtnText, { color: "#555", fontFamily: "Nunito_700Bold" }]}>{t("noSound")}</Text>
                 </>
               ) : (
                 <>
                   <Ionicons name="arrow-forward" size={18} color="#FFD166" />
-                  <Text style={[pb.doneBtnText, { color: "#FFD166", fontFamily: "Inter_700Bold" }]}>{t("forward")}</Text>
+                  <Text style={[pb.doneBtnText, { color: "#FFD166", fontFamily: "Nunito_700Bold" }]}>{t("forward")}</Text>
                 </>
               )}
             </Pressable>
@@ -970,7 +969,7 @@ const listenPrompt = StyleSheet.create({
   title: {
     color: "#fff",
     fontSize: 19,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
     textAlign: "center",
   },
   body: {
@@ -978,7 +977,7 @@ const listenPrompt = StyleSheet.create({
     fontSize: 14.5,
     lineHeight: 21,
     textAlign: "center",
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Nunito_400Regular",
   },
   btn: {
     marginTop: 8,
@@ -992,7 +991,7 @@ const listenPrompt = StyleSheet.create({
   btnText: {
     color: "#2A1E00",
     fontSize: 15,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
   },
   skipBtn: {
     marginTop: 2,
@@ -1004,7 +1003,7 @@ const listenPrompt = StyleSheet.create({
   skipBtnText: {
     color: "rgba(255,255,255,0.55)",
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Nunito_500Medium",
   },
 });
 

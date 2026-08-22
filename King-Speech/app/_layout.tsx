@@ -1,41 +1,16 @@
+// Only three type families ship in the app:
+//  · System  = Nunito   (UI, body, labels)
+//  · Level    = Literata (reading / in-level content)
+//  · Accent   = Rubik    (titles, display, accents)
 import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
   useFonts,
-} from "@expo-google-fonts/inter";
-import {
   Nunito_400Regular,
+  Nunito_500Medium,
+  Nunito_600SemiBold,
   Nunito_700Bold,
   Nunito_800ExtraBold,
 } from "@expo-google-fonts/nunito";
 import { Literata_400Regular } from "@expo-google-fonts/literata";
-import {
-  Caveat_400Regular,
-  Caveat_700Bold,
-} from "@expo-google-fonts/caveat";
-import {
-  Fredoka_500Medium,
-  Fredoka_700Bold,
-} from "@expo-google-fonts/fredoka";
-import {
-  SpaceMono_400Regular,
-  SpaceMono_700Bold,
-} from "@expo-google-fonts/space-mono";
-import {
-  PlayfairDisplay_400Regular,
-  PlayfairDisplay_700Bold,
-} from "@expo-google-fonts/playfair-display";
-import {
-  CormorantGaramond_400Regular,
-  CormorantGaramond_700Bold,
-} from "@expo-google-fonts/cormorant-garamond";
-import { YesevaOne_400Regular } from "@expo-google-fonts/yeseva-one";
-import {
-  PTSerif_400Regular,
-  PTSerif_700Bold,
-} from "@expo-google-fonts/pt-serif";
 import {
   Rubik_400Regular,
   Rubik_500Medium,
@@ -276,27 +251,12 @@ function ReadinessGate({
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
     Nunito_400Regular,
+    Nunito_500Medium,
+    Nunito_600SemiBold,
     Nunito_700Bold,
     Nunito_800ExtraBold,
     Literata_400Regular,
-    Caveat_400Regular,
-    Caveat_700Bold,
-    Fredoka_500Medium,
-    Fredoka_700Bold,
-    SpaceMono_400Regular,
-    SpaceMono_700Bold,
-    PlayfairDisplay_400Regular,
-    PlayfairDisplay_700Bold,
-    CormorantGaramond_400Regular,
-    CormorantGaramond_700Bold,
-    YesevaOne_400Regular,
-    PTSerif_400Regular,
-    PTSerif_700Bold,
     Rubik_400Regular,
     Rubik_500Medium,
     Rubik_600SemiBold,

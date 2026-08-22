@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "800",
     letterSpacing: 1.5,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
   },
   title: {
     color: "#fff",
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     marginTop: 14,
     textAlign: "center",
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
   },
   subtitle: {
     color: "rgba(255,255,255,0.65)",
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     marginTop: 10,
     textAlign: "center",
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Nunito_400Regular",
   },
   benefits: { width: "100%", marginTop: 26, gap: 12 },
   benefitRow: {
@@ -237,13 +237,13 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 15.5,
     fontWeight: "700",
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Nunito_600SemiBold",
   },
   benefitDesc: {
     color: "rgba(255,255,255,0.55)",
     fontSize: 13,
     marginTop: 2,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Nunito_400Regular",
   },
   cta: {
     width: "100%",
@@ -262,20 +262,20 @@ const styles = StyleSheet.create({
     color: "#2A1E00",
     fontSize: 17,
     fontWeight: "800",
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
   },
   note: {
     color: "rgba(255,255,255,0.45)",
     fontSize: 12.5,
     textAlign: "center",
     marginTop: 12,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Nunito_400Regular",
   },
   devBtn: { alignSelf: "center", marginTop: 14, padding: 6 },
   devText: {
     color: "rgba(255,255,255,0.4)",
     fontSize: 12,
     textDecorationLine: "underline",
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Nunito_400Regular",
   },
 });

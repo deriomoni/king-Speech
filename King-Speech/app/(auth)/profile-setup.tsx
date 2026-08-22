@@ -210,13 +210,13 @@ const s = StyleSheet.create({
   },
   title: {
     fontSize: 30,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
     letterSpacing: -0.4,
     marginBottom: 8,
   },
   sub: {
     fontSize: 15,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Nunito_400Regular",
     lineHeight: 22,
   },
   section: {
@@ -224,7 +224,7 @@ const s = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Nunito_600SemiBold",
     letterSpacing: 0.6,
     textTransform: "uppercase",
     marginBottom: 10,
@@ -235,7 +235,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 16,
     fontSize: 17,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Nunito_500Medium",
   },
   genderRow: {
     flexDirection: "row",
@@ -271,7 +271,7 @@ const s = StyleSheet.create({
   },
   genderTxt: {
     fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Nunito_600SemiBold",
     marginBottom: 10,
   },
   genderBar: {
@@ -305,7 +305,7 @@ const s = StyleSheet.create({
   },
   continueBtnTxt: {
     fontSize: 17,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Nunito_700Bold",
     letterSpacing: 0.2,
   },
 });
