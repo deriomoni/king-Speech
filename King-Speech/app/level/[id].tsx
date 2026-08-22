@@ -8,6 +8,7 @@ import {
   Platform,
   Modal,
   Alert,
+  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
@@ -584,6 +585,7 @@ function ConfettiSpark({ delay, x, color }: { delay: number; x: number; color: s
 // Confetti burst over the victory title. Only the lower ~half is shown (the
 // container clips the top); the .riv renders on a transparent background.
 const CONFETTI_RIVE = require("@/assets/rive/confetti.riv");
+const SCREEN_H = Dimensions.get("window").height;
 
 // ── Trophy-on-a-column mark for the level-complete screen ────────────────────
 // Line + column are black in light mode, white in dark; the cup keeps its
@@ -680,27 +682,40 @@ function LevelCompleteModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: colors.background,
-          alignItems: "center",
-          justifyContent: "center",
-          paddingHorizontal: 30,
-        }}
-      >
-        {/* Confetti — only the lower ~half is visible (top clipped), transparent */}
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        {/* Confetti pinned flush to the top edge; only the lower ~half shows
+            (top clipped), transparent background */}
         {visible && (
-          <View style={{ width: "100%", height: 120, overflow: "hidden", marginBottom: -8 }} pointerEvents="none">
+          <View
+            style={{ position: "absolute", top: 0, left: 0, right: 0, height: 150, overflow: "hidden" }}
+            pointerEvents="none"
+          >
             <RiveAnim
               source={CONFETTI_RIVE}
               autoplay
               fit="cover"
-              style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 240, backgroundColor: "transparent" }}
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: 300,
+                backgroundColor: "transparent",
+                transform: [{ scale: 1.19 }],
+              }}
             />
           </View>
         )}
 
+        <View
+          style={{
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "flex-start",
+            paddingTop: SCREEN_H * 0.22,
+            paddingHorizontal: 30,
+          }}
+        >
         <Animated.Text
           style={[
             { fontFamily: "Rubik_700Bold", fontSize: 26, color: colors.text, marginBottom: 26, textAlign: "center" },
@@ -758,6 +773,7 @@ function LevelCompleteModal({
             {lang === "en" ? "Exit" : "Выход"}
           </Text>
         </Pressable>
+        </View>
       </View>
     </Modal>
   );
