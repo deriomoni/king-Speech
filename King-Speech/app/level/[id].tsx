@@ -866,7 +866,8 @@ export default function LevelScreen() {
   }, [levelId, lang]);
 
   const handleLevelCompleteNext = React.useCallback(() => {
-    setShowLevelComplete(false);
+    // Keep the opaque victory widget up until navigation swaps the screen —
+    // hiding it first briefly revealed the finished level during the transition.
     setScores([]);
     if (!nextLevel) {
       Alert.alert(t("allLevelsDone"), "", [
@@ -887,10 +888,17 @@ export default function LevelScreen() {
   }, [nextLevel, t]);
 
   const handleLevelCompleteMap = React.useCallback(() => {
-    setShowLevelComplete(false);
+    // Don't hide the widget first — it covers the finished level until the tabs
+    // screen replaces it.
     setScores([]);
     router.replace("/(tabs)");
   }, []);
+
+  // If this screen is reused for a different level (router.replace to
+  // /level/[id]), make sure a leftover victory widget doesn't linger.
+  useEffect(() => {
+    setShowLevelComplete(false);
+  }, [levelId]);
 
   // Snapshot duration when modal opens
   useEffect(() => {
