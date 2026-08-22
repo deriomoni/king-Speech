@@ -4,9 +4,11 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withRepeat,
   Easing,
   cancelAnimation,
   FadeIn,
+  FadeOut,
   FadeInDown,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
@@ -113,6 +115,20 @@ export default function BreathingExerciseView({
   const [showHelp, setShowHelp] = useState(false);
   const scale = useSharedValue(MIN_SCALE);
 
+  // Nose/mouth cue icons breathe with a slow opacity pulse (opacity, NOT scale,
+  // so the vector never rasterizes/blurs).
+  const iconPulse = useSharedValue(1);
+  const [centerBox, setCenterBox] = useState({ y: 0, h: 0 });
+  useEffect(() => {
+    iconPulse.value = withRepeat(
+      withTiming(0.42, { duration: 850, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true,
+    );
+    return () => cancelAnimation(iconPulse);
+  }, [iconPulse]);
+  const iconPulseStyle = useAnimatedStyle(() => ({ opacity: iconPulse.value }));
+
   const onCompleteRef = useRef(onComplete);
   useEffect(() => {
     onCompleteRef.current = onComplete;
@@ -158,6 +174,14 @@ export default function BreathingExerciseView({
   const cycle = Math.min(CYCLES, Math.floor(idx / PATTERN.length) + 1);
   const phaseColor = phase?.color ?? warmupTheme.gold;
 
+  // Vertically center the cue icon between the cycle text (≈ top of the center
+  // area) and the top of the 280px ring. Container is 90px tall and centered.
+  const RING = 280;
+  const breathIconTop =
+    centerBox.h > 0
+      ? centerBox.y + (centerBox.h - RING) / 4 - 45
+      : SCREEN_H * 0.26;
+
   return (
     <View style={[styles.root, { paddingTop: topPad + 8, backgroundColor: colors.background }]}>
       {/* Header: back + title + help */}
@@ -182,19 +206,28 @@ export default function BreathingExerciseView({
       {running && (phase?.type === "inhale" || phase?.type === "exhale") && (
         <Animated.View
           key={`breath-icon-${idx}`}
-          entering={FadeIn.duration(260)}
+          entering={FadeIn.duration(240)}
+          exiting={FadeOut.duration(160)}
           pointerEvents="none"
-          style={styles.breathIcon}
+          style={[styles.breathIcon, { top: breathIconTop }]}
         >
-          {phase?.type === "inhale" ? (
-            <NoseIcon color={colors.text} size={44} />
-          ) : (
-            <MouthIcon color={colors.text} size={52} />
-          )}
+          <Animated.View style={iconPulseStyle}>
+            {phase?.type === "inhale" ? (
+              <NoseIcon color={colors.text} size={57} />
+            ) : (
+              <MouthIcon color={colors.text} size={68} />
+            )}
+          </Animated.View>
         </Animated.View>
       )}
 
-      <View style={styles.center}>
+      <View
+        style={styles.center}
+        onLayout={(e) => {
+          const { y, height } = e.nativeEvent.layout;
+          setCenterBox((prev) => (prev.y === y && prev.h === height ? prev : { y, h: height }));
+        }}
+      >
         <View style={[styles.ring, { borderColor: phaseColor + "2E" }]} />
         <Animated.View
           style={[
@@ -276,7 +309,7 @@ const styles = StyleSheet.create({
     fontFamily: warmupFonts.label,
   },
   cyclePlaceholder: { height: 23, marginTop: 10 },
-  breathIcon: { position: "absolute", top: SCREEN_H * 0.3, left: 0, right: 0, alignItems: "center", zIndex: 2 },
+  breathIcon: { position: "absolute", left: 0, right: 0, height: 90, alignItems: "center", justifyContent: "center", zIndex: 2 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   ring: {
     position: "absolute",
