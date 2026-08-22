@@ -18,12 +18,12 @@ import { useAppColors } from "@/hooks/useAppColors";
 // Timing model:
 //  · NAME_SEC   — the exercise name + short description are shown with a
 //                 visible 5s countdown so the player knows what's coming.
-//  · READ_SEC   — a hidden 10s window on the *first* task only: the prompt and
-//                 its form-tip are on screen with no timer, so there's time to
-//                 read. Following tasks start their cycles right away.
+//  · READ_SEC   — a 5s window on the *first* task only: the prompt and its
+//                 form-tip are on screen (with a visible countdown, no bar) so
+//                 there's time to read. Following tasks start cycles right away.
 //  · CYCLE_SECS — every task is performed over two cycles: 15s then 20s.
 const NAME_SEC = 5;
-const READ_SEC = 10;
+const READ_SEC = 5;
 const CYCLE_SECS = [15, 20];
 
 // Per-exercise content: the step prompts, a one-line "what & why" description
@@ -186,25 +186,20 @@ export default function MouthExerciseView({
       }
       const seg = schedule[k];
       setTaskIdx(seg.task);
-      if (seg.kind === "read") {
-        setReading(true);
-        setCount(0);
-        barP.value = 0;
-        timers.push(setTimeout(() => runSeg(k + 1), seg.sec * 1000));
-      } else {
-        setReading(false);
-        setCount(seg.sec);
+      setReading(seg.kind === "read");
+      setCount(seg.sec);
+      barP.value = 0;
+      if (seg.kind === "cycle") {
         Haptics.selectionAsync().catch(() => {});
-        barP.value = 0;
         barP.value = withTiming(1, { duration: seg.sec * 1000, easing: Easing.linear });
-        interval = setInterval(() => setCount((c) => Math.max(0, c - 1)), 1000);
-        timers.push(
-          setTimeout(() => {
-            if (interval) clearInterval(interval);
-            runSeg(k + 1);
-          }, seg.sec * 1000),
-        );
       }
+      interval = setInterval(() => setCount((c) => Math.max(0, c - 1)), 1000);
+      timers.push(
+        setTimeout(() => {
+          if (interval) clearInterval(interval);
+          runSeg(k + 1);
+        }, seg.sec * 1000),
+      );
     };
     runSeg(0);
 
@@ -275,9 +270,7 @@ export default function MouthExerciseView({
         <>
           <View style={styles.topInfo}>
             <Text style={[styles.nameCaption, { color: accent }]}>{exercise.name}</Text>
-            {!reading && (
-              <Text style={[styles.topCount, { color: colors.textMuted }]}>{count}</Text>
-            )}
+            <Text style={[styles.topCount, { color: colors.textMuted }]}>{count}</Text>
           </View>
 
           <View style={styles.center} pointerEvents="none">
