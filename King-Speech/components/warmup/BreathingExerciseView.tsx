@@ -115,18 +115,12 @@ export default function BreathingExerciseView({
   const [showHelp, setShowHelp] = useState(false);
   const scale = useSharedValue(MIN_SCALE);
 
-  // Nose/mouth cue icons breathe with a slow opacity pulse (opacity, NOT scale,
-  // so the vector never rasterizes/blurs).
+  // Nose/mouth cue icons breathe with an opacity pulse synced to the phase:
+  // darken over the first half, lighten over the second (opacity, NOT scale, so
+  // the vector never rasterizes). Driven from the phase effect below.
   const iconPulse = useSharedValue(1);
   const [centerBox, setCenterBox] = useState({ y: 0, h: 0 });
-  useEffect(() => {
-    iconPulse.value = withRepeat(
-      withTiming(0.42, { duration: 850, easing: Easing.inOut(Easing.ease) }),
-      -1,
-      true,
-    );
-    return () => cancelAnimation(iconPulse);
-  }, [iconPulse]);
+  useEffect(() => () => cancelAnimation(iconPulse), [iconPulse]);
   const iconPulseStyle = useAnimatedStyle(() => ({ opacity: iconPulse.value }));
 
   const onCompleteRef = useRef(onComplete);
@@ -149,6 +143,18 @@ export default function BreathingExerciseView({
       scale.value = withTiming(MAX_SCALE, { duration: phase.sec * 1000, easing: Easing.inOut(Easing.ease) });
     } else if (phase.type === "exhale") {
       scale.value = withTiming(MIN_SCALE, { duration: phase.sec * 1000, easing: Easing.inOut(Easing.ease) });
+    }
+    // Nose/mouth cue pulse is driven by the phase length: darken over the first
+    // half of the cycle, lighten back over the second half — one full breath of
+    // the icon per phase. (Opacity only, so the vector never rasterizes.)
+    if (phase.type === "inhale" || phase.type === "exhale") {
+      const half = (phase.sec / 2) * 1000;
+      iconPulse.value = 1;
+      iconPulse.value = withRepeat(
+        withTiming(0.4, { duration: half, easing: Easing.inOut(Easing.ease) }),
+        2,
+        true,
+      );
     }
     const ci = setInterval(() => setCount((c) => Math.max(0, c - 1)), 1000);
     const to = setTimeout(() => setIdx((i) => i + 1), phase.sec * 1000);
@@ -243,7 +249,7 @@ export default function BreathingExerciseView({
               <Text style={[styles.phaseVia, { color: phaseColor }]}>{phase.via}</Text>
             </>
           ) : (
-            <Butterfly color={moduleColor ?? warmupTheme.gold} size={72} />
+            <Butterfly color={phaseColor} size={94} />
           )}
         </Animated.View>
       </View>
@@ -316,13 +322,13 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
     borderRadius: 140,
-    borderWidth: 1.5,
+    borderWidth: 2,
   },
   circle: {
     width: 220,
     height: 220,
     borderRadius: 110,
-    borderWidth: 2,
+    borderWidth: 2.6,
     alignItems: "center",
     justifyContent: "center",
   },
