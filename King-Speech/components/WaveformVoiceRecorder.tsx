@@ -42,7 +42,7 @@ interface Props {
    * audio encoded as base64 (no data: prefix). May be undefined if the mic
    * was unavailable; consumers must handle that gracefully.
    */
-  onRecordingComplete: (durationSeconds: number, audioBase64?: string) => void;
+  onRecordingComplete: (durationSeconds: number, audioBase64?: string, mimeType?: string) => void;
   colors: import("@/constants/colors").AppColors;
   /** Overrides the idle start-button label (default: "Начать запись"). */
   startLabel?: string;
@@ -298,6 +298,7 @@ export default function WaveformVoiceRecorder({
     setPhase("analyzing");
 
     let audioBase64: string | undefined;
+    let mimeType: string | undefined;
 
     if (Platform.OS === "web") {
       const session = sessionRef.current;
@@ -352,6 +353,7 @@ export default function WaveformVoiceRecorder({
         }
 
         if (blob && blob.size > 0) {
+          mimeType = blob.type || "audio/webm";
           audioBase64 = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => {
@@ -402,13 +404,15 @@ export default function WaveformVoiceRecorder({
           audioBase64 = await FileSystem.readAsStringAsync(uri, {
             encoding: "base64",
           });
+          const ext = (uri.split(".").pop() || "m4a").toLowerCase();
+          mimeType = "audio/" + ext;
         }
       } catch (e) {
         console.warn("VoiceRecorder: could not read uri", e);
       }
     }
 
-    onRecordingComplete(Math.max(1, durationSec), audioBase64);
+    onRecordingComplete(Math.max(1, durationSec), audioBase64, mimeType);
     // Reset to idle so a follow-up retry from the parent shows the start pill.
     setPhase("idle");
     reset();

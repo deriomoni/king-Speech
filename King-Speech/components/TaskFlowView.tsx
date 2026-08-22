@@ -68,7 +68,31 @@ type Phase = "record" | "analyzing" | "scored";
 interface DevRow {
   question: string;
   transcript: string;
+  durationSec: number;
   analysis: SpeechAnalysis;
+}
+
+// Recorded answer audio is kept ONLY in memory for the duration of the level so
+// the player can replay it. Nothing is written to durable storage; temp files
+// used for native playback are deleted on unmount (see the cleanup effect).
+interface AnswerAudio {
+  base64: string;
+  mime: string;
+  durationSec: number;
+}
+
+function base64ToBlob(b64: string, mime: string): Blob {
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+
+function fmtDuration(sec: number): string {
+  const s = Math.max(0, Math.round(sec));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${m}:${r.toString().padStart(2, "0")}`;
 }
 
 export default function TaskFlowView({
@@ -103,12 +127,85 @@ export default function TaskFlowView({
   // Interview-only state.
   const [corridor, setCorridor] = useState(isInterview);
   const [devRows, setDevRows] = useState<DevRow[] | null>(null);
+  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
 
   const analysesRef = useRef<SpeechAnalysis[]>([]);
   const scoresRef = useRef<number[]>([]);
   const startRef = useRef(Date.now());
   // Background analysis promises, one slot per question (interview flow).
   const pendingRef = useRef<Array<Promise<TaskAnalysisResult> | null>>([]);
+  // In-memory recorded answers (never persisted) + active playback handle.
+  const audioRef = useRef<Array<AnswerAudio | null>>([]);
+  const playbackRef = useRef<{ sound?: any; url?: string; el?: any; files: string[] }>({ files: [] });
+
+  // On unmount: drop every in-memory answer, revoke URLs, unload the player and
+  // delete any temp files. Leaving the level erases all audio, by design.
+  useEffect(() => {
+    return () => {
+      const pb = playbackRef.current;
+      try { pb.el?.pause?.(); } catch {}
+      if (pb.url) { try { URL.revokeObjectURL(pb.url); } catch {} }
+      if (pb.sound) { try { pb.sound.unloadAsync?.(); } catch {} }
+      if (pb.files.length) {
+        try {
+          const FileSystem = require("expo-file-system/legacy");
+          pb.files.forEach((f) => FileSystem.deleteAsync(f, { idempotent: true }).catch(() => {}));
+        } catch {}
+      }
+      audioRef.current = [];
+    };
+  }, []);
+
+  const stopPlayback = async () => {
+    const pb = playbackRef.current;
+    try { pb.el?.pause?.(); } catch {}
+    if (pb.url) { try { URL.revokeObjectURL(pb.url); } catch {} pb.url = undefined; }
+    if (pb.sound) { try { await pb.sound.unloadAsync?.(); } catch {} pb.sound = undefined; }
+    pb.el = undefined;
+    setPlayingIndex(null);
+  };
+
+  const playAnswer = async (i: number) => {
+    const a = audioRef.current[i];
+    if (!a?.base64) return;
+    if (playingIndex === i) {
+      await stopPlayback();
+      return;
+    }
+    await stopPlayback();
+    setPlayingIndex(i);
+    if (Platform.OS === "web") {
+      try {
+        const url = URL.createObjectURL(base64ToBlob(a.base64, a.mime || "audio/webm"));
+        const el = new (window as any).Audio(url);
+        playbackRef.current.url = url;
+        playbackRef.current.el = el;
+        el.onended = () => { try { URL.revokeObjectURL(url); } catch {} setPlayingIndex(null); };
+        el.onerror = () => setPlayingIndex(null);
+        await el.play();
+      } catch {
+        setPlayingIndex(null);
+      }
+    } else {
+      try {
+        const FileSystem = require("expo-file-system/legacy");
+        const { Audio } = require("expo-av");
+        const ext = (a.mime?.split("/").pop() || "m4a").replace(/[^a-z0-9]/gi, "") || "m4a";
+        const path = `${FileSystem.cacheDirectory}ks_answer_${i}.${ext}`;
+        await FileSystem.writeAsStringAsync(path, a.base64, { encoding: "base64" });
+        playbackRef.current.files.push(path);
+        await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true });
+        const { sound } = await Audio.Sound.createAsync({ uri: path });
+        playbackRef.current.sound = sound;
+        sound.setOnPlaybackStatusUpdate((s: any) => {
+          if (s?.didJustFinish) setPlayingIndex(null);
+        });
+        await sound.playAsync();
+      } catch {
+        setPlayingIndex(null);
+      }
+    }
+  };
 
   const total = tasks.length;
   const task = tasks[index];
@@ -207,6 +304,7 @@ export default function TaskFlowView({
     const rows: DevRow[] = tasks.map((t, i) => ({
       question: t.content || t.title || "",
       transcript: analyses[i]?.transcript || "",
+      durationSec: audioRef.current[i]?.durationSec ?? 0,
       analysis: analyses[i] ?? emptyAnalysis(),
     }));
     if (Platform.OS !== "web") {
@@ -215,9 +313,17 @@ export default function TaskFlowView({
     setDevRows(rows);
   };
 
-  const handleInterviewRecorded = (durationSeconds: number, audioBase64?: string) => {
+  const handleInterviewRecorded = (durationSeconds: number, audioBase64?: string, mimeType?: string) => {
     const i = index;
     const t = tasks[i];
+    // Keep the take in memory only (for replay) — never written to storage.
+    if (audioBase64) {
+      audioRef.current[i] = {
+        base64: audioBase64,
+        mime: mimeType || (Platform.OS === "web" ? "audio/webm" : "audio/m4a"),
+        durationSec: durationSeconds,
+      };
+    }
     // Kick off analysis in the background and stash its promise.
     pendingRef.current[i] = analyzeGenericTask({
       originalText: t.content || t.instruction || "",
@@ -242,6 +348,7 @@ export default function TaskFlowView({
 
   // Dev report "continue" → hand the aggregate up (flower → victory).
   const finishFromDev = () => {
+    void stopPlayback();
     tasks.forEach((t, i) => onTaskScored(t.taskNumber, scoresRef.current[i] ?? 0));
     setDevRows(null);
     setDarken(true);
@@ -435,6 +542,8 @@ export default function TaskFlowView({
           isDark={isDark}
           topPad={topPad}
           bottomPad={bottomPad}
+          playingIndex={playingIndex}
+          onPlay={playAnswer}
           onContinue={finishFromDev}
         />
       ) : null}
@@ -464,8 +573,15 @@ function MiniScore({ analysis, ru }: { analysis: SpeechAnalysis; ru: boolean }) 
   );
 }
 
-// Developer-only report shown at the end of an interview level. Lists each
-// answer's transcript and per-aspect score, plus how the level score is built.
+// Answer breakdown shown at the end of an interview level. Lists each answer's
+// transcription, duration, a replay control, and a per-aspect score with a
+// short explanation of what each aspect measures.
+interface AspectInfo {
+  key: keyof SpeechAnalysis["score"];
+  label: string;
+  desc: string;
+  internal?: boolean;
+}
 function DevReport({
   rows,
   ru,
@@ -473,6 +589,8 @@ function DevReport({
   isDark,
   topPad,
   bottomPad,
+  playingIndex,
+  onPlay,
   onContinue,
 }: {
   rows: DevRow[];
@@ -481,41 +599,51 @@ function DevReport({
   isDark: boolean;
   topPad: number;
   bottomPad: number;
+  playingIndex: number | null;
+  onPlay: (index: number) => void;
   onContinue: () => void;
 }) {
   const overalls = rows.map((r) => r.analysis.score.overall);
   const avg = overalls.reduce((s, v) => s + v, 0) / Math.max(1, overalls.length);
-  const aspectKeys: Array<keyof SpeechAnalysis["score"]> = [
-    "clarity",
-    "confidence",
-    "volume",
-    "tempo",
-    "expressiveness",
-    "pauses",
-  ];
-  const aspectLabel: Record<string, string> = ru
-    ? { clarity: "чёткость", confidence: "увер-ть", volume: "громкость", tempo: "темп", expressiveness: "выразит.", pauses: "паузы" }
-    : { clarity: "clarity", confidence: "confidence", volume: "volume", tempo: "tempo", expressiveness: "express.", pauses: "pauses" };
+  const border = isDark ? "rgba(255,255,255,0.08)" : "rgba(20,22,26,0.08)";
+
+  // Per-aspect meaning. Tempo & pauses are kept as internal signals (they feed
+  // clarity / confidence) rather than standalone scores — flagged "внутр.".
+  const ASPECTS: AspectInfo[] = ru
+    ? [
+        { key: "clarity", label: "Чёткость", desc: "Разборчивость дикции: чистота согласных и уверенность распознавания." },
+        { key: "confidence", label: "Уверенность", desc: "Устойчивость голоса, завершённость интонации, беглость без запинок." },
+        { key: "volume", label: "Громкость", desc: "Фактическая громкость голоса — не тихо и без перегруза." },
+        { key: "tempo", label: "Темп", desc: "Скорость речи. Вспомогательный сигнал для чёткости, не отдельный балл.", internal: true },
+        { key: "expressiveness", label: "Выразительность", desc: "Интонационный диапазон и эмоциональная вовлечённость." },
+        { key: "pauses", label: "Паузы", desc: "Паузы и заминки. Вспомогательный сигнал для уверенности, не отдельный балл.", internal: true },
+      ]
+    : [
+        { key: "clarity", label: "Clarity", desc: "How intelligible your diction is: clean consonants and recognition confidence." },
+        { key: "confidence", label: "Confidence", desc: "Voice stability, finished intonation, fluency without stumbles." },
+        { key: "volume", label: "Volume", desc: "Actual loudness of your voice — not too quiet, no clipping." },
+        { key: "tempo", label: "Tempo", desc: "Speaking speed. A support signal for clarity, not a standalone score.", internal: true },
+        { key: "expressiveness", label: "Expressiveness", desc: "Pitch range and emotional engagement." },
+        { key: "pauses", label: "Pauses", desc: "Pauses and hesitations. A support signal for confidence, not a standalone score.", internal: true },
+      ];
 
   return (
     <Animated.View entering={FadeIn.duration(260)} style={[st.devRoot, { backgroundColor: colors.background }]}>
       <ScrollView
-        contentContainerStyle={{ paddingTop: topPad + 16, paddingBottom: bottomPad + 100, paddingHorizontal: 20, gap: 14 }}
+        contentContainerStyle={{ paddingTop: topPad + 20, paddingBottom: bottomPad + 100, paddingHorizontal: 20, gap: 14 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[st.devBadge, { backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(20,22,26,0.05)" }]}>
-          <Ionicons name="construct-outline" size={14} color={colors.textSecondary} />
-          <Text style={[st.devBadgeText, { color: colors.textSecondary, fontFamily: "Rubik_600SemiBold" }]}>
-            {ru ? "ДЛЯ РАЗРАБОТЧИКОВ" : "FOR DEVELOPERS"}
-          </Text>
-        </View>
-
         <Text style={[st.devTitle, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>
-          {ru ? "Транскрипция и разбор оценки" : "Transcription & scoring breakdown"}
+          {ru ? "Разбор ответов" : "Answer breakdown"}
+        </Text>
+        <Text style={[st.devLede, { color: colors.textSecondary, fontFamily: "Nunito_600SemiBold" }]}>
+          {ru
+            ? "Твоя речь, распознанная в текст, и из чего сложилась оценка."
+            : "Your speech turned into text, and what the score is built from."}
         </Text>
 
         {/* Aggregate */}
-        <View style={[st.devCard, { backgroundColor: colors.backgroundSecondary, borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(20,22,26,0.08)" }]}>
+        <View style={[st.devCard, { backgroundColor: colors.backgroundSecondary, borderColor: border }]}>
           <Text style={[st.devAggScore, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>
             {avg.toFixed(1)}<Text style={[st.devAggMax, { color: colors.textMuted }]}> / 10</Text>
           </Text>
@@ -530,14 +658,13 @@ function DevReport({
         {rows.map((r, i) => {
           const a = r.analysis;
           const wordCount = r.transcript.trim().split(/\s+/).filter(Boolean).length;
+          const isPlaying = playingIndex === i;
+          const hasAudio = r.durationSec > 0;
           return (
-            <View
-              key={i}
-              style={[st.devCard, { backgroundColor: colors.backgroundSecondary, borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(20,22,26,0.08)" }]}
-            >
+            <View key={i} style={[st.devCard, { backgroundColor: colors.backgroundSecondary, borderColor: border }]}>
               <View style={st.devRowHead}>
                 <Text style={[st.devQNum, { color: colors.textMuted, fontFamily: "Rubik_600SemiBold" }]}>
-                  {(ru ? "ВОПРОС " : "QUESTION ") + (i + 1)}
+                  {(ru ? "ВОПРОС " : "QUESTION ") + (i + 1) + (hasAudio ? " · " + fmtDuration(r.durationSec) : "")}
                 </Text>
                 <Text style={[st.devScore, { color: toneFor(a.score.overall), fontFamily: "Rubik_700Bold" }]}>
                   {a.score.overall.toFixed(1)}
@@ -545,22 +672,48 @@ function DevReport({
               </View>
               <Text style={[st.devQ, { color: colors.text, fontFamily: "Nunito_700Bold" }]}>{r.question}</Text>
 
+              {hasAudio ? (
+                <Pressable
+                  onPress={() => onPlay(i)}
+                  style={({ pressed }) => [
+                    st.playBtn,
+                    { borderColor: brand.violet + "66", backgroundColor: brand.violet + (isDark ? "22" : "14"), opacity: pressed ? 0.7 : 1 },
+                  ]}
+                >
+                  <Ionicons name={isPlaying ? "stop" : "play"} size={15} color={brand.violet} />
+                  <Text style={[st.playText, { color: brand.violet, fontFamily: "Nunito_700Bold" }]}>
+                    {isPlaying ? (ru ? "Остановить" : "Stop") : (ru ? "Прослушать запись" : "Play recording")}
+                  </Text>
+                </Pressable>
+              ) : null}
+
               <Text style={[st.devSubLabel, { color: colors.textMuted, fontFamily: "Rubik_600SemiBold" }]}>
-                {ru ? `ТРАНСКРИПЦИЯ · ${wordCount} сл.` : `TRANSCRIPT · ${wordCount} w.`}
+                {ru ? `ТРАНСКРИБАЦИЯ · ${wordCount} сл.` : `TRANSCRIPTION · ${wordCount} w.`}
               </Text>
               <Text style={[st.devTranscript, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
-                {r.transcript ? `«${r.transcript}»` : ru ? "— пусто (не распознано / нет бэкенда) —" : "— empty (not recognized / no backend) —"}
+                {r.transcript ? `«${r.transcript}»` : ru ? "— пусто (не распознано / нет связи с сервером) —" : "— empty (not recognized / no server) —"}
               </Text>
 
-              <View style={st.devAspects}>
-                {aspectKeys.map((k) => (
-                  <View key={k} style={st.devAspect}>
-                    <Text style={[st.devAspectVal, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>
-                      {Number(a.score[k] ?? 0).toFixed(1)}
+              {/* Per-aspect rows with a short explanation each */}
+              <View style={st.aspList}>
+                {ASPECTS.map((asp) => (
+                  <View key={asp.key} style={st.aspRow}>
+                    <Text style={[st.aspVal, { color: asp.internal ? colors.textMuted : toneFor(Number(a.score[asp.key] ?? 0)), fontFamily: "Rubik_700Bold" }]}>
+                      {Number(a.score[asp.key] ?? 0).toFixed(1)}
                     </Text>
-                    <Text style={[st.devAspectKey, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>
-                      {aspectLabel[k]}
-                    </Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[st.aspLabel, { color: colors.text, fontFamily: "Nunito_800ExtraBold" }]}>
+                        {asp.label}
+                        {asp.internal ? (
+                          <Text style={[st.aspTag, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>
+                            {ru ? "  · внутр." : "  · internal"}
+                          </Text>
+                        ) : null}
+                      </Text>
+                      <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
+                        {asp.desc}
+                      </Text>
+                    </View>
                   </View>
                 ))}
               </View>
@@ -573,6 +726,12 @@ function DevReport({
             </View>
           );
         })}
+
+        <Text style={[st.devPrivacy, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>
+          {ru
+            ? "Записи не сохраняются на устройстве и удаляются при выходе из уровня."
+            : "Recordings are never saved on the device and are erased when you leave the level."}
+        </Text>
       </ScrollView>
 
       <View style={[st.devFooter, { paddingBottom: bottomPad + 16, backgroundColor: colors.background }]}>
@@ -659,19 +818,10 @@ const st = StyleSheet.create({
   corridorQuote: { fontSize: 22, lineHeight: 30, textAlign: "center", marginTop: 24 },
   corridorHint: { fontSize: 11, letterSpacing: 2, marginTop: 16 },
 
-  // Dev report
+  // Answer-breakdown report
   devRoot: { ...StyleSheet.absoluteFillObject, zIndex: 30 },
-  devBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  devBadgeText: { fontSize: 11, letterSpacing: 1.4 },
-  devTitle: { fontSize: 22, lineHeight: 28 },
+  devTitle: { fontSize: 26, lineHeight: 31 },
+  devLede: { fontSize: 14, lineHeight: 20, marginTop: -6 },
   devCard: { borderRadius: 18, borderWidth: 1, padding: 16, gap: 8 },
   devAggScore: { fontSize: 40, lineHeight: 46 },
   devAggMax: { fontSize: 20 },
@@ -680,13 +830,28 @@ const st = StyleSheet.create({
   devQNum: { fontSize: 11, letterSpacing: 1.2 },
   devScore: { fontSize: 22 },
   devQ: { fontSize: 16, lineHeight: 22 },
-  devSubLabel: { fontSize: 10.5, letterSpacing: 1.2, marginTop: 4 },
+  playBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 7,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginTop: 2,
+  },
+  playText: { fontSize: 13.5 },
+  devSubLabel: { fontSize: 10.5, letterSpacing: 1.2, marginTop: 6 },
   devTranscript: { fontSize: 14, lineHeight: 21 },
-  devAspects: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 6 },
-  devAspect: { alignItems: "center", minWidth: 48 },
-  devAspectVal: { fontSize: 17 },
-  devAspectKey: { fontSize: 11, marginTop: 1 },
+  aspList: { gap: 12, marginTop: 8 },
+  aspRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+  aspVal: { fontSize: 20, minWidth: 34, textAlign: "right" },
+  aspLabel: { fontSize: 15 },
+  aspTag: { fontSize: 12 },
+  aspDesc: { fontSize: 12.5, lineHeight: 18, marginTop: 2 },
   devNote: { fontSize: 12.5, lineHeight: 18, marginTop: 4 },
+  devPrivacy: { fontSize: 12, lineHeight: 17, textAlign: "center", marginTop: 4, paddingHorizontal: 10 },
   devFooter: {
     position: "absolute",
     left: 0,
