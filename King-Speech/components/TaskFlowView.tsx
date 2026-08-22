@@ -1,5 +1,5 @@
-import React, { useRef, useState } from "react";
-import { View, Text, StyleSheet, Pressable, Platform, ActivityIndicator } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, StyleSheet, Pressable, Platform, ActivityIndicator, ScrollView } from "react-native";
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -12,8 +12,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import WaveformVoiceRecorder from "@/components/WaveformVoiceRecorder";
+import OscarMascot from "@/components/OscarMascot";
 import { toneFor } from "@/components/ScoreFlower";
-import { analyzeGenericTask } from "@/services/analyzeGenericTask";
+import { analyzeGenericTask, type TaskAnalysisResult } from "@/services/analyzeGenericTask";
 import type { SpeechAnalysis } from "@/services/speechAnalysis";
 import type { Task } from "@/context/GameContext";
 import { brand } from "@/constants/colors";
@@ -26,7 +27,16 @@ import { readableText } from "@/constants/pathPalette";
 // Growth). Recording → a very short score summary → the record control morphs
 // into a gold "Next" pill. Advancing swaps the text card to the next task. After
 // the LAST task, the screen darkens and the parent blooms the aggregate flower.
+//
+// Interview levels take a different route (isInterview): a clean theme
+// background, a white question card whose text fades in, and — crucially —
+// answers are NOT analyzed one-by-one. The player records an answer and moves
+// straight to the next question; analysis for answers 1..n-1 runs in the
+// background, the final answer is awaited, and a developer report (transcripts
+// + score breakdown) is shown before the level's aggregate flower.
 // ───────────────────────────────────────────────────────────────────────────
+
+const INTERVIEW_CORRIDOR_MS = 7000;
 
 interface Props {
   tasks: Task[];
@@ -37,6 +47,8 @@ interface Props {
   accent: string;
   /** Full-screen background behind the flow (module palette). Text on it adapts. */
   screenBg?: string;
+  /** Interview flow: clean bg, white card, deferred background analysis. */
+  isInterview?: boolean;
   colors: import("@/constants/colors").AppColors;
   isDark: boolean;
   lang: "ru" | "en";
@@ -53,6 +65,12 @@ interface Props {
 
 type Phase = "record" | "analyzing" | "scored";
 
+interface DevRow {
+  question: string;
+  transcript: string;
+  analysis: SpeechAnalysis;
+}
+
 export default function TaskFlowView({
   tasks,
   levelId,
@@ -61,6 +79,7 @@ export default function TaskFlowView({
   subtitle,
   accent,
   screenBg,
+  isInterview = false,
   colors,
   isDark,
   lang,
@@ -81,14 +100,28 @@ export default function TaskFlowView({
   const [emptyTake, setEmptyTake] = useState(false);
   const [darken, setDarken] = useState(false);
 
+  // Interview-only state.
+  const [corridor, setCorridor] = useState(isInterview);
+  const [devRows, setDevRows] = useState<DevRow[] | null>(null);
+
   const analysesRef = useRef<SpeechAnalysis[]>([]);
   const scoresRef = useRef<number[]>([]);
   const startRef = useRef(Date.now());
+  // Background analysis promises, one slot per question (interview flow).
+  const pendingRef = useRef<Array<Promise<TaskAnalysisResult> | null>>([]);
 
   const total = tasks.length;
   const task = tasks[index];
   const isLast = index >= total - 1;
 
+  // 7s mascot corridor before the interview begins (mirrors the reading level).
+  useEffect(() => {
+    if (!isInterview) return;
+    const t = setTimeout(() => setCorridor(false), INTERVIEW_CORRIDOR_MS);
+    return () => clearTimeout(t);
+  }, [isInterview]);
+
+  // ── Standard (tongue-twister) flow: analyze each take inline ────────────────
   const handleRecordingComplete = async (durationSeconds: number, audioBase64?: string) => {
     setPhase("analyzing");
     setEmptyTake(false);
@@ -146,9 +179,86 @@ export default function TaskFlowView({
     setPhase("record");
   };
 
+  // ── Interview flow: record → next immediately; analyze in the background ────
+  const emptyAnalysis = (): SpeechAnalysis => ({
+    summary: ru ? "Ответ не распознан." : "Answer not recognized.",
+    score: { overall: 0, clarity: 0, confidence: 0, volume: 0, tempo: 0, expressiveness: 0, pauses: 0 },
+    strengths: [],
+    recommendations: [],
+    tip: "",
+    transcript: "",
+    fillerCount: 0,
+    textMatchRatio: null,
+    xpBonus: 0,
+  });
+
+  const finalizeInterview = async () => {
+    // Await every background analysis (answers 1..n-1) plus the final one.
+    const results = await Promise.all(
+      pendingRef.current.map((p) =>
+        (p ?? Promise.resolve<TaskAnalysisResult>({ kind: "empty" })).catch(
+          () => ({ kind: "empty" } as TaskAnalysisResult),
+        ),
+      ),
+    );
+    const analyses = results.map((r) => (r.kind === "empty" ? emptyAnalysis() : r.analysis));
+    analysesRef.current = analyses;
+    scoresRef.current = analyses.map((a) => a.score.overall);
+    const rows: DevRow[] = tasks.map((t, i) => ({
+      question: t.content || t.title || "",
+      transcript: analyses[i]?.transcript || "",
+      analysis: analyses[i] ?? emptyAnalysis(),
+    }));
+    if (Platform.OS !== "web") {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    }
+    setDevRows(rows);
+  };
+
+  const handleInterviewRecorded = (durationSeconds: number, audioBase64?: string) => {
+    const i = index;
+    const t = tasks[i];
+    // Kick off analysis in the background and stash its promise.
+    pendingRef.current[i] = analyzeGenericTask({
+      originalText: t.content || t.instruction || "",
+      levelId,
+      levelNumber,
+      lang,
+      durationSeconds,
+      audioBase64,
+    });
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    }
+    if (i >= total - 1) {
+      // Final answer: wait for the whole batch, then show the dev report.
+      setPhase("analyzing");
+      void finalizeInterview();
+    } else {
+      // Move straight to the next question — no waiting on analysis.
+      setIndex(i + 1);
+    }
+  };
+
+  // Dev report "continue" → hand the aggregate up (flower → victory).
+  const finishFromDev = () => {
+    tasks.forEach((t, i) => onTaskScored(t.taskNumber, scoresRef.current[i] ?? 0));
+    setDevRows(null);
+    setDarken(true);
+    setTimeout(() => {
+      onAllComplete({
+        scores: scoresRef.current.slice(),
+        analyses: analysesRef.current.slice(),
+        durationSec: Math.max(1, Math.floor((Date.now() - startRef.current) / 1000)),
+      });
+    }, 300);
+  };
+
   const kindLabel = levelId.startsWith("tonguetwister")
     ? ru ? "Скороговорка" : "Tongue twister"
     : ru ? "Задание" : "Task";
+
+  const cardBg = isInterview ? colors.backgroundSecondary : undefined;
 
   return (
     <View style={{ flex: 1 }}>
@@ -159,7 +269,9 @@ export default function TaskFlowView({
         </Pressable>
         <View style={st.dotsRow}>
           {tasks.map((_, i) => {
-            const done = i < index || (i === index && phase === "scored");
+            const done = isInterview
+              ? i < index
+              : i < index || (i === index && phase === "scored");
             const active = i === index;
             return (
               <View
@@ -187,7 +299,9 @@ export default function TaskFlowView({
       {/* Level title (small) */}
       <View style={st.titleWrap}>
         <Text style={[st.kicker, { color: accent, fontFamily: "Rubik_600SemiBold" }]}>
-          {kindLabel.toUpperCase()} · {index + 1}/{total}
+          {isInterview
+            ? `${ru ? "Вопрос" : "Question"} ${index + 1}/${total}`
+            : `${kindLabel.toUpperCase()} · ${index + 1}/${total}`}
         </Text>
         <Text numberOfLines={1} style={[st.levelTitle, { color: ink, fontFamily: "Rubik_700Bold" }]}>
           {title}
@@ -198,25 +312,42 @@ export default function TaskFlowView({
       <View style={st.stage}>
         <Animated.View
           key={index}
-          entering={SlideInRight.duration(360)}
-          exiting={SlideOutLeft.duration(240)}
+          entering={isInterview ? FadeIn.duration(300) : SlideInRight.duration(360)}
+          exiting={isInterview ? FadeOut.duration(160) : SlideOutLeft.duration(240)}
           style={st.cardWrap}
         >
-          <View style={[st.card, { borderColor: brand.borderViolet }]}>
-            <LinearGradient
-              colors={isDark ? ["#1C1830", "#141221"] : ["#F3EFFB", "#EDE7FA"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            {task.instruction ? (
+          <View
+            style={[
+              st.card,
+              isInterview
+                ? { backgroundColor: cardBg, borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(20,22,26,0.08)" }
+                : { borderColor: brand.borderViolet },
+            ]}
+          >
+            {!isInterview ? (
+              <LinearGradient
+                colors={isDark ? ["#1C1830", "#141221"] : ["#F3EFFB", "#EDE7FA"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+            ) : null}
+            {task.instruction && !isInterview ? (
               <Text style={[st.instruction, { color: isDark ? "rgba(242,238,251,0.6)" : colors.textSecondary, fontFamily: "Nunito_600SemiBold" }]}>
                 {task.instruction}
               </Text>
             ) : null}
-            <Text style={[st.contentText, { color: isDark ? "#F5F1FF" : colors.text, fontFamily: "Rubik_700Bold" }]}>
+            {/* Interview: text fades in over 1.5s each new question. */}
+            <Animated.Text
+              key={`q-${index}`}
+              entering={isInterview ? FadeIn.duration(1500) : undefined}
+              style={[
+                st.contentText,
+                { color: isInterview ? colors.text : isDark ? "#F5F1FF" : colors.text, fontFamily: "Rubik_700Bold" },
+              ]}
+            >
               {task.content || task.title}
-            </Text>
+            </Animated.Text>
           </View>
         </Animated.View>
       </View>
@@ -236,7 +367,11 @@ export default function TaskFlowView({
 
         {phase === "record" ? (
           <Animated.View key="rec" entering={ZoomIn.duration(260)} style={st.controlSlot}>
-            <WaveformVoiceRecorder onRecordingComplete={handleRecordingComplete} colors={colors} />
+            <WaveformVoiceRecorder
+              onRecordingComplete={isInterview ? handleInterviewRecorded : handleRecordingComplete}
+              colors={colors}
+              startLabel={isInterview ? (ru ? "Ответить" : "Answer") : undefined}
+            />
           </Animated.View>
         ) : phase === "analyzing" ? (
           <Animated.View key="ana" entering={FadeIn.duration(200)} style={[st.controlSlot, st.pill, { backgroundColor: brand.gold }]}>
@@ -277,6 +412,32 @@ export default function TaskFlowView({
           style={[StyleSheet.absoluteFill, { backgroundColor: brand.ink }]}
         />
       ) : null}
+
+      {/* Interview corridor — 7s mascot loading curtain on entry */}
+      {corridor ? (
+        <Animated.View exiting={FadeOut.duration(420)} style={[st.corridor, { backgroundColor: colors.background }]}>
+          <OscarMascot emotion="happy" size={150} />
+          <Text style={[st.corridorQuote, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>
+            {ru ? "Дыши ровно. Говори как есть." : "Breathe easy. Speak your mind."}
+          </Text>
+          <Text style={[st.corridorHint, { color: colors.textMuted, fontFamily: "Rubik_600SemiBold" }]}>
+            {(ru ? "Готовим интервью" : "Preparing the interview").toUpperCase()}
+          </Text>
+        </Animated.View>
+      ) : null}
+
+      {/* Developer report — transcripts + scoring breakdown (test build) */}
+      {devRows ? (
+        <DevReport
+          rows={devRows}
+          ru={ru}
+          colors={colors}
+          isDark={isDark}
+          topPad={topPad}
+          bottomPad={bottomPad}
+          onContinue={finishFromDev}
+        />
+      ) : null}
     </View>
   );
 }
@@ -298,6 +459,129 @@ function MiniScore({ analysis, ru }: { analysis: SpeechAnalysis; ru: boolean }) 
             <Ionicons key={i} name={i <= stars ? "star" : "star-outline"} size={14} color={i <= stars ? brand.gold : "rgba(150,150,160,0.5)"} />
           ))}
         </View>
+      </View>
+    </Animated.View>
+  );
+}
+
+// Developer-only report shown at the end of an interview level. Lists each
+// answer's transcript and per-aspect score, plus how the level score is built.
+function DevReport({
+  rows,
+  ru,
+  colors,
+  isDark,
+  topPad,
+  bottomPad,
+  onContinue,
+}: {
+  rows: DevRow[];
+  ru: boolean;
+  colors: import("@/constants/colors").AppColors;
+  isDark: boolean;
+  topPad: number;
+  bottomPad: number;
+  onContinue: () => void;
+}) {
+  const overalls = rows.map((r) => r.analysis.score.overall);
+  const avg = overalls.reduce((s, v) => s + v, 0) / Math.max(1, overalls.length);
+  const aspectKeys: Array<keyof SpeechAnalysis["score"]> = [
+    "clarity",
+    "confidence",
+    "volume",
+    "tempo",
+    "expressiveness",
+    "pauses",
+  ];
+  const aspectLabel: Record<string, string> = ru
+    ? { clarity: "чёткость", confidence: "увер-ть", volume: "громкость", tempo: "темп", expressiveness: "выразит.", pauses: "паузы" }
+    : { clarity: "clarity", confidence: "confidence", volume: "volume", tempo: "tempo", expressiveness: "express.", pauses: "pauses" };
+
+  return (
+    <Animated.View entering={FadeIn.duration(260)} style={[st.devRoot, { backgroundColor: colors.background }]}>
+      <ScrollView
+        contentContainerStyle={{ paddingTop: topPad + 16, paddingBottom: bottomPad + 100, paddingHorizontal: 20, gap: 14 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[st.devBadge, { backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(20,22,26,0.05)" }]}>
+          <Ionicons name="construct-outline" size={14} color={colors.textSecondary} />
+          <Text style={[st.devBadgeText, { color: colors.textSecondary, fontFamily: "Rubik_600SemiBold" }]}>
+            {ru ? "ДЛЯ РАЗРАБОТЧИКОВ" : "FOR DEVELOPERS"}
+          </Text>
+        </View>
+
+        <Text style={[st.devTitle, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>
+          {ru ? "Транскрипция и разбор оценки" : "Transcription & scoring breakdown"}
+        </Text>
+
+        {/* Aggregate */}
+        <View style={[st.devCard, { backgroundColor: colors.backgroundSecondary, borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(20,22,26,0.08)" }]}>
+          <Text style={[st.devAggScore, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>
+            {avg.toFixed(1)}<Text style={[st.devAggMax, { color: colors.textMuted }]}> / 10</Text>
+          </Text>
+          <Text style={[st.devAggNote, { color: colors.textSecondary, fontFamily: "Nunito_600SemiBold" }]}>
+            {ru
+              ? `Итог = среднее из ${rows.length} ответов (${overalls.map((v) => v.toFixed(1)).join(" + ")}) ÷ ${rows.length}.`
+              : `Total = average of ${rows.length} answers (${overalls.map((v) => v.toFixed(1)).join(" + ")}) ÷ ${rows.length}.`}
+          </Text>
+        </View>
+
+        {/* Per-answer rows */}
+        {rows.map((r, i) => {
+          const a = r.analysis;
+          const wordCount = r.transcript.trim().split(/\s+/).filter(Boolean).length;
+          return (
+            <View
+              key={i}
+              style={[st.devCard, { backgroundColor: colors.backgroundSecondary, borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(20,22,26,0.08)" }]}
+            >
+              <View style={st.devRowHead}>
+                <Text style={[st.devQNum, { color: colors.textMuted, fontFamily: "Rubik_600SemiBold" }]}>
+                  {(ru ? "ВОПРОС " : "QUESTION ") + (i + 1)}
+                </Text>
+                <Text style={[st.devScore, { color: toneFor(a.score.overall), fontFamily: "Rubik_700Bold" }]}>
+                  {a.score.overall.toFixed(1)}
+                </Text>
+              </View>
+              <Text style={[st.devQ, { color: colors.text, fontFamily: "Nunito_700Bold" }]}>{r.question}</Text>
+
+              <Text style={[st.devSubLabel, { color: colors.textMuted, fontFamily: "Rubik_600SemiBold" }]}>
+                {ru ? `ТРАНСКРИПЦИЯ · ${wordCount} сл.` : `TRANSCRIPT · ${wordCount} w.`}
+              </Text>
+              <Text style={[st.devTranscript, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
+                {r.transcript ? `«${r.transcript}»` : ru ? "— пусто (не распознано / нет бэкенда) —" : "— empty (not recognized / no backend) —"}
+              </Text>
+
+              <View style={st.devAspects}>
+                {aspectKeys.map((k) => (
+                  <View key={k} style={st.devAspect}>
+                    <Text style={[st.devAspectVal, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>
+                      {Number(a.score[k] ?? 0).toFixed(1)}
+                    </Text>
+                    <Text style={[st.devAspectKey, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>
+                      {aspectLabel[k]}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+
+              {a.recommendations && a.recommendations.length ? (
+                <Text style={[st.devNote, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
+                  {(ru ? "Замечания: " : "Notes: ") + a.recommendations.join(" · ")}
+                </Text>
+              ) : null}
+            </View>
+          );
+        })}
+      </ScrollView>
+
+      <View style={[st.devFooter, { paddingBottom: bottomPad + 16, backgroundColor: colors.background }]}>
+        <Pressable onPress={onContinue} style={({ pressed }) => [st.pill, st.nextPill, { opacity: pressed ? 0.9 : 1 }]}>
+          <Text style={[st.pillText, { color: brand.onGold, fontFamily: "Nunito_800ExtraBold" }]}>
+            {ru ? "Продолжить" : "Continue"}
+          </Text>
+          <Ionicons name="arrow-forward" size={20} color={brand.onGold} />
+        </Pressable>
       </View>
     </Animated.View>
   );
@@ -363,4 +647,52 @@ const st = StyleSheet.create({
   miniScore: { fontSize: 34, letterSpacing: 0.5 },
   miniVerdict: { fontSize: 16 },
   starsRow: { flexDirection: "row", gap: 3, marginTop: 3 },
+
+  // Interview corridor
+  corridor: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 40,
+    zIndex: 20,
+  },
+  corridorQuote: { fontSize: 22, lineHeight: 30, textAlign: "center", marginTop: 24 },
+  corridorHint: { fontSize: 11, letterSpacing: 2, marginTop: 16 },
+
+  // Dev report
+  devRoot: { ...StyleSheet.absoluteFillObject, zIndex: 30 },
+  devBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  devBadgeText: { fontSize: 11, letterSpacing: 1.4 },
+  devTitle: { fontSize: 22, lineHeight: 28 },
+  devCard: { borderRadius: 18, borderWidth: 1, padding: 16, gap: 8 },
+  devAggScore: { fontSize: 40, lineHeight: 46 },
+  devAggMax: { fontSize: 20 },
+  devAggNote: { fontSize: 13, lineHeight: 19 },
+  devRowHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  devQNum: { fontSize: 11, letterSpacing: 1.2 },
+  devScore: { fontSize: 22 },
+  devQ: { fontSize: 16, lineHeight: 22 },
+  devSubLabel: { fontSize: 10.5, letterSpacing: 1.2, marginTop: 4 },
+  devTranscript: { fontSize: 14, lineHeight: 21 },
+  devAspects: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 6 },
+  devAspect: { alignItems: "center", minWidth: 48 },
+  devAspectVal: { fontSize: 17 },
+  devAspectKey: { fontSize: 11, marginTop: 1 },
+  devNote: { fontSize: 12.5, lineHeight: 18, marginTop: 4 },
+  devFooter: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    paddingTop: 12,
+  },
 });

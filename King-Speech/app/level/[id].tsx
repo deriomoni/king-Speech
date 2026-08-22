@@ -1511,13 +1511,17 @@ export default function LevelScreen() {
   }
 
   // Interview & tongue-twister levels wear the SAME palette as the Path map for
-  // their module: background = module bg, accent = module brick.
+  // their module: background = module bg, accent = module brick. Interview
+  // levels are the exception — they run on a clean theme background (light in
+  // light mode, dark in dark mode) with no module tint.
   const pathCols = getPathColors(level.module, isDark);
+  const isInterviewLevel = getBaseType(levelId) === "interview";
+  const flowBg = isInterviewLevel ? colors.background : pathCols.bg;
 
   return (
-    <View style={[styles.container, { backgroundColor: pathCols.bg }]}>
+    <View style={[styles.container, { backgroundColor: flowBg }]}>
       <LinearGradient
-        colors={[pathCols.bg, pathCols.bg]}
+        colors={[flowBg, flowBg]}
         style={StyleSheet.absoluteFill}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.5, y: 1 }}
@@ -1532,8 +1536,9 @@ export default function LevelScreen() {
         levelNumber={level.levelNumber}
         title={level.title}
         subtitle={level.subtitle}
-        accent={pathCols.brick}
-        screenBg={pathCols.bg}
+        accent={isInterviewLevel ? colors.gold : pathCols.brick}
+        screenBg={isInterviewLevel ? undefined : pathCols.bg}
+        isInterview={isInterviewLevel}
         colors={colors}
         isDark={isDark}
         lang={lang}

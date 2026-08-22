@@ -44,11 +44,14 @@ interface Props {
    */
   onRecordingComplete: (durationSeconds: number, audioBase64?: string) => void;
   colors: import("@/constants/colors").AppColors;
+  /** Overrides the idle start-button label (default: "Начать запись"). */
+  startLabel?: string;
 }
 
 export default function WaveformVoiceRecorder({
   onRecordingComplete,
   colors: _colors,
+  startLabel,
 }: Props) {
   const { lang } = useLang();
   const [phase, setPhase] = useState<RecordingPhase>("idle");
@@ -412,7 +415,7 @@ export default function WaveformVoiceRecorder({
   }, [awaitSessionStop, elapsedSeconds, onRecordingComplete, reset]);
 
   if (phase === "idle" || phase === "done" || phase === "analyzing") {
-    const label = lang === "en" ? "Start recording" : "Начать запись";
+    const label = startLabel ?? (lang === "en" ? "Start recording" : "Начать запись");
     const disabled = phase === "analyzing";
     return (
       <View style={styles.container}>
