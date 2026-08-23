@@ -438,7 +438,7 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
           <Text style={[ac.errorsTitle, { color: SCORE_COLOR, fontFamily: "Nunito_600SemiBold" }]}>
             {lang === "ru" ? "Совет на следующий раз" : "Tip for next take"}
           </Text>
-          <Text style={[ac.feedback, { color: "rgba(240,237,232,0.85)", fontFamily: "Nunito_500Medium" }]}>
+          <Text style={[ac.feedback, { color: "rgba(240,237,232,0.85)", fontFamily: "Nunito_500Medium", textAlign: "left" }]}>
             {tip}
           </Text>
         </Animated.View>
@@ -759,37 +759,10 @@ export default function ShowtimePlaybackScreen() {
       <LinearGradient colors={["#050A14", "#07101E", "#050A14"]} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 0.5, y: 1 }} />
 
       <Animated.View style={[pb.header, { paddingTop: topPad + 10 }, headerStyle]}>
-        <Pressable
-          onPress={() => {
-            if (!hasListenedFully && recordingUri) {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-              return;
-            }
-            router.back();
-          }}
-          style={({ pressed }) => [pb.backBtn, { opacity: (!hasListenedFully && recordingUri) ? 0.3 : pressed ? 0.7 : 1 }]}
-        >
-          <Ionicons name="chevron-down" size={22} color="rgba(255,255,255,0.7)" />
-        </Pressable>
         <View style={pb.headerCenter}>
           <Text style={[pb.headerTitle, { fontFamily: "Nunito_700Bold" }]}>{t("yourPerformance")}</Text>
           {title ? <Text style={[pb.headerSub, { fontFamily: "Nunito_400Regular" }]}>«{title}»</Text> : null}
         </View>
-        <Pressable
-          onPress={() => router.replace("/(tabs)")}
-          hitSlop={12}
-          style={({ pressed }) => ({
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "rgba(255,255,255,0.06)",
-            opacity: pressed ? 0.6 : 1,
-          })}
-        >
-          <Ionicons name="close" size={22} color="rgba(255,255,255,0.9)" />
-        </Pressable>
       </Animated.View>
 
       <ScrollView
@@ -867,24 +840,6 @@ export default function ShowtimePlaybackScreen() {
 
           {/* Actions */}
           <View style={pb.actions}>
-            <Pressable
-              onPress={() => {
-                if (!hasListenedFully && recordingUri) {
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                  return;
-                }
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                // replace (not push): playback sits on top of the stage we came
-                // from, so pushing a new stage would stack stage+playback pairs
-                // without bound and leak recorder/timer resources. Replace swaps
-                // in a fresh stage and keeps the stack depth flat.
-                router.replace({ pathname: "/showtime-stage", params: { levelId, mode: isTrainer ? "trainer" : "game" } });
-              }}
-              style={({ pressed }) => [pb.retryBtn, { backgroundColor: "rgba(255,209,102,0.12)", borderColor: "#FFD166", opacity: pressed ? 0.8 : 1 }]}
-            >
-              <Ionicons name="refresh" size={18} color="#FFD166" />
-              <Text style={[pb.retryBtnText, { color: "#FFD166", fontFamily: "Nunito_600SemiBold" }]}>{t("again")}</Text>
-            </Pressable>
             <Pressable
               onPress={handleDone}
               disabled={completing || isSilent || !analysisResult}
