@@ -833,7 +833,7 @@ function DevReport({
                         <Text style={[st.aspTag, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>{ru ? "  · вес 50" : "  · w 50"}</Text>
                       </Text>
                       <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
-                        {ru ? "Сколько слов из скороговорки распозналось в твоей речи." : "How many words of the text were recognized in your speech."}
+                        {ru ? "Каждое слово скороговорки — попало в распознанный текст или нет. Повторы не штрафуют." : "Each word of the text — did it land in the recognized speech? Repeats don't count against you."}
                       </Text>
                     </View>
                     <Text style={[st.litScore, { color: toneFor(r.accuracy.score10), fontFamily: "Rubik_700Bold" }]}>
@@ -844,8 +844,8 @@ function DevReport({
                     <>
                       <Text style={[st.litSub, { color: colors.textMuted, fontFamily: "Nunito_700Bold" }]}>
                         {ru
-                          ? `Совпало ${r.accuracy.matched} из ${r.accuracy.total} · пропущено ${r.accuracy.missed}`
-                          : `Matched ${r.accuracy.matched} of ${r.accuracy.total} · missed ${r.accuracy.missed}`}
+                          ? `Точность ${Math.round(r.accuracy.accuracy * 100)}% · слов ${r.accuracy.matched}/${r.accuracy.total} · пропущено ${r.accuracy.missed}`
+                          : `Accuracy ${Math.round(r.accuracy.accuracy * 100)}% · words ${r.accuracy.matched}/${r.accuracy.total} · missed ${r.accuracy.missed}`}
                       </Text>
                       {r.accuracy.missedWords.length ? (
                         <>

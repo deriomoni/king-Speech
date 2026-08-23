@@ -1,11 +1,15 @@
 // Text-accuracy check for the tongue-twister level. The card shows a fixed text;
-// we transcribe the player's audio and verify how many of the expected words
-// were actually said. Fully deterministic (no AI, no server) → scales infinitely.
+// we transcribe the player's audio and verify how many of its words were said.
+// Fully deterministic (no AI, no server) → scales infinitely.
 //
-// Matching uses an LCS (longest common subsequence) between the expected words
-// and the spoken words, so word order is respected and repeats/extra words don't
-// inflate the count. Equality is lenient by one edit (Levenshtein ≤ 1 for words
-// ≥ 4 chars) so ASR noise doesn't unfairly mark a correct word as missed.
+// Matching is by UNIQUE-WORD COVERAGE, not positional sequence: each distinct
+// word of the twister counts as a hit if it appears ANYWHERE in the transcript.
+// This is deliberate — ASR is unreliable and often collapses a phrase the player
+// repeats (a twister with a slogan said twice comes back once), which under a
+// positional match would score 7/14 = 50% even though every word was spoken.
+// Unique coverage gives the fair result (every distinct word hit = 100%).
+// Equality is lenient by one edit (Levenshtein ≤ 1 for words ≥ 4 chars) so ASR
+// noise doesn't mark a correct word as missed.
 
 export interface TextAccuracy {
   available: boolean;
@@ -57,7 +61,9 @@ function eq(a: string, b: string): boolean {
 }
 
 export function checkTextAccuracy(expectedText: string, transcript: string): TextAccuracy {
-  const expected = wordsOf(expectedText);
+  // Unique words of the twister (order preserved), so a repeated slogan counts
+  // once and its repeat can't drag the score down.
+  const expected = Array.from(new Set(wordsOf(expectedText)));
   const spoken = wordsOf(transcript);
   const total = expected.length;
   if (total === 0) {
@@ -76,32 +82,11 @@ export function checkTextAccuracy(expectedText: string, transcript: string): Tex
     };
   }
 
-  // LCS DP with lenient equality.
-  const n = expected.length;
-  const m = spoken.length;
-  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      dp[i][j] = eq(expected[i - 1], spoken[j - 1])
-        ? dp[i - 1][j - 1] + 1
-        : Math.max(dp[i - 1][j], dp[i][j - 1]);
-    }
-  }
-  // Backtrack to flag which expected words were matched.
-  const hit = new Array(n).fill(false);
-  let i = n;
-  let j = m;
-  while (i > 0 && j > 0) {
-    if (eq(expected[i - 1], spoken[j - 1]) && dp[i][j] === dp[i - 1][j - 1] + 1) {
-      hit[i - 1] = true;
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;
-    } else {
-      j--;
-    }
-  }
+  // Exact hits via a set (fast); fall back to a fuzzy scan (Levenshtein ≤ 1).
+  const spokenSet = new Set(spoken);
+  const hit = expected.map(
+    (w) => spokenSet.has(w) || spoken.some((s) => eq(w, s)),
+  );
 
   const matched = hit.filter(Boolean).length;
   const missed = total - matched;
