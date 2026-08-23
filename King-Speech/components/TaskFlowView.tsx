@@ -17,6 +17,7 @@ import { toneFor } from "@/components/ScoreFlower";
 import { analyzeGenericTask, type TaskAnalysisResult } from "@/services/analyzeGenericTask";
 import { scoreLiteracy, type LiteracyResult } from "@/services/literacyScore";
 import { judgeAnswer, type AnswerJudge } from "@/services/answerJudge";
+import { checkTextAccuracy, type TextAccuracy } from "@/services/textAccuracy";
 import type { SpeechAnalysis } from "@/services/speechAnalysis";
 import type { Task } from "@/context/GameContext";
 import { brand } from "@/constants/colors";
@@ -49,8 +50,11 @@ interface Props {
   accent: string;
   /** Full-screen background behind the flow (module palette). Text on it adapts. */
   screenBg?: string;
-  /** Interview flow: clean bg, white card, deferred background analysis. */
+  /** Interview flow: clean bg, white card, deferred analysis, AI judge + literacy. */
   isInterview?: boolean;
+  /** Tongue-twister flow: same clean/deferred UI, but scored on text accuracy
+   *  (no literacy, no AI judge). */
+  isTongue?: boolean;
   colors: import("@/constants/colors").AppColors;
   isDark: boolean;
   lang: "ru" | "en";
@@ -72,10 +76,11 @@ interface DevRow {
   transcript: string;
   durationSec: number;
   analysis: SpeechAnalysis;
-  literacy: LiteracyResult;
-  ai: AnswerJudge;
-  own: number; // autonomous score (0..10) — 90% of the final
-  overall10: number; // final per-answer score (own 90% + AI 10%)
+  literacy?: LiteracyResult; // interview only
+  ai?: AnswerJudge; // interview only
+  accuracy?: TextAccuracy; // tongue-twister only
+  own: number; // autonomous score (0..10)
+  overall10: number; // final per-answer score
 }
 
 // Autonomous ("own") weights: literacy dominates. Tempo & pauses are NOT scored
@@ -95,6 +100,22 @@ function autonomousOverall(a: SpeechAnalysis, lit: LiteracyResult): number {
     V2_WEIGHTS.expressiveness * (s.expressiveness ?? 0) +
     V2_WEIGHTS.clarity * (s.clarity ?? 0) +
     V2_WEIGHTS.volume * (s.volume ?? 0)
+  );
+}
+
+// Tongue-twister: no literacy (the text is fixed) — text accuracy is the core,
+// clarity next. All other aspects preserved.
+const TONGUE_WEIGHTS = { accuracy: 0.5, clarity: 0.2, confidence: 0.15, expressiveness: 0.08, volume: 0.07 };
+
+function tongueOverall(a: SpeechAnalysis, acc: TextAccuracy): number {
+  const s = a.score;
+  const accPart = acc.available ? acc.score10 : s.overall;
+  return (
+    TONGUE_WEIGHTS.accuracy * accPart +
+    TONGUE_WEIGHTS.clarity * (s.clarity ?? 0) +
+    TONGUE_WEIGHTS.confidence * (s.confidence ?? 0) +
+    TONGUE_WEIGHTS.expressiveness * (s.expressiveness ?? 0) +
+    TONGUE_WEIGHTS.volume * (s.volume ?? 0)
   );
 }
 
@@ -151,6 +172,7 @@ export default function TaskFlowView({
   accent,
   screenBg,
   isInterview = false,
+  isTongue = false,
   colors,
   isDark,
   lang,
@@ -161,6 +183,8 @@ export default function TaskFlowView({
   onExit,
 }: Props) {
   const ru = lang === "ru";
+  // Interview and tongue-twister levels share the same clean/deferred UI.
+  const deferred = isInterview || isTongue;
   // Ink that reads on the palette background (which may be light OR dark,
   // independent of theme). Falls back to the theme text color.
   const ink = screenBg ? readableText(screenBg) : colors.text;
@@ -172,7 +196,7 @@ export default function TaskFlowView({
   const [darken, setDarken] = useState(false);
 
   // Interview-only state.
-  const [corridor, setCorridor] = useState(isInterview);
+  const [corridor, setCorridor] = useState(deferred);
   const [devRows, setDevRows] = useState<DevRow[] | null>(null);
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
 
@@ -260,10 +284,10 @@ export default function TaskFlowView({
 
   // 7s mascot corridor before the interview begins (mirrors the reading level).
   useEffect(() => {
-    if (!isInterview) return;
+    if (!deferred) return;
     const t = setTimeout(() => setCorridor(false), INTERVIEW_CORRIDOR_MS);
     return () => clearTimeout(t);
-  }, [isInterview]);
+  }, [deferred]);
 
   // ── Standard (tongue-twister) flow: analyze each take inline ────────────────
   const handleRecordingComplete = async (durationSeconds: number, audioBase64?: string) => {
@@ -352,20 +376,20 @@ export default function TaskFlowView({
     const rows: DevRow[] = await Promise.all(
       tasks.map(async (t, i): Promise<DevRow> => {
         const analysis = analyses[i] ?? emptyAnalysis();
+        const transcript = analysis.transcript || "";
         const question = t.content || t.title || "";
-        const literacy = scoreLiteracy(analysis.transcript || "", audioRef.current[i]?.durationSec);
+        const durationSec = audioRef.current[i]?.durationSec ?? 0;
+        if (isTongue) {
+          // Deterministic word-match against the printed tongue twister — no
+          // literacy (fixed text) and no AI judge.
+          const accuracy = checkTextAccuracy(question, transcript);
+          const own = tongueOverall(analysis, accuracy);
+          return { question, transcript, durationSec, analysis, accuracy, own, overall10: own };
+        }
+        const literacy = scoreLiteracy(transcript, durationSec);
         const own = autonomousOverall(analysis, literacy);
-        const ai = await judgeAnswer({ question, transcript: analysis.transcript || "", lang });
-        return {
-          question,
-          transcript: analysis.transcript || "",
-          durationSec: audioRef.current[i]?.durationSec ?? 0,
-          analysis,
-          literacy,
-          ai,
-          own,
-          overall10: blendFinal(own, ai),
-        };
+        const ai = await judgeAnswer({ question, transcript, lang });
+        return { question, transcript, durationSec, analysis, literacy, ai, own, overall10: blendFinal(own, ai) };
       }),
     );
     // Level score = 90% autonomous + 10% AI (per answer), then averaged.
@@ -428,7 +452,7 @@ export default function TaskFlowView({
     ? ru ? "Скороговорка" : "Tongue twister"
     : ru ? "Задание" : "Task";
 
-  const cardBg = isInterview ? colors.backgroundSecondary : undefined;
+  const cardBg = deferred ? colors.backgroundSecondary : undefined;
 
   return (
     <View style={{ flex: 1 }}>
@@ -439,7 +463,7 @@ export default function TaskFlowView({
         </Pressable>
         <View style={st.dotsRow}>
           {tasks.map((_, i) => {
-            const done = isInterview
+            const done = deferred
               ? i < index
               : i < index || (i === index && phase === "scored");
             const active = i === index;
@@ -471,6 +495,8 @@ export default function TaskFlowView({
         <Text style={[st.kicker, { color: accent, fontFamily: "Rubik_600SemiBold" }]}>
           {isInterview
             ? `${ru ? "Вопрос" : "Question"} ${index + 1}/${total}`
+            : isTongue
+            ? `${ru ? "Скороговорка" : "Tongue twister"} ${index + 1}/${total}`
             : `${kindLabel.toUpperCase()} · ${index + 1}/${total}`}
         </Text>
         <Text numberOfLines={1} style={[st.levelTitle, { color: ink, fontFamily: "Rubik_700Bold" }]}>
@@ -482,19 +508,19 @@ export default function TaskFlowView({
       <View style={st.stage}>
         <Animated.View
           key={index}
-          entering={isInterview ? FadeIn.duration(300) : SlideInRight.duration(360)}
-          exiting={isInterview ? FadeOut.duration(160) : SlideOutLeft.duration(240)}
+          entering={deferred ? FadeIn.duration(300) : SlideInRight.duration(360)}
+          exiting={deferred ? FadeOut.duration(160) : SlideOutLeft.duration(240)}
           style={st.cardWrap}
         >
           <View
             style={[
               st.card,
-              isInterview
+              deferred
                 ? { backgroundColor: cardBg, borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(20,22,26,0.08)" }
                 : { borderColor: brand.borderViolet },
             ]}
           >
-            {!isInterview ? (
+            {!deferred ? (
               <LinearGradient
                 colors={isDark ? ["#1C1830", "#141221"] : ["#F3EFFB", "#EDE7FA"]}
                 start={{ x: 0, y: 0 }}
@@ -502,18 +528,18 @@ export default function TaskFlowView({
                 style={StyleSheet.absoluteFill}
               />
             ) : null}
-            {task.instruction && !isInterview ? (
+            {task.instruction && !deferred ? (
               <Text style={[st.instruction, { color: isDark ? "rgba(242,238,251,0.6)" : colors.textSecondary, fontFamily: "Nunito_600SemiBold" }]}>
                 {task.instruction}
               </Text>
             ) : null}
-            {/* Interview: text fades in over 1.5s each new question. */}
+            {/* Clean flow: text fades in over 1.5s each new card. */}
             <Animated.Text
               key={`q-${index}`}
-              entering={isInterview ? FadeIn.duration(1500) : undefined}
+              entering={deferred ? FadeIn.duration(1500) : undefined}
               style={[
                 st.contentText,
-                { color: isInterview ? colors.text : isDark ? "#F5F1FF" : colors.text, fontFamily: "Rubik_700Bold" },
+                { color: deferred ? colors.text : isDark ? "#F5F1FF" : colors.text, fontFamily: "Rubik_700Bold" },
               ]}
             >
               {task.content || task.title}
@@ -538,9 +564,9 @@ export default function TaskFlowView({
         {phase === "record" ? (
           <Animated.View key="rec" entering={ZoomIn.duration(260)} style={st.controlSlot}>
             <WaveformVoiceRecorder
-              onRecordingComplete={isInterview ? handleInterviewRecorded : handleRecordingComplete}
+              onRecordingComplete={deferred ? handleInterviewRecorded : handleRecordingComplete}
               colors={colors}
-              startLabel={isInterview ? (ru ? "Ответить" : "Answer") : undefined}
+              startLabel={isInterview ? (ru ? "Ответить" : "Answer") : isTongue ? (ru ? "Прочитать" : "Read") : undefined}
             />
           </Animated.View>
         ) : phase === "analyzing" ? (
@@ -588,10 +614,12 @@ export default function TaskFlowView({
         <Animated.View exiting={FadeOut.duration(420)} style={[st.corridor, { backgroundColor: colors.background }]}>
           <OscarMascot emotion="happy" size={150} />
           <Text style={[st.corridorQuote, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>
-            {ru ? "Дыши ровно. Говори как есть." : "Breathe easy. Speak your mind."}
+            {isTongue
+              ? ru ? "Медленно и чётко. Скорость придёт." : "Slow and clear. Speed will come."
+              : ru ? "Дыши ровно. Говори как есть." : "Breathe easy. Speak your mind."}
           </Text>
           <Text style={[st.corridorHint, { color: colors.textMuted, fontFamily: "Rubik_600SemiBold" }]}>
-            {(ru ? "Готовим интервью" : "Preparing the interview").toUpperCase()}
+            {(isTongue ? (ru ? "Готовим скороговорки" : "Preparing tongue twisters") : ru ? "Готовим интервью" : "Preparing the interview").toUpperCase()}
           </Text>
         </Animated.View>
       ) : null}
@@ -601,6 +629,7 @@ export default function TaskFlowView({
         <DevReport
           rows={devRows}
           ru={ru}
+          isTongue={isTongue}
           colors={colors}
           isDark={isDark}
           topPad={topPad}
@@ -648,6 +677,7 @@ interface AspectInfo {
 function DevReport({
   rows,
   ru,
+  isTongue,
   colors,
   isDark,
   topPad,
@@ -658,6 +688,7 @@ function DevReport({
 }: {
   rows: DevRow[];
   ru: boolean;
+  isTongue: boolean;
   colors: import("@/constants/colors").AppColors;
   isDark: boolean;
   topPad: number;
@@ -668,23 +699,23 @@ function DevReport({
 }) {
   const overalls = rows.map((r) => r.overall10);
   const avg = overalls.reduce((s, v) => s + v, 0) / Math.max(1, overalls.length);
-  const aiUsed = rows.filter((r) => r.ai.available).length;
+  const aiUsed = rows.filter((r) => r.ai?.available).length;
   const border = isDark ? "rgba(255,255,255,0.08)" : "rgba(20,22,26,0.08)";
 
   // Scored aspects (v2). Grammar/literacy is rendered separately above these as
   // the weight-40 core. Tempo & pauses are NOT here — they are internal signals.
   const ASPECTS: AspectInfo[] = ru
     ? [
-        { key: "confidence", label: "Уверенность", desc: "Устойчивость голоса, завершённость интонации, беглость без запинок. (вес 20)" },
-        { key: "expressiveness", label: "Выразительность", desc: "Интонационный диапазон и эмоциональная вовлечённость. (вес 18)" },
-        { key: "clarity", label: "Чёткость", desc: "Разборчивость дикции: чистота согласных и уверенность распознавания. (вес 14)" },
-        { key: "volume", label: "Громкость", desc: "Фактическая громкость голоса — не тихо и без перегруза. (вес 8)" },
+        { key: "confidence", label: "Уверенность", desc: "Устойчивость голоса, завершённость интонации, беглость без запинок." },
+        { key: "expressiveness", label: "Выразительность", desc: "Интонационный диапазон и эмоциональная вовлечённость." },
+        { key: "clarity", label: "Чёткость", desc: "Разборчивость дикции: чистота согласных и уверенность распознавания." },
+        { key: "volume", label: "Громкость", desc: "Фактическая громкость голоса — не тихо и без перегруза." },
       ]
     : [
-        { key: "confidence", label: "Confidence", desc: "Voice stability, finished intonation, fluency without stumbles. (w 20)" },
-        { key: "expressiveness", label: "Expressiveness", desc: "Pitch range and emotional engagement. (w 18)" },
-        { key: "clarity", label: "Clarity", desc: "Diction intelligibility: clean consonants and recognition confidence. (w 14)" },
-        { key: "volume", label: "Volume", desc: "Actual loudness of your voice — not too quiet, no clipping. (w 8)" },
+        { key: "confidence", label: "Confidence", desc: "Voice stability, finished intonation, fluency without stumbles." },
+        { key: "expressiveness", label: "Expressiveness", desc: "Pitch range and emotional engagement." },
+        { key: "clarity", label: "Clarity", desc: "Diction intelligibility: clean consonants and recognition confidence." },
+        { key: "volume", label: "Volume", desc: "Actual loudness of your voice — not too quiet, no clipping." },
       ];
 
   return (
@@ -694,10 +725,14 @@ function DevReport({
         showsVerticalScrollIndicator={false}
       >
         <Text style={[st.devTitle, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>
-          {ru ? "Разбор ответов" : "Answer breakdown"}
+          {isTongue ? (ru ? "Разбор скороговорок" : "Tongue-twister review") : ru ? "Разбор ответов" : "Answer breakdown"}
         </Text>
         <Text style={[st.devLede, { color: colors.textSecondary, fontFamily: "Nunito_600SemiBold" }]}>
-          {ru
+          {isTongue
+            ? ru
+              ? "Что распозналось и сколько слов совпало с текстом скороговорки."
+              : "What was recognized and how many words matched the text."
+            : ru
             ? "Твоя речь, распознанная в текст, и из чего сложилась оценка."
             : "Your speech turned into text, and what the score is built from."}
         </Text>
@@ -708,11 +743,15 @@ function DevReport({
             {fmtScore(avg)}<Text style={[st.devAggMax, { color: colors.textMuted }]}> / 10</Text>
           </Text>
           <Text style={[st.devAggNote, { color: colors.textSecondary, fontFamily: "Nunito_600SemiBold" }]}>
-            {ru
+            {isTongue
+              ? ru
+                ? `Средняя из ${rows.length} (${overalls.map((v) => fmtScore(v)).join(" + ")}) ÷ ${rows.length}. Каждая = 50% точность текста + 20% чёткость + 15% уверенность + 8% выразительность + 7% громкость.`
+                : `Average of ${rows.length} (${overalls.map((v) => fmtScore(v)).join(" + ")}) ÷ ${rows.length}. Each = 50% text accuracy + 20% clarity + 15% confidence + 8% expressiveness + 7% volume.`
+              : ru
               ? `Средняя из ${rows.length} ответов (${overalls.map((v) => fmtScore(v)).join(" + ")}) ÷ ${rows.length}. Каждый ответ = 90% наш механизм + 10% ИИ (ответил ли на вопрос + грамотность).`
               : `Average of ${rows.length} answers (${overalls.map((v) => fmtScore(v)).join(" + ")}) ÷ ${rows.length}. Each answer = 90% our mechanism + 10% AI (answered the question + literacy).`}
           </Text>
-          {aiUsed === 0 ? (
+          {!isTongue && aiUsed === 0 ? (
             <Text style={[st.devAggNote, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>
               {ru ? "ИИ-разбор сейчас недоступен — оценка полностью по нашему механизму." : "AI review is currently unavailable — scored entirely by our mechanism."}
             </Text>
@@ -729,7 +768,7 @@ function DevReport({
             <View key={i} style={[st.devCard, { backgroundColor: colors.backgroundSecondary, borderColor: border }]}>
               <View style={st.devRowHead}>
                 <Text style={[st.devQNum, { color: colors.textMuted, fontFamily: "Rubik_600SemiBold" }]}>
-                  {(ru ? "ВОПРОС " : "QUESTION ") + (i + 1) + (hasAudio ? " · " + fmtDuration(r.durationSec) : "")}
+                  {(isTongue ? (ru ? "СКОРОГОВОРКА " : "TWISTER ") : ru ? "ВОПРОС " : "QUESTION ") + (i + 1) + (hasAudio ? " · " + fmtDuration(r.durationSec) : "")}
                 </Text>
                 <Text style={[st.devScore, { color: toneFor(r.overall10), fontFamily: "Rubik_700Bold" }]}>
                   {fmtScore(r.overall10)}
@@ -737,28 +776,30 @@ function DevReport({
               </View>
               <Text style={[st.devQ, { color: colors.text, fontFamily: "Nunito_700Bold" }]}>{r.question}</Text>
 
-              {/* ИИ-судья: ответил ли на вопрос (главное) + грамотность */}
-              {r.ai.available ? (
-                <View style={[st.aiRow, { borderColor: toneFor(r.ai.relevance ?? 0) + "55", backgroundColor: toneFor(r.ai.relevance ?? 0) + (isDark ? "1E" : "12") }]}>
-                  <Ionicons
-                    name={r.ai.verdict === "yes" ? "checkmark-circle" : r.ai.verdict === "off" ? "close-circle" : "alert-circle"}
-                    size={17}
-                    color={toneFor(r.ai.relevance ?? 0)}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[st.aiTitle, { color: colors.text, fontFamily: "Nunito_800ExtraBold" }]}>
-                      {`${verdictLabel(r.ai.verdict, ru)} · ${ru ? "ответ" : "answer"} ${fmtScore(r.ai.relevance ?? 0)}/10 · ${ru ? "грамотность" : "literacy"} ${fmtScore(r.ai.competence ?? 0)}/10`}
-                    </Text>
-                    {r.ai.note ? (
-                      <Text style={[st.aiNote, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>{r.ai.note}</Text>
-                    ) : null}
+              {/* ИИ-судья (только интервью): ответил ли на вопрос (главное) + грамотность */}
+              {!isTongue ? (
+                r.ai && r.ai.available ? (
+                  <View style={[st.aiRow, { borderColor: toneFor(r.ai.relevance ?? 0) + "55", backgroundColor: toneFor(r.ai.relevance ?? 0) + (isDark ? "1E" : "12") }]}>
+                    <Ionicons
+                      name={r.ai.verdict === "yes" ? "checkmark-circle" : r.ai.verdict === "off" ? "close-circle" : "alert-circle"}
+                      size={17}
+                      color={toneFor(r.ai.relevance ?? 0)}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[st.aiTitle, { color: colors.text, fontFamily: "Nunito_800ExtraBold" }]}>
+                        {`${verdictLabel(r.ai.verdict, ru)} · ${ru ? "ответ" : "answer"} ${fmtScore(r.ai.relevance ?? 0)}/10 · ${ru ? "грамотность" : "literacy"} ${fmtScore(r.ai.competence ?? 0)}/10`}
+                      </Text>
+                      {r.ai.note ? (
+                        <Text style={[st.aiNote, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>{r.ai.note}</Text>
+                      ) : null}
+                    </View>
                   </View>
-                </View>
-              ) : (
-                <Text style={[st.aiOffline, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>
-                  {ru ? "ИИ-разбор недоступен — оценка по нашему механизму." : "AI review unavailable — scored by our mechanism."}
-                </Text>
-              )}
+                ) : (
+                  <Text style={[st.aiOffline, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>
+                    {ru ? "ИИ-разбор недоступен — оценка по нашему механизму." : "AI review unavailable — scored by our mechanism."}
+                  </Text>
+                )
+              ) : null}
 
               {hasAudio ? (
                 <Pressable
@@ -782,8 +823,60 @@ function DevReport({
                 {r.transcript ? `«${r.transcript}»` : ru ? "— пусто (не распознано / нет связи с сервером) —" : "— empty (not recognized / no server) —"}
               </Text>
 
-              {/* Грамотность — ядро оценки (вес 40) */}
-              <View style={[st.litCard, { borderColor: toneFor(r.literacy.overall10) + "44", backgroundColor: toneFor(r.literacy.overall10) + (isDark ? "1E" : "12") }]}>
+              {/* Точность текста — ядро для скороговорок (вес 50) */}
+              {isTongue && r.accuracy ? (
+                <View style={[st.litCard, { borderColor: toneFor(r.accuracy.score10) + "44", backgroundColor: toneFor(r.accuracy.score10) + (isDark ? "1E" : "12") }]}>
+                  <View style={st.litHead}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[st.litTitle, { color: colors.text, fontFamily: "Nunito_800ExtraBold" }]}>
+                        {ru ? "Точность текста" : "Text accuracy"}
+                        <Text style={[st.aspTag, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>{ru ? "  · вес 50" : "  · w 50"}</Text>
+                      </Text>
+                      <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
+                        {ru ? "Сколько слов из скороговорки распозналось в твоей речи." : "How many words of the text were recognized in your speech."}
+                      </Text>
+                    </View>
+                    <Text style={[st.litScore, { color: toneFor(r.accuracy.score10), fontFamily: "Rubik_700Bold" }]}>
+                      {r.accuracy.available ? fmtScore(r.accuracy.score10) : "—"}
+                    </Text>
+                  </View>
+                  {r.accuracy.available ? (
+                    <>
+                      <Text style={[st.litSub, { color: colors.textMuted, fontFamily: "Nunito_700Bold" }]}>
+                        {ru
+                          ? `Совпало ${r.accuracy.matched} из ${r.accuracy.total} · пропущено ${r.accuracy.missed}`
+                          : `Matched ${r.accuracy.matched} of ${r.accuracy.total} · missed ${r.accuracy.missed}`}
+                      </Text>
+                      {r.accuracy.missedWords.length ? (
+                        <>
+                          <Text style={[st.aspDesc, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>
+                            {ru ? "Пропущенные слова:" : "Missed words:"}
+                          </Text>
+                          <View style={st.litViolWrap}>
+                            {r.accuracy.missedWords.slice(0, 14).map((w, k) => (
+                              <View key={`${w}-${k}`} style={[st.litChip, { backgroundColor: toneFor(2) + "22" }]}>
+                                <Text style={[st.litChipText, { color: toneFor(2), fontFamily: "Nunito_700Bold" }]}>{w}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        </>
+                      ) : (
+                        <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
+                          {ru ? "Все слова произнесены — отлично!" : "Every word was said — great!"}
+                        </Text>
+                      )}
+                    </>
+                  ) : (
+                    <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
+                      {ru ? "Речь не распозналась — проверь микрофон/связь." : "Speech wasn't recognized — check mic/connection."}
+                    </Text>
+                  )}
+                </View>
+              ) : null}
+
+              {/* Грамотность — ядро оценки (вес 40, только интервью) */}
+              {!isTongue && r.literacy ? (
+                <View style={[st.litCard, { borderColor: toneFor(r.literacy.overall10) + "44", backgroundColor: toneFor(r.literacy.overall10) + (isDark ? "1E" : "12") }]}>
                 <View style={st.litHead}>
                   <View style={{ flex: 1 }}>
                     <Text style={[st.litTitle, { color: colors.text, fontFamily: "Nunito_800ExtraBold" }]}>
@@ -841,7 +934,8 @@ function DevReport({
                     {ru ? "Недостаточно распознанного текста для оценки грамотности." : "Not enough recognized text to score literacy."}
                   </Text>
                 )}
-              </View>
+                </View>
+              ) : null}
 
               {/* Per-aspect rows with a short explanation each */}
               <View style={st.aspList}>

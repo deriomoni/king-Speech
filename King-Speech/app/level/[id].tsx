@@ -1516,7 +1516,10 @@ export default function LevelScreen() {
   // light mode, dark in dark mode) with no module tint.
   const pathCols = getPathColors(level.module, isDark);
   const isInterviewLevel = getBaseType(levelId) === "interview";
-  const flowBg = isInterviewLevel ? colors.background : pathCols.bg;
+  const isTongueLevel = levelId.startsWith("tonguetwister");
+  // Interview & tongue-twister levels run on a clean theme background.
+  const isCleanLevel = isInterviewLevel || isTongueLevel;
+  const flowBg = isCleanLevel ? colors.background : pathCols.bg;
 
   return (
     <View style={[styles.container, { backgroundColor: flowBg }]}>
@@ -1536,9 +1539,10 @@ export default function LevelScreen() {
         levelNumber={level.levelNumber}
         title={level.title}
         subtitle={level.subtitle}
-        accent={isInterviewLevel ? colors.gold : pathCols.brick}
-        screenBg={isInterviewLevel ? undefined : pathCols.bg}
+        accent={isCleanLevel ? colors.gold : pathCols.brick}
+        screenBg={isCleanLevel ? undefined : pathCols.bg}
         isInterview={isInterviewLevel}
+        isTongue={isTongueLevel}
         colors={colors}
         isDark={isDark}
         lang={lang}
