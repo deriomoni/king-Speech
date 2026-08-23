@@ -16,6 +16,7 @@ import OscarMascot from "@/components/OscarMascot";
 import { toneFor } from "@/components/ScoreFlower";
 import { analyzeGenericTask, type TaskAnalysisResult } from "@/services/analyzeGenericTask";
 import { scoreLiteracy, type LiteracyResult } from "@/services/literacyScore";
+import { judgeAnswer, type AnswerJudge } from "@/services/answerJudge";
 import type { SpeechAnalysis } from "@/services/speechAnalysis";
 import type { Task } from "@/context/GameContext";
 import { brand } from "@/constants/colors";
@@ -72,14 +73,20 @@ interface DevRow {
   durationSec: number;
   analysis: SpeechAnalysis;
   literacy: LiteracyResult;
-  overall10: number; // v2-weighted per-answer score (0..10)
+  ai: AnswerJudge;
+  own: number; // autonomous score (0..10) — 90% of the final
+  overall10: number; // final per-answer score (own 90% + AI 10%)
 }
 
-// v2 weights: literacy dominates. Tempo & pauses are NOT scored (they feed other
-// aspects as internal signals per the spec).
+// Autonomous ("own") weights: literacy dominates. Tempo & pauses are NOT scored
+// (internal signals per the spec).
 const V2_WEIGHTS = { literacy: 0.4, confidence: 0.2, expressiveness: 0.18, clarity: 0.14, volume: 0.08 };
+// Final blend: 90% autonomous mechanism + 10% AI judge. AI is relevance-first.
+const AI_SHARE = 0.1;
+const AI_RELEVANCE_W = 0.7; // "did they answer the question" — the primary AI signal
+const AI_COMPETENCE_W = 0.3;
 
-function v2Overall(a: SpeechAnalysis, lit: LiteracyResult): number {
+function autonomousOverall(a: SpeechAnalysis, lit: LiteracyResult): number {
   const s = a.score;
   const litPart = lit.available ? lit.overall10 : s.overall; // fall back if no transcript
   return (
@@ -89,6 +96,14 @@ function v2Overall(a: SpeechAnalysis, lit: LiteracyResult): number {
     V2_WEIGHTS.clarity * (s.clarity ?? 0) +
     V2_WEIGHTS.volume * (s.volume ?? 0)
   );
+}
+
+// Blend the autonomous score with the AI judge. When the AI is unavailable
+// (overloaded / offline / timed out) the autonomous score stands alone.
+function blendFinal(own: number, ai: AnswerJudge): number {
+  if (!ai.available || ai.relevance == null || ai.competence == null) return own;
+  const aiScore = AI_RELEVANCE_W * ai.relevance + AI_COMPETENCE_W * ai.competence;
+  return (1 - AI_SHARE) * own + AI_SHARE * aiScore;
 }
 
 // Recorded answer audio is kept ONLY in memory for the duration of the level so
@@ -118,6 +133,13 @@ function fmtDuration(sec: number): string {
 function fmtScore(n: number): string {
   const r = Math.round(n * 10) / 10;
   return Number.isInteger(r) ? String(r) : r.toFixed(1);
+}
+
+function verdictLabel(v: AnswerJudge["verdict"], ru: boolean): string {
+  if (v === "yes") return ru ? "Ответ по теме" : "On topic";
+  if (v === "partial") return ru ? "Частично по теме" : "Partly on topic";
+  if (v === "off") return ru ? "Не по теме" : "Off topic";
+  return ru ? "Оценка ИИ" : "AI review";
 }
 
 export default function TaskFlowView({
@@ -325,19 +347,28 @@ export default function TaskFlowView({
     );
     const analyses = results.map((r) => (r.kind === "empty" ? emptyAnalysis() : r.analysis));
     analysesRef.current = analyses;
-    const rows: DevRow[] = tasks.map((t, i) => {
-      const analysis = analyses[i] ?? emptyAnalysis();
-      const literacy = scoreLiteracy(analysis.transcript || "", audioRef.current[i]?.durationSec);
-      return {
-        question: t.content || t.title || "",
-        transcript: analysis.transcript || "",
-        durationSec: audioRef.current[i]?.durationSec ?? 0,
-        analysis,
-        literacy,
-        overall10: v2Overall(analysis, literacy),
-      };
-    });
-    // Level score is the v2-weighted blend (literacy-first), not the raw mean.
+    // Compute the autonomous score, then ask the AI judge (relevance + competence)
+    // in parallel. The judge self-times-out and falls back, so this never hangs.
+    const rows: DevRow[] = await Promise.all(
+      tasks.map(async (t, i): Promise<DevRow> => {
+        const analysis = analyses[i] ?? emptyAnalysis();
+        const question = t.content || t.title || "";
+        const literacy = scoreLiteracy(analysis.transcript || "", audioRef.current[i]?.durationSec);
+        const own = autonomousOverall(analysis, literacy);
+        const ai = await judgeAnswer({ question, transcript: analysis.transcript || "", lang });
+        return {
+          question,
+          transcript: analysis.transcript || "",
+          durationSec: audioRef.current[i]?.durationSec ?? 0,
+          analysis,
+          literacy,
+          ai,
+          own,
+          overall10: blendFinal(own, ai),
+        };
+      }),
+    );
+    // Level score = 90% autonomous + 10% AI (per answer), then averaged.
     scoresRef.current = rows.map((r) => r.overall10);
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -637,6 +668,7 @@ function DevReport({
 }) {
   const overalls = rows.map((r) => r.overall10);
   const avg = overalls.reduce((s, v) => s + v, 0) / Math.max(1, overalls.length);
+  const aiUsed = rows.filter((r) => r.ai.available).length;
   const border = isDark ? "rgba(255,255,255,0.08)" : "rgba(20,22,26,0.08)";
 
   // Scored aspects (v2). Grammar/literacy is rendered separately above these as
@@ -677,9 +709,14 @@ function DevReport({
           </Text>
           <Text style={[st.devAggNote, { color: colors.textSecondary, fontFamily: "Nunito_600SemiBold" }]}>
             {ru
-              ? `Средняя из ${rows.length} ответов (${overalls.map((v) => fmtScore(v)).join(" + ")}) ÷ ${rows.length}. Каждый ответ = грамотность 40% + уверенность 20% + выразительность 18% + чёткость 14% + громкость 8%.`
-              : `Average of ${rows.length} answers (${overalls.map((v) => fmtScore(v)).join(" + ")}) ÷ ${rows.length}. Each answer = literacy 40% + confidence 20% + expressiveness 18% + clarity 14% + volume 8%.`}
+              ? `Средняя из ${rows.length} ответов (${overalls.map((v) => fmtScore(v)).join(" + ")}) ÷ ${rows.length}. Каждый ответ = 90% наш механизм + 10% ИИ (ответил ли на вопрос + грамотность).`
+              : `Average of ${rows.length} answers (${overalls.map((v) => fmtScore(v)).join(" + ")}) ÷ ${rows.length}. Each answer = 90% our mechanism + 10% AI (answered the question + literacy).`}
           </Text>
+          {aiUsed === 0 ? (
+            <Text style={[st.devAggNote, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>
+              {ru ? "ИИ-разбор сейчас недоступен — оценка полностью по нашему механизму." : "AI review is currently unavailable — scored entirely by our mechanism."}
+            </Text>
+          ) : null}
         </View>
 
         {/* Per-answer rows */}
@@ -699,6 +736,29 @@ function DevReport({
                 </Text>
               </View>
               <Text style={[st.devQ, { color: colors.text, fontFamily: "Nunito_700Bold" }]}>{r.question}</Text>
+
+              {/* ИИ-судья: ответил ли на вопрос (главное) + грамотность */}
+              {r.ai.available ? (
+                <View style={[st.aiRow, { borderColor: toneFor(r.ai.relevance ?? 0) + "55", backgroundColor: toneFor(r.ai.relevance ?? 0) + (isDark ? "1E" : "12") }]}>
+                  <Ionicons
+                    name={r.ai.verdict === "yes" ? "checkmark-circle" : r.ai.verdict === "off" ? "close-circle" : "alert-circle"}
+                    size={17}
+                    color={toneFor(r.ai.relevance ?? 0)}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[st.aiTitle, { color: colors.text, fontFamily: "Nunito_800ExtraBold" }]}>
+                      {`${verdictLabel(r.ai.verdict, ru)} · ${ru ? "ответ" : "answer"} ${fmtScore(r.ai.relevance ?? 0)}/10 · ${ru ? "грамотность" : "literacy"} ${fmtScore(r.ai.competence ?? 0)}/10`}
+                    </Text>
+                    {r.ai.note ? (
+                      <Text style={[st.aiNote, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>{r.ai.note}</Text>
+                    ) : null}
+                  </View>
+                </View>
+              ) : (
+                <Text style={[st.aiOffline, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>
+                  {ru ? "ИИ-разбор недоступен — оценка по нашему механизму." : "AI review unavailable — scored by our mechanism."}
+                </Text>
+              )}
 
               {hasAudio ? (
                 <Pressable
@@ -933,6 +993,10 @@ const st = StyleSheet.create({
   playText: { fontSize: 13.5 },
   devSubLabel: { fontSize: 10.5, letterSpacing: 1.2, marginTop: 6 },
   devTranscript: { fontSize: 14, lineHeight: 21 },
+  aiRow: { flexDirection: "row", alignItems: "flex-start", gap: 9, borderRadius: 12, borderWidth: 1, padding: 11, marginTop: 4 },
+  aiTitle: { fontSize: 13.5, lineHeight: 19 },
+  aiNote: { fontSize: 12.5, lineHeight: 18, marginTop: 3 },
+  aiOffline: { fontSize: 12.5, lineHeight: 18, marginTop: 4 },
   litCard: { borderRadius: 14, borderWidth: 1, padding: 13, gap: 8, marginTop: 8 },
   litHead: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   litTitle: { fontSize: 16 },

@@ -302,6 +302,16 @@ async function generateStructuredSummary(session: InterviewSession): Promise<Fin
   }
 }
 
+// ── Interview answer-judge load guard ────────────────────────────────────────
+// The AI judge (/api/judge-answer) is a best-effort enhancement worth ~10% of
+// the score. To keep the backend alive under load we shed judge requests beyond
+// a concurrency cap — the client then falls back to its autonomous score, so
+// the game never stalls. (For a multi-instance deploy, back this with Redis.)
+let judgeInFlight = 0;
+const JUDGE_MAX_INFLIGHT = Number(process.env.JUDGE_MAX_INFLIGHT ?? 40);
+// Fast, cheap model for the high-volume judge (override via env).
+const JUDGE_MODEL = process.env.JUDGE_MODEL ?? "claude-haiku-4-5-20251001";
+
 export async function registerRoutes(app: Express): Promise<Server> {
 
   // Lightweight health probe. Used by start-expo-dev.ps1 to detect whether the
@@ -498,6 +508,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) {
       console.error("analyze-interview error:", err);
       return res.status(500).json({ error: "Interview analysis failed" });
+    }
+  });
+
+  // Interview answer-judge (~10% of the score). Answers TWO questions only:
+  //   1) relevance — did the player actually answer THIS question? (primary)
+  //   2) competence — how literate / coherent the answer is.
+  // Everything else is scored by the client's autonomous mechanism. Under load
+  // we return { available:false } so the client uses its autonomous score.
+  app.post("/api/judge-answer", async (req: Request, res: Response) => {
+    const lang = getLang(req.body);
+    const { question, transcript } = req.body ?? {};
+    if (!transcript || typeof transcript !== "string" || transcript.trim().length < 4) {
+      return res.json({ available: false, reason: "empty" });
+    }
+    if (judgeInFlight >= JUDGE_MAX_INFLIGHT) {
+      return res.status(503).json({ available: false, reason: "overloaded" });
+    }
+    judgeInFlight++;
+    try {
+      const system = lang === "en"
+        ? `You are a fair but strict interview examiner. You are given a QUESTION and the TRANSCRIPT of a spoken answer. Judge ONLY two things:\n1) relevance (0..10) — how well the answer actually ADDRESSES THIS SPECIFIC QUESTION. This is the priority: 10 = answers it directly and fully; 5 = partial / adjacent; 0 = did not answer / off-topic.\n2) competence (0..10) — how literate and coherent the wording is (logic, precision, range; penalize waffle and fillers).\nIgnore pronunciation and loudness — text only.\nverdict: "yes" | "partial" | "off".\nnote: one short English sentence on what to improve (relevance first).\nReturn STRICTLY JSON: {"relevance":<0-10>,"competence":<0-10>,"verdict":"yes|partial|off","note":"..."}`
+        : `Ты — справедливый, но строгий экзаменатор на собеседовании. Тебе дают ВОПРОС и РАСШИФРОВКУ устного ответа. Оцени СТРОГО две вещи:\n1) relevance (0..10) — насколько ответ ПО СУЩЕСТВУ отвечает ИМЕННО НА ЭТОТ вопрос. Это приоритет: 10 = ответил прямо и полно; 5 = частично / рядом; 0 = не ответил / не о том.\n2) competence (0..10) — насколько грамотно и связно построен ответ (логика, точность, богатство речи; штрафуй за воду и слова-паразиты).\nНе оценивай произношение и громкость — только текст.\nverdict: "yes" | "partial" | "off" — ответил ли по теме.\nnote: одна короткая фраза на русском, что улучшить (в первую очередь про соответствие вопросу).\nВерни СТРОГО JSON: {"relevance":<0-10>,"competence":<0-10>,"verdict":"yes|partial|off","note":"..."}`;
+      const user = JSON.stringify({
+        question: String(question ?? "").slice(0, 600),
+        answer: transcript.trim().slice(0, 3000),
+      });
+      const out = await chatComplete({ system, user, maxTokens: 160, json: true, model: JUDGE_MODEL });
+      let parsed: any = {};
+      try { parsed = JSON.parse(out || "{}"); } catch { parsed = {}; }
+      const clamp = (v: any) => {
+        const n = Number(v);
+        return Number.isFinite(n) ? Math.min(10, Math.max(0, n)) : null;
+      };
+      const relevance = clamp(parsed.relevance);
+      const competence = clamp(parsed.competence);
+      if (relevance == null || competence == null) {
+        return res.json({ available: false, reason: "parse" });
+      }
+      const verdict = ["yes", "partial", "off"].includes(parsed.verdict)
+        ? parsed.verdict
+        : relevance >= 7 ? "yes" : relevance >= 4 ? "partial" : "off";
+      return res.json({
+        available: true,
+        relevance,
+        competence,
+        verdict,
+        note: typeof parsed.note === "string" ? parsed.note.slice(0, 240) : undefined,
+      });
+    } catch (err) {
+      console.error("judge-answer error:", err);
+      return res.status(503).json({ available: false, reason: "error" });
+    } finally {
+      judgeInFlight--;
     }
   });
 
