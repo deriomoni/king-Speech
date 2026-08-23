@@ -379,11 +379,11 @@ export function FlowerResultWindow({
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[rs.content, { paddingTop: topPad, paddingBottom: bottomPad + 8 }]}
+        contentContainerStyle={[rs.content, { paddingTop: topPad + 28, paddingBottom: bottomPad + 8 }]}
       >
         {/* Oscar leads the screen — big, centered, no card around him */}
         <Animated.View entering={FadeIn.duration(450)} style={rs.oscarSection}>
-          <OscarMascot emotion={oscarEmotion} size={260} />
+          <OscarMascot emotion={oscarEmotion} size={312} />
         </Animated.View>
 
         {/* Overall score right under the mascot — plain number, no circle */}
@@ -407,37 +407,19 @@ export function FlowerResultWindow({
           entering={FadeInDown.delay(160).duration(350)}
           style={[rs.metricsCard, { backgroundColor: cardBg, borderColor: cardBorder }]}
         >
-          {aspects.map((a) => {
-            const high = a.score >= 8;
-            const c = high ? RS_GREEN : tone(a.score);
-            return (
-              <View key={a.key} style={rs.metricItem}>
-                <Ionicons name={ASPECT_META[a.key].icon} size={13} color={c} />
-                <Text
-                  numberOfLines={1}
-                  style={[rs.metricLabel, { color: fgMuted, fontFamily: "Nunito_500Medium" }]}
-                >
-                  {a.label}
-                </Text>
-                <Text
-                  style={[
-                    rs.metricValue,
-                    { color: c, fontFamily: "Rubik_700Bold" },
-                    high &&
-                      (Platform.OS === "web"
-                        ? ({ textShadow: `0 0 10px ${RS_GREEN}B3` } as any)
-                        : {
-                            textShadowColor: RS_GREEN + "B3",
-                            textShadowOffset: { width: 0, height: 0 },
-                            textShadowRadius: 10,
-                          }),
-                  ]}
-                >
-                  {a.score.toFixed(1)}
-                </Text>
-              </View>
-            );
-          })}
+          {aspects.map((a) => (
+            <View key={a.key} style={rs.metricItem}>
+              <Text
+                numberOfLines={1}
+                style={[rs.metricLabel, { color: fgMuted, fontFamily: "Nunito_500Medium" }]}
+              >
+                {a.label}
+              </Text>
+              <Text style={[rs.metricValue, { color: fgText, fontFamily: "Rubik_700Bold" }]}>
+                {a.score.toFixed(1)}
+              </Text>
+            </View>
+          ))}
         </Animated.View>
 
         {/* One combined "what to improve" message (tip + growth merged) */}
@@ -447,7 +429,6 @@ export function FlowerResultWindow({
             style={[rs.adviceCard, { backgroundColor: scoreColor + "12", borderColor: scoreColor + "40" }]}
           >
             <View style={rs.adviceHead}>
-              <Ionicons name="bulb" size={16} color={scoreColor} />
               <Text style={[rs.adviceTitle, { color: scoreColor, fontFamily: "Rubik_600SemiBold" }]}>
                 {lang === "ru" ? "Над чем поработать" : "What to work on"}
               </Text>
@@ -456,10 +437,7 @@ export function FlowerResultWindow({
               <Text style={[rs.adviceLead, { color: fgText, fontFamily: "Nunito_700Bold" }]}>{tipText}</Text>
             ) : null}
             {growthLines.map((g, i) => (
-              <View key={i} style={rs.adviceRow}>
-                <View style={[rs.dot, { backgroundColor: scoreColor }]} />
-                <Text style={[rs.adviceText, { color: fgMuted, fontFamily: "Nunito_400Regular" }]}>{g}</Text>
-              </View>
+              <Text key={i} style={[rs.adviceText, { color: fgMuted, fontFamily: "Nunito_400Regular" }]}>{g}</Text>
             ))}
           </Animated.View>
         ) : null}
@@ -684,27 +662,37 @@ function LevelCompleteModal({
     <Modal visible={visible} transparent animationType="fade">
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         {/* Confetti pinned flush to the top edge; only the lower ~half shows
-            (top clipped), transparent background */}
+            (top clipped), transparent background. A soft fade at the bottom
+            dissolves it into the background so there's no hard cut edge. */}
         {visible && (
-          <View
-            style={{ position: "absolute", top: 0, left: 0, right: 0, height: 150, overflow: "hidden" }}
-            pointerEvents="none"
-          >
-            <RiveAnim
-              source={CONFETTI_RIVE}
-              autoplay
-              fit="cover"
-              style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: 300,
-                backgroundColor: "transparent",
-                transform: [{ scale: 1.19 }],
-              }}
+          <>
+            <View
+              style={{ position: "absolute", top: 0, left: 0, right: 0, height: 210, overflow: "hidden" }}
+              pointerEvents="none"
+            >
+              <RiveAnim
+                source={CONFETTI_RIVE}
+                autoplay
+                fit="cover"
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: 360,
+                  backgroundColor: "transparent",
+                  transform: [{ scale: 1.19 }],
+                }}
+              />
+            </View>
+            <LinearGradient
+              colors={["transparent", colors.background]}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              pointerEvents="none"
+              style={{ position: "absolute", top: 150, left: 0, right: 0, height: 70 }}
             />
-          </View>
+          </>
         )}
 
         <View
@@ -1760,13 +1748,13 @@ const rs = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 4,
   },
-  metricLabel: { flex: 1, fontSize: 12.5 },
-  metricValue: { fontSize: 14, marginLeft: 2 },
+  metricLabel: { fontSize: 12.5 },
+  metricValue: { fontSize: 14, marginLeft: 6 },
   oscarSection: {
     alignItems: "center",
     justifyContent: "center",
-    marginTop: -6,
-    marginBottom: -6,
+    marginTop: 8,
+    marginBottom: -4,
   },
   adviceCard: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 9 },
   adviceHead: { flexDirection: "row", alignItems: "center", gap: 7 },

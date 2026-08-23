@@ -596,7 +596,7 @@ export default function ReadingLevelView({
           exiting={FadeOut.duration(420)}
           style={[st.overlay, { backgroundColor: bgColor }]}
         >
-          <OscarMascot emotion="happy" size={150} />
+          <OscarMascot emotion="happy" size={180} />
           <Text style={[st.loadQuote, { color: ink, fontFamily: R.type.bodyFont }]}>
             {lang === "ru"
               ? "Речь — это сцена. Выходи и говори."

@@ -612,7 +612,7 @@ export default function TaskFlowView({
       {/* Interview corridor — 7s mascot loading curtain on entry */}
       {corridor ? (
         <Animated.View exiting={FadeOut.duration(420)} style={[st.corridor, { backgroundColor: colors.background }]}>
-          <OscarMascot emotion="happy" size={150} />
+          <OscarMascot emotion="happy" size={180} />
           <Text style={[st.corridorQuote, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>
             {isTongue
               ? ru ? "Медленно и чётко. Скорость придёт." : "Slow and clear. Speed will come."
