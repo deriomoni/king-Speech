@@ -662,37 +662,27 @@ function LevelCompleteModal({
     <Modal visible={visible} transparent animationType="fade">
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         {/* Confetti pinned flush to the top edge; only the lower ~half shows
-            (top clipped), transparent background. A soft fade at the bottom
-            dissolves it into the background so there's no hard cut edge. */}
+            (top clipped), transparent background. */}
         {visible && (
-          <>
-            <View
-              style={{ position: "absolute", top: 0, left: 0, right: 0, height: 210, overflow: "hidden" }}
-              pointerEvents="none"
-            >
-              <RiveAnim
-                source={CONFETTI_RIVE}
-                autoplay
-                fit="cover"
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: 360,
-                  backgroundColor: "transparent",
-                  transform: [{ scale: 1.19 }],
-                }}
-              />
-            </View>
-            <LinearGradient
-              colors={["transparent", colors.background]}
-              start={{ x: 0.5, y: 0 }}
-              end={{ x: 0.5, y: 1 }}
-              pointerEvents="none"
-              style={{ position: "absolute", top: 150, left: 0, right: 0, height: 70 }}
+          <View
+            style={{ position: "absolute", top: 0, left: 0, right: 0, height: 210, overflow: "hidden" }}
+            pointerEvents="none"
+          >
+            <RiveAnim
+              source={CONFETTI_RIVE}
+              autoplay
+              fit="cover"
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: 360,
+                backgroundColor: "transparent",
+                transform: [{ scale: 1.19 }],
+              }}
             />
-          </>
+          </View>
         )}
 
         <View
