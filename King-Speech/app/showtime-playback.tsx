@@ -35,7 +35,7 @@ import { getApiUrl } from "@/lib/query-client";
 import { playSfx } from "@/lib/sfx";
 import { getLevelsData } from "@/constants/gameContent";
 import SpeechAnalyzingLoader from "@/components/SpeechAnalyzingLoader";
-import ScoreFlower, { aspectsFromMetrics5 } from "@/components/ScoreFlower";
+import { aspectsFromMetrics5 } from "@/components/ScoreFlower";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -396,10 +396,19 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
 
       <Text style={[ac.label, { color: SCORE_COLOR, fontFamily: "Nunito_600SemiBold" }]}>{t("aiAnalysis")}</Text>
 
-      {/* Flower (per-aspect petals) when we have full metrics; else stars. */}
+      {/* Plain metrics table (parameter + score) when we have full metrics;
+          else stars. One neutral colour, no icons. */}
       {metrics ? (
-        <View style={ac.flowerWrap}>
-          <ScoreFlower overall={overall10} aspects={aspectsFromMetrics5(metrics, lang)} size={300} />
+        <View style={ac.metricsTable}>
+          {aspectsFromMetrics5(metrics, lang).map((a, i, arr) => (
+            <View
+              key={a.key}
+              style={[ac.metricRow, i < arr.length - 1 && ac.metricRowBorder]}
+            >
+              <Text style={[ac.metricLabel, { fontFamily: "Nunito_500Medium" }]}>{a.label}</Text>
+              <Text style={[ac.metricValue, { fontFamily: "Nunito_700Bold" }]}>{a.score.toFixed(1)}</Text>
+            </View>
+          ))}
         </View>
       ) : (
         <View style={ac.starsRow}>
@@ -456,6 +465,17 @@ const ac = StyleSheet.create({
   label: { fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase" },
   starsRow: { flexDirection: "row", gap: 12, justifyContent: "center", paddingVertical: 4 },
   flowerWrap: { alignItems: "center", justifyContent: "center", paddingVertical: 4 },
+  metricsTable: { width: "100%", paddingVertical: 4 },
+  metricRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 11,
+    paddingHorizontal: 2,
+  },
+  metricRowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(240,237,232,0.14)" },
+  metricLabel: { fontSize: 15, color: "rgba(240,237,232,0.92)" },
+  metricValue: { fontSize: 16, color: "rgba(240,237,232,0.92)" },
   scoreBadge: { alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
   scoreText: { fontSize: 16 },
   xpText: { fontSize: 14 },
