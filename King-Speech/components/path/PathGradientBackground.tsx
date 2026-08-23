@@ -3,10 +3,12 @@ import { View, StyleSheet } from "react-native";
 import type { ThemeMode } from "@/context/ThemeContext";
 
 /**
- * Full-screen SOLID background for the Path ("Путь") screen — one flat color
- * per module, taken straight from the curated Path palette (already resolved
- * for the active theme by getPathColors). Anchored to a module, so it stays put
- * while scrolling and only changes when the module changes.
+ * Full-screen SOLID background for the Path ("Путь") screen.
+ *
+ * One flat color for the whole ladder — the app's own theme background, light
+ * in the light theme and dark in the dark theme. It no longer changes from
+ * module to module: the curated Path palette still exists and is still used,
+ * but only for the level bricks, not for what they sit on.
  */
 function PathGradientBackgroundBase({
   color,

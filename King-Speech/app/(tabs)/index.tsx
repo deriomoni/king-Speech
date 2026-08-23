@@ -699,14 +699,20 @@ export default function PathScreen() {
   // Reference measureTick so the React Compiler doesn't strip the dependency.
   void measureTick;
 
-  // --- Path background (solid module color) ---------------------------------
-  // Which module drives the full-screen background color.
-  //   • Normal play: pinned to the ACTIVE level's module — the background stays
-  //     put while scrolling and only shifts when the player advances a module.
+  // --- Path background (one flat theme color) -------------------------------
+  // The ladder sits on the app's own background: light in the light theme,
+  // dark in the dark theme, the same on every module. The per-module palette
+  // no longer paints the background at all — only the level bricks still carry
+  // their module's color.
+  //
+  // `bgModule` is still tracked, because it anchors the symbol pattern layer
+  // (currently switched off, see PATH_PATTERN_BG) and drives the lock-in haptic
+  // just below.
+  //   • Normal play: pinned to the ACTIVE level's module.
   //   • Open Testing: follows the module currently IN VIEW, so a tester can
-  //     scroll through the map and preview every module's color in turn.
+  //     scroll the map and watch the anchor move.
   const bgModule = isOpenTestingEnabled ? tintAnchorModule : activeModule;
-  const curBgColor = getPathColors(bgModule, isDark).bg;
+  const curBgColor = colors.background;
 
   // Tactile "lock-in" — when the tint anchor module flips (i.e. the
   // previous module has fully scrolled off the viewport), fire a chunky
@@ -826,9 +832,10 @@ export default function PathScreen() {
     router.push("/rank-up");
   }, [portalStatus]);
 
-  // Base color sits under the full-screen gradient (only visible for the split
-  // second before it mounts). The gradient itself carries the level colors.
-  const containerBg = themeMode === "dark" ? "#07070A" : "#FAFAFC";
+  // Base color under the full-screen background layer — only visible for the
+  // split second before it mounts, so it uses the very same token and there is
+  // nothing to flash between the two.
+  const containerBg = colors.background;
 
   return (
     <View style={[styles.container, { backgroundColor: containerBg }]}>
@@ -896,16 +903,23 @@ export default function PathScreen() {
           <Text
             style={[styles.devRankKicker, { fontFamily: "Rubik_600SemiBold" }]}
           >
-            DEV · ФОН · прокрути карту
+            DEV · МОДУЛЬ · прокрути карту
           </Text>
           <View style={styles.devBgReadoutRow}>
+            {/* The background is one flat theme color now, so the swatch shows
+                the module's BRICK color — the only part of the palette the
+                Path still uses. */}
             <View
-              style={[styles.devBgSwatch, { backgroundColor: curBgColor }]}
+              style={[
+                styles.devBgSwatch,
+                { backgroundColor: getPathColors(bgModule, isDark).brick },
+              ]}
             />
             <Text
               style={[styles.devRankValue, { fontFamily: "Rubik_700Bold" }]}
             >
-              модуль {bgModule} · {curBgColor}
+              модуль {bgModule} · ступени{" "}
+              {getPathColors(bgModule, isDark).brick}
             </Text>
           </View>
         </View>
