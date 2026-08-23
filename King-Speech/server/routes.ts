@@ -312,6 +312,21 @@ const JUDGE_MAX_INFLIGHT = Number(process.env.JUDGE_MAX_INFLIGHT ?? 40);
 // Fast, cheap model for the high-volume judge (override via env).
 const JUDGE_MODEL = process.env.JUDGE_MODEL ?? "claude-haiku-4-5-20251001";
 
+// Hidden text-match for Show Time: what fraction of the script's UNIQUE words the
+// player actually said. Deterministic and O(unique) via Set membership — capped
+// so a very long Show Time script never becomes a heavy computation.
+function textCoverage(scriptText: string, transcript: string): number {
+  const norm = (s: string) =>
+    (s || "").toLowerCase().replace(/ё/g, "е").replace(/[^a-zа-я\s]/gi, " ").replace(/\s+/g, " ").trim();
+  const scriptWords = Array.from(new Set(norm(scriptText).split(" ").filter(Boolean))).slice(0, 800);
+  if (scriptWords.length === 0) return 0;
+  const spoken = new Set(norm(transcript).split(" ").filter(Boolean));
+  if (spoken.size === 0) return 0;
+  let hit = 0;
+  for (const w of scriptWords) if (spoken.has(w)) hit++;
+  return hit / scriptWords.length;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
 
   // Lightweight health probe. Used by start-expo-dev.ps1 to detect whether the
@@ -604,6 +619,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/analyze-speech", async (req: Request, res: Response) => {
     try {
       const { audioBase64, title, durationSeconds, moduleNumber } = req.body;
+      const scriptText: string = typeof req.body.scriptText === "string" ? req.body.scriptText : "";
       const lang = getLang(req.body);
       if (!audioBase64) return res.status(400).json({ error: "audioBase64 required" });
 
@@ -635,6 +651,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             clarity: 0, expressiveness: 0, volume: 0, confidence: 0, tempo: 0, pauses: 0,
           },
           errors: [silentError],
+          textMatch: null, wordCount: 0, durationSec: null, readOk: false,
         });
       }
 
@@ -646,6 +663,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Speech rate (tempo) and filler density from the transcript + duration.
       const tokens = transcript.toLowerCase().split(/[^a-zа-яё0-9]+/i).filter(Boolean);
       const wordCount = tokens.length;
+      // Hidden Show Time signals: how much of the script was actually read, and
+      // whether this counts as a genuine read (not a skip / random noise).
+      const textMatch = scriptText.trim().length >= 20 ? textCoverage(scriptText, transcript) : null;
+      const readOk = wordCount >= 12 && (textMatch == null || textMatch >= 0.15);
       const FILLERS_RU = ["э", "эм", "ну", "типа", "значит", "вот", "короче", "это", "блин", "как бы", "в общем", "так сказать", "это самое"];
       const FILLERS_EN = ["um", "uh", "like", "basically", "actually", "so", "well", "you know", "i mean", "kinda", "sorta"];
       const single = new Set((lang === "en" ? FILLERS_EN : FILLERS_RU).filter((f) => !f.includes(" ")));
@@ -752,6 +773,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         errors: Array.isArray(parsed.errors) ? parsed.errors.slice(0, 5) : [],
         tip: typeof parsed.tip === "string" ? parsed.tip : undefined,
+        // Hidden Show Time tolerance signals (transcript is NOT surfaced).
+        textMatch,
+        wordCount,
+        durationSec: dur,
+        readOk,
       });
     } catch (err) {
       console.error("analyze-speech error:", err);

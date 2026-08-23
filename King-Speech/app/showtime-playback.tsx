@@ -357,22 +357,32 @@ interface AnalysisResult {
   errors?: string[];
   /** Personal coaching tip from the server, derived from the weakest criterion. */
   tip?: string;
+  // Hidden Show Time signals (never shown to the player).
+  textMatch?: number | null; // 0..1 — fraction of the script's words that were said
+  wordCount?: number;
+  durationSec?: number | null;
+  readOk?: boolean; // false = didn't actually read the text (skip / noise)
 }
 
 function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (key: any) => string; lang: "ru" | "en" }) {
   if (!result) return null;
   const { stars, score, silent, feedback, categories, metrics, errors, tip } = result;
 
-  if (silent || stars === 0) {
+  if (silent || stars === 0 || result.readOk === false) {
+    // "Spoke, but didn't actually read the script" vs "no speech at all".
+    const didNotRead = result.readOk === false && !silent && stars !== 0;
+    const skipMsg = didNotRead
+      ? (lang === "ru"
+          ? "Похоже, текст не был прочитан вслух. Прочитай его целиком и пройди уровень снова."
+          : "Looks like the text wasn't read aloud. Read it in full and pass the level again.")
+      : feedback;
     return (
       <Animated.View entering={FadeInUp.delay(100).duration(500)} style={[ac.card, { borderColor: "#0EA5E944" }]}>
         <LinearGradient colors={["#0EA5E908", "transparent"]} style={StyleSheet.absoluteFill} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} />
         <Text style={[ac.label, { color: "#0EA5E9", fontFamily: "Nunito_600SemiBold" }]}>{t("notCounted")}</Text>
-        <View style={ac.starsRow}>
-          {[1, 2, 3].map((n) => <AnimatedStar key={n} filled={false} delay={n * 150} />)}
-        </View>
-        <Animated.Text entering={FadeIn.delay(500).duration(400)} style={[ac.feedback, { color: "rgba(240,80,80,0.9)", fontFamily: "Nunito_500Medium", textAlign: "center" }]}>
-          {feedback}
+        <Ionicons name="book-outline" size={40} color="#0EA5E9" style={{ alignSelf: "center", marginVertical: 4 }} />
+        <Animated.Text entering={FadeIn.delay(500).duration(400)} style={[ac.feedback, { color: "rgba(240,237,232,0.9)", fontFamily: "Nunito_500Medium", textAlign: "center" }]}>
+          {skipMsg}
         </Animated.Text>
       </Animated.View>
     );
@@ -381,14 +391,23 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
   const SCORE_COLOR = stars === 3 ? "#2DCB8E" : stars === 2 ? "#FFD166" : "#F5A623";
   const SCORE_LABEL = stars === 3 ? t("excellent") : stars === 2 ? t("good") : t("keepGoing");
 
-  // Overall 0..10 from the six 1..5 metrics so the flower centre reads smoothly
-  // (the star→score map is too coarse for the headline number).
-  const metricVals = metrics
-    ? [metrics.clarity, metrics.expressiveness, metrics.volume, metrics.confidence, metrics.tempo, metrics.pauses]
+  // Show Time is a PREPARED text read aloud — so the honest base score comes only
+  // from delivery + volume (diction, expressiveness, volume, confidence); tempo &
+  // pauses are dropped. Then the "Толерантность" layer supports a player who truly
+  // read: the more of the script they actually spoke (hidden text-match), the more
+  // the score is lifted toward 10. Skipping / noise doesn't lift it (text-match is
+  // near zero). Padding the timer with silence can't help either — no words said.
+  const deliveryVals = metrics
+    ? [metrics.clarity, metrics.expressiveness, metrics.volume, metrics.confidence]
     : [];
-  const overall10 = metricVals.length
-    ? Math.round((metricVals.reduce((a, b) => a + b, 0) / metricVals.length) * 2 * 10) / 10
+  const base10 = deliveryVals.length
+    ? (deliveryVals.reduce((a, b) => a + b, 0) / deliveryVals.length) * 2
     : score;
+  const tm = result.textMatch;
+  // Genuine-reading effort from the hidden text-match: 0 at ≤25% of the script
+  // said, full (→ score 10) at ≥85%. (readOk === false already returned above.)
+  const effort = tm != null ? Math.max(0, Math.min(1, (tm - 0.25) / (0.85 - 0.25))) : 0;
+  const overall10 = Math.round(Math.min(10, base10 + (10 - base10) * effort) * 10) / 10;
 
   return (
     <Animated.View entering={FadeInUp.delay(100).duration(500)} style={[ac.card, { borderColor: SCORE_COLOR + "44" }]}>
@@ -408,7 +427,9 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
           else stars. One neutral colour, no icons. */}
       {metrics ? (
         <View style={ac.metricsTable}>
-          {aspectsFromMetrics5(metrics, lang).map((a, i, arr) => (
+          {aspectsFromMetrics5(metrics, lang)
+            .filter((a) => a.key === "clarity" || a.key === "expressiveness" || a.key === "volume" || a.key === "confidence")
+            .map((a, i, arr) => (
             <View
               key={a.key}
               style={[ac.metricRow, i < arr.length - 1 && ac.metricRowBorder]}
@@ -500,13 +521,14 @@ const DEMO_RESULT: AnalysisResult = {
 
 // ── MAIN PLAYBACK SCREEN ──────────────────────────────────────────────────────
 export default function ShowtimePlaybackScreen() {
-  const { recordingUri, title, taskNumber: taskNumberParam, levelId: levelIdParam, mode: modeParam, demo: demoParam } = useLocalSearchParams<{
+  const { recordingUri, title, taskNumber: taskNumberParam, levelId: levelIdParam, mode: modeParam, demo: demoParam, scriptText: scriptTextParam } = useLocalSearchParams<{
     recordingUri: string;
     title: string;
     taskNumber?: string;
     levelId?: string;
     mode?: string;
     demo?: string;
+    scriptText?: string;
   }>();
   // DEV preview: opened from the Skip button to show the flower score window
   // with example data, no recording required.
@@ -608,7 +630,7 @@ export default function ShowtimePlaybackScreen() {
       const res = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audioBase64, title, moduleNumber }),
+        body: JSON.stringify({ audioBase64, title, moduleNumber, scriptText: scriptTextParam ?? "" }),
       });
       const data = await res.json();
       if (typeof data.stars === "number") {
@@ -621,6 +643,10 @@ export default function ShowtimePlaybackScreen() {
           metrics: data.metrics,
           errors: data.errors ?? [],
           tip: typeof data.tip === "string" ? data.tip : undefined,
+          textMatch: typeof data.textMatch === "number" ? data.textMatch : null,
+          wordCount: typeof data.wordCount === "number" ? data.wordCount : 0,
+          durationSec: typeof data.durationSec === "number" ? data.durationSec : null,
+          readOk: data.readOk !== false,
         });
         if (data.stars === 0) {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -726,7 +752,7 @@ export default function ShowtimePlaybackScreen() {
   const handleDone = () => {
     if (completing) return;
     // Block progression if the player said nothing
-    if (analysisResult?.silent || analysisResult?.stars === 0) {
+    if (analysisResult && (analysisResult.silent || analysisResult.stars === 0 || analysisResult.readOk === false)) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
@@ -749,7 +775,10 @@ export default function ShowtimePlaybackScreen() {
     proceed();
   };
 
-  const isSilent = analysisResult?.silent || analysisResult?.stars === 0;
+  // Didn't actually read the script (no speech, or spoke but text-match too low).
+  // Blocks progression — the player must read the text and try again.
+  const didNotRead = !!analysisResult && (analysisResult.silent || analysisResult.stars === 0 || analysisResult.readOk === false);
+  const isSilent = didNotRead;
 
   const headerStyle = useAnimatedStyle(() => ({ opacity: headerOpacity.value }));
   const contentStyle = useAnimatedStyle(() => ({ opacity: contentOpacity.value, transform: [{ translateY: contentY.value }] }));
@@ -841,6 +870,17 @@ export default function ShowtimePlaybackScreen() {
           {/* Actions */}
           <View style={pb.actions}>
             <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                // replace (not push) so playback doesn't stack on top of stage.
+                router.replace({ pathname: "/showtime-stage", params: { levelId, mode: isTrainer ? "trainer" : "game" } });
+              }}
+              style={({ pressed }) => [pb.retryBtn, { backgroundColor: "rgba(255,209,102,0.12)", borderColor: "#FFD166", opacity: pressed ? 0.8 : 1 }]}
+            >
+              <Ionicons name="refresh" size={18} color="#FFD166" />
+              <Text style={[pb.retryBtnText, { color: "#FFD166", fontFamily: "Nunito_600SemiBold" }]}>{t("again")}</Text>
+            </Pressable>
+            <Pressable
               onPress={handleDone}
               disabled={completing || isSilent || !analysisResult}
               style={({ pressed }) => [
@@ -857,8 +897,10 @@ export default function ShowtimePlaybackScreen() {
                 <ActivityIndicator size="small" color="#FFD166" />
               ) : isSilent ? (
                 <>
-                  <Ionicons name="mic-off-outline" size={18} color="#666" />
-                  <Text style={[pb.doneBtnText, { color: "#555", fontFamily: "Nunito_700Bold" }]}>{t("noSound")}</Text>
+                  <Ionicons name="book-outline" size={18} color="#666" />
+                  <Text style={[pb.doneBtnText, { color: "#555", fontFamily: "Nunito_700Bold" }]}>
+                    {lang === "ru" ? "Прочитай текст" : "Read the text"}
+                  </Text>
                 </>
               ) : (
                 <>

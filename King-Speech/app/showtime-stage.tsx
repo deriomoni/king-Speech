@@ -4593,7 +4593,7 @@ export default function ShowtimeStageScreen() {
     playSfx("applause").catch(() => {});
     setTimeout(() => {
       const uri = recordingUriRef.current ?? "";
-      router.push({ pathname: "/showtime-playback", params: { recordingUri: uri, title: speech.title, levelId, mode } });
+      router.push({ pathname: "/showtime-playback", params: { recordingUri: uri, title: speech.title, levelId, mode, scriptText: speech.lines.join("\n") } });
     }, 1200);
   };
 
@@ -4978,7 +4978,7 @@ export default function ShowtimeStageScreen() {
         onPreviewResults={() =>
           router.push({
             pathname: "/showtime-playback",
-            params: { title: speech.title, levelId, mode, demo: "1" },
+            params: { title: speech.title, levelId, mode, demo: "1", scriptText: speech.lines.join("\n") },
           })
         }
       />
