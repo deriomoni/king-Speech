@@ -114,6 +114,12 @@ function fmtDuration(sec: number): string {
   return `${m}:${r.toString().padStart(2, "0")}`;
 }
 
+// Score with the trailing ".0" trimmed: 10.0 -> "10", 7.0 -> "7", 7.5 -> "7.5".
+function fmtScore(n: number): string {
+  const r = Math.round(n * 10) / 10;
+  return Number.isInteger(r) ? String(r) : r.toFixed(1);
+}
+
 export default function TaskFlowView({
   tasks,
   levelId,
@@ -321,7 +327,7 @@ export default function TaskFlowView({
     analysesRef.current = analyses;
     const rows: DevRow[] = tasks.map((t, i) => {
       const analysis = analyses[i] ?? emptyAnalysis();
-      const literacy = scoreLiteracy(analysis.transcript || "");
+      const literacy = scoreLiteracy(analysis.transcript || "", audioRef.current[i]?.durationSec);
       return {
         question: t.content || t.title || "",
         transcript: analysis.transcript || "",
@@ -667,12 +673,12 @@ function DevReport({
         {/* Aggregate */}
         <View style={[st.devCard, { backgroundColor: colors.backgroundSecondary, borderColor: border }]}>
           <Text style={[st.devAggScore, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>
-            {avg.toFixed(1)}<Text style={[st.devAggMax, { color: colors.textMuted }]}> / 10</Text>
+            {fmtScore(avg)}<Text style={[st.devAggMax, { color: colors.textMuted }]}> / 10</Text>
           </Text>
           <Text style={[st.devAggNote, { color: colors.textSecondary, fontFamily: "Nunito_600SemiBold" }]}>
             {ru
-              ? `Средняя из ${rows.length} ответов (${overalls.map((v) => v.toFixed(1)).join(" + ")}) ÷ ${rows.length}. Каждый ответ = грамотность 40% + уверенность 20% + выразительность 18% + чёткость 14% + громкость 8%.`
-              : `Average of ${rows.length} answers (${overalls.map((v) => v.toFixed(1)).join(" + ")}) ÷ ${rows.length}. Each answer = literacy 40% + confidence 20% + expressiveness 18% + clarity 14% + volume 8%.`}
+              ? `Средняя из ${rows.length} ответов (${overalls.map((v) => fmtScore(v)).join(" + ")}) ÷ ${rows.length}. Каждый ответ = грамотность 40% + уверенность 20% + выразительность 18% + чёткость 14% + громкость 8%.`
+              : `Average of ${rows.length} answers (${overalls.map((v) => fmtScore(v)).join(" + ")}) ÷ ${rows.length}. Each answer = literacy 40% + confidence 20% + expressiveness 18% + clarity 14% + volume 8%.`}
           </Text>
         </View>
 
@@ -689,7 +695,7 @@ function DevReport({
                   {(ru ? "ВОПРОС " : "QUESTION ") + (i + 1) + (hasAudio ? " · " + fmtDuration(r.durationSec) : "")}
                 </Text>
                 <Text style={[st.devScore, { color: toneFor(r.overall10), fontFamily: "Rubik_700Bold" }]}>
-                  {r.overall10.toFixed(1)}
+                  {fmtScore(r.overall10)}
                 </Text>
               </View>
               <Text style={[st.devQ, { color: colors.text, fontFamily: "Nunito_700Bold" }]}>{r.question}</Text>
@@ -731,7 +737,7 @@ function DevReport({
                     </Text>
                   </View>
                   <Text style={[st.litScore, { color: toneFor(r.literacy.overall10), fontFamily: "Rubik_700Bold" }]}>
-                    {r.literacy.available ? r.literacy.overall10.toFixed(1) : "—"}
+                    {r.literacy.available ? fmtScore(r.literacy.overall10) : "—"}
                   </Text>
                 </View>
 
@@ -739,9 +745,16 @@ function DevReport({
                   <>
                     <Text style={[st.litSub, { color: colors.textMuted, fontFamily: "Nunito_700Bold" }]}>
                       {ru
-                        ? `Паразиты ${(r.literacy.g1 / 10).toFixed(1)} · Словоформы ${(r.literacy.g2 / 10).toFixed(1)} · Построение — фаза 3`
-                        : `Fillers ${(r.literacy.g1 / 10).toFixed(1)} · Word forms ${(r.literacy.g2 / 10).toFixed(1)} · Syntax — phase 3`}
+                        ? `Паразиты ${fmtScore(r.literacy.g1 / 10)} · Словоформы ${fmtScore(r.literacy.g2 / 10)} · Построение ${fmtScore(r.literacy.g3 / 10)}`
+                        : `Fillers ${fmtScore(r.literacy.g1 / 10)} · Word forms ${fmtScore(r.literacy.g2 / 10)} · Structure ${fmtScore(r.literacy.g3 / 10)}`}
                     </Text>
+                    {r.literacy.incomplete ? (
+                      <Text style={[st.litHabit, { color: toneFor(3), fontFamily: "Nunito_800ExtraBold" }]}>
+                        {ru
+                          ? "Мысль звучит незавершённой или ответ слишком короткий."
+                          : "The thought sounds unfinished or the answer is too short."}
+                      </Text>
+                    ) : null}
                     {r.literacy.habit ? (
                       <Text style={[st.litHabit, { color: colors.text, fontFamily: "Nunito_800ExtraBold" }]}>
                         {ru ? `Твоё слово-паразит: «${r.literacy.habit.lemma}» ×${r.literacy.habit.count}` : `Your filler word: “${r.literacy.habit.lemma}” ×${r.literacy.habit.count}`}
@@ -775,7 +788,7 @@ function DevReport({
                 {ASPECTS.map((asp) => (
                   <View key={asp.key} style={st.aspRow}>
                     <Text style={[st.aspVal, { color: asp.internal ? colors.textMuted : toneFor(Number(a.score[asp.key] ?? 0)), fontFamily: "Rubik_700Bold" }]}>
-                      {Number(a.score[asp.key] ?? 0).toFixed(1)}
+                      {fmtScore(Number(a.score[asp.key] ?? 0))}
                     </Text>
                     <View style={{ flex: 1 }}>
                       <Text style={[st.aspLabel, { color: colors.text, fontFamily: "Nunito_800ExtraBold" }]}>

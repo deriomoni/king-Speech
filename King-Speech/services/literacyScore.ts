@@ -29,9 +29,11 @@ export interface LiteracyResult {
   words: number;
   overall: number; // G, 0..100
   overall10: number; // G / 10, 0..10
-  g1: number; // 0..100
-  g2: number; // 0..100
-  g3Available: boolean; // always false until dependency parsing exists
+  g1: number; // паразиты, 0..100
+  g2: number; // словоформы, 0..100
+  g3: number; // построение речи (завершённость + паузы), 0..100
+  wordsPerSec: number | null;
+  incomplete: boolean; // thought seems cut off / too short to be an answer
   violations: LiteracyViolation[];
   habit?: { lemma: string; count: number };
 }
@@ -49,6 +51,16 @@ function norm(s: string): string {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+// Words a finished thought almost never ends on — a trailing one signals the
+// answer was cut off mid-clause.
+const HANGING_WORDS = new Set(
+  (
+    "и а но да или либо то же бы ли не ни что чтобы потому если когда как что-то " +
+    "в во на с со к ко по из изо для от ото до у о об обо за под над при про без " +
+    "между чем чём этот эта это эти тот та те мой моя мои наш наша это самое ну вот"
+  ).split(/\s+/),
+);
 
 interface Surface {
   id: string;
@@ -88,12 +100,23 @@ const SURFACES: Surface[] = (() => {
   return out;
 })();
 
-export function scoreLiteracy(transcript: string): LiteracyResult {
+export function scoreLiteracy(transcript: string, durationSec?: number): LiteracyResult {
   const text = norm(transcript || "");
   const words = text ? text.split(" ").filter(Boolean) : [];
   const L = words.length;
   if (L < 3) {
-    return { available: false, words: L, overall: 0, overall10: 0, g1: 0, g2: 0, g3Available: false, violations: [] };
+    return {
+      available: false,
+      words: L,
+      overall: 0,
+      overall10: 0,
+      g1: 0,
+      g2: 0,
+      g3: 0,
+      wordsPerSec: null,
+      incomplete: true,
+      violations: [],
+    };
   }
   const Lnorm = Math.max(L, 40);
   let work = " " + words.join(" ") + " ";
@@ -148,9 +171,31 @@ export function scoreLiteracy(transcript: string): LiteracyResult {
   const g1 = 100 * Math.exp(-d1 / (TAU.G1 || 14));
   const g2 = 100 * Math.exp(-d2 / (TAU.G2 || 8));
 
-  // G3 absent → renormalise G over the two available sub-blocks.
-  const wSum = (SUBW.g1_parasites || 0.3) + (SUBW.g2_forms || 0.35);
-  const overall = ((SUBW.g1_parasites || 0.3) * g1 + (SUBW.g2_forms || 0.35) * g2) / wSum;
+  // ── G3 — построение речи (heuristic; the spec's L2/L3 parser is not on the
+  // client, so we approximate "logic & completeness" from what the transcript +
+  // duration reveal): did the player actually say something, is the pace / pause
+  // pattern natural, and does the answer end on a finished thought? ────────────
+  const dur = durationSec && durationSec > 0 ? durationSec : null;
+  const wps = dur ? L / dur : null;
+
+  // substance: a real answer needs enough words; a few words = didn't answer.
+  const substance = clamp01((L - 8) / 40);
+  // fluency (pause proxy): natural conversational pace is ~2.0–3.2 words/sec.
+  // Long gaps between words drag words-per-second down → lower fluency. Unknown
+  // duration → treat pace as neutral so we never punish missing data.
+  const fluency = wps == null ? 0.85 : Math.exp(-Math.pow(wps - 2.6, 2) / (2 * 1.1 * 1.1));
+  // ending: a trailing conjunction / preposition / hanging particle = cut off.
+  const lastWord = words[words.length - 1];
+  const endsClean = !HANGING_WORDS.has(lastWord);
+  const incomplete = L < 20 || !endsClean;
+
+  const g3 = clamp(100 * (0.5 * substance + 0.35 * fluency + 0.15 * (endsClean ? 1 : 0)));
+
+  // Full G with all three sub-blocks (G3 now filled by the heuristic).
+  const w1 = SUBW.g1_parasites || 0.3;
+  const w2 = SUBW.g2_forms || 0.35;
+  const w3 = SUBW.g3_structure || 0.35;
+  const overall = (w1 * g1 + w2 * g2 + w3 * g3) / (w1 + w2 + w3);
 
   const violations = Object.values(byLemma).sort((a, b) => b.weight * b.count - a.weight * a.count).slice(0, 6);
 
@@ -169,7 +214,9 @@ export function scoreLiteracy(transcript: string): LiteracyResult {
     overall10: clamp(overall) / 10,
     g1: clamp(g1),
     g2: clamp(g2),
-    g3Available: false,
+    g3: clamp(g3),
+    wordsPerSec: wps,
+    incomplete,
     violations,
     habit,
   };
@@ -177,4 +224,8 @@ export function scoreLiteracy(transcript: string): LiteracyResult {
 
 function clamp(n: number): number {
   return Math.max(0, Math.min(100, n));
+}
+
+function clamp01(n: number): number {
+  return Math.max(0, Math.min(1, n));
 }
