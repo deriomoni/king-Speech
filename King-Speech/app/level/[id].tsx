@@ -1748,8 +1748,10 @@ const rs = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 4,
   },
-  metricLabel: { fontSize: 12.5 },
-  metricValue: { fontSize: 14, marginLeft: 6 },
+  // Fixed label width → values line up in a column (comfortable), but sit right
+  // after the longest label instead of at the far cell edge (close to param).
+  metricLabel: { width: 108, fontSize: 12.5 },
+  metricValue: { fontSize: 14 },
   oscarSection: {
     alignItems: "center",
     justifyContent: "center",
