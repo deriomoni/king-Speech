@@ -17,7 +17,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import RecordingPlayer from "@/components/RecordingPlayer";
-import ScoreFlower, { aspectsFromScore10 } from "@/components/ScoreFlower";
+import { aspectsFromScore10 } from "@/components/ScoreFlower";
 import type { AppColors } from "@/constants/colors";
 import type { SpeechAnalysis } from "@/services/speechAnalysis";
 
@@ -104,9 +104,17 @@ export default function ReadingResultsView({
   const cardBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.75)";
   const cardBorder = isDark ? "rgba(255,255,255,0.10)" : "rgba(40,30,10,0.10)";
   const trackColor = isDark ? "rgba(255,255,255,0.14)" : "rgba(40,30,10,0.16)";
-  const bg = isDark
-    ? (["#0B0A07", "#14110A", "#0B0A07"] as const)
-    : (["#F3EEE2", "#EFE8D8", "#F1ECDD"] as const);
+  // Plain theme background — light in light mode, dark in dark mode.
+  const bg = [colors.background, colors.background] as const;
+
+  // Clean the work title for a single line: drop the parenthetical subtitle and
+  // strip quotes/brackets so it fits fully on one line.
+  const cleanTitle =
+    title
+      .replace(/\s*[([{（][^)\]}）]*[)\]}）]\s*/g, " ") // remove (…) groups
+      .replace(/[«»„“”"']/g, "") // strip quotes
+      .replace(/\s+/g, " ")
+      .trim() || title;
 
   const handlePlaybackComplete = () => {
     if (!listenedFully) {
@@ -136,10 +144,14 @@ export default function ReadingResultsView({
       >
         {/* Hero — work + author */}
         <Animated.View entering={FadeInDown.duration(500)} style={st.hero}>
-          <Text style={[st.kicker, { color: accent, fontFamily: "Nunito_600SemiBold" }]}>
-            {t("readingReviewTitle").toUpperCase()}
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.5}
+            style={[st.workTitle, { color: fg, fontFamily: "Rubik_700Bold" }]}
+          >
+            {cleanTitle}
           </Text>
-          <Text style={[st.workTitle, { color: fg, fontFamily: "Rubik_700Bold" }]}>{title}</Text>
           {author ? (
             <Text style={[st.author, { color: fgMuted, fontFamily: "Nunito_400Regular" }]}>{author}</Text>
           ) : null}
@@ -177,7 +189,6 @@ export default function ReadingResultsView({
           style={[st.ratingCard, { backgroundColor: cardBg, borderColor: cardBorder, opacity: listenedFully ? 1 : 0.7 }]}
         >
           <View style={st.sectionHead}>
-            <Ionicons name={listenedFully ? "ribbon" : "lock-closed"} size={16} color={listenedFully ? accent : fgFaint} />
             <Text style={[st.sectionLabel, { color: listenedFully ? accent : fgFaint, fontFamily: "Nunito_600SemiBold" }]}>
               {t("rateYourself")}
             </Text>
@@ -197,16 +208,11 @@ export default function ReadingResultsView({
             ))}
           </View>
 
-          <Text style={[st.rateHint, { color: fgMuted, fontFamily: "Nunito_400Regular" }]}>
-            {listenedFully ? t("rateUnlockedHint") : t("rateLockedHint")}
-          </Text>
-
           {/* Divider */}
           <View style={[st.divider, { backgroundColor: cardBorder }]} />
 
           {/* AI verdict — runs in the background while the player listens */}
           <View style={st.aiHead}>
-            <Ionicons name="sparkles" size={14} color={accent} />
             <Text style={[st.aiLabel, { color: fgMuted, fontFamily: "Nunito_600SemiBold" }]}>
               {t("aiVerdict")}
             </Text>
@@ -225,21 +231,20 @@ export default function ReadingResultsView({
             </Animated.View>
           ) : analysis ? (
             <Animated.View entering={FadeInUp.duration(400)} style={st.aiResult}>
-              <View style={st.flowerWrap}>
-                <ScoreFlower
-                  overall={analysis.score.overall}
-                  aspects={aspectsFromScore10(analysis.score, lang)}
-                  size={300}
-                />
+              {/* Plain metrics table (parameter + score), one colour, no icons */}
+              <View style={st.metricsTable}>
+                {aspectsFromScore10(analysis.score, lang).map((a, i, arr) => (
+                  <View
+                    key={a.key}
+                    style={[st.metricRow, i < arr.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: cardBorder }]}
+                  >
+                    <Text style={[st.metricLabel, { color: fg, fontFamily: "Nunito_500Medium" }]}>{a.label}</Text>
+                    <Text style={[st.metricValue, { color: fg, fontFamily: "Nunito_700Bold" }]}>{a.score.toFixed(1)}</Text>
+                  </View>
+                ))}
               </View>
-              {analysis.summary ? (
-                <Text style={[st.aiSummary, { color: fg, fontFamily: "Nunito_500Medium" }]}>
-                  {analysis.summary}
-                </Text>
-              ) : null}
               {analysis.tip ? (
                 <View style={[st.tipCard, { backgroundColor: accent + "12", borderColor: accent + "33" }]}>
-                  <Ionicons name="bulb" size={14} color={accent} />
                   <Text style={[st.tipText, { color: fgMuted, fontFamily: "Nunito_400Regular" }]}>
                     {analysis.tip}
                   </Text>
@@ -309,7 +314,7 @@ const st = StyleSheet.create({
   scroll: { paddingHorizontal: 22, gap: 18 },
   hero: { alignItems: "center", gap: 6, marginBottom: 4 },
   kicker: { fontSize: 11, letterSpacing: 2 },
-  workTitle: { fontSize: 26, textAlign: "center", letterSpacing: 0.2, lineHeight: 32 },
+  workTitle: { fontSize: 22, textAlign: "center", letterSpacing: 0.2, lineHeight: 28 },
   author: { fontSize: 15, fontStyle: "italic", textAlign: "center" },
   section: { gap: 10 },
   sectionHead: { flexDirection: "row", alignItems: "center", gap: 7 },
@@ -334,8 +339,10 @@ const st = StyleSheet.create({
   dots: { flexDirection: "row" },
   aiLoadingText: { fontSize: 13, textAlign: "center" },
   aiResult: { gap: 12 },
-  flowerWrap: { alignItems: "center", justifyContent: "center", marginVertical: 4 },
-  aiSummary: { fontSize: 14, lineHeight: 20 },
+  metricsTable: { width: "100%" },
+  metricRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10 },
+  metricLabel: { fontSize: 15 },
+  metricValue: { fontSize: 16 },
   tipCard: { flexDirection: "row", gap: 8, alignItems: "flex-start", padding: 11, borderRadius: 12, borderWidth: 1 },
   tipText: { flex: 1, fontSize: 13, lineHeight: 18 },
   actions: { flexDirection: "row", gap: 12, marginTop: 2 },
