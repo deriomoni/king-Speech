@@ -23,7 +23,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
-import { View, Text, ActivityIndicator, StyleSheet, Platform } from "react-native";
+import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import Animated, {
@@ -43,28 +43,6 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { RolesProvider } from "@/context/RolesContext";
 
 SplashScreen.preventAutoHideAsync();
-
-// #region agent log
-function logAppBoot() {
-  const data = {
-    platform: Platform.OS,
-    host: typeof window !== "undefined" ? window.location?.host : null,
-    href: typeof window !== "undefined" ? window.location?.href : null,
-  };
-  fetch("http://127.0.0.1:7856/ingest/98a765d6-b717-4812-83af-50c7a780524a", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "94a5ad" },
-    body: JSON.stringify({
-      sessionId: "94a5ad",
-      hypothesisId: "H2",
-      location: "app/_layout.tsx:boot",
-      message: "app_boot",
-      data,
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-}
-// #endregion
 
 function RootLayoutNav() {
   const { themeMode } = useTheme();
@@ -265,10 +243,6 @@ export default function RootLayout() {
   });
 
   const fontsReady = fontsLoaded || !!fontError;
-
-  useEffect(() => {
-    logAppBoot();
-  }, []);
 
   return (
     <ErrorBoundary>
