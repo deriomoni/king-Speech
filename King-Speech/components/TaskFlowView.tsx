@@ -436,7 +436,9 @@ export default function TaskFlowView({
   // Dev report "continue" → hand the aggregate up (flower → victory).
   const finishFromDev = () => {
     void stopPlayback();
-    tasks.forEach((t, i) => onTaskScored(t.taskNumber, scoresRef.current[i] ?? 0));
+    // Level completion is committed atomically by the parent's onAllComplete
+    // (completeAllTasksForLevel) — completing tasks one-by-one here read stale
+    // state and lost all but the last, so the level looked unfinished on exit.
     setDevRows(null);
     setDarken(true);
     setTimeout(() => {

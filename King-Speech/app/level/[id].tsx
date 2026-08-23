@@ -1277,9 +1277,14 @@ export default function LevelScreen() {
     (payload: { scores: number[]; durationSec: number }) => {
       setScores(payload.scores);
       setLevelDurationSec(payload.durationSec);
+      // Complete the level atomically so "Выход" leaves it marked as passed.
+      const avg = payload.scores.length
+        ? payload.scores.reduce((a, b) => a + b, 0) / payload.scores.length
+        : 0;
+      completeAllTasksForLevel(levelId, avg);
       setTimeout(() => setShowLevelComplete(true), 400);
     },
-    [],
+    [completeAllTasksForLevel, levelId],
   );
 
   // New one-task-per-screen flow (tongue twisters / interview levels): the
@@ -1290,8 +1295,16 @@ export default function LevelScreen() {
       setScores(payload.scores);
       setLevelDurationSec(payload.durationSec);
       setLevelFlower(aggregateAnalyses(payload.analyses, lang));
+      // Mark the whole level complete + unlock the next one in a single atomic
+      // update. (Completing tasks one-by-one in a synchronous loop read stale
+      // state and lost all but the last task, so the level looked unfinished
+      // on the map after "Выход".)
+      const avg = payload.scores.length
+        ? payload.scores.reduce((a, b) => a + b, 0) / payload.scores.length
+        : 0;
+      completeAllTasksForLevel(levelId, avg);
     },
-    [lang],
+    [lang, completeAllTasksForLevel, levelId],
   );
   const handleFlowScored = React.useCallback(
     (taskNumber: number, score: number) => {
