@@ -42,6 +42,7 @@ function SelfStar({
   index,
   active,
   locked,
+  hint,
   accent,
   trackColor,
   onPress,
@@ -49,25 +50,41 @@ function SelfStar({
   index: number;
   active: boolean;
   locked: boolean;
+  hint: boolean; // unlocked but not yet rated → glow + blink to invite a tap
   accent: string;
   trackColor: string;
   onPress: () => void;
 }) {
   const scale = useSharedValue(1);
+  const blink = useSharedValue(1);
   useEffect(() => {
     if (active) {
       scale.value = withSequence(withSpring(1.25, { damping: 6 }), withSpring(1));
     }
   }, [active]);
-  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  useEffect(() => {
+    if (hint && !active) {
+      blink.value = withRepeat(withTiming(0.5, { duration: 650 }), -1, true);
+    } else {
+      cancelAnimation(blink);
+      blink.value = withTiming(1, { duration: 200 });
+    }
+    return () => cancelAnimation(blink);
+  }, [hint, active]);
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }], opacity: blink.value }));
+  const glow = active || hint;
+  const color = locked ? trackColor : active || hint ? accent : trackColor;
   return (
     <Pressable disabled={locked} onPress={onPress} hitSlop={6} style={({ pressed }) => ({ opacity: pressed && !locked ? 0.7 : 1 })}>
-      <Animated.View style={style}>
-        <Ionicons
-          name={active ? "star" : "star-outline"}
-          size={44}
-          color={locked ? trackColor : active ? accent : trackColor}
-        />
+      <Animated.View
+        style={[
+          style,
+          glow
+            ? { shadowColor: accent, shadowOpacity: 0.8, shadowRadius: 9, shadowOffset: { width: 0, height: 0 }, elevation: 6 }
+            : null,
+        ]}
+      >
+        <Ionicons name={active ? "star" : "star-outline"} size={44} color={color} />
       </Animated.View>
     </Pressable>
   );
@@ -162,8 +179,7 @@ export default function ReadingResultsView({
         {/* Listen-back */}
         <Animated.View entering={FadeInDown.delay(120).duration(500)} style={st.section}>
           <View style={st.sectionHead}>
-            <Ionicons name="headset" size={16} color={accent} />
-            <Text style={[st.sectionLabel, { color: accent, fontFamily: "Nunito_600SemiBold" }]}>
+            <Text style={[st.sectionLabel, { color: accent, fontFamily: "Rubik_600SemiBold" }]}>
               {t("listenYourself")}
             </Text>
           </View>
@@ -191,7 +207,7 @@ export default function ReadingResultsView({
           style={[st.ratingCard, { backgroundColor: cardBg, borderColor: cardBorder, opacity: listenedFully ? 1 : 0.7 }]}
         >
           <View style={st.sectionHead}>
-            <Text style={[st.sectionLabel, { color: listenedFully ? accent : fgFaint, fontFamily: "Nunito_600SemiBold" }]}>
+            <Text style={[st.sectionLabel, { color: listenedFully ? accent : fgFaint, fontFamily: "Rubik_600SemiBold" }]}>
               {t("rateYourself")}
             </Text>
           </View>
@@ -203,6 +219,7 @@ export default function ReadingResultsView({
                 index={n}
                 active={n <= selfRating}
                 locked={!listenedFully}
+                hint={listenedFully && selfRating === 0}
                 accent={accent}
                 trackColor={trackColor}
                 onPress={() => pickRating(n)}
@@ -218,21 +235,26 @@ export default function ReadingResultsView({
             entering={FadeInDown.duration(300)}
             style={[st.savePrompt, { backgroundColor: cardBg, borderColor: cardBorder }]}
           >
-            <View style={st.savePromptCloseRow}>
-              <Pressable onPress={() => setShowSavePrompt(false)} hitSlop={10} style={st.savePromptClose}>
-                <Ionicons name="close" size={18} color={fgFaint} />
-              </Pressable>
-            </View>
-            <View style={st.savePromptRow}>
-              <Text style={[st.savePromptText, { color: fg, fontFamily: "Nunito_600SemiBold" }]}>
-                {lang === "ru" ? "Сохранить в библиотеку?" : "Save to library?"}
-              </Text>
+            <Text style={[st.savePromptText, { color: fg, fontFamily: "Rubik_600SemiBold" }]}>
+              {lang === "ru" ? "Сохранить в библиотеку?" : "Save to library?"}
+            </Text>
+            <View style={st.savePromptBtns}>
               <Pressable
                 onPress={() => canSave && onSave(selfRating, true)}
                 disabled={!canSave}
-                style={({ pressed }) => [st.savePromptBtn, { backgroundColor: accent, opacity: !canSave ? 0.5 : pressed ? 0.85 : 1 }]}
+                style={({ pressed }) => [st.yesNoBtn, { backgroundColor: accent + "22", borderColor: accent, opacity: !canSave ? 0.5 : pressed ? 0.8 : 1 }]}
               >
-                <Ionicons name="bookmark" size={20} color="#1A1404" />
+                <Text style={[st.yesNoText, { color: fg, fontFamily: "Rubik_600SemiBold" }]}>
+                  {lang === "ru" ? "Да" : "Yes"}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setShowSavePrompt(false)}
+                style={({ pressed }) => [st.yesNoBtn, { backgroundColor: accent + "22", borderColor: accent, opacity: pressed ? 0.8 : 1 }]}
+              >
+                <Text style={[st.yesNoText, { color: fg, fontFamily: "Rubik_600SemiBold" }]}>
+                  {lang === "ru" ? "Нет" : "No"}
+                </Text>
               </Pressable>
             </View>
           </Animated.View>
@@ -297,7 +319,7 @@ const st = StyleSheet.create({
   workTitle: { fontSize: 22, textAlign: "center", letterSpacing: 0.2, lineHeight: 28 },
   author: { fontSize: 15, fontStyle: "italic", textAlign: "center" },
   section: { gap: 10 },
-  sectionHead: { flexDirection: "row", alignItems: "center", gap: 7 },
+  sectionHead: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
   sectionLabel: { fontSize: 12, letterSpacing: 1, textTransform: "uppercase" },
   hintRow: {
     flexDirection: "row",
@@ -310,13 +332,12 @@ const st = StyleSheet.create({
   },
   hintText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
   ratingCard: { borderRadius: 22, borderWidth: 1, padding: 18, gap: 14 },
-  savePrompt: { borderRadius: 18, borderWidth: 1, paddingHorizontal: 14, paddingBottom: 14, paddingTop: 4 },
-  savePromptCloseRow: { flexDirection: "row", justifyContent: "flex-end" },
-  savePromptClose: { padding: 4 },
-  savePromptRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: -2 },
-  savePromptText: { flex: 1, fontSize: 15.5 },
-  savePromptBtn: { width: 46, height: 46, borderRadius: 23, alignItems: "center", justifyContent: "center" },
-  starsRow: { flexDirection: "row", justifyContent: "center", gap: 10, paddingVertical: 4 },
+  savePrompt: { borderRadius: 18, borderWidth: 1, padding: 16, gap: 12, alignItems: "center" },
+  savePromptText: { fontSize: 15.5, textAlign: "center" },
+  savePromptBtns: { flexDirection: "row", gap: 12, justifyContent: "center" },
+  yesNoBtn: { minWidth: 100, alignItems: "center", justifyContent: "center", paddingVertical: 11, borderRadius: 14, borderWidth: 1 },
+  yesNoText: { fontSize: 15 },
+  starsRow: { flexDirection: "row", justifyContent: "center", gap: 18, paddingVertical: 8 },
   rateHint: { fontSize: 12.5, textAlign: "center", lineHeight: 17 },
   divider: { height: 1, marginVertical: 2 },
   aiHead: { flexDirection: "row", alignItems: "center", gap: 6 },

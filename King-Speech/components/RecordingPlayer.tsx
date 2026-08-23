@@ -1,12 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable, StyleSheet, Platform, LayoutChangeEvent } from "react-native";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  cancelAnimation,
-} from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
@@ -15,41 +8,18 @@ if (Platform.OS !== "web") {
   Audio = require("expo-av").Audio;
 }
 
-const BAR_COUNT = 28;
+const BAR_COUNT = 44;
 
-function WaveBar({
-  index,
-  isPlaying,
-  progress,
-  accent,
-  track,
-}: {
-  index: number;
-  isPlaying: boolean;
-  progress: number;
-  accent: string;
-  track: string;
-}) {
-  const height = useSharedValue(5);
-  useEffect(() => {
-    if (isPlaying) {
-      // Deterministic-ish per-bar bounce so it reads as "playing".
-      const peak = 6 + ((index * 37) % 22);
-      height.value = withRepeat(withTiming(peak, { duration: 220 + (index % 5) * 40 }), -1, true);
-    } else {
-      cancelAnimation(height);
-      height.value = withTiming(5 + ((index * 13) % 14), { duration: 200 });
-    }
-    return () => cancelAnimation(height);
-  }, [isPlaying]);
-  const style = useAnimatedStyle(() => ({ height: height.value }));
-  const filled = index / BAR_COUNT <= progress;
-  return (
-    <Animated.View
-      style={[style, { width: 3, borderRadius: 2, minHeight: 5, backgroundColor: filled ? accent : track }]}
-    />
+// A static, speech-like amplitude waveform (louder toward the middle, natural
+// variation) — reads as a real audio recording, not a row of equal lines.
+// Computed once at module load; the fill just tracks playback progress.
+const WAVE_HEIGHTS = Array.from({ length: BAR_COUNT }, (_, i) => {
+  const env = Math.sin((i / (BAR_COUNT - 1)) * Math.PI); // 0 → 1 → 0 envelope
+  const noise = Math.abs(
+    Math.sin(i * 1.7) * 0.5 + Math.sin(i * 0.9 + 1) * 0.3 + Math.sin(i * 2.7) * 0.2,
   );
-}
+  return Math.round(Math.max(5, Math.min(34, 6 + (5 + env * 23) * (0.45 + 0.55 * noise))));
+});
 
 interface Props {
   uri: string;
@@ -186,9 +156,9 @@ export default function RecordingPlayer({
     }
   };
 
-  const seekToRatio = async (ratio: number) => {
+  const seekToRatio = async (ratio: number, haptic: boolean = true) => {
     const r = Math.min(1, Math.max(0, ratio));
-    Haptics.selectionAsync().catch(() => {});
+    if (haptic) Haptics.selectionAsync().catch(() => {});
     if (Platform.OS === "web") {
       const el = audioElRef.current;
       const dur = el?.duration || durationSec;
@@ -213,11 +183,11 @@ export default function RecordingPlayer({
   const onBarLayout = (e: LayoutChangeEvent) => {
     barWidthRef.current = e.nativeEvent.layout.width;
   };
-  const onBarPress = (e: any) => {
+  const seekFromEvent = (e: any, haptic: boolean) => {
     const w = barWidthRef.current;
     if (!w) return;
     const x = e.nativeEvent.locationX;
-    seekToRatio(x / w);
+    seekToRatio(x / w, haptic);
   };
 
   const fmt = (s: number) =>
@@ -237,13 +207,24 @@ export default function RecordingPlayer({
             { backgroundColor: accentColor + "1F", borderColor: accentColor, opacity: pressed ? 0.8 : 1 },
           ]}
         >
-          <Ionicons name={isPlaying ? "pause" : "play"} size={22} color={accentColor} />
+          <Ionicons
+            name={isPlaying ? "pause" : "play"}
+            size={22}
+            color={accentColor}
+            style={{ marginLeft: isPlaying ? 0 : 3 }}
+          />
         </Pressable>
 
         <View style={s.waveWrap}>
-          {Array.from({ length: BAR_COUNT }).map((_, i) => (
-            <WaveBar key={i} index={i} isPlaying={isPlaying} progress={progress} accent={accentColor} track={trackColor} />
-          ))}
+          {WAVE_HEIGHTS.map((h, i) => {
+            const filled = (i + 0.5) / BAR_COUNT <= progress;
+            return (
+              <View
+                key={i}
+                style={{ width: 3, borderRadius: 2, height: h, backgroundColor: filled ? accentColor : trackColor }}
+              />
+            );
+          })}
         </View>
 
         <Pressable
@@ -256,13 +237,20 @@ export default function RecordingPlayer({
         </Pressable>
       </View>
 
-      {/* Tap-to-seek progress bar */}
-      <Pressable onLayout={onBarLayout} onPress={onBarPress} style={s.progressHit}>
+      {/* Drag / tap to seek */}
+      <View
+        onLayout={onBarLayout}
+        onStartShouldSetResponder={() => !!uri}
+        onMoveShouldSetResponder={() => !!uri}
+        onResponderGrant={(e) => seekFromEvent(e, true)}
+        onResponderMove={(e) => seekFromEvent(e, false)}
+        style={s.progressHit}
+      >
         <View style={[s.progressBg, { backgroundColor: trackColor }]}>
           <View style={[s.progressFill, { backgroundColor: accentColor, width: `${progress * 100}%` as any }]} />
           <View style={[s.knob, { left: `${progress * 100}%` as any, borderColor: accentColor }]} />
         </View>
-      </Pressable>
+      </View>
 
       <View style={s.timeRow}>
         <Text style={[s.time, { color: textColor }]}>{fmt(positionSec)}</Text>
@@ -283,7 +271,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
   },
-  waveWrap: { flex: 1, flexDirection: "row", alignItems: "center", gap: 2, height: 34 },
+  waveWrap: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 1, height: 40 },
   replayBtn: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
   progressHit: { paddingVertical: 8 },
   progressBg: { height: 4, borderRadius: 2, overflow: "visible" },
