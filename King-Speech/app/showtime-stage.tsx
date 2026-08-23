@@ -4337,8 +4337,8 @@ function SpeechLine({ text, isActive, isDone }: { text: string; isActive: boolea
   );
 }
 const sl = StyleSheet.create({
-  line: { fontSize: 16, lineHeight: 28, color: "rgba(255,255,255,0.25)", fontFamily: "Nunito_400Regular", textAlign: "center", paddingVertical: 2 },
-  lineActive: { fontSize: 21, color: "#FFFFFF", fontFamily: "Nunito_700Bold", lineHeight: 32 },
+  line: { fontSize: 14, lineHeight: 23, color: "rgba(255,255,255,0.25)", fontFamily: "Nunito_400Regular", textAlign: "center", paddingVertical: 2 },
+  lineActive: { fontSize: 17, color: "#FFFFFF", fontFamily: "Nunito_700Bold", lineHeight: 26 },
   lineDone: { color: "rgba(255,255,255,0.35)", textDecorationLine: "line-through", textDecorationColor: "rgba(255,255,255,0.2)" },
 });
 
