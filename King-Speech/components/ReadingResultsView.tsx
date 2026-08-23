@@ -34,7 +34,7 @@ interface Props {
   t: (key: any) => string;
   lang: "ru" | "en";
   onRetry: () => void;
-  onSave: (selfRating: number) => void;
+  onSave: (selfRating: number, saveToLibrary: boolean) => void;
   saving?: boolean;
 }
 
@@ -92,11 +92,12 @@ export default function ReadingResultsView({
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const accent = "#C9A227"; // warm gold, exclusive to the reading review
+  const accent = "#FFC531"; // clean warm gold
   // When there's no audio to play back (mic blocked), don't trap the player —
   // unlock the rating immediately so they can still self-assess and continue.
   const [listenedFully, setListenedFully] = useState(!audioUri);
   const [selfRating, setSelfRating] = useState(0);
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
 
   const fg = isDark ? "#F4F1EA" : colors.text;
   const fgMuted = isDark ? "rgba(244,241,234,0.6)" : colors.textSecondary;
@@ -130,6 +131,7 @@ export default function ReadingResultsView({
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     setSelfRating(n);
+    setShowSavePrompt(true);
   };
 
   const canSave = selfRating > 0 && !saving;
@@ -208,55 +210,33 @@ export default function ReadingResultsView({
             ))}
           </View>
 
-          {/* Divider */}
-          <View style={[st.divider, { backgroundColor: cardBorder }]} />
-
-          {/* AI verdict — runs in the background while the player listens */}
-          <View style={st.aiHead}>
-            <Text style={[st.aiLabel, { color: fgMuted, fontFamily: "Nunito_600SemiBold" }]}>
-              {t("aiVerdict")}
-            </Text>
-          </View>
-
-          {analyzing && !analysis ? (
-            <Animated.View entering={FadeIn.duration(300)} style={st.aiLoading}>
-              <View style={st.dots}>
-                {[0, 1, 2].map((i) => (
-                  <LoadingDot key={i} index={i} color={accent} />
-                ))}
-              </View>
-              <Text style={[st.aiLoadingText, { color: fgFaint, fontFamily: "Nunito_400Regular" }]}>
-                {t("aiListening")}
-              </Text>
-            </Animated.View>
-          ) : analysis ? (
-            <Animated.View entering={FadeInUp.duration(400)} style={st.aiResult}>
-              {/* Plain metrics table (parameter + score), one colour, no icons */}
-              <View style={st.metricsTable}>
-                {aspectsFromScore10(analysis.score, lang).map((a, i, arr) => (
-                  <View
-                    key={a.key}
-                    style={[st.metricRow, i < arr.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: cardBorder }]}
-                  >
-                    <Text style={[st.metricLabel, { color: fg, fontFamily: "Nunito_500Medium" }]}>{a.label}</Text>
-                    <Text style={[st.metricValue, { color: fg, fontFamily: "Nunito_700Bold" }]}>{a.score.toFixed(1)}</Text>
-                  </View>
-                ))}
-              </View>
-              {analysis.tip ? (
-                <View style={[st.tipCard, { backgroundColor: accent + "12", borderColor: accent + "33" }]}>
-                  <Text style={[st.tipText, { color: fgMuted, fontFamily: "Nunito_400Regular" }]}>
-                    {analysis.tip}
-                  </Text>
-                </View>
-              ) : null}
-            </Animated.View>
-          ) : (
-            <Text style={[st.aiLoadingText, { color: fgFaint, fontFamily: "Nunito_400Regular" }]}>
-              {t("aiListening")}
-            </Text>
-          )}
         </Animated.View>
+
+        {/* Save-to-library prompt — pops up once the player has rated */}
+        {showSavePrompt ? (
+          <Animated.View
+            entering={FadeInDown.duration(300)}
+            style={[st.savePrompt, { backgroundColor: cardBg, borderColor: cardBorder }]}
+          >
+            <View style={st.savePromptCloseRow}>
+              <Pressable onPress={() => setShowSavePrompt(false)} hitSlop={10} style={st.savePromptClose}>
+                <Ionicons name="close" size={18} color={fgFaint} />
+              </Pressable>
+            </View>
+            <View style={st.savePromptRow}>
+              <Text style={[st.savePromptText, { color: fg, fontFamily: "Nunito_600SemiBold" }]}>
+                {lang === "ru" ? "Сохранить в библиотеку?" : "Save to library?"}
+              </Text>
+              <Pressable
+                onPress={() => canSave && onSave(selfRating, true)}
+                disabled={!canSave}
+                style={({ pressed }) => [st.savePromptBtn, { backgroundColor: accent, opacity: !canSave ? 0.5 : pressed ? 0.85 : 1 }]}
+              >
+                <Ionicons name="bookmark" size={20} color="#1A1404" />
+              </Pressable>
+            </View>
+          </Animated.View>
+        ) : null}
 
         {/* Actions */}
         <Animated.View entering={FadeInDown.delay(320).duration(500)} style={st.actions}>
@@ -274,7 +254,7 @@ export default function ReadingResultsView({
             </Text>
           </Pressable>
           <Pressable
-            onPress={() => canSave && onSave(selfRating)}
+            onPress={() => canSave && onSave(selfRating, false)}
             disabled={!canSave}
             style={({ pressed }) => [
               st.saveBtn,
@@ -282,7 +262,7 @@ export default function ReadingResultsView({
             ]}
           >
             <Text style={[st.saveText, { color: "#1A1404", fontFamily: "Nunito_700Bold" }]}>
-              {t("saveAndContinue")}
+              {lang === "ru" ? "Дальше" : "Next"}
             </Text>
             <Ionicons name="arrow-forward" size={18} color="#1A1404" />
           </Pressable>
@@ -330,6 +310,12 @@ const st = StyleSheet.create({
   },
   hintText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
   ratingCard: { borderRadius: 22, borderWidth: 1, padding: 18, gap: 14 },
+  savePrompt: { borderRadius: 18, borderWidth: 1, paddingHorizontal: 14, paddingBottom: 14, paddingTop: 4 },
+  savePromptCloseRow: { flexDirection: "row", justifyContent: "flex-end" },
+  savePromptClose: { padding: 4 },
+  savePromptRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: -2 },
+  savePromptText: { flex: 1, fontSize: 15.5 },
+  savePromptBtn: { width: 46, height: 46, borderRadius: 23, alignItems: "center", justifyContent: "center" },
   starsRow: { flexDirection: "row", justifyContent: "center", gap: 10, paddingVertical: 4 },
   rateHint: { fontSize: 12.5, textAlign: "center", lineHeight: 17 },
   divider: { height: 1, marginVertical: 2 },

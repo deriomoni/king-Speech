@@ -1205,31 +1205,33 @@ export default function LevelScreen() {
   // Save & continue from the reading self-review: persist the take to the
   // private library (with the player's self-rating + the AI verdict), mark the
   // level complete, then show the celebration.
-  const handleReadingSave = async (selfRating: number) => {
+  const handleReadingSave = async (selfRating: number, saveToLibrary: boolean = true) => {
     if (readingSaving) return;
     setReadingSaving(true);
     const overall = currentAnalysis?.score.overall ?? 0;
-    // Fall back to the self-rating (scaled to /10) for XP/stars if the AI
-    // analysis never arrived (offline / backend down).
-    const finalScore = overall > 0 ? overall : Math.max(2, selfRating * 2);
+    // The score is now the player's own self-rating (scaled to /10); the AI
+    // overall is only used if it happens to exist (kept for the library entry).
+    const finalScore = Math.max(2, selfRating * 2);
 
-    try {
-      const durableUri = await persistReadingAudio(readingAudioUri);
-      if (durableUri) {
-        addReadingRecording({
-          uri: durableUri,
-          title: readingMeta?.workTitle || level.title,
-          author: readingMeta?.author,
-          category: readingMeta?.category,
-          date: Date.now(),
-          durationSec: readingDurationSec,
-          selfRating,
-          aiStars: overall > 0 ? Math.round(overall / 2) : undefined,
-          aiScore: overall > 0 ? overall : undefined,
-        });
+    if (saveToLibrary) {
+      try {
+        const durableUri = await persistReadingAudio(readingAudioUri);
+        if (durableUri) {
+          addReadingRecording({
+            uri: durableUri,
+            title: readingMeta?.workTitle || level.title,
+            author: readingMeta?.author,
+            category: readingMeta?.category,
+            date: Date.now(),
+            durationSec: readingDurationSec,
+            selfRating,
+            aiStars: overall > 0 ? Math.round(overall / 2) : undefined,
+            aiScore: overall > 0 ? overall : undefined,
+          });
+        }
+      } catch (e) {
+        console.warn("save reading recording failed:", e);
       }
-    } catch (e) {
-      console.warn("save reading recording failed:", e);
     }
 
     completeAllTasksForLevel(levelId, finalScore);
