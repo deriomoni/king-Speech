@@ -368,28 +368,20 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
   if (!result) return null;
   const { stars, score, silent, feedback, categories, metrics, errors, tip } = result;
 
-  if (silent || stars === 0 || result.readOk === false) {
-    // "Spoke, but didn't actually read the script" vs "no speech at all".
-    const didNotRead = result.readOk === false && !silent && stars !== 0;
-    const skipMsg = didNotRead
-      ? (lang === "ru"
-          ? "Похоже, текст не был прочитан вслух. Прочитай его целиком и пройди уровень снова."
-          : "Looks like the text wasn't read aloud. Read it in full and pass the level again.")
-      : feedback;
+  if (silent || stars === 0) {
     return (
       <Animated.View entering={FadeInUp.delay(100).duration(500)} style={[ac.card, { borderColor: "#0EA5E944" }]}>
         <LinearGradient colors={["#0EA5E908", "transparent"]} style={StyleSheet.absoluteFill} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} />
         <Text style={[ac.label, { color: "#0EA5E9", fontFamily: "Nunito_600SemiBold" }]}>{t("notCounted")}</Text>
         <Ionicons name="book-outline" size={40} color="#0EA5E9" style={{ alignSelf: "center", marginVertical: 4 }} />
         <Animated.Text entering={FadeIn.delay(500).duration(400)} style={[ac.feedback, { color: "rgba(240,237,232,0.9)", fontFamily: "Nunito_500Medium", textAlign: "center" }]}>
-          {skipMsg}
+          {lang === "ru"
+            ? "Кажется, ты не читал текст вслух. Прочитай его и пройди уровень снова."
+            : "Looks like the text wasn't read aloud. Read it and pass the level again."}
         </Animated.Text>
       </Animated.View>
     );
   }
-
-  const SCORE_COLOR = stars === 3 ? "#2DCB8E" : stars === 2 ? "#FFD166" : "#F5A623";
-  const SCORE_LABEL = stars === 3 ? t("excellent") : stars === 2 ? t("good") : t("keepGoing");
 
   // Show Time is a PREPARED text read aloud — so the honest base score comes only
   // from delivery + volume (diction, expressiveness, volume, confidence); tempo &
@@ -405,9 +397,15 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
     : score;
   const tm = result.textMatch;
   // Genuine-reading effort from the hidden text-match: 0 at ≤25% of the script
-  // said, full (→ score 10) at ≥85%. (readOk === false already returned above.)
+  // said, full (→ score 10) at ≥85%.
   const effort = tm != null ? Math.max(0, Math.min(1, (tm - 0.25) / (0.85 - 0.25))) : 0;
   const overall10 = Math.round(Math.min(10, base10 + (10 - base10) * effort) * 10) / 10;
+
+  // Tier / colour / XP all follow the SHOWN overall so nothing contradicts it.
+  const finalStars = overall10 >= 8.5 ? 3 : overall10 >= 6 ? 2 : 1;
+  const SCORE_COLOR = finalStars === 3 ? "#2DCB8E" : finalStars === 2 ? "#FFD166" : "#F5A623";
+  const SCORE_LABEL = finalStars === 3 ? t("excellent") : finalStars === 2 ? t("good") : t("keepGoing");
+  const xpDisplay = finalStars === 3 ? 10 : finalStars === 2 ? 7 : 4;
 
   return (
     <Animated.View entering={FadeInUp.delay(100).duration(500)} style={[ac.card, { borderColor: SCORE_COLOR + "44" }]}>
@@ -448,7 +446,7 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
       {/* Score badge */}
       <Animated.View entering={ZoomIn.delay(800).duration(400)} style={[ac.scoreBadge, { backgroundColor: SCORE_COLOR + "20", borderColor: SCORE_COLOR + "60" }]}>
         <Text style={[ac.scoreText, { color: SCORE_COLOR, fontFamily: "Nunito_700Bold" }]}>{SCORE_LABEL}</Text>
-        <Text style={[ac.xpText, { color: SCORE_COLOR, fontFamily: "Nunito_500Medium" }]}>+{score} XP</Text>
+        <Text style={[ac.xpText, { color: SCORE_COLOR, fontFamily: "Nunito_500Medium" }]}>+{xpDisplay} XP</Text>
       </Animated.View>
 
       {/* Coaching tip — surfaced from /api/analyze-speech.tip so the
@@ -752,7 +750,7 @@ export default function ShowtimePlaybackScreen() {
   const handleDone = () => {
     if (completing) return;
     // Block progression if the player said nothing
-    if (analysisResult && (analysisResult.silent || analysisResult.stars === 0 || analysisResult.readOk === false)) {
+    if (analysisResult && (analysisResult.silent || analysisResult.stars === 0)) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
@@ -775,10 +773,10 @@ export default function ShowtimePlaybackScreen() {
     proceed();
   };
 
-  // Didn't actually read the script (no speech, or spoke but text-match too low).
-  // Blocks progression — the player must read the text and try again.
-  const didNotRead = !!analysisResult && (analysisResult.silent || analysisResult.stars === 0 || analysisResult.readOk === false);
-  const isSilent = didNotRead;
+  // Didn't speak → blocks progression (must read the text and try again).
+  // NOTE: we block only on true silence, not on the low-text-match signal, since
+  // STT on a long Show Time script isn't reliable enough to fail a genuine read.
+  const isSilent = !!analysisResult && (analysisResult.silent || analysisResult.stars === 0);
 
   const headerStyle = useAnimatedStyle(() => ({ opacity: headerOpacity.value }));
   const contentStyle = useAnimatedStyle(() => ({ opacity: contentOpacity.value, transform: [{ translateY: contentY.value }] }));
