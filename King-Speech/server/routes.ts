@@ -534,7 +534,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         question: String(question ?? "").slice(0, 600),
         answer: transcript.trim().slice(0, 3000),
       });
-      const out = await chatComplete({ system, user, maxTokens: 160, json: true, model: JUDGE_MODEL });
+      // Prefer the cheap/fast judge model; if the key can't use it, fall back to
+      // the default (known-good) model so the judge still works.
+      let out: string;
+      try {
+        out = await chatComplete({ system, user, maxTokens: 160, json: true, model: JUDGE_MODEL });
+      } catch (modelErr) {
+        console.warn(`judge-answer: model "${JUDGE_MODEL}" failed, retrying with default model:`, (modelErr as any)?.message);
+        out = await chatComplete({ system, user, maxTokens: 160, json: true });
+      }
       let parsed: any = {};
       try { parsed = JSON.parse(out || "{}"); } catch { parsed = {}; }
       const clamp = (v: any) => {
