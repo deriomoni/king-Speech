@@ -396,6 +396,14 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
 
       <Text style={[ac.label, { color: SCORE_COLOR, fontFamily: "Nunito_600SemiBold" }]}>{t("aiAnalysis")}</Text>
 
+      {/* Overall summary score of the performance */}
+      <Animated.View entering={ZoomIn.delay(300).duration(400)} style={ac.overallWrap}>
+        <Text style={[ac.overallNum, { color: SCORE_COLOR, fontFamily: "Rubik_700Bold" }]}>
+          {overall10.toFixed(1)}
+          <Text style={[ac.overallDenom, { color: "rgba(240,237,232,0.6)", fontFamily: "Rubik_600SemiBold" }]}> / 10</Text>
+        </Text>
+      </Animated.View>
+
       {/* Plain metrics table (parameter + score) when we have full metrics;
           else stars. One neutral colour, no icons. */}
       {metrics ? (
@@ -422,11 +430,6 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
         <Text style={[ac.xpText, { color: SCORE_COLOR, fontFamily: "Nunito_500Medium" }]}>+{score} XP</Text>
       </Animated.View>
 
-      {/* Summary */}
-      <Animated.Text entering={FadeIn.delay(900).duration(400)} style={[ac.feedback, { color: "rgba(240,237,232,0.85)", fontFamily: "Nunito_400Regular" }]}>
-        {feedback}
-      </Animated.Text>
-
       {/* Coaching tip — surfaced from /api/analyze-speech.tip so the
           performer gets one concrete thing to fix next take. */}
       {tip ? (
@@ -441,21 +444,6 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
         </Animated.View>
       ) : null}
 
-      {/* Errors list */}
-      {errors && errors.length > 0 && (
-        <Animated.View entering={FadeIn.delay(1600).duration(400)} style={ac.errorsSection}>
-          <View style={[ac.divider, { backgroundColor: "#2A3348" }]} />
-          <Text style={[ac.errorsTitle, { color: "#F5A623", fontFamily: "Nunito_600SemiBold" }]}>
-            {t("payAttention")}
-          </Text>
-          {errors.map((err, i) => (
-            <View key={i} style={ac.errorRow}>
-              <View style={[ac.errorDot, { backgroundColor: "#F5A623" }]} />
-              <Text style={[ac.errorText, { color: "rgba(240,237,232,0.7)", fontFamily: "Nunito_400Regular" }]}>{err}</Text>
-            </View>
-          ))}
-        </Animated.View>
-      )}
     </Animated.View>
   );
 }
@@ -465,6 +453,9 @@ const ac = StyleSheet.create({
   label: { fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase" },
   starsRow: { flexDirection: "row", gap: 12, justifyContent: "center", paddingVertical: 4 },
   flowerWrap: { alignItems: "center", justifyContent: "center", paddingVertical: 4 },
+  overallWrap: { alignItems: "center", marginTop: 2, marginBottom: 2 },
+  overallNum: { fontSize: 44, lineHeight: 50 },
+  overallDenom: { fontSize: 20 },
   metricsTable: { width: "100%", paddingVertical: 4 },
   metricRow: {
     flexDirection: "row",
