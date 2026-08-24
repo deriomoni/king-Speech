@@ -55,6 +55,7 @@ import {
 import { useGame, MODULE_COLORS } from "@/context/GameContext";
 import { useModuleTransition } from "@/context/ModuleTransitionContext";
 import { WAVEFORM_BAR_MAX, useWaveformBars } from "@/hooks/useWaveformBars";
+import { useAppColors } from "@/hooks/useAppColors";
 
 type Phase = "tutorial" | "spin" | "play" | "result";
 type FeedItem = { id: string; word: string; status: "correct" | "wrong" };
@@ -86,6 +87,7 @@ export default function VocabularyLevelScreen() {
     moduleId?: string;
   }>();
   const levelId = String(params.levelId ?? "vocabulary");
+  const { colors } = useAppColors();
   const { addXP, markLevelComplete } = useGame();
   const { triggerModuleTransition } = useModuleTransition();
   // Vocabulary is a module's LAST level, so finishing it crosses into the next
@@ -144,11 +146,11 @@ export default function VocabularyLevelScreen() {
   }, []);
 
   if (!tutorialChecked) {
-    return <View style={styles.root} />;
+    return <View style={[styles.root, { backgroundColor: colors.background }]} />;
   }
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
       {phase === "tutorial" && (
         <TutorialPhase
           onDone={handleTutorialDone}
@@ -337,12 +339,18 @@ function ReelRow({
   pos,
   popScale,
   landed,
+  centerColor,
+  nearColor,
+  farColor,
 }: {
   word: string;
   index: number;
   pos: SharedValue<number>;
   popScale: SharedValue<number>;
   landed: boolean;
+  centerColor: string;
+  nearColor: string;
+  farColor: string;
 }) {
   const isWeb = Platform.OS === "web";
   const style = useAnimatedStyle(() => {
@@ -352,16 +360,18 @@ function ReelRow({
     const translateY = rel * ROW_SPACING;
     const translateX = 0;
     const scale = landed ? popScale.value : 1;
+    // Fade to fully transparent well before the window edge, so nothing hard-
+    // clips top/bottom — the words just dissolve into the background.
     const opacity = interpolate(
       d,
-      [0, 5, 7.5],
-      [1, 0.8, 0],
+      [0, 3, 5],
+      [1, 0.7, 0],
       Extrapolation.CLAMP,
     );
     const color = interpolateColor(
       Math.min(d, 3),
       [0, 1.5, 3],
-      ["#FFFFFF", REEL_NEAR, REEL_FAR],
+      [centerColor, nearColor, farColor],
     );
     const base = {
       opacity,
@@ -382,6 +392,35 @@ function ReelRow({
   );
 }
 
+// Intro: "Выбери слова" starts big in the centre and, over 1.5s, shrinks and
+// glides up into the title position, then fades out (the static title takes over).
+function SpinIntro({ colors }: { colors: { text: string } }) {
+  const { height } = useWindowDimensions();
+  const [visible, setVisible] = useState(true);
+  const p = useSharedValue(0);
+  useEffect(() => {
+    p.value = withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.cubic) });
+    const t = setTimeout(() => setVisible(false), 1560);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const style = useAnimatedStyle(() => ({
+    opacity: interpolate(p.value, [0, 0.72, 1], [1, 1, 0], Extrapolation.CLAMP),
+    transform: [
+      { translateY: interpolate(p.value, [0, 1], [0, -height * 0.38], Extrapolation.CLAMP) },
+      { scale: interpolate(p.value, [0, 1], [1.7, 0.72], Extrapolation.CLAMP) },
+    ],
+  }));
+  if (!visible) return null;
+  return (
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { alignItems: "center", justifyContent: "center" }]}>
+      <Animated.Text style={[{ color: colors.text, fontFamily: "Rubik_700Bold", fontSize: 30, letterSpacing: 0.3 }, style]}>
+        Выбери слова
+      </Animated.Text>
+    </View>
+  );
+}
+
 function SpinPhase({
   excludeIds,
   onPicked,
@@ -391,6 +430,11 @@ function SpinPhase({
   onPicked: (w: VocabWord) => void;
   onClose: () => void;
 }) {
+  const { colors, isDark } = useAppColors();
+  // Reel word colours follow the theme: centre = crisp text, neighbours fade out.
+  const reelCenter = colors.text;
+  const reelNear = colors.textSecondary;
+  const reelFar = isDark ? "rgba(244,241,234,0.18)" : "rgba(20,22,26,0.18)";
   // A finite reel of Russian words, frozen ONCE at mount. Because the strip is
   // built here (not derived from a live pool), the parent recording the picked
   // word — which changes excludeIds — can never reshuffle it mid-spin, so the
@@ -475,16 +519,18 @@ function SpinPhase({
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 80 : insets.top + 12;
   return (
-    <View style={[styles.spinRoot, { backgroundColor: REEL_BG }]}>
+    <View style={[styles.spinRoot, { backgroundColor: colors.background }]}>
       <View style={[styles.topBar, { paddingTop: topPad }]}>
         <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={12}>
-          <Ionicons name="close" size={24} color="#fff" />
+          <Ionicons name="close" size={24} color={colors.text} />
         </Pressable>
-        <Text style={styles.topTitle}>Выбери слова</Text>
+        <Text style={[styles.topTitle, { color: colors.text }]}>Выбери слова</Text>
         <View style={{ width: 36 }} />
       </View>
 
       <View style={{ flex: 1 }}>
+        {/* Reel — words scroll down the centre; edges fade into the background
+            (fade + blur, no visible overlay). */}
         <View style={styles.reelWindow}>
           <View style={styles.reelTilt}>
             {reel.map((w, i) => (
@@ -495,12 +541,15 @@ function SpinPhase({
                 pos={pos}
                 popScale={popScale}
                 landed={landIndex === i}
+                centerColor={reelCenter}
+                nearColor={reelNear}
+                farColor={reelFar}
               />
             ))}
           </View>
         </View>
 
-        <Text style={styles.rouletteMeta}>
+        <Text style={[styles.rouletteMeta, { color: colors.textMuted }]}>
           {center
             ? `${POS_LABELS_RU[center.partOfSpeech]} · ${DIFFICULTY_LABEL_RU[center.difficulty]}`
             : " "}
@@ -521,6 +570,8 @@ function SpinPhase({
           <Text style={styles.stopRoundText}>СТОП</Text>
         </Pressable>
       </View>
+
+      <SpinIntro colors={colors} />
     </View>
   );
 }
@@ -548,6 +599,7 @@ function PlayPhase({
   onFinish: () => void;
   onExit: () => void;
 }) {
+  const { colors } = useAppColors();
   const [stage, setStage] = useState<"countdown" | "active">("countdown");
   const [countdown, setCountdown] = useState(3);
   const [timeLeft, setTimeLeft] = useState(word.timerSeconds);
@@ -1015,29 +1067,26 @@ function PlayPhase({
           style={styles.closeBtn}
           hitSlop={12}
         >
-          <Ionicons name="close" size={24} color="#fff" />
+          <Ionicons name="close" size={24} color={colors.text} />
         </Pressable>
         <Animated.View style={timerStyle}>
           <Text
             style={[
               styles.playTimer,
-              {
-                color:
-                  stage === "active" ? timerColor : "rgba(255,255,255,0.40)",
-              },
+              { color: stage === "active" ? timerColor : colors.textMuted },
             ]}
           >
             {stage === "active" ? timerText : `${word.timerSeconds} сек`}
           </Text>
         </Animated.View>
-        <View style={styles.closeBtn} />
+        <View style={{ width: 36 }} />
       </View>
 
       <View style={styles.playWordBlock}>
-        <Text style={styles.playWord} numberOfLines={1} adjustsFontSizeToFit>
+        <Text style={[styles.playWord, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit>
           {word.word.toUpperCase()}
         </Text>
-        <Text style={styles.playMeta}>
+        <Text style={[styles.playMeta, { color: colors.textMuted }]}>
           {POS_LABELS_RU[word.partOfSpeech]}
           {stage === "countdown"
             ? ` · ${DIFFICULTY_LABEL_RU[word.difficulty]}`
@@ -1291,9 +1340,8 @@ const styles = StyleSheet.create({
   },
   topTitle: {
     color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-    fontFamily: "Nunito_600SemiBold",
+    fontSize: 19,
+    fontFamily: "Rubik_700Bold",
   },
   closeBtn: {
     width: 36,
