@@ -120,6 +120,7 @@ function RecordingCard({
         <Animated.View entering={FadeIn.duration(250)} style={{ marginTop: 12, gap: 10 }}>
           <RecordingPlayer
             uri={rec.uri}
+            waveform={rec.waveform}
             accentColor={accent}
             trackColor={track}
             textColor={theme.textSecondary}

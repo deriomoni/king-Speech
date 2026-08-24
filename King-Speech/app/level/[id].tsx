@@ -810,6 +810,7 @@ export default function LevelScreen() {
   // private library.
   const [showReadingReview, setShowReadingReview] = useState(false);
   const [readingAudioUri, setReadingAudioUri] = useState<string | null>(null);
+  const [readingWaveform, setReadingWaveform] = useState<number[] | null>(null);
   const [readingDurationSec, setReadingDurationSec] = useState(0);
   const [readingSaving, setReadingSaving] = useState(false);
 
@@ -1004,11 +1005,13 @@ export default function LevelScreen() {
     durationSeconds: number,
     audioBase64?: string,
     audioUri?: string,
+    waveform?: number[],
   ) => {
     if (isReadingLevel) {
       // Reading levels open the self-review screen immediately (so the player
       // can listen back) and analyze in the background — no blocking loader.
       setReadingAudioUri(audioUri ?? null);
+      setReadingWaveform(waveform ?? null);
       setReadingDurationSec(durationSeconds);
       setCurrentAnalysis(null);
       setShowReadingReview(true);
@@ -1227,6 +1230,7 @@ export default function LevelScreen() {
             selfRating,
             aiStars: overall > 0 ? Math.round(overall / 2) : undefined,
             aiScore: overall > 0 ? overall : undefined,
+            waveform: readingWaveform ?? undefined,
           });
         }
       } catch (e) {
@@ -1395,6 +1399,7 @@ export default function LevelScreen() {
               author={author}
               category={category}
               audioUri={readingAudioUri ?? ""}
+              waveform={readingWaveform ?? undefined}
               durationSec={readingDurationSec}
               analysis={currentAnalysis}
               analyzing={analyzing}

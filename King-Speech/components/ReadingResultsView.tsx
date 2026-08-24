@@ -26,6 +26,7 @@ interface Props {
   author?: string;
   category?: string;
   audioUri: string;
+  waveform?: number[];
   durationSec: number;
   analysis: SpeechAnalysis | null;
   analyzing: boolean;
@@ -94,6 +95,7 @@ export default function ReadingResultsView({
   title,
   author,
   audioUri,
+  waveform,
   durationSec,
   analysis,
   analyzing,
@@ -185,6 +187,7 @@ export default function ReadingResultsView({
           </View>
           <RecordingPlayer
             uri={audioUri}
+            waveform={waveform}
             accentColor={accent}
             trackColor={trackColor}
             textColor={fgMuted}

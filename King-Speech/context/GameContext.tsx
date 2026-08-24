@@ -239,6 +239,7 @@ export interface ReadingRecording {
   selfRating?: number;      // 1–5, the player's own score
   aiStars?: number;         // 0–5, derived from the AI overall score
   aiScore?: number;         // 0–10 AI overall (optional)
+  waveform?: number[];      // real amplitude envelope (0..1) from record metering
 }
 
 interface GameContextValue {

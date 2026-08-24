@@ -20,11 +20,39 @@ export interface ReadingCaptureResult {
   durationSec: number;
   audioBase64?: string;
   audioUri?: string;
+  /** Real amplitude envelope (0..1) from record-time metering (native). */
+  waveform?: number[];
+}
+
+const ENVELOPE_BARS = 44;
+
+// Downsample raw amplitude samples to a fixed-length, peak-normalised envelope.
+function buildEnvelope(samples: number[], n: number): number[] | undefined {
+  if (!samples.length) return undefined;
+  const out = new Array(n).fill(0);
+  const block = samples.length / n;
+  let max = 0;
+  for (let i = 0; i < n; i++) {
+    const start = Math.floor(i * block);
+    const end = Math.max(start + 1, Math.floor((i + 1) * block));
+    let sum = 0;
+    let cnt = 0;
+    for (let j = start; j < end && j < samples.length; j++) {
+      sum += samples[j];
+      cnt++;
+    }
+    const avg = cnt ? sum / cnt : 0;
+    out[i] = avg;
+    if (avg > max) max = avg;
+  }
+  if (max > 0) for (let i = 0; i < n; i++) out[i] = Math.min(1, out[i] / max);
+  return out;
 }
 
 export function useReadingCapture() {
   const startTsRef = useRef(0);
   const recordingRef = useRef<any>(null);
+  const meterSamplesRef = useRef<number[]>([]);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -77,6 +105,17 @@ export function useReadingCapture() {
       };
       const { recording } = await Audio.Recording.createAsync(meteringOpts);
       recordingRef.current = recording;
+      // Collect the real amplitude envelope from metering (dBFS → 0..1) so the
+      // player can draw the actual waveform of this recording.
+      meterSamplesRef.current = [];
+      try {
+        recording.setProgressUpdateInterval?.(90);
+        recording.setOnRecordingStatusUpdate?.((status: any) => {
+          if (typeof status?.metering === "number") {
+            meterSamplesRef.current.push(Math.max(0, Math.min(1, (status.metering + 60) / 60)));
+          }
+        });
+      } catch {}
     } catch {}
   }, []);
 
@@ -144,7 +183,8 @@ export function useReadingCapture() {
     } catch (e) {
       console.warn("useReadingCapture: stop failed", e);
     }
-    return { durationSec, audioBase64, audioUri };
+    const waveform = buildEnvelope(meterSamplesRef.current, ENVELOPE_BARS);
+    return { durationSec, audioBase64, audioUri, waveform };
   }, []);
 
   const cancel = useCallback(() => {

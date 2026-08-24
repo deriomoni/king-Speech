@@ -50,6 +50,7 @@ interface Props {
     durationSeconds: number,
     audioBase64?: string,
     audioUri?: string,
+    waveform?: number[],
   ) => void;
   resetSignal: number;
   /** Bumped to restart the reading from the top (countdown → read again). */
@@ -334,8 +335,8 @@ export default function ReadingLevelView({
     exitReading();
     setPhase("saving");
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const { durationSec, audioBase64, audioUri } = await finish();
-    onRecordingComplete(durationSec, audioBase64, audioUri);
+    const { durationSec, audioBase64, audioUri, waveform } = await finish();
+    onRecordingComplete(durationSec, audioBase64, audioUri, waveform);
   };
 
   const cycleSpeed = () => {

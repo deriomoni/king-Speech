@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable, StyleSheet, Platform, LayoutChangeEvent } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { useAudioWaveform } from "@/hooks/useAudioWaveform";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -9,17 +10,28 @@ if (Platform.OS !== "web") {
 }
 
 const BAR_COUNT = 44;
+const MIN_BAR = 5;
+const MAX_BAR = 34;
 
-// A static, speech-like amplitude waveform (louder toward the middle, natural
-// variation) — reads as a real audio recording, not a row of equal lines.
-// Computed once at module load; the fill just tracks playback progress.
-const WAVE_HEIGHTS = Array.from({ length: BAR_COUNT }, (_, i) => {
+// Fallback shape when no real amplitude data is available (old native recordings
+// that were saved before metering capture). Speech-like envelope, not equal lines.
+const FALLBACK_HEIGHTS = Array.from({ length: BAR_COUNT }, (_, i) => {
   const env = Math.sin((i / (BAR_COUNT - 1)) * Math.PI); // 0 → 1 → 0 envelope
   const noise = Math.abs(
     Math.sin(i * 1.7) * 0.5 + Math.sin(i * 0.9 + 1) * 0.3 + Math.sin(i * 2.7) * 0.2,
   );
-  return Math.round(Math.max(5, Math.min(34, 6 + (5 + env * 23) * (0.45 + 0.55 * noise))));
+  return Math.round(Math.max(MIN_BAR, Math.min(MAX_BAR, 6 + (5 + env * 23) * (0.45 + 0.55 * noise))));
 });
+
+// Resample a 0..1 amplitude array to BAR_COUNT and convert to bar pixel heights.
+function toHeights(samples: number[]): number[] {
+  const n = samples.length;
+  return Array.from({ length: BAR_COUNT }, (_, i) => {
+    const v = n === BAR_COUNT ? samples[i] : samples[Math.min(n - 1, Math.floor((i / BAR_COUNT) * n))];
+    const a = Math.max(0, Math.min(1, v || 0));
+    return Math.round(MIN_BAR + a * (MAX_BAR - MIN_BAR));
+  });
+}
 
 interface Props {
   uri: string;
@@ -30,6 +42,9 @@ interface Props {
   onComplete?: () => void;
   /** Start playing shortly after mount. */
   autoPlay?: boolean;
+  /** Real amplitude envelope (0..1 per bar), e.g. from record-time metering.
+   *  When absent, the waveform is decoded from the audio (web) or falls back. */
+  waveform?: number[];
 }
 
 /**
@@ -44,7 +59,17 @@ export default function RecordingPlayer({
   textColor = "#9A97AD",
   onComplete,
   autoPlay,
+  waveform,
 }: Props) {
+  // Real waveform: prefer a passed-in amplitude envelope (record-time metering),
+  // otherwise decode from the audio file (works on web), otherwise fall back.
+  const decoded = useAudioWaveform(uri, BAR_COUNT);
+  const barHeights =
+    waveform && waveform.length
+      ? toHeights(waveform)
+      : decoded.status === "ready"
+      ? toHeights(decoded.samples)
+      : FALLBACK_HEIGHTS;
   const [isPlaying, setIsPlaying] = useState(false);
   const [durationSec, setDurationSec] = useState(0);
   const [positionSec, setPositionSec] = useState(0);
@@ -216,7 +241,7 @@ export default function RecordingPlayer({
         </Pressable>
 
         <View style={s.waveWrap}>
-          {WAVE_HEIGHTS.map((h, i) => {
+          {barHeights.map((h, i) => {
             const filled = (i + 0.5) / BAR_COUNT <= progress;
             return (
               <View

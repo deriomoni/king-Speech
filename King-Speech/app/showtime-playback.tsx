@@ -33,6 +33,7 @@ import { useGame, getRankForSection } from "@/context/GameContext";
 import { useLang } from "@/context/LangContext";
 import { getApiUrl } from "@/lib/query-client";
 import { playSfx } from "@/lib/sfx";
+import { useAudioWaveform } from "@/hooks/useAudioWaveform";
 import { getLevelsData } from "@/constants/gameContent";
 import SpeechAnalyzingLoader from "@/components/SpeechAnalyzingLoader";
 import { aspectsFromMetrics5 } from "@/components/ScoreFlower";
@@ -195,26 +196,29 @@ function AudienceSeats() {
   );
 }
 
-// ── WAVE BAR ─────────────────────────────────────────────────────────────────
-function WaveBar({ index, isPlaying, progress }: { index: number; isPlaying: boolean; progress: number }) {
-  const height = useSharedValue(4);
-  const GOLD = "#FFD166";
-  const BORDER = "#2A3348";
-  useEffect(() => {
-    if (isPlaying) {
-      height.value = withRepeat(withTiming(Math.random() * 22 + 4, { duration: 200 + index * 30 }), -1, true);
-    } else {
-      cancelAnimation(height);
-      height.value = withTiming(4);
-    }
-  }, [isPlaying]);
-  const style = useAnimatedStyle(() => ({ height: height.value }));
-  return <Animated.View style={[style, { width: 3, borderRadius: 2, minHeight: 4, backgroundColor: index / 20 <= progress ? GOLD : BORDER }]} />;
+// ── WAVEFORM (real amplitude of the recording) ───────────────────────────────
+const AP_BARS = 26;
+const AP_MIN = 4;
+const AP_MAX = 26;
+// Fallback shape when the audio can't be decoded (native, no envelope).
+const AP_FALLBACK = Array.from({ length: AP_BARS }, (_, i) => {
+  const env = Math.sin((i / (AP_BARS - 1)) * Math.PI);
+  const noise = Math.abs(Math.sin(i * 1.7) * 0.5 + Math.sin(i * 0.9 + 1) * 0.3 + Math.sin(i * 2.7) * 0.2);
+  return Math.round(Math.max(AP_MIN, Math.min(AP_MAX, 5 + (4 + env * 18) * (0.45 + 0.55 * noise))));
+});
+function apHeights(samples: number[]): number[] {
+  const n = samples.length;
+  return Array.from({ length: AP_BARS }, (_, i) => {
+    const v = n === AP_BARS ? samples[i] : samples[Math.min(n - 1, Math.floor((i / AP_BARS) * n))];
+    return Math.round(AP_MIN + Math.max(0, Math.min(1, v || 0)) * (AP_MAX - AP_MIN));
+  });
 }
 
 // ── AUDIO PLAYER ──────────────────────────────────────────────────────────────
 function AudioPlayer({ uri, onPlaybackComplete }: { uri: string; onPlaybackComplete?: () => void }) {
   const { t } = useLang();
+  const wf = useAudioWaveform(uri, AP_BARS);
+  const barHeights = wf.status === "ready" ? apHeights(wf.samples) : AP_FALLBACK;
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [position, setPosition] = useState(0);
@@ -281,12 +285,15 @@ function AudioPlayer({ uri, onPlaybackComplete }: { uri: string; onPlaybackCompl
     <View style={[ap.container, { borderColor: "#2A3348" }]}>
       <View style={ap.row}>
         <Pressable onPress={handlePlay} disabled={!uri} style={({ pressed }) => [ap.playBtn, { backgroundColor: !uri ? "#2A3348" : "#0B1426", opacity: pressed ? 0.85 : 1 }]}>
-          <Ionicons name={isPlaying ? "pause" : "play"} size={22} color="#FFD166" />
+          <Ionicons name={isPlaying ? "pause" : "play"} size={22} color="#FFD166" style={{ marginLeft: isPlaying ? 0 : 3 }} />
         </Pressable>
         <View style={ap.waveform}>
-          {Array.from({ length: 20 }).map((_, i) => (
-            <WaveBar key={i} index={i} isPlaying={isPlaying} progress={progress} />
-          ))}
+          {barHeights.map((h, i) => {
+            const filled = (i + 0.5) / AP_BARS <= progress;
+            return (
+              <View key={i} style={{ width: 3, borderRadius: 2, height: h, backgroundColor: filled ? "#FFD166" : "#2A3348" }} />
+            );
+          })}
         </View>
         <Text style={[ap.time, { color: "#6B6880", fontFamily: "Nunito_400Regular" }]}>
           {fmt(position)}{duration > 0 ? ` / ${fmt(duration)}` : ""}
