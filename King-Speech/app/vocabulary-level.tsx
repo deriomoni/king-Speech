@@ -30,6 +30,7 @@ import DevSkipButton from "@/components/DevSkipButton";
 import Animated, {
   Easing,
   Extrapolation,
+  FadeIn,
   FadeInDown,
   FadeOut,
   interpolate,
@@ -360,12 +361,12 @@ function ReelRow({
     const translateY = rel * ROW_SPACING;
     const translateX = 0;
     const scale = landed ? popScale.value : 1;
-    // Fade to fully transparent well before the window edge, so nothing hard-
-    // clips top/bottom — the words just dissolve into the background.
+    // Fade to fully transparent quickly toward the edges, so words dissolve into
+    // the background well before the window edge (stronger top/bottom fade).
     const opacity = interpolate(
       d,
-      [0, 3, 5],
-      [1, 0.7, 0],
+      [0, 1.5, 3],
+      [1, 0.4, 0],
       Extrapolation.CLAMP,
     );
     const color = interpolateColor(
@@ -379,7 +380,7 @@ function ReelRow({
       transform: [{ translateY }, { translateX }, { scale }],
     };
     if (isWeb) {
-      const blur = interpolate(d, [0, 0.5, 1, 2.5, 4], [0, 0.4, 1.5, 3.5, 5.5], Extrapolation.CLAMP);
+      const blur = interpolate(d, [0, 0.5, 1, 2, 3], [0, 1.2, 3.5, 7, 11], Extrapolation.CLAMP);
       return { ...base, filter: `blur(${blur.toFixed(2)}px)` } as any;
     }
     return base;
@@ -392,45 +393,44 @@ function ReelRow({
   );
 }
 
-// Intro: "Выбери слово" starts big in the centre over a SOLID theme background
-// (so the spinning reel never shows through), and over 2.5s shrinks and glides
-// up toward the title, then the whole thing fades out and the real title appears.
+// Intro: "Выбери слово" appears STATICALLY, centred, over a solid theme
+// background for ~1s, then fades out — after which the real title fades in and
+// the reel begins.
 function SpinIntro({ colors, onDone }: { colors: { text: string; background: string }; onDone: () => void }) {
-  const { height } = useWindowDimensions();
   const [visible, setVisible] = useState(true);
-  const p = useSharedValue(0);
+  const op = useSharedValue(1);
   const doneRef = useRef(onDone);
   useEffect(() => {
     doneRef.current = onDone;
   }, [onDone]);
   useEffect(() => {
-    p.value = withTiming(1, { duration: 2500, easing: Easing.inOut(Easing.cubic) });
-    const t = setTimeout(() => {
+    const hold = setTimeout(() => {
+      op.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.ease) });
+    }, 1000);
+    const done = setTimeout(() => {
       doneRef.current();
       setVisible(false);
-    }, 2500);
-    return () => clearTimeout(t);
+    }, 1320);
+    return () => {
+      clearTimeout(hold);
+      clearTimeout(done);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  // The whole overlay (solid bg + text) fades out only in the last ~0.4s.
-  const wrapStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(p.value, [0, 0.84, 1], [1, 1, 0], Extrapolation.CLAMP),
-  }));
-  const textStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: interpolate(p.value, [0, 1], [0, -height * 0.4], Extrapolation.CLAMP) },
-      { scale: interpolate(p.value, [0, 1], [1.8, 0.7], Extrapolation.CLAMP) },
-    ],
-  }));
+  const wrapStyle = useAnimatedStyle(() => ({ opacity: op.value }));
   if (!visible) return null;
   return (
     <Animated.View
       pointerEvents="none"
-      style={[StyleSheet.absoluteFill, { backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }, wrapStyle]}
+      style={[StyleSheet.absoluteFill, { backgroundColor: colors.background, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 }, wrapStyle]}
     >
-      <Animated.Text style={[{ color: colors.text, fontFamily: "Rubik_700Bold", fontSize: 30, letterSpacing: 0.3 }, textStyle]}>
+      <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        style={{ color: colors.text, fontFamily: "Rubik_700Bold", fontSize: 34, letterSpacing: 0.3, textAlign: "center" }}
+      >
         Выбери слово
-      </Animated.Text>
+      </Text>
     </Animated.View>
   );
 }
@@ -477,10 +477,11 @@ function SpinPhase({
   const isSpinning = landIndex == null;
   const center = landIndex != null ? reel[landIndex] : null;
 
-  // Continuous constant-speed sweep while spinning. Runs a bit longer than the
-  // 6s auto-stop so the reel can never run dry before it stops.
+  // Continuous constant-speed sweep — starts only AFTER the intro, and runs a
+  // bit longer than the 7s auto-stop so the reel can never run dry first.
   useEffect(() => {
-    const travel = SPIN_SPEED * 7.5;
+    if (!introDone) return;
+    const travel = SPIN_SPEED * 8;
     const farTarget = Math.max(START_POS - travel, SETTLE_COLS + 1);
     pos.value = withTiming(farTarget, {
       duration: ((START_POS - farTarget) / SPIN_SPEED) * 1000,
@@ -488,7 +489,7 @@ function SpinPhase({
     });
     return () => cancelAnimation(pos);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [introDone]);
 
   const finishPick = useCallback(
     (idx: number) => {
@@ -527,10 +528,12 @@ function SpinPhase({
   useEffect(() => {
     stopRef.current = stop;
   }, [stop]);
+  // Auto-pick 7s AFTER the intro finishes (not from mount).
   useEffect(() => {
-    const autoId = setTimeout(() => stopRef.current(), 6000);
+    if (!introDone) return;
+    const autoId = setTimeout(() => stopRef.current(), 7000);
     return () => clearTimeout(autoId);
-  }, []);
+  }, [introDone]);
 
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 80 : insets.top + 12;
@@ -540,7 +543,13 @@ function SpinPhase({
         <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={12}>
           <Ionicons name="close" size={24} color={colors.text} />
         </Pressable>
-        <Text style={[styles.topTitle, { color: colors.text, opacity: introDone ? 1 : 0 }]}>Выбери слово</Text>
+        {introDone ? (
+          <Animated.Text entering={FadeIn.duration(450)} style={[styles.topTitle, { color: colors.text }]}>
+            Выбери слово
+          </Animated.Text>
+        ) : (
+          <View />
+        )}
         <View style={{ width: 36 }} />
       </View>
 
