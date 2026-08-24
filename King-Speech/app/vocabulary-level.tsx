@@ -348,13 +348,9 @@ function ReelRow({
   const style = useAnimatedStyle(() => {
     const rel = index - pos.value;
     const d = Math.abs(rel);
-    // Position of this word on the curved rail (clamped to the half-circle).
-    // Only the SPACE is curved: the word slides along the arc (down/up and
-    // away to the left) but stays perfectly level — no rotation, no
-    // perspective shrinking, exactly like the reference.
-    const theta = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, rel * STEP_ANGLE));
-    const translateY = HOOP_R * Math.sin(theta);
-    const translateX = -HOOP_R * (1 - Math.cos(theta));
+    // Straight vertical column, centred (top → bottom); no left curve.
+    const translateY = rel * ROW_SPACING;
+    const translateX = 0;
     const scale = landed ? popScale.value : 1;
     const opacity = interpolate(
       d,
@@ -484,13 +480,9 @@ function SpinPhase({
         <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={12}>
           <Ionicons name="close" size={24} color="#fff" />
         </Pressable>
-        <Text style={styles.topTitle}>Выбери слово</Text>
-        <View style={styles.closeBtn} />
+        <Text style={styles.topTitle}>Выбери слова</Text>
+        <View style={{ width: 36 }} />
       </View>
-
-      <Text style={styles.spinSubtitle}>
-        Слова крутятся — нажми СТОП, когда будешь готов
-      </Text>
 
       <View style={{ flex: 1 }}>
         <View style={styles.reelWindow}>
@@ -505,11 +497,6 @@ function SpinPhase({
                 landed={landIndex === i}
               />
             ))}
-          </View>
-
-          {/* Centre pointer — marks the word the reel lands on */}
-          <View pointerEvents="none" style={styles.reelPointer}>
-            <Ionicons name="caret-forward" size={30} color={RED} />
           </View>
         </View>
 
@@ -1409,8 +1396,8 @@ const styles = StyleSheet.create({
     height: ROW_SPACING,
     fontSize: 34,
     lineHeight: ROW_SPACING,
-    textAlign: "left",
-    paddingLeft: 64,
+    textAlign: "center",
+    paddingHorizontal: 24,
     fontFamily: "Nunito_800ExtraBold",
   },
   reelPointer: {
@@ -1436,16 +1423,6 @@ const styles = StyleSheet.create({
     backgroundColor: RED,
     alignItems: "center",
     justifyContent: "center",
-    ...Platform.select({
-      ios: {
-        shadowColor: RED,
-        shadowOpacity: 0.45,
-        shadowRadius: 14,
-        shadowOffset: { width: 0, height: 6 },
-      },
-      android: { elevation: 6 },
-      default: {},
-    }),
   },
   stopRoundText: {
     color: "#fff",
