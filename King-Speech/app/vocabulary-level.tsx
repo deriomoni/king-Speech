@@ -313,7 +313,7 @@ function TutorialPhase({
 // deep-purple background, the whole word column tilted a few degrees, words
 // slide vertically; the centred word is crisp white, neighbours are lilac and
 // progressively blurred with distance.
-const ROW_SPACING = 56; // vertical distance between neighbouring words (at the centre)
+const ROW_SPACING = 76; // vertical distance between neighbouring words (at the centre)
 const REEL_LEN = 72; // long enough to keep sweeping for the full auto-stop window
 const SETTLE_COLS = 3; // slots to glide past after STOP for a natural landing
 const SPIN_SPEED = 4.2; // words per second while spinning
@@ -392,32 +392,46 @@ function ReelRow({
   );
 }
 
-// Intro: "Выбери слова" starts big in the centre and, over 1.5s, shrinks and
-// glides up into the title position, then fades out (the static title takes over).
-function SpinIntro({ colors }: { colors: { text: string } }) {
+// Intro: "Выбери слово" starts big in the centre over a SOLID theme background
+// (so the spinning reel never shows through), and over 2.5s shrinks and glides
+// up toward the title, then the whole thing fades out and the real title appears.
+function SpinIntro({ colors, onDone }: { colors: { text: string; background: string }; onDone: () => void }) {
   const { height } = useWindowDimensions();
   const [visible, setVisible] = useState(true);
   const p = useSharedValue(0);
+  const doneRef = useRef(onDone);
   useEffect(() => {
-    p.value = withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.cubic) });
-    const t = setTimeout(() => setVisible(false), 1560);
+    doneRef.current = onDone;
+  }, [onDone]);
+  useEffect(() => {
+    p.value = withTiming(1, { duration: 2500, easing: Easing.inOut(Easing.cubic) });
+    const t = setTimeout(() => {
+      doneRef.current();
+      setVisible(false);
+    }, 2500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const style = useAnimatedStyle(() => ({
-    opacity: interpolate(p.value, [0, 0.72, 1], [1, 1, 0], Extrapolation.CLAMP),
+  // The whole overlay (solid bg + text) fades out only in the last ~0.4s.
+  const wrapStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(p.value, [0, 0.84, 1], [1, 1, 0], Extrapolation.CLAMP),
+  }));
+  const textStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateY: interpolate(p.value, [0, 1], [0, -height * 0.38], Extrapolation.CLAMP) },
-      { scale: interpolate(p.value, [0, 1], [1.7, 0.72], Extrapolation.CLAMP) },
+      { translateY: interpolate(p.value, [0, 1], [0, -height * 0.4], Extrapolation.CLAMP) },
+      { scale: interpolate(p.value, [0, 1], [1.8, 0.7], Extrapolation.CLAMP) },
     ],
   }));
   if (!visible) return null;
   return (
-    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { alignItems: "center", justifyContent: "center" }]}>
-      <Animated.Text style={[{ color: colors.text, fontFamily: "Rubik_700Bold", fontSize: 30, letterSpacing: 0.3 }, style]}>
-        Выбери слова
+    <Animated.View
+      pointerEvents="none"
+      style={[StyleSheet.absoluteFill, { backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }, wrapStyle]}
+    >
+      <Animated.Text style={[{ color: colors.text, fontFamily: "Rubik_700Bold", fontSize: 30, letterSpacing: 0.3 }, textStyle]}>
+        Выбери слово
       </Animated.Text>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -435,6 +449,8 @@ function SpinPhase({
   const reelCenter = colors.text;
   const reelNear = colors.textSecondary;
   const reelFar = isDark ? "rgba(244,241,234,0.18)" : "rgba(20,22,26,0.18)";
+  // The title appears only once the intro animation has landed in its place.
+  const [introDone, setIntroDone] = useState(false);
   // A finite reel of Russian words, frozen ONCE at mount. Because the strip is
   // built here (not derived from a live pool), the parent recording the picked
   // word — which changes excludeIds — can never reshuffle it mid-spin, so the
@@ -524,7 +540,7 @@ function SpinPhase({
         <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={12}>
           <Ionicons name="close" size={24} color={colors.text} />
         </Pressable>
-        <Text style={[styles.topTitle, { color: colors.text }]}>Выбери слова</Text>
+        <Text style={[styles.topTitle, { color: colors.text, opacity: introDone ? 1 : 0 }]}>Выбери слово</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -548,12 +564,6 @@ function SpinPhase({
             ))}
           </View>
         </View>
-
-        <Text style={[styles.rouletteMeta, { color: colors.textMuted }]}>
-          {center
-            ? `${POS_LABELS_RU[center.partOfSpeech]} · ${DIFFICULTY_LABEL_RU[center.difficulty]}`
-            : " "}
-        </Text>
       </View>
 
       <View style={[styles.stopBtnWrap, { paddingBottom: (Platform.OS === "web" ? 32 : 24) + insets.bottom }]}>
@@ -571,7 +581,7 @@ function SpinPhase({
         </Pressable>
       </View>
 
-      <SpinIntro colors={colors} />
+      <SpinIntro colors={colors} onDone={() => setIntroDone(true)} />
     </View>
   );
 }
@@ -1041,7 +1051,7 @@ function PlayPhase({
     backgroundColor: `rgba(255,59,48,${bgOpacity.value})`,
   }));
 
-  const timerColor = timeLeft <= 10 && timeLeft > 0 ? RED : "#fff";
+  const timerColor = timeLeft <= 10 && timeLeft > 0 ? RED : colors.text;
   const timerText = `${String(Math.floor(timeLeft / 60)).padStart(2, "0")}:${String(
     timeLeft % 60,
   ).padStart(2, "0")}`;
@@ -1070,13 +1080,8 @@ function PlayPhase({
           <Ionicons name="close" size={24} color={colors.text} />
         </Pressable>
         <Animated.View style={timerStyle}>
-          <Text
-            style={[
-              styles.playTimer,
-              { color: stage === "active" ? timerColor : colors.textMuted },
-            ]}
-          >
-            {stage === "active" ? timerText : `${word.timerSeconds} сек`}
+          <Text style={[styles.playTimer, { color: timerColor }]}>
+            {timerText}
           </Text>
         </Animated.View>
         <View style={{ width: 36 }} />
@@ -1086,12 +1091,13 @@ function PlayPhase({
         <Text style={[styles.playWord, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit>
           {word.word.toUpperCase()}
         </Text>
-        <Text style={[styles.playMeta, { color: colors.textMuted }]}>
-          {POS_LABELS_RU[word.partOfSpeech]}
-          {stage === "countdown"
-            ? ` · ${DIFFICULTY_LABEL_RU[word.difficulty]}`
-            : ""}
-        </Text>
+        {/* Characteristics (part of speech · difficulty) show ONLY while the
+            player is actually speaking (the play screen), never on the preview. */}
+        {stage === "active" ? (
+          <Text style={[styles.playMeta, { color: colors.textMuted }]}>
+            {`${POS_LABELS_RU[word.partOfSpeech]} · ${DIFFICULTY_LABEL_RU[word.difficulty]}`}
+          </Text>
+        ) : null}
       </View>
 
       {stage === "countdown" ? (
@@ -1100,11 +1106,11 @@ function PlayPhase({
           <Animated.Text
             key={countdown}
             entering={FadeInDown.duration(180)}
-            style={styles.countdownNumber}
+            style={[styles.countdownNumber, { color: colors.text }]}
           >
             {countdown === 0 ? "СТАРТ" : countdown}
           </Animated.Text>
-          <Text style={styles.countdownHint}>Готовься называть синонимы</Text>
+          <Text style={[styles.countdownHint, { color: colors.textMuted }]}>Готовься называть синонимы</Text>
           <View style={{ flex: 1 }} />
         </View>
       ) : (
