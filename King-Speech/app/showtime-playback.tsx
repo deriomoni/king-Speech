@@ -215,10 +215,11 @@ function apHeights(samples: number[]): number[] {
 }
 
 // ── AUDIO PLAYER ──────────────────────────────────────────────────────────────
-function AudioPlayer({ uri, onPlaybackComplete }: { uri: string; onPlaybackComplete?: () => void }) {
+function AudioPlayer({ uri, waveform, onPlaybackComplete }: { uri: string; waveform?: number[]; onPlaybackComplete?: () => void }) {
   const { t } = useLang();
   const wf = useAudioWaveform(uri, AP_BARS);
-  const barHeights = wf.status === "ready" ? apHeights(wf.samples) : AP_FALLBACK;
+  const barHeights =
+    waveform && waveform.length ? apHeights(waveform) : wf.status === "ready" ? apHeights(wf.samples) : AP_FALLBACK;
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [position, setPosition] = useState(0);
@@ -526,7 +527,7 @@ const DEMO_RESULT: AnalysisResult = {
 
 // ── MAIN PLAYBACK SCREEN ──────────────────────────────────────────────────────
 export default function ShowtimePlaybackScreen() {
-  const { recordingUri, title, taskNumber: taskNumberParam, levelId: levelIdParam, mode: modeParam, demo: demoParam, scriptText: scriptTextParam } = useLocalSearchParams<{
+  const { recordingUri, title, taskNumber: taskNumberParam, levelId: levelIdParam, mode: modeParam, demo: demoParam, scriptText: scriptTextParam, waveform: waveformParam } = useLocalSearchParams<{
     recordingUri: string;
     title: string;
     taskNumber?: string;
@@ -534,7 +535,18 @@ export default function ShowtimePlaybackScreen() {
     mode?: string;
     demo?: string;
     scriptText?: string;
+    waveform?: string;
   }>();
+  // Real amplitude envelope of THIS recording, captured during recording.
+  const recordedWaveform = React.useMemo<number[] | undefined>(() => {
+    if (!waveformParam) return undefined;
+    try {
+      const arr = JSON.parse(waveformParam);
+      return Array.isArray(arr) && arr.length ? arr.map((v: any) => Number(v) || 0) : undefined;
+    } catch {
+      return undefined;
+    }
+  }, [waveformParam]);
   // DEV preview: opened from the Skip button to show the flower score window
   // with example data, no recording required.
   const isDemo = demoParam === "1";
@@ -824,7 +836,7 @@ export default function ShowtimePlaybackScreen() {
             </Text>
           </View>
 
-          <AudioPlayer uri={recordingUri ?? ""} onPlaybackComplete={handlePlaybackComplete} />
+          <AudioPlayer uri={recordingUri ?? ""} waveform={recordedWaveform} onPlaybackComplete={handlePlaybackComplete} />
 
           {!hasListenedFully && recordingUri && (
             <View style={pb.listenHint}>

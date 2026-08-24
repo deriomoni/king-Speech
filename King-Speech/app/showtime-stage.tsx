@@ -4107,6 +4107,32 @@ function getRuMergedThemes(): Record<string, SpeechTheme> {
   return out;
 }
 
+const WF_BARS = 26;
+
+// Downsample raw amplitude samples to a fixed-length, peak-normalised envelope
+// (the real waveform of the recording, from record-time metering).
+function buildShowEnvelope(samples: number[], n: number): number[] | null {
+  if (!samples.length) return null;
+  const out = new Array(n).fill(0);
+  const block = samples.length / n;
+  let max = 0;
+  for (let i = 0; i < n; i++) {
+    const start = Math.floor(i * block);
+    const end = Math.max(start + 1, Math.floor((i + 1) * block));
+    let sum = 0;
+    let cnt = 0;
+    for (let j = start; j < end && j < samples.length; j++) {
+      sum += samples[j];
+      cnt++;
+    }
+    const avg = cnt ? sum / cnt : 0;
+    out[i] = avg;
+    if (avg > max) max = avg;
+  }
+  if (max > 0) for (let i = 0; i < n; i++) out[i] = Math.min(1, out[i] / max);
+  return out;
+}
+
 export function getSpeechThemes(lang: Lang): Record<string, SpeechTheme> {
   return lang === "en" ? SPEECH_THEMES_EN : getRuMergedThemes();
 }
@@ -4466,6 +4492,8 @@ export default function ShowtimeStageScreen() {
   const audioChunksRef = useRef<Blob[]>([]);
   const audioBlobRef = useRef<Blob | null>(null);
   const recordingUriRef = useRef<string | null>(null);
+  const meterSamplesRef = useRef<number[]>([]);
+  const waveformRef = useRef<number[] | null>(null);
   const [isRecording, setIsRecording] = useState(false);
 
   // Scrollable teleprompter: full speech is readable from the top and
@@ -4551,8 +4579,27 @@ export default function ShowtimeStageScreen() {
       try {
         await Audio.requestPermissionsAsync();
         await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-        const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+        const baseOpts = Audio.RecordingOptionsPresets.HIGH_QUALITY;
+        const meteringOpts = {
+          ...baseOpts,
+          isMeteringEnabled: true,
+          ios: { ...(baseOpts.ios ?? {}), meteringEnabled: true },
+          android: { ...(baseOpts.android ?? {}) },
+          web: { ...(baseOpts.web ?? {}) },
+        };
+        meterSamplesRef.current = [];
+        waveformRef.current = null;
+        const { recording } = await Audio.Recording.createAsync(meteringOpts);
         recordingRef.current = recording;
+        // Collect the real amplitude envelope (dBFS → 0..1) for the waveform.
+        try {
+          recording.setProgressUpdateInterval?.(90);
+          recording.setOnRecordingStatusUpdate?.((status: any) => {
+            if (typeof status?.metering === "number") {
+              meterSamplesRef.current.push(Math.max(0, Math.min(1, (status.metering + 60) / 60)));
+            }
+          });
+        } catch {}
         setIsRecording(true);
       } catch (e) {
         console.warn("Recording error:", e);
@@ -4572,6 +4619,7 @@ export default function ShowtimeStageScreen() {
           await recordingRef.current.stopAndUnloadAsync();
           recordingUriRef.current = recordingRef.current.getURI();
           recordingRef.current = null;
+          waveformRef.current = buildShowEnvelope(meterSamplesRef.current, WF_BARS);
           await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
         }
       } catch (e) {
@@ -4593,7 +4641,7 @@ export default function ShowtimeStageScreen() {
     playSfx("applause").catch(() => {});
     setTimeout(() => {
       const uri = recordingUriRef.current ?? "";
-      router.push({ pathname: "/showtime-playback", params: { recordingUri: uri, title: speech.title, levelId, mode, scriptText: speech.lines.join("\n") } });
+      router.push({ pathname: "/showtime-playback", params: { recordingUri: uri, title: speech.title, levelId, mode, scriptText: speech.lines.join("\n"), waveform: waveformRef.current ? JSON.stringify(waveformRef.current) : "" } });
     }, 1200);
   };
 
