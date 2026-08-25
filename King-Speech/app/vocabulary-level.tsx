@@ -481,6 +481,9 @@ function SpinPhase({
   const reelFar = isDark ? "rgba(244,241,234,0.18)" : "rgba(20,22,26,0.18)";
   // The title appears only once the intro animation has landed in its place.
   const [introDone, setIntroDone] = useState(false);
+  // After the intro clears we hold the reel STATIC and cleanly spaced for 1s
+  // (so nothing overlaps), then start the sweep. `spinStarted` gates the motion.
+  const [spinStarted, setSpinStarted] = useState(false);
   // A finite reel of Russian words, frozen ONCE at mount. Because the strip is
   // built here (not derived from a live pool), the parent recording the picked
   // word — which changes excludeIds — can never reshuffle it mid-spin, so the
@@ -507,10 +510,17 @@ function SpinPhase({
   const isSpinning = landIndex == null;
   const center = landIndex != null ? reel[landIndex] : null;
 
-  // Continuous constant-speed sweep — starts only AFTER the intro, and runs a
-  // bit longer than the 7s auto-stop so the reel can never run dry first.
+  // Hold the reel still for 1s after the intro clears, then release the sweep.
   useEffect(() => {
     if (!introDone) return;
+    const id = setTimeout(() => setSpinStarted(true), 1000);
+    return () => clearTimeout(id);
+  }, [introDone]);
+
+  // Continuous constant-speed sweep — starts only AFTER the 1s settle hold, and
+  // runs a bit longer than the 7s auto-stop so the reel can never run dry first.
+  useEffect(() => {
+    if (!spinStarted) return;
     const travel = SPIN_SPEED * 8;
     const farTarget = Math.max(START_POS - travel, SETTLE_COLS + 1);
     pos.value = withTiming(farTarget, {
@@ -519,7 +529,7 @@ function SpinPhase({
     });
     return () => cancelAnimation(pos);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [introDone]);
+  }, [spinStarted]);
 
   const finishPick = useCallback(
     (idx: number) => {
@@ -558,12 +568,12 @@ function SpinPhase({
   useEffect(() => {
     stopRef.current = stop;
   }, [stop]);
-  // Auto-pick 7s AFTER the intro finishes (not from mount).
+  // Auto-pick 7s AFTER the reel actually starts sweeping (not from mount/intro).
   useEffect(() => {
-    if (!introDone) return;
+    if (!spinStarted) return;
     const autoId = setTimeout(() => stopRef.current(), 7000);
     return () => clearTimeout(autoId);
-  }, [introDone]);
+  }, [spinStarted]);
 
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 80 : insets.top + 12;
@@ -587,21 +597,26 @@ function SpinPhase({
         {/* Reel — words scroll down the centre; edges fade into the background
             (fade + blur, no visible overlay). */}
         <View style={styles.reelWindow}>
-          <View style={styles.reelTilt}>
-            {reel.map((w, i) => (
-              <ReelRow
-                key={i}
-                word={w.word}
-                index={i}
-                pos={pos}
-                popScale={popScale}
-                landed={landIndex === i}
-                centerColor={reelCenter}
-                nearColor={reelNear}
-                farColor={reelFar}
-              />
-            ))}
-          </View>
+          {/* Rendered only after the intro clears, so its centre word can never
+              overlap the fading "Выбери слово" intro text. Fades in over a clean
+              background, sits still for 1s, then sweeps. */}
+          {introDone ? (
+            <Animated.View entering={FadeIn.duration(320)} style={styles.reelTilt}>
+              {reel.map((w, i) => (
+                <ReelRow
+                  key={i}
+                  word={w.word}
+                  index={i}
+                  pos={pos}
+                  popScale={popScale}
+                  landed={landIndex === i}
+                  centerColor={reelCenter}
+                  nearColor={reelNear}
+                  farColor={reelFar}
+                />
+              ))}
+            </Animated.View>
+          ) : null}
         </View>
       </View>
 
@@ -662,6 +677,8 @@ function PlayPhase({
   const [adFor, setAdFor] = useState<null | "replace" | "hint">(null);
   // Once revealed, the hint stays on screen for the rest of the round.
   const [hintRevealed, setHintRevealed] = useState(false);
+  // Game is paused (timer frozen) while a confirm/hint/ad modal is open.
+  const paused = modal !== null || adFor !== null;
   const [stage, setStage] = useState<"countdown" | "active">("countdown");
   const [countdown, setCountdown] = useState(3);
   const [timeLeft, setTimeLeft] = useState(word.timerSeconds);
@@ -735,7 +752,7 @@ function PlayPhase({
 
   // ── Timer ────────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (stage !== "active") return;
+    if (stage !== "active" || paused) return;
     const id = setInterval(() => {
       // Pure updater — NO side effects. Calling onFinish() (a parent setter)
       // from inside a setState updater fires "Cannot update a component while
@@ -745,7 +762,7 @@ function PlayPhase({
     }, 1000);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stage]);
+  }, [stage, paused]);
 
   // Time's up → finish. Side effects live here, outside the setTimeLeft updater.
   useEffect(() => {
@@ -1247,7 +1264,7 @@ function PlayPhase({
             )}
           </ScrollView>
 
-          <Text style={styles.playCounter}>
+          <Text style={[styles.playCounter, { color: colors.textSecondary }]}>
             {foundSynonyms.length} из {word.synonyms.length} · {score} очков
           </Text>
 
@@ -1306,7 +1323,9 @@ function PlayPhase({
             </Pressable>
 
             <View style={styles.activeRowCenter}>
-              <Text style={styles.activeRowCenterText}>Слушаю…</Text>
+              <Text style={[styles.activeRowCenterText, { color: colors.textSecondary }]}>
+                {paused ? "Пауза" : "Слушаю…"}
+              </Text>
             </View>
 
             <View style={styles.activeRowSide}>
@@ -1348,13 +1367,19 @@ function PlayPhase({
               onPress={() => setModal("replace")}
               style={({ pressed }) => [
                 styles.cornerBtn,
-                { opacity: pressed ? 0.75 : 1 },
+                {
+                  backgroundColor: colors.backgroundSecondary,
+                  borderColor: colors.border,
+                  opacity: pressed ? 0.75 : 1,
+                },
               ]}
               accessibilityRole="button"
               accessibilityLabel="Заменить слово"
             >
-              <Ionicons name="refresh" size={16} color="#FFFFFF" />
-              <Text style={styles.cornerBtnText}>Заменить слово</Text>
+              <Ionicons name="refresh" size={16} color={colors.text} />
+              <Text style={[styles.cornerBtnText, { color: colors.text }]}>
+                Заменить слово
+              </Text>
             </Pressable>
 
             <Pressable
