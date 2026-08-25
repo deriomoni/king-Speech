@@ -481,9 +481,6 @@ function SpinPhase({
   const reelFar = isDark ? "rgba(244,241,234,0.18)" : "rgba(20,22,26,0.18)";
   // The title appears only once the intro animation has landed in its place.
   const [introDone, setIntroDone] = useState(false);
-  // After the intro clears we hold the reel STATIC and cleanly spaced for 1s
-  // (so nothing overlaps), then start the sweep. `spinStarted` gates the motion.
-  const [spinStarted, setSpinStarted] = useState(false);
   // A finite reel of Russian words, frozen ONCE at mount. Because the strip is
   // built here (not derived from a live pool), the parent recording the picked
   // word — which changes excludeIds — can never reshuffle it mid-spin, so the
@@ -510,18 +507,12 @@ function SpinPhase({
   const isSpinning = landIndex == null;
   const center = landIndex != null ? reel[landIndex] : null;
 
-  // Hold the reel still for 1s after the intro clears, then release the sweep.
+  // Continuous constant-speed sweep — starts immediately at mount (behind the
+  // intro overlay) at FULL speed, so by the time the reel is revealed it's
+  // already mid-spin. The player never sees it idle, loading, or ramping up.
+  // Runs comfortably longer than the auto-stop so it can never run dry first.
   useEffect(() => {
-    if (!introDone) return;
-    const id = setTimeout(() => setSpinStarted(true), 1000);
-    return () => clearTimeout(id);
-  }, [introDone]);
-
-  // Continuous constant-speed sweep — starts only AFTER the 1s settle hold, and
-  // runs a bit longer than the 7s auto-stop so the reel can never run dry first.
-  useEffect(() => {
-    if (!spinStarted) return;
-    const travel = SPIN_SPEED * 8;
+    const travel = SPIN_SPEED * 11;
     const farTarget = Math.max(START_POS - travel, SETTLE_COLS + 1);
     pos.value = withTiming(farTarget, {
       duration: ((START_POS - farTarget) / SPIN_SPEED) * 1000,
@@ -529,7 +520,7 @@ function SpinPhase({
     });
     return () => cancelAnimation(pos);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spinStarted]);
+  }, []);
 
   const finishPick = useCallback(
     (idx: number) => {
@@ -568,12 +559,13 @@ function SpinPhase({
   useEffect(() => {
     stopRef.current = stop;
   }, [stop]);
-  // Auto-pick 7s AFTER the reel actually starts sweeping (not from mount/intro).
+  // Auto-pick 7s after the reel is revealed (it's already spinning at full speed
+  // behind the intro). The sweep window is far longer, so it never runs dry.
   useEffect(() => {
-    if (!spinStarted) return;
+    if (!introDone) return;
     const autoId = setTimeout(() => stopRef.current(), 7000);
     return () => clearTimeout(autoId);
-  }, [spinStarted]);
+  }, [introDone]);
 
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 80 : insets.top + 12;
@@ -1109,6 +1101,14 @@ function PlayPhase({
   const bgOpacity = useSharedValue(0);
   useEffect(() => {
     if (stage !== "active") return;
+    // Paused (a modal is open) → freeze the low-time blink/shake entirely.
+    if (paused) {
+      cancelAnimation(shakeX);
+      cancelAnimation(bgOpacity);
+      shakeX.value = withTiming(0, { duration: 100 });
+      bgOpacity.value = withTiming(0, { duration: 100 });
+      return;
+    }
     if (timeLeft > 0 && timeLeft <= 5) {
       shakeX.value = withRepeat(
         withSequence(
@@ -1148,7 +1148,7 @@ function PlayPhase({
       cancelAnimation(shakeX);
       cancelAnimation(bgOpacity);
     };
-  }, [timeLeft, stage, shakeX, bgOpacity]);
+  }, [timeLeft, stage, paused, shakeX, bgOpacity]);
 
   const timerStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: shakeX.value }],
@@ -1265,7 +1265,7 @@ function PlayPhase({
           </ScrollView>
 
           <Text style={[styles.playCounter, { color: colors.textSecondary }]}>
-            {foundSynonyms.length} из {word.synonyms.length} · {score} очков
+            {foundSynonyms.length} из {word.synonyms.length}
           </Text>
 
           {allFoundBanner ? (
