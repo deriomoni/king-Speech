@@ -50,7 +50,7 @@ export default function ShowTimeScreen() {
   const cardBg = isLight ? "rgba(36,25,52,0.035)" : "rgba(255,255,255,0.03)";
   const chipBg = isLight ? "rgba(36,25,52,0.06)" : "rgba(255,255,255,0.06)";
   const { coins, showTimeFreeAvailable, consumeShowTimeFree, spendCoins } = useGame();
-  const SHOW_TIME_COST = 40;
+  const SHOW_TIME_COST = 50;
   const [payModal, setPayModal] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState(0);
   const topPad = Platform.OS === "web" ? 67 : insets.top;
@@ -207,23 +207,19 @@ export default function ShowTimeScreen() {
             <Text style={[st.startBtnText, { color: "#1A1A2E", fontFamily: "Nunito_700Bold" }]}>
               {t("startTraining")}
             </Text>
-          </Pressable>
-          <View style={st.entryNote}>
             {showTimeFreeAvailable ? (
-              <Ionicons name="gift-outline" size={13} color={inkFaint} />
+              <View style={st.startBtnTag}>
+                <Text style={st.startBtnTagText}>
+                  {lang === "en" ? "free" : "бесплатно"}
+                </Text>
+              </View>
             ) : (
-              <CoinIcon size={13} color={inkFaint} />
+              <View style={st.startBtnCost}>
+                <Text style={st.startBtnCostText}>{SHOW_TIME_COST}</Text>
+                <CoinIcon size={16} color="#1A1A2E" />
+              </View>
             )}
-            <Text style={[st.entryNoteText, { color: inkFaint, fontFamily: "Nunito_400Regular" }]}>
-              {showTimeFreeAvailable
-                ? lang === "en"
-                  ? "First entry today is free"
-                  : "Первый выход сегодня — бесплатно"
-                : lang === "en"
-                  ? `${SHOW_TIME_COST} coins per entry`
-                  : `${SHOW_TIME_COST} монет за выход`}
-            </Text>
-          </View>
+          </Pressable>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(500).duration(400)}>
@@ -419,14 +415,34 @@ const st = StyleSheet.create({
     elevation: 5,
   },
   startBtnText: { fontSize: 18 },
-  entryNote: {
+  startBtnCost: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-    marginTop: 10,
+    gap: 4,
+    marginLeft: 2,
+    paddingLeft: 10,
+    borderLeftWidth: 1.5,
+    borderLeftColor: "rgba(26,26,46,0.22)",
   },
-  entryNoteText: { fontSize: 12.5 },
+  startBtnCostText: {
+    color: "#1A1A2E",
+    fontSize: 18,
+    fontFamily: "Nunito_800ExtraBold",
+  },
+  startBtnTag: {
+    marginLeft: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    backgroundColor: "rgba(26,26,46,0.16)",
+  },
+  startBtnTagText: {
+    color: "#1A1A2E",
+    fontSize: 12.5,
+    fontFamily: "Nunito_700Bold",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
 
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,

@@ -663,8 +663,8 @@ function PlayPhase({
 
   // Coin costs. If the player is short, they can watch a (simulated) rewarded
   // ad instead of paying.
-  const HINT_COST = 20;
-  const REPLACE_COST = 10;
+  const HINT_COST = 30;
+  const REPLACE_COST = 15;
   // Which of the two side buttons has an open modal, if any.
   const [modal, setModal] = useState<null | "replace" | "hint">(null);
   // A simulated rewarded-ad flow. `adFor` remembers what the ad unlocks.
