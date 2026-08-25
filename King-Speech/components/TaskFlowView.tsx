@@ -20,6 +20,8 @@ import { judgeAnswer, type AnswerJudge } from "@/services/answerJudge";
 import { checkTextAccuracy, type TextAccuracy } from "@/services/textAccuracy";
 import type { SpeechAnalysis } from "@/services/speechAnalysis";
 import type { Task } from "@/context/GameContext";
+import { useGame } from "@/context/GameContext";
+import CoinIcon from "@/components/CoinIcon";
 import { brand } from "@/constants/colors";
 import { readableText } from "@/constants/pathPalette";
 
@@ -52,6 +54,9 @@ interface Props {
   screenBg?: string;
   /** Interview flow: clean bg, white card, deferred analysis, AI judge + literacy. */
   isInterview?: boolean;
+  /** Interview only: alternate question variants per task slot, for the
+   *  "Другой вопрос" replace button. */
+  interviewVariants?: string[][] | null;
   /** Tongue-twister flow: same clean/deferred UI, but scored on text accuracy
    *  (no literacy, no AI judge). */
   isTongue?: boolean;
@@ -172,6 +177,7 @@ export default function TaskFlowView({
   accent,
   screenBg,
   isInterview = false,
+  interviewVariants = null,
   isTongue = false,
   colors,
   isDark,
@@ -191,6 +197,19 @@ export default function TaskFlowView({
   const inkSoft = ink === "#FFFFFF" ? "rgba(255,255,255,0.62)" : "rgba(20,22,26,0.6)";
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("record");
+
+  // "Другой вопрос" (interview): swap the shown question for a variant. Costs
+  // coins, capped at 2 replacements per question slot.
+  const { coins, spendCoins } = useGame();
+  const REPLACE_Q_COST = 30;
+  const MAX_REPLACES = 2;
+  const [questionOverrides, setQuestionOverrides] = useState<Record<number, string>>({});
+  const [replaceCounts, setReplaceCounts] = useState<Record<number, number>>({});
+  // Effective question text for slot i, honoring any replacement. Used for BOTH
+  // the on-screen card and the analysis/AI-judge input so scoring matches what
+  // the player actually answered.
+  const questionAt = (i: number) =>
+    questionOverrides[i] ?? (tasks[i]?.content || "");
   const [current, setCurrent] = useState<SpeechAnalysis | null>(null);
   const [emptyTake, setEmptyTake] = useState(false);
   const [darken, setDarken] = useState(false);
@@ -347,6 +366,30 @@ export default function TaskFlowView({
     setPhase("record");
   };
 
+  // "Другой вопрос" — swap the current interview question for the next variant.
+  const variantsHere = interviewVariants?.[index] ?? null;
+  const usedHere = replaceCounts[index] ?? 0;
+  // Cap at 2 per the spec, but never beyond the number of distinct alternates.
+  const replaceLimit = variantsHere
+    ? Math.min(MAX_REPLACES, variantsHere.length - 1)
+    : 0;
+  const canReplaceQuestion =
+    isInterview && phase === "record" && !!variantsHere && usedHere < replaceLimit;
+
+  const replaceQuestion = () => {
+    if (!canReplaceQuestion || !variantsHere) return;
+    if (coins < REPLACE_Q_COST) return;
+    if (!spendCoins(REPLACE_Q_COST)) return;
+    // variant[0] is the initial question; replace #1 → [1], #2 → [2] (wrap if
+    // fewer variants exist so a replacement always changes the text).
+    const nextVariant = variantsHere[(usedHere + 1) % variantsHere.length];
+    setQuestionOverrides((m) => ({ ...m, [index]: nextVariant }));
+    setReplaceCounts((m) => ({ ...m, [index]: usedHere + 1 }));
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    }
+  };
+
   // ── Interview flow: record → next immediately; analyze in the background ────
   const emptyAnalysis = (): SpeechAnalysis => ({
     summary: ru ? "Ответ не распознан." : "Answer not recognized.",
@@ -377,7 +420,7 @@ export default function TaskFlowView({
       tasks.map(async (t, i): Promise<DevRow> => {
         const analysis = analyses[i] ?? emptyAnalysis();
         const transcript = analysis.transcript || "";
-        const question = t.content || t.title || "";
+        const question = questionOverrides[i] ?? (t.content || t.title || "");
         const durationSec = audioRef.current[i]?.durationSec ?? 0;
         if (isTongue) {
           // Deterministic word-match against the printed tongue twister — no
@@ -413,7 +456,7 @@ export default function TaskFlowView({
     }
     // Kick off analysis in the background and stash its promise.
     pendingRef.current[i] = analyzeGenericTask({
-      originalText: t.content || t.instruction || "",
+      originalText: questionOverrides[i] ?? (t.content || t.instruction || ""),
       levelId,
       levelNumber,
       lang,
@@ -537,14 +580,14 @@ export default function TaskFlowView({
             ) : null}
             {/* Clean flow: text fades in over 1.5s each new card. */}
             <Animated.Text
-              key={`q-${index}`}
+              key={`q-${index}-${replaceCounts[index] ?? 0}`}
               entering={deferred ? FadeIn.duration(1500) : undefined}
               style={[
                 st.contentText,
                 { color: deferred ? colors.text : isDark ? "#F5F1FF" : colors.text, fontFamily: "Rubik_700Bold" },
               ]}
             >
-              {task.content || task.title}
+              {(questionOverrides[index] ?? task.content) || task.title}
             </Animated.Text>
           </View>
         </Animated.View>
@@ -552,6 +595,47 @@ export default function TaskFlowView({
 
       {/* Bottom control — record → (analyzing) → mini-score + gold Next pill */}
       <View style={[st.controls, { paddingBottom: bottomPad + 14 }]}>
+        {isInterview && phase === "record" && !corridor ? (
+          <Animated.View entering={FadeIn.duration(300)} style={st.replaceQWrap}>
+            <Pressable
+              onPress={replaceQuestion}
+              disabled={!canReplaceQuestion || coins < REPLACE_Q_COST}
+              style={({ pressed }) => [
+                st.replaceQBtn,
+                {
+                  backgroundColor: colors.backgroundSecondary,
+                  borderColor: colors.border,
+                  opacity:
+                    !canReplaceQuestion || coins < REPLACE_Q_COST
+                      ? 0.5
+                      : pressed
+                        ? 0.7
+                        : 1,
+                },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={ru ? "Другой вопрос" : "Another question"}
+            >
+              <Ionicons name="shuffle" size={16} color={ink} />
+              <Text style={[st.replaceQText, { color: ink, fontFamily: "Nunito_700Bold" }]}>
+                {usedHere >= replaceLimit
+                  ? ru
+                    ? "Замен больше нет"
+                    : "No swaps left"
+                  : ru
+                    ? "Другой вопрос"
+                    : "Another question"}
+              </Text>
+              {usedHere < replaceLimit ? (
+                <View style={[st.replaceQCost, { backgroundColor: colors.border }]}>
+                  <CoinIcon size={11} color={ink} />
+                  <Text style={[st.replaceQCostText, { color: ink }]}>{REPLACE_Q_COST}</Text>
+                </View>
+              ) : null}
+            </Pressable>
+          </Animated.View>
+        ) : null}
+
         {emptyTake ? (
           <Animated.Text
             entering={FadeIn}
@@ -1016,6 +1100,27 @@ const st = StyleSheet.create({
   controls: { paddingHorizontal: 24, alignItems: "center", gap: 12, minHeight: 150, justifyContent: "flex-end" },
   controlSlot: { width: "100%", alignItems: "center", minHeight: 64, justifyContent: "center" },
   emptyHint: { fontSize: 13, lineHeight: 18, textAlign: "center", paddingHorizontal: 12 },
+  replaceQWrap: { alignItems: "center" },
+  replaceQBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  replaceQText: { fontSize: 13.5 },
+  replaceQCost: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    marginLeft: 2,
+    paddingVertical: 2,
+    paddingHorizontal: 7,
+    borderRadius: 10,
+  },
+  replaceQCostText: { fontSize: 12, fontFamily: "Nunito_800ExtraBold" },
   scoredWrap: { width: "100%", alignItems: "center", gap: 12 },
   pill: {
     flexDirection: "row",

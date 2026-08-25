@@ -45,7 +45,7 @@ import TaskFlowView from "@/components/TaskFlowView";
 import { aggregateAnalyses } from "@/services/analyzeGenericTask";
 import WarmupLevelView from "@/components/warmup/WarmupLevelView";
 import DevSkipButton from "@/components/DevSkipButton";
-import { getModuleFromLevelId } from "@/constants/contentLoader";
+import { getModuleFromLevelId, getInterviewVariantsForLevel } from "@/constants/contentLoader";
 import { getPathColors, readableText } from "@/constants/pathPalette";
 import SpeechAnalyzingLoader from "@/components/SpeechAnalyzingLoader";
 import { getReadingMeta, getLevelsData } from "@/constants/gameContent";
@@ -1540,6 +1540,7 @@ export default function LevelScreen() {
         accent={isCleanLevel ? colors.gold : pathCols.brick}
         screenBg={isCleanLevel ? undefined : pathCols.bg}
         isInterview={isInterviewLevel}
+        interviewVariants={isInterviewLevel ? getInterviewVariantsForLevel(levelId, lang) : null}
         isTongue={isTongueLevel}
         colors={colors}
         isDark={isDark}
