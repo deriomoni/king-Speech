@@ -665,12 +665,15 @@ function PlayPhase({
   // ad instead of paying.
   const HINT_COST = 30;
   const REPLACE_COST = 15;
+  const EXTRA_TIME_COST = 25;
   // Which of the two side buttons has an open modal, if any.
   const [modal, setModal] = useState<null | "replace" | "hint">(null);
   // A simulated rewarded-ad flow. `adFor` remembers what the ad unlocks.
-  const [adFor, setAdFor] = useState<null | "replace" | "hint">(null);
+  const [adFor, setAdFor] = useState<null | "replace" | "hint" | "time">(null);
   // Once revealed, the hint stays on screen for the rest of the round.
   const [hintRevealed, setHintRevealed] = useState(false);
+  // Extra time (×2 the word's allotted time) — one grant per round.
+  const [extraTimeUsed, setExtraTimeUsed] = useState(false);
   // Game is paused (timer frozen) while a confirm/hint/ad modal is open.
   const paused = modal !== null || adFor !== null;
   const [stage, setStage] = useState<"countdown" | "active">("countdown");
@@ -1094,6 +1097,25 @@ function PlayPhase({
     }
   };
 
+  // "Доп. время" → doubles the word's allotted time (adds one more full
+  // allotment to the remaining clock, so the total budget becomes ×2). Pay with
+  // coins, or watch a rewarded ad when short.
+  const grantExtraTime = () => {
+    setExtraTimeUsed(true);
+    setTimeLeft((t) => t + word.timerSeconds);
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    }
+  };
+  const requestExtraTime = () => {
+    if (extraTimeUsed || stage !== "active") return;
+    if (coins >= EXTRA_TIME_COST) {
+      if (spendCoins(EXTRA_TIME_COST)) grantExtraTime();
+    } else {
+      setAdFor("time");
+    }
+  };
+
   // Called when the simulated rewarded ad finishes. Grants whatever it unlocked.
   const onAdComplete = () => {
     const target = adFor;
@@ -1103,6 +1125,8 @@ function PlayPhase({
       onReplace();
     } else if (target === "hint") {
       revealHint();
+    } else if (target === "time") {
+      grantExtraTime();
     }
   };
 
@@ -1200,7 +1224,39 @@ function PlayPhase({
             {timerText}
           </Text>
         </Animated.View>
-        <View style={{ width: 36 }} />
+        {stage === "active" ? (
+          <Pressable
+            onPress={requestExtraTime}
+            disabled={extraTimeUsed}
+            style={({ pressed }) => [
+              styles.timeBtn,
+              { opacity: extraTimeUsed ? 0.4 : pressed ? 0.75 : 1 },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Добавить время ×2"
+          >
+            {extraTimeUsed ? (
+              <Ionicons name="checkmark" size={15} color="#FFFFFF" />
+            ) : (
+              <Ionicons name="time" size={15} color="#FFFFFF" />
+            )}
+            <Text style={styles.timeBtnText}>×2</Text>
+            {!extraTimeUsed ? (
+              <View style={styles.timeCostPill}>
+                {coins >= EXTRA_TIME_COST ? (
+                  <>
+                    <CoinIcon size={10} color="#FFFFFF" />
+                    <Text style={styles.timeCostText}>{EXTRA_TIME_COST}</Text>
+                  </>
+                ) : (
+                  <Ionicons name="play" size={10} color="#FFFFFF" />
+                )}
+              </View>
+            ) : null}
+          </Pressable>
+        ) : (
+          <View style={{ width: 36 }} />
+        )}
       </View>
 
       <View style={styles.playWordBlock}>
@@ -1492,7 +1548,9 @@ function PlayPhase({
                 <Text style={styles.modalTitle}>
                   {adFor === "replace"
                     ? "Реклама за замену слова"
-                    : "Реклама за подсказку"}
+                    : adFor === "time"
+                      ? "Реклама за доп. время"
+                      : "Реклама за подсказку"}
                 </Text>
                 <Text style={styles.modalBody}>
                   Досмотрите короткий ролик, чтобы получить награду.
@@ -2020,6 +2078,37 @@ const styles = StyleSheet.create({
     fontFamily: "Rubik_500Medium",
   },
   hintChipTextDone: { color: GREEN_TEXT, letterSpacing: 0.2 },
+
+  // Top-bar extra-time (×2) button
+  timeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 18,
+    backgroundColor: "#4C6EF5",
+  },
+  timeBtnText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontFamily: "Rubik_700Bold",
+  },
+  timeCostPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    marginLeft: 1,
+    paddingVertical: 1,
+    paddingHorizontal: 5,
+    borderRadius: 9,
+    backgroundColor: "rgba(0,0,0,0.18)",
+  },
+  timeCostText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontFamily: "Rubik_700Bold",
+  },
 
   // Bottom corner actions
   cornerRow: {
