@@ -78,6 +78,27 @@ function makeId() {
 
 const TOP_PAD = Platform.OS === "web" ? 80 : 56;
 
+// Reveal only the first 3 letters of a synonym; mask the rest with crosses so
+// the hint nudges without giving the whole answer away. Spaces are preserved.
+function maskSynonym(word: string): string {
+  const reveal = 3;
+  let shown = 0;
+  let out = "";
+  for (const ch of word) {
+    if (ch === " " || ch === "-") {
+      out += ch;
+      continue;
+    }
+    if (shown < reveal) {
+      out += ch;
+      shown += 1;
+    } else {
+      out += "×";
+    }
+  }
+  return out;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ROOT
 // ─────────────────────────────────────────────────────────────────────────────
@@ -209,6 +230,15 @@ export default function VocabularyLevelScreen() {
           }}
           onFinish={() => setPhase("result")}
           onExit={() => router.replace("/(tabs)")}
+          onReplace={() => {
+            // Discard the current word and re-spin. shownIds already excludes it,
+            // so the roulette can't land on the same word again this session.
+            setSelectedWord(null);
+            setFoundSynonyms([]);
+            setScore(0);
+            setFeed([]);
+            setPhase("spin");
+          }}
         />
       )}
       {phase === "result" && selectedWord && (
@@ -608,6 +638,7 @@ function PlayPhase({
   onAddWrong,
   onFinish,
   onExit,
+  onReplace,
 }: {
   word: VocabWord;
   foundSynonyms: string[];
@@ -617,8 +648,20 @@ function PlayPhase({
   onAddWrong: (text: string) => void;
   onFinish: () => void;
   onExit: () => void;
+  onReplace: () => void;
 }) {
   const { colors } = useAppColors();
+  const { coins, spendCoins } = useGame();
+
+  // Cost of one hint reveal, in coins. If the player is short, they can watch a
+  // (simulated) rewarded ad instead.
+  const HINT_COST = 2;
+  // Which of the two side buttons has an open modal, if any.
+  const [modal, setModal] = useState<null | "replace" | "hint">(null);
+  // A simulated rewarded-ad flow. `adFor` remembers what the ad unlocks.
+  const [adFor, setAdFor] = useState<null | "replace" | "hint">(null);
+  // Once revealed, the hint stays on screen for the rest of the round.
+  const [hintRevealed, setHintRevealed] = useState(false);
   const [stage, setStage] = useState<"countdown" | "active">("countdown");
   const [countdown, setCountdown] = useState(3);
   const [timeLeft, setTimeLeft] = useState(word.timerSeconds);
@@ -1007,6 +1050,43 @@ function PlayPhase({
     ]);
   };
 
+  // ── Replace-word & hint (coins / rewarded ad) ────────────────────────────
+  const revealHint = () => {
+    setHintRevealed(true);
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    }
+  };
+
+  // "Заменить слово" → confirm. On confirm, always route through a rewarded ad.
+  const confirmReplace = () => {
+    setModal(null);
+    setAdFor("replace");
+  };
+
+  // "Подсказка" → pay with coins if the player can afford it, otherwise the
+  // player watches a rewarded ad to unlock the reveal for free.
+  const requestHint = () => {
+    if (hintRevealed) return;
+    if (coins >= HINT_COST) {
+      if (spendCoins(HINT_COST)) revealHint();
+    } else {
+      setAdFor("hint");
+    }
+  };
+
+  // Called when the simulated rewarded ad finishes. Grants whatever it unlocked.
+  const onAdComplete = () => {
+    const target = adFor;
+    setAdFor(null);
+    if (target === "replace") {
+      stopRecognition();
+      onReplace();
+    } else if (target === "hint") {
+      revealHint();
+    }
+  };
+
   // ── Timer animations ─────────────────────────────────────────────────────
   const shakeX = useSharedValue(0);
   const bgOpacity = useSharedValue(0);
@@ -1179,6 +1259,40 @@ function PlayPhase({
             </View>
           ) : null}
 
+          {hintRevealed ? (
+            <Animated.View entering={FadeIn.duration(220)} style={styles.hintPanel}>
+              <View style={styles.hintPanelHead}>
+                <Ionicons name="bulb" size={14} color="#FFC531" />
+                <Text style={styles.hintPanelTitle}>Подсказка</Text>
+              </View>
+              <View style={styles.hintChips}>
+                {word.synonyms.map((syn) => {
+                  const done = foundSynonyms.some(
+                    (f) => normForDedup(f) === normForDedup(syn),
+                  );
+                  return (
+                    <View
+                      key={syn}
+                      style={[
+                        styles.hintChip,
+                        done && styles.hintChipDone,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.hintChipText,
+                          done && styles.hintChipTextDone,
+                        ]}
+                      >
+                        {done ? syn : maskSynonym(syn)}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </Animated.View>
+          ) : null}
+
           <View style={styles.activeRow}>
             <Pressable
               onPress={handleStopActive}
@@ -1225,6 +1339,134 @@ function PlayPhase({
                   <Ionicons name="send" size={18} color="#fff" />
                 </Pressable>
               </View>
+            </View>
+          ) : null}
+
+          {/* Bottom corner actions */}
+          <View pointerEvents="box-none" style={styles.cornerRow}>
+            <Pressable
+              onPress={() => setModal("replace")}
+              style={({ pressed }) => [
+                styles.cornerBtn,
+                { opacity: pressed ? 0.75 : 1 },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Заменить слово"
+            >
+              <Ionicons name="refresh" size={16} color="#FFFFFF" />
+              <Text style={styles.cornerBtnText}>Заменить слово</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={requestHint}
+              disabled={hintRevealed}
+              style={({ pressed }) => [
+                styles.cornerBtn,
+                styles.cornerBtnHint,
+                { opacity: hintRevealed ? 0.45 : pressed ? 0.75 : 1 },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Подсказка"
+            >
+              <Ionicons name="bulb" size={16} color="#1B1300" />
+              <Text style={styles.cornerBtnTextDark}>Подсказка</Text>
+              <View style={styles.cornerCostPill}>
+                {coins >= HINT_COST ? (
+                  <>
+                    <Ionicons name="logo-usd" size={11} color="#1B1300" />
+                    <Text style={styles.cornerCostText}>{HINT_COST}</Text>
+                  </>
+                ) : (
+                  <Ionicons name="play" size={11} color="#1B1300" />
+                )}
+              </View>
+            </Pressable>
+          </View>
+
+          {/* Replace-word confirmation */}
+          {modal === "replace" ? (
+            <View style={styles.modalOverlay}>
+              <Animated.View
+                entering={FadeIn.duration(180)}
+                style={styles.modalCard}
+              >
+                <View style={styles.modalIcon}>
+                  <Ionicons name="refresh" size={26} color="#8AB4FF" />
+                </View>
+                <Text style={styles.modalTitle}>
+                  Вы точно хотите заменить слово?
+                </Text>
+                <Text style={styles.modalBody}>
+                  Чтобы прокрутить рулетку ещё раз, нужно посмотреть рекламу.
+                </Text>
+                <View style={styles.modalBtns}>
+                  <Pressable
+                    onPress={() => setModal(null)}
+                    style={({ pressed }) => [
+                      styles.modalBtn,
+                      styles.modalBtnGhost,
+                      { opacity: pressed ? 0.8 : 1 },
+                    ]}
+                  >
+                    <Text style={styles.modalBtnGhostText}>Нет</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={confirmReplace}
+                    style={({ pressed }) => [
+                      styles.modalBtn,
+                      styles.modalBtnPrimary,
+                      { opacity: pressed ? 0.85 : 1 },
+                    ]}
+                  >
+                    <Text style={styles.modalBtnPrimaryText}>Да</Text>
+                  </Pressable>
+                </View>
+              </Animated.View>
+            </View>
+          ) : null}
+
+          {/* Simulated rewarded ad */}
+          {adFor ? (
+            <View style={styles.modalOverlay}>
+              <Animated.View
+                entering={FadeIn.duration(180)}
+                style={styles.modalCard}
+              >
+                <View style={styles.adBadge}>
+                  <Text style={styles.adBadgeText}>РЕКЛАМА</Text>
+                </View>
+                <Text style={styles.modalTitle}>
+                  {adFor === "replace"
+                    ? "Реклама за замену слова"
+                    : "Реклама за подсказку"}
+                </Text>
+                <Text style={styles.modalBody}>
+                  Досмотрите короткий ролик, чтобы получить награду.
+                </Text>
+                <View style={styles.modalBtns}>
+                  <Pressable
+                    onPress={() => setAdFor(null)}
+                    style={({ pressed }) => [
+                      styles.modalBtn,
+                      styles.modalBtnGhost,
+                      { opacity: pressed ? 0.8 : 1 },
+                    ]}
+                  >
+                    <Text style={styles.modalBtnGhostText}>Отмена</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={onAdComplete}
+                    style={({ pressed }) => [
+                      styles.modalBtn,
+                      styles.modalBtnPrimary,
+                      { opacity: pressed ? 0.85 : 1 },
+                    ]}
+                  >
+                    <Ionicons name="play" size={15} color="#fff" />
+                    <Text style={styles.modalBtnPrimaryText}>Смотреть</Text>
+                  </Pressable>
+                </View>
+              </Animated.View>
             </View>
           ) : null}
         </>
@@ -1679,6 +1921,190 @@ const styles = StyleSheet.create({
     backgroundColor: RED,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  // Hint reveal panel
+  hintPanel: {
+    marginHorizontal: 20,
+    marginTop: 12,
+    backgroundColor: "rgba(255,197,49,0.10)",
+    borderColor: "rgba(255,197,49,0.30)",
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+  },
+  hintPanelHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 10,
+  },
+  hintPanelTitle: {
+    color: "#FFC531",
+    fontSize: 12.5,
+    fontFamily: "Rubik_600SemiBold",
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
+  },
+  hintChips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  hintChip: {
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderColor: "rgba(255,255,255,0.14)",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 11,
+  },
+  hintChipDone: {
+    backgroundColor: GREEN_BG,
+    borderColor: GREEN_BORDER,
+  },
+  hintChipText: {
+    color: "rgba(255,255,255,0.9)",
+    fontSize: 15,
+    letterSpacing: 2,
+    fontFamily: "Rubik_500Medium",
+  },
+  hintChipTextDone: { color: GREEN_TEXT, letterSpacing: 0.2 },
+
+  // Bottom corner actions
+  cornerRow: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    bottom: Platform.OS === "web" ? 22 : 30,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+  },
+  cornerBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 22,
+    backgroundColor: "rgba(255,255,255,0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
+  },
+  cornerBtnHint: {
+    backgroundColor: "#FFC531",
+    borderColor: "#FFD873",
+  },
+  cornerBtnText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontFamily: "Rubik_600SemiBold",
+  },
+  cornerBtnTextDark: {
+    color: "#1B1300",
+    fontSize: 13,
+    fontFamily: "Rubik_600SemiBold",
+  },
+  cornerCostPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    marginLeft: 2,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    backgroundColor: "rgba(0,0,0,0.14)",
+  },
+  cornerCostText: {
+    color: "#1B1300",
+    fontSize: 12,
+    fontFamily: "Rubik_700Bold",
+  },
+
+  // Modals (replace confirm + rewarded ad)
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(4,7,20,0.72)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
+    zIndex: 50,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: "#141B33",
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.10)",
+    paddingVertical: 24,
+    paddingHorizontal: 22,
+    alignItems: "center",
+  },
+  modalIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: "rgba(138,180,255,0.14)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+  },
+  adBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: "rgba(255,197,49,0.16)",
+    marginBottom: 14,
+  },
+  adBadgeText: {
+    color: "#FFC531",
+    fontSize: 11,
+    letterSpacing: 1.5,
+    fontFamily: "Rubik_700Bold",
+  },
+  modalTitle: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    lineHeight: 24,
+    textAlign: "center",
+    fontFamily: "Rubik_600SemiBold",
+  },
+  modalBody: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 13.5,
+    lineHeight: 19,
+    textAlign: "center",
+    marginTop: 8,
+    fontFamily: "Rubik_400Regular",
+  },
+  modalBtns: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 20,
+    alignSelf: "stretch",
+  },
+  modalBtn: {
+    flex: 1,
+    height: 46,
+    borderRadius: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  modalBtnGhost: {
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
+  },
+  modalBtnGhostText: {
+    color: "rgba(255,255,255,0.85)",
+    fontSize: 15,
+    fontFamily: "Rubik_600SemiBold",
+  },
+  modalBtnPrimary: { backgroundColor: "#4C6EF5" },
+  modalBtnPrimaryText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontFamily: "Rubik_600SemiBold",
   },
 
   // Result

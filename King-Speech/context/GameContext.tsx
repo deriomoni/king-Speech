@@ -180,6 +180,8 @@ function extractProgress(levels: Level[]): SavedProgress[] {
 
 const STORAGE_KEY = "@kingspeech_levels_v4";
 const XP_KEY = "@kingspeech_xp_v4";
+const COINS_KEY = "@kingspeech_coins_v1";
+const START_COINS = 5;
 const PROGRESS_KEY = "@kingspeech_progress_v5";
 const RANK_KEY = "@kingspeech_current_rank_v1";
 const SHOWTIME_RECORDINGS_KEY = "@kingspeech_showtime_recordings_v1";
@@ -245,6 +247,10 @@ export interface ReadingRecording {
 interface GameContextValue {
   levels: Level[];
   totalXp: number;
+  coins: number;
+  addCoins: (amount: number) => void;
+  /** Spend coins; returns false (and changes nothing) if the balance is short. */
+  spendCoins: (amount: number) => boolean;
   completeTask: (levelId: LevelType, taskNumber: number, score: number) => void;
   completeAllTasksForLevel: (levelId: LevelType, score: number) => void;
   addXP: (amount: number) => void;
@@ -294,6 +300,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const { isOpenTestingEnabled } = useDevTools();
   const [savedProgress, setSavedProgress] = useState<SavedProgress[] | null>(null);
   const [totalXp, setTotalXp] = useState(0);
+  const [coins, setCoins] = useState(START_COINS);
   const [isLoaded, setIsLoaded] = useState(false);
   const [currentRank, setCurrentRankState] = useState(1);
   const [showTimeRecordings, setShowTimeRecordings] = useState<Record<number, ShowTimeRecording[]>>({});
@@ -313,7 +320,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       AsyncStorage.getItem(METRIC_SERIES_KEY),
       AsyncStorage.getItem(PORTAL_DONE_KEY),
       AsyncStorage.getItem(READING_LIBRARY_KEY),
-    ]).then(([progressRaw, legacyRaw, xpRaw, rankRaw, recRaw, scoresRaw, seriesRaw, portalRaw, readingRaw]) => {
+      AsyncStorage.getItem(COINS_KEY),
+    ]).then(([progressRaw, legacyRaw, xpRaw, rankRaw, recRaw, scoresRaw, seriesRaw, portalRaw, readingRaw, coinsRaw]) => {
       let progress: SavedProgress[] | null = null;
 
       if (progressRaw) {
@@ -332,6 +340,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
       if (xpRaw) {
         try { setTotalXp(parseInt(xpRaw, 10)); } catch {}
+      }
+
+      if (coinsRaw != null) {
+        const n = parseInt(coinsRaw, 10);
+        if (Number.isFinite(n)) setCoins(Math.max(0, n));
       }
 
       if (rankRaw) {
@@ -551,6 +564,27 @@ export function GameProvider({ children }: { children: ReactNode }) {
       AsyncStorage.setItem(XP_KEY, String(n));
       return n;
     });
+  };
+
+  // ── Coins (soft currency, e.g. vocabulary hints) ────────────────────────────
+  const addCoins = (amount: number) => {
+    if (!Number.isFinite(amount) || amount <= 0) return;
+    setCoins((prev) => {
+      const n = Math.max(0, prev + Math.floor(amount));
+      AsyncStorage.setItem(COINS_KEY, String(n)).catch(() => {});
+      return n;
+    });
+  };
+  const spendCoins = (amount: number): boolean => {
+    const cost = Math.floor(amount);
+    if (!Number.isFinite(cost) || cost <= 0) return true;
+    if (coins < cost) return false;
+    setCoins((prev) => {
+      const n = Math.max(0, prev - cost);
+      AsyncStorage.setItem(COINS_KEY, String(n)).catch(() => {});
+      return n;
+    });
+    return true;
   };
 
   // Mark a level as completed and unlock the next level in the path. Used
@@ -1175,6 +1209,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
     () => ({
       levels,
       totalXp,
+      coins,
+      addCoins,
+      spendCoins,
       completeTask,
       completeAllTasksForLevel,
       addXP,
@@ -1200,7 +1237,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       addReadingRecording,
       removeReadingRecording,
     }),
-    [levels, totalXp, isLoaded, currentRank, showTimeRecordings, metricScores, metricSeries, portalCompleted, readingRecordings]
+    [levels, totalXp, coins, isLoaded, currentRank, showTimeRecordings, metricScores, metricSeries, portalCompleted, readingRecordings]
   );
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
