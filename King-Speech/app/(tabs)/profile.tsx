@@ -135,7 +135,7 @@ export default function ProfileScreen() {
   const { theme } = useTheme();
   const { t, lang } = useLang();
   const insets = useSafeAreaInsets();
-  const { levels, totalXp, readingRecordings } = useGame();
+  const { levels, coins, readingRecordings } = useGame();
   const { user, setPhotoURL, saveProfile } = useAuth();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
@@ -379,7 +379,7 @@ export default function ProfileScreen() {
               {t("statLevel")}
             </Text>
           </View>
-          <StatBox theme={theme} icon="star" value={`${totalXp}`} label="XP" />
+          <StatBox theme={theme} icon="disc" value={`${coins}`} label={lang === "en" ? "Coins" : "Монеты"} />
         </Animated.View>
 
         {/* Private reading library — button now carries the title itself, so
@@ -442,13 +442,13 @@ export default function ProfileScreen() {
               <ProgMetric theme={theme} value={`${currentModule}`} label={lang === "en" ? "Module" : "Модуль"} />
               <ProgMetric theme={theme} value={`${completedLevels}`} label={lang === "en" ? "Levels" : "Уровни"} />
               <ProgMetric theme={theme} value={`${totalTasks}`} label={lang === "en" ? "Tasks" : "Задания"} />
-              <ProgMetric theme={theme} value={`${totalXp}`} label="XP" />
+              <ProgMetric theme={theme} value={`${coins}`} label={lang === "en" ? "Coins" : "Монеты"} />
             </View>
 
             <Text style={[styles.progSummary, { color: theme.textSecondary }]}>
               {lang === "en"
-                ? `You're on module ${currentModule} of 67 — ${completedLevels} levels done and ${totalXp} XP earned. Keep the streak going.`
-                : `Вы на модуле ${currentModule} из 67 — пройдено ${completedLevels} уровней и накоплено ${totalXp} XP. Так держать!`}
+                ? `You're on module ${currentModule} of 67 — ${completedLevels} levels done and ${coins} coins earned. Keep the streak going.`
+                : `Вы на модуле ${currentModule} из 67 — пройдено ${completedLevels} уровней и накоплено ${coins} монет. Так держать!`}
             </Text>
           </View>
         </Animated.View>

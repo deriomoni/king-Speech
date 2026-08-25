@@ -26,6 +26,7 @@ import { router } from "expo-router";
 import { getSpeechThemes } from "@/app/showtime-stage";
 import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useGame } from "@/context/GameContext";
 import { VinylGallery } from "@/components/showtime/VinylGallery";
 import { ShowTimeLogo, ShowTimeLogoLight } from "@/components/showtime/ShowTimeLogo";
 
@@ -47,6 +48,9 @@ export default function ShowTimeScreen() {
   const inkFaint = isLight ? "rgba(36,25,52,0.45)" : "rgba(255,255,255,0.35)";
   const cardBg = isLight ? "rgba(36,25,52,0.035)" : "rgba(255,255,255,0.03)";
   const chipBg = isLight ? "rgba(36,25,52,0.06)" : "rgba(255,255,255,0.06)";
+  const { coins, showTimeFreeAvailable, consumeShowTimeFree, spendCoins } = useGame();
+  const SHOW_TIME_COST = 40;
+  const [payModal, setPayModal] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState(0);
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -64,12 +68,29 @@ export default function ShowTimeScreen() {
     }
   };
 
-  const handleStart = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  const goToStage = () => {
     router.push({
       pathname: "/showtime-stage",
       params: { levelId: theme.levelId, mode: "trainer" },
     });
+  };
+
+  const handleStart = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    // First Show Time of the day is free; further entries cost coins.
+    if (showTimeFreeAvailable) {
+      consumeShowTimeFree();
+      goToStage();
+    } else {
+      setPayModal(true);
+    }
+  };
+
+  const confirmPaidEntry = () => {
+    if (spendCoins(SHOW_TIME_COST)) {
+      setPayModal(false);
+      goToStage();
+    }
   };
 
   const scrollY = useSharedValue(0);
@@ -186,6 +207,22 @@ export default function ShowTimeScreen() {
               {t("startTraining")}
             </Text>
           </Pressable>
+          <View style={st.entryNote}>
+            <Ionicons
+              name={showTimeFreeAvailable ? "gift-outline" : "disc"}
+              size={13}
+              color={inkFaint}
+            />
+            <Text style={[st.entryNoteText, { color: inkFaint, fontFamily: "Nunito_400Regular" }]}>
+              {showTimeFreeAvailable
+                ? lang === "en"
+                  ? "First entry today is free"
+                  : "Первый выход сегодня — бесплатно"
+                : lang === "en"
+                  ? `${SHOW_TIME_COST} coins per entry`
+                  : `${SHOW_TIME_COST} монет за выход`}
+            </Text>
+          </View>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(500).duration(400)}>
@@ -252,6 +289,47 @@ export default function ShowTimeScreen() {
           </Pressable>
         </Animated.View>
       </Animated.ScrollView>
+
+      {payModal ? (
+        <View style={st.modalOverlay}>
+          <Animated.View entering={FadeIn.duration(180)} style={st.modalCard}>
+            <View style={st.modalIcon}>
+              <Ionicons name="disc" size={26} color="#F5A623" />
+            </View>
+            <Text style={st.modalTitle}>
+              {lang === "en" ? "Enter Show Time again?" : "Ещё один выход в Show Time?"}
+            </Text>
+            <Text style={st.modalBody}>
+              {coins >= SHOW_TIME_COST
+                ? lang === "en"
+                  ? `Today's free entry is used. This one costs ${SHOW_TIME_COST} coins. You have ${coins}.`
+                  : `Бесплатный выход на сегодня использован. Этот стоит ${SHOW_TIME_COST} монет. У вас ${coins}.`
+                : lang === "en"
+                  ? `Not enough coins — you need ${SHOW_TIME_COST} and have ${coins}. Earn more by finishing levels.`
+                  : `Не хватает монет — нужно ${SHOW_TIME_COST}, у вас ${coins}. Зарабатывайте, проходя уровни.`}
+            </Text>
+            <View style={st.modalBtns}>
+              <Pressable
+                onPress={() => setPayModal(false)}
+                style={({ pressed }) => [st.modalBtn, st.modalBtnGhost, { opacity: pressed ? 0.8 : 1 }]}
+              >
+                <Text style={st.modalBtnGhostText}>
+                  {lang === "en" ? "Cancel" : "Отмена"}
+                </Text>
+              </Pressable>
+              {coins >= SHOW_TIME_COST ? (
+                <Pressable
+                  onPress={confirmPaidEntry}
+                  style={({ pressed }) => [st.modalBtn, st.modalBtnPrimary, { opacity: pressed ? 0.85 : 1 }]}
+                >
+                  <Ionicons name="disc" size={15} color="#1A1A2E" />
+                  <Text style={st.modalBtnPrimaryText}>{SHOW_TIME_COST}</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </Animated.View>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -340,6 +418,89 @@ const st = StyleSheet.create({
     elevation: 5,
   },
   startBtnText: { fontSize: 18 },
+  entryNote: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    marginTop: 10,
+  },
+  entryNoteText: { fontSize: 12.5 },
+
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(4,7,20,0.72)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
+    zIndex: 50,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: "#141B33",
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.10)",
+    paddingVertical: 24,
+    paddingHorizontal: 22,
+    alignItems: "center",
+  },
+  modalIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: "rgba(245,166,35,0.14)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+  },
+  modalTitle: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    lineHeight: 24,
+    textAlign: "center",
+    fontFamily: "Nunito_700Bold",
+  },
+  modalBody: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 13.5,
+    lineHeight: 19,
+    textAlign: "center",
+    marginTop: 8,
+    fontFamily: "Nunito_400Regular",
+  },
+  modalBtns: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 20,
+    alignSelf: "stretch",
+  },
+  modalBtn: {
+    flex: 1,
+    height: 46,
+    borderRadius: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  modalBtnGhost: {
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
+  },
+  modalBtnGhostText: {
+    color: "rgba(255,255,255,0.85)",
+    fontSize: 15,
+    fontFamily: "Nunito_700Bold",
+  },
+  modalBtnPrimary: { backgroundColor: "#F5A623" },
+  modalBtnPrimaryText: {
+    color: "#1A1A2E",
+    fontSize: 15,
+    fontFamily: "Nunito_800ExtraBold",
+  },
   rolesEntry: {
     flexDirection: "row",
     alignItems: "center",

@@ -180,9 +180,23 @@ function extractProgress(levels: Level[]): SavedProgress[] {
 
 const STORAGE_KEY = "@kingspeech_levels_v4";
 const XP_KEY = "@kingspeech_xp_v4";
-const COINS_KEY = "@kingspeech_coins_v1";
-const START_COINS = 5;
+// Coins = the points the player earns at the end of each level, used as the
+// in-game currency. v2 seeds the wallet from the player's accumulated XP on
+// first load so existing progress carries over as coins.
+const COINS_KEY = "@kingspeech_coins_v2";
+const START_COINS = 0;
+// Daily-free Show Time tracker (stores the local YYYY-MM-DD of the last free run).
+const SHOWTIME_FREE_KEY = "@kingspeech_showtime_free_v1";
 const PROGRESS_KEY = "@kingspeech_progress_v5";
+
+// Local calendar day as YYYY-MM-DD (not UTC), so the free run resets at the
+// player's local midnight.
+function localDayStr(): string {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
 const RANK_KEY = "@kingspeech_current_rank_v1";
 const SHOWTIME_RECORDINGS_KEY = "@kingspeech_showtime_recordings_v1";
 // v3: rank-scoped per-metric weakness scores aggregated from real Show Time
@@ -251,6 +265,10 @@ interface GameContextValue {
   addCoins: (amount: number) => void;
   /** Spend coins; returns false (and changes nothing) if the balance is short. */
   spendCoins: (amount: number) => boolean;
+  /** True if the player still has today's one free Show Time entry available. */
+  showTimeFreeAvailable: boolean;
+  /** Mark today's free Show Time entry as used. */
+  consumeShowTimeFree: () => void;
   completeTask: (levelId: LevelType, taskNumber: number, score: number) => void;
   completeAllTasksForLevel: (levelId: LevelType, score: number) => void;
   addXP: (amount: number) => void;
@@ -308,6 +326,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [metricSeries, setMetricSeries] = useState<Record<number, MetricSeries>>({});
   const [portalCompleted, setPortalCompleted] = useState<Record<number, boolean>>({});
   const [readingRecordings, setReadingRecordings] = useState<ReadingRecording[]>([]);
+  const [showTimeLastFree, setShowTimeLastFree] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -321,7 +340,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       AsyncStorage.getItem(PORTAL_DONE_KEY),
       AsyncStorage.getItem(READING_LIBRARY_KEY),
       AsyncStorage.getItem(COINS_KEY),
-    ]).then(([progressRaw, legacyRaw, xpRaw, rankRaw, recRaw, scoresRaw, seriesRaw, portalRaw, readingRaw, coinsRaw]) => {
+      AsyncStorage.getItem(SHOWTIME_FREE_KEY),
+    ]).then(([progressRaw, legacyRaw, xpRaw, rankRaw, recRaw, scoresRaw, seriesRaw, portalRaw, readingRaw, coinsRaw, showtimeFreeRaw]) => {
       let progress: SavedProgress[] | null = null;
 
       if (progressRaw) {
@@ -345,7 +365,18 @@ export function GameProvider({ children }: { children: ReactNode }) {
       if (coinsRaw != null) {
         const n = parseInt(coinsRaw, 10);
         if (Number.isFinite(n)) setCoins(Math.max(0, n));
+      } else if (xpRaw) {
+        // First run on the coins-v2 wallet: seed it from accumulated XP so the
+        // player's earned points become their starting coin balance.
+        const n = parseInt(xpRaw, 10);
+        if (Number.isFinite(n)) {
+          const seed = Math.max(0, n);
+          setCoins(seed);
+          AsyncStorage.setItem(COINS_KEY, String(seed)).catch(() => {});
+        }
       }
+
+      if (showtimeFreeRaw) setShowTimeLastFree(showtimeFreeRaw);
 
       if (rankRaw) {
         const r = parseInt(rankRaw, 10);
@@ -502,6 +533,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       AsyncStorage.setItem(XP_KEY, String(n));
       return n;
     });
+    addCoins(taskXp);
   };
 
   // For reading levels: complete every task in one shot, unlock the next
@@ -551,6 +583,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       AsyncStorage.setItem(XP_KEY, String(n));
       return n;
     });
+    addCoins(taskXp);
   };
 
   // Generic XP add — used by free-form game modes (e.g. vocabulary) where
@@ -564,6 +597,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       AsyncStorage.setItem(XP_KEY, String(n));
       return n;
     });
+    addCoins(Math.floor(amount));
   };
 
   // ── Coins (soft currency, e.g. vocabulary hints) ────────────────────────────
@@ -585,6 +619,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
       return n;
     });
     return true;
+  };
+
+  // ── Show Time daily-free entry ──────────────────────────────────────────────
+  const showTimeFreeAvailable = showTimeLastFree !== localDayStr();
+  const consumeShowTimeFree = () => {
+    const today = localDayStr();
+    setShowTimeLastFree(today);
+    AsyncStorage.setItem(SHOWTIME_FREE_KEY, today).catch(() => {});
   };
 
   // Mark a level as completed and unlock the next level in the path. Used
@@ -1212,6 +1254,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       coins,
       addCoins,
       spendCoins,
+      showTimeFreeAvailable,
+      consumeShowTimeFree,
       completeTask,
       completeAllTasksForLevel,
       addXP,
@@ -1237,7 +1281,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       addReadingRecording,
       removeReadingRecording,
     }),
-    [levels, totalXp, coins, isLoaded, currentRank, showTimeRecordings, metricScores, metricSeries, portalCompleted, readingRecordings]
+    [levels, totalXp, coins, showTimeLastFree, isLoaded, currentRank, showTimeRecordings, metricScores, metricSeries, portalCompleted, readingRecordings]
   );
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

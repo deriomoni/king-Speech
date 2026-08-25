@@ -660,9 +660,10 @@ function PlayPhase({
   const { colors } = useAppColors();
   const { coins, spendCoins } = useGame();
 
-  // Cost of one hint reveal, in coins. If the player is short, they can watch a
-  // (simulated) rewarded ad instead.
-  const HINT_COST = 2;
+  // Coin costs. If the player is short, they can watch a (simulated) rewarded
+  // ad instead of paying.
+  const HINT_COST = 20;
+  const REPLACE_COST = 10;
   // Which of the two side buttons has an open modal, if any.
   const [modal, setModal] = useState<null | "replace" | "hint">(null);
   // A simulated rewarded-ad flow. `adFor` remembers what the ad unlocks.
@@ -1067,10 +1068,18 @@ function PlayPhase({
     }
   };
 
-  // "Заменить слово" → confirm. On confirm, always route through a rewarded ad.
+  // "Заменить слово" → confirm. Pay with coins if affordable, otherwise fall
+  // back to a rewarded ad.
   const confirmReplace = () => {
     setModal(null);
-    setAdFor("replace");
+    if (coins >= REPLACE_COST) {
+      if (spendCoins(REPLACE_COST)) {
+        stopRecognition();
+        onReplace();
+      }
+    } else {
+      setAdFor("replace");
+    }
   };
 
   // "Подсказка" → pay with coins if the player can afford it, otherwise the
@@ -1378,8 +1387,25 @@ function PlayPhase({
             >
               <Ionicons name="refresh" size={16} color={colors.text} />
               <Text style={[styles.cornerBtnText, { color: colors.text }]}>
-                Заменить слово
+                Заменить
               </Text>
+              <View
+                style={[
+                  styles.cornerCostPill,
+                  { backgroundColor: colors.border },
+                ]}
+              >
+                {coins >= REPLACE_COST ? (
+                  <>
+                    <Ionicons name="disc" size={11} color={colors.text} />
+                    <Text style={[styles.cornerCostText, { color: colors.text }]}>
+                      {REPLACE_COST}
+                    </Text>
+                  </>
+                ) : (
+                  <Ionicons name="play" size={11} color={colors.text} />
+                )}
+              </View>
             </Pressable>
 
             <Pressable
@@ -1398,7 +1424,7 @@ function PlayPhase({
               <View style={styles.cornerCostPill}>
                 {coins >= HINT_COST ? (
                   <>
-                    <Ionicons name="logo-usd" size={11} color="#1B1300" />
+                    <Ionicons name="disc" size={11} color="#1B1300" />
                     <Text style={styles.cornerCostText}>{HINT_COST}</Text>
                   </>
                 ) : (
@@ -1422,7 +1448,9 @@ function PlayPhase({
                   Вы точно хотите заменить слово?
                 </Text>
                 <Text style={styles.modalBody}>
-                  Чтобы прокрутить рулетку ещё раз, нужно посмотреть рекламу.
+                  {coins >= REPLACE_COST
+                    ? `Замена стоит ${REPLACE_COST} монет. У вас ${coins}.`
+                    : `Не хватает монет (нужно ${REPLACE_COST}). Можно посмотреть рекламу.`}
                 </Text>
                 <View style={styles.modalBtns}>
                   <Pressable
