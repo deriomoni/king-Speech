@@ -1248,6 +1248,7 @@ function ResultPhase({
   score: number;
   onNext: () => void;
 }) {
+  const { colors, isDark } = useAppColors();
   const [animFound, setAnimFound] = useState(0);
   const [animScore, setAnimScore] = useState(0);
 
@@ -1281,15 +1282,15 @@ function ResultPhase({
 
   return (
     <ScrollView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.resultContent, { paddingTop: topPad, paddingBottom: 48 + insets.bottom }]}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.resultTitle}>Время вышло!</Text>
-      <Text style={styles.resultWord}>Слово: {word.word.toUpperCase()}</Text>
+      <Text style={[styles.resultTitle, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>Время вышло!</Text>
+      <Text style={[styles.resultWord, { color: colors.textSecondary, fontFamily: "Rubik_500Medium" }]}>Слово: {word.word.toUpperCase()}</Text>
 
-      <Text style={styles.resultBigCount}>{animFound} / {total}</Text>
-      <Text style={styles.resultScore}>+{animScore} очков</Text>
+      <Text style={[styles.resultBigCount, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>{animFound} / {total}</Text>
+      <Text style={[styles.resultScore, { color: colors.textSecondary, fontFamily: "Rubik_600SemiBold" }]}>+{animScore} очков</Text>
 
       <View style={styles.progressTrack}>
         <Animated.View
@@ -1298,7 +1299,7 @@ function ResultPhase({
         />
       </View>
 
-      <Text style={styles.synSectionLabel}>Синонимы к слову «{word.word}»</Text>
+      <Text style={[styles.synSectionLabel, { color: colors.textSecondary, fontFamily: "Rubik_600SemiBold" }]}>Синонимы к слову «{word.word}»</Text>
       <View style={styles.synList}>
         {word.synonyms.map((syn, idx) => {
           const found = isFound(syn);
@@ -1306,20 +1307,30 @@ function ResultPhase({
             <Animated.View
               key={`${syn}-${idx}`}
               entering={FadeInDown.delay(idx * 55).duration(240)}
-              style={found ? styles.foundChip : styles.missedChip}
+              style={[
+                found ? styles.foundChip : styles.missedChip,
+                found
+                  ? (isDark ? null : { backgroundColor: "rgba(99,153,34,0.16)" })
+                  : { backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(20,22,26,0.05)", borderColor: colors.border },
+              ]}
             >
-              <Text style={found ? styles.foundChipText : styles.missedChipText}>
+              <Text
+                style={[
+                  found ? styles.foundChipText : styles.missedChipText,
+                  { fontFamily: "Rubik_500Medium", color: found ? (isDark ? "#C0DD97" : "#2F6B12") : colors.textMuted },
+                ]}
+              >
                 {found ? "✓ " : ""}{syn}
               </Text>
             </Animated.View>
           );
         })}
       </View>
-      <Text style={styles.statsLine}>
+      <Text style={[styles.statsLine, { color: colors.textMuted, fontFamily: "Rubik_500Medium" }]}>
         Назвал {foundCount} · Пропустил {missedCount}
       </Text>
       {foundCount === 0 ? (
-        <Text style={styles.resultEncourage}>В следующий раз получится!</Text>
+        <Text style={[styles.resultEncourage, { color: colors.textSecondary, fontFamily: "Rubik_500Medium" }]}>В следующий раз получится!</Text>
       ) : null}
 
       <Pressable
