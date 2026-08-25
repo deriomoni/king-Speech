@@ -217,6 +217,36 @@ const resonators: ActionStep = {
   ],
 };
 
+const lipTrill: ActionStep = {
+  kind: "action",
+  id: "lip-trill",
+  block: "voice",
+  emoji: "😛",
+  title: { ru: "Губной вибрант «бррр»", en: "Lip trill 'brrr'" },
+  intro: { ru: "Расслабь губы и пусти воздух — они завибрируют. Делай за мной:", en: "Relax your lips and push air — they'll flutter. Do it with me:" },
+  seconds: 20,
+  moves: [
+    { ru: "Ровное «бррр» на одном дыхании", en: "A steady 'brrr' on one breath" },
+    { ru: "Веди звук вверх, как горка", en: "Glide the tone up like a slide" },
+    { ru: "И плавно опусти вниз", en: "Then slide it smoothly back down" },
+  ],
+};
+
+const sirena: ActionStep = {
+  kind: "action",
+  id: "sirena",
+  block: "voice",
+  emoji: "🚨",
+  title: { ru: "Сирена", en: "Siren" },
+  intro: { ru: "Тяни «у-у-у» и катай голос от низа к верху и обратно:", en: "Sustain an 'oo' and roll your voice from low to high and back:" },
+  seconds: 20,
+  moves: [
+    { ru: "От самого низкого — плавно вверх", en: "From your lowest — smoothly up" },
+    { ru: "До самого высокого — и обратно", en: "To your highest — and back" },
+    { ru: "Без рывков, одной линией", en: "No jumps, one continuous line" },
+  ],
+};
+
 const articulation: ArticulationStep = {
   kind: "articulation",
   id: "articulation",
@@ -231,6 +261,20 @@ const articulation: ArticulationStep = {
   ],
 };
 
+const articulationTongue: ArticulationStep = {
+  kind: "articulation",
+  id: "articulation-tongue",
+  block: "voice",
+  title: { ru: "Разбуди язык", en: "Wake up your tongue" },
+  intro: { ru: "Дикция живёт на кончике языка. Повторяй за подсказкой:", en: "Diction lives on the tip of your tongue. Follow the prompt:" },
+  moves: [
+    { emoji: "👅", label: { ru: "«Цокай» языком, как копыта", en: "Click your tongue like hooves" }, secs: 5 },
+    { emoji: "🗣️", label: { ru: "Чётко: «та-да, та-да, та-да»", en: "Crisp: 'ta-da, ta-da, ta-da'" }, secs: 5 },
+    { emoji: "😬", label: { ru: "Упри язык: «ла-ла-ла»", en: "Press the tongue: 'la-la-la'" }, secs: 5 },
+    { emoji: "💨", label: { ru: "Взрывные: «па-та-ка»", en: "Plosives: 'pa-ta-ka'" }, secs: 5 },
+  ],
+};
+
 const chant: ChantStep = {
   kind: "chant",
   id: "chant-ma",
@@ -239,6 +283,16 @@ const chant: ChantStep = {
   intro: { ru: "Тяни каждый слог, будто поёшь. Веди голос за подсветкой.", en: "Draw out each syllable like a song. Follow the highlight." },
   syllables: ["МА", "МЭ", "МИ", "МО", "МУ"],
   tempoMs: 620,
+};
+
+const chantBro: ChantStep = {
+  kind: "chant",
+  id: "chant-bro",
+  block: "voice",
+  title: { ru: "Распевка на «Б»", en: "Warm-up on 'B'" },
+  intro: { ru: "Чётко смыкай губы на каждом слоге. Веди голос за подсветкой.", en: "Close your lips crisply on each syllable. Follow the highlight." },
+  syllables: ["БА", "БО", "БУ", "БЭ", "БЫ"],
+  tempoMs: 600,
 };
 
 // Tongue twisters, grouped conceptually by target sound, with difficulty 1..4.
@@ -282,6 +336,71 @@ const twKolpak: TwisterStep = {
   text: {
     ru: "Колпак под колпаком, а под колпаком колпак.",
     en: "Kolpak pod kolpakom, a pod kolpakom kolpak.",
+  },
+};
+
+const twGreki: TwisterStep = {
+  kind: "twister",
+  id: "tw-greki",
+  block: "twister",
+  title: { ru: "Грека и рак", en: "Greka and the crab" },
+  sound: { ru: "Р · К", en: "R · K" },
+  difficulty: 2,
+  text: {
+    ru: "Ехал Грека через реку, видит Грека — в реке рак.",
+    en: "Ekhal Greka cherez reku, vidit Greka — v reke rak.",
+  },
+};
+
+const twOsip: TwisterStep = {
+  kind: "twister",
+  id: "tw-osip",
+  block: "twister",
+  title: { ru: "Осип и Архип", en: "Osip and Arkhip" },
+  sound: { ru: "С · Х · П", en: "S · KH · P" },
+  difficulty: 2,
+  text: {
+    ru: "Осип охрип, а Архип осип.",
+    en: "Osip okhrip, a Arkhip osip.",
+  },
+};
+
+const twKlara: TwisterStep = {
+  kind: "twister",
+  id: "tw-klara",
+  block: "twister",
+  title: { ru: "Карл и Клара", en: "Karl and Klara" },
+  sound: { ru: "Р · К · Л", en: "R · K · L" },
+  difficulty: 3,
+  text: {
+    ru: "Карл у Клары украл кораллы, а Клара у Карла украла кларнет.",
+    en: "Karl u Klary ukral korally, a Klara u Karla ukrala klarnet.",
+  },
+};
+
+const twByk: TwisterStep = {
+  kind: "twister",
+  id: "tw-byk",
+  block: "twister",
+  title: { ru: "Тупогубый бычок", en: "The blunt-lipped bull" },
+  sound: { ru: "Б · Г", en: "B · G" },
+  difficulty: 3,
+  text: {
+    ru: "Бык тупогуб, тупогубенький бычок, у быка бела губа была тупа.",
+    en: "Byk tupogub, tupogubenkiy bychok, u byka bela guba byla tupa.",
+  },
+};
+
+const twCherti: TwisterStep = {
+  kind: "twister",
+  id: "tw-cherti",
+  block: "twister",
+  title: { ru: "Чертёнок", en: "Little devils" },
+  sound: { ru: "Ч · Р", en: "CH · R" },
+  difficulty: 4,
+  text: {
+    ru: "Четыре чёрненьких чумазеньких чертёнка чертили чёрными чернилами чертёж.",
+    en: "Chetyre chyornenkikh chumazenkikh chertyonka chertili chyornymi chernilami chertyozh.",
   },
 };
 
@@ -362,7 +481,14 @@ export const ROUTES: CheatRoute[] = [
     icon: "flame",
     title: { ru: "Разминка", en: "Warm-up" },
     subtitle: { ru: "Быстрая разминка за минуту", en: "A one-minute warm-up" },
-    steps: [physiologicalSigh, chant, finalStep],
+    // ~1 min: one calming breath, mouth + voice, and one easy twister.
+    steps: [
+      physiologicalSigh,
+      articulation,
+      chant,
+      twSasha,
+      finalStep,
+    ],
   },
   {
     id: "quick",
@@ -371,7 +497,17 @@ export const ROUTES: CheatRoute[] = [
     icon: "flash",
     title: { ru: "2 минуты", en: "2 minutes" },
     subtitle: { ru: "Экстренно, перед самым выходом", en: "Emergency, right before you go on" },
-    steps: [physiologicalSigh, tipExcitement, chant, fixVoice, twSasha, finalStep],
+    // ~2 min: breath → mouth/voice → two twisters, with a tip and a fix.
+    steps: [
+      physiologicalSigh, tipExcitement,
+      articulation,
+      chant,
+      lipTrill,
+      twSasha,
+      fixVoice,
+      twGreki,
+      finalStep,
+    ],
   },
   {
     id: "balanced",
@@ -380,12 +516,25 @@ export const ROUTES: CheatRoute[] = [
     icon: "pulse",
     title: { ru: "5 минут", en: "5 minutes" },
     subtitle: { ru: "Сбалансированная разминка", en: "A balanced warm-up" },
+    // ~5 min: full breath + voice work and a real twister set (easy → hard).
     steps: [
       physiologicalSigh, tipExcitement,
-      diaphragmatic, tipTempo,
-      articulation, tipPauses,
-      chant, fixVoice,
-      twTrava, finalStep,
+      diaphragmatic,
+      articulation,
+      lipTrill,
+      chant,
+      tipTempo,
+      resonators,
+      articulationTongue,
+      twSasha,
+      twGreki,
+      twTrava,
+      tipPauses,
+      sirena,
+      twKlara,
+      fixVoice,
+      twKopyt,
+      finalStep,
     ],
   },
   {
@@ -395,16 +544,36 @@ export const ROUTES: CheatRoute[] = [
     icon: "shield-checkmark",
     title: { ru: "10 минут", en: "10 minutes" },
     subtitle: { ru: "Полная подготовка заранее", en: "Full prep, ahead of time" },
+    // ~10 min: calm the nerves, open the breath, wake the whole apparatus, then
+    // a long twister ladder from easy to hellish.
     steps: [
       physiologicalSigh, tipExcitement,
-      grounding, fixWarm,
+      grounding,
       shaking, tipPosture,
-      diaphragmatic, tipTempo,
-      articulation, tipPauses,
-      resonators, fixDry,
-      chant, tipEyes,
-      twKopyt, fixVoice,
-      twKolpak, finalStep,
+      diaphragmatic,
+      articulation,
+      lipTrill,
+      chant,
+      tipTempo,
+      resonators,
+      sirena,
+      articulationTongue,
+      chantBro,
+      fixWarm,
+      twSasha,
+      twOsip,
+      twGreki,
+      tipPauses,
+      twTrava,
+      twByk,
+      fixDry,
+      twKopyt,
+      tipEyes,
+      twKlara,
+      twCherti,
+      fixVoice,
+      twKolpak,
+      finalStep,
     ],
   },
 ];
@@ -420,8 +589,8 @@ export interface RefSection {
 export const REFERENCE: RefSection[] = [
   { block: "nerves", steps: [physiologicalSigh, grounding, shaking] },
   { block: "breath", steps: [diaphragmatic] },
-  { block: "voice", steps: [articulation, chant, resonators] },
-  { block: "twister", steps: [twSasha, twTrava, twKopyt, twKolpak] },
+  { block: "voice", steps: [articulation, articulationTongue, chant, chantBro, resonators, lipTrill, sirena] },
+  { block: "twister", steps: [twSasha, twGreki, twOsip, twTrava, twByk, twKlara, twKopyt, twCherti, twKolpak] },
   { block: "fix", steps: [fixVoice, fixDry, fixWarm] },
   { block: "tip", steps: [tipExcitement, tipTempo, tipPauses, tipEyes, tipPosture] },
   { block: "final", steps: [finalStep] },
