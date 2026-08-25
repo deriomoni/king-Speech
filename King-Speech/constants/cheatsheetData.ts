@@ -140,7 +140,7 @@ const physiologicalSigh: BreathingStep = {
   kind: "breathing",
   id: "sigh",
   block: "nerves",
-  title: { ru: "Успокоиться за 60 секунд", en: "Calm down in 60 seconds" },
+  title: { ru: "Дыхательная разминка", en: "Breathing warm-up" },
   intro: {
     ru: "Физиологический вздох сбивает тревогу быстрее всего. Дыши вместе с кругом.",
     en: "The physiological sigh calms nerves fastest. Breathe with the circle.",
@@ -431,6 +431,28 @@ const tipPosture: TipStep = {
   text: { ru: "Встань устойчиво, вес на обе ноги, плечи вниз. Опора даёт уверенный звук.", en: "Stand grounded, weight on both feet, shoulders down. Stability steadies your voice." },
 };
 
+// Encouraging one-liners to slip between exercises — reassure and de-stress.
+const tipYouGotThis: TipStep = {
+  kind: "tip", id: "tip-yougot", block: "tip", variant: "tip", icon: "sunny-outline",
+  title: { ru: "У тебя получится", en: "You've got this" },
+  text: { ru: "Ты уже здесь и готовишься — это половина успеха. Осталось просто начать.", en: "You're here and preparing — that's half the battle. Now just begin." },
+};
+const tipSmile: TipStep = {
+  kind: "tip", id: "tip-smile", block: "tip", variant: "tip", icon: "happy-outline",
+  title: { ru: "Улыбнись", en: "Smile" },
+  text: { ru: "Лёгкая улыбка расслабляет лицо — и голос сразу звучит теплее и живее.", en: "A light smile relaxes your face — and your voice instantly sounds warmer." },
+};
+const tipMistakesOk: TipStep = {
+  kind: "tip", id: "tip-mistakes", block: "tip", variant: "tip", icon: "shield-checkmark-outline",
+  title: { ru: "Ошибиться — это норм", en: "Slips are fine" },
+  text: { ru: "Даже опытные ораторы оговариваются. Не останавливайся — и никто не заметит.", en: "Even seasoned speakers stumble. Just keep going — no one will notice." },
+};
+const tipShine: TipStep = {
+  kind: "tip", id: "tip-shine", block: "tip", variant: "tip", icon: "sparkles-outline",
+  title: { ru: "Тебе есть что сказать", en: "You have something to say" },
+  text: { ru: "Люди пришли услышать именно тебя. Дыши ровно — и просто поделись.", en: "People came to hear you. Breathe steady — and simply share it." },
+};
+
 // Quick fixes (быстрые фиксы — аварии перед выходом)
 const fixVoice: TipStep = {
   kind: "tip", id: "fix-voice", block: "fix", variant: "fix", icon: "mic-outline",
@@ -461,6 +483,12 @@ const finalStep: FinalStep = {
   mantra: { ru: "Мне есть что сказать — и я скажу это спокойно.", en: "I have something to say — and I'll say it calmly." },
 };
 
+// Full tongue-twister pool (easy → hellish) — used by the karaoke twister view's
+// "Замена" (replace) button to cycle to another twister.
+export const TWISTERS: TwisterStep[] = [
+  twSasha, twGreki, twOsip, twTrava, twByk, twKlara, twKopyt, twCherti, twKolpak,
+];
+
 // ── Routes ──────────────────────────────────────────────────────────────────
 
 export interface CheatRoute {
@@ -484,6 +512,7 @@ export const ROUTES: CheatRoute[] = [
     // ~1 min: one calming breath, mouth + voice, and one easy twister.
     steps: [
       physiologicalSigh,
+      tipYouGotThis,
       articulation,
       chant,
       twSasha,
@@ -501,11 +530,11 @@ export const ROUTES: CheatRoute[] = [
     steps: [
       physiologicalSigh, tipExcitement,
       articulation,
-      chant,
+      chant, tipSmile,
       lipTrill,
       twSasha,
       fixVoice,
-      twGreki,
+      twGreki, tipMistakesOk,
       finalStep,
     ],
   },
@@ -519,13 +548,13 @@ export const ROUTES: CheatRoute[] = [
     // ~5 min: full breath + voice work and a real twister set (easy → hard).
     steps: [
       physiologicalSigh, tipExcitement,
-      diaphragmatic,
+      diaphragmatic, tipYouGotThis,
       articulation,
       lipTrill,
       chant,
       tipTempo,
       resonators,
-      articulationTongue,
+      articulationTongue, tipSmile,
       twSasha,
       twGreki,
       twTrava,
@@ -533,7 +562,7 @@ export const ROUTES: CheatRoute[] = [
       sirena,
       twKlara,
       fixVoice,
-      twKopyt,
+      twKopyt, tipMistakesOk,
       finalStep,
     ],
   },
@@ -548,7 +577,7 @@ export const ROUTES: CheatRoute[] = [
     // a long twister ladder from easy to hellish.
     steps: [
       physiologicalSigh, tipExcitement,
-      grounding,
+      grounding, tipYouGotThis,
       shaking, tipPosture,
       diaphragmatic,
       articulation,
@@ -556,7 +585,7 @@ export const ROUTES: CheatRoute[] = [
       chant,
       tipTempo,
       resonators,
-      sirena,
+      sirena, tipSmile,
       articulationTongue,
       chantBro,
       fixWarm,
@@ -570,9 +599,9 @@ export const ROUTES: CheatRoute[] = [
       twKopyt,
       tipEyes,
       twKlara,
-      twCherti,
+      twCherti, tipShine,
       fixVoice,
-      twKolpak,
+      twKolpak, tipMistakesOk,
       finalStep,
     ],
   },

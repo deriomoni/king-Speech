@@ -13,6 +13,7 @@ import * as Haptics from "expo-haptics";
 import { fonts } from "@/constants/colors";
 import { useAppColors } from "@/hooks/useAppColors";
 import { tx, type BreathingStep, type PhaseType } from "@/constants/cheatsheetData";
+import { ButterflyIcon, MouthIcon } from "@/components/cheatsheet/BreathIcons";
 
 // Distinct colour per phase so it's instantly obvious where you are.
 const C_INHALE = "#FFCF34";
@@ -28,10 +29,14 @@ function phaseColor(type: PhaseType): string {
   return C_EXHALE;
 }
 
-function phaseIcon(type: PhaseType): keyof typeof Ionicons.glyphMap {
-  if (type === "inhale") return "arrow-down";
-  if (type === "hold") return "pause";
-  return "arrow-up";
+// Cue icon per phase: nose on inhale (breathe in through the nose), mouth on
+// exhale (out through the mouth), pause on hold.
+// NOTE: the nose mark is a temporary Ionicons fallback until the custom nose
+// SVG is supplied — swap it into a NoseIcon in BreathIcons.tsx once available.
+function PhaseCueIcon({ type, color }: { type: PhaseType; color: string }) {
+  if (type === "exhale") return <MouthIcon size={18} color={color} />;
+  if (type === "hold") return <Ionicons name="pause" size={18} color={color} />;
+  return <Ionicons name="arrow-down" size={18} color={color} />;
 }
 
 function haptic() {
@@ -125,14 +130,14 @@ export default function BreathingCircle({
           entering={FadeIn.duration(260)}
           style={[styles.cue, { backgroundColor: color + "1A", borderColor: color + "4D" }]}
         >
-          <Ionicons name={phaseIcon(phase.type)} size={18} color={color} />
+          <PhaseCueIcon type={phase.type} color={color} />
           <Text style={[styles.cueText, { color }]}>{tx(phase.cue, lang)}</Text>
         </Animated.View>
       ) : (
         <View style={[styles.cue, { backgroundColor: C_EXHALE + "1A", borderColor: C_EXHALE + "4D" }]}>
           <Ionicons name="checkmark" size={18} color={C_EXHALE} />
           <Text style={[styles.cueText, { color: C_EXHALE }]}>
-            {lang === "en" ? "Tap Next when ready" : "Нажми «Дальше», когда готов"}
+            {lang === "en" ? "Tap Forward when ready" : "Нажми «Вперёд», когда готов"}
           </Text>
         </View>
       )}
@@ -142,13 +147,18 @@ export default function BreathingCircle({
         <Animated.View
           style={[styles.circle, circleStyle, { backgroundColor: color + "22", borderColor: color }]}
         >
+          {/* Butterfly breathes with the circle — a faint silhouette behind the
+              phase label, tinted to the current phase colour. */}
+          <View style={styles.butterflyBack} pointerEvents="none">
+            <ButterflyIcon size={128} color={color + "26"} />
+          </View>
           {phase ? (
             <>
               <Text style={[styles.phaseLabel, { color }]}>{tx(phase.label, lang)}</Text>
               <Text style={[styles.phaseCount, { color: colors.text }]}>{count}</Text>
             </>
           ) : (
-            <Ionicons name="leaf-outline" size={52} color={C_INHALE} />
+            <ButterflyIcon size={72} color={C_EXHALE} />
           )}
         </Animated.View>
       </View>
@@ -180,6 +190,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  butterflyBack: { position: "absolute", alignItems: "center", justifyContent: "center" },
   phaseLabel: { fontSize: 19, fontFamily: fonts.bodyBold },
   phaseCount: { color: "#fff", fontSize: 54, fontFamily: fonts.display, marginTop: 2 },
 });

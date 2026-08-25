@@ -25,6 +25,7 @@ import { useAppColors } from "@/hooks/useAppColors";
 import {
   tx,
   DIFFICULTY_LABEL,
+  TWISTERS,
   type CheatRoute,
   type CheatStep,
   type ActionStep,
@@ -159,32 +160,127 @@ function ActionView({ step, lang, c, isDark }: { step: ActionStep; lang: string;
   );
 }
 
-// ── Tongue twister ───────────────────────────────────────────────────────────
+// ── Tongue twister — karaoke highlight that accelerates across 3 speed passes ─
+// Words light up one-by-one (like the chant). Each full pass is faster than the
+// last: slow → in-tempo → fast, looping. A "Замена" button swaps the twister.
+const TW_PASS_MS = [520, 340, 210]; // ms per word for slow / tempo / fast
+const TW_SPEED_LABEL: { ru: string; en: string; color: string }[] = [
+  { ru: "Медленно", en: "Slow", color: "#5FD3C4" },
+  { ru: "В темпе", en: "In tempo", color: "#FFCF34" },
+  { ru: "Быстро", en: "Fast", color: "#FF7A6B" },
+];
+
+function TwisterWord({ text, active, muted }: { text: string; active: boolean; muted: string }) {
+  const p = useSharedValue(active ? 1 : 0);
+  useEffect(() => {
+    p.value = withTiming(active ? 1 : 0, { duration: 160 });
+  }, [active, p]);
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + p.value * 0.12 }],
+    opacity: 0.38 + p.value * 0.62,
+  }));
+  return (
+    <Animated.View style={style}>
+      <Text style={[styles.twWord, { color: muted }, active && styles.twWordActive]}>{text}</Text>
+    </Animated.View>
+  );
+}
+
 function TwisterView({ step, lang, c, isDark }: { step: TwisterStep; lang: string; c: AppColors; isDark: boolean }) {
-  const diff = DIFFICULTY_LABEL[step.difficulty];
+  // The twister currently shown — starts from the step, cycles via "Замена".
+  const [tw, setTw] = useState<TwisterStep>(step);
+  useEffect(() => setTw(step), [step]);
+
+  const words = React.useMemo(() => tx(tw.text, lang).split(/\s+/).filter(Boolean), [tw, lang]);
+  const [active, setActive] = useState(0);
+  const [pass, setPass] = useState(0); // 0 slow → 1 tempo → 2 fast → loop
+  const passRef = React.useRef(0);
+  passRef.current = pass;
+
+  // Karaoke driver: advance the highlight; at the end of a line, step to the
+  // next (faster) speed pass and loop back to slow after the fast one.
+  useEffect(() => {
+    if (!words.length) return;
+    setActive(0);
+    const id = setInterval(() => {
+      setActive((a) => {
+        if (a + 1 >= words.length) {
+          setPass((pv) => (pv + 1) % TW_PASS_MS.length);
+          return 0;
+        }
+        return a + 1;
+      });
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      }
+    }, TW_PASS_MS[passRef.current]);
+    return () => clearInterval(id);
+    // Re-arm the interval whenever the speed pass or the twister changes.
+  }, [words, pass]);
+
+  const replace = useCallback(() => {
+    haptic();
+    const pool = TWISTERS.length ? TWISTERS : [step];
+    const curIdx = pool.findIndex((t) => t.id === tw.id);
+    const next = pool[(curIdx + 1) % pool.length]; // step to the next twister (wraps)
+    setPass(0);
+    setActive(0);
+    setTw(next);
+  }, [tw, step]);
+
+  const diff = DIFFICULTY_LABEL[tw.difficulty];
+  const speed = TW_SPEED_LABEL[pass];
+
   return (
     <View style={styles.twWrap}>
       <View style={styles.twTags}>
         <View style={styles.soundChip}>
           <Ionicons name="volume-high-outline" size={13} color={PURPLE} />
-          <Text style={styles.soundChipTxt}>{tx(step.sound, lang)}</Text>
+          <Text style={styles.soundChipTxt}>{tx(tw.sound, lang)}</Text>
         </View>
         <View style={[styles.diffChip, { backgroundColor: ink(isDark, 0.06), borderColor: ink(isDark, 0.1) }]}>
           {[1, 2, 3, 4].map((n) => (
             <View
               key={n}
-              style={[styles.diffPip, { backgroundColor: ink(isDark, 0.22) }, n <= step.difficulty && styles.diffPipOn]}
+              style={[styles.diffPip, { backgroundColor: ink(isDark, 0.22) }, n <= tw.difficulty && styles.diffPipOn]}
             />
           ))}
           <Text style={[styles.diffTxt, { color: c.textSecondary }]}>{tx(diff, lang)}</Text>
         </View>
       </View>
-      <Text style={[styles.twText, { color: c.text }]}>{tx(step.text, lang)}</Text>
+
+      {/* Speed pill — updates each pass: slow → tempo → fast. */}
+      <View style={[styles.speedPill, { backgroundColor: speed.color + "1F", borderColor: speed.color + "55" }]}>
+        <Ionicons name="speedometer-outline" size={14} color={speed.color} />
+        <Text style={[styles.speedTxt, { color: speed.color }]}>{lang === "en" ? speed.en : speed.ru}</Text>
+      </View>
+
+      {/* Karaoke line */}
+      <View style={styles.twKaraoke}>
+        {words.map((w, i) => (
+          <TwisterWord key={`${w}-${i}`} text={w} active={i === active} muted={c.textMuted} />
+        ))}
+      </View>
+
       <Text style={[styles.twHint, { color: c.textMuted }]}>
         {lang === "en"
-          ? "Say it 3× — slow, then a touch faster each time."
-          : "Повтори 3 раза — медленно, потом чуть быстрее."}
+          ? "Follow the highlight — it speeds up each pass."
+          : "Веди голос за подсветкой — каждый круг быстрее."}
       </Text>
+
+      {/* Replace the twister (free) */}
+      <Pressable
+        onPress={replace}
+        style={({ pressed }) => [
+          styles.twReplaceBtn,
+          { backgroundColor: ink(isDark, 0.06), borderColor: ink(isDark, 0.12), opacity: pressed ? 0.7 : 1 },
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel={lang === "en" ? "Replace" : "Замена"}
+      >
+        <Ionicons name="shuffle" size={16} color={c.text} />
+        <Text style={[styles.twReplaceTxt, { color: c.text }]}>{lang === "en" ? "Replace" : "Замена"}</Text>
+      </Pressable>
     </View>
   );
 }
@@ -359,7 +455,11 @@ export default function CheatSheetRunner({
           </ScrollView>
         )}
 
-        {step.kind === "twister" && <TwisterView step={step} lang={lang} c={c} isDark={isDark} />}
+        {step.kind === "twister" && (
+          <ScrollView contentContainerStyle={styles.scrollBody} showsVerticalScrollIndicator={false}>
+            <TwisterView step={step} lang={lang} c={c} isDark={isDark} />
+          </ScrollView>
+        )}
 
         {step.kind === "tip" && (
           <ScrollView contentContainerStyle={styles.scrollBody} showsVerticalScrollIndicator={false}>
@@ -374,15 +474,30 @@ export default function CheatSheetRunner({
         )}
       </Animated.View>
 
-      {/* Footer */}
+      {/* Footer — Back (left) + Forward (right). Split from the old single
+          "Next" so the player can step back to the previous exercise. */}
       {!isFinal && (
-        // Raise the yellow button off the very bottom edge: some devices report
-        // insets.bottom ~0 in Expo Go, which left the button under the home
-        // gesture area and hard/impossible to tap. Floor the clearance.
-        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 22) + 18 }]}>
-          <Pressable onPress={next} hitSlop={10} style={({ pressed }) => [styles.nextBtn, pressed && { opacity: 0.9 }]}>
+        // Raise the buttons off the very bottom edge: some devices report
+        // insets.bottom ~0 in Expo Go, which left them under the home gesture
+        // area and hard/impossible to tap. Floor the clearance.
+        <View style={[styles.footer, styles.footerRow, { paddingBottom: Math.max(insets.bottom, 22) + 18 }]}>
+          <Pressable
+            onPress={back}
+            disabled={idx <= 0}
+            hitSlop={10}
+            style={({ pressed }) => [
+              styles.backBtn,
+              { backgroundColor: ink(isDark, 0.07), borderColor: ink(isDark, 0.12), opacity: idx <= 0 ? 0.4 : pressed ? 0.8 : 1 },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={lang === "en" ? "Back" : "Назад"}
+          >
+            <Ionicons name="arrow-back" size={18} color={c.text} />
+            <Text style={[styles.backTxt, { color: c.text }]}>{lang === "en" ? "Back" : "Назад"}</Text>
+          </Pressable>
+          <Pressable onPress={next} hitSlop={10} style={({ pressed }) => [styles.nextBtn, styles.nextBtnFlex, pressed && { opacity: 0.9 }]}>
             <LinearGradient colors={[GOLD, "#E6B82E"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-            <Text style={styles.nextTxt}>{lang === "en" ? "Next" : "Дальше"}</Text>
+            <Text style={styles.nextTxt}>{lang === "en" ? "Forward" : "Вперёд"}</Text>
             <Ionicons name="arrow-forward" size={18} color="#41310A" />
           </Pressable>
         </View>
@@ -438,7 +553,7 @@ const styles = StyleSheet.create({
   timerBtnTxt: { color: "#41310A", fontSize: 15, fontFamily: fonts.bodyBold },
 
   // twister
-  twWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 22 },
+  twWrap: { alignItems: "center", justifyContent: "center", gap: 20, paddingVertical: 12 },
   twTags: { flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap", justifyContent: "center" },
   soundChip: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(148,104,251,0.14)", borderWidth: 1, borderColor: "rgba(148,104,251,0.35)", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16 },
   soundChipTxt: { color: PURPLE, fontSize: 13, fontFamily: fonts.bodyBold, letterSpacing: 0.5 },
@@ -448,6 +563,13 @@ const styles = StyleSheet.create({
   diffTxt: { fontSize: 12, fontFamily: fonts.bodySemibold, marginLeft: 4 },
   twText: { fontSize: 30, lineHeight: 42, fontFamily: fonts.display, textAlign: "center", paddingHorizontal: 6 },
   twHint: { fontSize: 14, fontFamily: fonts.body, textAlign: "center" },
+  speedPill: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 18, borderWidth: 1 },
+  speedTxt: { fontSize: 13, fontFamily: fonts.bodyBold, letterSpacing: 0.5, textTransform: "uppercase" },
+  twKaraoke: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 6 },
+  twWord: { fontSize: 27, lineHeight: 38, fontFamily: fonts.display, textAlign: "center" },
+  twWordActive: { color: GOLD },
+  twReplaceBtn: { flexDirection: "row", alignItems: "center", gap: 7, paddingVertical: 10, paddingHorizontal: 18, borderRadius: 22, borderWidth: 1, marginTop: 4 },
+  twReplaceTxt: { fontSize: 14, fontFamily: fonts.bodyBold },
 
   // tip / fix
   tipWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16, paddingHorizontal: 8 },
@@ -470,6 +592,19 @@ const styles = StyleSheet.create({
 
   // footer
   footer: { paddingHorizontal: 22, paddingTop: 8 },
+  footerRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  backBtn: {
+    height: 56,
+    paddingHorizontal: 20,
+    borderRadius: 28,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  backTxt: { fontSize: 16, fontFamily: fonts.bodyBold },
   nextBtn: { overflow: "hidden", height: 56, borderRadius: 28, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  nextBtnFlex: { flex: 1 },
   nextTxt: { color: "#41310A", fontSize: 17, fontFamily: fonts.bodyBold },
 });
