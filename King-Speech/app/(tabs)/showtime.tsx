@@ -29,6 +29,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useGame } from "@/context/GameContext";
 import { VinylGallery } from "@/components/showtime/VinylGallery";
 import { ShowTimeLogo, ShowTimeLogoLight } from "@/components/showtime/ShowTimeLogo";
+import CoinIcon from "@/components/CoinIcon";
 
 const { width: SW } = Dimensions.get("window");
 
@@ -208,11 +209,11 @@ export default function ShowTimeScreen() {
             </Text>
           </Pressable>
           <View style={st.entryNote}>
-            <Ionicons
-              name={showTimeFreeAvailable ? "gift-outline" : "disc"}
-              size={13}
-              color={inkFaint}
-            />
+            {showTimeFreeAvailable ? (
+              <Ionicons name="gift-outline" size={13} color={inkFaint} />
+            ) : (
+              <CoinIcon size={13} color={inkFaint} />
+            )}
             <Text style={[st.entryNoteText, { color: inkFaint, fontFamily: "Nunito_400Regular" }]}>
               {showTimeFreeAvailable
                 ? lang === "en"
@@ -294,7 +295,7 @@ export default function ShowTimeScreen() {
         <View style={st.modalOverlay}>
           <Animated.View entering={FadeIn.duration(180)} style={st.modalCard}>
             <View style={st.modalIcon}>
-              <Ionicons name="disc" size={26} color="#F5A623" />
+              <CoinIcon size={26} color="#F5A623" />
             </View>
             <Text style={st.modalTitle}>
               {lang === "en" ? "Enter Show Time again?" : "Ещё один выход в Show Time?"}
@@ -322,7 +323,7 @@ export default function ShowTimeScreen() {
                   onPress={confirmPaidEntry}
                   style={({ pressed }) => [st.modalBtn, st.modalBtnPrimary, { opacity: pressed ? 0.85 : 1 }]}
                 >
-                  <Ionicons name="disc" size={15} color="#1A1A2E" />
+                  <CoinIcon size={15} color="#1A1A2E" />
                   <Text style={st.modalBtnPrimaryText}>{SHOW_TIME_COST}</Text>
                 </Pressable>
               ) : null}

@@ -57,6 +57,7 @@ import { useGame, MODULE_COLORS } from "@/context/GameContext";
 import { useModuleTransition } from "@/context/ModuleTransitionContext";
 import { WAVEFORM_BAR_MAX, useWaveformBars } from "@/hooks/useWaveformBars";
 import { useAppColors } from "@/hooks/useAppColors";
+import CoinIcon from "@/components/CoinIcon";
 
 type Phase = "tutorial" | "spin" | "play" | "result";
 type FeedItem = { id: string; word: string; status: "correct" | "wrong" };
@@ -1397,7 +1398,7 @@ function PlayPhase({
               >
                 {coins >= REPLACE_COST ? (
                   <>
-                    <Ionicons name="disc" size={11} color={colors.text} />
+                    <CoinIcon size={11} color={colors.text} />
                     <Text style={[styles.cornerCostText, { color: colors.text }]}>
                       {REPLACE_COST}
                     </Text>
@@ -1424,7 +1425,7 @@ function PlayPhase({
               <View style={styles.cornerCostPill}>
                 {coins >= HINT_COST ? (
                   <>
-                    <Ionicons name="disc" size={11} color="#1B1300" />
+                    <CoinIcon size={11} color="#1B1300" />
                     <Text style={styles.cornerCostText}>{HINT_COST}</Text>
                   </>
                 ) : (

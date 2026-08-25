@@ -22,6 +22,7 @@ import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useGame, MODULE_COLORS } from "@/context/GameContext";
+import CoinIcon from "@/components/CoinIcon";
 import { useAuth } from "@/context/AuthContext";
 import { useLang } from "@/context/LangContext";
 import { storage as fbStorage, auth as fbAuth, firebaseConfigured } from "@/lib/firebase";
@@ -379,7 +380,7 @@ export default function ProfileScreen() {
               {t("statLevel")}
             </Text>
           </View>
-          <StatBox theme={theme} icon="disc" value={`${coins}`} label={lang === "en" ? "Coins" : "Монеты"} />
+          <StatBox theme={theme} icon="star" coin value={`${coins}`} label={lang === "en" ? "Coins" : "Монеты"} />
         </Animated.View>
 
         {/* Private reading library — button now carries the title itself, so
@@ -698,11 +699,13 @@ function ProgMetric({
 function StatBox({
   theme,
   icon,
+  coin,
   value,
   label,
 }: {
   theme: Theme;
   icon: keyof typeof Ionicons.glyphMap;
+  coin?: boolean;
   value: string;
   label: string;
 }) {
@@ -713,7 +716,11 @@ function StatBox({
         { backgroundColor: theme.card, borderColor: theme.cardBorder },
       ]}
     >
-      <Ionicons name={icon} size={18} color={theme.accent} />
+      {coin ? (
+        <CoinIcon size={18} color={theme.accent} />
+      ) : (
+        <Ionicons name={icon} size={18} color={theme.accent} />
+      )}
       <Text style={[styles.statVal, { color: theme.text }]}>{value}</Text>
       <Text style={[styles.statLbl, { color: theme.textSecondary }]} numberOfLines={1}>
         {label}
