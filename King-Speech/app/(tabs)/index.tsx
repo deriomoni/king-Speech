@@ -513,6 +513,8 @@ export default function PathScreen() {
     side?: "left" | "right";
     toSide?: "left" | "right" | "center";
     isLast?: boolean;
+    /** True when the next row is a module divider — suppress the dangling thread. */
+    nextIsDivider?: boolean;
     key: string;
   }> = [];
 
@@ -566,6 +568,9 @@ export default function PathScreen() {
     if (r.type !== "step" && r.type !== "portal") continue;
     const next = renderItems[i + 1];
     if (next) r.toSide = rowSide(next);
+    // A module boundary (divider next, or end of list) has no brick to connect
+    // to — mark it so the connector isn't drawn as a dangling stub.
+    r.nextIsDivider = !next || next.type === "divider";
   }
 
   const activeStep = renderItems.find(
@@ -1017,7 +1022,7 @@ export default function PathScreen() {
                 />
               </View>
 
-              {!isLast && (
+              {!isLast && !ri.nextIsDivider && (
                 <SnakeConnector
                   fromSide={side}
                   toSide={ri.toSide ?? (side === "right" ? "left" : "right")}
