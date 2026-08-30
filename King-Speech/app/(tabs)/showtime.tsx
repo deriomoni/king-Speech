@@ -26,6 +26,7 @@ import { router } from "expo-router";
 import { getSpeechThemes } from "@/app/showtime-stage";
 import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useAppColors } from "@/hooks/useAppColors";
 import { useGame } from "@/context/GameContext";
 import { VinylGallery } from "@/components/showtime/VinylGallery";
 import { ShowTimeLogo, ShowTimeLogoLight } from "@/components/showtime/ShowTimeLogo";
@@ -37,13 +38,16 @@ export default function ShowTimeScreen() {
   const insets = useSafeAreaInsets();
   const { t, lang } = useLang();
   const { themeMode } = useTheme();
+  const { colors } = useAppColors();
   const isLight = themeMode === "light";
-  // Light theme: white paper interface with the colorful wordmark. Dark theme
-  // keeps the original navy stage look.
-  const bgGradient: [string, string, string] = isLight
-    ? ["#FFFFFF", "#F5F7FB", "#FFFFFF"]
-    : ["#070D1A", "#0D1830", "#070D1A"];
-  const bgColor = isLight ? "#FFFFFF" : "#070D1A";
+  // Background follows the app theme (same as the Path): app dark in dark mode,
+  // app light in light mode — no bespoke navy stage tint.
+  const bgGradient: [string, string, string] = [
+    colors.background,
+    colors.backgroundSecondary,
+    colors.background,
+  ];
+  const bgColor = colors.background;
   const ink = isLight ? "#241934" : "#E8E4D8"; // section heading
   const inkSub = isLight ? "rgba(36,25,52,0.62)" : "rgba(255,255,255,0.7)";
   const inkFaint = isLight ? "rgba(36,25,52,0.45)" : "rgba(255,255,255,0.35)";
