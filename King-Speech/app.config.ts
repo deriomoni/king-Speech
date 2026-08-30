@@ -65,10 +65,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     package: "com.oratopath",
     adaptiveIcon: {
-      backgroundColor: "#0B1426",
+      backgroundColor: "#FFD857",
       foregroundImage: "./assets/images/android-icon-foreground.png",
-      backgroundImage: "./assets/images/android-icon-background.png",
-      monochromeImage: "./assets/images/android-icon-monochrome.png",
+      monochromeImage: "./assets/images/android-icon-foreground.png",
     },
   },
   web: {
