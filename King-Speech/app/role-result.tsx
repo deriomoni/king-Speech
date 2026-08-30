@@ -43,8 +43,8 @@ if (Platform.OS !== "web") {
   } catch {}
 }
 
-const BG = "#0E0A1F";
-const BG2 = "#1A1230";
+const BG = "#0E0E10"; // main interface dark (brandColors.bg)
+const BG2 = "#1A1A1F"; // elevated surface for the subtle backdrop gradient
 const CARD_BG = "#221838";
 const TEXT = "#F5F0FF";
 const MUTED = "#A79CC4";

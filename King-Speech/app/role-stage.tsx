@@ -33,7 +33,7 @@ if (Platform.OS !== "web") {
   Audio = require("expo-av").Audio;
 }
 
-const BG = "#0B0718";
+const BG = "#0E0E10"; // main interface dark (brandColors.bg)
 const TEXT = "#F5F0FF";
 const MUTED = "#A79CC4";
 
