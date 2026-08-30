@@ -22,7 +22,6 @@ import Animated, {
   runOnJS,
   type SharedValue,
 } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -422,44 +421,31 @@ function ModuleDivider({
 
   return (
     <View style={styles.moduleDivider}>
-      <View
-        style={[styles.moduleDividerLine, { backgroundColor: mc.color + "40" }]}
-      />
-      <View style={[styles.moduleQuoteCard, { borderColor: mc.color + "50" }]}>
-        <LinearGradient
-          colors={[mc.color + "18", mc.color + "08"]}
-          style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
-        />
-        <View style={[styles.moduleNumBadge, { backgroundColor: mc.color }]}>
-          <Text style={[styles.moduleNumText, { fontFamily: "Rubik_700Bold" }]}>
-            {moduleNum}
-          </Text>
-        </View>
-        {lang === "ru" && getModuleName(moduleNum) ? (
-          <Text
-            style={{
-              color: colors.text,
-              fontFamily: "Rubik_700Bold",
-              fontSize: 16,
-              textAlign: "center",
-              marginBottom: 4,
-            }}
-          >
-            {getModuleName(moduleNum)}
-          </Text>
-        ) : null}
+      {/* No box, no colored number circle, no vertical dashes — just the module
+          number and text on the Path background. */}
+      <Text style={[styles.moduleNumText, { color: mc.color, fontFamily: "Rubik_700Bold" }]}>
+        {moduleNum}
+      </Text>
+      {lang === "ru" && getModuleName(moduleNum) ? (
         <Text
-          style={[
-            styles.moduleQuoteText,
-            { color: colors.text, fontFamily: "Rubik_500Medium" },
-          ]}
+          style={{
+            color: colors.text,
+            fontFamily: "Rubik_700Bold",
+            fontSize: 16,
+            textAlign: "center",
+          }}
         >
-          {quote}
+          {getModuleName(moduleNum)}
         </Text>
-      </View>
-      <View
-        style={[styles.moduleDividerLine, { backgroundColor: mc.color + "40" }]}
-      />
+      ) : null}
+      <Text
+        style={[
+          styles.moduleQuoteText,
+          { color: colors.text, fontFamily: "Rubik_500Medium" },
+        ]}
+      >
+        {quote}
+      </Text>
     </View>
   );
 }
@@ -1124,8 +1110,9 @@ const styles = StyleSheet.create({
   },
   moduleDivider: {
     alignItems: "center",
-    marginVertical: 10,
-    gap: 8,
+    marginTop: 16,
+    marginBottom: 26,
+    gap: 6,
   },
   moduleDividerLine: {
     width: 2,
