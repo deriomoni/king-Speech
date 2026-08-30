@@ -1345,7 +1345,7 @@ function PlayPhase({
           {hintRevealed ? (
             <Animated.View entering={FadeIn.duration(220)} style={styles.hintPanel}>
               <View style={styles.hintPanelHead}>
-                <Ionicons name="bulb" size={14} color="#FFC531" />
+                <Ionicons name="bulb" size={14} color="#FFD857" />
                 <Text style={styles.hintPanelTitle}>Подсказка</Text>
               </View>
               <View style={styles.hintChips}>
@@ -2052,7 +2052,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   hintPanelTitle: {
-    color: "#FFC531",
+    color: "#FFD857",
     fontSize: 12.5,
     fontFamily: "Rubik_600SemiBold",
     letterSpacing: 0.3,
@@ -2132,8 +2132,8 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.18)",
   },
   cornerBtnHint: {
-    backgroundColor: "#FFC531",
-    borderColor: "#FFD873",
+    backgroundColor: "#FFD857",
+    borderColor: "#FFD857",
   },
   cornerBtnText: {
     color: "#FFFFFF",
@@ -2198,7 +2198,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   adBadgeText: {
-    color: "#FFC531",
+    color: "#FFD857",
     fontSize: 11,
     letterSpacing: 1.5,
     fontFamily: "Rubik_700Bold",

@@ -182,7 +182,7 @@ export default function PitchTrackSkiaImpl({
             <LinearGradient
               start={vec(-TRAIL_W, 0)}
               end={vec(0, 0)}
-              colors={["#FFCF3400", warmupTheme.gold]}
+              colors={["#FFD85700", warmupTheme.gold]}
             />
           </Rect>
 

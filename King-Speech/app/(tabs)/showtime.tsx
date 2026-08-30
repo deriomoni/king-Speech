@@ -277,7 +277,7 @@ export default function ShowTimeScreen() {
             accessibilityRole="button"
           >
             <View style={st.tipsBtnIcon}>
-              <Ionicons name="bulb" size={18} color="#FFD230" />
+              <Ionicons name="bulb" size={18} color="#FFD857" />
             </View>
             <Text style={[st.tipsBtnText, { fontFamily: "Nunito_600SemiBold" }]}>
               {t("speakerTips")}

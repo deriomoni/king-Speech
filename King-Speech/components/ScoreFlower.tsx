@@ -80,7 +80,7 @@ function clamp10(v: number): number {
 // for weak. Reads as an at-a-glance heat map across the petals, on-brand
 // (King Speech = purple + gold) instead of the old teal-neon.
 export function toneFor(score: number): string {
-  if (score >= 8) return "#FFD230"; // royal gold
+  if (score >= 8) return "#FFD857"; // royal gold
   if (score >= 6) return "#B79BFF"; // light violet
   if (score >= 4) return "#FF9E4A"; // apricot
   return "#FB7185"; // coral (honest "low")

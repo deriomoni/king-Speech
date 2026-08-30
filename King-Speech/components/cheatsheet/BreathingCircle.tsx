@@ -15,7 +15,7 @@ import { useAppColors } from "@/hooks/useAppColors";
 import { tx, type BreathingStep, type PhaseType } from "@/constants/cheatsheetData";
 
 // Distinct colour per phase so it's instantly obvious where you are.
-const C_INHALE = "#FFCF34";
+const C_INHALE = "#FFD857";
 const C_HOLD = "#B7A6FF";
 const C_EXHALE = "#5FD3C4";
 

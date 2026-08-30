@@ -111,7 +111,7 @@ export default function ReadingResultsView({
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const accent = "#FFC531"; // clean warm gold
+  const accent = "#FFD857"; // clean warm gold
   // When there's no audio to play back (mic blocked), don't trap the player —
   // unlock the rating immediately so they can still self-assess and continue.
   const [listenedFully, setListenedFully] = useState(!audioUri);

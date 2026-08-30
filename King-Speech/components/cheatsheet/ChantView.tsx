@@ -9,7 +9,7 @@ import * as Haptics from "expo-haptics";
 import { fonts } from "@/constants/colors";
 import { useAppColors } from "@/hooks/useAppColors";
 
-const ACCENT = "#FFCF34";
+const ACCENT = "#FFD857";
 
 function Syllable({ text, active, muted }: { text: string; active: boolean; muted: string }) {
   const p = useSharedValue(active ? 1 : 0);

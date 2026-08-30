@@ -2,7 +2,7 @@ import { spring } from "@/theme/tokens";
 
 export const warmupTheme = {
   bg: "#0E0E10",
-  gold: "#FFCF34",
+  gold: "#FFD857",
   purple: "#9468FB",
   onGold: "#41310A",
   missRed: "#FF6B6B",

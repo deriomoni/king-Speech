@@ -39,7 +39,7 @@ import ChantView from "@/components/cheatsheet/ChantView";
 
 type AppColors = import("@/constants/colors").AppColors;
 
-const GOLD = "#FFCF34";
+const GOLD = "#FFD857";
 const PURPLE = "#9468FB";
 
 // Translucent surface/border tint that flips with the theme (white ink on
@@ -166,7 +166,7 @@ function ActionView({ step, lang, c, isDark }: { step: ActionStep; lang: string;
 const TW_PASS_MS = [520, 340, 210]; // ms per word for slow / tempo / fast
 const TW_SPEED_LABEL: { ru: string; en: string; color: string }[] = [
   { ru: "Медленно", en: "Slow", color: "#5FD3C4" },
-  { ru: "В темпе", en: "In tempo", color: "#FFCF34" },
+  { ru: "В темпе", en: "In tempo", color: "#FFD857" },
   { ru: "Быстро", en: "Fast", color: "#FF7A6B" },
 ];
 
