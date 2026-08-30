@@ -1111,7 +1111,7 @@ const styles = StyleSheet.create({
   moduleDivider: {
     alignItems: "center",
     marginTop: 16,
-    marginBottom: 26,
+    marginBottom: 36,
     gap: 6,
   },
   moduleDividerLine: {
