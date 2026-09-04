@@ -4492,6 +4492,7 @@ export default function ShowtimeStageScreen() {
   const AUTO_SPEEDS = [0.5, 1, 1.5, 2];
   const [speedIdx, setSpeedIdx] = useState(1); // default 1×
   const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const introTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [noiseBubbles, setNoiseBubbles] = useState<NoiseBubble[]>([]);
   const bubbleIdRef = useRef(0);
   const noiseTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -4525,6 +4526,12 @@ export default function ShowtimeStageScreen() {
   const liveTagScale = useSharedValue(1);
   const speechPanelY = useSharedValue(60);
   const speechPanelOpacity = useSharedValue(0);
+  // Title intro card: grows + darkens, then shrinks + lightens and vanishes;
+  // the main text only appears once the title is fully gone.
+  const [introDone, setIntroDone] = useState(false);
+  const titleScale = useSharedValue(0.9);
+  const titleOpacity = useSharedValue(0);
+  const introDim = useSharedValue(0);
 
   useEffect(() => {
     liveTagScale.value = withRepeat(withTiming(1.08, { duration: 700 }), -1, true);
@@ -4663,10 +4670,31 @@ export default function ShowtimeStageScreen() {
 
   const handleStart = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    curtainOpacity.value = withTiming(0, { duration: 1200 });
+    curtainOpacity.value = withTiming(0, { duration: 1000 });
     audienceReveal.value = withTiming(1, { duration: 1000 });
-    speechPanelY.value = withDelay(900, withSpring(0, { damping: 16 }));
-    speechPanelOpacity.value = withDelay(900, withTiming(1, { duration: 500 }));
+
+    // Title intro: after the curtain lifts, the title grows + darkens, then
+    // shrinks + lightens and fades out. Only then does the speech text appear.
+    const INTRO_DELAY = 650;
+    titleScale.value = withDelay(INTRO_DELAY, withSequence(
+      withTiming(1.22, { duration: 950 }),
+      withTiming(1.0, { duration: 800 }),
+    ));
+    introDim.value = withDelay(INTRO_DELAY, withSequence(
+      withTiming(0.52, { duration: 950 }),
+      withTiming(0, { duration: 800 }),
+    ));
+    titleOpacity.value = withDelay(INTRO_DELAY, withSequence(
+      withTiming(1, { duration: 450 }),
+      withDelay(650, withTiming(0, { duration: 650 })),
+    ));
+    const INTRO_END = INTRO_DELAY + 1750; // title fully gone
+    introTimerRef.current = setTimeout(() => setIntroDone(true), INTRO_END);
+
+    // Main text fades in only after the title has vanished.
+    speechPanelY.value = withDelay(INTRO_END, withSpring(0, { damping: 16 }));
+    speechPanelOpacity.value = withDelay(INTRO_END, withTiming(1, { duration: 600 }));
+
     setStarted(true);
     await startRecording();
 
@@ -4687,6 +4715,7 @@ export default function ShowtimeStageScreen() {
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (introTimerRef.current) clearTimeout(introTimerRef.current);
     };
   }, []);
 
@@ -4719,7 +4748,7 @@ export default function ShowtimeStageScreen() {
   // length and the chosen speed. Re-runs whenever the line changes, so it
   // naturally chains line→line; pausing or switching to manual stops it.
   useEffect(() => {
-    if (!started || finished || scrollMode !== "auto" || autoPaused) return;
+    if (!started || finished || scrollMode !== "auto" || autoPaused || !introDone) return;
     const speed = AUTO_SPEEDS[speedIdx] ?? 1;
     const isLast = currentLine >= speech.lines.length - 1;
     const line = speech.lines[currentLine] ?? "";
@@ -4742,7 +4771,7 @@ export default function ShowtimeStageScreen() {
     };
     // finishPerformance is stable enough for this purpose; excluded from deps.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [started, finished, scrollMode, autoPaused, speedIdx, currentLine, speech.lines]);
+  }, [started, finished, scrollMode, autoPaused, speedIdx, currentLine, speech.lines, introDone]);
 
   const cycleSpeed = useCallback(() => {
     Haptics.selectionAsync().catch(() => {});
@@ -4758,6 +4787,8 @@ export default function ShowtimeStageScreen() {
   const audienceStyle = useAnimatedStyle(() => ({ opacity: audienceReveal.value }));
   const liveStyle = useAnimatedStyle(() => ({ transform: [{ scale: liveTagScale.value }] }));
   const speechStyle = useAnimatedStyle(() => ({ opacity: speechPanelOpacity.value, transform: [{ translateY: speechPanelY.value }] }));
+  const titleIntroStyle = useAnimatedStyle(() => ({ opacity: titleOpacity.value, transform: [{ scale: titleScale.value }] }));
+  const introDimStyle = useAnimatedStyle(() => ({ opacity: introDim.value }));
 
   return (
     <View style={s.container}>
@@ -4879,9 +4910,15 @@ export default function ShowtimeStageScreen() {
       </Pressable>
 
       {/* Header — no back arrow; LIVE centered symmetrically between two equal
-          side columns. */}
+          side columns. Top-left carries the auto-scroll speed (text only). */}
       <View style={[s.header, { paddingTop: topPad + 8 }]}>
-        <View style={s.headerSide} />
+        <View style={[s.headerSide, { alignItems: "flex-start", justifyContent: "center" }]}>
+          {started && !finished && scrollMode === "auto" && (
+            <Pressable onPress={cycleSpeed} hitSlop={12} style={({ pressed }) => [s.speedTextBtn, { opacity: pressed ? 0.55 : 1 }]}>
+              <Text style={[s.speedText, { fontFamily: "Nunito_800ExtraBold" }]}>{AUTO_SPEEDS[speedIdx]}×</Text>
+            </Pressable>
+          )}
+        </View>
         <View style={s.headerCenter}>
           {started && (
             <Animated.View style={[s.liveTag, liveStyle]}>
@@ -4892,9 +4929,6 @@ export default function ShowtimeStageScreen() {
           <Text style={[s.speechTitle, { fontFamily: "Nunito_500Medium" }]} numberOfLines={1} ellipsizeMode="tail">{speech.title}</Text>
         </View>
         <View style={[s.headerRight, s.headerSide]}>
-          {!isRecording && started && !finished && (
-            <Text style={[s.lineCounter, { fontFamily: "Nunito_400Regular" }]}>{currentLine + 1}/{speech.lines.length}</Text>
-          )}
           {started && !finished && timeLeft !== null && (
             <View style={[s.timerBadge, { backgroundColor: timeLeft <= 10 ? "#0EA5E940" : "rgba(17,17,20,0.07)" }]}>
               <Ionicons name="timer-outline" size={14} color={timeLeft <= 10 ? "#0EA5E9" : "rgba(17,17,20,0.65)"} />
@@ -4905,6 +4939,16 @@ export default function ShowtimeStageScreen() {
           )}
         </View>
       </View>
+
+      {/* Title intro — plays once on start, then hands off to the speech text */}
+      {started && !introDone && (
+        <View pointerEvents="none" style={s.introWrap}>
+          <Animated.View style={[StyleSheet.absoluteFill, introDimStyle, { backgroundColor: "#000" }]} />
+          <Animated.Text style={[s.introTitle, titleIntroStyle, { fontFamily: "Nunito_800ExtraBold" }]} numberOfLines={3}>
+            {theme.title}
+          </Animated.Text>
+        </View>
+      )}
 
       {showTutorial && started && !finished && (
         <Pressable
@@ -4988,26 +5032,8 @@ export default function ShowtimeStageScreen() {
             <View style={[s.progressFill, { backgroundColor: theme.accentColor, width: `${((currentLine + 1) / speech.lines.length) * 100}%` as any }]} />
           </View>
 
-          {/* Auto-scroll controls: pause/play + speed */}
-          {scrollMode === "auto" && (
-            <View style={s.autoRow}>
-              <Pressable onPress={toggleAutoPause} style={({ pressed }) => [s.autoChip, { borderColor: theme.accentColor + "55", opacity: pressed ? 0.7 : 1 }]}>
-                <Ionicons name={autoPaused ? "play" : "pause"} size={16} color={theme.accentColor} />
-                <Text style={[s.autoChipText, { fontFamily: "Nunito_600SemiBold", color: theme.accentColor }]}>
-                  {autoPaused ? (lang === "en" ? "Play" : "Старт") : (lang === "en" ? "Pause" : "Пауза")}
-                </Text>
-              </Pressable>
-              <Pressable onPress={cycleSpeed} style={({ pressed }) => [s.autoChip, { borderColor: theme.accentColor + "55", opacity: pressed ? 0.7 : 1 }]}>
-                <Ionicons name="speedometer-outline" size={16} color={theme.accentColor} />
-                <Text style={[s.autoChipText, { fontFamily: "Nunito_700Bold", color: theme.accentColor }]}>
-                  {AUTO_SPEEDS[speedIdx]}×
-                </Text>
-              </Pressable>
-            </View>
-          )}
-
-          {/* Navigation — plain transparent white arrows, symmetric at the
-              two edges (mirrored about the centre). */}
+          {/* Navigation — plain transparent white arrows, symmetric at the two
+              edges. In auto mode a pause/resume icon sits centred between them. */}
           <View style={s.navRow}>
             <Pressable
               onPress={prevLine}
@@ -5017,6 +5043,16 @@ export default function ShowtimeStageScreen() {
             >
               <Ionicons name="chevron-back" size={30} color="#FFFFFF" />
             </Pressable>
+
+            {scrollMode === "auto" && (
+              <Pressable
+                onPress={toggleAutoPause}
+                hitSlop={12}
+                style={({ pressed }) => [s.navBtn, { opacity: pressed ? 0.55 : 1 }]}
+              >
+                <Ionicons name={autoPaused ? "play" : "pause"} size={30} color="#FFFFFF" />
+              </Pressable>
+            )}
 
             <Pressable
               onPress={nextLine}
@@ -5055,6 +5091,10 @@ const s = StyleSheet.create({
   header: { position: "absolute", top: 0, left: 0, right: 0, flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 10, zIndex: 10 },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.06)", alignItems: "center", justifyContent: "center" },
   headerSide: { minWidth: 52 },
+  introWrap: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center", paddingHorizontal: 34, zIndex: 30 },
+  introTitle: { fontSize: 34, lineHeight: 40, color: "#FFFFFF", textAlign: "center", letterSpacing: 0.2, textShadowColor: "rgba(0,0,0,0.6)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 12 },
+  speedTextBtn: { paddingVertical: 4, paddingHorizontal: 4 },
+  speedText: { fontSize: 17, color: "rgba(17,17,20,0.85)", letterSpacing: 0.3 },
   headerCenter: { flex: 1, alignItems: "center", gap: 2 },
   liveTag: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#FF3B30", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   liveDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: "#fff" },
