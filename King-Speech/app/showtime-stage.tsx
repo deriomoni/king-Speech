@@ -4878,11 +4878,10 @@ export default function ShowtimeStageScreen() {
         <Ionicons name="close" size={22} color="rgba(17,17,20,0.85)" />
       </Pressable>
 
-      {/* Header */}
+      {/* Header — no back arrow; LIVE centered symmetrically between two equal
+          side columns. */}
       <View style={[s.header, { paddingTop: topPad + 8 }]}>
-        <Pressable onPress={() => { started && !finished ? setShowExitConfirm(true) : router.back(); }} style={({ pressed }) => [s.backBtn, { opacity: pressed ? 0.6 : 1 }]}>
-          <Ionicons name="chevron-down" size={22} color="rgba(17,17,20,0.7)" />
-        </Pressable>
+        <View style={s.headerSide} />
         <View style={s.headerCenter}>
           {started && (
             <Animated.View style={[s.liveTag, liveStyle]}>
@@ -4892,8 +4891,7 @@ export default function ShowtimeStageScreen() {
           )}
           <Text style={[s.speechTitle, { fontFamily: "Nunito_500Medium" }]} numberOfLines={1} ellipsizeMode="tail">{speech.title}</Text>
         </View>
-        <View style={s.headerRight}>
-          {isRecording && <RecDot />}
+        <View style={[s.headerRight, s.headerSide]}>
           {!isRecording && started && !finished && (
             <Text style={[s.lineCounter, { fontFamily: "Nunito_400Regular" }]}>{currentLine + 1}/{speech.lines.length}</Text>
           )}
@@ -5008,42 +5006,29 @@ export default function ShowtimeStageScreen() {
             </View>
           )}
 
-          {/* Navigation */}
+          {/* Navigation — plain transparent white arrows, symmetric at the
+              two edges (mirrored about the centre). */}
           <View style={s.navRow}>
             <Pressable
               onPress={prevLine}
               disabled={currentLine === 0}
-              style={({ pressed }) => [s.navBtn, { backgroundColor: "rgba(255,255,255,0.12)", opacity: currentLine === 0 ? 0.25 : pressed ? 0.7 : 1 }]}
+              hitSlop={12}
+              style={({ pressed }) => [s.navBtn, { opacity: currentLine === 0 ? 0.25 : pressed ? 0.55 : 1 }]}
             >
-              <Ionicons name="chevron-back" size={20} color="rgba(255,255,255,0.8)" />
+              <Ionicons name="chevron-back" size={30} color="#FFFFFF" />
             </Pressable>
 
-            <View style={s.pips}>
-              {speech.lines.map((_, i) => (
-                <View key={i} style={[s.pip, {
-                  backgroundColor: i === currentLine ? theme.accentColor : i < currentLine ? hexToRgba(theme.accentColor, 0.4) : "rgba(255,255,255,0.22)",
-                  width: i === currentLine ? 16 : 6,
-                }]} />
-              ))}
-            </View>
-
-            <View style={s.navBtnNextWrap}>
-              <View style={[s.navBtnNextGlow, { backgroundColor: theme.accentColor }]} />
-              <Pressable
-                onPress={nextLine}
-                style={({ pressed }) => [s.navBtn, s.navBtnNext, { overflow: "hidden" as const, opacity: pressed ? 0.85 : 1 }]}
-              >
-                <LinearGradient
-                  colors={[theme.accentColor, "#FF8C00", theme.accentColor]}
-                  style={StyleSheet.absoluteFill}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                />
-                {currentLine === speech.lines.length - 1
-                  ? <Ionicons name="checkmark" size={24} color="#1A1A2E" />
-                  : <Ionicons name="chevron-forward" size={24} color="#1A1A2E" />
-                }
-              </Pressable>
-            </View>
+            <Pressable
+              onPress={nextLine}
+              hitSlop={12}
+              style={({ pressed }) => [s.navBtn, { opacity: pressed ? 0.55 : 1 }]}
+            >
+              <Ionicons
+                name={currentLine === speech.lines.length - 1 ? "checkmark" : "chevron-forward"}
+                size={30}
+                color="#FFFFFF"
+              />
+            </Pressable>
           </View>
         </Animated.View>
       )}
@@ -5069,8 +5054,9 @@ const s = StyleSheet.create({
   floorLine: { position: "absolute", top: SH * 0.48, left: 0, right: 0, height: 1.5, backgroundColor: "rgba(255,209,102,0.12)" },
   header: { position: "absolute", top: 0, left: 0, right: 0, flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 10, zIndex: 10 },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.06)", alignItems: "center", justifyContent: "center" },
+  headerSide: { minWidth: 52 },
   headerCenter: { flex: 1, alignItems: "center", gap: 2 },
-  liveTag: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#0EA5E9", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  liveTag: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#FF3B30", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   liveDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: "#fff" },
   liveText: { fontSize: 10, color: "#fff", letterSpacing: 1.5 },
   speechTitle: { fontSize: 13, color: "rgba(17,17,20,0.6)" },
