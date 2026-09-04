@@ -10,7 +10,6 @@ import {
   ScrollView,
   Image,
 } from "react-native";
-import { BlurView } from "expo-blur";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
@@ -4374,10 +4373,11 @@ function SpeechLine({ text, isActive, isDone }: { text: string; isActive: boolea
   );
 }
 const sl = StyleSheet.create({
-  // Dark ink — the lines sit on the white sheet at the bottom of the screen.
-  line: { fontSize: 14, lineHeight: 23, color: "rgba(17,17,20,0.32)", fontFamily: "Nunito_400Regular", textAlign: "center", paddingVertical: 2 },
-  lineActive: { fontSize: 17, color: "#111114", fontFamily: "Nunito_700Bold", lineHeight: 26 },
-  lineDone: { color: "rgba(17,17,20,0.4)", textDecorationLine: "line-through", textDecorationColor: "rgba(17,17,20,0.25)" },
+  // Light text over the bottom scrim, so the audience photo stays visible while
+  // you read. A soft shadow keeps it legible over lighter spots of the image.
+  line: { fontSize: 14, lineHeight: 23, color: "rgba(255,255,255,0.42)", fontFamily: "Nunito_400Regular", textAlign: "center", paddingVertical: 2, textShadowColor: "rgba(0,0,0,0.55)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 },
+  lineActive: { fontSize: 17, color: "#FFFFFF", fontFamily: "Nunito_700Bold", lineHeight: 26 },
+  lineDone: { color: "rgba(255,255,255,0.4)", textDecorationLine: "line-through", textDecorationColor: "rgba(255,255,255,0.25)" },
 });
 
 function lightenHex(hex: string, pct: number): string {
@@ -4761,27 +4761,22 @@ export default function ShowtimeStageScreen() {
 
   return (
     <View style={s.container}>
-      {/* Variable audience photo backdrop */}
+      {/* Variable audience photo backdrop — the room stays fully visible; you
+          watch the crowd while you read. */}
       <Image source={bgPhoto} style={StyleSheet.absoluteFill} resizeMode="cover" />
 
-      {/* Blur band — the photo softens as it approaches the white sheet. */}
-      <BlurView
-        intensity={38}
-        tint="light"
-        pointerEvents="none"
-        style={[StyleSheet.absoluteFill, { top: SH * 0.4 }]}
-      />
-      {/* White sheet fade — the lower part flows into a clean white page. */}
+      {/* Bottom legibility scrim — only the lower foreground darkens so the
+          light speech text reads; the audience above stays clear. */}
       <LinearGradient
         pointerEvents="none"
         colors={[
           "transparent",
-          "rgba(255,255,255,0.35)",
-          "rgba(255,255,255,0.9)",
-          "#FFFFFF",
-          "#FFFFFF",
+          "transparent",
+          "rgba(6,8,14,0.35)",
+          "rgba(6,8,14,0.78)",
+          "rgba(6,8,14,0.92)",
         ]}
-        locations={[0, 0.4, 0.5, 0.6, 1]}
+        locations={[0, 0.5, 0.66, 0.84, 1]}
         style={StyleSheet.absoluteFill}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
@@ -5012,15 +5007,15 @@ export default function ShowtimeStageScreen() {
             <Pressable
               onPress={prevLine}
               disabled={currentLine === 0}
-              style={({ pressed }) => [s.navBtn, { backgroundColor: "rgba(17,17,20,0.06)", opacity: currentLine === 0 ? 0.25 : pressed ? 0.7 : 1 }]}
+              style={({ pressed }) => [s.navBtn, { backgroundColor: "rgba(255,255,255,0.12)", opacity: currentLine === 0 ? 0.25 : pressed ? 0.7 : 1 }]}
             >
-              <Ionicons name="chevron-back" size={20} color="rgba(17,17,20,0.7)" />
+              <Ionicons name="chevron-back" size={20} color="rgba(255,255,255,0.8)" />
             </Pressable>
 
             <View style={s.pips}>
               {speech.lines.map((_, i) => (
                 <View key={i} style={[s.pip, {
-                  backgroundColor: i === currentLine ? theme.accentColor : i < currentLine ? hexToRgba(theme.accentColor, 0.4) : "rgba(17,17,20,0.15)",
+                  backgroundColor: i === currentLine ? theme.accentColor : i < currentLine ? hexToRgba(theme.accentColor, 0.4) : "rgba(255,255,255,0.22)",
                   width: i === currentLine ? 16 : 6,
                 }]} />
               ))}
@@ -5101,10 +5096,10 @@ const s = StyleSheet.create({
   // runs to the safe-area bottom. A fixed top boundary stops long speeches
   // from spilling up into the audience; the text area flexes inside it so
   // short speeches sit vertically centered and long ones scroll within bounds.
-  speechPanel: { position: "absolute", top: SH * 0.5, bottom: 0, left: 0, right: 0, paddingTop: 16, paddingHorizontal: 18, gap: 12 },
+  speechPanel: { position: "absolute", top: SH * 0.58, bottom: 0, left: 0, right: 0, paddingTop: 16, paddingHorizontal: 18, gap: 12 },
   linesScroll: { flex: 1, width: "100%" },
   linesContainer: { flexGrow: 1, justifyContent: "center", alignItems: "center", gap: 0, paddingVertical: 4 },
-  progressBg: { height: 3, borderRadius: 2, backgroundColor: "rgba(17,17,20,0.1)", overflow: "hidden" },
+  progressBg: { height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.18)", overflow: "hidden" },
   progressFill: { height: 3, borderRadius: 2, backgroundColor: "#FFD166" },
   navRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
   navBtn: { width: 58, height: 58, borderRadius: 29, alignItems: "center", justifyContent: "center" },
