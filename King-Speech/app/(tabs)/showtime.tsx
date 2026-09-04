@@ -31,6 +31,7 @@ import { useGame } from "@/context/GameContext";
 import { VinylGallery } from "@/components/showtime/VinylGallery";
 import { ShowTimeLogo, ShowTimeLogoLight } from "@/components/showtime/ShowTimeLogo";
 import CoinIcon from "@/components/CoinIcon";
+import AppDialog from "@/components/AppDialog";
 
 const { width: SW } = Dimensions.get("window");
 
@@ -291,46 +292,28 @@ export default function ShowTimeScreen() {
         </Animated.View>
       </Animated.ScrollView>
 
-      {payModal ? (
-        <View style={st.modalOverlay}>
-          <Animated.View entering={FadeIn.duration(180)} style={st.modalCard}>
-            <View style={st.modalIcon}>
-              <CoinIcon size={26} color="#F5A623" />
-            </View>
-            <Text style={st.modalTitle}>
-              {lang === "en" ? "Enter Show Time again?" : "Ещё один выход в Show Time?"}
-            </Text>
-            <Text style={st.modalBody}>
-              {coins >= SHOW_TIME_COST
-                ? lang === "en"
-                  ? `Today's free entry is used. This one costs ${SHOW_TIME_COST} coins. You have ${coins}.`
-                  : `Бесплатный выход на сегодня использован. Этот стоит ${SHOW_TIME_COST} монет. У вас ${coins}.`
-                : lang === "en"
-                  ? `Not enough coins — you need ${SHOW_TIME_COST} and have ${coins}. Earn more by finishing levels.`
-                  : `Не хватает монет — нужно ${SHOW_TIME_COST}, у вас ${coins}. Зарабатывайте, проходя уровни.`}
-            </Text>
-            <View style={st.modalBtns}>
-              <Pressable
-                onPress={() => setPayModal(false)}
-                style={({ pressed }) => [st.modalBtn, st.modalBtnGhost, { opacity: pressed ? 0.8 : 1 }]}
-              >
-                <Text style={st.modalBtnGhostText}>
-                  {lang === "en" ? "Cancel" : "Отмена"}
-                </Text>
-              </Pressable>
-              {coins >= SHOW_TIME_COST ? (
-                <Pressable
-                  onPress={confirmPaidEntry}
-                  style={({ pressed }) => [st.modalBtn, st.modalBtnPrimary, { opacity: pressed ? 0.85 : 1 }]}
-                >
-                  <CoinIcon size={15} color="#1A1A2E" />
-                  <Text style={st.modalBtnPrimaryText}>{SHOW_TIME_COST}</Text>
-                </Pressable>
-              ) : null}
-            </View>
-          </Animated.View>
-        </View>
-      ) : null}
+      <AppDialog
+        visible={payModal}
+        title={lang === "en" ? "Enter Show Time again?" : "Ещё один выход в Show Time?"}
+        message={
+          coins >= SHOW_TIME_COST
+            ? lang === "en"
+              ? `Today's free entry is used. This one costs ${SHOW_TIME_COST} coins. You have ${coins}.`
+              : `Бесплатный выход на сегодня использован. Этот стоит ${SHOW_TIME_COST} монет. У вас ${coins}.`
+            : lang === "en"
+              ? `Not enough coins — you need ${SHOW_TIME_COST} and have ${coins}. Earn more by finishing levels.`
+              : `Не хватает монет — нужно ${SHOW_TIME_COST}, у вас ${coins}. Зарабатывайте, проходя уровни.`
+        }
+        onRequestClose={() => setPayModal(false)}
+        buttons={
+          coins >= SHOW_TIME_COST
+            ? [
+                { label: lang === "en" ? "Cancel" : "Отмена", variant: "secondary", onPress: () => setPayModal(false) },
+                { label: lang === "en" ? `Enter · ${SHOW_TIME_COST}` : `Выйти · ${SHOW_TIME_COST}`, variant: "primary", onPress: confirmPaidEntry },
+              ]
+            : [{ label: lang === "en" ? "Got it" : "Понятно", variant: "primary", onPress: () => setPayModal(false) }]
+        }
+      />
     </View>
   );
 }

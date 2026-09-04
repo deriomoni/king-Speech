@@ -58,6 +58,7 @@ import { useModuleTransition } from "@/context/ModuleTransitionContext";
 import { WAVEFORM_BAR_MAX, useWaveformBars } from "@/hooks/useWaveformBars";
 import { useAppColors } from "@/hooks/useAppColors";
 import CoinIcon from "@/components/CoinIcon";
+import AppDialog from "@/components/AppDialog";
 
 type Phase = "tutorial" | "spin" | "play" | "result";
 type FeedItem = { id: string; word: string; status: "correct" | "wrong" };
@@ -1491,96 +1492,39 @@ function PlayPhase({
             </Pressable>
           </View>
 
-          {/* Replace-word confirmation */}
-          {modal === "replace" ? (
-            <View style={styles.modalOverlay}>
-              <Animated.View
-                entering={FadeIn.duration(180)}
-                style={styles.modalCard}
-              >
-                <View style={styles.modalIcon}>
-                  <Ionicons name="refresh" size={26} color="#8AB4FF" />
-                </View>
-                <Text style={styles.modalTitle}>
-                  Вы точно хотите заменить слово?
-                </Text>
-                <Text style={styles.modalBody}>
-                  {coins >= REPLACE_COST
-                    ? `Замена стоит ${REPLACE_COST} монет. У вас ${coins}.`
-                    : `Не хватает монет (нужно ${REPLACE_COST}). Можно посмотреть рекламу.`}
-                </Text>
-                <View style={styles.modalBtns}>
-                  <Pressable
-                    onPress={() => setModal(null)}
-                    style={({ pressed }) => [
-                      styles.modalBtn,
-                      styles.modalBtnGhost,
-                      { opacity: pressed ? 0.8 : 1 },
-                    ]}
-                  >
-                    <Text style={styles.modalBtnGhostText}>Нет</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={confirmReplace}
-                    style={({ pressed }) => [
-                      styles.modalBtn,
-                      styles.modalBtnPrimary,
-                      { opacity: pressed ? 0.85 : 1 },
-                    ]}
-                  >
-                    <Text style={styles.modalBtnPrimaryText}>Да</Text>
-                  </Pressable>
-                </View>
-              </Animated.View>
-            </View>
-          ) : null}
+          {/* Replace-word confirmation — shared AppDialog */}
+          <AppDialog
+            visible={modal === "replace"}
+            title="Вы точно хотите заменить слово?"
+            message={
+              coins >= REPLACE_COST
+                ? `Замена стоит ${REPLACE_COST} монет. У вас ${coins}.`
+                : `Не хватает монет (нужно ${REPLACE_COST}). Можно посмотреть рекламу.`
+            }
+            onRequestClose={() => setModal(null)}
+            buttons={[
+              { label: "Нет", variant: "secondary", onPress: () => setModal(null) },
+              { label: "Да", variant: "primary", onPress: confirmReplace },
+            ]}
+          />
 
-          {/* Simulated rewarded ad */}
-          {adFor ? (
-            <View style={styles.modalOverlay}>
-              <Animated.View
-                entering={FadeIn.duration(180)}
-                style={styles.modalCard}
-              >
-                <View style={styles.adBadge}>
-                  <Text style={styles.adBadgeText}>РЕКЛАМА</Text>
-                </View>
-                <Text style={styles.modalTitle}>
-                  {adFor === "replace"
-                    ? "Реклама за замену слова"
-                    : adFor === "time"
-                      ? "Реклама за доп. время"
-                      : "Реклама за подсказку"}
-                </Text>
-                <Text style={styles.modalBody}>
-                  Досмотрите короткий ролик, чтобы получить награду.
-                </Text>
-                <View style={styles.modalBtns}>
-                  <Pressable
-                    onPress={() => setAdFor(null)}
-                    style={({ pressed }) => [
-                      styles.modalBtn,
-                      styles.modalBtnGhost,
-                      { opacity: pressed ? 0.8 : 1 },
-                    ]}
-                  >
-                    <Text style={styles.modalBtnGhostText}>Отмена</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={onAdComplete}
-                    style={({ pressed }) => [
-                      styles.modalBtn,
-                      styles.modalBtnPrimary,
-                      { opacity: pressed ? 0.85 : 1 },
-                    ]}
-                  >
-                    <Ionicons name="play" size={15} color="#fff" />
-                    <Text style={styles.modalBtnPrimaryText}>Смотреть</Text>
-                  </Pressable>
-                </View>
-              </Animated.View>
-            </View>
-          ) : null}
+          {/* Simulated rewarded ad — shared AppDialog */}
+          <AppDialog
+            visible={!!adFor}
+            title={
+              adFor === "replace"
+                ? "Реклама за замену слова"
+                : adFor === "time"
+                  ? "Реклама за доп. время"
+                  : "Реклама за подсказку"
+            }
+            message="Досмотрите короткий ролик, чтобы получить награду."
+            onRequestClose={() => setAdFor(null)}
+            buttons={[
+              { label: "Отмена", variant: "secondary", onPress: () => setAdFor(null) },
+              { label: "Смотреть", variant: "primary", onPress: onAdComplete },
+            ]}
+          />
         </>
       )}
     </View>
