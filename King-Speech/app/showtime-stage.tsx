@@ -8,7 +8,9 @@ import {
   Dimensions,
   Modal,
   ScrollView,
+  Image,
 } from "react-native";
+import { BlurView } from "expo-blur";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
@@ -33,6 +35,15 @@ import {
 } from "@/constants/showtimeLoader";
 import { playSfx, preloadSfx, unloadSfx } from "@/lib/sfx";
 import DevSkipButton from "@/components/DevSkipButton";
+
+// Real audience photos (first-person, speaker POV). Used as the variable stage
+// backdrop — the speech text sits on a white sheet at the bottom that blurs up
+// into the photo.
+const AUDIENCE_PHOTOS = [
+  require("@/assets/showtime/audience/audience1.jpg"),
+  require("@/assets/showtime/audience/audience2.jpg"),
+  require("@/assets/showtime/audience/audience3.jpg"),
+];
 
 // expo-av only on native
 let Audio: any = null;
@@ -4363,9 +4374,10 @@ function SpeechLine({ text, isActive, isDone }: { text: string; isActive: boolea
   );
 }
 const sl = StyleSheet.create({
-  line: { fontSize: 14, lineHeight: 23, color: "rgba(255,255,255,0.25)", fontFamily: "Nunito_400Regular", textAlign: "center", paddingVertical: 2 },
-  lineActive: { fontSize: 17, color: "#FFFFFF", fontFamily: "Nunito_700Bold", lineHeight: 26 },
-  lineDone: { color: "rgba(255,255,255,0.35)", textDecorationLine: "line-through", textDecorationColor: "rgba(255,255,255,0.2)" },
+  // Dark ink — the lines sit on the white sheet at the bottom of the screen.
+  line: { fontSize: 14, lineHeight: 23, color: "rgba(17,17,20,0.32)", fontFamily: "Nunito_400Regular", textAlign: "center", paddingVertical: 2 },
+  lineActive: { fontSize: 17, color: "#111114", fontFamily: "Nunito_700Bold", lineHeight: 26 },
+  lineDone: { color: "rgba(17,17,20,0.4)", textDecorationLine: "line-through", textDecorationColor: "rgba(17,17,20,0.25)" },
 });
 
 function lightenHex(hex: string, pct: number): string {
@@ -4464,6 +4476,10 @@ export default function ShowtimeStageScreen() {
   const theme = themes[levelId] ?? themes["showtime"];
   const [speechIdx] = useState(() => Math.floor(Math.random() * theme.speeches.length));
   const speech = theme.speeches[speechIdx];
+  // Variable audience backdrop — one of the real photos, chosen per run.
+  const [bgPhoto] = useState(
+    () => AUDIENCE_PHOTOS[Math.floor(Math.random() * AUDIENCE_PHOTOS.length)],
+  );
 
   const [currentLine, setCurrentLine] = useState(0);
   const [started, setStarted] = useState(false);
@@ -4745,21 +4761,31 @@ export default function ShowtimeStageScreen() {
 
   return (
     <View style={s.container}>
-      <LinearGradient colors={[theme.gradientColors[0] + "CC", theme.gradientColors[1] + "88", theme.gradientColors[2] + "CC", "#000000"]} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 0.5, y: 1 }} />
+      {/* Variable audience photo backdrop */}
+      <Image source={bgPhoto} style={StyleSheet.absoluteFill} resizeMode="cover" />
 
-      <Spotlight accentColor={theme.accentColor} />
-
-      {/* Audience */}
-      <Animated.View style={[s.audienceArea, audienceStyle]}>
-        <View style={s.audienceInner}>
-          {AUDIENCE.map((p, i) => <AudiencePerson key={i} person={p} />)}
-        </View>
-        {noiseBubbles.map((b) => <NoiseBubbleView key={b.id} bubble={b} />)}
-        {PHONE_LIGHTS.map((pl) => <PhoneLight key={pl.id} x={pl.x} y={pl.y} />)}
-        <LinearGradient colors={["transparent", "rgba(4,8,15,0.88)", "#04080F"]} style={[s.audienceFade, { pointerEvents: "none" } as any]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} />
-      </Animated.View>
-
-      <View style={[s.floorLine, { backgroundColor: hexToRgba(theme.accentColor, 0.2) }]} />
+      {/* Blur band — the photo softens as it approaches the white sheet. */}
+      <BlurView
+        intensity={38}
+        tint="light"
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, { top: SH * 0.4 }]}
+      />
+      {/* White sheet fade — the lower part flows into a clean white page. */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={[
+          "transparent",
+          "rgba(255,255,255,0.35)",
+          "rgba(255,255,255,0.9)",
+          "#FFFFFF",
+          "#FFFFFF",
+        ]}
+        locations={[0, 0.4, 0.5, 0.6, 1]}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+      />
 
       {/* Pre-start curtain */}
       {!started && (
@@ -4843,18 +4869,18 @@ export default function ShowtimeStageScreen() {
           borderRadius: 20,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "rgba(0,0,0,0.25)",
+          backgroundColor: "rgba(0,0,0,0.06)",
           zIndex: 100,
           opacity: pressed ? 0.6 : 1,
         })}
       >
-        <Ionicons name="close" size={22} color="rgba(255,255,255,0.9)" />
+        <Ionicons name="close" size={22} color="rgba(17,17,20,0.85)" />
       </Pressable>
 
       {/* Header */}
       <View style={[s.header, { paddingTop: topPad + 8 }]}>
         <Pressable onPress={() => { started && !finished ? setShowExitConfirm(true) : router.back(); }} style={({ pressed }) => [s.backBtn, { opacity: pressed ? 0.6 : 1 }]}>
-          <Ionicons name="chevron-down" size={22} color="rgba(255,255,255,0.7)" />
+          <Ionicons name="chevron-down" size={22} color="rgba(17,17,20,0.7)" />
         </Pressable>
         <View style={s.headerCenter}>
           {started && (
@@ -4871,9 +4897,9 @@ export default function ShowtimeStageScreen() {
             <Text style={[s.lineCounter, { fontFamily: "Nunito_400Regular" }]}>{currentLine + 1}/{speech.lines.length}</Text>
           )}
           {started && !finished && timeLeft !== null && (
-            <View style={[s.timerBadge, { backgroundColor: timeLeft <= 10 ? "#0EA5E940" : "rgba(255,255,255,0.1)" }]}>
-              <Ionicons name="timer-outline" size={14} color={timeLeft <= 10 ? "#0EA5E9" : "rgba(255,255,255,0.7)"} />
-              <Text style={[s.timerText, { fontFamily: "Nunito_700Bold", color: timeLeft <= 10 ? "#0EA5E9" : "rgba(255,255,255,0.7)" }]}>
+            <View style={[s.timerBadge, { backgroundColor: timeLeft <= 10 ? "#0EA5E940" : "rgba(17,17,20,0.07)" }]}>
+              <Ionicons name="timer-outline" size={14} color={timeLeft <= 10 ? "#0EA5E9" : "rgba(17,17,20,0.65)"} />
+              <Text style={[s.timerText, { fontFamily: "Nunito_700Bold", color: timeLeft <= 10 ? "#0EA5E9" : "rgba(17,17,20,0.65)" }]}>
                 {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, "0")}
               </Text>
             </View>
@@ -4986,15 +5012,15 @@ export default function ShowtimeStageScreen() {
             <Pressable
               onPress={prevLine}
               disabled={currentLine === 0}
-              style={({ pressed }) => [s.navBtn, { backgroundColor: "rgba(255,255,255,0.07)", opacity: currentLine === 0 ? 0.25 : pressed ? 0.7 : 1 }]}
+              style={({ pressed }) => [s.navBtn, { backgroundColor: "rgba(17,17,20,0.06)", opacity: currentLine === 0 ? 0.25 : pressed ? 0.7 : 1 }]}
             >
-              <Ionicons name="chevron-back" size={20} color="rgba(255,255,255,0.7)" />
+              <Ionicons name="chevron-back" size={20} color="rgba(17,17,20,0.7)" />
             </Pressable>
 
             <View style={s.pips}>
               {speech.lines.map((_, i) => (
                 <View key={i} style={[s.pip, {
-                  backgroundColor: i === currentLine ? theme.accentColor : i < currentLine ? hexToRgba(theme.accentColor, 0.4) : "rgba(255,255,255,0.15)",
+                  backgroundColor: i === currentLine ? theme.accentColor : i < currentLine ? hexToRgba(theme.accentColor, 0.4) : "rgba(17,17,20,0.15)",
                   width: i === currentLine ? 16 : 6,
                 }]} />
               ))}
@@ -5041,16 +5067,16 @@ const s = StyleSheet.create({
   audienceFade: { position: "absolute", bottom: 0, left: 0, right: 0, height: 100 },
   floorLine: { position: "absolute", top: SH * 0.48, left: 0, right: 0, height: 1.5, backgroundColor: "rgba(255,209,102,0.12)" },
   header: { position: "absolute", top: 0, left: 0, right: 0, flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 10, zIndex: 10 },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" },
+  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.06)", alignItems: "center", justifyContent: "center" },
   headerCenter: { flex: 1, alignItems: "center", gap: 2 },
   liveTag: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#0EA5E9", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   liveDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: "#fff" },
   liveText: { fontSize: 10, color: "#fff", letterSpacing: 1.5 },
-  speechTitle: { fontSize: 13, color: "rgba(255,255,255,0.55)" },
+  speechTitle: { fontSize: 13, color: "rgba(17,17,20,0.6)" },
   headerRight: { minWidth: 52, alignItems: "flex-end", gap: 4 },
   timerBadge: { flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 8 },
   timerText: { fontSize: 12 },
-  lineCounter: { fontSize: 13, color: "rgba(255,255,255,0.4)" },
+  lineCounter: { fontSize: 13, color: "rgba(17,17,20,0.5)" },
   // Curtain
   curtainContent: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 28 },
   // Scrollable variant so tall curtain content can't clip top/bottom on small
@@ -5078,7 +5104,7 @@ const s = StyleSheet.create({
   speechPanel: { position: "absolute", top: SH * 0.5, bottom: 0, left: 0, right: 0, paddingTop: 16, paddingHorizontal: 18, gap: 12 },
   linesScroll: { flex: 1, width: "100%" },
   linesContainer: { flexGrow: 1, justifyContent: "center", alignItems: "center", gap: 0, paddingVertical: 4 },
-  progressBg: { height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.1)", overflow: "hidden" },
+  progressBg: { height: 3, borderRadius: 2, backgroundColor: "rgba(17,17,20,0.1)", overflow: "hidden" },
   progressFill: { height: 3, borderRadius: 2, backgroundColor: "#FFD166" },
   navRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
   navBtn: { width: 58, height: 58, borderRadius: 29, alignItems: "center", justifyContent: "center" },
