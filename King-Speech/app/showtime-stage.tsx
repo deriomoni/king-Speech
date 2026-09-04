@@ -4770,17 +4770,19 @@ export default function ShowtimeStageScreen() {
         resizeMode="cover"
       />
 
-      {/* Blend the photo's lower edge into the dark reading area below. */}
+      {/* Light overall tint on the photo + a long, smooth ramp into the solid
+          black reading block, so the photo→black boundary is a gentle fade. */}
       <LinearGradient
         pointerEvents="none"
         colors={[
-          "transparent",
-          "transparent",
-          "rgba(11,13,18,0.5)",
-          "rgba(11,13,18,0.96)",
+          "rgba(0,0,0,0.14)",
+          "rgba(0,0,0,0.18)",
+          "rgba(11,13,18,0.45)",
+          "rgba(11,13,18,0.85)",
+          "#0B0D12",
           "#0B0D12",
         ]}
-        locations={[0, 0.5, 0.6, 0.66, 1]}
+        locations={[0, 0.3, 0.44, 0.54, 0.62, 1]}
         style={StyleSheet.absoluteFill}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
@@ -5100,7 +5102,7 @@ const s = StyleSheet.create({
   // runs to the safe-area bottom. A fixed top boundary stops long speeches
   // from spilling up into the audience; the text area flexes inside it so
   // short speeches sit vertically centered and long ones scroll within bounds.
-  speechPanel: { position: "absolute", top: SH * 0.62, bottom: 0, left: 0, right: 0, paddingTop: 14, paddingHorizontal: 18, gap: 12 },
+  speechPanel: { position: "absolute", top: SH * 0.5, bottom: 0, left: 0, right: 0, paddingTop: 14, paddingHorizontal: 18, gap: 12 },
   linesScroll: { flex: 1, width: "100%" },
   linesContainer: { flexGrow: 1, justifyContent: "center", alignItems: "center", gap: 0, paddingVertical: 4 },
   progressBg: { height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.18)", overflow: "hidden" },
