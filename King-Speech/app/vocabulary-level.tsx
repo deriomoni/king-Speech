@@ -1132,62 +1132,31 @@ function PlayPhase({
   };
 
   // ── Timer animations ─────────────────────────────────────────────────────
-  const shakeX = useSharedValue(0);
   const bgOpacity = useSharedValue(0);
   useEffect(() => {
     if (stage !== "active") return;
-    // Paused (a modal is open) → freeze the low-time blink/shake entirely.
-    if (paused) {
-      cancelAnimation(shakeX);
-      cancelAnimation(bgOpacity);
-      shakeX.value = withTiming(0, { duration: 100 });
-      bgOpacity.value = withTiming(0, { duration: 100 });
-      return;
-    }
-    if (timeLeft > 0 && timeLeft <= 5) {
-      shakeX.value = withRepeat(
-        withSequence(
-          withTiming(-4, { duration: 40 }),
-          withTiming(4, { duration: 40 }),
-          withTiming(0, { duration: 40 }),
-        ),
-        -1,
-        false,
-      );
+    // Low-time cue is a smooth red pulse only — no shake. Paused freezes it.
+    if (!paused && timeLeft > 0 && timeLeft <= 10) {
+      const peak = timeLeft <= 5 ? 0.08 : 0.05;
+      const step = timeLeft <= 5 ? 520 : 700;
       bgOpacity.value = withRepeat(
         withSequence(
-          withTiming(0.05, { duration: 400 }),
-          withTiming(0, { duration: 400 }),
+          withTiming(peak, { duration: step }),
+          withTiming(0, { duration: step }),
         ),
         -1,
         false,
       );
-    } else if (timeLeft > 0 && timeLeft <= 10) {
-      shakeX.value = withRepeat(
-        withSequence(
-          withTiming(-4, { duration: 60 }),
-          withTiming(4, { duration: 60 }),
-          withTiming(0, { duration: 60 }),
-        ),
-        -1,
-        false,
-      );
-      bgOpacity.value = withTiming(0, { duration: 200 });
     } else {
-      cancelAnimation(shakeX);
       cancelAnimation(bgOpacity);
-      shakeX.value = withTiming(0, { duration: 100 });
-      bgOpacity.value = withTiming(0, { duration: 100 });
+      bgOpacity.value = withTiming(0, { duration: 220 });
     }
     return () => {
-      cancelAnimation(shakeX);
       cancelAnimation(bgOpacity);
     };
-  }, [timeLeft, stage, paused, shakeX, bgOpacity]);
+  }, [timeLeft, stage, paused, bgOpacity]);
 
-  const timerStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: shakeX.value }],
-  }));
+  const timerStyle = useAnimatedStyle(() => ({}));
   const bgStyle = useAnimatedStyle(() => ({
     backgroundColor: `rgba(255,59,48,${bgOpacity.value})`,
   }));

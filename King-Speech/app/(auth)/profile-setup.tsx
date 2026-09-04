@@ -61,13 +61,13 @@ export default function ProfileSetupScreen() {
         </Animated.View>
 
         {/* Header */}
-        <Animated.View entering={FadeInUp.delay(80).springify()} style={s.header}>
+        <Animated.View entering={FadeInUp.delay(80).duration(500)} style={s.header}>
           <Text style={[s.title, { color: theme.text }]}>{t("profileTitle")}</Text>
           <Text style={[s.sub, { color: theme.textSecondary }]}>{t("profileSub")}</Text>
         </Animated.View>
 
         {/* Name input */}
-        <Animated.View entering={FadeInDown.delay(160).springify()} style={s.section}>
+        <Animated.View entering={FadeInDown.delay(160).duration(500)} style={s.section}>
           <Text style={[s.label, { color: theme.textSecondary }]}>{t("yourName")}</Text>
           <TextInput
             value={name}
@@ -90,7 +90,7 @@ export default function ProfileSetupScreen() {
         </Animated.View>
 
         {/* Gender */}
-        <Animated.View entering={FadeInDown.delay(240).springify()} style={s.section}>
+        <Animated.View entering={FadeInDown.delay(240).duration(500)} style={s.section}>
           <Text style={[s.label, { color: theme.textSecondary }]}>{t("gender")}</Text>
           <View style={s.genderRow}>
             {/* Male */}
@@ -162,7 +162,7 @@ export default function ProfileSetupScreen() {
         </Animated.View>
 
         {/* Continue button */}
-        <Animated.View entering={FadeInDown.delay(320).springify()} style={s.btnWrap}>
+        <Animated.View entering={FadeInDown.delay(320).duration(500)} style={s.btnWrap}>
           <Pressable
             onPress={handleContinue}
             disabled={!canContinue}

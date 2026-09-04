@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, Pressable, Modal } from "react-native";
-import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import Animated, { FadeIn } from "react-native-reanimated";
 import { useAppColors } from "@/hooks/useAppColors";
 
 /**
@@ -52,7 +52,7 @@ export default function AppDialog({
           onPress={dismissOnBackdrop ? onRequestClose : undefined}
         />
         <Animated.View
-          entering={FadeInDown.springify().damping(20).mass(0.7)}
+          entering={FadeIn.duration(200)}
           style={[styles.card, { backgroundColor: cardBg, borderColor: colors.border }]}
         >
           <Text style={[styles.title, { color: colors.text }]}>{title}</Text>

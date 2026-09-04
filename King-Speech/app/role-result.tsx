@@ -329,7 +329,7 @@ export default function RoleResultScreen() {
         {stage === "reveal" && score && (
           <Animated.View entering={FadeInDown}>
             {isNew && (
-              <Animated.View entering={ZoomIn.springify().damping(12)} style={styles.unlockBanner}>
+              <Animated.View entering={ZoomIn.duration(420)} style={styles.unlockBanner}>
                 <LinearGradient colors={["#FFDE5C33", "transparent"]} style={StyleSheet.absoluteFill} />
                 <Ionicons name="trophy" size={20} color="#FFC01E" />
                 <Text style={styles.unlockText}>{lang === "en" ? "New role added to your collection!" : "Новая роль в твоей коллекции!"}</Text>

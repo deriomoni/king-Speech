@@ -109,7 +109,7 @@ export default function LoginScreen() {
         </Pressable>
       </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(100).springify()} style={s.header}>
+      <Animated.View entering={FadeInUp.delay(100).duration(500)} style={s.header}>
         {/* Crown / logo mark */}
         <View style={[s.logoMark, { backgroundColor: theme.accent }]}>
           <Text style={s.logoIcon}>👑</Text>
@@ -132,7 +132,7 @@ export default function LoginScreen() {
         </View>
       )}
 
-      <Animated.View entering={FadeInDown.delay(200).springify()} style={s.btns}>
+      <Animated.View entering={FadeInDown.delay(200).duration(500)} style={s.btns}>
         {/* Google */}
         <Pressable
           style={({ pressed }) => [

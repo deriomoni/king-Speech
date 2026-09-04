@@ -53,13 +53,13 @@ export default function WelcomeScreen() {
       </Animated.View>
 
       {/* Title + subtitle */}
-      <Animated.View entering={FadeInUp.delay(300).springify()} style={s.textBlock}>
+      <Animated.View entering={FadeInUp.delay(300).duration(500)} style={s.textBlock}>
         <Text style={[s.title, { color: theme.text }]}>{t("welcome")}</Text>
         <Text style={[s.sub, { color: theme.textSecondary }]}>{t("welcomeSub")}</Text>
       </Animated.View>
 
       {/* CTA */}
-      <Animated.View entering={FadeInDown.delay(450).springify()} style={s.btnBlock}>
+      <Animated.View entering={FadeInDown.delay(450).duration(500)} style={s.btnBlock}>
         <Pressable
           style={({ pressed }) => [
             s.primaryBtn,

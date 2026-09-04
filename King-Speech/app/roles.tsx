@@ -101,7 +101,7 @@ function ModePicker({
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.sheetBackdrop} onPress={onClose}>
-        <Animated.View entering={FadeInUp.springify().damping(18)} style={styles.sheet}>
+        <Animated.View entering={FadeInUp.duration(420)} style={styles.sheet}>
           <Pressable onPress={() => {}}>
             <View style={styles.sheetHandle} />
             <View style={styles.sheetArtBox}>
@@ -200,7 +200,7 @@ function SpinOverlay({
         </Text>
         <Animated.View
           key={current.id + (done ? "-done" : "")}
-          entering={done ? ZoomIn.springify().damping(12) : FadeIn.duration(60)}
+          entering={done ? ZoomIn.duration(420) : FadeIn.duration(60)}
           style={styles.spinCard}
         >
           <View style={styles.spinArtBox}>

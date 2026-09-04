@@ -665,7 +665,7 @@ export default function TaskFlowView({
         ) : (
           <Animated.View key="scored" entering={FadeInDown.duration(300)} style={st.scoredWrap}>
             {current ? <MiniScore analysis={current} ru={ru} /> : null}
-            <Animated.View entering={ZoomIn.springify().damping(13)}>
+            <Animated.View entering={ZoomIn.duration(420)}>
               <Pressable
                 onPress={advance}
                 style={({ pressed }) => [st.pill, st.nextPill, { opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}

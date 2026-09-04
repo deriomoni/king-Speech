@@ -4692,9 +4692,10 @@ export default function ShowtimeStageScreen() {
     const INTRO_END = INTRO_DELAY + 1750; // title fully gone
     introTimerRef.current = setTimeout(() => setIntroDone(true), INTRO_END);
 
-    // Main text fades in only after the title has vanished.
-    speechPanelY.value = withDelay(INTRO_END, withSpring(0, { damping: 16 }));
-    speechPanelOpacity.value = withDelay(INTRO_END, withTiming(1, { duration: 600 }));
+    // Main text fades in smoothly only after the title has vanished — a gentle
+    // glide + fade, no spring bounce.
+    speechPanelY.value = withDelay(INTRO_END, withTiming(0, { duration: 620 }));
+    speechPanelOpacity.value = withDelay(INTRO_END, withTiming(1, { duration: 620 }));
 
     setStarted(true);
     await startRecording();
