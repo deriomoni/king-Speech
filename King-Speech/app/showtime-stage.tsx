@@ -34,6 +34,7 @@ import {
 } from "@/constants/showtimeLoader";
 import { playSfx, preloadSfx, unloadSfx } from "@/lib/sfx";
 import DevSkipButton from "@/components/DevSkipButton";
+import AppDialog from "@/components/AppDialog";
 
 // Real audience photos (first-person, speaker POV). Used as the variable stage
 // backdrop — the speech text sits on a white sheet at the bottom that blurs up
@@ -4928,16 +4929,7 @@ export default function ShowtimeStageScreen() {
           )}
           <Text style={[s.speechTitle, { fontFamily: "Nunito_500Medium" }]} numberOfLines={1} ellipsizeMode="tail">{speech.title}</Text>
         </View>
-        <View style={[s.headerRight, s.headerSide]}>
-          {started && !finished && timeLeft !== null && (
-            <View style={[s.timerBadge, { backgroundColor: timeLeft <= 10 ? "#0EA5E940" : "rgba(17,17,20,0.07)" }]}>
-              <Ionicons name="timer-outline" size={14} color={timeLeft <= 10 ? "#0EA5E9" : "rgba(17,17,20,0.65)"} />
-              <Text style={[s.timerText, { fontFamily: "Nunito_700Bold", color: timeLeft <= 10 ? "#0EA5E9" : "rgba(17,17,20,0.65)" }]}>
-                {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, "0")}
-              </Text>
-            </View>
-          )}
-        </View>
+        <View style={[s.headerRight, s.headerSide]} />
       </View>
 
       {/* Title intro — plays once on start, then hands off to the speech text */}
@@ -4975,24 +4967,17 @@ export default function ShowtimeStageScreen() {
         </Pressable>
       )}
 
-      {/* Exit confirmation */}
-      <Modal visible={showExitConfirm} transparent animationType="fade" onRequestClose={() => setShowExitConfirm(false)}>
-        <View style={s.exitOverlay}>
-          <View style={s.exitCard}>
-            <Ionicons name="warning-outline" size={32} color={theme.accentColor} />
-            <Text style={[s.exitTitle, { fontFamily: "Nunito_700Bold" }]}>{t("exitConfirmTitle")}</Text>
-            <Text style={[s.exitMsg, { fontFamily: "Nunito_400Regular" }]}>{t("exitConfirmMsg")}</Text>
-            <View style={s.exitBtns}>
-              <Pressable onPress={() => setShowExitConfirm(false)} style={({ pressed }) => [s.exitBtn, s.exitBtnStay, { opacity: pressed ? 0.8 : 1 }]}>
-                <Text style={[s.exitBtnStayText, { fontFamily: "Nunito_600SemiBold" }]}>{t("stayBtn")}</Text>
-              </Pressable>
-              <Pressable onPress={() => { setShowExitConfirm(false); router.replace("/(tabs)"); }} style={({ pressed }) => [s.exitBtn, s.exitBtnLeave, { opacity: pressed ? 0.8 : 1 }]}>
-                <Text style={[s.exitBtnLeaveText, { fontFamily: "Nunito_600SemiBold" }]}>{t("leaveBtn")}</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* Exit confirmation — shared AppDialog design */}
+      <AppDialog
+        visible={showExitConfirm}
+        title={t("exitConfirmTitle")}
+        message={t("exitConfirmMsg")}
+        onRequestClose={() => setShowExitConfirm(false)}
+        buttons={[
+          { label: t("stayBtn"), variant: "primary", onPress: () => setShowExitConfirm(false) },
+          { label: t("leaveBtn"), variant: "secondary", onPress: () => { setShowExitConfirm(false); router.replace("/(tabs)"); } },
+        ]}
+      />
 
       {/* Finishing overlay */}
       {finished && (
