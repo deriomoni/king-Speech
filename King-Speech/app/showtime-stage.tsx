@@ -4761,12 +4761,12 @@ export default function ShowtimeStageScreen() {
 
   return (
     <View style={s.container}>
-      {/* Variable audience photo — pinned to the top and shown at FULL width so
-          the whole row of people is visible (no side-cropping on tall phones).
-          The empty wall/floor margins get trimmed; the crowd sits up high. */}
+      {/* Variable audience photo — full width at its ORIGINAL proportions
+          (1080×1610), pinned to the top. No zoom, no side crop: the whole row
+          of people is centred across the width, above the speech text. */}
       <Image
         source={bgPhoto}
-        style={{ position: "absolute", top: 0, left: 0, right: 0, height: SH * 0.62 }}
+        style={{ position: "absolute", top: 0, left: 0, width: SW, height: (SW * 1610) / 1080 }}
         resizeMode="cover"
       />
 
