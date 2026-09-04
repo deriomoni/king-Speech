@@ -4761,22 +4761,26 @@ export default function ShowtimeStageScreen() {
 
   return (
     <View style={s.container}>
-      {/* Variable audience photo backdrop — the room stays fully visible; you
-          watch the crowd while you read. */}
-      <Image source={bgPhoto} style={StyleSheet.absoluteFill} resizeMode="cover" />
+      {/* Variable audience photo — pinned to the top and shown at FULL width so
+          the whole row of people is visible (no side-cropping on tall phones).
+          The empty wall/floor margins get trimmed; the crowd sits up high. */}
+      <Image
+        source={bgPhoto}
+        style={{ position: "absolute", top: 0, left: 0, right: 0, height: SH * 0.62 }}
+        resizeMode="cover"
+      />
 
-      {/* Bottom legibility scrim — only the lower foreground darkens so the
-          light speech text reads; the audience above stays clear. */}
+      {/* Blend the photo's lower edge into the dark reading area below. */}
       <LinearGradient
         pointerEvents="none"
         colors={[
           "transparent",
           "transparent",
-          "rgba(6,8,14,0.35)",
-          "rgba(6,8,14,0.78)",
-          "rgba(6,8,14,0.92)",
+          "rgba(11,13,18,0.5)",
+          "rgba(11,13,18,0.96)",
+          "#0B0D12",
         ]}
-        locations={[0, 0.5, 0.66, 0.84, 1]}
+        locations={[0, 0.5, 0.6, 0.66, 1]}
         style={StyleSheet.absoluteFill}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
@@ -5056,7 +5060,7 @@ export default function ShowtimeStageScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000" },
+  container: { flex: 1, backgroundColor: "#0B0D12" },
   audienceArea: { position: "absolute", top: 0, left: 0, right: 0, height: SH * 0.48, overflow: "hidden" },
   audienceInner: { position: "relative", width: SW, height: 180, marginTop: 80 },
   audienceFade: { position: "absolute", bottom: 0, left: 0, right: 0, height: 100 },
@@ -5096,7 +5100,7 @@ const s = StyleSheet.create({
   // runs to the safe-area bottom. A fixed top boundary stops long speeches
   // from spilling up into the audience; the text area flexes inside it so
   // short speeches sit vertically centered and long ones scroll within bounds.
-  speechPanel: { position: "absolute", top: SH * 0.58, bottom: 0, left: 0, right: 0, paddingTop: 16, paddingHorizontal: 18, gap: 12 },
+  speechPanel: { position: "absolute", top: SH * 0.62, bottom: 0, left: 0, right: 0, paddingTop: 14, paddingHorizontal: 18, gap: 12 },
   linesScroll: { flex: 1, width: "100%" },
   linesContainer: { flexGrow: 1, justifyContent: "center", alignItems: "center", gap: 0, paddingVertical: 4 },
   progressBg: { height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.18)", overflow: "hidden" },
