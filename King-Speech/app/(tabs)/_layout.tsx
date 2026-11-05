@@ -10,7 +10,22 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+// SDK 56 split expo-router from react-navigation and no longer exposes the
+// bottom-tabs prop types publicly. This is the minimal shape of what
+// expo-router's <Tabs> passes to a custom `tabBar`.
+type TabRoute = { key: string; name: string };
+type BottomTabBarProps = {
+  state: { index: number; routes: TabRoute[] };
+  navigation: {
+    emit: (event: {
+      type: "tabPress";
+      target?: string;
+      canPreventDefault?: boolean;
+    }) => { defaultPrevented: boolean };
+    navigate: (name: string) => void;
+  };
+  descriptors: Record<string, { options: { tabBarStyle?: unknown } }>;
+};
 import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { sonic } from "@/constants/colors";

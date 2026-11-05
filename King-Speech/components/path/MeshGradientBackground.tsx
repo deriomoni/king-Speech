@@ -16,7 +16,7 @@ import Animated, {
   cancelAnimation,
   Easing,
 } from "react-native-reanimated";
-import { useIsFocused } from "@react-navigation/native";
+import { useIsFocused } from "expo-router";
 
 // ──────────────────────────────────────────────────────────────────────
 // Local color helpers — duplicated from RankBackground intentionally so

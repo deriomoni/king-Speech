@@ -9,7 +9,7 @@ import Animated, {
   withTiming,
   cancelAnimation,
 } from "react-native-reanimated";
-import { useIsFocused } from "@react-navigation/native";
+import { useIsFocused } from "expo-router";
 import type { RankTheme } from "./rankTheme";
 import type { ThemeMode } from "@/context/ThemeContext";
 import { MeshGradientBackground } from "./MeshGradientBackground";

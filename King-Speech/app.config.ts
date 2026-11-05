@@ -21,6 +21,8 @@ const plugins: ExpoConfig["plugins"] = [
   "expo-apple-authentication",
   "expo-image",
   "expo-sharing",
+  "expo-splash-screen",
+  "expo-status-bar",
   [
     "expo-image-picker",
     {
