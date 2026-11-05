@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Modal,
   ScrollView,
   Image,
+  PanResponder,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -21,29 +22,59 @@ import Animated, {
   withSpring,
   withDelay,
   cancelAnimation,
+  runOnJS,
   FadeIn,
+  FadeOut,
+  Easing,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
+import { useVideoPlayer, VideoView } from "expo-video";
 import { useLang, Lang } from "@/context/LangContext";
 import {
   getShowtimeModule,
   getModuleFromShowtimeId,
 } from "@/constants/showtimeLoader";
 import { playSfx, preloadSfx, unloadSfx } from "@/lib/sfx";
+import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
 import DevSkipButton from "@/components/DevSkipButton";
 import AppDialog from "@/components/AppDialog";
 
-// Real audience photos (first-person, speaker POV). Used as the variable stage
+// Audience halls (first-person, speaker POV). Used as the variable stage
 // backdrop — the speech text sits on a white sheet at the bottom that blurs up
-// into the photo.
-const AUDIENCE_PHOTOS = [
-  require("@/assets/showtime/audience/audience1.jpg"),
-  require("@/assets/showtime/audience/audience2.jpg"),
-  require("@/assets/showtime/audience/audience3.jpg"),
+// into the picture.
+//
+// A hall can be alive. `intro` plays once as the speaker takes the stage (the
+// audience settling into their seats — a beat you only want to see once) and
+// hands over to `clip`, which loops silently for the rest of the performance.
+// The intro's last frame and the loop's first frame are the same picture, so
+// the hand-over is invisible. `still` is the opening frame, shown underneath so
+// the backdrop is never blank while the video opens. Halls with no clip yet
+// stay stills — drop a file in and add `clip` to bring them to life.
+const AUDIENCE_SCENES: { still: any; intro?: any; clip?: any }[] = [
+  {
+    still: require("@/assets/showtime/audience/audience1.png"),
+    intro: require("@/assets/showtime/audience/audience1-intro.mp4"),
+    clip: require("@/assets/showtime/audience/audience1-loop.mp4"),
+  },
+  { still: require("@/assets/showtime/audience/audience2.png") },
+  { still: require("@/assets/showtime/audience/audience3.png") },
 ];
+
+// Where the unlit rows sit inside the hall picture, as a fraction of its
+// height. The murmurs from the audience drift over those silhouettes and never
+// over the lit faces below, so they read as noise from the dark of the room.
+const DARK_ROWS_TOP = 0.16;
+const DARK_ROWS_BOTTOM = 0.32;
+
+// While only some halls are animated, the live ones own the stage — a static
+// room next to a breathing one reads as a bug. Once every hall has a clip this
+// is simply all of them.
+const LIVE_SCENES = AUDIENCE_SCENES.filter((s) => s.clip);
+const SCENE_POOL = LIVE_SCENES.length > 0 ? LIVE_SCENES : AUDIENCE_SCENES;
 
 // expo-av only on native
 let Audio: any = null;
@@ -4242,33 +4273,54 @@ function NoiseBubbleView({ bubble }: { bubble: NoiseBubble }) {
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(0);
   useEffect(() => {
-    opacity.value = withSequence(withTiming(1, { duration: 300 }), withTiming(1, { duration: 900 }), withTiming(0, { duration: 500 }));
-    translateY.value = withTiming(-18, { duration: 1700 });
+    // Never reaches full opacity: a murmur should be noticed out of the corner
+    // of the eye, not read.
+    opacity.value = withSequence(
+      withTiming(0.55, { duration: 420 }),
+      withTiming(0.55, { duration: 800 }),
+      withTiming(0, { duration: 600 }),
+    );
+    translateY.value = withTiming(-14, { duration: 1820 });
   }, []);
   const style = useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ translateY: translateY.value }] }));
   return (
-    <Animated.View style={[style, { position: "absolute", left: bubble.x, top: bubble.y, backgroundColor: "rgba(255,255,255,0.09)", borderRadius: 10, paddingHorizontal: 7, paddingVertical: 3 }]}>
-      <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 10, fontFamily: "Nunito_400Regular" }}>{bubble.text}</Text>
+    <Animated.View style={[style, { position: "absolute", left: bubble.x, top: bubble.y, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 9, paddingHorizontal: 7, paddingVertical: 3 }]}>
+      <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 10, fontFamily: "Nunito_400Regular" }}>{bubble.text}</Text>
     </Animated.View>
   );
 }
 
 // ── PHONE LIGHT ───────────────────────────────────────────────────────────────
+// A phone waking up somewhere in the unlit rows: a small cold glow that comes
+// up, holds and dies. Kept weak on purpose — it is depth in the dark, not an
+// event, so the screen itself is tiny and the halo carries most of it.
 function PhoneLight({ x, y }: { x: number; y: number }) {
   const opacity = useSharedValue(0);
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
     const loop = () => {
-      setTimeout(() => {
-        opacity.value = withSequence(withTiming(0.6, { duration: 400 }), withTiming(0.6, { duration: 2500 }), withTiming(0, { duration: 600 }));
+      timer = setTimeout(() => {
+        opacity.value = withSequence(
+          withTiming(0.34, { duration: 800 }),
+          withTiming(0.34, { duration: 2600 }),
+          withTiming(0, { duration: 1000 }),
+        );
         loop();
       }, Math.random() * 8000 + 5000);
     };
     loop();
-    return () => cancelAnimation(opacity);
+    return () => { clearTimeout(timer); cancelAnimation(opacity); };
   }, []);
   const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return (
-    <Animated.View style={[style, { position: "absolute", left: x, top: y, width: 8, height: 12, borderRadius: 2, backgroundColor: "#E0E8FF" }]} />
+    <Animated.View
+      pointerEvents="none"
+      style={[style, { position: "absolute", left: x, top: y, alignItems: "center", justifyContent: "center" }]}
+    >
+      <View style={{ position: "absolute", width: 26, height: 26, borderRadius: 13, backgroundColor: "rgba(173,205,255,0.09)" }} />
+      <View style={{ position: "absolute", width: 14, height: 14, borderRadius: 7, backgroundColor: "rgba(198,220,255,0.14)" }} />
+      <View style={{ width: 5, height: 7, borderRadius: 1.5, backgroundColor: "rgba(214,232,255,0.5)" }} />
+    </Animated.View>
   );
 }
 
@@ -4343,12 +4395,18 @@ function generateAudience(): PersonDef[] {
   return people;
 }
 
-function generatePhoneLights() {
-  return Array.from({ length: 8 }, (_, i) => ({ id: i, x: Math.random() * (SW - 40) + 10, y: Math.random() * 130 + 10 }));
+// Scattered across the unlit rows only — a lit screen among the visible faces
+// would read as a mistake. `photoH` is the on-screen height of the hall
+// picture, so the band follows whatever backdrop is playing.
+function generatePhoneLights(photoH: number) {
+  return Array.from({ length: 8 }, (_, i) => ({
+    id: i,
+    x: 16 + Math.random() * Math.max(40, SW - 44),
+    y: photoH * (DARK_ROWS_TOP + Math.random() * (DARK_ROWS_BOTTOM - DARK_ROWS_TOP)),
+  }));
 }
 
 const AUDIENCE = generateAudience();
-const PHONE_LIGHTS = generatePhoneLights();
 
 // ── REC INDICATOR ─────────────────────────────────────────────────────────────
 function RecDot() {
@@ -4367,17 +4425,31 @@ function RecDot() {
 
 // ── SPEECH LINE ────────────────────────────────────────────────────────────────
 function SpeechLine({ text, isActive, isDone }: { text: string; isActive: boolean; isDone: boolean }) {
+  // The current sentence grows into its size instead of snapping to it (it
+  // used to jump from 14 to 17 the instant it became active). The type itself
+  // is animated rather than scaled, so long lines re-wrap instead of running
+  // out past the edges of the screen, and the text stays crisp.
+  const grow = useSharedValue(isActive ? 1 : 0);
+  useEffect(() => {
+    grow.value = withTiming(isActive ? 1 : 0, { duration: 340, easing: Easing.out(Easing.cubic) });
+    return () => cancelAnimation(grow);
+  }, [isActive]);
+  const growStyle = useAnimatedStyle(() => ({
+    fontSize: 14 + grow.value * 3,
+    lineHeight: 23 + grow.value * 3,
+  }));
   return (
-    <Text style={[sl.line, isActive && sl.lineActive, isDone && sl.lineDone]}>
+    <Animated.Text style={[sl.line, isActive && sl.lineActive, isDone && sl.lineDone, growStyle]}>
       {text}
-    </Text>
+    </Animated.Text>
   );
 }
 const sl = StyleSheet.create({
   // Light text over the bottom scrim, so the audience photo stays visible while
   // you read. A soft shadow keeps it legible over lighter spots of the image.
   line: { fontSize: 14, lineHeight: 23, color: "rgba(255,255,255,0.42)", fontFamily: "Nunito_400Regular", textAlign: "center", paddingVertical: 2, textShadowColor: "rgba(0,0,0,0.55)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 },
-  lineActive: { fontSize: 17, color: "#FFFFFF", fontFamily: "Nunito_700Bold", lineHeight: 26 },
+  // Size lives in the animation above; this only carries the emphasis.
+  lineActive: { color: "#FFFFFF", fontFamily: "Nunito_700Bold" },
   lineDone: { color: "rgba(255,255,255,0.4)", textDecorationLine: "line-through", textDecorationColor: "rgba(255,255,255,0.25)" },
 });
 
@@ -4408,9 +4480,11 @@ function StartButton({ accentColor, onPress, label }: { accentColor: string; onP
     opacity: 1 - pressY.value / 5,
     transform: [{ scaleY: 1 - pressY.value / 10 }],
   }));
+  // The glow under the button, not a second slab: it sinks and tightens as the
+  // button is pressed instead of sliding out from underneath it.
   const shadowAnim = useAnimatedStyle(() => ({
-    opacity: 0.15 + pressY.value * 0.05,
-    transform: [{ translateY: pressY.value * 0.5 }, { scaleX: 1 + pressY.value * 0.01 }],
+    opacity: 0.5 - pressY.value * 0.06,
+    transform: [{ translateY: 10 - pressY.value * 0.8 }, { scaleX: 0.86 - pressY.value * 0.01 }],
   }));
 
   const sideColor = darkenHex(accentColor, 18);
@@ -4432,15 +4506,33 @@ function StartButton({ accentColor, onPress, label }: { accentColor: string; onP
 
   return (
     <Pressable onPress={onPress} onPressIn={onPressIn} onPressOut={onPressOut} style={sb.outer}>
-      <Animated.View style={[sb.shadow, { backgroundColor: accentColor }, shadowAnim]} />
-      <Animated.View style={[sb.face, faceAnim]}>
+      <Animated.View pointerEvents="none" style={[sb.glow, shadowAnim]}>
+        <LinearGradient
+          colors={[accentColor + "00", accentColor + "66", accentColor + "00"]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={[StyleSheet.absoluteFill, { borderRadius: 28 }]}
+        />
+      </Animated.View>
+      <Animated.View
+        style={[
+          sb.face,
+          faceAnim,
+          Platform.select({
+            ios: { shadowColor: accentColor, shadowOpacity: 0.45, shadowRadius: 18, shadowOffset: { width: 0, height: 8 } },
+            android: { elevation: 10 },
+            default: {},
+          }),
+        ]}
+      >
         <LinearGradient
           colors={[lightenHex(accentColor, 20), accentColor]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
-          style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
+          style={[StyleSheet.absoluteFill, { borderRadius: 28 }]}
         />
         <View style={sb.highlight} />
+        <View style={sb.rim} />
         <LinearGradient
           colors={["transparent", sideColor + "22"]}
           start={{ x: 0.5, y: 0 }}
@@ -4454,16 +4546,178 @@ function StartButton({ accentColor, onPress, label }: { accentColor: string; onP
   );
 }
 const sb = StyleSheet.create({
-  outer: { position: "relative", marginTop: 16, paddingBottom: 10, alignSelf: "center" },
-  shadow: { position: "absolute", top: 4, bottom: 0, left: 0, right: 0, borderRadius: 20 },
+  outer: { position: "relative", marginTop: 18, paddingBottom: 16, alignSelf: "center" },
+  // A wide, soft pool of light under the button. Blurred by construction — a
+  // gradient that fades out on both sides has no edge to catch the eye.
+  glow: { position: "absolute", left: -10, right: -10, top: 14, bottom: 0, opacity: 0.5 },
   face: {
     flexDirection: "row", alignItems: "center", gap: 10,
-    paddingHorizontal: 32, paddingVertical: 16, borderRadius: 20,
+    paddingHorizontal: 38, paddingVertical: 17, borderRadius: 28,
     overflow: "hidden",
   },
-  highlight: { position: "absolute", top: 0, left: 0, right: 0, height: "45%", borderTopLeftRadius: 20, borderTopRightRadius: 20, backgroundColor: "rgba(255,255,255,0.22)" },
-  shadowOverlay: { position: "absolute", bottom: 0, left: 0, right: 0, height: "50%", borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
-  label: { fontSize: 18, color: "#1A1A2E" },
+  highlight: { position: "absolute", top: 0, left: 0, right: 0, height: "45%", borderTopLeftRadius: 28, borderTopRightRadius: 28, backgroundColor: "rgba(255,255,255,0.18)" },
+  rim: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, borderRadius: 28, borderWidth: 1, borderColor: "rgba(255,255,255,0.35)" },
+  shadowOverlay: { position: "absolute", bottom: 0, left: 0, right: 0, height: "50%", borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
+  label: { fontSize: 18, color: "#1A1A2E", letterSpacing: 0.2 },
+});
+
+// ── REC BLINK ─────────────────────────────────────────────────────────────────
+// The recording marker: a black tag with a red dot blinking inside it, the way
+// a camera does. The tag itself no longer pulses — a badge that keeps growing
+// and shrinking next to the text you are reading is impossible to ignore.
+function RecBlinkDot() {
+  const opacity = useSharedValue(1);
+  useEffect(() => {
+    opacity.value = withRepeat(withTiming(0.15, { duration: 700 }), -1, true);
+    return () => cancelAnimation(opacity);
+  }, []);
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return <Animated.View style={[s.liveDot, style]} />;
+}
+
+// ── BEFORE YOU GO ON ──────────────────────────────────────────────────────────
+// The line under the logo on the curtain. Short, spoken the way a friend would
+// say it a second before you step out — and it changes while you stand there,
+// so the wait is never a dead screen.
+const ENCOURAGEMENTS: Record<string, string[]> = {
+  ru: [
+    "Зал ждёт именно тебя",
+    "Вдохни. И начинай",
+    "Твой голос сильнее, чем кажется",
+    "Ты готов больше, чем чувствуешь",
+    "Пауза — это тоже речь",
+    "Смотри в зал, а не в текст",
+    "Волнение — просто топливо",
+    "Собьёшься — иди дальше",
+    "Никто не знает эту речь лучше тебя",
+    "Первую фразу — спокойно",
+    "Они на твоей стороне",
+    "Говори так, будто это правда",
+  ],
+  en: [
+    "The room is waiting for you",
+    "Breathe. Then begin",
+    "Your voice is stronger than you think",
+    "You are readier than you feel",
+    "A pause is part of the speech",
+    "Look at the room, not the page",
+    "Nerves are just fuel",
+    "If you slip, keep going",
+    "Nobody knows this speech better than you",
+    "Take the first line slowly",
+    "They are on your side",
+    "Say it like you mean it",
+  ],
+};
+
+function EncouragementLine({ lang, color }: { lang: Lang; color: string }) {
+  const list = ENCOURAGEMENTS[lang] ?? ENCOURAGEMENTS.ru;
+  const [idx, setIdx] = useState(() => Math.floor(Math.random() * list.length));
+  const opacity = useSharedValue(0);
+
+  const advance = useCallback(() => {
+    setIdx((i) => (i + 1) % list.length);
+    opacity.value = withTiming(1, { duration: 520 });
+  }, [list.length]);
+
+  useEffect(() => {
+    opacity.value = withTiming(1, { duration: 520 });
+    const id = setInterval(() => {
+      opacity.value = withTiming(0, { duration: 420 }, (finished) => {
+        if (finished) runOnJS(advance)();
+      });
+    }, 10000);
+    return () => { clearInterval(id); cancelAnimation(opacity); };
+  }, [advance]);
+
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return (
+    <Animated.Text style={[el.line, style, { color, fontFamily: "Nunito_500Medium" }]} numberOfLines={2}>
+      {list[idx]}
+    </Animated.Text>
+  );
+}
+const el = StyleSheet.create({
+  line: { fontSize: 15, textAlign: "center", lineHeight: 22, opacity: 0.9, marginTop: 2, minHeight: 44 },
+});
+
+// ── TEXT EDGE BLUR ────────────────────────────────────────────────────────────
+// The speech does not end at a hard cut: the lines at the top and bottom of the
+// reading area soften into the hall. Neither RN nor expo-blur can do a gradient
+// blur, so three stacked strips approximate one — the closer to the edge, the
+// stronger the blur.
+function TextEdgeBlur({ edge }: { edge: "top" | "bottom" }) {
+  // Android renders each blur into its own surface, so it gets one strip
+  // instead of three — the gradient below carries the rest of the falloff.
+  const strips =
+    Platform.OS === "android"
+      ? edge === "top"
+        ? [{ h: 44, i: 14 }]
+        : [{ h: 58, i: 16 }]
+      : edge === "top"
+        ? [{ h: 56, i: 5 }, { h: 36, i: 11 }, { h: 18, i: 20 }]
+        : [{ h: 72, i: 5 }, { h: 48, i: 12 }, { h: 26, i: 24 }];
+  const anchor = edge === "top" ? { top: 0 } : { bottom: 0 };
+  const fade: [string, string] = edge === "top"
+    ? ["rgba(11,13,18,0.72)", "rgba(11,13,18,0)"]
+    : ["rgba(11,13,18,0)", "rgba(11,13,18,0.82)"];
+  return (
+    <View pointerEvents="none" style={[teb.wrap, anchor, { height: strips[0].h }]}>
+      {strips.map((strip, i) => (
+        <BlurView
+          key={i}
+          intensity={strip.i}
+          tint="dark"
+          experimentalBlurMethod="dimezisBlurView"
+          style={[teb.strip, anchor, { height: strip.h }]}
+        />
+      ))}
+      {/* Guarantees the falloff even where the blur is unavailable. */}
+      <LinearGradient colors={fade} style={StyleSheet.absoluteFill} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} />
+    </View>
+  );
+}
+const teb = StyleSheet.create({
+  wrap: { position: "absolute", left: 0, right: 0 },
+  strip: { position: "absolute", left: 0, right: 0 },
+});
+
+// ── HOUSE LIGHTS ──────────────────────────────────────────────────────────────
+// Thin vertical slider that drops under the sun button: top of the track is the
+// room as shot, the bottom is near dark. It only takes the width it needs so it
+// never covers the speech.
+const DIM_TRACK_H = 132;
+function DimSlider({ value, onChange, color }: { value: number; onChange: (v: number) => void; color: string }) {
+  const live = useRef({ onChange });
+  live.current = { onChange };
+  const setFromY = (y: number) => {
+    live.current.onChange(Math.max(0, Math.min(1, y / DIM_TRACK_H)));
+  };
+  const pan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (e) => setFromY(e.nativeEvent.locationY),
+      onPanResponderMove: (e) => setFromY(e.nativeEvent.locationY),
+    }),
+  ).current;
+
+  return (
+    <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(180)} style={ds.wrap}>
+      <View style={[ds.track, { height: DIM_TRACK_H }]} hitSlop={{ left: 16, right: 16 }} {...pan.panHandlers}>
+        <View style={ds.base} />
+        <View style={[ds.fill, { height: value * DIM_TRACK_H, backgroundColor: color }]} />
+        <View style={[ds.knob, { top: Math.max(0, Math.min(DIM_TRACK_H - 14, value * DIM_TRACK_H - 7)), borderColor: color }]} />
+      </View>
+    </Animated.View>
+  );
+}
+const ds = StyleSheet.create({
+  wrap: { position: "absolute", top: 44, left: (38 - 24) / 2, alignItems: "center" },
+  track: { width: 24, alignItems: "center" },
+  base: { position: "absolute", top: 0, bottom: 0, width: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.22)" },
+  fill: { position: "absolute", top: 0, width: 4, borderRadius: 2 },
+  knob: { position: "absolute", width: 14, height: 14, borderRadius: 7, backgroundColor: "#fff", borderWidth: 2 },
 });
 
 // ── MAIN ─────────────────────────────────────────────────────────────────────
@@ -4477,14 +4731,110 @@ export default function ShowtimeStageScreen() {
   const theme = themes[levelId] ?? themes["showtime"];
   const [speechIdx] = useState(() => Math.floor(Math.random() * theme.speeches.length));
   const speech = theme.speeches[speechIdx];
-  // Variable audience backdrop — one of the real photos, chosen per run.
-  const [bgPhoto] = useState(
-    () => AUDIENCE_PHOTOS[Math.floor(Math.random() * AUDIENCE_PHOTOS.length)],
-  );
+  // Variable audience backdrop — one of the halls, chosen per run.
+  const [scene] = useState(() => SCENE_POOL[Math.floor(Math.random() * SCENE_POOL.length)]);
+  // Height/width of that hall, so the backdrop keeps its own proportions.
+  const bgPhotoRatio = useMemo(() => {
+    try {
+      const src = Image.resolveAssetSource(scene.still);
+      if (src?.width && src?.height) return src.height / src.width;
+    } catch {}
+    return 16 / 9;
+  }, [scene]);
+
+  // The hall opens with the intro once, then loops for as long as the speaker
+  // is on stage — it only stops when they finish the performance themselves.
+  const audienceIntroPlayer = useVideoPlayer(scene.intro ?? null, (p) => {
+    try {
+      p.loop = false;
+      p.muted = true;
+      // Never take the audio session away from the performance recording.
+      p.audioMixingMode = "mixWithOthers";
+    } catch {}
+  });
+  const audiencePlayer = useVideoPlayer(scene.clip ?? null, (p) => {
+    try {
+      p.loop = true;
+      p.muted = true;
+      p.audioMixingMode = "mixWithOthers";
+    } catch {}
+  });
+
+  // Phone screens waking up in the dark rows — placed once per run.
+  const [phoneLights] = useState(() => generatePhoneLights(SW * bgPhotoRatio));
+
+  // House lights: the sun button opens a slider that takes the hall down. The
+  // dim is a black sheet over the backdrop only — the speech, the murmurs and
+  // the controls stay exactly as bright as they were.
+  const [lightOpen, setLightOpen] = useState(false);
+  const [dim, setDim] = useState(0);
+  const dimValue = useSharedValue(0);
+  const dimStyle = useAnimatedStyle(() => ({ opacity: dimValue.value }));
+  const setDimSmooth = useCallback((v: number) => {
+    setDim(v);
+    // Short ramp instead of a jump, so dragging the slider reads as the room
+    // fading rather than stepping.
+    dimValue.value = withTiming(v * 0.88, { duration: 140, easing: Easing.out(Easing.quad) });
+  }, []);
+
+  // A soft pump on the speech when the lights change — the text breathes once
+  // and softens for a moment, so the change is felt on the page too.
+  const pump = useSharedValue(0);
+  const [pumping, setPumping] = useState(false);
+  const pumpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pumpText = useCallback(() => {
+    setPumping(true);
+    pump.value = withSequence(
+      withTiming(1, { duration: 170, easing: Easing.out(Easing.quad) }),
+      withTiming(0, { duration: 460, easing: Easing.inOut(Easing.quad) }),
+    );
+    if (pumpTimerRef.current) clearTimeout(pumpTimerRef.current);
+    pumpTimerRef.current = setTimeout(() => setPumping(false), 700);
+  }, []);
+  useEffect(() => () => { if (pumpTimerRef.current) clearTimeout(pumpTimerRef.current); }, []);
+  const pumpStyle = useAnimatedStyle(() => ({ transform: [{ scale: 1 + pump.value * 0.014 }] }));
+  const pumpBlurStyle = useAnimatedStyle(() => ({ opacity: pump.value * 0.75 }));
+
+  const toggleLight = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    setLightOpen((v) => !v);
+    pumpText();
+  }, [pumpText]);
+
+  const hasClip = !!scene.clip;
+  const hasIntro = !!scene.intro;
+  // The intro is over for good once it has played — the loop never rewinds
+  // into it, so the audience only settles into their seats the one time.
+  const [audienceIntroDone, setAudienceIntroDone] = useState(!scene.intro);
 
   const [currentLine, setCurrentLine] = useState(0);
   const [started, setStarted] = useState(false);
   const [finished, setFinished] = useState(false);
+
+  // Hand over from the intro to the loop on the intro's last frame.
+  useEffect(() => {
+    if (!hasIntro) return;
+    const sub = audienceIntroPlayer.addListener("playToEnd", () => setAudienceIntroDone(true));
+    return () => { try { sub?.remove?.(); } catch {} };
+  }, [hasIntro, audienceIntroPlayer]);
+
+  // The room stays alive from the moment the screen opens (so it is already
+  // breathing behind the curtain) and keeps going until the speaker ends the
+  // performance — nothing else stops it.
+  useEffect(() => {
+    if (!hasClip) return;
+    try {
+      if (finished) {
+        audienceIntroPlayer.pause();
+        audiencePlayer.pause();
+      } else if (audienceIntroDone) {
+        audienceIntroPlayer.pause();
+        audiencePlayer.play();
+      } else {
+        audienceIntroPlayer.play();
+      }
+    } catch {}
+  }, [hasClip, audienceIntroPlayer, audiencePlayer, audienceIntroDone, finished]);
 
   // Teleprompter scroll mode: "manual" (player taps next) or "auto"
   // (paragraphs advance on their own, highlighted, with a speed control).
@@ -4524,7 +4874,6 @@ export default function ShowtimeStageScreen() {
 
   const curtainOpacity = useSharedValue(1);
   const audienceReveal = useSharedValue(0);
-  const liveTagScale = useSharedValue(1);
   const speechPanelY = useSharedValue(60);
   const speechPanelOpacity = useSharedValue(0);
   // Title intro card: grows + darkens, then shrinks + lightens and vanishes;
@@ -4534,9 +4883,7 @@ export default function ShowtimeStageScreen() {
   const titleOpacity = useSharedValue(0);
   const introDim = useSharedValue(0);
 
-  useEffect(() => {
-    liveTagScale.value = withRepeat(withTiming(1.08, { duration: 700 }), -1, true);
-  }, []);
+
 
   // Preload sound effects (generated once into cache) and free them on exit.
   useEffect(() => {
@@ -4557,17 +4904,25 @@ export default function ShowtimeStageScreen() {
     AsyncStorage.setItem("@kingspeech_showtime_tutorial_seen", "1").catch(() => {});
   }, []);
 
-  // Noise spawn
+  // Noise spawn — murmurs drifting up out of the dark rows at the back. The
+  // band is a fraction of the hall picture, so they keep landing on the
+  // silhouettes whatever proportions the backdrop has.
   const spawnNoise = useCallback(() => {
     const effects = NOISE_EFFECTS[lang];
     const effect = effects[Math.floor(Math.random() * effects.length)];
     const id = ++bubbleIdRef.current;
-    const bubble: NoiseBubble = { id, text: effect.text, x: Math.random() * (SW - 80) + 10, y: Math.random() * 140 + 5 };
+    const photoH = SW * bgPhotoRatio;
+    const bubble: NoiseBubble = {
+      id,
+      text: effect.text,
+      x: 14 + Math.random() * Math.max(40, SW - 120),
+      y: photoH * (DARK_ROWS_TOP + Math.random() * (DARK_ROWS_BOTTOM - DARK_ROWS_TOP)),
+    };
     setNoiseBubbles((p) => [...p, bubble]);
     const t1 = setTimeout(() => setNoiseBubbles((p) => p.filter((b) => b.id !== id)), effect.duration + 500);
-    const t2 = setTimeout(spawnNoise, Math.random() * 2500 + 800);
+    const t2 = setTimeout(spawnNoise, Math.random() * 1400 + 500);
     noiseTimersRef.current.push(t1, t2);
-  }, [lang]);
+  }, [lang, bgPhotoRatio]);
 
   useEffect(() => {
     if (started && !finished) {
@@ -4787,21 +5142,47 @@ export default function ShowtimeStageScreen() {
 
   const curtainStyle = useAnimatedStyle(() => ({ opacity: curtainOpacity.value }));
   const audienceStyle = useAnimatedStyle(() => ({ opacity: audienceReveal.value }));
-  const liveStyle = useAnimatedStyle(() => ({ transform: [{ scale: liveTagScale.value }] }));
   const speechStyle = useAnimatedStyle(() => ({ opacity: speechPanelOpacity.value, transform: [{ translateY: speechPanelY.value }] }));
   const titleIntroStyle = useAnimatedStyle(() => ({ opacity: titleOpacity.value, transform: [{ scale: titleScale.value }] }));
   const introDimStyle = useAnimatedStyle(() => ({ opacity: introDim.value }));
 
   return (
     <View style={s.container}>
-      {/* Variable audience photo — full width at its ORIGINAL proportions
-          (1080×1610), pinned to the top. No zoom, no side crop: the whole row
-          of people is centred across the width, above the speech text. */}
+      {/* Variable audience hall — full width at its OWN proportions, pinned to
+          the top. The height is read off the asset so a new picture never gets
+          cropped: no zoom, no side crop, the whole room sits above the text.
+          The still is the clip's first frame and sits underneath it, so the
+          backdrop is already there while the video opens. */}
       <Image
-        source={bgPhoto}
-        style={{ position: "absolute", top: 0, left: 0, width: SW, height: (SW * 1610) / 1080 }}
+        source={scene.still}
+        style={{ position: "absolute", top: 0, left: 0, width: SW, height: SW * bgPhotoRatio }}
         resizeMode="cover"
       />
+      {hasClip && (
+        <VideoView
+          player={audiencePlayer}
+          style={{ position: "absolute", top: 0, left: 0, width: SW, height: SW * bgPhotoRatio }}
+          contentFit="cover"
+          surfaceType="textureView"
+          nativeControls={false}
+          pointerEvents="none"
+        />
+      )}
+      {hasIntro && (
+        // Sits on top of the loop and simply switches off when it is done: both
+        // views are already showing the same frame at that moment.
+        <VideoView
+          player={audienceIntroPlayer}
+          style={{
+            position: "absolute", top: 0, left: 0, width: SW, height: SW * bgPhotoRatio,
+            opacity: audienceIntroDone ? 0 : 1,
+          }}
+          contentFit="cover"
+          surfaceType="textureView"
+          nativeControls={false}
+          pointerEvents="none"
+        />
+      )}
 
       {/* Light overall tint on the photo + a long, smooth ramp into the solid
           black reading block, so the photo→black boundary is a gentle fade. */}
@@ -4821,6 +5202,25 @@ export default function ShowtimeStageScreen() {
         end={{ x: 0.5, y: 1 }}
       />
 
+      {/* House lights — sits on the hall only, so taking the room down never
+          touches the legibility of the speech below. */}
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: "#000" }, dimStyle]} />
+
+      {/* Life in the dark rows: phone screens waking up, and murmurs — a
+          whisper, a cough, a chair creaking. Visual noise that keeps the room
+          busy in the corner of the eye; faint and small on purpose, so it
+          never competes with the speech. */}
+      {started && !finished && (
+        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+          {phoneLights.map((p) => (
+            <PhoneLight key={p.id} x={p.x} y={p.y} />
+          ))}
+          {noiseBubbles.map((b) => (
+            <NoiseBubbleView key={b.id} bubble={b} />
+          ))}
+        </View>
+      )}
+
       {/* Pre-start curtain */}
       {!started && (
         <Animated.View style={[StyleSheet.absoluteFill, curtainStyle, { backgroundColor: theme.gradientColors[1], zIndex: 20 }]}>
@@ -4834,23 +5234,26 @@ export default function ShowtimeStageScreen() {
             showsVerticalScrollIndicator={false}
             bounces={false}
           >
-            <Ionicons name="videocam" size={44} color={theme.accentColor} />
-            <Text style={[s.curtainTitle, { fontFamily: "Nunito_700Bold", color: theme.accentColor }]} numberOfLines={1} adjustsFontSizeToFit>{theme.curtainTitle}</Text>
+            {/* The wordmark itself, not a camera icon plus the words. */}
+            <ShowTimeLogo width={Math.min(SW * 0.54, 240)} color={theme.accentColor} />
+
+            {/* One name only — the piece used to be printed twice, once under
+                its label and once again as a subtitle below it. */}
             <View style={s.curtainThemeWrap}>
               <Text style={[s.curtainThemeLabel, { fontFamily: "Nunito_500Medium", color: theme.accentColor + "99" }]}>{t("speechTopic")}</Text>
               <Text style={[s.curtainThemeName, { fontFamily: "Nunito_700Bold", color: theme.accentColor }]} numberOfLines={2}>{theme.title}</Text>
             </View>
-            <Text style={[s.curtainSub, { fontFamily: "Nunito_600SemiBold" }]} numberOfLines={2}>«{speech.title}»</Text>
-            <Text style={[s.curtainHint, { fontFamily: "Nunito_400Regular" }]}>
-              {theme.audienceDesc}{"\n"}{t("recordingStartsAuto")}
-              {theme.timerSeconds !== null ? `\n${t("timerLabel")}: ${theme.timerSeconds} ${t("sec")}` : ""}
-            </Text>
-            <View style={s.previewBox}>
-              {speech.lines.slice(0, 4).map((line, i) => (
-                <Text key={i} style={[s.previewLine, { fontFamily: "Nunito_400Regular", opacity: 0.5 - i * 0.08 }]} numberOfLines={1}>{line}</Text>
-              ))}
-              <Text style={[s.previewLine, { fontFamily: "Nunito_400Regular", opacity: 0.18 }]}>...</Text>
-            </View>
+
+            {/* A word before you step out, in place of the description of the
+                hall. The speech is no longer previewed here either — you read
+                it on stage, not before it. */}
+            <EncouragementLine lang={lang} color="rgba(255,255,255,0.86)" />
+
+            {theme.timerSeconds !== null && (
+              <Text style={[s.curtainHint, { fontFamily: "Nunito_400Regular" }]}>
+                {t("timerLabel")}: {theme.timerSeconds} {t("sec")}
+              </Text>
+            )}
             {/* Scroll-mode selector */}
             <View style={s.modeRow}>
               {(["manual", "auto"] as const).map((m) => {
@@ -4903,19 +5306,40 @@ export default function ShowtimeStageScreen() {
           borderRadius: 20,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "rgba(0,0,0,0.06)",
+          // White on a dark scrim: the hall behind it is dark, so the old dark
+          // glyph disappeared into the backdrop.
+          backgroundColor: "rgba(0,0,0,0.38)",
           zIndex: 100,
           opacity: pressed ? 0.6 : 1,
         })}
       >
-        <Ionicons name="close" size={22} color="rgba(17,17,20,0.85)" />
+        <Ionicons name="close" size={22} color="#FFFFFF" />
       </Pressable>
 
       {/* Header — no back arrow; LIVE centered symmetrically between two equal
-          side columns. Top-left carries the auto-scroll speed (text only). */}
+          side columns. Top-left carries the house lights and, under them, the
+          auto-scroll speed. */}
       <View style={[s.header, { paddingTop: topPad + 8 }]}>
-        <View style={[s.headerSide, { alignItems: "flex-start", justifyContent: "center" }]}>
-          {started && !finished && scrollMode === "auto" && (
+        <View style={[s.headerSide, { alignItems: "flex-start" }]}>
+          {started && !finished && (
+            <>
+              <Pressable
+                onPress={toggleLight}
+                hitSlop={10}
+                style={({ pressed }) => [
+                  s.lightBtn,
+                  {
+                    backgroundColor: lightOpen ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.38)",
+                    opacity: pressed ? 0.7 : 1,
+                  },
+                ]}
+              >
+                <Ionicons name="sunny" size={19} color={lightOpen ? theme.accentColor : "#FFFFFF"} />
+              </Pressable>
+              {lightOpen && <DimSlider value={dim} onChange={setDimSmooth} color={theme.accentColor} />}
+            </>
+          )}
+          {started && !finished && !lightOpen && scrollMode === "auto" && (
             <Pressable onPress={cycleSpeed} hitSlop={12} style={({ pressed }) => [s.speedTextBtn, { opacity: pressed ? 0.55 : 1 }]}>
               <Text style={[s.speedText, { fontFamily: "Nunito_800ExtraBold" }]}>{AUTO_SPEEDS[speedIdx]}×</Text>
             </Pressable>
@@ -4923,10 +5347,10 @@ export default function ShowtimeStageScreen() {
         </View>
         <View style={s.headerCenter}>
           {started && (
-            <Animated.View style={[s.liveTag, liveStyle]}>
-              <View style={s.liveDot} />
+            <View style={s.liveTag}>
+              <RecBlinkDot />
               <Text style={[s.liveText, { fontFamily: "Nunito_700Bold" }]}>LIVE</Text>
-            </Animated.View>
+            </View>
           )}
           <Text style={[s.speechTitle, { fontFamily: "Nunito_500Medium" }]} numberOfLines={1} ellipsizeMode="tail">{speech.title}</Text>
         </View>
@@ -4993,25 +5417,39 @@ export default function ShowtimeStageScreen() {
 
       {/* Speech panel */}
       {started && !finished && (
-        <Animated.View style={[s.speechPanel, speechStyle, { paddingBottom: bottomPad + 14 }]}>
-          {/* Lines — scrollable so the full speech is readable from the top */}
-          <ScrollView
-            ref={linesScrollRef}
-            style={s.linesScroll}
-            contentContainerStyle={s.linesContainer}
-            showsVerticalScrollIndicator={false}
-          >
-            {speech.lines.map((line, i) => (
-              <View
-                key={i}
-                onLayout={(e) => {
-                  lineYRef.current[i] = e.nativeEvent.layout.y;
-                }}
-              >
-                <SpeechLine text={line} isActive={i === currentLine} isDone={i < currentLine} />
-              </View>
-            ))}
-          </ScrollView>
+        <Animated.View style={[s.speechPanel, speechStyle, pumpStyle, { paddingBottom: bottomPad + 14 }]}>
+          {/* Lines — scrollable so the full speech is readable from the top.
+              The wrapper exists so the edge blur hugs the text area and not the
+              controls under it. */}
+          <View style={s.linesWrap}>
+            <ScrollView
+              ref={linesScrollRef}
+              style={s.linesScroll}
+              contentContainerStyle={s.linesContainer}
+              showsVerticalScrollIndicator={false}
+            >
+              {speech.lines.map((line, i) => (
+                <View
+                  key={i}
+                  onLayout={(e) => {
+                    lineYRef.current[i] = e.nativeEvent.layout.y;
+                  }}
+                >
+                  <SpeechLine text={line} isActive={i === currentLine} isDone={i < currentLine} />
+                </View>
+              ))}
+            </ScrollView>
+
+            <TextEdgeBlur edge="bottom" />
+
+            {/* The pump's soft focus: rides in and out with the scale, so the
+                page feels like it breathes when the lights move. */}
+            {pumping && (
+              <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, pumpBlurStyle]}>
+                <BlurView intensity={10} tint="dark" experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />
+              </Animated.View>
+            )}
+          </View>
 
           {/* Progress bar */}
           <View style={s.progressBg}>
@@ -5079,11 +5517,12 @@ const s = StyleSheet.create({
   headerSide: { minWidth: 52 },
   introWrap: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center", paddingHorizontal: 34, zIndex: 30 },
   introTitle: { fontSize: 34, lineHeight: 40, color: "#FFFFFF", textAlign: "center", letterSpacing: 0.2, textShadowColor: "rgba(0,0,0,0.6)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 12 },
-  speedTextBtn: { paddingVertical: 4, paddingHorizontal: 4 },
-  speedText: { fontSize: 17, color: "rgba(17,17,20,0.85)", letterSpacing: 0.3 },
+  lightBtn: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
+  speedTextBtn: { paddingVertical: 4, paddingHorizontal: 6, marginTop: 6 },
+  speedText: { fontSize: 17, color: "rgba(255,255,255,0.9)", letterSpacing: 0.3, textShadowColor: "rgba(0,0,0,0.5)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 5 },
   headerCenter: { flex: 1, alignItems: "center", gap: 2 },
-  liveTag: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#FF3B30", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  liveDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: "#fff" },
+  liveTag: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(0,0,0,0.72)", paddingHorizontal: 9, paddingVertical: 4, borderRadius: 7 },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#FF3B30" },
   liveText: { fontSize: 10, color: "#fff", letterSpacing: 1.5 },
   speechTitle: { fontSize: 13, color: "rgba(17,17,20,0.6)" },
   headerRight: { minWidth: 52, alignItems: "flex-end", gap: 4 },
@@ -5095,11 +5534,7 @@ const s = StyleSheet.create({
   // Scrollable variant so tall curtain content can't clip top/bottom on small
   // screens (flexGrow keeps short content vertically centered).
   curtainScroll: { flexGrow: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 28, paddingVertical: 44 },
-  curtainTitle: { fontSize: 34, color: "#FFD166", letterSpacing: 1 },
-  curtainSub: { fontSize: 18, color: "rgba(255,255,255,0.8)" },
   curtainHint: { fontSize: 14, color: "rgba(255,255,255,0.4)", textAlign: "center", lineHeight: 20 },
-  previewBox: { alignItems: "center", gap: 2, marginTop: 4, paddingHorizontal: 12 },
-  previewLine: { fontSize: 13, color: "rgba(255,209,102,0.7)", textAlign: "center", lineHeight: 20 },
   // Scroll-mode selector (curtain)
   modeRow: { flexDirection: "row", gap: 10, marginTop: 6 },
   modeBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 14, borderWidth: 1.5 },
@@ -5115,6 +5550,7 @@ const s = StyleSheet.create({
   // from spilling up into the audience; the text area flexes inside it so
   // short speeches sit vertically centered and long ones scroll within bounds.
   speechPanel: { position: "absolute", top: SH * 0.5, bottom: 0, left: 0, right: 0, paddingTop: 14, paddingHorizontal: 18, gap: 12 },
+  linesWrap: { flex: 1, width: "100%", overflow: "hidden" },
   linesScroll: { flex: 1, width: "100%" },
   linesContainer: { flexGrow: 1, justifyContent: "center", alignItems: "center", gap: 0, paddingVertical: 4 },
   progressBg: { height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.18)", overflow: "hidden" },

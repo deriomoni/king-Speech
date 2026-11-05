@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,9 @@ import {
   Pressable,
   Platform,
   ScrollView,
+  PanResponder,
+  BackHandler,
+  useWindowDimensions,
 } from "react-native";
 import { fetch } from "expo/fetch";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -13,6 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
+import { useVideoPlayer, VideoView } from "expo-video";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -20,7 +24,9 @@ import Animated, {
   withTiming,
   withDelay,
   cancelAnimation,
+  runOnJS,
   FadeIn,
+  FadeOut,
   FadeInDown,
   ZoomIn,
   Easing,
@@ -31,26 +37,44 @@ import { getRoleById, tx } from "@/constants/rolesData";
 import { takeRolePerformance, type RolePerformance } from "@/lib/rolePerformance";
 import { getApiUrl } from "@/lib/query-client";
 
-let Video: any = null;
-let ResizeMode: any = null;
 let AudioMod: any = null;
 if (Platform.OS !== "web") {
   try {
-    const av = require("@/lib/av");
-    Video = av.Video;
-    ResizeMode = av.ResizeMode;
-    AudioMod = av.Audio;
+    AudioMod = require("@/lib/av").Audio;
   } catch {}
 }
+
+/**
+ * The front camera preview is mirrored by the OS while you perform, but the
+ * file expo-camera writes is not. Playing the raw file back therefore looks
+ * flipped compared to the stage the performer just watched, so the take is
+ * rendered mirrored to match it. Flip this to false to show the raw framing.
+ */
+const MIRROR_TAKE = true;
 
 const BG = "#0E0E10"; // main interface dark (brandColors.bg)
 const BG2 = "#1A1A1F"; // elevated surface for the subtle backdrop gradient
 const CARD_BG = "#221838";
 const TEXT = "#F5F0FF";
 const MUTED = "#A79CC4";
+// Brand accents (theme/tokens): gold = the action you tap, violet = support.
+const GOLD = "#FFD857";
+const GOLD_SOFT = "#FFE68C";
+const ON_GOLD = "#3A2C00";
+const VIOLET = "#7C4DFF";
+const ON_VIOLET = "#F1EBFF";
+
+const CARD_RADIUS = 24;
+const EXPAND_MS = 300;
+const COLLAPSE_MS = 260;
 
 function haptic(style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle.Light) {
   if (Platform.OS !== "web") Haptics.impactAsync(style).catch(() => {});
+}
+
+function clock(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds || 0));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
 interface RoleScore {
@@ -78,6 +102,7 @@ export default function RoleResultScreen() {
   const insets = useSafeAreaInsets();
   const { lang } = useLang();
   const { recordRolePlay } = useRoles();
+  const { width: screenW, height: screenH } = useWindowDimensions();
 
   const perfRef = useRef<RolePerformance | null>(null);
   if (perfRef.current === null) perfRef.current = takeRolePerformance();
@@ -94,13 +119,176 @@ export default function RoleResultScreen() {
   const scanRot = useSharedValue(0);
   const scanStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${scanRot.value}deg` }] }));
 
-  // Local-only playback of the user's own take (watch + listen). Sources stay
-  // on-device; only audioBase64 is ever sent to the server (for scoring).
+  // ---------------------------------------------------------------------
+  // Playback of the user's own take. Everything here stays on the device;
+  // only audioBase64 is ever sent to the server (for scoring).
+  //
+  // The take is two files: a muted video and the audio recorded next to it.
+  // The mic is armed a moment before the camera starts writing, so the audio
+  // track has a head start on the picture — `syncOffset` is that head start,
+  // measured from the two durations, and the audio is played from there so
+  // the voice lands on the lips.
+  // ---------------------------------------------------------------------
   const [playing, setPlaying] = useState(false);
-  const videoRef = useRef<any>(null);
+  const [position, setPosition] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
   const soundRef = useRef<any>(null);
   const webAudioRef = useRef<HTMLAudioElement | null>(null);
+  const syncOffsetRef = useRef(0);
+  const playingRef = useRef(false);
+  const lastDriftRef = useRef(0);
   const canPlayback = !!(perf?.audioUri || perf?.videoUri);
+
+  const videoSource = useMemo(
+    () => (Platform.OS !== "web" && perf?.videoUri ? { uri: perf.videoUri } : null),
+    [perf?.videoUri],
+  );
+  const hasVideo = !!videoSource;
+  const player = useVideoPlayer(videoSource, (p) => {
+    try {
+      p.loop = false;
+      p.muted = true; // the voice comes from the separate audio track
+      p.timeUpdateEventInterval = 0.2;
+    } catch {}
+  });
+
+  const duration = videoDuration || audioDuration || perf?.durationSeconds || 0;
+
+  useEffect(() => { playingRef.current = playing; }, [playing]);
+
+  // Head start of the audio track over the picture.
+  useEffect(() => {
+    if (audioDuration > 0 && videoDuration > 0) {
+      syncOffsetRef.current = Math.min(3, Math.max(0, audioDuration - videoDuration));
+    }
+  }, [audioDuration, videoDuration]);
+
+  // Load the audio up front so its duration (and therefore the sync offset) is
+  // known before the first tap on play.
+  useEffect(() => {
+    if (Platform.OS === "web" || !perf?.audioUri || !AudioMod) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        try { await AudioMod.setAudioModeAsync?.({ playsInSilentModeIOS: true }); } catch {}
+        const { sound } = await AudioMod.Sound.createAsync({ uri: perf.audioUri }, { shouldPlay: false });
+        if (cancelled) { try { await sound.unloadAsync(); } catch {} return; }
+        soundRef.current = sound;
+        sound.setOnPlaybackStatusUpdate?.((st: any) => {
+          if (!mountedRef.current) return;
+          if (st?.durationMillis) setAudioDuration(st.durationMillis / 1000);
+          if (st?.didJustFinish) setPlaying(false);
+        });
+        for (let i = 0; i < 15 && !cancelled; i++) {
+          const st = await sound.getStatusAsync();
+          if (st?.durationMillis) { if (!cancelled && mountedRef.current) setAudioDuration(st.durationMillis / 1000); break; }
+          await new Promise((r) => setTimeout(r, 120));
+        }
+      } catch (e) {
+        console.warn("role-result: audio load failed", e);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [perf?.audioUri]);
+
+  // Video duration + playhead, and the drift correction that keeps the voice
+  // glued to the picture while both players run on their own clocks.
+  useEffect(() => {
+    if (!hasVideo || !player) return;
+    const subs: any[] = [];
+    try {
+      subs.push(player.addListener("timeUpdate", ({ currentTime }: any) => {
+        if (!mountedRef.current) return;
+        setPosition(currentTime);
+        const snd = soundRef.current;
+        const now = Date.now();
+        if (!snd || !playingRef.current || now - lastDriftRef.current < 1000) return;
+        lastDriftRef.current = now;
+        const targetMs = (currentTime + syncOffsetRef.current) * 1000;
+        snd.getStatusAsync?.()
+          .then((st: any) => {
+            if (!mountedRef.current || !playingRef.current) return;
+            if (typeof st?.positionMillis === "number" && Math.abs(st.positionMillis - targetMs) > 300) {
+              snd.setPositionAsync?.(targetMs);
+            }
+          })
+          .catch(() => {});
+      }));
+      subs.push(player.addListener("playToEnd", () => {
+        if (!mountedRef.current) return;
+        setPlaying(false);
+        try { soundRef.current?.pauseAsync?.(); } catch {}
+      }));
+    } catch {}
+
+    // `duration` is only known once the file is ready — poll briefly for it.
+    let tries = 0;
+    const id = setInterval(() => {
+      tries += 1;
+      let d = 0;
+      try { d = Number(player.duration) || 0; } catch {}
+      if (d > 0) {
+        if (mountedRef.current) setVideoDuration(d);
+        clearInterval(id);
+      } else if (tries > 25) clearInterval(id);
+    }, 200);
+
+    return () => {
+      clearInterval(id);
+      subs.forEach((s) => { try { s?.remove?.(); } catch {} });
+    };
+  }, [player, hasVideo]);
+
+  // Audio-only takes have no timeUpdate events — poll the sound instead.
+  useEffect(() => {
+    if (hasVideo || !playing) return;
+    const id = setInterval(async () => {
+      if (Platform.OS === "web") {
+        const a = webAudioRef.current;
+        if (a && mountedRef.current) setPosition(a.currentTime || 0);
+        return;
+      }
+      try {
+        const st = await soundRef.current?.getStatusAsync?.();
+        if (st && mountedRef.current) setPosition((st.positionMillis || 0) / 1000);
+      } catch {}
+    }, 250);
+    return () => clearInterval(id);
+  }, [hasVideo, playing]);
+
+  const startAt = useCallback(async (t: number) => {
+    if (Platform.OS === "web") {
+      const a = webAudioRef.current;
+      if (!a) return;
+      try { a.currentTime = t; } catch {}
+      a.play().catch(() => {});
+      return;
+    }
+    lastDriftRef.current = Date.now();
+    try {
+      if (soundRef.current) {
+        await soundRef.current.setPositionAsync((t + syncOffsetRef.current) * 1000);
+      }
+    } catch {}
+    try {
+      if (hasVideo) {
+        player.currentTime = t;
+        player.play();
+      }
+    } catch {}
+    try { await soundRef.current?.playAsync?.(); } catch {}
+  }, [hasVideo, player]);
+
+  const pauseAll = useCallback(() => {
+    if (Platform.OS === "web") {
+      try { webAudioRef.current?.pause(); } catch {}
+      return;
+    }
+    try { player?.pause(); } catch {}
+    try { soundRef.current?.pauseAsync?.(); } catch {}
+  }, [player]);
 
   const togglePlay = useCallback(async () => {
     if (!perf) return;
@@ -109,45 +297,105 @@ export default function RoleResultScreen() {
       let a = webAudioRef.current;
       if (!a) {
         a = new window.Audio(perf.audioUri);
-        a.onended = () => { if (mountedRef.current) setPlaying(false); };
+        a.onended = () => { if (mountedRef.current) { setPlaying(false); setPosition(0); } };
+        a.onloadedmetadata = () => { if (mountedRef.current) setAudioDuration(a?.duration || 0); };
         webAudioRef.current = a;
       }
       if (playing) { a.pause(); setPlaying(false); }
-      else { try { a.currentTime = 0; } catch {} a.play().catch(() => {}); setPlaying(true); }
+      else { await startAt(position >= (duration || 0) - 0.15 ? 0 : position); setPlaying(true); }
       return;
     }
     try {
       if (playing) {
-        try { await soundRef.current?.pauseAsync?.(); } catch {}
-        try { await videoRef.current?.pauseAsync?.(); } catch {}
+        pauseAll();
         setPlaying(false);
         return;
       }
-      if (!soundRef.current && perf.audioUri && AudioMod) {
-        try { await AudioMod.setAudioModeAsync?.({ playsInSilentModeIOS: true }); } catch {}
-        const { sound } = await AudioMod.Sound.createAsync({ uri: perf.audioUri }, { shouldPlay: false });
-        soundRef.current = sound;
-        sound.setOnPlaybackStatusUpdate?.((st: any) => {
-          if (st?.didJustFinish && mountedRef.current) setPlaying(false);
-        });
-      }
-      if (videoRef.current) {
-        try {
-          await videoRef.current.setPositionAsync(0);
-          await videoRef.current.playAsync();
-          videoRef.current.setOnPlaybackStatusUpdate?.((st: any) => {
-            if (st?.didJustFinish && !soundRef.current && mountedRef.current) setPlaying(false);
-          });
-        } catch {}
-      }
-      if (soundRef.current) {
-        try { await soundRef.current.setPositionAsync(0); await soundRef.current.playAsync(); } catch {}
-      }
-      if (mountedRef.current) setPlaying(true);
+      // Replay from the top once the take has run out.
+      const from = duration > 0 && position >= duration - 0.15 ? 0 : position;
+      await startAt(from);
+      if (mountedRef.current) { setPosition(from); setPlaying(true); }
     } catch (e) {
       console.warn("role-result: playback failed", e);
     }
-  }, [playing, perf]);
+  }, [playing, perf, position, duration, startAt, pauseAll]);
+
+  const seekTo = useCallback(async (t: number) => {
+    const clamped = Math.max(0, Math.min(duration || 0, t));
+    setPosition(clamped);
+    lastDriftRef.current = Date.now();
+    if (Platform.OS === "web") {
+      const a = webAudioRef.current;
+      if (a) { try { a.currentTime = clamped; } catch {} }
+      return;
+    }
+    try { if (hasVideo) player.currentTime = clamped; } catch {}
+    try { await soundRef.current?.setPositionAsync?.((clamped + syncOffsetRef.current) * 1000); } catch {}
+  }, [duration, hasVideo, player]);
+
+  // ---------------------------------------------------------------------
+  // Fullscreen: the video box grows from the card's own rectangle to the full
+  // screen and shrinks straight back into it, so there is no modal snap and no
+  // black frame on the way out.
+  // ---------------------------------------------------------------------
+  const cardRef = useRef<View>(null);
+  const [overlayMounted, setOverlayMounted] = useState(false);
+  const [videoInOverlay, setVideoInOverlay] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const expand = useSharedValue(0);
+  const rect = useSharedValue({ x: 0, y: 0, w: 0, h: 0 });
+
+  const boxStyle = useAnimatedStyle(() => {
+    const r = rect.value;
+    const t = expand.value;
+    return {
+      left: r.x + (0 - r.x) * t,
+      top: r.y + (0 - r.y) * t,
+      width: r.w + (screenW - r.w) * t,
+      height: r.h + (screenH - r.h) * t,
+      borderRadius: CARD_RADIUS * (1 - t),
+    };
+  });
+  const backdropStyle = useAnimatedStyle(() => ({ opacity: expand.value }));
+
+  const endCollapse = useCallback(() => {
+    // Hand the player back to the card first and only drop the overlay a frame
+    // later: at this point the two sit on exactly the same rectangle, so the
+    // hand-over is invisible instead of flashing an empty card.
+    setVideoInOverlay(false);
+    setTimeout(() => { if (mountedRef.current) setOverlayMounted(false); }, 80);
+  }, []);
+
+  const openFullscreen = useCallback(() => {
+    const node = cardRef.current;
+    if (!node || !hasVideo) return;
+    haptic();
+    node.measureInWindow((x: number, y: number, w: number, h: number) => {
+      if (!mountedRef.current || !w || !h) return;
+      rect.value = { x, y, w, h };
+      expand.value = 0;
+      setVideoInOverlay(true);
+      setOverlayMounted(true);
+      setFullscreen(true);
+      expand.value = withTiming(1, { duration: EXPAND_MS, easing: Easing.out(Easing.cubic) });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasVideo]);
+
+  const closeFullscreen = useCallback(() => {
+    haptic();
+    setFullscreen(false);
+    expand.value = withTiming(0, { duration: COLLAPSE_MS, easing: Easing.inOut(Easing.cubic) }, (finished) => {
+      if (finished) runOnJS(endCollapse)();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [endCollapse]);
+
+  useEffect(() => {
+    if (!fullscreen || Platform.OS !== "android") return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => { closeFullscreen(); return true; });
+    return () => sub.remove();
+  }, [fullscreen, closeFullscreen]);
 
   // Fetch scoring from the server. Falls back internally; the endpoint always
   // returns a usable score even without AI keys.
@@ -211,7 +459,7 @@ export default function RoleResultScreen() {
       mountedRef.current = false;
       cancelAnimation(scanRot);
       try { soundRef.current?.unloadAsync?.(); } catch {}
-      try { videoRef.current?.pauseAsync?.(); } catch {}
+      try { player?.pause(); } catch {}
       try { webAudioRef.current?.pause?.(); } catch {}
       try {
         if (Platform.OS === "web" && perf?.audioUri) URL.revokeObjectURL(perf.audioUri);
@@ -237,54 +485,56 @@ export default function RoleResultScreen() {
   return (
     <View style={styles.root}>
       <LinearGradient colors={[BG2, BG]} style={StyleSheet.absoluteFill} />
-      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: topPad, paddingBottom: bottomPad }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={{ padding: 20, paddingTop: topPad, paddingBottom: bottomPad }}
+        showsVerticalScrollIndicator={false}
+        scrollEnabled={!fullscreen}
+      >
         <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/roles"))} hitSlop={12} style={styles.closeBtn}>
           <Ionicons name="close" size={24} color={TEXT} />
         </Pressable>
 
-        {/* Local video / role preview — watch & listen to your own take. */}
-        <View style={styles.previewWrap}>
-          {Platform.OS !== "web" && Video && perf.videoUri ? (
-            <Video
-              ref={videoRef}
-              source={{ uri: perf.videoUri }}
-              style={StyleSheet.absoluteFill}
-              resizeMode={ResizeMode?.COVER ?? "cover"}
-              isMuted
-              useNativeControls={false}
+        {/* The take: video plus the separately recorded audio. */}
+        <View ref={cardRef} collapsable={false} style={styles.previewWrap}>
+          {hasVideo ? (
+            <VideoView
+              player={videoInOverlay ? null : player}
+              style={[StyleSheet.absoluteFill, MIRROR_TAKE && styles.mirrored]}
+              contentFit="cover"
+              surfaceType="textureView"
+              nativeControls={false}
             />
           ) : (
-            <LinearGradient colors={[role.accent + "55", "transparent"]} style={StyleSheet.absoluteFill} />
-          )}
-          {!(Platform.OS !== "web" && Video && perf.videoUri) && (
-            <Text style={styles.previewEmoji}>{role.emoji}</Text>
-          )}
-
-          {/* Play / pause the recorded take (video + separate audio). */}
-          {canPlayback && (
-            <Pressable onPress={togglePlay} style={styles.playOverlay} hitSlop={8}>
-              <View style={styles.playCircle}>
-                <Ionicons name={playing ? "pause" : "play"} size={30} color="#fff" style={{ marginLeft: playing ? 0 : 3 }} />
-              </View>
-              <Text style={styles.playHint}>
-                {playing
-                  ? (lang === "en" ? "Playing your take" : "Играет твой дубль")
-                  : (perf.videoUri
-                      ? (lang === "en" ? "Watch & listen" : "Смотреть и слушать")
-                      : (lang === "en" ? "Listen to your take" : "Послушать себя"))}
-              </Text>
-            </Pressable>
+            <>
+              <LinearGradient colors={[role.accent + "55", "transparent"]} style={StyleSheet.absoluteFill} />
+              <Text style={styles.previewEmoji}>{role.emoji}</Text>
+            </>
           )}
 
-          <View style={styles.previewTag}>
-            <Text style={styles.previewTagEmoji}>{role.emoji}</Text>
-            <Text style={styles.previewTagText}>{tx(role.title, lang)}</Text>
-          </View>
           {canPlayback && (
-            <View style={styles.localBadge}>
-              <Ionicons name="lock-closed" size={11} color="#fff" />
-              <Text style={styles.localBadgeText}>{lang === "en" ? "Stays on device" : "Только на устройстве"}</Text>
-            </View>
+            <>
+              <Pressable onPress={togglePlay} style={styles.tapLayer}>
+                {!playing && position === 0 && (
+                  <View style={styles.bigPlay}>
+                    <Ionicons name="play" size={30} color={ON_GOLD} style={{ marginLeft: 3 }} />
+                  </View>
+                )}
+              </Pressable>
+
+              {hasVideo && (
+                <Pressable onPress={openFullscreen} hitSlop={10} style={styles.glassBtn}>
+                  <Ionicons name="expand" size={17} color="#fff" />
+                </Pressable>
+              )}
+
+              <PlayerBar
+                playing={playing}
+                position={position}
+                duration={duration}
+                onToggle={togglePlay}
+                onSeek={seekTo}
+              />
+            </>
           )}
         </View>
 
@@ -296,17 +546,17 @@ export default function RoleResultScreen() {
             <View style={styles.starsRow}>
               {[1, 2, 3, 4, 5].map((n) => (
                 <Pressable key={n} onPress={() => { haptic(); setSelfStars(n); }} hitSlop={6}>
-                  <Ionicons name={n <= selfStars ? "star" : "star-outline"} size={40} color={n <= selfStars ? "#FFC01E" : "#5A4E7A"} />
+                  <Ionicons name={n <= selfStars ? "star" : "star-outline"} size={40} color={n <= selfStars ? GOLD : "#5A4E7A"} />
                 </Pressable>
               ))}
             </View>
             <Pressable
               disabled={selfStars === 0}
               onPress={() => { haptic(Haptics.ImpactFeedbackStyle.Medium); runAnalysis(); }}
-              style={({ pressed }) => [styles.primaryBtn, { opacity: selfStars === 0 ? 0.4 : pressed ? 0.9 : 1 }]}
+              style={({ pressed }) => [styles.primaryBtn, { opacity: selfStars === 0 ? 0.4 : 1, transform: [{ scale: pressed && selfStars > 0 ? 0.98 : 1 }] }]}
             >
-              <LinearGradient colors={["#7AF0FF", "#4DA3FF"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-              <Ionicons name="sparkles" size={20} color="#08243A" />
+              <LinearGradient colors={[GOLD_SOFT, GOLD]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={StyleSheet.absoluteFill} />
+              <Ionicons name="sparkles" size={20} color={ON_GOLD} />
               <Text style={styles.primaryBtnText}>{lang === "en" ? "Get feedback" : "Оценить"}</Text>
             </Pressable>
           </Animated.View>
@@ -316,9 +566,9 @@ export default function RoleResultScreen() {
         {stage === "scanning" && (
           <Animated.View entering={FadeIn} style={[styles.block, { alignItems: "center", paddingVertical: 40 }]}>
             <Animated.View style={[styles.scanner, scanStyle]}>
-              <LinearGradient colors={["#7AF0FF", "transparent"]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
+              <LinearGradient colors={[VIOLET, "transparent"]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
             </Animated.View>
-            <Ionicons name="scan" size={40} color="#7AF0FF" style={{ position: "absolute", top: 40 }} />
+            <Ionicons name="scan" size={40} color={VIOLET} style={{ position: "absolute", top: 40 }} />
             <Text style={[styles.blockTitle, { marginTop: 20, textAlign: "center" }]}>
               {lang === "en" ? "Analysing your performance..." : "Анализируем твою игру..."}
             </Text>
@@ -331,7 +581,7 @@ export default function RoleResultScreen() {
             {isNew && (
               <Animated.View entering={ZoomIn.duration(420)} style={styles.unlockBanner}>
                 <LinearGradient colors={["#FFDE5C33", "transparent"]} style={StyleSheet.absoluteFill} />
-                <Ionicons name="trophy" size={20} color="#FFC01E" />
+                <Ionicons name="trophy" size={20} color={GOLD} />
                 <Text style={styles.unlockText}>{lang === "en" ? "New role added to your collection!" : "Новая роль в твоей коллекции!"}</Text>
               </Animated.View>
             )}
@@ -340,7 +590,7 @@ export default function RoleResultScreen() {
             <View style={styles.overallStars}>
               {[1, 2, 3].map((n) => (
                 <Animated.View key={n} entering={ZoomIn.delay(n * 120)}>
-                  <Ionicons name={n <= score.stars ? "star" : "star-outline"} size={44} color={n <= score.stars ? "#FFC01E" : "#5A4E7A"} />
+                  <Ionicons name={n <= score.stars ? "star" : "star-outline"} size={44} color={n <= score.stars ? GOLD : "#5A4E7A"} />
                 </Animated.View>
               ))}
             </View>
@@ -367,7 +617,7 @@ export default function RoleResultScreen() {
               <Text style={styles.feedbackText}>{score.feedback}</Text>
               {score.tip && (
                 <View style={styles.tipRow}>
-                  <Ionicons name="bulb" size={16} color="#FFC01E" />
+                  <Ionicons name="bulb" size={16} color={GOLD} />
                   <Text style={styles.tipText}>{score.tip}</Text>
                 </View>
               )}
@@ -379,10 +629,12 @@ export default function RoleResultScreen() {
             </View>
 
             {/* Actions */}
-            <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/roles"))} style={({ pressed }) => [styles.primaryBtn, { opacity: pressed ? 0.9 : 1 }]}>
-              <LinearGradient colors={["#FF7AC4", "#8E5BFF"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-              <Ionicons name="repeat" size={20} color="#fff" />
-              <Text style={[styles.primaryBtnText, { color: "#fff" }]}>{lang === "en" ? "Play another role" : "Ещё роль"}</Text>
+            <Pressable
+              onPress={() => (router.canGoBack() ? router.back() : router.replace("/roles"))}
+              style={({ pressed }) => [styles.secondaryActionBtn, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}
+            >
+              <Ionicons name="repeat" size={20} color={ON_VIOLET} />
+              <Text style={styles.secondaryActionText}>{lang === "en" ? "Play another role" : "Ещё роль"}</Text>
             </Pressable>
             <Pressable onPress={() => router.replace("/(tabs)")} style={styles.secondaryBtn}>
               <Text style={styles.secondaryBtnText}>{lang === "en" ? "Done" : "Готово"}</Text>
@@ -390,6 +642,116 @@ export default function RoleResultScreen() {
           </Animated.View>
         )}
       </ScrollView>
+
+      {/* Fullscreen take — the same video box, grown out of the card. */}
+      {overlayMounted && (
+        <View style={StyleSheet.absoluteFill} pointerEvents={fullscreen ? "auto" : "none"}>
+          <Animated.View style={[StyleSheet.absoluteFill, styles.fsBackdrop, backdropStyle]} pointerEvents="none" />
+          <Animated.View style={[styles.fsBox, boxStyle]} pointerEvents="none">
+            <VideoView
+              player={videoInOverlay ? player : null}
+              style={[StyleSheet.absoluteFill, MIRROR_TAKE && styles.mirrored]}
+              contentFit="cover"
+              surfaceType="textureView"
+              nativeControls={false}
+            />
+          </Animated.View>
+
+          {fullscreen && (
+            <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(120)} style={StyleSheet.absoluteFill}>
+              <Pressable style={StyleSheet.absoluteFill} onPress={togglePlay}>
+                {!playing && (
+                  <View style={styles.fsCenter}>
+                    <View style={styles.bigPlay}>
+                      <Ionicons name="play" size={34} color={ON_GOLD} style={{ marginLeft: 3 }} />
+                    </View>
+                  </View>
+                )}
+              </Pressable>
+              <Pressable
+                onPress={closeFullscreen}
+                hitSlop={12}
+                style={[styles.glassBtn, { top: (Platform.OS === "web" ? 20 : insets.top) + 10, right: 16 }]}
+              >
+                <Ionicons name="contract" size={17} color="#fff" />
+              </Pressable>
+              <PlayerBar
+                playing={playing}
+                position={position}
+                duration={duration}
+                onToggle={togglePlay}
+                onSeek={seekTo}
+                bottomInset={(Platform.OS === "web" ? 16 : insets.bottom) + 10}
+              />
+            </Animated.View>
+          )}
+        </View>
+      )}
+    </View>
+  );
+}
+
+/**
+ * Transport for the take: play / pause, elapsed + total time and a scrubbable
+ * timeline. Rendered over the video, both in the card and in fullscreen.
+ */
+function PlayerBar({
+  playing,
+  position,
+  duration,
+  onToggle,
+  onSeek,
+  bottomInset = 0,
+}: {
+  playing: boolean;
+  position: number;
+  duration: number;
+  onToggle: () => void;
+  onSeek: (t: number) => void;
+  bottomInset?: number;
+}) {
+  const [trackW, setTrackW] = useState(0);
+  // PanResponder is built once, so the live values it needs live in a ref.
+  const live = useRef({ trackW: 0, duration: 0, onSeek });
+  live.current = { trackW, duration, onSeek };
+
+  const pan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (e) => seekFromX(e.nativeEvent.locationX),
+      onPanResponderMove: (e) => seekFromX(e.nativeEvent.locationX),
+    }),
+  ).current;
+
+  function seekFromX(x: number) {
+    const { trackW: w, duration: d, onSeek: seek } = live.current;
+    if (!w || !d) return;
+    seek(Math.max(0, Math.min(1, x / w)) * d);
+  }
+
+  const pct = duration > 0 ? Math.max(0, Math.min(1, position / duration)) : 0;
+
+  return (
+    <View style={[styles.barWrap, { paddingBottom: 12 + bottomInset }]} pointerEvents="box-none">
+      <LinearGradient colors={["transparent", "rgba(0,0,0,0.75)"]} style={StyleSheet.absoluteFill} pointerEvents="none" />
+      <View style={styles.barRow}>
+        <Pressable onPress={onToggle} hitSlop={10} style={styles.barPlay}>
+          <Ionicons name={playing ? "pause" : "play"} size={17} color={ON_GOLD} style={{ marginLeft: playing ? 0 : 2 }} />
+        </Pressable>
+        <Text style={styles.barTime}>{clock(position)}</Text>
+        <View
+          style={styles.track}
+          onLayout={(e) => setTrackW(e.nativeEvent.layout.width)}
+          hitSlop={{ top: 14, bottom: 14 }}
+          {...pan.panHandlers}
+        >
+          <View style={styles.trackBase} />
+          <View style={[styles.trackFill, { width: `${pct * 100}%` }]} />
+          <View style={[styles.knob, { left: Math.max(0, pct * trackW - 6) }]} />
+        </View>
+        <Text style={styles.barTime}>{clock(duration)}</Text>
+      </View>
     </View>
   );
 }
@@ -401,7 +763,7 @@ function MetricBar({ label, icon, value, delay }: { label: string; icon: keyof t
     return () => cancelAnimation(w);
   }, [value]);
   const barStyle = useAnimatedStyle(() => ({ width: `${w.value}%` }));
-  const color = value >= 4 ? "#2ECC71" : value >= 3 ? "#FFC01E" : "#FF7A7A";
+  const color = value >= 4 ? "#2ECC71" : value >= 3 ? GOLD : "#FF7A7A";
   return (
     <View style={styles.metricRow}>
       <View style={styles.metricHead}>
@@ -421,16 +783,26 @@ const styles = StyleSheet.create({
   closeBtn: { alignSelf: "flex-end", width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "#FFFFFF12", marginBottom: 8 },
   title: { color: TEXT, fontFamily: "Nunito_800ExtraBold", fontSize: 22, marginBottom: 16 },
 
-  previewWrap: { height: 260, borderRadius: 24, overflow: "hidden", backgroundColor: CARD_BG, alignItems: "center", justifyContent: "center", marginBottom: 18 },
+  previewWrap: { height: 300, borderRadius: CARD_RADIUS, overflow: "hidden", backgroundColor: CARD_BG, alignItems: "center", justifyContent: "center", marginBottom: 18 },
   previewEmoji: { fontSize: 96 },
-  playOverlay: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center", gap: 10 },
-  playCircle: { width: 68, height: 68, borderRadius: 34, backgroundColor: "rgba(0,0,0,0.45)", borderWidth: 2, borderColor: "rgba(255,255,255,0.85)", alignItems: "center", justifyContent: "center" },
-  playHint: { color: "#fff", fontFamily: "Nunito_600SemiBold", fontSize: 13, backgroundColor: "rgba(0,0,0,0.4)", paddingHorizontal: 12, paddingVertical: 5, borderRadius: 12, overflow: "hidden" },
-  previewTag: { position: "absolute", bottom: 12, left: 12, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#00000066", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16 },
-  previewTagEmoji: { fontSize: 16 },
-  previewTagText: { color: "#fff", fontFamily: "Nunito_700Bold", fontSize: 14 },
-  localBadge: { position: "absolute", top: 12, right: 12, flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#00000077", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14 },
-  localBadgeText: { color: "#fff", fontFamily: "Nunito_600SemiBold", fontSize: 10 },
+  mirrored: { transform: [{ scaleX: -1 }] },
+  tapLayer: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
+  bigPlay: { width: 68, height: 68, borderRadius: 34, backgroundColor: GOLD, alignItems: "center", justifyContent: "center",
+    ...Platform.select({ ios: { shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } }, android: { elevation: 6 }, default: {} }) },
+  glassBtn: { position: "absolute", top: 12, right: 12, width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.45)", borderWidth: 1, borderColor: "rgba(255,255,255,0.18)" },
+
+  barWrap: { position: "absolute", left: 0, right: 0, bottom: 0, paddingTop: 26, paddingHorizontal: 12 },
+  barRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  barPlay: { width: 34, height: 34, borderRadius: 17, backgroundColor: GOLD, alignItems: "center", justifyContent: "center" },
+  barTime: { color: "#fff", fontFamily: "Nunito_700Bold", fontSize: 11, minWidth: 30, textAlign: "center", opacity: 0.9 },
+  track: { flex: 1, height: 22, justifyContent: "center" },
+  trackBase: { height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.28)" },
+  trackFill: { position: "absolute", left: 0, height: 4, borderRadius: 2, backgroundColor: GOLD },
+  knob: { position: "absolute", width: 12, height: 12, borderRadius: 6, backgroundColor: GOLD, borderWidth: 2, borderColor: "rgba(0,0,0,0.35)" },
+
+  fsBackdrop: { backgroundColor: "#000" },
+  fsBox: { position: "absolute", overflow: "hidden", backgroundColor: "#000" },
+  fsCenter: { flex: 1, alignItems: "center", justifyContent: "center" },
 
   block: { backgroundColor: CARD_BG, borderRadius: 22, padding: 20, marginBottom: 16 },
   blockTitle: { color: TEXT, fontFamily: "Nunito_800ExtraBold", fontSize: 20 },
@@ -438,14 +810,16 @@ const styles = StyleSheet.create({
   starsRow: { flexDirection: "row", justifyContent: "center", gap: 10, marginVertical: 22 },
 
   primaryBtn: { height: 56, borderRadius: 18, overflow: "hidden", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 4 },
-  primaryBtnText: { color: "#08243A", fontFamily: "Nunito_800ExtraBold", fontSize: 16 },
+  primaryBtnText: { color: ON_GOLD, fontFamily: "Nunito_800ExtraBold", fontSize: 16 },
+  secondaryActionBtn: { height: 56, borderRadius: 18, backgroundColor: VIOLET, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 4 },
+  secondaryActionText: { color: ON_VIOLET, fontFamily: "Nunito_800ExtraBold", fontSize: 16 },
   secondaryBtn: { alignItems: "center", paddingVertical: 16, marginTop: 6 },
   secondaryBtnText: { color: MUTED, fontFamily: "Nunito_600SemiBold", fontSize: 15 },
 
   scanner: { width: 120, height: 120, borderRadius: 60, opacity: 0.8 },
 
   unlockBanner: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#FFC01E1A", borderWidth: 1, borderColor: "#FFC01E55", borderRadius: 16, padding: 14, marginBottom: 16, overflow: "hidden" },
-  unlockText: { color: "#FFC01E", fontFamily: "Nunito_800ExtraBold", fontSize: 14, flex: 1 },
+  unlockText: { color: GOLD, fontFamily: "Nunito_800ExtraBold", fontSize: 14, flex: 1 },
   overallStars: { flexDirection: "row", justifyContent: "center", gap: 10, marginBottom: 20 },
 
   metricRow: { marginBottom: 16 },

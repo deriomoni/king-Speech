@@ -259,22 +259,36 @@ function AudioPlayer({ uri, waveform, onPlaybackComplete }: { uri: string; wavef
       intervalRef.current = setInterval(() => setPosition(Math.round(audioElRef.current?.currentTime ?? 0)), 500);
     } else {
       try {
-        if (soundRef.current) {
-          await soundRef.current.playAsync();
-          setIsPlaying(true);
-        } else {
-          const { sound } = await Audio.Sound.createAsync({ uri }, { shouldPlay: true });
+        // The stage screen leaves the audio session in recording mode, where
+        // iOS routes playback to the earpiece and mutes it entirely while the
+        // ringer switch is on silent — which is why the take seemed not to
+        // start at all. Hand the session back to playback before every play.
+        try {
+          await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true });
+        } catch {}
+
+        if (!soundRef.current) {
+          const { sound } = await Audio.Sound.createAsync({ uri }, { shouldPlay: false });
           soundRef.current = sound;
           const status = await sound.getStatusAsync();
-          if (status.isLoaded) setDuration(Math.round((status.durationMillis ?? 0) / 1000));
+          if (status?.isLoaded && status.durationMillis) setDuration(Math.round(status.durationMillis / 1000));
           sound.setOnPlaybackStatusUpdate((st: any) => {
-            if (st.isLoaded) {
-              setPosition(Math.round(st.positionMillis / 1000));
-              if (st.didJustFinish) { setIsPlaying(false); setPosition(0); onPlaybackComplete?.(); }
-            }
+            if (!st?.isLoaded) return;
+            if (st.durationMillis) setDuration(Math.round(st.durationMillis / 1000));
+            setPosition(Math.round((st.positionMillis ?? 0) / 1000));
+            if (st.didJustFinish) { setIsPlaying(false); setPosition(0); onPlaybackComplete?.(); }
           });
-          setIsPlaying(true);
         }
+        // A take that already played sits at its end — rewind, or play() is a
+        // no-op and nothing is heard.
+        const st = await soundRef.current.getStatusAsync();
+        const atEnd =
+          st?.durationMillis > 0 && st?.positionMillis >= st.durationMillis - 120;
+        if (atEnd || position === 0) {
+          try { await soundRef.current.setPositionAsync(0); } catch {}
+        }
+        await soundRef.current.playAsync();
+        setIsPlaying(true);
       } catch (e) { console.warn("Playback error:", e); }
     }
   };
@@ -815,18 +829,9 @@ export default function ShowtimePlaybackScreen() {
         contentContainerStyle={[pb.scroll, { paddingBottom: bottomPad + 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View entering={FadeIn.delay(200).duration(600)}>
-          <StageScene />
-        </Animated.View>
-
-        <Animated.View entering={FadeIn.delay(400).duration(600)} style={pb.audienceSection}>
-          <LinearGradient colors={["#070D1A", "#070D1A"]} style={StyleSheet.absoluteFill} />
-          <AudienceSeats />
-          <View style={pb.youAreHere}>
-            <View style={[pb.youDot, { backgroundColor: "#FFD166" }]} />
-            <Text style={[pb.youText, { color: "#FFD166", fontFamily: "Nunito_600SemiBold" }]}>{t("youAreHere")}</Text>
-          </View>
-        </Animated.View>
+        {/* The stage-from-the-seats mock-up used to live here. Removed for now
+            — this screen is about listening back, and a second illustration of
+            the hall on top of it was only taking the space. */}
 
         <Animated.View style={[contentStyle, pb.content]}>
           <View style={pb.sectionLabel}>

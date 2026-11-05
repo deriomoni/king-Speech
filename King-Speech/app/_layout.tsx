@@ -99,7 +99,16 @@ function RootLayoutNav() {
       />
       <Stack.Screen
         name="role-result"
-        options={{ headerShown: false, presentation: "fullScreenModal" }}
+        options={{
+          headerShown: false,
+          presentation: "fullScreenModal",
+          // The stage replaces itself with this screen. With the default modal
+          // transition that means "dismiss, show the level underneath, present
+          // again" — a jarring bounce back to the level. A cross-fade keeps the
+          // stage on screen until the result has taken over.
+          animation: "fade",
+          gestureEnabled: false,
+        }}
       />
       </Stack>
     </>

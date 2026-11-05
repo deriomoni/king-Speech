@@ -36,12 +36,19 @@ if (Platform.OS !== "web") {
 const BG = "#0E0E10"; // main interface dark (brandColors.bg)
 const TEXT = "#F5F0FF";
 const MUTED = "#A79CC4";
+// Brand accents (theme/tokens): gold is the one thing you tap.
+const GOLD = "#FFD857";
+const GOLD_SOFT = "#FFE68C";
+const ON_GOLD = "#3A2C00";
 
 function haptic(style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle.Light) {
   if (Platform.OS !== "web") Haptics.impactAsync(style).catch(() => {});
 }
 
 type Phase = "permission" | "scan" | "ready" | "recording" | "processing";
+
+/** Takes a player gets per scene: the first one plus a single restart. */
+const MAX_TAKES = 2;
 
 export default function RoleStageScreen() {
   const insets = useSafeAreaInsets();
@@ -55,6 +62,8 @@ export default function RoleStageScreen() {
   const [phase, setPhase] = useState<Phase>("scan");
   const [elapsed, setElapsed] = useState(0);
   const [camReady, setCamReady] = useState(false);
+  const [take, setTake] = useState(1);
+  const [restarting, setRestarting] = useState(false);
 
   const cameraRef = useRef<CameraView | null>(null);
   const videoUriRef = useRef<string | undefined>(undefined);
@@ -222,21 +231,26 @@ export default function RoleStageScreen() {
     const duration = Math.max(1, Math.floor((Date.now() - startTimeRef.current) / 1000));
     setPhase("processing");
 
-    // Stop the muted video (local preview only).
+    // Cut both captures as close together as possible. The take is played back
+    // as a muted video plus the separately recorded audio track, so any time
+    // one of them keeps running alone lands on the result screen as lip-sync
+    // drift — hence: stop the camera, stop the mic, and only then wait for the
+    // video file to be finalised.
     try {
-      if (Platform.OS !== "web" && cameraRef.current) {
-        cameraRef.current.stopRecording?.();
-        if (recordPromiseRef.current) {
-          const res = await Promise.race([
-            recordPromiseRef.current,
-            new Promise((r) => setTimeout(() => r(null), 2500)),
-          ]);
-          if (res && (res as any).uri) videoUriRef.current = (res as any).uri;
-        }
-      }
+      if (Platform.OS !== "web") cameraRef.current?.stopRecording?.();
     } catch {}
 
     const audioBase64 = await stopAudio();
+
+    try {
+      if (Platform.OS !== "web" && recordPromiseRef.current) {
+        const res = await Promise.race([
+          recordPromiseRef.current,
+          new Promise((r) => setTimeout(() => r(null), 2500)),
+        ]);
+        if (res && (res as any).uri) videoUriRef.current = (res as any).uri;
+      }
+    } catch {}
 
     setRolePerformance({
       roleId: role?.id ?? String(params.roleId),
@@ -249,6 +263,52 @@ export default function RoleStageScreen() {
 
     router.replace("/role-result");
   }, [stopAudio, role, params.roleId, mode]);
+
+  // Throw the current take away without scoring it (the "start over" button).
+  const discardTake = useCallback(async () => {
+    try {
+      if (Platform.OS !== "web" && cameraRef.current) {
+        cameraRef.current.stopRecording?.();
+        if (recordPromiseRef.current) {
+          await Promise.race([
+            recordPromiseRef.current,
+            new Promise((r) => setTimeout(() => r(null), 2500)),
+          ]);
+        }
+      }
+    } catch {}
+    recordPromiseRef.current = null;
+    videoUriRef.current = undefined;
+
+    if (Platform.OS === "web") {
+      const mr = webRecorderRef.current;
+      try { if (mr && mr.state !== "inactive") mr.stop(); } catch {}
+      try { webStreamRef.current?.getTracks().forEach((t) => t.stop()); } catch {}
+      webRecorderRef.current = null;
+      webStreamRef.current = null;
+      webChunksRef.current = [];
+    } else {
+      try { await nativeRecRef.current?.stopAndUnloadAsync?.(); } catch {}
+      nativeRecRef.current = null;
+      try { await Audio.setAudioModeAsync({ allowsRecordingIOS: false }); } catch {}
+    }
+    audioUriRef.current = undefined;
+  }, []);
+
+  const restartRecording = useCallback(async () => {
+    if (restarting || take >= MAX_TAKES) return;
+    haptic(Haptics.ImpactFeedbackStyle.Medium);
+    setRestarting(true);
+    if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null; }
+    setElapsed(0);
+    await discardTake();
+    // Give the camera session a beat to release before arming it again —
+    // recordAsync() right after stopRecording() fails on some devices.
+    await new Promise((r) => setTimeout(r, 250));
+    setTake((t) => t + 1);
+    setRestarting(false);
+    await startRecording();
+  }, [restarting, take, discardTake, startRecording]);
 
   // --- Missing role guard ---
   if (!role) {
@@ -274,6 +334,7 @@ export default function RoleStageScreen() {
             facing="front"
             mode="video"
             mute
+            videoQuality="1080p"
             onCameraReady={() => setCamReady(true)}
           />
         ) : (
@@ -347,18 +408,41 @@ export default function RoleStageScreen() {
         )}
 
         {phase === "ready" && (
-          <Pressable onPress={startRecording} style={({ pressed }) => [styles.recordBtn, { opacity: pressed ? 0.9 : 1 }]}>
-            <LinearGradient colors={["#FF6B6B", "#E8384F"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-            <Ionicons name="mic" size={22} color="#fff" />
+          <Pressable onPress={startRecording} style={({ pressed }) => [styles.recordBtn, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
+            <LinearGradient colors={[GOLD_SOFT, GOLD]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={StyleSheet.absoluteFill} />
+            <Ionicons name="mic" size={22} color={ON_GOLD} />
             <Text style={styles.recordBtnText}>{lang === "en" ? "Start performing" : "Начать выступление"}</Text>
           </Pressable>
         )}
 
         {phase === "recording" && (
-          <Pressable onPress={finishRecording} style={({ pressed }) => [styles.stopBtn, { opacity: pressed ? 0.9 : 1 }]}>
-            <View style={styles.stopSquare} />
-            <Text style={styles.stopBtnText}>{lang === "en" ? "Finish" : "Готово"}</Text>
-          </Pressable>
+          <>
+            <Text style={styles.takeHint}>
+              {take < MAX_TAKES
+                ? (lang === "en" ? `Take ${take} of ${MAX_TAKES}` : `Дубль ${take} из ${MAX_TAKES}`)
+                : (lang === "en" ? "Last take" : "Последний дубль")}
+            </Text>
+            <View style={styles.actionRow}>
+              {take < MAX_TAKES && (
+                <Pressable
+                  onPress={restartRecording}
+                  disabled={restarting}
+                  style={({ pressed }) => [styles.retakeBtn, { opacity: restarting ? 0.45 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+                >
+                  <Ionicons name="refresh" size={19} color="#fff" />
+                  <Text style={styles.retakeBtnText}>{lang === "en" ? "Start over" : "Заново"}</Text>
+                </Pressable>
+              )}
+              <Pressable
+                onPress={finishRecording}
+                disabled={restarting}
+                style={({ pressed }) => [styles.stopBtn, { flex: 1, opacity: restarting ? 0.45 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
+              >
+                <View style={styles.stopSquare} />
+                <Text style={styles.stopBtnText}>{lang === "en" ? "Finish" : "Готово"}</Text>
+              </Pressable>
+            </View>
+          </>
         )}
 
         {phase === "processing" && (
@@ -409,12 +493,16 @@ const styles = StyleSheet.create({
   prompterText: { color: TEXT, fontFamily: "Literata_400Regular", fontSize: 22, lineHeight: 32 },
   sceneText: { color: TEXT, fontFamily: "Nunito_700Bold", fontSize: 20, lineHeight: 28 },
 
-  recordBtn: { height: 60, borderRadius: 20, overflow: "hidden", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
-    ...Platform.select({ ios: { shadowColor: "#E8384F", shadowOpacity: 0.5, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } }, android: { elevation: 8 }, default: {} }) },
-  recordBtnText: { color: "#fff", fontFamily: "Nunito_800ExtraBold", fontSize: 17 },
-  stopBtn: { height: 60, borderRadius: 20, backgroundColor: "#fff", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12 },
-  stopSquare: { width: 18, height: 18, borderRadius: 4, backgroundColor: "#E8384F" },
-  stopBtnText: { color: "#1A1230", fontFamily: "Nunito_800ExtraBold", fontSize: 17 },
+  recordBtn: { height: 58, borderRadius: 18, overflow: "hidden", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
+    ...Platform.select({ ios: { shadowColor: GOLD, shadowOpacity: 0.35, shadowRadius: 16, shadowOffset: { width: 0, height: 8 } }, android: { elevation: 8 }, default: {} }) },
+  recordBtnText: { color: ON_GOLD, fontFamily: "Nunito_800ExtraBold", fontSize: 17 },
+  stopBtn: { height: 58, borderRadius: 18, backgroundColor: GOLD, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
+  actionRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  retakeBtn: { height: 58, paddingHorizontal: 20, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.10)", borderWidth: 1, borderColor: "rgba(255,255,255,0.22)", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  retakeBtnText: { color: "#fff", fontFamily: "Nunito_700Bold", fontSize: 15 },
+  takeHint: { color: MUTED, fontFamily: "Nunito_700Bold", fontSize: 11, textAlign: "center", letterSpacing: 1.2, textTransform: "uppercase" },
+  stopSquare: { width: 16, height: 16, borderRadius: 4, backgroundColor: ON_GOLD },
+  stopBtnText: { color: ON_GOLD, fontFamily: "Nunito_800ExtraBold", fontSize: 17 },
   processing: { height: 60, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12 },
   processingText: { color: TEXT, fontFamily: "Nunito_600SemiBold", fontSize: 15 },
 });

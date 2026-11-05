@@ -161,7 +161,7 @@ export default function SpeechAnalyzingLoader({ visible, lang }: Props) {
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(7, 13, 26, 0.92)",
+    backgroundColor: "#070D1A",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 9999,
