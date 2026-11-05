@@ -19,6 +19,8 @@ const plugins: ExpoConfig["plugins"] = [
   "expo-font",
   "expo-web-browser",
   "expo-apple-authentication",
+  "expo-image",
+  "expo-sharing",
   [
     "expo-image-picker",
     {
