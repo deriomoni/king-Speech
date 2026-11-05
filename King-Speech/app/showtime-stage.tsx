@@ -54,14 +54,13 @@ import AppDialog from "@/components/AppDialog";
 // the hand-over is invisible. `still` is the opening frame, shown underneath so
 // the backdrop is never blank while the video opens. Halls with no clip yet
 // stay stills — drop a file in and add `clip` to bring them to life.
+// TEMP: the Sep 25 hall renders (audience1-3.png) and the audience1 intro/loop
+// videos were lost with the old working copy. Until they are re-added, the halls
+// fall back to the earlier stills. Restore the .png/.mp4 requires when found.
 const AUDIENCE_SCENES: { still: any; intro?: any; clip?: any }[] = [
-  {
-    still: require("@/assets/showtime/audience/audience1.png"),
-    intro: require("@/assets/showtime/audience/audience1-intro.mp4"),
-    clip: require("@/assets/showtime/audience/audience1-loop.mp4"),
-  },
-  { still: require("@/assets/showtime/audience/audience2.png") },
-  { still: require("@/assets/showtime/audience/audience3.png") },
+  { still: require("@/assets/showtime/audience/audience1.jpg") },
+  { still: require("@/assets/showtime/audience/audience2.jpg") },
+  { still: require("@/assets/showtime/audience/audience3.jpg") },
 ];
 
 // Where the unlit rows sit inside the hall picture, as a fraction of its
