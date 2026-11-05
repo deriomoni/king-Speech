@@ -45,6 +45,8 @@ import { getPathColors, darkenHex, readableText } from "@/constants/pathPalette"
 import FinalPortal from "@/components/path/FinalPortal";
 import { getRankTheme } from "@/components/path/rankTheme";
 import PathScrubber from "@/components/path/PathScrubber";
+import LevelIcon, { levelIconKind } from "@/components/path/LevelIcon";
+import BrickStroke from "@/components/path/BrickStroke";
 
 function GlowRing({ color, radius }: { color: string; radius: number }) {
   // Soft, breathing halo behind the active tile. Rendered as a filled tile-
@@ -348,10 +350,14 @@ function StepBlock({
           />
 
           <View style={styles.stepLeft}>
-            {isLocked ? (
-              <Ionicons name="lock-closed" size={20} color={iconColor} />
-            ) : isDone ? (
+            {isDone ? (
               <Ionicons name="checkmark" size={22} color={iconColor} />
+            ) : levelIconKind(item.id) ? (
+              // Level glyph in every not-yet-completed state (locked bricks
+              // used to show a padlock). Cut-outs take the face colour.
+              <LevelIcon levelId={item.id} color={iconColor} hole={faceColor} />
+            ) : isLocked ? (
+              <Ionicons name="lock-closed" size={20} color={iconColor} />
             ) : (
               <Ionicons name={item.icon as any} size={22} color={iconColor} />
             )}
@@ -387,6 +393,13 @@ function StepBlock({
             </Text>
           </View>
         </View>
+        <BrickStroke
+          width={STEP_W}
+          height={STEP_H}
+          radius={shapeR}
+          brick={levelColor}
+          variant={isLocked ? "locked" : isAvail && showGlow ? "active" : "completed"}
+        />
       </Pressable>
     </Animated.View>
   );
@@ -1178,7 +1191,9 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     zIndex: 1,
   },
-  stepLeft: { alignItems: "center", justifyContent: "center" },
+  // Fixed 26×26 slot (LEVEL_ICON_BOX) so every glyph sits at the same scale
+  // and the text column always starts at 14 + 26 + 10 = 50.
+  stepLeft: { width: 26, height: 26, alignItems: "center", justifyContent: "center" },
   stepIconCircle: {
     width: 38,
     height: 38,
