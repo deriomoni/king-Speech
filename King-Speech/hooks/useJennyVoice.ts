@@ -5,7 +5,7 @@ import { getApiUrl } from "@/lib/query-client";
 // expo-av only on native
 let Audio: any = null;
 if (Platform.OS !== "web") {
-  Audio = require("expo-av").Audio;
+  Audio = require("@/lib/av").Audio;
 }
 
 /**

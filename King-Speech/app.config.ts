@@ -23,6 +23,14 @@ const plugins: ExpoConfig["plugins"] = [
   "expo-sharing",
   "expo-splash-screen",
   "expo-status-bar",
+  "expo-video",
+  [
+    "expo-audio",
+    {
+      microphonePermission:
+        "King Speech использует микрофон, чтобы записывать твою речь в упражнениях.",
+    },
+  ],
   [
     "expo-image-picker",
     {
@@ -80,7 +88,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins,
   experiments: {
     typedRoutes: true,
-    reactCompiler: true,
+    reactCompiler: false,
   },
   ...(EAS_PROJECT_ID
     ? {

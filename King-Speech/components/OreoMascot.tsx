@@ -9,7 +9,7 @@ import Animated, {
   withDelay,
   Easing,
 } from "react-native-reanimated";
-import { Video, ResizeMode } from "expo-av";
+import { Video, ResizeMode } from "@/lib/av";
 
 interface Props {
   size?: number;

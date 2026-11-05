@@ -40,7 +40,7 @@ import { aspectsFromMetrics5 } from "@/components/ScoreFlower";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
-  Audio = require("expo-av").Audio;
+  Audio = require("@/lib/av").Audio;
 }
 
 const { width: SW } = Dimensions.get("window");

@@ -16,7 +16,7 @@ import { useWaveformBars } from "@/hooks/useWaveformBars";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
-  Audio = require("expo-av").Audio;
+  Audio = require("@/lib/av").Audio;
 }
 
 export type RecordingPhase =

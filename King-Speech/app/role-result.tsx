@@ -36,7 +36,7 @@ let ResizeMode: any = null;
 let AudioMod: any = null;
 if (Platform.OS !== "web") {
   try {
-    const av = require("expo-av");
+    const av = require("@/lib/av");
     Video = av.Video;
     ResizeMode = av.ResizeMode;
     AudioMod = av.Audio;

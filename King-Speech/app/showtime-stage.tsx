@@ -48,7 +48,7 @@ const AUDIENCE_PHOTOS = [
 // expo-av only on native
 let Audio: any = null;
 if (Platform.OS !== "web") {
-  Audio = require("expo-av").Audio;
+  Audio = require("@/lib/av").Audio;
 }
 
 const { width: SW, height: SH } = Dimensions.get("window");
@@ -4982,13 +4982,13 @@ export default function ShowtimeStageScreen() {
 
       {/* Finishing overlay */}
       {finished && (
-        <Animated.View entering={FadeIn.duration(600)} style={s.finishOverlay}>
-          <View style={s.finishContent}>
+        <View style={s.finishOverlay}>
+          <Animated.View entering={FadeIn.duration(600)} style={s.finishContent}>
             <Ionicons name="trophy" size={44} color={theme.accentColor} />
             <Text style={[s.finishTitle, { fontFamily: "Nunito_700Bold" }]}>{t("bravo")}</Text>
             <Text style={[s.finishSub, { fontFamily: "Nunito_400Regular" }]}>{t("openingPlayback")}</Text>
-          </View>
-        </Animated.View>
+          </Animated.View>
+        </View>
       )}
 
       {/* Speech panel */}

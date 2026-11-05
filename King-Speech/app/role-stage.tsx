@@ -30,7 +30,7 @@ import { setRolePerformance } from "@/lib/rolePerformance";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
-  Audio = require("expo-av").Audio;
+  Audio = require("@/lib/av").Audio;
 }
 
 const BG = "#0E0E10"; // main interface dark (brandColors.bg)

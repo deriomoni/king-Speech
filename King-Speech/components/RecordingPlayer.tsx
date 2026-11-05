@@ -6,7 +6,7 @@ import { useAudioWaveform } from "@/hooks/useAudioWaveform";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
-  Audio = require("expo-av").Audio;
+  Audio = require("@/lib/av").Audio;
 }
 
 const BAR_COUNT = 44;

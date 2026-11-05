@@ -13,7 +13,7 @@ import { Platform } from "react-native";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
-  Audio = require("expo-av").Audio;
+  Audio = require("@/lib/av").Audio;
 }
 
 export interface ReadingCaptureResult {

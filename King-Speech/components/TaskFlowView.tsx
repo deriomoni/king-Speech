@@ -279,7 +279,7 @@ export default function TaskFlowView({
     } else {
       try {
         const FileSystem = require("expo-file-system/legacy");
-        const { Audio } = require("expo-av");
+        const { Audio } = require("@/lib/av");
         const ext = (a.mime?.split("/").pop() || "m4a").replace(/[^a-z0-9]/gi, "") || "m4a";
         const path = `${FileSystem.cacheDirectory}ks_answer_${i}.${ext}`;
         await FileSystem.writeAsStringAsync(path, a.base64, { encoding: "base64" });
@@ -688,26 +688,30 @@ export default function TaskFlowView({
 
       {/* Darken curtain before the flower blooms */}
       {darken ? (
-        <Animated.View
-          entering={FadeIn.duration(420)}
-          pointerEvents="none"
-          style={[StyleSheet.absoluteFill, { backgroundColor: brand.ink }]}
-        />
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <Animated.View
+            entering={FadeIn.duration(420)}
+            pointerEvents="none"
+            style={{ flex: 1, backgroundColor: brand.ink }}
+          />
+        </View>
       ) : null}
 
       {/* Interview corridor — 7s mascot loading curtain on entry */}
       {corridor ? (
-        <Animated.View exiting={FadeOut.duration(420)} style={[st.corridor, { backgroundColor: colors.background }]}>
-          <OscarMascot emotion="happy" size={180} />
-          <Text style={[st.corridorQuote, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>
-            {isTongue
-              ? ru ? "Медленно и чётко. Скорость придёт." : "Slow and clear. Speed will come."
-              : ru ? "Дыши ровно. Говори как есть." : "Breathe easy. Speak your mind."}
-          </Text>
-          <Text style={[st.corridorHint, { color: colors.textMuted, fontFamily: "Rubik_600SemiBold" }]}>
-            {(isTongue ? (ru ? "Готовим скороговорки" : "Preparing tongue twisters") : ru ? "Готовим интервью" : "Preparing the interview").toUpperCase()}
-          </Text>
-        </Animated.View>
+        <View style={[st.corridor, { backgroundColor: colors.background }]} pointerEvents="box-none">
+          <Animated.View exiting={FadeOut.duration(420)} style={st.corridorInner}>
+            <OscarMascot emotion="happy" size={180} />
+            <Text style={[st.corridorQuote, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>
+              {isTongue
+                ? ru ? "Медленно и чётко. Скорость придёт." : "Slow and clear. Speed will come."
+                : ru ? "Дыши ровно. Говори как есть." : "Breathe easy. Speak your mind."}
+            </Text>
+            <Text style={[st.corridorHint, { color: colors.textMuted, fontFamily: "Rubik_600SemiBold" }]}>
+              {(isTongue ? (ru ? "Готовим скороговорки" : "Preparing tongue twisters") : ru ? "Готовим интервью" : "Preparing the interview").toUpperCase()}
+            </Text>
+          </Animated.View>
+        </View>
       ) : null}
 
       {/* Developer report — transcripts + scoring breakdown (test build) */}
@@ -805,7 +809,7 @@ function DevReport({
       ];
 
   return (
-    <Animated.View entering={FadeIn.duration(260)} style={[st.devRoot, { backgroundColor: colors.background }]}>
+    <View style={[st.devRoot, { backgroundColor: colors.background }]}>
       <ScrollView
         contentContainerStyle={{ paddingTop: topPad + 20, paddingBottom: bottomPad + 100, paddingHorizontal: 20, gap: 14 }}
         showsVerticalScrollIndicator={false}
@@ -1071,7 +1075,7 @@ function DevReport({
           <Ionicons name="arrow-forward" size={20} color={brand.onGold} />
         </Pressable>
       </View>
-    </Animated.View>
+    </View>
   );
 }
 
@@ -1083,8 +1087,15 @@ const st = StyleSheet.create({
   titleWrap: { paddingHorizontal: 28, paddingTop: 18, gap: 4 },
   kicker: { fontSize: 12, letterSpacing: 1.6 },
   levelTitle: { fontSize: 22, lineHeight: 28 },
-  stage: { flex: 1, justifyContent: "center", paddingHorizontal: 22 },
-  cardWrap: { width: "100%" },
+  stage: { flex: 1 },
+  // Absolutely filled so the entering and exiting cards overlap in the SAME
+  // spot during a swap (slide / cross-fade) instead of stacking in flow — the
+  // latter made both task screens visible at once under reanimated 4.
+  cardWrap: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    paddingHorizontal: 22,
+  },
   card: {
     borderRadius: 28,
     borderWidth: 1,
@@ -1158,17 +1169,28 @@ const st = StyleSheet.create({
   starsRow: { flexDirection: "row", gap: 3, marginTop: 3 },
 
   // Interview corridor
+  // Outer plain View carries absolute-fill + zIndex; the animated inner view
+  // fills it and keeps the centering (reanimated 4 layout anim would otherwise
+  // override position:absolute and stack the overlay in flow).
   corridor: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 40,
     zIndex: 20,
+    elevation: 20,
+  },
+  corridorInner: {
+    alignItems: "center",
   },
   corridorQuote: { fontSize: 22, lineHeight: 30, textAlign: "center", marginTop: 24 },
   corridorHint: { fontSize: 11, letterSpacing: 2, marginTop: 16 },
 
-  // Answer-breakdown report
+  // Answer-breakdown report — outer plain View fills + zIndex, animated inner fills it.
   devRoot: { ...StyleSheet.absoluteFillObject, zIndex: 30 },
   devTitle: { fontSize: 26, lineHeight: 31 },
   devLede: { fontSize: 14, lineHeight: 20, marginTop: -6 },

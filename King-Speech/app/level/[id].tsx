@@ -658,9 +658,13 @@ function LevelCompleteModal({
     marginBottom: 6,
   };
 
+  if (!visible) return null;
+  // In-tree full-screen overlay instead of a RN <Modal>: on the New
+  // Architecture a Modal can fail to render/unmount when it swaps with another
+  // Modal in the same frame (the flower→complete hand-off), leaving this
+  // success screen blank and the previous mascot ghosted over the next level.
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]}>
         {/* Confetti pinned flush to the top edge; only the lower ~half shows
             (top clipped), transparent background. */}
         {visible && (
@@ -753,7 +757,6 @@ function LevelCompleteModal({
         </Pressable>
         </View>
       </View>
-    </Modal>
   );
 }
 
@@ -1553,9 +1556,13 @@ export default function LevelScreen() {
       />
 
       {/* Aggregate level flower — its dark canvas + bloom IS the "screen
-          darkens → flower appears" moment after the last task. */}
-      <Modal visible={!!levelFlower} animationType="fade" transparent={false} presentationStyle="fullScreen">
-        {levelFlower ? (
+          darkens → flower appears" moment after the last task. Rendered as an
+          in-tree full-screen overlay (NOT a RN <Modal>): on the New
+          Architecture a Modal can fail to unmount on state change/navigation,
+          leaving the mascot ghosted over the next level. An overlay unmounts
+          cleanly the moment `levelFlower` is cleared. */}
+      {levelFlower ? (
+        <View style={StyleSheet.absoluteFill}>
           <FlowerResultWindow
             overall={levelFlower.score.overall}
             aspects={aspectsFromScore10(levelFlower.score, lang)}
@@ -1570,8 +1577,8 @@ export default function LevelScreen() {
             primaryLabel={t("forward")}
             onPrimary={handleFlowerContinue}
           />
-        ) : null}
-      </Modal>
+        </View>
+      ) : null}
 
       {/* Level Complete Modal */}
       <LevelCompleteModal

@@ -133,7 +133,7 @@ function bytesToBase64(bytes: Uint8Array): string {
 let NativeAudio: any = null;
 let NativeFS: any = null;
 if (Platform.OS !== "web") {
-  try { NativeAudio = require("expo-av").Audio; } catch {}
+  try { NativeAudio = require("@/lib/av").Audio; } catch {}
   try { NativeFS = require("expo-file-system/legacy"); } catch {}
 }
 

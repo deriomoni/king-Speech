@@ -569,44 +569,47 @@ export default function ReadingLevelView({
 
       {/* Countdown overlay */}
       {showCountdown && (
-        <Animated.View
-          entering={FadeIn.duration(180)}
-          exiting={FadeOut.duration(220)}
+        <View
           style={[st.overlay, { backgroundColor: bgColor + "F2" }]}
           pointerEvents="none"
         >
-          <Animated.Text
-            key={`cd-${countdown}`}
-            entering={FadeIn.duration(200)}
-            exiting={FadeOut.duration(200)}
-            style={[st.countdownNum, { color: ink, fontFamily: R.type.heroFont }]}
+          <Animated.View
+            entering={FadeIn.duration(180)}
+            exiting={FadeOut.duration(220)}
+            style={st.overlayInner}
           >
-            {countdown}
-          </Animated.Text>
-          <Text
-            style={[st.countdownHint, { color: inkFaint, fontFamily: R.type.kickerFont }]}
-          >
-            {(lang === "ru" ? "Приготовься" : "Get ready").toUpperCase()}
-          </Text>
-        </Animated.View>
+            <Animated.Text
+              key={`cd-${countdown}`}
+              entering={FadeIn.duration(200)}
+              exiting={FadeOut.duration(200)}
+              style={[st.countdownNum, { color: ink, fontFamily: R.type.heroFont }]}
+            >
+              {countdown}
+            </Animated.Text>
+            <Text
+              style={[st.countdownHint, { color: inkFaint, fontFamily: R.type.kickerFont }]}
+            >
+              {(lang === "ru" ? "Приготовься" : "Get ready").toUpperCase()}
+            </Text>
+          </Animated.View>
+        </View>
       )}
 
       {/* Loading curtain — mascot + line; the level renders behind it */}
       {loading && (
-        <Animated.View
-          exiting={FadeOut.duration(420)}
-          style={[st.overlay, { backgroundColor: bgColor }]}
-        >
-          <OscarMascot emotion="happy" size={180} />
-          <Text style={[st.loadQuote, { color: ink, fontFamily: R.type.bodyFont }]}>
-            {lang === "ru"
-              ? "Речь — это сцена. Выходи и говори."
-              : "Speech is a stage. Step up and speak."}
-          </Text>
-          <Text style={[st.loadHint, { color: inkFaint, fontFamily: R.type.kickerFont }]}>
-            {(lang === "ru" ? "Готовим полотно" : "Preparing the canvas").toUpperCase()}
-          </Text>
-        </Animated.View>
+        <View style={[st.overlay, { backgroundColor: bgColor }]}>
+          <Animated.View exiting={FadeOut.duration(420)} style={st.overlayInner}>
+            <OscarMascot emotion="happy" size={180} />
+            <Text style={[st.loadQuote, { color: ink, fontFamily: R.type.bodyFont }]}>
+              {lang === "ru"
+                ? "Речь — это сцена. Выходи и говори."
+                : "Speech is a stage. Step up and speak."}
+            </Text>
+            <Text style={[st.loadHint, { color: inkFaint, fontFamily: R.type.kickerFont }]}>
+              {(lang === "ru" ? "Готовим полотно" : "Preparing the canvas").toUpperCase()}
+            </Text>
+          </Animated.View>
+        </View>
       )}
 
       {/* "Узнать больше" sheet — neutral text only, author name big, ✕ top-right */}
@@ -738,6 +741,9 @@ const st = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 40,
   },
+  // Inner holds the centered content; positioning + bg live on the plain outer
+  // View (reanimated 4 layout anims override position:absolute).
+  overlayInner: { alignItems: "center" },
   loadQuote: {
     fontSize: 20,
     lineHeight: 29,

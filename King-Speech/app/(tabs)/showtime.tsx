@@ -134,7 +134,7 @@ export default function ShowTimeScreen() {
       <Animated.ScrollView
         onScroll={onScroll}
         scrollEventThrottle={16}
-        contentContainerStyle={[st.scroll, { paddingTop: topPad + 12, paddingBottom: bottomPad + 100 }]}
+        contentContainerStyle={[st.scroll, { paddingTop: topPad + 12, paddingBottom: bottomPad + 160 }]}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeIn.duration(400)} style={st.header}>
@@ -212,13 +212,7 @@ export default function ShowTimeScreen() {
             <Text style={[st.startBtnText, { color: "#1A1A2E", fontFamily: "Nunito_700Bold" }]}>
               {t("startTraining")}
             </Text>
-            {showTimeFreeAvailable ? (
-              <View style={st.startBtnTag}>
-                <Text style={st.startBtnTagText}>
-                  {lang === "en" ? "free" : "бесплатно"}
-                </Text>
-              </View>
-            ) : (
+            {showTimeFreeAvailable ? null : (
               <View style={st.startBtnCost}>
                 <Text style={st.startBtnCostText}>{SHOW_TIME_COST}</Text>
                 <CoinIcon size={16} color="#1A1A2E" />

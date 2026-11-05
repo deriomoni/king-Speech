@@ -41,8 +41,11 @@ const EMOTION_ANIMATION: Record<OscarEmotion, string> = {
   shiny: "Shiny",
 };
 
-// Portion of the artboard height we keep (crops out the demo button strip).
-const CROP = 0.74;
+// The mascot is rendered 30% bigger than the requested `size`, inside a FULL
+// SQUARE frame (no bottom crop) so NO limb — a raised arm/hand, legs/feet —
+// is clipped. The Rive artboard is `contain`-fit and centered, giving the
+// character margin on every side.
+const SIZE_BOOST = 1.3;
 
 interface Props {
   emotion?: OscarEmotion;
@@ -52,13 +55,15 @@ interface Props {
 }
 
 export default function OscarMascot({ emotion = "idle", size = 150, style }: Props) {
+  const S = Math.round(size * SIZE_BOOST);
   return (
     <View
       style={[
         {
-          width: size,
-          height: Math.round(size * CROP),
-          overflow: "hidden",
+          width: S,
+          height: S,
+          alignItems: "center",
+          justifyContent: "center",
         },
         style,
       ]}
@@ -68,9 +73,9 @@ export default function OscarMascot({ emotion = "idle", size = 150, style }: Pro
         // Remount on emotion change so the new timeline plays from frame 0.
         key={`oscar-${emotion}`}
         source={require("@/assets/rive/oscar.riv")}
-        style={{ width: size, height: size, backgroundColor: "transparent" }}
+        style={{ width: S, height: S, backgroundColor: "transparent" }}
         fit="contain"
-        alignment="topCenter"
+        alignment="center"
         autoplay
         animation={EMOTION_ANIMATION[emotion]}
       />

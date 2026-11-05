@@ -24,9 +24,9 @@ export interface PitchState {
   pitchMode: PitchMode;
 }
 
-let Audio: typeof import("expo-av").Audio | null = null;
+let Audio: typeof import("@/lib/av").Audio | null = null;
 if (Platform.OS !== "web") {
-  Audio = require("expo-av").Audio;
+  Audio = require("@/lib/av").Audio;
 }
 
 export function usePitchDetection() {

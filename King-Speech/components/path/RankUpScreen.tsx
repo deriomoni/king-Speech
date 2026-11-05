@@ -21,7 +21,7 @@ import Animated, {
   cancelAnimation,
 } from "react-native-reanimated";
 import { router } from "expo-router";
-import { Audio } from "expo-av";
+import { Audio } from "@/lib/av";
 import { RankBackground } from "./RankBackground";
 import { useTheme } from "@/context/ThemeContext";
 import { getRankTheme, pickLocalized, type RankTheme } from "./rankTheme";
