@@ -10,20 +10,20 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-// SDK 56 split expo-router from react-navigation and no longer exposes the
-// bottom-tabs prop types publicly. This is the minimal shape of what
-// expo-router's <Tabs> passes to a custom `tabBar`.
+// Minimal shape of what expo-router's <Tabs> passes to a custom `tabBar`.
+// SDK 58 replaced the `navigation` prop with `emitter` + `navigateToTab`
+// (see expo-router/build/react-navigation/bottom-tabs/types.d.ts).
 type TabRoute = { key: string; name: string };
 type BottomTabBarProps = {
   state: { index: number; routes: TabRoute[] };
-  navigation: {
+  emitter: {
     emit: (event: {
       type: "tabPress";
       target?: string;
       canPreventDefault?: boolean;
     }) => { defaultPrevented: boolean };
-    navigate: (name: string) => void;
   };
+  navigateToTab: (routeKey: string) => void;
   descriptors: Record<string, { options: { tabBarStyle?: unknown } }>;
 };
 import { useLang } from "@/context/LangContext";
@@ -101,7 +101,7 @@ function asGradient(colors: readonly string[]): GradientColors {
   return colors as GradientColors;
 }
 
-function SonicTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
+function SonicTabBar({ state, emitter, navigateToTab, descriptors }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { themeMode } = useTheme();
   const tk = TAB_TOKENS[themeMode];
@@ -155,13 +155,13 @@ function SonicTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
     }
     const target = state.routes.find((r) => r.name === slot.routeName);
     if (!target) return;
-    const event = navigation.emit({
+    const event = emitter.emit({
       type: "tabPress",
       target: target.key,
       canPreventDefault: true,
     });
     if (!event.defaultPrevented) {
-      navigation.navigate(target.name as never);
+      navigateToTab(target.key);
     }
   };
 
