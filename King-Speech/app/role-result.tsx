@@ -34,6 +34,7 @@ import Animated, {
 import { useLang } from "@/context/LangContext";
 import { useRoles } from "@/context/RolesContext";
 import { getRoleById, tx } from "@/constants/rolesData";
+import RoleArt from "@/components/roles/RoleArt";
 import { takeRolePerformance, type RolePerformance } from "@/lib/rolePerformance";
 import { getApiUrl } from "@/lib/query-client";
 
@@ -507,7 +508,7 @@ export default function RoleResultScreen() {
           ) : (
             <>
               <LinearGradient colors={[role.accent + "55", "transparent"]} style={StyleSheet.absoluteFill} />
-              <Text style={styles.previewEmoji}>{role.emoji}</Text>
+              <RoleArt id={role.id} size={220} radius={22} />
             </>
           )}
 
@@ -784,7 +785,6 @@ const styles = StyleSheet.create({
   title: { color: TEXT, fontFamily: "Nunito_800ExtraBold", fontSize: 22, marginBottom: 16 },
 
   previewWrap: { height: 300, borderRadius: CARD_RADIUS, overflow: "hidden", backgroundColor: CARD_BG, alignItems: "center", justifyContent: "center", marginBottom: 18 },
-  previewEmoji: { fontSize: 96 },
   mirrored: { transform: [{ scaleX: -1 }] },
   tapLayer: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
   bigPlay: { width: 68, height: 68, borderRadius: 34, backgroundColor: GOLD, alignItems: "center", justifyContent: "center",

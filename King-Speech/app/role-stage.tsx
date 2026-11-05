@@ -26,6 +26,7 @@ import Animated, {
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from "expo-camera";
 import { useLang } from "@/context/LangContext";
 import { getRoleById, tx, type RoleMode } from "@/constants/rolesData";
+import RoleArt from "@/components/roles/RoleArt";
 import { setRolePerformance } from "@/lib/rolePerformance";
 
 let Audio: any = null;
@@ -350,7 +351,7 @@ export default function RoleStageScreen() {
           <Ionicons name="close" size={24} color="#fff" />
         </Pressable>
         <View style={styles.roleTag}>
-          <Text style={styles.roleTagEmoji}>{role.emoji}</Text>
+          <RoleArt id={role.id} size={28} radius={14} face />
           <Text style={styles.roleTagText} numberOfLines={1}>{tx(role.title, lang)}</Text>
         </View>
         {phase === "recording" ? (
@@ -465,8 +466,7 @@ const styles = StyleSheet.create({
 
   topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 10 },
   closeBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "#00000055" },
-  roleTag: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#00000055", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 18, maxWidth: 200 },
-  roleTagEmoji: { fontSize: 15 },
+  roleTag: { flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: "#00000055", paddingLeft: 4, paddingRight: 12, paddingVertical: 4, borderRadius: 18, maxWidth: 200 },
   roleTagText: { color: "#fff", fontFamily: "Nunito_700Bold", fontSize: 13, flexShrink: 1 },
   recPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#E8384FCC", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 18 },
   recDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#fff" },

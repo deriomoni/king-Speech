@@ -37,6 +37,9 @@ const { width: SW } = Dimensions.get("window");
 const CARD_GAP = 12;
 const H_PAD = 20;
 const CARD_W = (Math.min(SW, 520) - H_PAD * 2 - CARD_GAP) / 2;
+const CARD_ART = Math.floor(CARD_W - 28); // fills the card inside its 14pt padding
+const SPIN_W = Math.min(SW - 72, 300);
+const SPIN_ART = Math.floor(SPIN_W - 44);
 
 // Clean white / black roles theme.
 const BG = "#FFFFFF";
@@ -76,7 +79,7 @@ function RoleCard({
       ]}
     >
       <View style={styles.cardArtBox}>
-        <RoleArt id={role.id} size={92} />
+        <RoleArt id={role.id} size={CARD_ART} radius={12} />
       </View>
       <Text style={styles.cardTitle} numberOfLines={2}>{tx(role.title, lang)}</Text>
       <Text style={styles.cardDesc} numberOfLines={3}>{tx(role.desc, lang)}</Text>
@@ -105,7 +108,7 @@ function ModePicker({
           <Pressable onPress={() => {}}>
             <View style={styles.sheetHandle} />
             <View style={styles.sheetArtBox}>
-              <RoleArt id={role.id} size={96} />
+              <RoleArt id={role.id} size={148} radius={20} />
             </View>
             <Text style={styles.sheetTitle}>{tx(role.title, lang)}</Text>
             <Text style={styles.sheetScene}>{tx(role.scene, lang)}</Text>
@@ -204,7 +207,7 @@ function SpinOverlay({
           style={styles.spinCard}
         >
           <View style={styles.spinArtBox}>
-            <RoleArt id={current.id} size={120} />
+            <RoleArt id={current.id} size={SPIN_ART} radius={18} />
           </View>
           <Text style={styles.spinTitle}>{tx(current.title, lang)}</Text>
           {done && <Text style={styles.spinDesc}>{tx(current.desc, lang)}</Text>}
@@ -323,7 +326,7 @@ export default function RolesScreen() {
           {visibleRoles.map((role, i) => {
             const has = isCollected(role.id);
             return (
-              <Animated.View key={role.id} entering={FadeInDown.delay(Math.min(i * 30, 300))}>
+              <Animated.View key={role.id} entering={FadeInDown.delay(Math.min(i * 30, 300))} style={styles.cardSlot}>
                 <RoleCard role={role} collected={has} onPress={() => { haptic(); setPickerRole(role); }} />
               </Animated.View>
             );
@@ -400,13 +403,15 @@ const styles = StyleSheet.create({
   chipText: { color: MUTED, fontFamily: "Nunito_600SemiBold", fontSize: 13 },
 
   grid: { flexDirection: "row", flexWrap: "wrap", gap: CARD_GAP, marginTop: 18 },
+  // The slot stretches to the tallest card in its row; the card fills it so row heights match.
+  cardSlot: { width: CARD_W },
   card: {
-    width: CARD_W, minHeight: 188, borderRadius: 20, padding: 14,
+    width: CARD_W, minHeight: 188, flexGrow: 1, borderRadius: 20, padding: 14,
     backgroundColor: CARD_BG, borderWidth: 2, borderColor: LINE,
     alignItems: "center", overflow: "hidden",
   },
   cardArtBox: {
-    width: 100, height: 100, alignItems: "center", justifyContent: "center", marginTop: 2, marginBottom: 8,
+    width: CARD_ART, height: CARD_ART, alignItems: "center", justifyContent: "center", marginTop: 2, marginBottom: 8,
   },
   cardTitle: { color: TEXT, fontFamily: "Nunito_800ExtraBold", fontSize: 16, marginTop: 2, textAlign: "center" },
   cardDesc: { color: MUTED, fontFamily: "Nunito_400Regular", fontSize: 12, marginTop: 4, lineHeight: 16, textAlign: "center" },
@@ -419,7 +424,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1, borderColor: "#0000000F",
   },
   sheetHandle: { alignSelf: "center", width: 44, height: 5, borderRadius: 3, backgroundColor: "#00000022", marginBottom: 14 },
-  sheetArtBox: { width: 104, height: 104, alignSelf: "center", alignItems: "center", justifyContent: "center" },
+  sheetArtBox: { width: 148, height: 148, alignSelf: "center", alignItems: "center", justifyContent: "center" },
   sheetTitle: { color: TEXT, fontFamily: "Nunito_800ExtraBold", fontSize: 22, textAlign: "center", marginTop: 6 },
   sheetScene: { color: MUTED, fontFamily: "Nunito_400Regular", fontSize: 14, textAlign: "center", marginTop: 8, lineHeight: 20 },
   sheetChoose: { color: TEXT, fontFamily: "Nunito_700Bold", fontSize: 13, marginTop: 20, marginBottom: 10, letterSpacing: 0.5 },
@@ -437,7 +442,7 @@ const styles = StyleSheet.create({
   spinBackdrop: { flex: 1, backgroundColor: "#FFFFFFF7", alignItems: "center", justifyContent: "center", padding: 28 },
   spinLabel: { color: TEXT, fontFamily: "Nunito_800ExtraBold", fontSize: 22, marginBottom: 22 },
   spinCard: {
-    width: Math.min(SW - 72, 300), minHeight: 240, borderRadius: 28, borderWidth: 2,
+    width: SPIN_W, minHeight: 240, borderRadius: 28, borderWidth: 2,
     borderColor: LINE,
     backgroundColor: CARD_BG, alignItems: "center", justifyContent: "center", padding: 22, overflow: "hidden",
     ...Platform.select({
@@ -445,7 +450,7 @@ const styles = StyleSheet.create({
       android: { elevation: 8 }, default: {},
     }),
   },
-  spinArtBox: { width: 132, height: 132, alignItems: "center", justifyContent: "center", marginBottom: 6 },
+  spinArtBox: { width: SPIN_ART, height: SPIN_ART, alignItems: "center", justifyContent: "center", marginBottom: 6 },
   spinTitle: { color: TEXT, fontFamily: "Nunito_800ExtraBold", fontSize: 22, textAlign: "center", marginTop: 10 },
   spinDesc: { color: MUTED, fontFamily: "Nunito_400Regular", fontSize: 13, textAlign: "center", marginTop: 8, lineHeight: 18 },
   spinPlayBtn: {
