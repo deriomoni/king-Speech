@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable, Platform, Alert } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
-import { useGame } from "@/context/GameContext";
 import { useLang } from "@/context/LangContext";
 import { useAuth } from "@/context/AuthContext";
 import { useDevTools } from "@/context/DevToolsContext";
@@ -93,7 +92,6 @@ function ThemeOption({
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { theme, themeMode, setTheme } = useTheme();
-  const { resetProgress } = useGame();
   const { lang: appLang, setLang: setAppLang, t } = useLang();
   const { user } = useAuth();
   const { isOpenTestingEnabled, setOpenTestingEnabled, isDevSkipEnabled, setDevSkipEnabled } =
@@ -110,17 +108,6 @@ export default function SettingsScreen() {
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
-
-  const handleReset = () => {
-    if (Platform.OS === "web") {
-      if (window.confirm(t("resetConfirm"))) resetProgress();
-    } else {
-      Alert.alert(t("resetTitle"), t("resetMessage"), [
-        { text: t("cancel"), style: "cancel" },
-        { text: t("resetBtn"), style: "destructive", onPress: resetProgress },
-      ]);
-    }
-  };
 
   const userName = user?.name || t("profile");
   const initial = (userName.trim()[0] || "K").toUpperCase();
@@ -405,15 +392,6 @@ export default function SettingsScreen() {
                 }
               />
             )}
-            {/* Not in the Figma screen — kept so the existing reset action stays reachable. */}
-            <ListRow
-              theme={theme}
-              icon={<Ionicons name="trash-outline" size={22} color={SIGN_OUT} />}
-              label={t("resetProgress")}
-              labelColor={SIGN_OUT}
-              onPress={handleReset}
-              right={<View />}
-            />
           </Card>
         </Animated.View>
       </ScrollView>

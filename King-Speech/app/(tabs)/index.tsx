@@ -48,6 +48,28 @@ import { getRankTheme } from "@/components/path/rankTheme";
 import PathScrubber from "@/components/path/PathScrubber";
 import LevelIcon, { levelIconKind } from "@/components/path/LevelIcon";
 import BrickStroke from "@/components/path/BrickStroke";
+import DailyTipOverlay, { getDailyTip } from "@/components/DailyTipOverlay";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "@/context/AuthContext";
+
+// The daily tip opens once per calendar day, the first time the Path is shown.
+const DAILY_TIP_KEY = "@kingspeech_daily_tip_seen_v1";
+
+function useDailyTip() {
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const today = new Date().toDateString();
+    AsyncStorage.getItem(DAILY_TIP_KEY)
+      .then((seen) => {
+        if (seen === today) return;
+        setOpen(true);
+        AsyncStorage.setItem(DAILY_TIP_KEY, today).catch(() => {});
+      })
+      .catch(() => {});
+  }, []);
+  return { open, close: () => setOpen(false), tip: getDailyTip(new Date(), user?.createdAt) };
+}
 
 // Figma variable path/connector — the thread between levels not yet walked.
 const PATH_CONNECTOR = {
@@ -474,6 +496,7 @@ function ModuleDivider({
 
 export default function PathScreen() {
   const { colors, colorScheme, themeMode } = useAppColors();
+  const dailyTip = useDailyTip();
   const isDark = themeMode === "dark";
   const insets = useSafeAreaInsets();
   const {
@@ -1116,6 +1139,7 @@ export default function PathScreen() {
         </Pressable>
       </Animated.View>
 
+      <DailyTipOverlay visible={dailyTip.open} onClose={dailyTip.close} tip={dailyTip.tip} />
     </View>
   );
 }
