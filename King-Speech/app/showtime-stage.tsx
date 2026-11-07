@@ -39,9 +39,12 @@ import {
   getModuleFromShowtimeId,
 } from "@/constants/showtimeLoader";
 import { playSfx, preloadSfx, unloadSfx } from "@/lib/sfx";
-import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
 import DevSkipButton from "@/components/DevSkipButton";
-import AppDialog from "@/components/AppDialog";
+import StageGlassDialog from "@/components/showtime/StageGlassDialog";
+import { SvgXml } from "react-native-svg";
+import { useTheme } from "@/context/ThemeContext";
+import { categoryOf, THEME_CATEGORIES } from "@/components/showtime/themeCategories";
+import { stageLineArtXml, playCircleXml } from "@/assets/figma/showtime-stage/svgs";
 
 // Audience halls (first-person, speaker POV). Used as the variable stage
 // backdrop — the speech text sits on a white sheet at the bottom that blurs up
@@ -4658,8 +4661,8 @@ function TextEdgeBlur({ edge }: { edge: "top" | "bottom" }) {
         : [{ h: 72, i: 5 }, { h: 48, i: 12 }, { h: 26, i: 24 }];
   const anchor = edge === "top" ? { top: 0 } : { bottom: 0 };
   const fade: [string, string] = edge === "top"
-    ? ["rgba(11,13,18,0.72)", "rgba(11,13,18,0)"]
-    : ["rgba(11,13,18,0)", "rgba(11,13,18,0.82)"];
+    ? ["rgba(38,38,40,0.72)", "rgba(38,38,40,0)"]
+    : ["rgba(38,38,40,0)", "rgba(38,38,40,0.82)"];
   return (
     <View pointerEvents="none" style={[teb.wrap, anchor, { height: strips[0].h }]}>
       {strips.map((strip, i) => (
@@ -4730,6 +4733,34 @@ export default function ShowtimeStageScreen() {
   const theme = themes[levelId] ?? themes["showtime"];
   const [speechIdx] = useState(() => Math.floor(Math.random() * theme.speeches.length));
   const speech = theme.speeches[speechIdx];
+  const { theme: ui, themeMode } = useTheme();
+  const isDarkUi = themeMode === "dark";
+
+  // Theme preview (Figma 310:4346) facts: category, length, difficulty.
+  const preview = useMemo(() => {
+    const en = lang === "en";
+    const words = speech.lines.join(" ").split(/\s+/).filter(Boolean).length;
+    const minutes = Math.max(1, Math.round(words / 110));
+    const rank = getShowtimeModule(getModuleFromShowtimeId(levelId))?.rank ?? 1;
+    const difficulty = rank <= 1
+      ? (en ? "Easy" : "Лёгкая")
+      : rank <= 3
+        ? (en ? "Medium" : "Средняя")
+        : (en ? "Hard" : "Сложная");
+    const cat = THEME_CATEGORIES.find((c) => c.id === categoryOf(levelId));
+    const n10 = words % 10, n100 = words % 100;
+    const wordsWord = en
+      ? "words"
+      : n10 === 1 && n100 !== 11
+        ? "слово"
+        : n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)
+          ? "слова"
+          : "слов";
+    return {
+      category: cat ? (en ? cat.en : cat.ru) : "",
+      meta: `${minutes} ${en ? "min" : "мин"}  ·  ${difficulty}  ·  ${words} ${wordsWord}`,
+    };
+  }, [lang, levelId, speech]);
   // Variable audience backdrop — one of the halls, chosen per run.
   const [scene] = useState(() => SCENE_POOL[Math.floor(Math.random() * SCENE_POOL.length)]);
   // Height/width of that hall, so the backdrop keeps its own proportions.
@@ -5190,10 +5221,10 @@ export default function ShowtimeStageScreen() {
         colors={[
           "rgba(0,0,0,0.14)",
           "rgba(0,0,0,0.18)",
-          "rgba(11,13,18,0.45)",
-          "rgba(11,13,18,0.85)",
-          "#0B0D12",
-          "#0B0D12",
+          "rgba(38,38,40,0.45)",
+          "rgba(38,38,40,0.85)",
+          "#262628",
+          "#262628",
         ]}
         locations={[0, 0.3, 0.44, 0.54, 0.62, 1]}
         style={StyleSheet.absoluteFill}
@@ -5220,79 +5251,100 @@ export default function ShowtimeStageScreen() {
         </View>
       )}
 
-      {/* Pre-start curtain */}
+      {/* Theme preview before going on stage (Figma 310:4346 "Show Time ·
+          Превью темы"): line-art stage, category + title, length/difficulty,
+          a short brief, the delivery set-up, then the scroll mode and the CTA.
+          Fades away as the hall comes up. */}
       {!started && (
-        <Animated.View style={[StyleSheet.absoluteFill, curtainStyle, { backgroundColor: theme.gradientColors[1], zIndex: 20 }]}>
-          <LinearGradient colors={theme.gradientColors} style={StyleSheet.absoluteFill} />
-          {Array.from({ length: 12 }).map((_, i) => (
-            <View key={i} style={{ position: "absolute", left: `${i * 8.5}%` as any, top: 0, bottom: 0, width: 1, backgroundColor: theme.accentColor + "30" }} />
-          ))}
+        <Animated.View style={[StyleSheet.absoluteFill, curtainStyle, { backgroundColor: ui.bg, zIndex: 20 }]}>
           <ScrollView
             style={StyleSheet.absoluteFill}
-            contentContainerStyle={s.curtainScroll}
+            contentContainerStyle={[s.pvScroll, { paddingTop: topPad + 43, paddingBottom: bottomPad + 52 }]}
             showsVerticalScrollIndicator={false}
             bounces={false}
           >
-            {/* The wordmark itself, not a camera icon plus the words. */}
-            <ShowTimeLogo width={Math.min(SW * 0.54, 240)} color={theme.accentColor} />
-
-            {/* One name only — the piece used to be printed twice, once under
-                its label and once again as a subtitle below it. */}
-            <View style={s.curtainThemeWrap}>
-              <Text style={[s.curtainThemeLabel, { fontFamily: "Geologica_500Medium", color: theme.accentColor + "99" }]}>{t("speechTopic")}</Text>
-              <Text style={[s.curtainThemeName, { fontFamily: "Geologica_700Bold", color: theme.accentColor }]} numberOfLines={2}>{theme.title}</Text>
+            <View style={s.pvArt}>
+              <SvgXml
+                xml={stageLineArtXml
+                  .replace(/__INK__/g, isDarkUi ? "#F0EEE9" : "#262628")
+                  .replace(/__GOLD__/g, "#FFD857")}
+                width={321.6}
+                height={200}
+              />
             </View>
 
-            {/* A word before you step out, in place of the description of the
-                hall. The speech is no longer previewed here either — you read
-                it on stage, not before it. */}
-            <EncouragementLine lang={lang} color="rgba(255,255,255,0.86)" />
-
+            {preview.category ? (
+              <Text style={[s.pvCategory, { color: isDarkUi ? "rgba(240,238,233,0.5)" : "rgba(38,38,40,0.5)" }]}>
+                {preview.category}
+              </Text>
+            ) : null}
+            <Text style={[s.pvTitle, { color: ui.text }]}>«{theme.title}»</Text>
+            <View style={[s.pvDivider, { backgroundColor: isDarkUi ? "rgba(240,238,233,0.1)" : "rgba(38,38,40,0.1)" }]} />
+            <Text style={[s.pvMeta, { color: isDarkUi ? "rgba(240,238,233,0.5)" : "rgba(38,38,40,0.5)" }]}>{preview.meta}</Text>
+            {/* TODO(design): themes carry no description yet — a shared brief
+                stands in until the content gets a per-theme one. */}
+            <Text style={[s.pvDesc, { color: isDarkUi ? "rgba(240,238,233,0.85)" : "rgba(38,38,40,0.85)" }]}>
+              {lang === "en"
+                ? "A speech to say out loud, in front of a hall. Read it with your voice — what it means to you, you'll find out on stage."
+                : "Речь, которую нужно произнести вслух перед залом. Прочитай её голосом, а что она значит лично для тебя, поймёшь на сцене."}
+            </Text>
             {theme.timerSeconds !== null && (
-              <Text style={[s.curtainHint, { fontFamily: "Geologica_400Regular" }]}>
+              <Text style={[s.pvMeta, { color: isDarkUi ? "rgba(240,238,233,0.5)" : "rgba(38,38,40,0.5)", marginTop: 8 }]}>
                 {t("timerLabel")}: {theme.timerSeconds} {t("sec")}
               </Text>
             )}
-            {/* Scroll-mode selector */}
-            <View style={s.modeRow}>
+
+            <Text style={[s.pvKicker, { color: isDarkUi ? "rgba(240,238,233,0.5)" : "rgba(38,38,40,0.5)" }]}>
+              {lang === "en" ? "SET YOURSELF UP" : "НАСТРОЙ НА ВЫХОД"}
+            </Text>
+            {/* TODO(design): tone / pace / hall are not in the content yet —
+                the design's defaults are shown for every theme. */}
+            <View style={s.pvChips}>
+              {(lang === "en"
+                ? [["Tone", "confident"], ["Pace", "calm"], ["Hall", "colleagues"]]
+                : [["Тон", "уверенный"], ["Темп", "спокойный"], ["Зал", "коллеги"]]
+              ).map(([k, v]) => (
+                <View key={k} style={[s.pvChip, { backgroundColor: ui.card, borderColor: isDarkUi ? "rgba(240,238,233,0.06)" : "rgba(38,38,40,0.08)" }]}>
+                  <Text style={[s.pvChipKey, { color: isDarkUi ? "rgba(240,238,233,0.5)" : "rgba(38,38,40,0.5)" }]}>{k}</Text>
+                  <Text style={[s.pvChipVal, { color: ui.text }]} numberOfLines={1}>{v}</Text>
+                </View>
+              ))}
+            </View>
+
+            <View style={{ flexGrow: 1, minHeight: 36 }} />
+
+            {/* Scroll mode — segmented control */}
+            <View style={[s.pvSeg, { backgroundColor: ui.card, borderColor: isDarkUi ? "rgba(240,238,233,0.06)" : "rgba(38,38,40,0.08)" }]}>
               {(["manual", "auto"] as const).map((m) => {
                 const active = scrollMode === m;
                 return (
                   <Pressable
                     key={m}
                     onPress={() => { Haptics.selectionAsync().catch(() => {}); setScrollMode(m); }}
-                    style={[
-                      s.modeBtn,
-                      {
-                        borderColor: active ? theme.accentColor : "rgba(255,255,255,0.18)",
-                        backgroundColor: active ? theme.accentColor + "22" : "rgba(255,255,255,0.04)",
-                      },
-                    ]}
+                    style={[s.pvSegItem, active && { backgroundColor: isDarkUi ? "rgba(240,238,233,0.12)" : "rgba(38,38,40,0.08)" }]}
                   >
-                    <Ionicons
-                      name={m === "manual" ? "hand-left-outline" : "play-forward-outline"}
-                      size={18}
-                      color={active ? theme.accentColor : "rgba(255,255,255,0.6)"}
-                    />
-                    <Text style={[s.modeBtnText, { fontFamily: "Geologica_600SemiBold", color: active ? theme.accentColor : "rgba(255,255,255,0.6)" }]}>
+                    <Text style={[s.pvSegText, { color: active ? ui.text : isDarkUi ? "rgba(240,238,233,0.5)" : "rgba(38,38,40,0.5)" }]}>
                       {m === "manual"
-                        ? (lang === "en" ? "Manual" : "Механический")
+                        ? (lang === "en" ? "Manual" : "Механическая")
                         : (lang === "en" ? "Auto-scroll" : "Авто-свайп")}
                     </Text>
                   </Pressable>
                 );
               })}
             </View>
-            <StartButton accentColor={theme.accentColor} onPress={handleStart} label={t("goOnStage")} />
-            <Pressable onPress={() => router.back()} style={({ pressed }) => [s.curtainExitBtn, { opacity: pressed ? 0.6 : 1 }]}>
-              <Ionicons name="arrow-back" size={16} color="rgba(255,255,255,0.6)" />
-              <Text style={[s.curtainExitTxt, { fontFamily: "Geologica_500Medium" }]}>{t("exit")}</Text>
+
+            <Pressable
+              onPress={handleStart}
+              style={({ pressed }) => [s.pvCta, { backgroundColor: ui.accent, borderColor: ui.ctaStroke, opacity: pressed ? 0.88 : 1 }]}
+            >
+              <SvgXml xml={playCircleXml.replace(/__INK__/g, "#3A3A3B")} width={22} height={24} />
+              <Text style={[s.pvCtaText, { color: ui.accentText }]}>{t("goOnStage")}</Text>
             </Pressable>
           </ScrollView>
         </Animated.View>
       )}
 
-      {/* Top-right close X */}
+      {/* Top-right close X — a bare glyph, as in the design (no scrim). */}
       <Pressable
         onPress={() => { (started && !finished) ? setShowExitConfirm(true) : router.replace("/(tabs)"); }}
         hitSlop={12}
@@ -5302,17 +5354,13 @@ export default function ShowtimeStageScreen() {
           right: 16,
           width: 40,
           height: 40,
-          borderRadius: 20,
           alignItems: "center",
           justifyContent: "center",
-          // White on a dark scrim: the hall behind it is dark, so the old dark
-          // glyph disappeared into the backdrop.
-          backgroundColor: "rgba(0,0,0,0.38)",
           zIndex: 100,
           opacity: pressed ? 0.6 : 1,
         })}
       >
-        <Ionicons name="close" size={22} color="#FFFFFF" />
+        <Ionicons name="close" size={26} color={started ? "#F0EEE9" : ui.text} />
       </Pressable>
 
       {/* Header — no back arrow; LIVE centered symmetrically between two equal
@@ -5328,12 +5376,12 @@ export default function ShowtimeStageScreen() {
                 style={({ pressed }) => [
                   s.lightBtn,
                   {
-                    backgroundColor: lightOpen ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.38)",
+                    backgroundColor: lightOpen ? "rgba(240,238,233,0.16)" : "transparent",
                     opacity: pressed ? 0.7 : 1,
                   },
                 ]}
               >
-                <Ionicons name="sunny" size={19} color={lightOpen ? theme.accentColor : "#FFFFFF"} />
+                <Ionicons name="sunny-outline" size={22} color={lightOpen ? ui.accent : "#F0EEE9"} />
               </Pressable>
               {lightOpen && <DimSlider value={dim} onChange={setDimSmooth} color={theme.accentColor} />}
             </>
@@ -5366,40 +5414,27 @@ export default function ShowtimeStageScreen() {
         </View>
       )}
 
-      {showTutorial && started && !finished && (
-        <Pressable
-          onPress={dismissTutorial}
-          style={s.tutorialOverlay}
-        >
-          <View style={s.tutorialCard}>
-            <View style={s.tutorialIconWrap}>
-              <Ionicons name="bulb" size={28} color="#FFD166" />
-            </View>
-            <Text style={[s.tutorialTitle, { fontFamily: "Geologica_700Bold" }]}>
-              {t("hint")}
-            </Text>
-            <Text style={[s.tutorialText, { fontFamily: "Geologica_400Regular" }]}>
-              {t("tutorialText")}
-            </Text>
-            <View style={s.tutorialArrow}>
-              <Ionicons name="arrow-down" size={32} color="#FFD166" />
-            </View>
-            <Text style={[s.tutorialDismiss, { fontFamily: "Geologica_400Regular" }]}>
-              {t("tapAnywhere")}
-            </Text>
-          </View>
-        </Pressable>
-      )}
+      {/* Stage hint (Figma 37:6850 "Сцена · вступление + подсказка") */}
+      <StageGlassDialog
+        visible={showTutorial && started && !finished}
+        title={t("hint")}
+        message={t("tutorialText")}
+        placement="lower"
+        overlay={0}
+        onRequestClose={dismissTutorial}
+        buttons={[{ label: lang === "en" ? "Got it" : "Понятно", variant: "primary", onPress: dismissTutorial }]}
+      />
 
-      {/* Exit confirmation — shared AppDialog design */}
-      <AppDialog
+      {/* Exit confirmation (Figma 37:3800 "Show Time · Вы уверены?") */}
+      <StageGlassDialog
         visible={showExitConfirm}
         title={t("exitConfirmTitle")}
         message={t("exitConfirmMsg")}
+        overlay={0.4}
         onRequestClose={() => setShowExitConfirm(false)}
         buttons={[
-          { label: t("stayBtn"), variant: "primary", onPress: () => setShowExitConfirm(false) },
           { label: t("leaveBtn"), variant: "secondary", onPress: () => { setShowExitConfirm(false); router.replace("/(tabs)"); } },
+          { label: t("stayBtn"), variant: "primary", onPress: () => setShowExitConfirm(false) },
         ]}
       />
 
@@ -5407,7 +5442,7 @@ export default function ShowtimeStageScreen() {
       {finished && (
         <View style={s.finishOverlay}>
           <Animated.View entering={FadeIn.duration(600)} style={s.finishContent}>
-            <Ionicons name="trophy" size={44} color={theme.accentColor} />
+            <Ionicons name="trophy" size={44} color={ui.accent} />
             <Text style={[s.finishTitle, { fontFamily: "Geologica_700Bold" }]}>{t("bravo")}</Text>
             <Text style={[s.finishSub, { fontFamily: "Geologica_400Regular" }]}>{t("openingPlayback")}</Text>
           </Animated.View>
@@ -5452,7 +5487,7 @@ export default function ShowtimeStageScreen() {
 
           {/* Progress bar */}
           <View style={s.progressBg}>
-            <View style={[s.progressFill, { backgroundColor: theme.accentColor, width: `${((currentLine + 1) / speech.lines.length) * 100}%` as any }]} />
+            <View style={[s.progressFill, { backgroundColor: ui.accent, width: `${((currentLine + 1) / speech.lines.length) * 100}%` as any }]} />
           </View>
 
           {/* Navigation — plain transparent white arrows, symmetric at the two
@@ -5506,7 +5541,7 @@ export default function ShowtimeStageScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0B0D12" },
+  container: { flex: 1, backgroundColor: "#262628" },
   audienceArea: { position: "absolute", top: 0, left: 0, right: 0, height: SH * 0.48, overflow: "hidden" },
   audienceInner: { position: "relative", width: SW, height: 180, marginTop: 80 },
   audienceFade: { position: "absolute", bottom: 0, left: 0, right: 0, height: 100 },
@@ -5520,14 +5555,32 @@ const s = StyleSheet.create({
   speedTextBtn: { paddingVertical: 4, paddingHorizontal: 6, marginTop: 6 },
   speedText: { fontSize: 17, color: "rgba(255,255,255,0.9)", letterSpacing: 0.3, textShadowColor: "rgba(0,0,0,0.5)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 5 },
   headerCenter: { flex: 1, alignItems: "center", gap: 2 },
-  liveTag: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(0,0,0,0.72)", paddingHorizontal: 9, paddingVertical: 4, borderRadius: 7 },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#FF3B30" },
-  liveText: { fontSize: 10, color: "#fff", letterSpacing: 1.5 },
+  liveTag: { flexDirection: "row", alignItems: "center", gap: 5, height: 22, backgroundColor: "rgba(38,38,40,0.72)", paddingHorizontal: 9, borderRadius: 32 },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#FFD857" },
+  liveText: { fontSize: 10, color: "#F0EEE9", letterSpacing: 0.5 },
   speechTitle: { fontSize: 13, color: "rgba(17,17,20,0.6)" },
   headerRight: { minWidth: 52, alignItems: "flex-end", gap: 4 },
   timerBadge: { flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 8 },
   timerText: { fontSize: 12 },
   lineCounter: { fontSize: 13, color: "rgba(17,17,20,0.5)" },
+  // Theme preview (Figma 310:4346)
+  pvScroll: { flexGrow: 1, paddingHorizontal: 28 },
+  pvArt: { alignItems: "center", marginBottom: 20 },
+  pvCategory: { fontFamily: "Geologica_500Medium", fontSize: 14 },
+  pvTitle: { fontFamily: "Geologica_700Bold", fontSize: 34, lineHeight: 37.4, letterSpacing: -0.34, marginTop: 8 },
+  pvDivider: { height: 1, marginTop: 12 },
+  pvMeta: { fontFamily: "Geologica_500Medium", fontSize: 13, marginTop: 13 },
+  pvDesc: { fontFamily: "Geologica_400Regular", fontSize: 16, lineHeight: 22.4, marginTop: 18 },
+  pvKicker: { fontFamily: "Geologica_600SemiBold", fontSize: 11, letterSpacing: 0.55, marginTop: 22 },
+  pvChips: { flexDirection: "row", gap: 8, marginTop: 10 },
+  pvChip: { flex: 1, borderRadius: 16, borderWidth: 2, paddingHorizontal: 12, paddingVertical: 10, gap: 2 },
+  pvChipKey: { fontFamily: "Geologica_500Medium", fontSize: 12 },
+  pvChipVal: { fontFamily: "Geologica_600SemiBold", fontSize: 14 },
+  pvSeg: { height: 44, borderRadius: 22, borderWidth: 2, flexDirection: "row", padding: 2, overflow: "hidden" },
+  pvSegItem: { flex: 1, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  pvSegText: { fontFamily: "Geologica_600SemiBold", fontSize: 14 },
+  pvCta: { height: 56, borderRadius: 28, borderWidth: 4, marginTop: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
+  pvCtaText: { fontFamily: "Geologica_800ExtraBold", fontSize: 17 },
   // Curtain
   curtainContent: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 28 },
   // Scrollable variant so tall curtain content can't clip top/bottom on small
@@ -5552,7 +5605,7 @@ const s = StyleSheet.create({
   linesWrap: { flex: 1, width: "100%", overflow: "hidden" },
   linesScroll: { flex: 1, width: "100%" },
   linesContainer: { flexGrow: 1, justifyContent: "center", alignItems: "center", gap: 0, paddingVertical: 4 },
-  progressBg: { height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.18)", overflow: "hidden" },
+  progressBg: { height: 3, borderRadius: 2, backgroundColor: "rgba(240,238,233,0.18)", overflow: "hidden" },
   progressFill: { height: 3, borderRadius: 2, backgroundColor: "#FFD166" },
   navRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
   navBtn: { width: 58, height: 58, borderRadius: 29, alignItems: "center", justifyContent: "center" },
@@ -5562,7 +5615,7 @@ const s = StyleSheet.create({
   pips: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, flexWrap: "wrap" },
   pip: { height: 6, borderRadius: 3 },
   // Finish overlay
-  finishOverlay: { position: "absolute", inset: 0, backgroundColor: "rgba(4,8,15,0.92)", alignItems: "center", justifyContent: "center", zIndex: 30 },
+  finishOverlay: { position: "absolute", inset: 0, backgroundColor: "rgba(38,38,40,0.92)", alignItems: "center", justifyContent: "center", zIndex: 30 },
   finishContent: { alignItems: "center", gap: 12 },
   finishTitle: { fontSize: 38, color: "#fff" },
   finishSub: { fontSize: 16, color: "rgba(255,255,255,0.5)" },

@@ -5,224 +5,77 @@ import {
   StyleSheet,
   Pressable,
   Platform,
-  Dimensions,
   ScrollView,
   ActivityIndicator,
-  Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, router, useNavigation } from "expo-router";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withRepeat,
   withTiming,
-  withSequence,
   withSpring,
   withDelay,
-  cancelAnimation,
   FadeIn,
   FadeInUp,
   FadeInDown,
   ZoomIn,
 } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { SvgXml } from "react-native-svg";
 import { useGame, getRankForSection } from "@/context/GameContext";
 import { useLang } from "@/context/LangContext";
+import { useTheme } from "@/context/ThemeContext";
 import { getApiUrl } from "@/lib/query-client";
 import { playSfx } from "@/lib/sfx";
 import { useAudioWaveform } from "@/hooks/useAudioWaveform";
 import { getLevelsData } from "@/constants/gameContent";
 import SpeechAnalyzingLoader from "@/components/SpeechAnalyzingLoader";
+import StageGlassDialog from "@/components/showtime/StageGlassDialog";
 import { aspectsFromMetrics5 } from "@/components/ScoreFlower";
+import { starOnXml, starOffXml, headphonesXml } from "@/assets/figma/showtime-stage/svgs";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
   Audio = require("@/lib/av").Audio;
 }
 
-const { width: SW } = Dimensions.get("window");
-
-// ── SPEAKER AVATAR ────────────────────────────────────────────────────────────
-function SpeakerAvatar() {
-  const breathe = useSharedValue(1);
-  const sway = useSharedValue(0);
-  const armLeft = useSharedValue(0);
-
-  useEffect(() => {
-    breathe.value = withRepeat(withTiming(1.015, { duration: 2200 }), -1, true);
-    sway.value = withRepeat(withSequence(
-      withTiming(1.5, { duration: 3000 }),
-      withTiming(-1.5, { duration: 3000 })
-    ), -1, true);
-    const gestureLoop = () => {
-      setTimeout(() => {
-        armLeft.value = withSequence(withTiming(-18, { duration: 600 }), withTiming(0, { duration: 600 }));
-        gestureLoop();
-      }, Math.random() * 4000 + 3000);
-    };
-    gestureLoop();
-    return () => { cancelAnimation(breathe); cancelAnimation(sway); cancelAnimation(armLeft); };
-  }, []);
-
-  const bodyStyle = useAnimatedStyle(() => ({ transform: [{ scale: breathe.value }, { rotate: `${sway.value}deg` }] }));
-  const armLStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${armLeft.value}deg` }] }));
-  const DARK = "#1A1A2E";
-
-  return (
-    <Animated.View style={[bodyStyle, { alignItems: "center" }]}>
-      <View style={{ position: "relative", alignItems: "center" }}>
-        <View style={{ position: "absolute", width: 52, height: 52, borderRadius: 26, backgroundColor: "rgba(255,240,100,0.2)", top: -6 }} />
-        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: DARK, borderWidth: 2, borderColor: "rgba(255,220,80,0.3)" }} />
-      </View>
-      <View style={{ width: 10, height: 8, backgroundColor: DARK }} />
-      <View style={{ width: 52, height: 56, backgroundColor: DARK, borderRadius: 10, borderTopLeftRadius: 14, borderTopRightRadius: 14 }}>
-        <View style={{ position: "absolute", top: 4, left: 10, width: 12, height: 24, borderRadius: 6, backgroundColor: "rgba(255,220,80,0.08)" }} />
-        <View style={{ position: "absolute", top: 4, right: 10, width: 12, height: 24, borderRadius: 6, backgroundColor: "rgba(255,220,80,0.08)" }} />
-      </View>
-      <Animated.View style={[armLStyle, { position: "absolute", top: 46, left: -22, width: 14, height: 42, backgroundColor: DARK, borderRadius: 7, transformOrigin: "top" }]} />
-      <View style={{ position: "absolute", top: 46, right: -22, width: 14, height: 42, backgroundColor: DARK, borderRadius: 7 }} />
-      <View style={{ flexDirection: "row", gap: 6, marginTop: 2 }}>
-        <View style={{ width: 20, height: 32, backgroundColor: DARK, borderRadius: 6 }} />
-        <View style={{ width: 20, height: 32, backgroundColor: DARK, borderRadius: 6 }} />
-      </View>
-      <View style={{ flexDirection: "row", gap: 8, marginTop: 1 }}>
-        <View style={{ width: 22, height: 8, backgroundColor: DARK, borderRadius: 4 }} />
-        <View style={{ width: 22, height: 8, backgroundColor: DARK, borderRadius: 4 }} />
-      </View>
-    </Animated.View>
-  );
-}
-
-// ── STAGE SCENE ───────────────────────────────────────────────────────────────
-function StageScene() {
-  const spotlight1 = useSharedValue(1);
-  const spotlight2 = useSharedValue(0.7);
-  const flashVal = useSharedValue(0.25);
-
-  useEffect(() => {
-    spotlight1.value = withRepeat(withSequence(
-      withTiming(0.88, { duration: 100 }), withTiming(1, { duration: 150 }), withTiming(0.95, { duration: 80 }), withTiming(1, { duration: 250 })
-    ), -1, false);
-    spotlight2.value = withRepeat(withTiming(0.5, { duration: 1800 }), -1, true);
-    const flashLoop = () => {
-      setTimeout(() => {
-        flashVal.value = withSequence(withTiming(0.8, { duration: 60 }), withTiming(0.25, { duration: 350 }));
-        flashLoop();
-      }, Math.random() * 5000 + 3000);
-    };
-    flashLoop();
-    return () => { cancelAnimation(spotlight1); cancelAnimation(spotlight2); cancelAnimation(flashVal); };
-  }, []);
-
-  const sp1Style = useAnimatedStyle(() => ({ opacity: spotlight1.value }));
-  const sp2Style = useAnimatedStyle(() => ({ opacity: spotlight2.value }));
-  const flashStyle = useAnimatedStyle(() => ({ opacity: flashVal.value }));
-
-  return (
-    <View style={ss.container}>
-      <LinearGradient colors={["#0D1520", "#08101A"]} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} />
-      <LinearGradient colors={["#2A0E3A", "#1A0828"]} style={[ss.curtain, { left: 0, borderBottomRightRadius: 12 }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
-      <LinearGradient colors={["#1A0828", "#2A0E3A"]} style={[ss.curtain, { right: 0, borderBottomLeftRadius: 12 }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
-      <Animated.View style={[ss.spotlightCone, { left: SW * 0.32, right: SW * 0.32, pointerEvents: "none" }, sp1Style]}>
-        <LinearGradient colors={["rgba(255,240,100,0.6)", "rgba(255,220,60,0.2)", "rgba(255,200,30,0.04)", "transparent"]} style={StyleSheet.absoluteFill} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} />
-      </Animated.View>
-      <Animated.View style={[ss.spotlightCone, { left: SW * 0.1, width: SW * 0.25, pointerEvents: "none" }, sp2Style]}>
-        <LinearGradient colors={["rgba(100,140,255,0.3)", "rgba(80,100,220,0.08)", "transparent"]} style={StyleSheet.absoluteFill} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} />
-      </Animated.View>
-      <Animated.View style={[ss.flashOverlay, { pointerEvents: "none" }, flashStyle]}>
-        <LinearGradient colors={["rgba(255,255,200,0.9)", "transparent"]} style={StyleSheet.absoluteFill} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} />
-      </Animated.View>
-      <LinearGradient colors={["transparent", "rgba(255,220,60,0.12)", "rgba(255,200,30,0.05)"]} style={ss.floorGlow} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} />
-      <View style={ss.avatarPosition}>
-        <SpeakerAvatar />
-        <View style={ss.avatarShadow} />
-      </View>
-      <View style={ss.stageEdge} />
-    </View>
-  );
-}
-
-const ss = StyleSheet.create({
-  container: { width: "100%", height: 260, overflow: "hidden", position: "relative" },
-  curtain: { position: "absolute", top: 0, bottom: 0, width: 36 },
-  spotlightCone: { position: "absolute", top: 0, height: "100%" },
-  flashOverlay: { position: "absolute", top: 0, left: SW * 0.2, right: SW * 0.2, height: 60, borderRadius: 30 },
-  floorGlow: { position: "absolute", bottom: 0, left: 36, right: 36, height: 100 },
-  avatarPosition: { position: "absolute", bottom: 30, left: 0, right: 0, alignItems: "center" },
-  avatarShadow: { width: 50, height: 8, borderRadius: 25, backgroundColor: "rgba(0,0,0,0.5)", marginTop: 2 },
-  stageEdge: { position: "absolute", bottom: 20, left: 36, right: 36, height: 3, backgroundColor: "rgba(255,209,102,0.15)", borderRadius: 2 },
-});
-
-// ── SEAT HEAD ─────────────────────────────────────────────────────────────────
-interface SeatDef { x: number; y: number; headR: number; color: string; delayMs: number; }
-
-function SeatHead({ x, y, headR, color, delayMs }: SeatDef) {
-  const sway = useSharedValue(0);
-  useEffect(() => {
-    sway.value = withDelay(delayMs, withRepeat(withTiming(Math.random() > 0.5 ? 2 : -2, { duration: 2500 + Math.random() * 2000 }), -1, true));
-    return () => cancelAnimation(sway);
-  }, []);
-  const swayStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${sway.value}deg` }] }));
-  return (
-    <Animated.View style={[swayStyle, { position: "absolute", left: x, top: y, alignItems: "center" }]}>
-      <View style={{ width: headR * 2, height: headR * 2, borderRadius: headR, backgroundColor: color }} />
-      <View style={{ width: headR * 2.8, height: headR * 1.4, backgroundColor: color, borderTopLeftRadius: headR * 0.8, borderTopRightRadius: headR * 0.8, marginTop: 2 }} />
-    </Animated.View>
-  );
-}
-
-function AudienceSeats() {
-  const ROW_DEFS = [
-    { y: 0, count: 8, headR: 14, gap: 38, color: "#141E30" },
-    { y: 36, count: 6, headR: 12, gap: 44, color: "#0F1828" },
-    { y: 66, count: 5, headR: 10, gap: 50, color: "#0A1220" },
-  ];
-  const seats: SeatDef[] = [];
-  let pi = 0;
-  for (const row of ROW_DEFS) {
-    const totalW = row.count * row.gap;
-    const startX = (SW - totalW) / 2 + row.headR;
-    for (let i = 0; i < row.count; i++) {
-      seats.push({ x: startX + i * row.gap - row.headR, y: row.y, headR: row.headR, color: row.color, delayMs: pi++ * 180 });
-    }
-  }
-  return (
-    <View style={{ width: SW, height: 110, position: "relative" }}>
-      {seats.map((s, i) => <SeatHead key={i} {...s} />)}
-    </View>
-  );
-}
+// Show Time · Разбор выступления (Figma 209:2262 metrics / 209:2485 stars):
+// big overall score + verdict, a coaching tip, then the performance card with
+// the replay "Recorder bar" and the collapsible per-aspect bars.
 
 // ── WAVEFORM (real amplitude of the recording) ───────────────────────────────
-const AP_BARS = 26;
-const AP_MIN = 4;
-const AP_MAX = 26;
-// Fallback shape when the audio can't be decoded (native, no envelope).
-const AP_FALLBACK = Array.from({ length: AP_BARS }, (_, i) => {
-  const env = Math.sin((i / (AP_BARS - 1)) * Math.PI);
-  const noise = Math.abs(Math.sin(i * 1.7) * 0.5 + Math.sin(i * 0.9 + 1) * 0.3 + Math.sin(i * 2.7) * 0.2);
-  return Math.round(Math.max(AP_MIN, Math.min(AP_MAX, 5 + (4 + env * 18) * (0.45 + 0.55 * noise))));
-});
-function apHeights(samples: number[]): number[] {
-  const n = samples.length;
-  return Array.from({ length: AP_BARS }, (_, i) => {
-    const v = n === AP_BARS ? samples[i] : samples[Math.min(n - 1, Math.floor((i / AP_BARS) * n))];
-    return Math.round(AP_MIN + Math.max(0, Math.min(1, v || 0)) * (AP_MAX - AP_MIN));
+const AP_BARS = 30;
+// Deterministic placeholder shape when the audio can't be decoded.
+const AP_FALLBACK = [0.35, 0.55, 0.25, 0.75, 0.45, 0.9, 0.6, 0.3, 0.7, 1, 0.5, 0.4, 0.85, 0.65, 0.25, 0.55, 0.95, 0.75, 0.35, 0.6, 0.45, 0.8, 0.3, 0.7, 0.9, 0.5, 0.65, 0.4, 0.75, 0.55];
+function resample(src: number[] | undefined, n: number): number[] {
+  const w = src && src.length ? src : AP_FALLBACK;
+  if (w.length === n) return w.map((v) => Math.max(0, Math.min(1, v || 0)));
+  return Array.from({ length: n }, (_, i) => {
+    const a = Math.floor((i * w.length) / n);
+    const b = Math.max(a + 1, Math.floor(((i + 1) * w.length) / n));
+    let m = 0;
+    for (let k = a; k < b && k < w.length; k++) m = Math.max(m, w[k] || 0);
+    return Math.max(0, Math.min(1, m));
   });
 }
 
-// ── AUDIO PLAYER ──────────────────────────────────────────────────────────────
+const fmt = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
+
+// ── AUDIO PLAYER · Figma "Recorder bar" (Playback) ───────────────────────────
 function AudioPlayer({ uri, waveform, onPlaybackComplete }: { uri: string; waveform?: number[]; onPlaybackComplete?: () => void }) {
-  const { t } = useLang();
+  const { theme, themeMode } = useTheme();
+  const isDark = themeMode === "dark";
   const wf = useAudioWaveform(uri, AP_BARS);
-  const barHeights =
-    waveform && waveform.length ? apHeights(waveform) : wf.status === "ready" ? apHeights(wf.samples) : AP_FALLBACK;
+  const bars = resample(
+    waveform && waveform.length ? waveform : wf.status === "ready" ? wf.samples : undefined,
+    AP_BARS,
+  );
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [position, setPosition] = useState(0);
+  const [waveW, setWaveW] = useState(0);
   const soundRef = useRef<any>(null);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -293,68 +146,68 @@ function AudioPlayer({ uri, waveform, onPlaybackComplete }: { uri: string; wavef
     }
   };
 
-  const fmt = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
-  const progress = duration > 0 ? position / duration : 0;
+  const progress = duration > 0 && Number.isFinite(duration) ? Math.min(1, position / duration) : 0;
+  // At rest the whole take reads solid; while playing, bars right of the
+  // playhead dim to 30% and the gold playhead rides on top.
+  const showHead = isPlaying || progress > 0;
+  const played = showHead ? progress : 1;
+  const dim = isDark ? "rgba(240,238,233,0.3)" : "rgba(38,38,40,0.25)";
+  const shown = isPlaying || position > 0 ? position : duration;
 
   return (
-    <View style={[ap.container, { borderColor: "#2A3348" }]}>
-      <View style={ap.row}>
-        <Pressable onPress={handlePlay} disabled={!uri} style={({ pressed }) => [ap.playBtn, { backgroundColor: !uri ? "#2A3348" : "#0B1426", opacity: pressed ? 0.85 : 1 }]}>
-          <Ionicons name={isPlaying ? "pause" : "play"} size={22} color="#FFD166" style={{ marginLeft: isPlaying ? 0 : 3 }} />
-        </Pressable>
-        <View style={ap.waveform}>
-          {barHeights.map((h, i) => {
-            const filled = (i + 0.5) / AP_BARS <= progress;
-            return (
-              <View key={i} style={{ width: 3, borderRadius: 2, height: h, backgroundColor: filled ? "#FFD166" : "#2A3348" }} />
-            );
-          })}
-        </View>
-        <Text style={[ap.time, { color: "#6B6880", fontFamily: "Geologica_400Regular" }]}>
-          {fmt(position)}{duration > 0 ? ` / ${fmt(duration)}` : ""}
-        </Text>
+    <View
+      style={[
+        ap.bar,
+        {
+          backgroundColor: isDark ? "#3C3C3D" : theme.cardElevated,
+          borderColor: isDark ? "rgba(240,238,233,0.45)" : "rgba(38,38,40,0.3)",
+        },
+      ]}
+    >
+      <Pressable
+        onPress={handlePlay}
+        disabled={!uri}
+        hitSlop={8}
+        style={({ pressed }) => [ap.play, { backgroundColor: theme.accent, opacity: !uri ? 1 : pressed ? 0.8 : 1 }]}
+      >
+        {isPlaying ? (
+          <View style={[ap.pause, { backgroundColor: theme.accentText }]} />
+        ) : (
+          <Ionicons name="play" size={16} color={theme.accentText} style={{ marginLeft: 2 }} />
+        )}
+      </Pressable>
+      <View style={ap.wave} onLayout={(e) => setWaveW(e.nativeEvent.layout.width)}>
+        {bars.map((v, i) => (
+          <View
+            key={i}
+            style={[ap.waveBar, { height: 6 + v * 28, backgroundColor: (i + 0.5) / bars.length <= played ? theme.text : dim }]}
+          />
+        ))}
+        {showHead && waveW > 0 ? (
+          <View pointerEvents="none" style={[ap.head, { left: Math.max(0, Math.min(waveW - 2, progress * waveW)) - 2.5 }]}>
+            <View style={[ap.headDot, { backgroundColor: theme.accent }]} />
+            <View style={[ap.headLine, { backgroundColor: theme.accent }]} />
+          </View>
+        ) : null}
       </View>
-      <View style={[ap.progressBg, { backgroundColor: "#2A3348" }]}>
-        <View style={[ap.progressFill, { backgroundColor: "#FFD166", width: `${progress * 100}%` as any }]} />
-      </View>
-      {!uri && (
-        <Text style={{ fontSize: 12, color: "#6B6880", textAlign: "center", fontFamily: "Geologica_400Regular" }}>
-          {t("recordingNotSaved")}
-        </Text>
-      )}
+      <Text style={[ap.time, { color: isDark ? "rgba(240,238,233,0.6)" : theme.textSecondary }]}>{fmt(Math.max(0, shown || 0))}</Text>
     </View>
   );
 }
 
 const ap = StyleSheet.create({
-  container: { borderRadius: 16, borderWidth: 1, overflow: "hidden", padding: 14, gap: 10 },
-  row: { flexDirection: "row", alignItems: "center", gap: 12 },
-  playBtn: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
-  waveform: { flex: 1, flexDirection: "row", alignItems: "center", gap: 2, height: 32 },
-  time: { fontSize: 12, minWidth: 50, textAlign: "right" },
-  progressBg: { height: 3, borderRadius: 2, overflow: "hidden" },
-  progressFill: { height: 3, borderRadius: 2 },
+  bar: { height: 66, borderRadius: 33, borderWidth: 3.5, flexDirection: "row", alignItems: "center", paddingLeft: 9, paddingRight: 18, overflow: "hidden" },
+  play: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  pause: { width: 11, height: 11, borderRadius: 2 },
+  wave: { flex: 1, height: 50, marginLeft: 12, marginRight: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  waveBar: { width: 2.7, borderRadius: 1.4 },
+  head: { position: "absolute", top: 2, width: 7, alignItems: "center" },
+  headDot: { width: 7, height: 7, borderRadius: 3.5 },
+  headLine: { width: 2.3, height: 42, borderRadius: 1.2, marginTop: -3.5 },
+  time: { fontFamily: "Geologica_700Bold", fontSize: 12 },
 });
 
-// ── STAR COMPONENT ────────────────────────────────────────────────────────────
-function AnimatedStar({ filled, delay }: { filled: boolean; delay: number }) {
-  const scale = useSharedValue(0);
-  const opacity = useSharedValue(0);
-  useEffect(() => {
-    scale.value = withDelay(delay, withSpring(1, { damping: 10, stiffness: 200 }));
-    opacity.value = withDelay(delay, withTiming(1, { duration: 200 }));
-  }, []);
-  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }], opacity: opacity.value }));
-  return (
-    <Animated.View style={[style, { alignItems: "center", justifyContent: "center" }]}>
-      <Ionicons name={filled ? "star" : "star-outline"} size={40} color={filled ? "#FFD166" : "#2A3348"} />
-    </Animated.View>
-  );
-}
-
-// (Per-aspect bars replaced by the ScoreFlower petals.)
-
-// ── AI ANALYSIS CARD ──────────────────────────────────────────────────────────
+// ── AI ANALYSIS ───────────────────────────────────────────────────────────────
 interface AnalysisResult {
   stars: number;
   score: number;
@@ -386,31 +239,14 @@ interface AnalysisResult {
   readOk?: boolean; // false = didn't actually read the text (skip / noise)
 }
 
-function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (key: any) => string; lang: "ru" | "en" }) {
-  if (!result) return null;
-  const { stars, score, silent, feedback, categories, metrics, errors, tip } = result;
-
-  if (silent || stars === 0) {
-    return (
-      <Animated.View entering={FadeInUp.delay(100).duration(500)} style={[ac.card, { borderColor: "#0EA5E944" }]}>
-        <LinearGradient colors={["#0EA5E908", "transparent"]} style={StyleSheet.absoluteFill} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} />
-        <Text style={[ac.label, { color: "#0EA5E9", fontFamily: "Geologica_600SemiBold" }]}>{t("notCounted")}</Text>
-        <Ionicons name="book-outline" size={40} color="#0EA5E9" style={{ alignSelf: "center", marginVertical: 4 }} />
-        <Animated.Text entering={FadeIn.delay(500).duration(400)} style={[ac.feedback, { color: "rgba(240,237,232,0.9)", fontFamily: "Geologica_500Medium", textAlign: "center" }]}>
-          {lang === "ru"
-            ? "Кажется, ты не читал текст вслух. Прочитай его и пройди уровень снова."
-            : "Looks like the text wasn't read aloud. Read it and pass the level again."}
-        </Animated.Text>
-      </Animated.View>
-    );
-  }
-
-  // Show Time is a PREPARED text read aloud — so the honest base score comes only
-  // from delivery + volume (diction, expressiveness, volume, confidence); tempo &
-  // pauses are dropped. Then the "Толерантность" layer supports a player who truly
-  // read: the more of the script they actually spoke (hidden text-match), the more
-  // the score is lifted toward 10. Skipping / noise doesn't lift it (text-match is
-  // near zero). Padding the timer with silence can't help either — no words said.
+// Show Time is a PREPARED text read aloud — so the honest base score comes only
+// from delivery + volume (diction, expressiveness, volume, confidence); tempo &
+// pauses are dropped. Then the "Толерантность" layer supports a player who truly
+// read: the more of the script they actually spoke (hidden text-match), the more
+// the score is lifted toward 10. Skipping / noise doesn't lift it (text-match is
+// near zero). Padding the timer with silence can't help either — no words said.
+function summarize(result: AnalysisResult) {
+  const { metrics, score } = result;
   const deliveryVals = metrics
     ? [metrics.clarity, metrics.expressiveness, metrics.volume, metrics.confidence]
     : [];
@@ -422,107 +258,14 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
   // said, full (→ score 10) at ≥85%.
   const effort = tm != null ? Math.max(0, Math.min(1, (tm - 0.25) / (0.85 - 0.25))) : 0;
   const overall10 = Math.round(Math.min(10, base10 + (10 - base10) * effort) * 10) / 10;
-
-  // Tier / colour / XP all follow the SHOWN overall so nothing contradicts it.
+  // Tier / XP all follow the SHOWN overall so nothing contradicts it.
   const finalStars = overall10 >= 8.5 ? 3 : overall10 >= 6 ? 2 : 1;
-  const SCORE_COLOR = finalStars === 3 ? "#2DCB8E" : finalStars === 2 ? "#FFD166" : "#F5A623";
-  const SCORE_LABEL = finalStars === 3 ? t("excellent") : finalStars === 2 ? t("good") : t("keepGoing");
-  const xpDisplay = finalStars === 3 ? 10 : finalStars === 2 ? 7 : 4;
-
-  return (
-    <Animated.View entering={FadeInUp.delay(100).duration(500)} style={[ac.card, { borderColor: SCORE_COLOR + "44" }]}>
-      <LinearGradient colors={[SCORE_COLOR + "0D", "transparent"]} style={StyleSheet.absoluteFill} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} />
-
-      <Text style={[ac.label, { color: SCORE_COLOR, fontFamily: "Geologica_600SemiBold" }]}>{t("aiAnalysis")}</Text>
-
-      {/* Overall summary score of the performance */}
-      <Animated.View entering={ZoomIn.delay(300).duration(400)} style={ac.overallWrap}>
-        <Text style={[ac.overallNum, { color: SCORE_COLOR, fontFamily: "Geologica_700Bold" }]}>
-          {overall10.toFixed(1)}
-          <Text style={[ac.overallDenom, { color: "rgba(240,237,232,0.6)", fontFamily: "Geologica_600SemiBold" }]}> / 10</Text>
-        </Text>
-      </Animated.View>
-
-      {/* Plain metrics table (parameter + score) when we have full metrics;
-          else stars. One neutral colour, no icons. */}
-      {metrics ? (
-        <View style={ac.metricsTable}>
-          {aspectsFromMetrics5(metrics, lang)
-            .filter((a) => a.key === "clarity" || a.key === "expressiveness" || a.key === "volume" || a.key === "confidence")
-            .map((a, i, arr) => (
-            <View
-              key={a.key}
-              style={[ac.metricRow, i < arr.length - 1 && ac.metricRowBorder]}
-            >
-              <Text style={[ac.metricLabel, { fontFamily: "Geologica_500Medium" }]}>{a.label}</Text>
-              <Text style={[ac.metricValue, { fontFamily: "Geologica_700Bold" }]}>{a.score.toFixed(1)}</Text>
-            </View>
-          ))}
-        </View>
-      ) : (
-        <View style={ac.starsRow}>
-          {[1, 2, 3].map((n) => <AnimatedStar key={n} filled={n <= stars} delay={n * 200} />)}
-        </View>
-      )}
-
-      {/* Score badge */}
-      <Animated.View entering={ZoomIn.delay(800).duration(400)} style={[ac.scoreBadge, { backgroundColor: SCORE_COLOR + "20", borderColor: SCORE_COLOR + "60" }]}>
-        <Text style={[ac.scoreText, { color: SCORE_COLOR, fontFamily: "Geologica_700Bold" }]}>{SCORE_LABEL}</Text>
-        <Text style={[ac.xpText, { color: SCORE_COLOR, fontFamily: "Geologica_500Medium" }]}>+{xpDisplay} XP</Text>
-      </Animated.View>
-
-      {/* Coaching tip — surfaced from /api/analyze-speech.tip so the
-          performer gets one concrete thing to fix next take. */}
-      {tip ? (
-        <Animated.View entering={FadeIn.delay(1500).duration(400)} style={ac.errorsSection}>
-          <View style={[ac.divider, { backgroundColor: "#2A3348" }]} />
-          <Text style={[ac.errorsTitle, { color: SCORE_COLOR, fontFamily: "Geologica_600SemiBold" }]}>
-            {lang === "ru" ? "Совет на следующий раз" : "Tip for next take"}
-          </Text>
-          <Text style={[ac.feedback, { color: "rgba(240,237,232,0.85)", fontFamily: "Geologica_500Medium", textAlign: "left" }]}>
-            {tip}
-          </Text>
-        </Animated.View>
-      ) : null}
-
-    </Animated.View>
-  );
+  const xp = finalStars === 3 ? 10 : finalStars === 2 ? 7 : 4;
+  return { overall10, finalStars, xp };
 }
 
-const ac = StyleSheet.create({
-  card: { borderRadius: 20, borderWidth: 1, padding: 20, gap: 14, overflow: "hidden" },
-  label: { fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase" },
-  starsRow: { flexDirection: "row", gap: 12, justifyContent: "center", paddingVertical: 4 },
-  flowerWrap: { alignItems: "center", justifyContent: "center", paddingVertical: 4 },
-  overallWrap: { alignItems: "center", marginTop: 2, marginBottom: 2 },
-  overallNum: { fontSize: 44, lineHeight: 50 },
-  overallDenom: { fontSize: 20 },
-  metricsTable: { width: "100%", paddingVertical: 4 },
-  metricRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 11,
-    paddingHorizontal: 2,
-  },
-  metricRowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(240,237,232,0.14)" },
-  metricLabel: { fontSize: 15, color: "rgba(240,237,232,0.92)" },
-  metricValue: { fontSize: 16, color: "rgba(240,237,232,0.92)" },
-  scoreBadge: { alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
-  scoreText: { fontSize: 16 },
-  xpText: { fontSize: 14 },
-  feedback: { fontSize: 14, lineHeight: 21, textAlign: "center" },
-  catsSection: { gap: 10 },
-  divider: { height: 1, marginVertical: 2 },
-  errorsSection: { gap: 8 },
-  errorsTitle: { fontSize: 12, letterSpacing: 0.8 },
-  errorRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
-  errorDot: { width: 5, height: 5, borderRadius: 3, marginTop: 7 },
-  errorText: { flex: 1, fontSize: 13, lineHeight: 19 },
-});
-
-// DEV preview data for the Skip button — showcases the flower score window
-// without a recording. Metrics span the colour tiers (mint / emerald / amber).
+// DEV preview data for the Skip button — showcases the score window without a
+// recording.
 const DEMO_RESULT: AnalysisResult = {
   stars: 3,
   score: 8,
@@ -536,8 +279,26 @@ const DEMO_RESULT: AnalysisResult = {
   },
   metrics: { clarity: 5, expressiveness: 5, volume: 3, confidence: 4, tempo: 4, pauses: 2 },
   errors: ["Пример: паузы проскакивают — дай ключевым словам прозвучать"],
-  tip: "Совет (пример): делай чуть больше осмысленных пауз после ключевых строк.",
+  tip: "Делай чуть больше осмысленных пауз после ключевых строк.",
 };
+
+// Figma order of the "Характеристики" rows.
+const METRIC_ORDER = ["clarity", "confidence", "volume", "expressiveness"] as const;
+
+function MetricRow({ label, value }: { label: string; value: number }) {
+  const { theme, themeMode } = useTheme();
+  const isDark = themeMode === "dark";
+  const v = Math.max(0, Math.min(10, value));
+  return (
+    <View style={pb.metricRow}>
+      <Text numberOfLines={1} style={[pb.metricLabel, { color: isDark ? "rgba(240,238,233,0.85)" : theme.text }]}>{label}</Text>
+      <View style={[pb.metricTrack, { backgroundColor: isDark ? "rgba(240,238,233,0.08)" : "rgba(38,38,40,0.08)" }]}>
+        {v > 0 ? <View style={[pb.metricFill, { width: `${v * 10}%`, backgroundColor: theme.accent }]} /> : null}
+      </View>
+      <Text style={[pb.metricValue, { color: theme.text }]}>{Number.isInteger(v) ? String(v) : v.toFixed(1)}</Text>
+    </View>
+  );
+}
 
 // ── MAIN PLAYBACK SCREEN ──────────────────────────────────────────────────────
 export default function ShowtimePlaybackScreen() {
@@ -561,16 +322,20 @@ export default function ShowtimePlaybackScreen() {
       return undefined;
     }
   }, [waveformParam]);
-  // DEV preview: opened from the Skip button to show the flower score window
-  // with example data, no recording required.
-  const isDemo = demoParam === "1";
+  // DEV preview: opened from the Skip button to show the score window with
+  // example data, no recording required. demo=2 previews the "no metrics"
+  // (stars) variant.
+  const isDemo = demoParam === "1" || demoParam === "2";
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   const { completeTask, getLevelById, addShowTimeRecording, recordMetricScores } = useGame();
   const { t, lang } = useLang();
+  const { theme, themeMode } = useTheme();
+  const isDark = themeMode === "dark";
   const taskNumber = parseInt(taskNumberParam ?? "1", 10) || 1;
+  void taskNumber;
   const levelId = levelIdParam ?? "showtime";
   const isTrainer = modeParam === "trainer";
 
@@ -579,6 +344,7 @@ export default function ShowtimePlaybackScreen() {
   const [completing, setCompleting] = useState(false);
   const [hasListenedFully, setHasListenedFully] = useState(false);
   const [showListenPrompt, setShowListenPrompt] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(true);
 
   const handlePlaybackComplete = () => {
     setHasListenedFully(true);
@@ -607,7 +373,11 @@ export default function ShowtimePlaybackScreen() {
     // DEV preview: show example results immediately, skip real analysis.
     if (isDemo) {
       setHasListenedFully(true);
-      setAnalysisResult(DEMO_RESULT);
+      setAnalysisResult(
+        demoParam === "2"
+          ? { stars: 2, score: 7, silent: false, feedback: "", errors: [] }
+          : DEMO_RESULT,
+      );
       return;
     }
 
@@ -814,80 +584,159 @@ export default function ShowtimePlaybackScreen() {
   const headerStyle = useAnimatedStyle(() => ({ opacity: headerOpacity.value }));
   const contentStyle = useAnimatedStyle(() => ({ opacity: contentOpacity.value, transform: [{ translateY: contentY.value }] }));
 
+  const ru = lang !== "en";
+  const sum = analysisResult && !isSilent ? summarize(analysisResult) : null;
+  const verdict = sum ? (sum.finalStars === 3 ? t("excellent") : sum.finalStars === 2 ? t("good") : t("keepGoing")) : "";
+  const metrics = analysisResult?.metrics;
+  const metricRows = metrics
+    ? METRIC_ORDER.map((k) => aspectsFromMetrics5(metrics, lang).find((a) => a.key === k)).filter(Boolean) as { key: string; label: string; score: number }[]
+    : [];
+  const tip = (analysisResult?.tip ?? "").trim();
+
+  const labelColor = isDark ? "rgba(240,238,233,0.5)" : theme.textSecondary;
+  const dimColor = isDark ? "rgba(240,238,233,0.35)" : theme.textMuted;
+  const cardStyle = {
+    backgroundColor: isDark ? "rgba(240,238,233,0.05)" : theme.card,
+    borderColor: isDark ? "rgba(240,238,233,0.08)" : theme.cardBorder,
+  };
+  const dividerColor = isDark ? "rgba(240,238,233,0.08)" : theme.cardBorder;
+
   return (
-    <View style={[pb.container, { backgroundColor: "#070D1A" }]}>
-      <LinearGradient colors={["#050A14", "#07101E", "#050A14"]} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 0.5, y: 1 }} />
-
-      <Animated.View style={[pb.header, { paddingTop: topPad + 10 }, headerStyle]}>
-        <View style={pb.headerCenter}>
-          <Text style={[pb.headerTitle, { fontFamily: "Geologica_700Bold" }]}>{t("yourPerformance")}</Text>
-          {title ? <Text style={[pb.headerSub, { fontFamily: "Geologica_400Regular" }]}>«{title}»</Text> : null}
-        </View>
-      </Animated.View>
-
+    <View style={[pb.container, { backgroundColor: theme.bg }]}>
       <ScrollView
-        contentContainerStyle={[pb.scroll, { paddingBottom: bottomPad + 40 }]}
+        contentContainerStyle={[pb.scroll, { paddingTop: topPad + 55, paddingBottom: bottomPad + 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* The stage-from-the-seats mock-up used to live here. Removed for now
-            — this screen is about listening back, and a second illustration of
-            the hall on top of it was only taking the space. */}
+        <Animated.Text style={[pb.title, { color: theme.text }, headerStyle]}>
+          {ru ? "Разбор выступления" : "Performance review"}
+        </Animated.Text>
 
-        <Animated.View style={[contentStyle, pb.content]}>
-          <View style={pb.sectionLabel}>
-            <Ionicons name="headset-outline" size={16} color="#FFD166" />
-            <Text style={[pb.sectionLabelText, { color: "#FFD166", fontFamily: "Geologica_600SemiBold" }]}>
-              {t("performanceRecording")}
-            </Text>
-          </View>
+        <Animated.View style={[contentStyle, { flexGrow: 1 }]}>
+          {/* Overall score + verdict */}
+          {sum ? (
+            <Animated.View entering={FadeInUp.delay(100).duration(500)} style={pb.scoreBlock}>
+              <Text style={[pb.label, { color: labelColor }]}>{ru ? "ОЦЕНКА" : "SCORE"}</Text>
+              <Animated.View entering={ZoomIn.delay(250).duration(400)} style={pb.scoreRow}>
+                <Text style={[pb.scoreNum, { color: theme.accentInk }]}>{sum.overall10.toFixed(1)}</Text>
+                <Text style={[pb.scoreMax, { color: dimColor }]}>/10</Text>
+              </Animated.View>
+              {/* Without the per-aspect breakdown the stars carry the tier
+                  (Figma 209:2485). */}
+              {!metrics ? (
+                <View style={pb.starsRow}>
+                  {[1, 2, 3].map((n) => (
+                    <Animated.View key={n} entering={ZoomIn.delay(300 + n * 150).duration(300)}>
+                      <SvgXml
+                        xml={n <= sum.finalStars ? starOnXml : starOffXml.replace(/__INK__/g, isDark ? "#F0EEE9" : "#262628")}
+                        width={30}
+                        height={30}
+                      />
+                    </Animated.View>
+                  ))}
+                </View>
+              ) : null}
+              <View style={pb.verdictRow}>
+                <Text style={[pb.verdict, { color: theme.text }]}>{verdict}</Text>
+                <View style={[pb.xpPill, { backgroundColor: isDark ? "rgba(255,216,87,0.14)" : "rgba(255,216,87,0.35)" }]}>
+                  <Text style={[pb.xpText, { color: theme.accentInk }]}>+{sum.xp} XP</Text>
+                </View>
+              </View>
+            </Animated.View>
+          ) : null}
 
-          <AudioPlayer uri={recordingUri ?? ""} waveform={recordedWaveform} onPlaybackComplete={handlePlaybackComplete} />
-
-          {!hasListenedFully && recordingUri && (
-            <View style={pb.listenHint}>
-              <Ionicons name="headset" size={14} color="rgba(255,209,102,0.7)" />
-              <Text style={[pb.listenHintText, { fontFamily: "Geologica_400Regular" }]}>
-                {t("listenToEnd")}
-              </Text>
-            </View>
-          )}
-
-          {/* AI Analysis */}
-          {analyzing && (
-            <Animated.View entering={FadeIn.duration(300)} style={pb.analyzingCard}>
-              <ActivityIndicator color="#FFD166" size="small" />
-              <Text style={[pb.analyzingText, { color: "rgba(240,237,232,0.7)", fontFamily: "Geologica_400Regular" }]}>
-                {t("aiAnalyzing")}
+          {/* Didn't read the text → not counted */}
+          {isSilent ? (
+            <Animated.View entering={FadeInUp.delay(100).duration(500)} style={[pb.card, cardStyle, { marginTop: 28, gap: 12 }]}>
+              <Text style={[pb.label, { color: theme.accentInk }]}>{t("notCounted").toUpperCase()}</Text>
+              <Text style={[pb.tip, { color: theme.text }]}>
+                {ru
+                  ? "Кажется, ты не читал текст вслух. Прочитай его и пройди уровень снова."
+                  : "Looks like the text wasn't read aloud. Read it and pass the level again."}
               </Text>
             </Animated.View>
-          )}
+          ) : null}
 
-          {analysisResult && !analyzing && (
-            <AnalysisCard result={analysisResult} t={t} lang={lang} />
-          )}
+          {/* Coaching tip — surfaced from /api/analyze-speech.tip */}
+          {sum && tip ? (
+            <Animated.View entering={FadeIn.delay(600).duration(400)} style={[pb.card, cardStyle, { marginTop: 28, gap: 16 }]}>
+              <Text style={[pb.label, { color: theme.accentInk }]}>{ru ? "СОВЕТ" : "TIP"}</Text>
+              <Text style={[pb.tip, { color: theme.text }]}>{tip}</Text>
+            </Animated.View>
+          ) : null}
 
-          {/* Tips card */}
-          {!analysisResult && !analyzing && (
-            <View style={[pb.tipsCard, { borderColor: "#2A3348" }]}>
-              <Text style={[pb.tipsTitle, { color: "#F0EDE8", fontFamily: "Geologica_600SemiBold" }]}>
-                {t("whatToEvaluate")}
-              </Text>
-              {[
-                t("evalQ1"),
-                t("evalQ2"),
-                t("evalQ3"),
-                t("evalQ4"),
-                t("evalQ5"),
-              ].map((tip, i) => (
-                <Animated.View key={i} entering={FadeInDown.delay(600 + i * 80).duration(350)} style={pb.tipRow}>
-                  <View style={[pb.tipNum, { backgroundColor: "#0B1426" }]}>
-                    <Text style={[pb.tipNumText, { color: "#FFD166", fontFamily: "Geologica_700Bold" }]}>{i + 1}</Text>
-                  </View>
-                  <Text style={[pb.tipText, { color: "rgba(240,237,232,0.75)", fontFamily: "Geologica_400Regular" }]}>{tip}</Text>
+          {/* Before the result: what to listen for while it's being analysed. */}
+          {!analysisResult && !analyzing ? (
+            <View style={[pb.card, cardStyle, { marginTop: 28, gap: 10 }]}>
+              <Text style={[pb.label, { color: theme.accentInk }]}>{t("whatToEvaluate").toUpperCase()}</Text>
+              {[t("evalQ1"), t("evalQ2"), t("evalQ3"), t("evalQ4"), t("evalQ5")].map((q, i) => (
+                <Animated.View key={i} entering={FadeInDown.delay(600 + i * 80).duration(350)} style={pb.evalRow}>
+                  <Text style={[pb.evalNum, { color: theme.accentInk }]}>{i + 1}</Text>
+                  <Text style={[pb.evalText, { color: isDark ? "rgba(240,238,233,0.75)" : theme.textSecondary }]}>{q}</Text>
                 </Animated.View>
               ))}
             </View>
-          )}
+          ) : null}
+
+          {analyzing ? (
+            <View style={[pb.card, cardStyle, { marginTop: 28, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12 }]}>
+              <ActivityIndicator color={theme.accent} size="small" />
+              <Text style={[pb.evalText, { color: theme.textSecondary }]}>{t("aiAnalyzing")}</Text>
+            </View>
+          ) : null}
+
+          <Text style={[pb.label, { color: labelColor, marginTop: 36, marginBottom: 12 }]}>
+            {ru ? "ВЫСТУПЛЕНИЕ" : "PERFORMANCE"}
+          </Text>
+
+          {/* Performance card: theme, replay, characteristics */}
+          <View style={[pb.card, cardStyle, { gap: 14 }]}>
+            <View style={pb.cardHead}>
+              <Text style={[pb.label, { color: labelColor }]}>{ru ? "ТЕМА" : "TOPIC"}</Text>
+              {sum ? (
+                <View style={pb.ansScore}>
+                  <Text style={[pb.ansScoreNum, { color: theme.accentInk }]}>{sum.overall10.toFixed(1)}</Text>
+                  <Text style={[pb.ansScoreMax, { color: dimColor }]}>/10</Text>
+                </View>
+              ) : null}
+            </View>
+            {title ? <Text style={[pb.topic, { color: theme.text }]}>«{title}»</Text> : null}
+
+            <AudioPlayer uri={recordingUri ?? ""} waveform={recordedWaveform} onPlaybackComplete={handlePlaybackComplete} />
+
+            {!recordingUri ? (
+              <Text style={[pb.note, { color: isDark ? "rgba(240,238,233,0.4)" : theme.textMuted }]}>{t("recordingNotSaved")}</Text>
+            ) : !hasListenedFully ? (
+              <Text style={[pb.note, { color: isDark ? "rgba(240,238,233,0.4)" : theme.textMuted }]}>{t("listenToEnd")}</Text>
+            ) : null}
+
+            {metricRows.length && !isSilent ? (
+              <>
+                <View style={[pb.divider, { backgroundColor: dividerColor }]} />
+                <Pressable
+                  onPress={() => setDetailsOpen((v) => !v)}
+                  style={pb.toggle}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: detailsOpen }}
+                >
+                  <Text style={[pb.toggleText, { color: isDark ? "rgba(240,238,233,0.7)" : theme.textSecondary }]}>
+                    {ru ? "Характеристики" : "Breakdown"}
+                  </Text>
+                  <View style={[pb.chevron, { backgroundColor: isDark ? "rgba(240,238,233,0.08)" : "rgba(38,38,40,0.06)" }]}>
+                    <Ionicons name={detailsOpen ? "chevron-up" : "chevron-down"} size={16} color={theme.text} />
+                  </View>
+                </Pressable>
+                {detailsOpen ? (
+                  <View style={{ gap: 12 }}>
+                    {metricRows.map((a) => (
+                      <MetricRow key={a.key} label={a.label} value={a.score} />
+                    ))}
+                  </View>
+                ) : null}
+              </>
+            ) : null}
+          </View>
+
+          <View style={{ flexGrow: 1, minHeight: 44 }} />
 
           {/* Actions */}
           <View style={pb.actions}>
@@ -897,37 +746,43 @@ export default function ShowtimePlaybackScreen() {
                 // replace (not push) so playback doesn't stack on top of stage.
                 router.replace({ pathname: "/showtime-stage", params: { levelId, mode: isTrainer ? "trainer" : "game" } });
               }}
-              style={({ pressed }) => [pb.retryBtn, { backgroundColor: "rgba(255,209,102,0.12)", borderColor: "#FFD166", opacity: pressed ? 0.8 : 1 }]}
+              style={({ pressed }) => [
+                pb.btn,
+                {
+                  backgroundColor: isDark ? "#2E2E2F" : theme.card,
+                  borderColor: isDark ? "rgba(240,238,233,0.06)" : theme.cardBorder,
+                  borderWidth: 2,
+                  opacity: pressed ? 0.8 : 1,
+                },
+              ]}
             >
-              <Ionicons name="refresh" size={18} color="#FFD166" />
-              <Text style={[pb.retryBtnText, { color: "#FFD166", fontFamily: "Geologica_600SemiBold" }]}>{t("again")}</Text>
+              <Ionicons name="refresh" size={16} color={theme.text} />
+              <Text style={[pb.btnTextSecondary, { color: theme.text }]}>{t("again")}</Text>
             </Pressable>
             <Pressable
               onPress={handleDone}
               disabled={completing || isSilent || !analysisResult}
               style={({ pressed }) => [
-                pb.doneBtn,
-                {
-                  backgroundColor: isSilent ? "#1A1A2A" : "#0B1426",
-                  opacity: pressed || completing || !analysisResult ? 0.5 : 1,
-                  borderWidth: isSilent ? 1 : 0,
-                  borderColor: isSilent ? "#0EA5E940" : "transparent",
-                },
+                pb.btn,
+                isSilent
+                  ? { backgroundColor: isDark ? "rgba(240,238,233,0.06)" : theme.card, borderColor: "transparent", borderWidth: 2 }
+                  : { backgroundColor: theme.accent, borderColor: theme.ctaStroke, borderWidth: 4 },
+                { opacity: pressed || completing || !analysisResult ? 0.5 : 1 },
               ]}
             >
               {completing ? (
-                <ActivityIndicator size="small" color="#FFD166" />
+                <ActivityIndicator size="small" color={theme.accentText} />
               ) : isSilent ? (
                 <>
-                  <Ionicons name="book-outline" size={18} color="#666" />
-                  <Text style={[pb.doneBtnText, { color: "#555", fontFamily: "Geologica_700Bold" }]}>
-                    {lang === "ru" ? "Прочитай текст" : "Read the text"}
+                  <Ionicons name="book-outline" size={16} color={theme.textMuted} />
+                  <Text style={[pb.btnTextPrimary, { color: theme.textMuted }]}>
+                    {ru ? "Прочитай текст" : "Read the text"}
                   </Text>
                 </>
               ) : (
                 <>
-                  <Ionicons name="arrow-forward" size={18} color="#FFD166" />
-                  <Text style={[pb.doneBtnText, { color: "#FFD166", fontFamily: "Geologica_700Bold" }]}>{t("forward")}</Text>
+                  <Ionicons name="arrow-forward" size={16} color={theme.accentText} />
+                  <Text style={[pb.btnTextPrimary, { color: theme.accentText }]}>{t("forward")}</Text>
                 </>
               )}
             </Pressable>
@@ -937,134 +792,63 @@ export default function ShowtimePlaybackScreen() {
 
       <SpeechAnalyzingLoader visible={analyzing && !analysisResult} lang={lang} />
 
-      <Modal
+      {/* Figma 36:1228 "Show Time · Послушай себя (modal)" */}
+      <StageGlassDialog
         visible={showListenPrompt}
-        transparent
-        animationType="fade"
+        icon={<SvgXml xml={headphonesXml} width={38} height={38} />}
+        title={lang === "en" ? "Listen to yourself" : "Послушай себя"}
+        message={
+          lang === "en"
+            ? "Listen to your speech to the end — honest self-reflection is a real step toward getting better."
+            : "Прослушай свою речь до конца - честный самоанализ это шаг к тому, чтобы стать лучше."
+        }
+        stacked
         onRequestClose={() => setShowListenPrompt(false)}
-      >
-        <View style={listenPrompt.overlay}>
-          <View style={listenPrompt.card}>
-            <Ionicons name="headset-outline" size={38} color="#FFD166" />
-            <Text style={listenPrompt.title}>
-              {lang === "en" ? "Listen to yourself" : "Послушай себя"}
-            </Text>
-            <Text style={listenPrompt.body}>
-              {lang === "en"
-                ? "Listen to your speech to the end — honest self-reflection is a real step toward getting better."
-                : "Прослушай свою речь до конца — честный самоанализ это шаг к тому, чтобы стать лучше."}
-            </Text>
-            <Pressable
-              onPress={() => setShowListenPrompt(false)}
-              style={({ pressed }) => [listenPrompt.btn, { opacity: pressed ? 0.85 : 1 }]}
-            >
-              <Text style={listenPrompt.btnText}>
-                {lang === "en" ? "Listen" : "Дослушать"}
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={skipListening}
-              style={({ pressed }) => [listenPrompt.skipBtn, { opacity: pressed ? 0.7 : 1 }]}
-            >
-              <Text style={listenPrompt.skipBtnText}>
-                {lang === "en" ? "Skip" : "Пропустить"}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
+        buttons={[
+          { label: lang === "en" ? "Listen" : "Дослушать", variant: "primary", onPress: () => setShowListenPrompt(false) },
+          { label: lang === "en" ? "Skip" : "Пропустить", variant: "link", onPress: skipListening },
+        ]}
+      />
     </View>
   );
 }
 
-const listenPrompt = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(3,7,14,0.78)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 28,
-  },
-  card: {
-    width: "100%",
-    maxWidth: 360,
-    backgroundColor: "#0E1626",
-    borderRadius: 22,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,209,102,0.25)",
-    padding: 26,
-    alignItems: "center",
-    gap: 12,
-  },
-  title: {
-    color: "#fff",
-    fontSize: 19,
-    fontFamily: "Geologica_700Bold",
-    textAlign: "center",
-  },
-  body: {
-    color: "rgba(255,255,255,0.7)",
-    fontSize: 14.5,
-    lineHeight: 21,
-    textAlign: "center",
-    fontFamily: "Geologica_400Regular",
-  },
-  btn: {
-    marginTop: 8,
-    backgroundColor: "#FFD166",
-    paddingHorizontal: 28,
-    height: 48,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  btnText: {
-    color: "#2A1E00",
-    fontSize: 15,
-    fontFamily: "Geologica_700Bold",
-  },
-  skipBtn: {
-    marginTop: 2,
-    paddingHorizontal: 20,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  skipBtnText: {
-    color: "rgba(255,255,255,0.55)",
-    fontSize: 14,
-    fontFamily: "Geologica_500Medium",
-  },
-});
-
 const pb = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 12, gap: 8 },
-  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
-  headerCenter: { flex: 1, alignItems: "center" },
-  headerTitle: { fontSize: 18, color: "#fff" },
-  headerSub: { fontSize: 13, color: "rgba(255,255,255,0.5)" },
-  scroll: { gap: 0 },
-  audienceSection: { width: "100%", alignItems: "center", paddingTop: 16, paddingBottom: 24, overflow: "hidden" },
-  youAreHere: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 },
-  youDot: { width: 8, height: 8, borderRadius: 4 },
-  youText: { fontSize: 12 },
-  content: { padding: 20, gap: 16 },
-  sectionLabel: { flexDirection: "row", alignItems: "center", gap: 8 },
-  sectionLabelText: { fontSize: 12, letterSpacing: 1.2, textTransform: "uppercase" },
-  tipsCard: { borderRadius: 18, borderWidth: 1, padding: 18, gap: 10 },
-  tipsTitle: { fontSize: 15, marginBottom: 4 },
-  tipRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
-  tipNum: { width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  tipNumText: { fontSize: 12 },
-  tipText: { flex: 1, fontSize: 14, lineHeight: 20, paddingTop: 2 },
-  analyzingCard: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12, padding: 20, borderRadius: 16, backgroundColor: "rgba(255,209,102,0.06)", borderWidth: 1, borderColor: "rgba(255,209,102,0.2)" },
-  analyzingText: { fontSize: 14 },
+  scroll: { flexGrow: 1, paddingHorizontal: 20 },
+  title: { fontFamily: "Geologica_900Black", fontSize: 28, lineHeight: 34, letterSpacing: -0.28 },
+  label: { fontFamily: "Geologica_600SemiBold", fontSize: 12, letterSpacing: 0.6 },
+  scoreBlock: { marginTop: 28, gap: 4 },
+  scoreRow: { flexDirection: "row", alignItems: "baseline", gap: 6 },
+  scoreNum: { fontFamily: "Geologica_900Black", fontSize: 96, lineHeight: 104, letterSpacing: -2.88 },
+  scoreMax: { fontFamily: "Geologica_700Bold", fontSize: 30, letterSpacing: -0.3 },
+  starsRow: { flexDirection: "row", gap: 8 },
+  verdictRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingTop: 10 },
+  verdict: { fontFamily: "Geologica_800ExtraBold", fontSize: 17 },
+  xpPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 32 },
+  xpText: { fontFamily: "Geologica_700Bold", fontSize: 13, letterSpacing: 0.65 },
+  card: { borderRadius: 22, borderWidth: 2, padding: 20 },
+  tip: { fontFamily: "Geologica_700Bold", fontSize: 16, lineHeight: 19.2 },
+  evalRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+  evalNum: { fontFamily: "Geologica_800ExtraBold", fontSize: 14, width: 14, lineHeight: 20 },
+  evalText: { flex: 1, fontFamily: "Geologica_400Regular", fontSize: 14, lineHeight: 20 },
+  cardHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  ansScore: { flexDirection: "row", alignItems: "baseline", gap: 2 },
+  ansScoreNum: { fontFamily: "Geologica_900Black", fontSize: 22, letterSpacing: -0.11 },
+  ansScoreMax: { fontFamily: "Geologica_700Bold", fontSize: 13 },
+  topic: { fontFamily: "Geologica_800ExtraBold", fontSize: 17, lineHeight: 23 },
+  note: { fontFamily: "Geologica_400Regular", fontSize: 12.5 },
+  divider: { height: 1 },
+  toggle: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  toggleText: { fontFamily: "Geologica_700Bold", fontSize: 14 },
+  chevron: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  metricRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  metricLabel: { width: 134, fontFamily: "Geologica_700Bold", fontSize: 14 },
+  metricTrack: { flex: 1, height: 6, borderRadius: 3, overflow: "hidden" },
+  metricFill: { height: 6, borderRadius: 3 },
+  metricValue: { width: 24, textAlign: "right", fontFamily: "Geologica_700Bold", fontSize: 15 },
   actions: { flexDirection: "row", gap: 12 },
-  retryBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, borderRadius: 16, borderWidth: 1 },
-  retryBtnText: { fontSize: 15 },
-  doneBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, borderRadius: 16 },
-  doneBtnText: { fontSize: 15 },
-  listenHint: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: "rgba(255,209,102,0.08)", borderWidth: 1, borderColor: "rgba(255,209,102,0.15)" },
-  listenHintText: { fontSize: 12, color: "rgba(255,209,102,0.7)" },
+  btn: { flex: 1, height: 50, borderRadius: 32, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
+  btnTextSecondary: { fontFamily: "Geologica_600SemiBold", fontSize: 15 },
+  btnTextPrimary: { fontFamily: "Geologica_700Bold", fontSize: 15 },
 });

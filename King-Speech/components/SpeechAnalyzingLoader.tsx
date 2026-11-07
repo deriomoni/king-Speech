@@ -10,12 +10,10 @@ import Animated, {
   FadeIn,
   FadeOut,
 } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import OscarMascot from "@/components/OscarMascot";
+import { useTheme } from "@/context/ThemeContext";
 
-const GOLD = "#FFD166";
-const GOLD_DEEP = "#FF9F43";
 
 const PHRASES_RU = [
   "Анализируем вашу речь…",
@@ -39,9 +37,12 @@ const PHRASES_EN = [
 
 const PHRASE_INTERVAL_MS = 2000;
 const PROGRESS_DURATION_MS = 4500;
-const RIVE_SIZE = 180;
+// Figma 36:1252 "Show Time · Анализ речи (loader)": 200pt Oscar, 16pt line,
+// 220×3 gold progress on a faint track, all on the app background.
+const RIVE_SIZE = 200;
 
 function ProgressBar() {
+  const { theme, themeMode } = useTheme();
   const w = useSharedValue(0);
 
   useEffect(() => {
@@ -57,20 +58,14 @@ function ProgressBar() {
   }));
 
   return (
-    <View style={styles.progressTrack}>
-      <Animated.View style={[styles.progressFill, fillStyle]}>
-        <LinearGradient
-          colors={[GOLD, GOLD_DEEP]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
+    <View style={[styles.progressTrack, { backgroundColor: themeMode === "dark" ? "rgba(240,238,233,0.1)" : "rgba(38,38,40,0.1)" }]}>
+      <Animated.View style={[styles.progressFill, { backgroundColor: theme.accent }, fillStyle]} />
     </View>
   );
 }
 
 function RotatingPhrase({ phrases }: { phrases: string[] }) {
+  const { theme } = useTheme();
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -86,7 +81,7 @@ function RotatingPhrase({ phrases }: { phrases: string[] }) {
         key={index}
         entering={FadeIn.duration(400)}
         exiting={FadeOut.duration(300)}
-        style={styles.phraseText}
+        style={[styles.phraseText, { color: theme.text }]}
         numberOfLines={2}
       >
         {phrases[index]}
@@ -101,6 +96,7 @@ interface Props {
 }
 
 export default function SpeechAnalyzingLoader({ visible, lang }: Props) {
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   // Keep the overlay mounted while it's visible AND while it's fading out.
   // The opacity is driven by a shared value so the FadeOut actually runs
@@ -139,6 +135,7 @@ export default function SpeechAnalyzingLoader({ visible, lang }: Props) {
       style={[
         styles.overlay,
         overlayStyle,
+        { backgroundColor: theme.bg },
         { paddingTop: topPad, paddingBottom: bottomPad },
       ]}
       accessible
@@ -161,7 +158,6 @@ export default function SpeechAnalyzingLoader({ visible, lang }: Props) {
 const styles = StyleSheet.create({
   overlay: {
     position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: "#070D1A",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 9999,
@@ -184,16 +180,13 @@ const styles = StyleSheet.create({
   phraseText: {
     fontSize: 16,
     lineHeight: 22,
-    color: "#F0EDE8",
     fontFamily: "Geologica_400Regular",
-    fontStyle: "italic",
     textAlign: "center",
   },
   progressTrack: {
     width: 220,
     height: 3,
     borderRadius: 2,
-    backgroundColor: "rgba(255, 255, 255, 0.10)",
     overflow: "hidden",
   },
   progressFill: {
