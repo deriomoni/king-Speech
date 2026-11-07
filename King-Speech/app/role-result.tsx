@@ -786,7 +786,7 @@ const styles = StyleSheet.create({
 
   previewWrap: { height: 300, borderRadius: CARD_RADIUS, overflow: "hidden", backgroundColor: CARD_BG, alignItems: "center", justifyContent: "center", marginBottom: 18 },
   mirrored: { transform: [{ scaleX: -1 }] },
-  tapLayer: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
+  tapLayer: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" },
   bigPlay: { width: 68, height: 68, borderRadius: 34, backgroundColor: GOLD, alignItems: "center", justifyContent: "center",
     ...Platform.select({ ios: { shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } }, android: { elevation: 6 }, default: {} }) },
   glassBtn: { position: "absolute", top: 12, right: 12, width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.45)", borderWidth: 1, borderColor: "rgba(255,255,255,0.18)" },

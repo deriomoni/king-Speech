@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   pillBorder: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
     borderRadius: PILL_HEIGHT / 2,
     borderWidth: 1,
   },

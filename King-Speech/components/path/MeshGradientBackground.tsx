@@ -317,7 +317,7 @@ export function MeshGradientBackground({
   const blobLayerStyle: any =
     Platform.OS === "web"
       ? {
-          ...StyleSheet.absoluteFillObject,
+          position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
           // RN-Web passes these through to the underlying div. willChange
           // tells the browser to promote the layer to its own compositor
           // texture so the blur isn't re-rasterized every frame.

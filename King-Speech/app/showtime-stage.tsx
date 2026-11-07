@@ -5514,7 +5514,7 @@ const s = StyleSheet.create({
   header: { position: "absolute", top: 0, left: 0, right: 0, flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 10, zIndex: 10 },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.06)", alignItems: "center", justifyContent: "center" },
   headerSide: { minWidth: 52 },
-  introWrap: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center", paddingHorizontal: 34, zIndex: 30 },
+  introWrap: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center", paddingHorizontal: 34, zIndex: 30 },
   introTitle: { fontSize: 34, lineHeight: 40, color: "#FFFFFF", textAlign: "center", letterSpacing: 0.2, textShadowColor: "rgba(0,0,0,0.6)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 12 },
   lightBtn: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
   speedTextBtn: { paddingVertical: 4, paddingHorizontal: 6, marginTop: 6 },

@@ -318,7 +318,7 @@ export default function ModuleTransitionOverlay({
 }
 
 const styles = StyleSheet.create({
-  root: { ...StyleSheet.absoluteFillObject, zIndex: 999, elevation: 30 },
+  root: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, elevation: 30 },
   halo: { position: "absolute", alignSelf: "center" },
   heroArea: { flex: 1, alignItems: "center", justifyContent: "center" },
   caption: {

@@ -1092,7 +1092,7 @@ const st = StyleSheet.create({
   // spot during a swap (slide / cross-fade) instead of stacking in flow — the
   // latter made both task screens visible at once under reanimated 4.
   cardWrap: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
     justifyContent: "center",
     paddingHorizontal: 22,
   },
@@ -1191,7 +1191,7 @@ const st = StyleSheet.create({
   corridorHint: { fontSize: 11, letterSpacing: 2, marginTop: 16 },
 
   // Answer-breakdown report — outer plain View fills + zIndex, animated inner fills it.
-  devRoot: { ...StyleSheet.absoluteFillObject, zIndex: 30 },
+  devRoot: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 30 },
   devTitle: { fontSize: 26, lineHeight: 31 },
   devLede: { fontSize: 14, lineHeight: 20, marginTop: -6 },
   devCard: { borderRadius: 18, borderWidth: 1, padding: 16, gap: 8 },
