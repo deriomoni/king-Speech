@@ -459,7 +459,7 @@ function SpinIntro({ colors, onDone }: { colors: { text: string; background: str
       <Text
         numberOfLines={1}
         adjustsFontSizeToFit
-        style={{ color: colors.text, fontFamily: "Rubik_700Bold", fontSize: 34, letterSpacing: 0.3, textAlign: "center" }}
+        style={{ color: colors.text, fontFamily: "Geologica_700Bold", fontSize: 34, letterSpacing: 0.3, textAlign: "center" }}
       >
         Выбери слово
       </Text>
@@ -1553,11 +1553,11 @@ function ResultPhase({
       contentContainerStyle={[styles.resultContent, { paddingTop: topPad, paddingBottom: 48 + insets.bottom }]}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={[styles.resultTitle, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>Время вышло!</Text>
-      <Text style={[styles.resultWord, { color: colors.textSecondary, fontFamily: "Rubik_500Medium" }]}>Слово: {word.word.toUpperCase()}</Text>
+      <Text style={[styles.resultTitle, { color: colors.text, fontFamily: "Geologica_700Bold" }]}>Время вышло!</Text>
+      <Text style={[styles.resultWord, { color: colors.textSecondary, fontFamily: "Geologica_500Medium" }]}>Слово: {word.word.toUpperCase()}</Text>
 
-      <Text style={[styles.resultBigCount, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>{animFound} / {total}</Text>
-      <Text style={[styles.resultScore, { color: colors.textSecondary, fontFamily: "Rubik_600SemiBold" }]}>+{animScore} очков</Text>
+      <Text style={[styles.resultBigCount, { color: colors.text, fontFamily: "Geologica_700Bold" }]}>{animFound} / {total}</Text>
+      <Text style={[styles.resultScore, { color: colors.textSecondary, fontFamily: "Geologica_600SemiBold" }]}>+{animScore} очков</Text>
 
       <View style={styles.progressTrack}>
         <Animated.View
@@ -1566,7 +1566,7 @@ function ResultPhase({
         />
       </View>
 
-      <Text style={[styles.synSectionLabel, { color: colors.textSecondary, fontFamily: "Rubik_600SemiBold" }]}>Синонимы к слову «{word.word}»</Text>
+      <Text style={[styles.synSectionLabel, { color: colors.textSecondary, fontFamily: "Geologica_600SemiBold" }]}>Синонимы к слову «{word.word}»</Text>
       <View style={styles.synList}>
         {word.synonyms.map((syn, idx) => {
           const found = isFound(syn);
@@ -1584,7 +1584,7 @@ function ResultPhase({
               <Text
                 style={[
                   found ? styles.foundChipText : styles.missedChipText,
-                  { fontFamily: "Rubik_500Medium", color: found ? (isDark ? "#C0DD97" : "#2F6B12") : colors.textMuted },
+                  { fontFamily: "Geologica_500Medium", color: found ? (isDark ? "#C0DD97" : "#2F6B12") : colors.textMuted },
                 ]}
               >
                 {found ? "✓ " : ""}{syn}
@@ -1593,11 +1593,11 @@ function ResultPhase({
           );
         })}
       </View>
-      <Text style={[styles.statsLine, { color: colors.textMuted, fontFamily: "Rubik_500Medium" }]}>
+      <Text style={[styles.statsLine, { color: colors.textMuted, fontFamily: "Geologica_500Medium" }]}>
         Назвал {foundCount} · Пропустил {missedCount}
       </Text>
       {foundCount === 0 ? (
-        <Text style={[styles.resultEncourage, { color: colors.textSecondary, fontFamily: "Rubik_500Medium" }]}>В следующий раз получится!</Text>
+        <Text style={[styles.resultEncourage, { color: colors.textSecondary, fontFamily: "Geologica_500Medium" }]}>В следующий раз получится!</Text>
       ) : null}
 
       <Pressable
@@ -1634,7 +1634,7 @@ const styles = StyleSheet.create({
   topTitle: {
     color: "#fff",
     fontSize: 19,
-    fontFamily: "Rubik_700Bold",
+    fontFamily: "Geologica_700Bold",
   },
   closeBtn: {
     width: 36,
@@ -1671,7 +1671,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 22,
     fontWeight: "700",
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
   },
   tutorialH2: {
     color: "rgba(255,255,255,0.5)",
@@ -1701,7 +1701,7 @@ const styles = StyleSheet.create({
     color: RED,
     fontSize: 11,
     fontWeight: "600",
-    fontFamily: "Nunito_600SemiBold",
+    fontFamily: "Geologica_600SemiBold",
   },
   ruleText: {
     flex: 1,
@@ -1739,7 +1739,7 @@ const styles = StyleSheet.create({
     lineHeight: ROW_SPACING,
     textAlign: "center",
     paddingHorizontal: 24,
-    fontFamily: "Nunito_800ExtraBold",
+    fontFamily: "Geologica_800ExtraBold",
   },
   reelPointer: {
     position: "absolute",
@@ -1770,7 +1770,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     letterSpacing: 3,
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
   },
 
   // Play
@@ -1778,7 +1778,7 @@ const styles = StyleSheet.create({
   playTimer: {
     fontSize: 18,
     fontWeight: "700",
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
     letterSpacing: 1.5,
   },
   playWordBlock: { alignItems: "center", marginTop: 18, marginBottom: 8 },
@@ -1789,7 +1789,7 @@ const styles = StyleSheet.create({
     letterSpacing: 6,
     textAlign: "center",
     paddingHorizontal: 20,
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
   },
   playMeta: {
     color: "rgba(255,255,255,0.5)",
@@ -1808,7 +1808,7 @@ const styles = StyleSheet.create({
     fontSize: 96,
     fontWeight: "800",
     textAlign: "center",
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
     letterSpacing: 2,
   },
   countdownHint: {
@@ -1866,7 +1866,7 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.8)",
     fontSize: 14,
     fontWeight: "600",
-    fontFamily: "Nunito_600SemiBold",
+    fontFamily: "Geologica_600SemiBold",
   },
   feedScroll: {
     flexGrow: 0,
@@ -1888,7 +1888,7 @@ const styles = StyleSheet.create({
     color: GREEN_TEXT,
     fontSize: 14,
     fontWeight: "700",
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
   },
   feedContent: { paddingVertical: 4, gap: 6 },
   feedCorrect: {
@@ -1967,7 +1967,7 @@ const styles = StyleSheet.create({
   hintPanelTitle: {
     color: "#FFD857",
     fontSize: 12.5,
-    fontFamily: "Rubik_600SemiBold",
+    fontFamily: "Geologica_600SemiBold",
     letterSpacing: 0.3,
     textTransform: "uppercase",
   },
@@ -1988,7 +1988,7 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.9)",
     fontSize: 15,
     letterSpacing: 2,
-    fontFamily: "Rubik_500Medium",
+    fontFamily: "Geologica_500Medium",
   },
   hintChipTextDone: { color: GREEN_TEXT, letterSpacing: 0.2 },
 
@@ -2005,7 +2005,7 @@ const styles = StyleSheet.create({
   timeBtnText: {
     color: "#FFFFFF",
     fontSize: 13,
-    fontFamily: "Rubik_700Bold",
+    fontFamily: "Geologica_700Bold",
   },
   timeCostPill: {
     flexDirection: "row",
@@ -2020,7 +2020,7 @@ const styles = StyleSheet.create({
   timeCostText: {
     color: "#FFFFFF",
     fontSize: 11,
-    fontFamily: "Rubik_700Bold",
+    fontFamily: "Geologica_700Bold",
   },
 
   // Bottom corner actions
@@ -2051,12 +2051,12 @@ const styles = StyleSheet.create({
   cornerBtnText: {
     color: "#FFFFFF",
     fontSize: 13,
-    fontFamily: "Rubik_600SemiBold",
+    fontFamily: "Geologica_600SemiBold",
   },
   cornerBtnTextDark: {
     color: "#1B1300",
     fontSize: 13,
-    fontFamily: "Rubik_600SemiBold",
+    fontFamily: "Geologica_600SemiBold",
   },
   cornerCostPill: {
     flexDirection: "row",
@@ -2071,7 +2071,7 @@ const styles = StyleSheet.create({
   cornerCostText: {
     color: "#1B1300",
     fontSize: 12,
-    fontFamily: "Rubik_700Bold",
+    fontFamily: "Geologica_700Bold",
   },
 
   // Modals (replace confirm + rewarded ad)
@@ -2114,14 +2114,14 @@ const styles = StyleSheet.create({
     color: "#FFD857",
     fontSize: 11,
     letterSpacing: 1.5,
-    fontFamily: "Rubik_700Bold",
+    fontFamily: "Geologica_700Bold",
   },
   modalTitle: {
     color: "#FFFFFF",
     fontSize: 18,
     lineHeight: 24,
     textAlign: "center",
-    fontFamily: "Rubik_600SemiBold",
+    fontFamily: "Geologica_600SemiBold",
   },
   modalBody: {
     color: "rgba(255,255,255,0.6)",
@@ -2129,7 +2129,7 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     textAlign: "center",
     marginTop: 8,
-    fontFamily: "Rubik_400Regular",
+    fontFamily: "Geologica_400Regular",
   },
   modalBtns: {
     flexDirection: "row",
@@ -2154,13 +2154,13 @@ const styles = StyleSheet.create({
   modalBtnGhostText: {
     color: "rgba(255,255,255,0.85)",
     fontSize: 15,
-    fontFamily: "Rubik_600SemiBold",
+    fontFamily: "Geologica_600SemiBold",
   },
   modalBtnPrimary: { backgroundColor: "#4C6EF5" },
   modalBtnPrimaryText: {
     color: "#FFFFFF",
     fontSize: 15,
-    fontFamily: "Rubik_600SemiBold",
+    fontFamily: "Geologica_600SemiBold",
   },
 
   // Result
@@ -2174,7 +2174,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 20,
     fontWeight: "700",
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
   },
   resultWord: {
     color: "rgba(255,255,255,0.5)",
@@ -2187,14 +2187,14 @@ const styles = StyleSheet.create({
     fontSize: 64,
     fontWeight: "800",
     marginTop: 28,
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
   },
   resultScore: {
     color: RED,
     fontSize: 28,
     fontWeight: "700",
     marginTop: 12,
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
   },
   resultSubtitle: {
     color: "rgba(255,255,255,0.55)",
@@ -2202,7 +2202,7 @@ const styles = StyleSheet.create({
     marginTop: 28,
     marginBottom: 12,
     alignSelf: "flex-start",
-    fontFamily: "Nunito_500Medium",
+    fontFamily: "Geologica_500Medium",
   },
   resultEncourage: {
     color: "rgba(255,255,255,0.65)",
@@ -2229,7 +2229,7 @@ const styles = StyleSheet.create({
     color: "#C0DD97",
     fontSize: 13,
     fontWeight: "500",
-    fontFamily: "Nunito_500Medium",
+    fontFamily: "Geologica_500Medium",
   },
   missedChip: {
     paddingHorizontal: 12,
@@ -2243,7 +2243,7 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.5)",
     fontSize: 13,
     fontWeight: "500",
-    fontFamily: "Nunito_500Medium",
+    fontFamily: "Geologica_500Medium",
   },
   progressTrack: {
     width: "100%",
@@ -2264,13 +2264,13 @@ const styles = StyleSheet.create({
     marginTop: 28,
     marginBottom: 14,
     alignSelf: "flex-start",
-    fontFamily: "Nunito_600SemiBold",
+    fontFamily: "Geologica_600SemiBold",
   },
   statsLine: {
     color: "rgba(255,255,255,0.6)",
     fontSize: 14,
     marginTop: 18,
-    fontFamily: "Nunito_500Medium",
+    fontFamily: "Geologica_500Medium",
   },
 
   // Shared primary button
@@ -2286,6 +2286,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 15,
     fontWeight: "600",
-    fontFamily: "Nunito_600SemiBold",
+    fontFamily: "Geologica_600SemiBold",
   },
 });

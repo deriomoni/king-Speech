@@ -255,9 +255,9 @@ const st = StyleSheet.create({
     overflow: "hidden",
   },
   rowTop: { flexDirection: "row", alignItems: "center", gap: 8 },
-  label: { fontSize: 14.5, fontFamily: "Rubik_500Medium" },
-  labelOverall: { fontSize: 16.5, fontFamily: "Rubik_600SemiBold" },
-  score: { fontSize: 22, fontFamily: "Rubik_700Bold", letterSpacing: 0.3 },
+  label: { fontSize: 14.5, fontFamily: "Geologica_500Medium" },
+  labelOverall: { fontSize: 16.5, fontFamily: "Geologica_600SemiBold" },
+  score: { fontSize: 22, fontFamily: "Geologica_700Bold", letterSpacing: 0.3 },
   scoreOverall: { fontSize: 38, lineHeight: 42 },
   track: {
     backgroundColor: "rgba(255,255,255,0.09)",
@@ -265,7 +265,7 @@ const st = StyleSheet.create({
     overflow: "hidden",
   },
   fill: { height: "100%", borderRadius: 8, overflow: "hidden" },
-  tierWord: { fontSize: 12.5, fontFamily: "Rubik_600SemiBold", letterSpacing: 0.6, textTransform: "uppercase", opacity: 0.9 },
+  tierWord: { fontSize: 12.5, fontFamily: "Geologica_600SemiBold", letterSpacing: 0.6, textTransform: "uppercase", opacity: 0.9 },
   connector: {
     position: "absolute",
     left: 18,

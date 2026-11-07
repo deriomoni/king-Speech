@@ -4284,7 +4284,7 @@ function NoiseBubbleView({ bubble }: { bubble: NoiseBubble }) {
   const style = useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ translateY: translateY.value }] }));
   return (
     <Animated.View style={[style, { position: "absolute", left: bubble.x, top: bubble.y, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 9, paddingHorizontal: 7, paddingVertical: 3 }]}>
-      <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 10, fontFamily: "Nunito_400Regular" }}>{bubble.text}</Text>
+      <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 10, fontFamily: "Geologica_400Regular" }}>{bubble.text}</Text>
     </Animated.View>
   );
 }
@@ -4417,7 +4417,7 @@ function RecDot() {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
       <Animated.View style={[style, { width: 8, height: 8, borderRadius: 4, backgroundColor: "#0EA5E9" }]} />
-      <Text style={{ color: "#0EA5E9", fontSize: 11, fontFamily: "Nunito_700Bold", letterSpacing: 1 }}>REC</Text>
+      <Text style={{ color: "#0EA5E9", fontSize: 11, fontFamily: "Geologica_700Bold", letterSpacing: 1 }}>REC</Text>
     </View>
   );
 }
@@ -4446,9 +4446,9 @@ function SpeechLine({ text, isActive, isDone }: { text: string; isActive: boolea
 const sl = StyleSheet.create({
   // Light text over the bottom scrim, so the audience photo stays visible while
   // you read. A soft shadow keeps it legible over lighter spots of the image.
-  line: { fontSize: 14, lineHeight: 23, color: "rgba(255,255,255,0.42)", fontFamily: "Nunito_400Regular", textAlign: "center", paddingVertical: 2, textShadowColor: "rgba(0,0,0,0.55)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 },
+  line: { fontSize: 14, lineHeight: 23, color: "rgba(255,255,255,0.42)", fontFamily: "Geologica_400Regular", textAlign: "center", paddingVertical: 2, textShadowColor: "rgba(0,0,0,0.55)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 },
   // Size lives in the animation above; this only carries the emphasis.
-  lineActive: { color: "#FFFFFF", fontFamily: "Nunito_700Bold" },
+  lineActive: { color: "#FFFFFF", fontFamily: "Geologica_700Bold" },
   lineDone: { color: "rgba(255,255,255,0.4)", textDecorationLine: "line-through", textDecorationColor: "rgba(255,255,255,0.25)" },
 });
 
@@ -4539,7 +4539,7 @@ function StartButton({ accentColor, onPress, label }: { accentColor: string; onP
           style={sb.shadowOverlay}
         />
         <Ionicons name="mic" size={22} color="#1A1A2E" />
-        <Text style={[sb.label, { fontFamily: "Nunito_700Bold" }]}>{label}</Text>
+        <Text style={[sb.label, { fontFamily: "Geologica_700Bold" }]}>{label}</Text>
       </Animated.View>
     </Pressable>
   );
@@ -4631,7 +4631,7 @@ function EncouragementLine({ lang, color }: { lang: Lang; color: string }) {
 
   const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return (
-    <Animated.Text style={[el.line, style, { color, fontFamily: "Nunito_500Medium" }]} numberOfLines={2}>
+    <Animated.Text style={[el.line, style, { color, fontFamily: "Geologica_500Medium" }]} numberOfLines={2}>
       {list[idx]}
     </Animated.Text>
   );
@@ -5239,8 +5239,8 @@ export default function ShowtimeStageScreen() {
             {/* One name only — the piece used to be printed twice, once under
                 its label and once again as a subtitle below it. */}
             <View style={s.curtainThemeWrap}>
-              <Text style={[s.curtainThemeLabel, { fontFamily: "Nunito_500Medium", color: theme.accentColor + "99" }]}>{t("speechTopic")}</Text>
-              <Text style={[s.curtainThemeName, { fontFamily: "Nunito_700Bold", color: theme.accentColor }]} numberOfLines={2}>{theme.title}</Text>
+              <Text style={[s.curtainThemeLabel, { fontFamily: "Geologica_500Medium", color: theme.accentColor + "99" }]}>{t("speechTopic")}</Text>
+              <Text style={[s.curtainThemeName, { fontFamily: "Geologica_700Bold", color: theme.accentColor }]} numberOfLines={2}>{theme.title}</Text>
             </View>
 
             {/* A word before you step out, in place of the description of the
@@ -5249,7 +5249,7 @@ export default function ShowtimeStageScreen() {
             <EncouragementLine lang={lang} color="rgba(255,255,255,0.86)" />
 
             {theme.timerSeconds !== null && (
-              <Text style={[s.curtainHint, { fontFamily: "Nunito_400Regular" }]}>
+              <Text style={[s.curtainHint, { fontFamily: "Geologica_400Regular" }]}>
                 {t("timerLabel")}: {theme.timerSeconds} {t("sec")}
               </Text>
             )}
@@ -5274,7 +5274,7 @@ export default function ShowtimeStageScreen() {
                       size={18}
                       color={active ? theme.accentColor : "rgba(255,255,255,0.6)"}
                     />
-                    <Text style={[s.modeBtnText, { fontFamily: "Nunito_600SemiBold", color: active ? theme.accentColor : "rgba(255,255,255,0.6)" }]}>
+                    <Text style={[s.modeBtnText, { fontFamily: "Geologica_600SemiBold", color: active ? theme.accentColor : "rgba(255,255,255,0.6)" }]}>
                       {m === "manual"
                         ? (lang === "en" ? "Manual" : "Механический")
                         : (lang === "en" ? "Auto-scroll" : "Авто-свайп")}
@@ -5286,7 +5286,7 @@ export default function ShowtimeStageScreen() {
             <StartButton accentColor={theme.accentColor} onPress={handleStart} label={t("goOnStage")} />
             <Pressable onPress={() => router.back()} style={({ pressed }) => [s.curtainExitBtn, { opacity: pressed ? 0.6 : 1 }]}>
               <Ionicons name="arrow-back" size={16} color="rgba(255,255,255,0.6)" />
-              <Text style={[s.curtainExitTxt, { fontFamily: "Nunito_500Medium" }]}>{t("exit")}</Text>
+              <Text style={[s.curtainExitTxt, { fontFamily: "Geologica_500Medium" }]}>{t("exit")}</Text>
             </Pressable>
           </ScrollView>
         </Animated.View>
@@ -5340,7 +5340,7 @@ export default function ShowtimeStageScreen() {
           )}
           {started && !finished && !lightOpen && scrollMode === "auto" && (
             <Pressable onPress={cycleSpeed} hitSlop={12} style={({ pressed }) => [s.speedTextBtn, { opacity: pressed ? 0.55 : 1 }]}>
-              <Text style={[s.speedText, { fontFamily: "Nunito_800ExtraBold" }]}>{AUTO_SPEEDS[speedIdx]}×</Text>
+              <Text style={[s.speedText, { fontFamily: "Geologica_800ExtraBold" }]}>{AUTO_SPEEDS[speedIdx]}×</Text>
             </Pressable>
           )}
         </View>
@@ -5348,10 +5348,10 @@ export default function ShowtimeStageScreen() {
           {started && (
             <View style={s.liveTag}>
               <RecBlinkDot />
-              <Text style={[s.liveText, { fontFamily: "Nunito_700Bold" }]}>LIVE</Text>
+              <Text style={[s.liveText, { fontFamily: "Geologica_700Bold" }]}>LIVE</Text>
             </View>
           )}
-          <Text style={[s.speechTitle, { fontFamily: "Nunito_500Medium" }]} numberOfLines={1} ellipsizeMode="tail">{speech.title}</Text>
+          <Text style={[s.speechTitle, { fontFamily: "Geologica_500Medium" }]} numberOfLines={1} ellipsizeMode="tail">{speech.title}</Text>
         </View>
         <View style={[s.headerRight, s.headerSide]} />
       </View>
@@ -5360,7 +5360,7 @@ export default function ShowtimeStageScreen() {
       {started && !introDone && (
         <View pointerEvents="none" style={s.introWrap}>
           <Animated.View style={[StyleSheet.absoluteFill, introDimStyle, { backgroundColor: "#000" }]} />
-          <Animated.Text style={[s.introTitle, titleIntroStyle, { fontFamily: "Nunito_800ExtraBold" }]} numberOfLines={3}>
+          <Animated.Text style={[s.introTitle, titleIntroStyle, { fontFamily: "Geologica_800ExtraBold" }]} numberOfLines={3}>
             {theme.title}
           </Animated.Text>
         </View>
@@ -5375,16 +5375,16 @@ export default function ShowtimeStageScreen() {
             <View style={s.tutorialIconWrap}>
               <Ionicons name="bulb" size={28} color="#FFD166" />
             </View>
-            <Text style={[s.tutorialTitle, { fontFamily: "Nunito_700Bold" }]}>
+            <Text style={[s.tutorialTitle, { fontFamily: "Geologica_700Bold" }]}>
               {t("hint")}
             </Text>
-            <Text style={[s.tutorialText, { fontFamily: "Nunito_400Regular" }]}>
+            <Text style={[s.tutorialText, { fontFamily: "Geologica_400Regular" }]}>
               {t("tutorialText")}
             </Text>
             <View style={s.tutorialArrow}>
               <Ionicons name="arrow-down" size={32} color="#FFD166" />
             </View>
-            <Text style={[s.tutorialDismiss, { fontFamily: "Nunito_400Regular" }]}>
+            <Text style={[s.tutorialDismiss, { fontFamily: "Geologica_400Regular" }]}>
               {t("tapAnywhere")}
             </Text>
           </View>
@@ -5408,8 +5408,8 @@ export default function ShowtimeStageScreen() {
         <View style={s.finishOverlay}>
           <Animated.View entering={FadeIn.duration(600)} style={s.finishContent}>
             <Ionicons name="trophy" size={44} color={theme.accentColor} />
-            <Text style={[s.finishTitle, { fontFamily: "Nunito_700Bold" }]}>{t("bravo")}</Text>
-            <Text style={[s.finishSub, { fontFamily: "Nunito_400Regular" }]}>{t("openingPlayback")}</Text>
+            <Text style={[s.finishTitle, { fontFamily: "Geologica_700Bold" }]}>{t("bravo")}</Text>
+            <Text style={[s.finishSub, { fontFamily: "Geologica_400Regular" }]}>{t("openingPlayback")}</Text>
           </Animated.View>
         </View>
       )}

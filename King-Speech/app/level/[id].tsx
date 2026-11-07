@@ -189,7 +189,7 @@ const TranscriptBlock = React.memo(function TranscriptBlock({
     >
       <View style={rs.transcriptHeader}>
         <Ionicons name="ear-outline" size={16} color={fgMuted} />
-        <Text style={[rs.feedbackTitle, { color: fgText, fontFamily: "Nunito_600SemiBold" }]}>
+        <Text style={[rs.feedbackTitle, { color: fgText, fontFamily: "Geologica_600SemiBold" }]}>
           {lang === "ru" ? "Что мы услышали" : "What we heard"}
         </Text>
       </View>
@@ -210,7 +210,7 @@ const TranscriptBlock = React.memo(function TranscriptBlock({
           },
         ]}
       >
-        <Text style={[rs.transcriptText, { color: fgText, fontFamily: "Nunito_400Regular" }]}>
+        <Text style={[rs.transcriptText, { color: fgText, fontFamily: "Geologica_400Regular" }]}>
           {segments.map((seg, i) =>
             seg.isFiller ? (
               <Text
@@ -218,7 +218,7 @@ const TranscriptBlock = React.memo(function TranscriptBlock({
                 style={{
                   color: accent,
                   backgroundColor: fillerBg,
-                  fontFamily: "Nunito_600SemiBold",
+                  fontFamily: "Geologica_600SemiBold",
                 }}
               >
                 {seg.text}
@@ -230,7 +230,7 @@ const TranscriptBlock = React.memo(function TranscriptBlock({
         </Text>
         {isLong ? (
           <View style={rs.transcriptToggleRow}>
-            <Text style={[rs.transcriptToggleText, { color: fgMuted, fontFamily: "Nunito_500Medium" }]}>
+            <Text style={[rs.transcriptToggleText, { color: fgMuted, fontFamily: "Geologica_500Medium" }]}>
               {expandLabel}
             </Text>
             <Ionicons
@@ -389,14 +389,14 @@ export function FlowerResultWindow({
         {/* Overall score right under the mascot — plain number, no circle */}
         <Animated.View entering={FadeIn.delay(80).duration(350)} style={rs.heroSection}>
           <View style={rs.scoreRow}>
-            <Text style={[rs.scoreHeroNum, { color: scoreColor, fontFamily: "Rubik_700Bold" }]}>
+            <Text style={[rs.scoreHeroNum, { color: scoreColor, fontFamily: "Geologica_700Bold" }]}>
               {overall.toFixed(1)}
             </Text>
-            <Text style={[rs.scoreHeroDenom, { color: fgMuted, fontFamily: "Rubik_600SemiBold" }]}>
+            <Text style={[rs.scoreHeroDenom, { color: fgMuted, fontFamily: "Geologica_600SemiBold" }]}>
               /10
             </Text>
           </View>
-          <Text style={[rs.tierLabel, { color: scoreColor, fontFamily: "Rubik_600SemiBold" }]}>
+          <Text style={[rs.tierLabel, { color: scoreColor, fontFamily: "Geologica_600SemiBold" }]}>
             {tierLabel}
           </Text>
         </Animated.View>
@@ -411,11 +411,11 @@ export function FlowerResultWindow({
             <View key={a.key} style={rs.metricItem}>
               <Text
                 numberOfLines={1}
-                style={[rs.metricLabel, { color: fgMuted, fontFamily: "Nunito_500Medium" }]}
+                style={[rs.metricLabel, { color: fgMuted, fontFamily: "Geologica_500Medium" }]}
               >
                 {a.label}
               </Text>
-              <Text style={[rs.metricValue, { color: fgText, fontFamily: "Rubik_700Bold" }]}>
+              <Text style={[rs.metricValue, { color: fgText, fontFamily: "Geologica_700Bold" }]}>
                 {a.score.toFixed(1)}
               </Text>
             </View>
@@ -429,15 +429,15 @@ export function FlowerResultWindow({
             style={[rs.adviceCard, { backgroundColor: scoreColor + "12", borderColor: scoreColor + "40" }]}
           >
             <View style={rs.adviceHead}>
-              <Text style={[rs.adviceTitle, { color: scoreColor, fontFamily: "Rubik_600SemiBold" }]}>
+              <Text style={[rs.adviceTitle, { color: scoreColor, fontFamily: "Geologica_600SemiBold" }]}>
                 {lang === "ru" ? "Над чем поработать" : "What to work on"}
               </Text>
             </View>
             {tipText ? (
-              <Text style={[rs.adviceLead, { color: fgText, fontFamily: "Nunito_700Bold" }]}>{tipText}</Text>
+              <Text style={[rs.adviceLead, { color: fgText, fontFamily: "Geologica_700Bold" }]}>{tipText}</Text>
             ) : null}
             {growthLines.map((g, i) => (
-              <Text key={i} style={[rs.adviceText, { color: fgMuted, fontFamily: "Nunito_400Regular" }]}>{g}</Text>
+              <Text key={i} style={[rs.adviceText, { color: fgMuted, fontFamily: "Geologica_400Regular" }]}>{g}</Text>
             ))}
           </Animated.View>
         ) : null}
@@ -453,14 +453,14 @@ export function FlowerResultWindow({
               ]}
             >
               <Ionicons name="refresh" size={18} color={fgMuted} />
-              <Text style={[rs.retryBtnText, { color: fgMuted, fontFamily: "Rubik_600SemiBold" }]}>{t("again")}</Text>
+              <Text style={[rs.retryBtnText, { color: fgMuted, fontFamily: "Geologica_600SemiBold" }]}>{t("again")}</Text>
             </Pressable>
           ) : null}
           <Pressable
             onPress={onPrimary}
             style={({ pressed }) => [rs.nextBtn, { backgroundColor: "#FFD857", opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
           >
-            <Text style={[rs.nextBtnText, { fontFamily: "Rubik_700Bold", color: "#3A2C00" }]}>{primaryLabel}</Text>
+            <Text style={[rs.nextBtnText, { fontFamily: "Geologica_700Bold", color: "#3A2C00" }]}>{primaryLabel}</Text>
             <Ionicons name="arrow-forward" size={18} color="#3A2C00" />
           </Pressable>
         </Animated.View>
@@ -500,10 +500,10 @@ function EmptyRecordingSheet({
           <View style={[ers.micBadge, { backgroundColor: accent + "1A" }]}>
             <Ionicons name="mic-off-outline" size={18} color={accent} />
           </View>
-          <Text style={[ers.title, { color: fg, fontFamily: "Nunito_700Bold" }]}>
+          <Text style={[ers.title, { color: fg, fontFamily: "Geologica_700Bold" }]}>
             {lang === "ru" ? "Кажется, мы тебя не услышали" : "We didn't quite hear you"}
           </Text>
-          <Text style={[ers.body, { color: muted, fontFamily: "Nunito_400Regular" }]}>
+          <Text style={[ers.body, { color: muted, fontFamily: "Geologica_400Regular" }]}>
             {lang === "ru"
               ? "Чтобы пройти уровень, нужно говорить вслух. Ничего страшного — попробуй ещё раз, чуть увереннее и ближе к микрофону."
               : "To pass this level you need to speak out loud. No worries — give it another go, a little louder and closer to the mic."}
@@ -513,7 +513,7 @@ function EmptyRecordingSheet({
             style={({ pressed }) => [ers.btn, { backgroundColor: btnBg, opacity: pressed ? 0.85 : 1 }]}
           >
             <Ionicons name="refresh" size={18} color={btnFg} />
-            <Text style={[ers.btnText, { color: btnFg, fontFamily: "Nunito_700Bold" }]}>
+            <Text style={[ers.btnText, { color: btnFg, fontFamily: "Geologica_700Bold" }]}>
               {lang === "ru" ? "Записать снова" : "Record again"}
             </Text>
           </Pressable>
@@ -650,7 +650,7 @@ function LevelCompleteModal({
   const timeStr = `${Math.floor(durationSec / 60)}:${String(Math.floor(durationSec % 60)).padStart(2, "0")}`;
 
   const statLabel = {
-    fontFamily: "Rubik_600SemiBold" as const,
+    fontFamily: "Geologica_600SemiBold" as const,
     fontSize: 11,
     letterSpacing: 1.4,
     textTransform: "uppercase" as const,
@@ -700,7 +700,7 @@ function LevelCompleteModal({
         >
         <Animated.Text
           style={[
-            { fontFamily: "Rubik_700Bold", fontSize: 26, color: colors.text, marginBottom: 26, textAlign: "center" },
+            { fontFamily: "Geologica_700Bold", fontSize: 26, color: colors.text, marginBottom: 26, textAlign: "center" },
             titlePulse,
           ]}
         >
@@ -714,13 +714,13 @@ function LevelCompleteModal({
           <View style={{ alignItems: "center" }}>
             <Text style={statLabel}>{lang === "en" ? "Score" : "Оценка"}</Text>
             <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-              <Text style={{ fontFamily: "Rubik_700Bold", fontSize: 40, color: colors.text }}>{scoreStr}</Text>
-              <Text style={{ fontFamily: "Rubik_600SemiBold", fontSize: 20, color: colors.textSecondary }}>/10</Text>
+              <Text style={{ fontFamily: "Geologica_700Bold", fontSize: 40, color: colors.text }}>{scoreStr}</Text>
+              <Text style={{ fontFamily: "Geologica_600SemiBold", fontSize: 20, color: colors.textSecondary }}>/10</Text>
             </View>
           </View>
           <View style={{ alignItems: "center" }}>
             <Text style={statLabel}>{lang === "en" ? "Time" : "Время"}</Text>
-            <Text style={{ fontFamily: "Rubik_700Bold", fontSize: 40, color: colors.text }}>{timeStr}</Text>
+            <Text style={{ fontFamily: "Geologica_700Bold", fontSize: 40, color: colors.text }}>{timeStr}</Text>
           </View>
         </View>
 
@@ -740,7 +740,7 @@ function LevelCompleteModal({
             },
           ]}
         >
-          <Text style={{ fontFamily: "Rubik_700Bold", fontSize: 16, color: "#3A2C00" }}>
+          <Text style={{ fontFamily: "Geologica_700Bold", fontSize: 16, color: "#3A2C00" }}>
             {t("nextLevel")}
           </Text>
           <Ionicons name="arrow-forward" size={17} color="#3A2C00" />
@@ -751,7 +751,7 @@ function LevelCompleteModal({
           hitSlop={8}
           style={({ pressed }) => [{ marginTop: 16, opacity: pressed ? 0.6 : 1 }]}
         >
-          <Text style={{ fontFamily: "Rubik_500Medium", fontSize: 15, color: colors.textMuted }}>
+          <Text style={{ fontFamily: "Geologica_500Medium", fontSize: 15, color: colors.textMuted }}>
             {lang === "en" ? "Exit" : "Выход"}
           </Text>
         </Pressable>
@@ -2002,13 +2002,13 @@ const styles = StyleSheet.create({
   },
   readingExitTitle: {
     fontSize: 20,
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
     letterSpacing: -0.3,
   },
   readingExitMsg: {
     fontSize: 14,
     lineHeight: 20,
-    fontFamily: "Nunito_400Regular",
+    fontFamily: "Geologica_400Regular",
     marginBottom: 6,
   },
   readingExitLeave: {
@@ -2021,7 +2021,7 @@ const styles = StyleSheet.create({
   readingExitLeaveTxt: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
   },
   readingExitStay: {
     height: 50,
@@ -2032,7 +2032,7 @@ const styles = StyleSheet.create({
   },
   readingExitStayTxt: {
     fontSize: 16,
-    fontFamily: "Nunito_600SemiBold",
+    fontFamily: "Geologica_600SemiBold",
   },
   levelTitle: { fontSize: 20 },
   levelSubtitle: { fontSize: 13, marginTop: 2 },

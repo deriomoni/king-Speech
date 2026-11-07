@@ -483,13 +483,13 @@ const styles = StyleSheet.create({
   logoWrap: { alignItems: "flex-start", marginBottom: -8 },
   pageTitle: {
     fontSize: 20,
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
     letterSpacing: -0.2,
     marginBottom: 4,
   },
   sectionLabel: {
     fontSize: 13,
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
     paddingLeft: 4,
     letterSpacing: 1,
     textTransform: "uppercase",
@@ -508,12 +508,12 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     fontSize: 15,
-    fontFamily: "Nunito_400Regular",
+    fontFamily: "Geologica_400Regular",
     letterSpacing: -0.1,
   },
   rowValue: {
     fontSize: 14,
-    fontFamily: "Nunito_400Regular",
+    fontFamily: "Geologica_400Regular",
   },
   themeRow: {
     flexDirection: "row",
@@ -533,7 +533,7 @@ const styles = StyleSheet.create({
   },
   themeOptionLabel: {
     fontSize: 15,
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
   },
   brand: {
     flexDirection: "row",
@@ -553,12 +553,12 @@ const styles = StyleSheet.create({
   },
   brandName: {
     fontSize: 15,
-    fontFamily: "Rubik_600SemiBold",
+    fontFamily: "Geologica_600SemiBold",
     letterSpacing: -0.1,
   },
   brandTag: {
     fontSize: 11,
-    fontFamily: "Nunito_400Regular",
+    fontFamily: "Geologica_400Regular",
     marginTop: 1,
   },
 });

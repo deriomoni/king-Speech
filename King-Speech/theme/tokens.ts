@@ -1,17 +1,17 @@
 export const colors = {
   // core
-  bg: "#0E0E10",
-  surface: "#1A1A1F",
-  border: "#2A2A31",
+  bg: "#262628", // Figma bg/app
+  surface: "#323234", // Figma surface/card
+  border: "rgba(240,238,233,0.10)", // Figma border/card
   gold: "#FFD857", // DOMINANT accent (MAIN interface yellow): CTA buttons, rewards, progress, mascot
   purple: "#9468FB", // SUPPORT accent: secondary highlights, links, glows
   purpleDeep: "#6A4FF4",
 
   // text on dark
-  textPrimary: "#F5F5F7",
-  textSecondary: "#C9C9D1",
-  textTertiary: "#8A8A93",
-  onGold: "#41310A", // text color on gold fills — never pure black
+  textPrimary: "#F0EEE9",
+  textSecondary: "rgba(240,238,233,0.75)",
+  textTertiary: "rgba(240,238,233,0.5)",
+  onGold: "#262628", // Figma ink/on-accent
   onPurple: "#F0E9FF",
 
   // semantic
@@ -94,13 +94,13 @@ export const spring = {
 } as const;
 
 export const typography = {
-  display: { fontFamily: "Rubik_700Bold", fontSize: 32, lineHeight: 38 },
-  h1: { fontFamily: "Rubik_600SemiBold", fontSize: 24, lineHeight: 30 },
-  h2: { fontFamily: "Rubik_500Medium", fontSize: 20, lineHeight: 26 },
-  body: { fontFamily: "Nunito_400Regular", fontSize: 16, lineHeight: 24 },
-  bodyStrong: { fontFamily: "Nunito_700Bold", fontSize: 16, lineHeight: 24 },
-  caption: { fontFamily: "Nunito_400Regular", fontSize: 13, lineHeight: 18 },
-  button: { fontFamily: "Nunito_800ExtraBold", fontSize: 16, lineHeight: 20 },
+  display: { fontFamily: "Geologica_700Bold", fontSize: 32, lineHeight: 38 },
+  h1: { fontFamily: "Geologica_600SemiBold", fontSize: 24, lineHeight: 30 },
+  h2: { fontFamily: "Geologica_500Medium", fontSize: 20, lineHeight: 26 },
+  body: { fontFamily: "Geologica_400Regular", fontSize: 16, lineHeight: 24 },
+  bodyStrong: { fontFamily: "Geologica_700Bold", fontSize: 16, lineHeight: 24 },
+  caption: { fontFamily: "Geologica_400Regular", fontSize: 13, lineHeight: 18 },
+  button: { fontFamily: "Geologica_800ExtraBold", fontSize: 16, lineHeight: 20 },
   reading: { fontFamily: "Literata_400Regular", fontSize: 18, lineHeight: 30 },
 } as const;
 
@@ -120,14 +120,14 @@ export const reading = {
   type: {
     // IDLE hero (work title). The component picks the size adaptively
     // (lg → md → sm as the title gets longer); lineHeight = size * heroLineRatio.
-    heroFont: "Rubik_800ExtraBold",
+    heroFont: "Geologica_800ExtraBold",
     heroSizeLg: 52,
     heroSizeMd: 46,
     heroSizeSm: 40,
     heroLineRatio: 1.02,
     heroTracking: -1.2,
     // Kicker — the "АВТОР · ЖАНР" line under the hero.
-    kickerFont: "Rubik_700Bold",
+    kickerFont: "Geologica_700Bold",
     kickerSize: 11,
     kickerTracking: 1.6,
     kickerOpacity: 0.55,
@@ -137,7 +137,7 @@ export const reading = {
     bodySize: 23,
     bodyLineRatio: 1.55,
     // Footer meta ("ЧТЕНИЕ · 04" / "РАНГ II").
-    metaFont: "Rubik_700Bold",
+    metaFont: "Geologica_700Bold",
     metaSize: 10,
     metaTracking: 1.2,
     metaOpacity: 0.35,

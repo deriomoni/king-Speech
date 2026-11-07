@@ -17,8 +17,8 @@ export const warmupSpring = {
 };
 
 export const warmupFonts = {
-  title: "Rubik_700Bold",
-  body: "Nunito_400Regular",
-  label: "Nunito_700Bold",
-  digit: "Rubik_700Bold",
+  title: "Geologica_700Bold",
+  body: "Geologica_400Regular",
+  label: "Geologica_700Bold",
+  digit: "Geologica_700Bold",
 } as const;

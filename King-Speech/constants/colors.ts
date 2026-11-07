@@ -11,23 +11,24 @@ const MINT_SOFT = "#BECBEB";
 
 const DARK_BG = brandColors.bg;
 const DARK_SURFACE = brandColors.surface;
-const DARK_ELEVATED = "#1F1F24";
+const DARK_ELEVATED = "#3A3A3C";
 
-const LIGHT_BG = "#FAFAFC";
-const LIGHT_SURFACE = "#FFFFFF";
+const LIGHT_BG = "#FAF9F6";
+const LIGHT_SURFACE = "#EFEEEC";
+const LIGHT_INK = "#262628";
 
 const SUCCESS = brandColors.success;
 const ALERT = brandColors.purple;
 
 export const fonts = {
-  display: "Rubik_700Bold",
-  displayItalic: "Rubik_500Medium",
-  serif: "Rubik_600SemiBold",
-  serifBold: "Rubik_700Bold",
-  body: "Nunito_400Regular",
-  bodyRegular: "Nunito_400Regular",
-  bodySemibold: "Nunito_700Bold",
-  bodyBold: "Nunito_800ExtraBold",
+  display: "Geologica_700Bold",
+  displayItalic: "Geologica_500Medium",
+  serif: "Geologica_600SemiBold",
+  serifBold: "Geologica_700Bold",
+  body: "Geologica_400Regular",
+  bodyRegular: "Geologica_400Regular",
+  bodySemibold: "Geologica_700Bold",
+  bodyBold: "Geologica_800ExtraBold",
 };
 
 const redesignPalette = {
@@ -71,14 +72,14 @@ export type AppColors = {
 export default {
   light: {
     background: LIGHT_BG,
-    backgroundSecondary: "#F4F4F4",
+    backgroundSecondary: "#F4F3F0",
     surface: LIGHT_SURFACE,
-    text: brandColors.bg,
-    textSecondary: "rgba(14,14,16,0.65)",
-    textMuted: "rgba(14,14,16,0.40)",
-    tint: PRIMARY,
-    tabIconDefault: "rgba(14,14,16,0.45)",
-    tabIconSelected: PRIMARY,
+    text: LIGHT_INK,
+    textSecondary: "rgba(38,38,40,0.65)",
+    textMuted: "rgba(38,38,40,0.42)",
+    tint: LIGHT_INK,
+    tabIconDefault: "#A5A5A4",
+    tabIconSelected: LIGHT_INK,
     navy: brandColors.bg,
     navyLight: DARK_ELEVATED,
     gold: ACCENT_YELLOW,
@@ -95,7 +96,7 @@ export default {
     stepAvailableSide: PRIMARY_DEEP,
     stepCompleted: SUCCESS,
     stepCompletedSide: "#1DA872",
-    border: "rgba(14,14,16,0.08)",
+    border: "rgba(38,38,40,0.08)",
     redesign: { ...redesignPalette, background: LIGHT_BG },
   } satisfies AppColors,
   dark: {
@@ -105,9 +106,9 @@ export default {
     text: brandColors.textPrimary,
     textSecondary: brandColors.textSecondary,
     textMuted: brandColors.textTertiary,
-    tint: PRIMARY,
-    tabIconDefault: brandColors.textTertiary,
-    tabIconSelected: brandColors.textPrimary,
+    tint: ACCENT_YELLOW,
+    tabIconDefault: "#81807F",
+    tabIconSelected: ACCENT_YELLOW,
     navy: brandColors.bg,
     navyLight: "rgba(255,255,255,0.08)",
     gold: ACCENT_YELLOW,
@@ -124,7 +125,7 @@ export default {
     stepAvailableSide: PRIMARY_DEEP,
     stepCompleted: SUCCESS,
     stepCompletedSide: "#1DA872",
-    border: "rgba(255,255,255,0.08)",
+    border: "rgba(240,238,233,0.10)",
     redesign: { ...redesignPalette, background: DARK_BG },
   } satisfies AppColors,
 };

@@ -306,7 +306,7 @@ const pb = StyleSheet.create({
   label: {
     color: sonic.onCta,
     fontSize: 17,
-    fontFamily: "Nunito_800ExtraBold",
+    fontFamily: "Geologica_800ExtraBold",
     letterSpacing: -0.1,
   },
 });
@@ -340,7 +340,7 @@ export function EditorialTitle({
           fontSize: size,
           lineHeight: Math.round(size * 1.05),
           letterSpacing: -size * 0.02,
-          fontFamily: "Rubik_700Bold",
+          fontFamily: "Geologica_700Bold",
           textAlign: align,
         },
         style,
@@ -351,7 +351,7 @@ export function EditorialTitle({
       {italic ? (
         <Text
           style={{
-            fontFamily: "Rubik_500Medium",
+            fontFamily: "Geologica_500Medium",
             color,
           }}
         >
@@ -384,7 +384,7 @@ export function MicroLabel({
           fontSize: 11,
           letterSpacing: 1.4,
           textTransform: "uppercase",
-          fontFamily: "Nunito_400Regular",
+          fontFamily: "Geologica_400Regular",
         },
         style,
       ]}

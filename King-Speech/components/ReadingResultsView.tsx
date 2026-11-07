@@ -169,19 +169,19 @@ export default function ReadingResultsView({
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.5}
-            style={[st.workTitle, { color: fg, fontFamily: "Rubik_700Bold" }]}
+            style={[st.workTitle, { color: fg, fontFamily: "Geologica_700Bold" }]}
           >
             {cleanTitle}
           </Text>
           {author ? (
-            <Text style={[st.author, { color: fgMuted, fontFamily: "Nunito_400Regular" }]}>{author}</Text>
+            <Text style={[st.author, { color: fgMuted, fontFamily: "Geologica_400Regular" }]}>{author}</Text>
           ) : null}
         </Animated.View>
 
         {/* Listen-back */}
         <Animated.View entering={FadeInDown.delay(120).duration(500)} style={st.section}>
           <View style={st.sectionHead}>
-            <Text style={[st.sectionLabel, { color: accent, fontFamily: "Rubik_600SemiBold" }]}>
+            <Text style={[st.sectionLabel, { color: accent, fontFamily: "Geologica_600SemiBold" }]}>
               {t("listenYourself")}
             </Text>
           </View>
@@ -197,7 +197,7 @@ export default function ReadingResultsView({
           {!listenedFully ? (
             <View style={[st.hintRow, { backgroundColor: accent + "14", borderColor: accent + "33" }]}>
               <Ionicons name="information-circle-outline" size={15} color={accent} />
-              <Text style={[st.hintText, { color: fgMuted, fontFamily: "Nunito_400Regular" }]}>
+              <Text style={[st.hintText, { color: fgMuted, fontFamily: "Geologica_400Regular" }]}>
                 {t("listenBackHint")}
               </Text>
             </View>
@@ -210,7 +210,7 @@ export default function ReadingResultsView({
           style={[st.ratingCard, { backgroundColor: cardBg, borderColor: cardBorder, opacity: listenedFully ? 1 : 0.7 }]}
         >
           <View style={st.sectionHead}>
-            <Text style={[st.sectionLabel, { color: listenedFully ? accent : fgFaint, fontFamily: "Rubik_600SemiBold" }]}>
+            <Text style={[st.sectionLabel, { color: listenedFully ? accent : fgFaint, fontFamily: "Geologica_600SemiBold" }]}>
               {t("rateYourself")}
             </Text>
           </View>
@@ -238,7 +238,7 @@ export default function ReadingResultsView({
             entering={FadeInDown.duration(300)}
             style={[st.savePrompt, { backgroundColor: cardBg, borderColor: cardBorder }]}
           >
-            <Text style={[st.savePromptText, { color: fg, fontFamily: "Rubik_600SemiBold" }]}>
+            <Text style={[st.savePromptText, { color: fg, fontFamily: "Geologica_600SemiBold" }]}>
               {lang === "ru" ? "Сохранить в библиотеку?" : "Save to library?"}
             </Text>
             <View style={st.savePromptBtns}>
@@ -247,7 +247,7 @@ export default function ReadingResultsView({
                 disabled={!canSave}
                 style={({ pressed }) => [st.yesNoBtn, { backgroundColor: accent + "22", borderColor: accent, opacity: !canSave ? 0.5 : pressed ? 0.8 : 1 }]}
               >
-                <Text style={[st.yesNoText, { color: fg, fontFamily: "Rubik_600SemiBold" }]}>
+                <Text style={[st.yesNoText, { color: fg, fontFamily: "Geologica_600SemiBold" }]}>
                   {lang === "ru" ? "Да" : "Yes"}
                 </Text>
               </Pressable>
@@ -255,7 +255,7 @@ export default function ReadingResultsView({
                 onPress={() => setShowSavePrompt(false)}
                 style={({ pressed }) => [st.yesNoBtn, { backgroundColor: accent + "22", borderColor: accent, opacity: pressed ? 0.8 : 1 }]}
               >
-                <Text style={[st.yesNoText, { color: fg, fontFamily: "Rubik_600SemiBold" }]}>
+                <Text style={[st.yesNoText, { color: fg, fontFamily: "Geologica_600SemiBold" }]}>
                   {lang === "ru" ? "Нет" : "No"}
                 </Text>
               </Pressable>
@@ -274,7 +274,7 @@ export default function ReadingResultsView({
             ]}
           >
             <Ionicons name="refresh" size={18} color={fgMuted} />
-            <Text style={[st.retryText, { color: fgMuted, fontFamily: "Nunito_600SemiBold" }]}>
+            <Text style={[st.retryText, { color: fgMuted, fontFamily: "Geologica_600SemiBold" }]}>
               {t("replay")}
             </Text>
           </Pressable>
@@ -286,7 +286,7 @@ export default function ReadingResultsView({
               { backgroundColor: accent, opacity: !canSave ? 0.4 : pressed ? 0.88 : 1 },
             ]}
           >
-            <Text style={[st.saveText, { color: "#1A1404", fontFamily: "Nunito_700Bold" }]}>
+            <Text style={[st.saveText, { color: "#1A1404", fontFamily: "Geologica_700Bold" }]}>
               {lang === "ru" ? "Дальше" : "Next"}
             </Text>
             <Ionicons name="arrow-forward" size={18} color="#1A1404" />

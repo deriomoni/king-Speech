@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
   },
   startPillText: {
     color: "#3A2C00",
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
     fontSize: 16,
     letterSpacing: 0.4,
   },

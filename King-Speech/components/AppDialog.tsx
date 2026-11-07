@@ -110,14 +110,14 @@ const styles = StyleSheet.create({
     fontSize: 19,
     lineHeight: 25,
     textAlign: "center",
-    fontFamily: "Nunito_800ExtraBold",
+    fontFamily: "Geologica_800ExtraBold",
   },
   message: {
     fontSize: 14,
     lineHeight: 20,
     textAlign: "center",
     marginTop: 8,
-    fontFamily: "Nunito_400Regular",
+    fontFamily: "Geologica_400Regular",
   },
   btns: {
     flexDirection: "row",
@@ -134,6 +134,6 @@ const styles = StyleSheet.create({
   },
   btnText: {
     fontSize: 15,
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
   },
 });

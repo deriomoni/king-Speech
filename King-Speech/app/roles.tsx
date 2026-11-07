@@ -379,10 +379,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20,
     backgroundColor: "#FFFFFF10", borderWidth: 1, borderColor: "#FFFFFF1A",
   },
-  trophyText: { color: "#FFC01E", fontFamily: "Nunito_700Bold", fontSize: 13 },
-  kicker: { color: MUTED, fontFamily: "Nunito_700Bold", fontSize: 12, letterSpacing: 2, marginTop: 6 },
-  title: { color: TEXT, fontFamily: "Nunito_800ExtraBold", fontSize: 30, marginTop: 6, lineHeight: 34 },
-  subtitle: { color: MUTED, fontFamily: "Nunito_400Regular", fontSize: 14, marginTop: 8, lineHeight: 20 },
+  trophyText: { color: "#FFC01E", fontFamily: "Geologica_700Bold", fontSize: 13 },
+  kicker: { color: MUTED, fontFamily: "Geologica_700Bold", fontSize: 12, letterSpacing: 2, marginTop: 6 },
+  title: { color: TEXT, fontFamily: "Geologica_800ExtraBold", fontSize: 30, marginTop: 6, lineHeight: 34 },
+  subtitle: { color: MUTED, fontFamily: "Geologica_400Regular", fontSize: 14, marginTop: 8, lineHeight: 20 },
 
   spinCta: {
     marginTop: 20, height: 56, borderRadius: 18, overflow: "hidden",
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
       android: { elevation: 8 }, default: {},
     }),
   },
-  spinCtaText: { color: "#fff", fontFamily: "Nunito_800ExtraBold", fontSize: 17 },
+  spinCtaText: { color: "#fff", fontFamily: "Geologica_800ExtraBold", fontSize: 17 },
 
   chipsRow: { alignItems: "center", gap: 8, paddingVertical: 2 },
   chip: {
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 9, borderRadius: 20, borderWidth: 1.5,
     backgroundColor: "#FFFFFF",
   },
-  chipText: { color: MUTED, fontFamily: "Nunito_600SemiBold", fontSize: 13 },
+  chipText: { color: MUTED, fontFamily: "Geologica_600SemiBold", fontSize: 13 },
 
   grid: { flexDirection: "row", flexWrap: "wrap", gap: CARD_GAP, marginTop: 18 },
   // The slot stretches to the tallest card in its row; the card fills it so row heights match.
@@ -413,8 +413,8 @@ const styles = StyleSheet.create({
   cardArtBox: {
     width: CARD_ART, height: CARD_ART, alignItems: "center", justifyContent: "center", marginTop: 2, marginBottom: 8,
   },
-  cardTitle: { color: TEXT, fontFamily: "Nunito_800ExtraBold", fontSize: 16, marginTop: 2, textAlign: "center" },
-  cardDesc: { color: MUTED, fontFamily: "Nunito_400Regular", fontSize: 12, marginTop: 4, lineHeight: 16, textAlign: "center" },
+  cardTitle: { color: TEXT, fontFamily: "Geologica_800ExtraBold", fontSize: 16, marginTop: 2, textAlign: "center" },
+  cardDesc: { color: MUTED, fontFamily: "Geologica_400Regular", fontSize: 12, marginTop: 4, lineHeight: 16, textAlign: "center" },
 
   // Mode picker
   sheetBackdrop: { flex: 1, backgroundColor: "#00000055", justifyContent: "flex-end" },
@@ -425,22 +425,22 @@ const styles = StyleSheet.create({
   },
   sheetHandle: { alignSelf: "center", width: 44, height: 5, borderRadius: 3, backgroundColor: "#00000022", marginBottom: 14 },
   sheetArtBox: { width: 148, height: 148, alignSelf: "center", alignItems: "center", justifyContent: "center" },
-  sheetTitle: { color: TEXT, fontFamily: "Nunito_800ExtraBold", fontSize: 22, textAlign: "center", marginTop: 6 },
-  sheetScene: { color: MUTED, fontFamily: "Nunito_400Regular", fontSize: 14, textAlign: "center", marginTop: 8, lineHeight: 20 },
-  sheetChoose: { color: TEXT, fontFamily: "Nunito_700Bold", fontSize: 13, marginTop: 20, marginBottom: 10, letterSpacing: 0.5 },
+  sheetTitle: { color: TEXT, fontFamily: "Geologica_800ExtraBold", fontSize: 22, textAlign: "center", marginTop: 6 },
+  sheetScene: { color: MUTED, fontFamily: "Geologica_400Regular", fontSize: 14, textAlign: "center", marginTop: 8, lineHeight: 20 },
+  sheetChoose: { color: TEXT, fontFamily: "Geologica_700Bold", fontSize: 13, marginTop: 20, marginBottom: 10, letterSpacing: 0.5 },
   modeBtn: {
     height: 66, borderRadius: 18, overflow: "hidden", flexDirection: "row", alignItems: "center",
     paddingHorizontal: 18, gap: 14, marginBottom: 12,
   },
   modeBtnTextWrap: { flex: 1 },
-  modeBtnTitle: { color: "#fff", fontFamily: "Nunito_800ExtraBold", fontSize: 16 },
-  modeBtnSub: { color: "#FFFFFFCC", fontFamily: "Nunito_400Regular", fontSize: 12, marginTop: 2 },
+  modeBtnTitle: { color: "#fff", fontFamily: "Geologica_800ExtraBold", fontSize: 16 },
+  modeBtnSub: { color: "#FFFFFFCC", fontFamily: "Geologica_400Regular", fontSize: 12, marginTop: 2 },
   sheetCancel: { alignItems: "center", paddingVertical: 12, marginTop: 2 },
-  sheetCancelText: { color: MUTED, fontFamily: "Nunito_600SemiBold", fontSize: 15 },
+  sheetCancelText: { color: MUTED, fontFamily: "Geologica_600SemiBold", fontSize: 15 },
 
   // Spin overlay
   spinBackdrop: { flex: 1, backgroundColor: "#FFFFFFF7", alignItems: "center", justifyContent: "center", padding: 28 },
-  spinLabel: { color: TEXT, fontFamily: "Nunito_800ExtraBold", fontSize: 22, marginBottom: 22 },
+  spinLabel: { color: TEXT, fontFamily: "Geologica_800ExtraBold", fontSize: 22, marginBottom: 22 },
   spinCard: {
     width: SPIN_W, minHeight: 240, borderRadius: 28, borderWidth: 2,
     borderColor: LINE,
@@ -451,13 +451,13 @@ const styles = StyleSheet.create({
     }),
   },
   spinArtBox: { width: SPIN_ART, height: SPIN_ART, alignItems: "center", justifyContent: "center", marginBottom: 6 },
-  spinTitle: { color: TEXT, fontFamily: "Nunito_800ExtraBold", fontSize: 22, textAlign: "center", marginTop: 10 },
-  spinDesc: { color: MUTED, fontFamily: "Nunito_400Regular", fontSize: 13, textAlign: "center", marginTop: 8, lineHeight: 18 },
+  spinTitle: { color: TEXT, fontFamily: "Geologica_800ExtraBold", fontSize: 22, textAlign: "center", marginTop: 10 },
+  spinDesc: { color: MUTED, fontFamily: "Geologica_400Regular", fontSize: 13, textAlign: "center", marginTop: 8, lineHeight: 18 },
   spinPlayBtn: {
     marginTop: 28, height: 56, minWidth: 240, borderRadius: 28, overflow: "hidden",
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 28,
   },
-  spinPlayText: { color: "#3A2C00", fontFamily: "Nunito_800ExtraBold", fontSize: 16 },
+  spinPlayText: { color: "#3A2C00", fontFamily: "Geologica_800ExtraBold", fontSize: 16 },
   spinSkip: { paddingVertical: 14, marginTop: 4 },
-  spinSkipText: { color: MUTED, fontFamily: "Nunito_600SemiBold", fontSize: 15 },
+  spinSkipText: { color: MUTED, fontFamily: "Geologica_600SemiBold", fontSize: 15 },
 });

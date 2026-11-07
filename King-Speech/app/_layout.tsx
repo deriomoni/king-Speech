@@ -1,23 +1,17 @@
-// Only three type families ship in the app:
-//  · System  = Nunito   (UI, body, labels)
-//  · Level    = Literata (reading / in-level content)
-//  · Accent   = Rubik    (titles, display, accents)
+// Type families (per the Figma design system):
+//  · Geologica = every UI string (titles, body, labels, buttons)
+//  · Literata  = reading / in-level literary content
 import {
   useFonts,
-  Nunito_400Regular,
-  Nunito_500Medium,
-  Nunito_600SemiBold,
-  Nunito_700Bold,
-  Nunito_800ExtraBold,
-} from "@expo-google-fonts/nunito";
+  Geologica_300Light,
+  Geologica_400Regular,
+  Geologica_500Medium,
+  Geologica_600SemiBold,
+  Geologica_700Bold,
+  Geologica_800ExtraBold,
+  Geologica_900Black,
+} from "@expo-google-fonts/geologica";
 import { Literata_400Regular } from "@expo-google-fonts/literata";
-import {
-  Rubik_400Regular,
-  Rubik_500Medium,
-  Rubik_600SemiBold,
-  Rubik_700Bold,
-  Rubik_800ExtraBold,
-} from "@expo-google-fonts/rubik";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -143,7 +137,7 @@ function LoadingScreen() {
         <Text
           style={[
             loadingStyles.title,
-            { color: theme.text, fontFamily: "Rubik_700Bold" },
+            { color: theme.text, fontFamily: "Geologica_700Bold" },
           ]}
         >
           King Speech
@@ -151,7 +145,7 @@ function LoadingScreen() {
         <Text
           style={[
             loadingStyles.tagline,
-            { color: theme.textSecondary, fontFamily: "Nunito_400Regular" },
+            { color: theme.textSecondary, fontFamily: "Geologica_400Regular" },
           ]}
         >
           {t("brandTagline")}
@@ -238,17 +232,14 @@ function ReadinessGate({
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    Nunito_400Regular,
-    Nunito_500Medium,
-    Nunito_600SemiBold,
-    Nunito_700Bold,
-    Nunito_800ExtraBold,
+    Geologica_300Light,
+    Geologica_400Regular,
+    Geologica_500Medium,
+    Geologica_600SemiBold,
+    Geologica_700Bold,
+    Geologica_800ExtraBold,
+    Geologica_900Black,
     Literata_400Regular,
-    Rubik_400Regular,
-    Rubik_500Medium,
-    Rubik_600SemiBold,
-    Rubik_700Bold,
-    Rubik_800ExtraBold,
   });
 
   const fontsReady = fontsLoaded || !!fontError;

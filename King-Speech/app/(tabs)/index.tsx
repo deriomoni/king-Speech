@@ -436,14 +436,14 @@ function ModuleDivider({
     <View style={styles.moduleDivider}>
       {/* No box, no colored number circle, no vertical dashes — just the module
           number and text on the Path background. */}
-      <Text style={[styles.moduleNumText, { color: mc.color, fontFamily: "Rubik_700Bold" }]}>
+      <Text style={[styles.moduleNumText, { color: mc.color, fontFamily: "Geologica_700Bold" }]}>
         {moduleNum}
       </Text>
       {lang === "ru" && getModuleName(moduleNum) ? (
         <Text
           style={{
             color: colors.text,
-            fontFamily: "Rubik_700Bold",
+            fontFamily: "Geologica_700Bold",
             fontSize: 16,
             textAlign: "center",
           }}
@@ -454,7 +454,7 @@ function ModuleDivider({
       <Text
         style={[
           styles.moduleQuoteText,
-          { color: colors.text, fontFamily: "Rubik_500Medium" },
+          { color: colors.text, fontFamily: "Geologica_500Medium" },
         ]}
       >
         {quote}
@@ -870,10 +870,10 @@ export default function PathScreen() {
             <Ionicons name="chevron-back" size={16} color="#fff" />
           </Pressable>
           <View style={styles.devRankLabelCol}>
-            <Text style={[styles.devRankKicker, { fontFamily: "Rubik_600SemiBold" }]}>
+            <Text style={[styles.devRankKicker, { fontFamily: "Geologica_600SemiBold" }]}>
               DEV · RANK
             </Text>
-            <Text style={[styles.devRankValue, { fontFamily: "Rubik_700Bold" }]}>
+            <Text style={[styles.devRankValue, { fontFamily: "Geologica_700Bold" }]}>
               {currentRank} / 5 ·{" "}
               {t(getRankForSection(rankBounds.fromSection).nameKey as any)}
             </Text>
@@ -905,7 +905,7 @@ export default function PathScreen() {
           pointerEvents="none"
         >
           <Text
-            style={[styles.devRankKicker, { fontFamily: "Rubik_600SemiBold" }]}
+            style={[styles.devRankKicker, { fontFamily: "Geologica_600SemiBold" }]}
           >
             DEV · МОДУЛЬ · прокрути карту
           </Text>
@@ -920,7 +920,7 @@ export default function PathScreen() {
               ]}
             />
             <Text
-              style={[styles.devRankValue, { fontFamily: "Rubik_700Bold" }]}
+              style={[styles.devRankValue, { fontFamily: "Geologica_700Bold" }]}
             >
               модуль {bgModule} · ступени{" "}
               {getPathColors(bgModule, isDark).brick}
@@ -1061,7 +1061,7 @@ export default function PathScreen() {
           <Text
             style={[
               styles.bottomHintText,
-              { color: colors.textMuted, fontFamily: "Rubik_400Regular" },
+              { color: colors.textMuted, fontFamily: "Geologica_400Regular" },
             ]}
           >
             {t("startFromBottom")}

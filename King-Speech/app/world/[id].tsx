@@ -592,7 +592,7 @@ function SheetAction({
       <Text
         style={[
           detailStyles.sheetRowText,
-          { color, fontFamily: "Rubik_500Medium" },
+          { color, fontFamily: "Geologica_500Medium" },
         ]}
       >
         {label}
@@ -713,7 +713,7 @@ function RenameModal({
               <Text
                 style={[
                   detailStyles.renameBtnText,
-                  { color: "#fff", fontFamily: "Rubik_600SemiBold" },
+                  { color: "#fff", fontFamily: "Geologica_600SemiBold" },
                 ]}
               >
                 {lang === "en" ? "Save" : "Сохранить"}
@@ -1243,7 +1243,7 @@ function ModulesBlock({
               testID={`world-module-${l.id}`}
             >
               <View style={[detailStyles.modBadge, { backgroundColor: mc.color }]}>
-                <Text style={[detailStyles.modBadgeText, { fontFamily: "Rubik_700Bold" }]}>
+                <Text style={[detailStyles.modBadgeText, { fontFamily: "Geologica_700Bold" }]}>
                   {l.module}
                 </Text>
               </View>
@@ -1278,7 +1278,7 @@ function ModulesBlock({
                   <Text
                     style={[
                       detailStyles.modProg,
-                      { color: theme.textMuted, fontFamily: "Rubik_500Medium" },
+                      { color: theme.textMuted, fontFamily: "Geologica_500Medium" },
                     ]}
                   >
                     {tasksDone}/{l.tasks.length}

@@ -324,12 +324,12 @@ const styles = StyleSheet.create({
   caption: {
     letterSpacing: 12,
     fontSize: 18,
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
     marginBottom: 6,
     textShadowRadius: 10,
   },
   num: {
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
     color: "#FFFFFF",
     textAlign: "center",
     textShadowRadius: 30,
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   floor: { height: 4, borderRadius: 4, shadowOpacity: 0.95, shadowRadius: 18, shadowOffset: { width: 0, height: 0 }, elevation: 8 },
   footer: { alignItems: "center", gap: 18 },
   quote: {
-    fontFamily: "Nunito_500Medium",
+    fontFamily: "Geologica_500Medium",
     fontSize: 17,
     lineHeight: 25,
     textAlign: "center",
@@ -363,5 +363,5 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 10,
   },
-  nextText: { fontFamily: "Nunito_700Bold", fontSize: 17 },
+  nextText: { fontFamily: "Geologica_700Bold", fontSize: 17 },
 });

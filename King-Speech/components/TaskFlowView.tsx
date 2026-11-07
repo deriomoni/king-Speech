@@ -537,14 +537,14 @@ export default function TaskFlowView({
 
       {/* Level title (small) */}
       <View style={st.titleWrap}>
-        <Text style={[st.kicker, { color: accent, fontFamily: "Rubik_600SemiBold" }]}>
+        <Text style={[st.kicker, { color: accent, fontFamily: "Geologica_600SemiBold" }]}>
           {isInterview
             ? `${ru ? "Вопрос" : "Question"} ${index + 1}/${total}`
             : isTongue
             ? `${ru ? "Скороговорка" : "Tongue twister"} ${index + 1}/${total}`
             : `${kindLabel.toUpperCase()} · ${index + 1}/${total}`}
         </Text>
-        <Text numberOfLines={1} style={[st.levelTitle, { color: ink, fontFamily: "Rubik_700Bold" }]}>
+        <Text numberOfLines={1} style={[st.levelTitle, { color: ink, fontFamily: "Geologica_700Bold" }]}>
           {title}
         </Text>
       </View>
@@ -574,7 +574,7 @@ export default function TaskFlowView({
               />
             ) : null}
             {task.instruction && !deferred ? (
-              <Text style={[st.instruction, { color: isDark ? "rgba(242,238,251,0.6)" : colors.textSecondary, fontFamily: "Nunito_600SemiBold" }]}>
+              <Text style={[st.instruction, { color: isDark ? "rgba(242,238,251,0.6)" : colors.textSecondary, fontFamily: "Geologica_600SemiBold" }]}>
                 {task.instruction}
               </Text>
             ) : null}
@@ -584,7 +584,7 @@ export default function TaskFlowView({
               entering={deferred ? FadeIn.duration(1500) : undefined}
               style={[
                 st.contentText,
-                { color: deferred ? colors.text : isDark ? "#F5F1FF" : colors.text, fontFamily: "Rubik_700Bold" },
+                { color: deferred ? colors.text : isDark ? "#F5F1FF" : colors.text, fontFamily: "Geologica_700Bold" },
               ]}
             >
               {(questionOverrides[index] ?? task.content) || task.title}
@@ -617,7 +617,7 @@ export default function TaskFlowView({
               accessibilityLabel={ru ? "Другой вопрос" : "Another question"}
             >
               <Ionicons name="shuffle" size={16} color={ink} />
-              <Text style={[st.replaceQText, { color: ink, fontFamily: "Nunito_700Bold" }]}>
+              <Text style={[st.replaceQText, { color: ink, fontFamily: "Geologica_700Bold" }]}>
                 {usedHere >= replaceLimit
                   ? ru
                     ? "Замен больше нет"
@@ -639,7 +639,7 @@ export default function TaskFlowView({
         {emptyTake ? (
           <Animated.Text
             entering={FadeIn}
-            style={[st.emptyHint, { color: inkSoft, fontFamily: "Nunito_600SemiBold" }]}
+            style={[st.emptyHint, { color: inkSoft, fontFamily: "Geologica_600SemiBold" }]}
           >
             {ru
               ? "Кажется, мы тебя не услышали — попробуй ещё раз, чуть увереннее."
@@ -658,7 +658,7 @@ export default function TaskFlowView({
         ) : phase === "analyzing" ? (
           <Animated.View key="ana" entering={FadeIn.duration(200)} style={[st.controlSlot, st.pill, { backgroundColor: brand.gold }]}>
             <ActivityIndicator size="small" color={brand.onGold} />
-            <Text style={[st.pillText, { color: brand.onGold, fontFamily: "Nunito_800ExtraBold" }]}>
+            <Text style={[st.pillText, { color: brand.onGold, fontFamily: "Geologica_800ExtraBold" }]}>
               {ru ? "Анализирую…" : "Analyzing…"}
             </Text>
           </Animated.View>
@@ -670,7 +670,7 @@ export default function TaskFlowView({
                 onPress={advance}
                 style={({ pressed }) => [st.pill, st.nextPill, { opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
               >
-                <Text style={[st.pillText, { color: brand.onGold, fontFamily: "Nunito_800ExtraBold" }]}>
+                <Text style={[st.pillText, { color: brand.onGold, fontFamily: "Geologica_800ExtraBold" }]}>
                   {isLast ? (ru ? "Смотреть оценку" : "See score") : (ru ? "Далее" : "Next")}
                 </Text>
                 <Ionicons name="arrow-forward" size={20} color={brand.onGold} />
@@ -678,7 +678,7 @@ export default function TaskFlowView({
             </Animated.View>
             <Pressable onPress={retryTake} hitSlop={8} style={({ pressed }) => [st.retryLink, { opacity: pressed ? 0.5 : 1 }]}>
               <Ionicons name="refresh" size={14} color={inkSoft} />
-              <Text style={[st.retryText, { color: inkSoft, fontFamily: "Nunito_600SemiBold" }]}>
+              <Text style={[st.retryText, { color: inkSoft, fontFamily: "Geologica_600SemiBold" }]}>
                 {ru ? "Переписать" : "Re-record"}
               </Text>
             </Pressable>
@@ -702,12 +702,12 @@ export default function TaskFlowView({
         <View style={[st.corridor, { backgroundColor: colors.background }]} pointerEvents="box-none">
           <Animated.View exiting={FadeOut.duration(420)} style={st.corridorInner}>
             <OscarMascot emotion="happy" size={180} />
-            <Text style={[st.corridorQuote, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>
+            <Text style={[st.corridorQuote, { color: colors.text, fontFamily: "Geologica_700Bold" }]}>
               {isTongue
                 ? ru ? "Медленно и чётко. Скорость придёт." : "Slow and clear. Speed will come."
                 : ru ? "Дыши ровно. Говори как есть." : "Breathe easy. Speak your mind."}
             </Text>
-            <Text style={[st.corridorHint, { color: colors.textMuted, fontFamily: "Rubik_600SemiBold" }]}>
+            <Text style={[st.corridorHint, { color: colors.textMuted, fontFamily: "Geologica_600SemiBold" }]}>
               {(isTongue ? (ru ? "Готовим скороговорки" : "Preparing tongue twisters") : ru ? "Готовим интервью" : "Preparing the interview").toUpperCase()}
             </Text>
           </Animated.View>
@@ -742,9 +742,9 @@ function MiniScore({ analysis, ru }: { analysis: SpeechAnalysis; ru: boolean }) 
   const verdict = s >= 8 ? (ru ? "Отлично!" : "Excellent!") : s >= 6 ? (ru ? "Хорошо" : "Good") : s >= 4 ? (ru ? "Неплохо" : "Not bad") : (ru ? "Ещё разок" : "Keep trying");
   return (
     <Animated.View entering={ZoomIn.duration(320)} style={[st.mini, { borderColor: tone + "55", backgroundColor: tone + "14" }]}>
-      <Text style={[st.miniScore, { color: tone, fontFamily: "Rubik_700Bold" }]}>{s.toFixed(1)}</Text>
+      <Text style={[st.miniScore, { color: tone, fontFamily: "Geologica_700Bold" }]}>{s.toFixed(1)}</Text>
       <View style={{ flex: 1 }}>
-        <Text style={[st.miniVerdict, { color: tone, fontFamily: "Nunito_800ExtraBold" }]}>{verdict}</Text>
+        <Text style={[st.miniVerdict, { color: tone, fontFamily: "Geologica_800ExtraBold" }]}>{verdict}</Text>
         <View style={st.starsRow}>
           {[1, 2, 3].map((i) => (
             <Ionicons key={i} name={i <= stars ? "star" : "star-outline"} size={14} color={i <= stars ? brand.gold : "rgba(150,150,160,0.5)"} />
@@ -814,10 +814,10 @@ function DevReport({
         contentContainerStyle={{ paddingTop: topPad + 20, paddingBottom: bottomPad + 100, paddingHorizontal: 20, gap: 14 }}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[st.devTitle, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>
+        <Text style={[st.devTitle, { color: colors.text, fontFamily: "Geologica_700Bold" }]}>
           {isTongue ? (ru ? "Разбор скороговорок" : "Tongue-twister review") : ru ? "Разбор ответов" : "Answer breakdown"}
         </Text>
-        <Text style={[st.devLede, { color: colors.textSecondary, fontFamily: "Nunito_600SemiBold" }]}>
+        <Text style={[st.devLede, { color: colors.textSecondary, fontFamily: "Geologica_600SemiBold" }]}>
           {isTongue
             ? ru
               ? "Что распозналось и сколько слов совпало с текстом скороговорки."
@@ -829,10 +829,10 @@ function DevReport({
 
         {/* Aggregate */}
         <View style={[st.devCard, { backgroundColor: colors.backgroundSecondary, borderColor: border }]}>
-          <Text style={[st.devAggScore, { color: colors.text, fontFamily: "Rubik_700Bold" }]}>
+          <Text style={[st.devAggScore, { color: colors.text, fontFamily: "Geologica_700Bold" }]}>
             {fmtScore(avg)}<Text style={[st.devAggMax, { color: colors.textMuted }]}> / 10</Text>
           </Text>
-          <Text style={[st.devAggNote, { color: colors.textSecondary, fontFamily: "Nunito_600SemiBold" }]}>
+          <Text style={[st.devAggNote, { color: colors.textSecondary, fontFamily: "Geologica_600SemiBold" }]}>
             {isTongue
               ? ru
                 ? `Средняя из ${rows.length} (${overalls.map((v) => fmtScore(v)).join(" + ")}) ÷ ${rows.length}. Каждая = 50% точность текста + 20% чёткость + 15% уверенность + 8% выразительность + 7% громкость.`
@@ -842,7 +842,7 @@ function DevReport({
               : `Average of ${rows.length} answers (${overalls.map((v) => fmtScore(v)).join(" + ")}) ÷ ${rows.length}. Each answer = 90% our mechanism + 10% AI (answered the question + literacy).`}
           </Text>
           {!isTongue && aiUsed === 0 ? (
-            <Text style={[st.devAggNote, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>
+            <Text style={[st.devAggNote, { color: colors.textMuted, fontFamily: "Geologica_600SemiBold" }]}>
               {ru ? "ИИ-разбор сейчас недоступен — оценка полностью по нашему механизму." : "AI review is currently unavailable — scored entirely by our mechanism."}
             </Text>
           ) : null}
@@ -857,14 +857,14 @@ function DevReport({
           return (
             <View key={i} style={[st.devCard, { backgroundColor: colors.backgroundSecondary, borderColor: border }]}>
               <View style={st.devRowHead}>
-                <Text style={[st.devQNum, { color: colors.textMuted, fontFamily: "Rubik_600SemiBold" }]}>
+                <Text style={[st.devQNum, { color: colors.textMuted, fontFamily: "Geologica_600SemiBold" }]}>
                   {(isTongue ? (ru ? "СКОРОГОВОРКА " : "TWISTER ") : ru ? "ВОПРОС " : "QUESTION ") + (i + 1) + (hasAudio ? " · " + fmtDuration(r.durationSec) : "")}
                 </Text>
-                <Text style={[st.devScore, { color: toneFor(r.overall10), fontFamily: "Rubik_700Bold" }]}>
+                <Text style={[st.devScore, { color: toneFor(r.overall10), fontFamily: "Geologica_700Bold" }]}>
                   {fmtScore(r.overall10)}
                 </Text>
               </View>
-              <Text style={[st.devQ, { color: colors.text, fontFamily: "Nunito_700Bold" }]}>{r.question}</Text>
+              <Text style={[st.devQ, { color: colors.text, fontFamily: "Geologica_700Bold" }]}>{r.question}</Text>
 
               {/* ИИ-судья (только интервью): ответил ли на вопрос (главное) + грамотность */}
               {!isTongue ? (
@@ -876,16 +876,16 @@ function DevReport({
                       color={toneFor(r.ai.relevance ?? 0)}
                     />
                     <View style={{ flex: 1 }}>
-                      <Text style={[st.aiTitle, { color: colors.text, fontFamily: "Nunito_800ExtraBold" }]}>
+                      <Text style={[st.aiTitle, { color: colors.text, fontFamily: "Geologica_800ExtraBold" }]}>
                         {`${verdictLabel(r.ai.verdict, ru)} · ${ru ? "ответ" : "answer"} ${fmtScore(r.ai.relevance ?? 0)}/10 · ${ru ? "грамотность" : "literacy"} ${fmtScore(r.ai.competence ?? 0)}/10`}
                       </Text>
                       {r.ai.note ? (
-                        <Text style={[st.aiNote, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>{r.ai.note}</Text>
+                        <Text style={[st.aiNote, { color: colors.textSecondary, fontFamily: "Geologica_400Regular" }]}>{r.ai.note}</Text>
                       ) : null}
                     </View>
                   </View>
                 ) : (
-                  <Text style={[st.aiOffline, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>
+                  <Text style={[st.aiOffline, { color: colors.textMuted, fontFamily: "Geologica_600SemiBold" }]}>
                     {ru ? "ИИ-разбор недоступен — оценка по нашему механизму." : "AI review unavailable — scored by our mechanism."}
                   </Text>
                 )
@@ -900,16 +900,16 @@ function DevReport({
                   ]}
                 >
                   <Ionicons name={isPlaying ? "stop" : "play"} size={15} color={brand.violet} />
-                  <Text style={[st.playText, { color: brand.violet, fontFamily: "Nunito_700Bold" }]}>
+                  <Text style={[st.playText, { color: brand.violet, fontFamily: "Geologica_700Bold" }]}>
                     {isPlaying ? (ru ? "Остановить" : "Stop") : (ru ? "Прослушать запись" : "Play recording")}
                   </Text>
                 </Pressable>
               ) : null}
 
-              <Text style={[st.devSubLabel, { color: colors.textMuted, fontFamily: "Rubik_600SemiBold" }]}>
+              <Text style={[st.devSubLabel, { color: colors.textMuted, fontFamily: "Geologica_600SemiBold" }]}>
                 {ru ? `ТРАНСКРИБАЦИЯ · ${wordCount} сл.` : `TRANSCRIPTION · ${wordCount} w.`}
               </Text>
-              <Text style={[st.devTranscript, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
+              <Text style={[st.devTranscript, { color: colors.textSecondary, fontFamily: "Geologica_400Regular" }]}>
                 {r.transcript ? `«${r.transcript}»` : ru ? "— пусто (не распознано / нет связи с сервером) —" : "— empty (not recognized / no server) —"}
               </Text>
 
@@ -918,46 +918,46 @@ function DevReport({
                 <View style={[st.litCard, { borderColor: toneFor(r.accuracy.score10) + "44", backgroundColor: toneFor(r.accuracy.score10) + (isDark ? "1E" : "12") }]}>
                   <View style={st.litHead}>
                     <View style={{ flex: 1 }}>
-                      <Text style={[st.litTitle, { color: colors.text, fontFamily: "Nunito_800ExtraBold" }]}>
+                      <Text style={[st.litTitle, { color: colors.text, fontFamily: "Geologica_800ExtraBold" }]}>
                         {ru ? "Точность текста" : "Text accuracy"}
-                        <Text style={[st.aspTag, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>{ru ? "  · вес 50" : "  · w 50"}</Text>
+                        <Text style={[st.aspTag, { color: colors.textMuted, fontFamily: "Geologica_600SemiBold" }]}>{ru ? "  · вес 50" : "  · w 50"}</Text>
                       </Text>
-                      <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
+                      <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Geologica_400Regular" }]}>
                         {ru ? "Каждое слово скороговорки — попало в распознанный текст или нет. Повторы не штрафуют." : "Each word of the text — did it land in the recognized speech? Repeats don't count against you."}
                       </Text>
                     </View>
-                    <Text style={[st.litScore, { color: toneFor(r.accuracy.score10), fontFamily: "Rubik_700Bold" }]}>
+                    <Text style={[st.litScore, { color: toneFor(r.accuracy.score10), fontFamily: "Geologica_700Bold" }]}>
                       {r.accuracy.available ? fmtScore(r.accuracy.score10) : "—"}
                     </Text>
                   </View>
                   {r.accuracy.available ? (
                     <>
-                      <Text style={[st.litSub, { color: colors.textMuted, fontFamily: "Nunito_700Bold" }]}>
+                      <Text style={[st.litSub, { color: colors.textMuted, fontFamily: "Geologica_700Bold" }]}>
                         {ru
                           ? `Точность ${Math.round(r.accuracy.accuracy * 100)}% · слов ${r.accuracy.matched}/${r.accuracy.total} · пропущено ${r.accuracy.missed}`
                           : `Accuracy ${Math.round(r.accuracy.accuracy * 100)}% · words ${r.accuracy.matched}/${r.accuracy.total} · missed ${r.accuracy.missed}`}
                       </Text>
                       {r.accuracy.missedWords.length ? (
                         <>
-                          <Text style={[st.aspDesc, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>
+                          <Text style={[st.aspDesc, { color: colors.textMuted, fontFamily: "Geologica_600SemiBold" }]}>
                             {ru ? "Пропущенные слова:" : "Missed words:"}
                           </Text>
                           <View style={st.litViolWrap}>
                             {r.accuracy.missedWords.slice(0, 14).map((w, k) => (
                               <View key={`${w}-${k}`} style={[st.litChip, { backgroundColor: toneFor(2) + "22" }]}>
-                                <Text style={[st.litChipText, { color: toneFor(2), fontFamily: "Nunito_700Bold" }]}>{w}</Text>
+                                <Text style={[st.litChipText, { color: toneFor(2), fontFamily: "Geologica_700Bold" }]}>{w}</Text>
                               </View>
                             ))}
                           </View>
                         </>
                       ) : (
-                        <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
+                        <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Geologica_400Regular" }]}>
                           {ru ? "Все слова произнесены — отлично!" : "Every word was said — great!"}
                         </Text>
                       )}
                     </>
                   ) : (
-                    <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
+                    <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Geologica_400Regular" }]}>
                       {ru ? "Речь не распозналась — проверь микрофон/связь." : "Speech wasn't recognized — check mic/connection."}
                     </Text>
                   )}
@@ -969,37 +969,37 @@ function DevReport({
                 <View style={[st.litCard, { borderColor: toneFor(r.literacy.overall10) + "44", backgroundColor: toneFor(r.literacy.overall10) + (isDark ? "1E" : "12") }]}>
                 <View style={st.litHead}>
                   <View style={{ flex: 1 }}>
-                    <Text style={[st.litTitle, { color: colors.text, fontFamily: "Nunito_800ExtraBold" }]}>
+                    <Text style={[st.litTitle, { color: colors.text, fontFamily: "Geologica_800ExtraBold" }]}>
                       {ru ? "Грамотность" : "Literacy"}
-                      <Text style={[st.aspTag, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>{ru ? "  · вес 40" : "  · w 40"}</Text>
+                      <Text style={[st.aspTag, { color: colors.textMuted, fontFamily: "Geologica_600SemiBold" }]}>{ru ? "  · вес 40" : "  · w 40"}</Text>
                     </Text>
-                    <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
+                    <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Geologica_400Regular" }]}>
                       {ru
                         ? "Слова-паразиты и грамматика словоформ. Главный параметр речи."
                         : "Filler words and word-form grammar. The core of the score."}
                     </Text>
                   </View>
-                  <Text style={[st.litScore, { color: toneFor(r.literacy.overall10), fontFamily: "Rubik_700Bold" }]}>
+                  <Text style={[st.litScore, { color: toneFor(r.literacy.overall10), fontFamily: "Geologica_700Bold" }]}>
                     {r.literacy.available ? fmtScore(r.literacy.overall10) : "—"}
                   </Text>
                 </View>
 
                 {r.literacy.available ? (
                   <>
-                    <Text style={[st.litSub, { color: colors.textMuted, fontFamily: "Nunito_700Bold" }]}>
+                    <Text style={[st.litSub, { color: colors.textMuted, fontFamily: "Geologica_700Bold" }]}>
                       {ru
                         ? `Паразиты ${fmtScore(r.literacy.g1 / 10)} · Словоформы ${fmtScore(r.literacy.g2 / 10)} · Построение ${fmtScore(r.literacy.g3 / 10)}`
                         : `Fillers ${fmtScore(r.literacy.g1 / 10)} · Word forms ${fmtScore(r.literacy.g2 / 10)} · Structure ${fmtScore(r.literacy.g3 / 10)}`}
                     </Text>
                     {r.literacy.incomplete ? (
-                      <Text style={[st.litHabit, { color: toneFor(3), fontFamily: "Nunito_800ExtraBold" }]}>
+                      <Text style={[st.litHabit, { color: toneFor(3), fontFamily: "Geologica_800ExtraBold" }]}>
                         {ru
                           ? "Мысль звучит незавершённой или ответ слишком короткий."
                           : "The thought sounds unfinished or the answer is too short."}
                       </Text>
                     ) : null}
                     {r.literacy.habit ? (
-                      <Text style={[st.litHabit, { color: colors.text, fontFamily: "Nunito_800ExtraBold" }]}>
+                      <Text style={[st.litHabit, { color: colors.text, fontFamily: "Geologica_800ExtraBold" }]}>
                         {ru ? `Твоё слово-паразит: «${r.literacy.habit.lemma}» ×${r.literacy.habit.count}` : `Your filler word: “${r.literacy.habit.lemma}” ×${r.literacy.habit.count}`}
                       </Text>
                     ) : null}
@@ -1007,20 +1007,20 @@ function DevReport({
                       <View style={st.litViolWrap}>
                         {r.literacy.violations.map((v) => (
                           <View key={v.lemma} style={[st.litChip, { backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(20,22,26,0.05)" }]}>
-                            <Text style={[st.litChipText, { color: colors.textSecondary, fontFamily: "Nunito_700Bold" }]}>
+                            <Text style={[st.litChipText, { color: colors.textSecondary, fontFamily: "Geologica_700Bold" }]}>
                               «{v.lemma}» ×{v.count}
                             </Text>
                           </View>
                         ))}
                       </View>
                     ) : (
-                      <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
+                      <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Geologica_400Regular" }]}>
                         {ru ? "Паразитов и грубых форм не найдено — чисто." : "No fillers or bad forms found — clean."}
                       </Text>
                     )}
                   </>
                 ) : (
-                  <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
+                  <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Geologica_400Regular" }]}>
                     {ru ? "Недостаточно распознанного текста для оценки грамотности." : "Not enough recognized text to score literacy."}
                   </Text>
                 )}
@@ -1031,19 +1031,19 @@ function DevReport({
               <View style={st.aspList}>
                 {ASPECTS.map((asp) => (
                   <View key={asp.key} style={st.aspRow}>
-                    <Text style={[st.aspVal, { color: asp.internal ? colors.textMuted : toneFor(Number(a.score[asp.key] ?? 0)), fontFamily: "Rubik_700Bold" }]}>
+                    <Text style={[st.aspVal, { color: asp.internal ? colors.textMuted : toneFor(Number(a.score[asp.key] ?? 0)), fontFamily: "Geologica_700Bold" }]}>
                       {fmtScore(Number(a.score[asp.key] ?? 0))}
                     </Text>
                     <View style={{ flex: 1 }}>
-                      <Text style={[st.aspLabel, { color: colors.text, fontFamily: "Nunito_800ExtraBold" }]}>
+                      <Text style={[st.aspLabel, { color: colors.text, fontFamily: "Geologica_800ExtraBold" }]}>
                         {asp.label}
                         {asp.internal ? (
-                          <Text style={[st.aspTag, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>
+                          <Text style={[st.aspTag, { color: colors.textMuted, fontFamily: "Geologica_600SemiBold" }]}>
                             {ru ? "  · внутр." : "  · internal"}
                           </Text>
                         ) : null}
                       </Text>
-                      <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
+                      <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Geologica_400Regular" }]}>
                         {asp.desc}
                       </Text>
                     </View>
@@ -1052,7 +1052,7 @@ function DevReport({
               </View>
 
               {a.recommendations && a.recommendations.length ? (
-                <Text style={[st.devNote, { color: colors.textSecondary, fontFamily: "Nunito_400Regular" }]}>
+                <Text style={[st.devNote, { color: colors.textSecondary, fontFamily: "Geologica_400Regular" }]}>
                   {(ru ? "Замечания: " : "Notes: ") + a.recommendations.join(" · ")}
                 </Text>
               ) : null}
@@ -1060,7 +1060,7 @@ function DevReport({
           );
         })}
 
-        <Text style={[st.devPrivacy, { color: colors.textMuted, fontFamily: "Nunito_600SemiBold" }]}>
+        <Text style={[st.devPrivacy, { color: colors.textMuted, fontFamily: "Geologica_600SemiBold" }]}>
           {ru
             ? "Записи не сохраняются на устройстве и удаляются при выходе из уровня."
             : "Recordings are never saved on the device and are erased when you leave the level."}
@@ -1069,7 +1069,7 @@ function DevReport({
 
       <View style={[st.devFooter, { paddingBottom: bottomPad + 16, backgroundColor: colors.background }]}>
         <Pressable onPress={onContinue} style={({ pressed }) => [st.pill, st.nextPill, { opacity: pressed ? 0.9 : 1 }]}>
-          <Text style={[st.pillText, { color: brand.onGold, fontFamily: "Nunito_800ExtraBold" }]}>
+          <Text style={[st.pillText, { color: brand.onGold, fontFamily: "Geologica_800ExtraBold" }]}>
             {ru ? "Продолжить" : "Continue"}
           </Text>
           <Ionicons name="arrow-forward" size={20} color={brand.onGold} />
@@ -1131,7 +1131,7 @@ const st = StyleSheet.create({
     paddingHorizontal: 7,
     borderRadius: 10,
   },
-  replaceQCostText: { fontSize: 12, fontFamily: "Nunito_800ExtraBold" },
+  replaceQCostText: { fontSize: 12, fontFamily: "Geologica_800ExtraBold" },
   scoredWrap: { width: "100%", alignItems: "center", gap: 12 },
   pill: {
     flexDirection: "row",

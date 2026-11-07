@@ -147,7 +147,7 @@ export default function ShowTimeScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(150).duration(400)}>
-          <Text style={[st.sectionLabel, st.galleryHeading, { fontFamily: "Nunito_600SemiBold", color: ink }]}>
+          <Text style={[st.sectionLabel, st.galleryHeading, { fontFamily: "Geologica_600SemiBold", color: ink }]}>
             {t("chooseTopic")}
           </Text>
           <VinylGallery
@@ -168,33 +168,33 @@ export default function ShowTimeScreen() {
             />
             <View style={st.previewHeader}>
               <View style={[st.previewThemeDot, { backgroundColor: theme.accentColor }]} />
-              <Text style={[st.previewThemeName, { fontFamily: "Nunito_600SemiBold", color: theme.accentColor }]}>
+              <Text style={[st.previewThemeName, { fontFamily: "Geologica_600SemiBold", color: theme.accentColor }]}>
                 {theme.title}
               </Text>
               {theme.timerSeconds !== null && (
                 <View style={[st.previewTimerBadge, { backgroundColor: chipBg }]}>
                   <Ionicons name="time-outline" size={12} color={inkFaint} />
-                  <Text style={[st.previewTimerText, { fontFamily: "Nunito_400Regular", color: inkFaint }]}>{theme.timerSeconds} {t("sec")}</Text>
+                  <Text style={[st.previewTimerText, { fontFamily: "Geologica_400Regular", color: inkFaint }]}>{theme.timerSeconds} {t("sec")}</Text>
                 </View>
               )}
             </View>
-            <Text style={[st.previewInterior, { fontFamily: "Nunito_400Regular", color: inkFaint }]}>{theme.interior}</Text>
+            <Text style={[st.previewInterior, { fontFamily: "Geologica_400Regular", color: inkFaint }]}>{theme.interior}</Text>
             <View style={[st.previewDivider, isLight && { backgroundColor: "rgba(36,25,52,0.10)" }]} />
-            <Text style={[st.previewSpeechTitle, { fontFamily: "Nunito_600SemiBold", color: inkSub }]}>
+            <Text style={[st.previewSpeechTitle, { fontFamily: "Geologica_600SemiBold", color: inkSub }]}>
               {randomSpeech.title}
             </Text>
             <View style={st.previewLines}>
               {randomSpeech.lines.slice(0, 4).map((line, i) => (
                 <Text
                   key={i}
-                  style={[st.previewLine, { fontFamily: "Nunito_400Regular", opacity: 0.6 - i * 0.1, color: isLight ? "#241934" : "#fff" }]}
+                  style={[st.previewLine, { fontFamily: "Geologica_400Regular", opacity: 0.6 - i * 0.1, color: isLight ? "#241934" : "#fff" }]}
                   numberOfLines={2}
                   ellipsizeMode="tail"
                 >
                   {line}
                 </Text>
               ))}
-              <Text style={[st.previewLine, { fontFamily: "Nunito_400Regular", opacity: 0.2, color: isLight ? "#241934" : "#fff" }]}>...</Text>
+              <Text style={[st.previewLine, { fontFamily: "Geologica_400Regular", opacity: 0.2, color: isLight ? "#241934" : "#fff" }]}>...</Text>
             </View>
           </View>
         </Animated.View>
@@ -208,7 +208,7 @@ export default function ShowTimeScreen() {
             ]}
           >
             <Ionicons name="play-circle" size={22} color="#1A1A2E" />
-            <Text style={[st.startBtnText, { color: "#1A1A2E", fontFamily: "Nunito_700Bold" }]}>
+            <Text style={[st.startBtnText, { color: "#1A1A2E", fontFamily: "Geologica_700Bold" }]}>
               {t("startTraining")}
             </Text>
             {showTimeFreeAvailable ? null : (
@@ -235,10 +235,10 @@ export default function ShowTimeScreen() {
               <Path fillRule="evenodd" clipRule="evenodd" d="M139.222 0V307C101.166 306.825 60.5922 290.874 36.7222 262C36.7222 262 0.722253 226.418 0.222241 168.709C-0.277771 111 0.222203 0 0.222203 0H139.222ZM106.409 103.131H53.3152C53.3152 96.1586 54.6885 89.2546 57.3568 82.813C60.025 76.3714 63.9359 70.5184 68.8661 65.5882C73.7964 60.6581 79.6494 56.7473 86.0911 54.0792C92.5328 51.4111 99.4369 50.0379 106.409 50.038V103.131ZM139.222 166.869H53.3152C53.3152 189.653 62.3661 211.504 78.4768 227.614C94.5875 243.725 116.438 252.776 139.222 252.776V166.869ZM172.035 103.131H225.129C225.129 96.1586 223.756 89.2546 221.088 82.813C218.419 76.3714 214.509 70.5184 209.578 65.5882C204.648 60.6581 198.795 56.7473 192.353 54.0792C185.912 51.4111 179.008 50.0379 172.035 50.038V103.131ZM139.222 166.869H225.129C225.129 178.15 222.907 189.321 218.59 199.744C214.273 210.167 207.945 219.637 199.968 227.614C191.99 235.592 182.52 241.919 172.097 246.237C161.675 250.554 150.504 252.776 139.222 252.776V166.869Z" fill={ink} />
             </Svg>
             <View style={{ flex: 1 }}>
-              <Text style={[st.rolesEntryTitle, { color: ink, fontFamily: "Nunito_800ExtraBold" }]}>
+              <Text style={[st.rolesEntryTitle, { color: ink, fontFamily: "Geologica_800ExtraBold" }]}>
                 {lang === "en" ? "Roles" : "Роли"}
               </Text>
-              <Text style={[st.rolesEntrySub, { color: inkSub, fontFamily: "Nunito_400Regular" }]}>
+              <Text style={[st.rolesEntrySub, { color: inkSub, fontFamily: "Geologica_400Regular" }]}>
                 {lang === "en"
                   ? "Play a character & train adaptability"
                   : "Играй персонажа и тренируй адаптивность"}
@@ -262,7 +262,7 @@ export default function ShowTimeScreen() {
             <View style={st.tipsBtnIcon}>
               <Ionicons name="bulb" size={18} color="#FFD857" />
             </View>
-            <Text style={[st.tipsBtnText, { fontFamily: "Nunito_600SemiBold" }]}>
+            <Text style={[st.tipsBtnText, { fontFamily: "Geologica_600SemiBold" }]}>
               {t("speakerTips")}
             </Text>
             <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
@@ -386,7 +386,7 @@ const st = StyleSheet.create({
   startBtnCostText: {
     color: "#1A1A2E",
     fontSize: 18,
-    fontFamily: "Nunito_800ExtraBold",
+    fontFamily: "Geologica_800ExtraBold",
   },
   startBtnTag: {
     marginLeft: 2,
@@ -398,7 +398,7 @@ const st = StyleSheet.create({
   startBtnTagText: {
     color: "#1A1A2E",
     fontSize: 12.5,
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
@@ -436,7 +436,7 @@ const st = StyleSheet.create({
     fontSize: 18,
     lineHeight: 24,
     textAlign: "center",
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
   },
   modalBody: {
     color: "rgba(255,255,255,0.6)",
@@ -444,7 +444,7 @@ const st = StyleSheet.create({
     lineHeight: 19,
     textAlign: "center",
     marginTop: 8,
-    fontFamily: "Nunito_400Regular",
+    fontFamily: "Geologica_400Regular",
   },
   modalBtns: {
     flexDirection: "row",
@@ -469,13 +469,13 @@ const st = StyleSheet.create({
   modalBtnGhostText: {
     color: "rgba(255,255,255,0.85)",
     fontSize: 15,
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
   },
   modalBtnPrimary: { backgroundColor: "#F5A623" },
   modalBtnPrimaryText: {
     color: "#1A1A2E",
     fontSize: 15,
-    fontFamily: "Nunito_800ExtraBold",
+    fontFamily: "Geologica_800ExtraBold",
   },
   // No plate of its own: it sits straight on the screen background in both
   // themes, so only the mark, the words and the arrow read as the control.

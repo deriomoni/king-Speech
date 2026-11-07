@@ -110,12 +110,12 @@ export default function WorldsMapRoute() {
           <Text
             style={[
               styles.kicker,
-              { color: appTheme.textMuted, fontFamily: "Rubik_500Medium" },
+              { color: appTheme.textMuted, fontFamily: "Geologica_500Medium" },
             ]}
           >
             {lang === "en" ? "WORLDS" : "МИРЫ"}
           </Text>
-          <Text style={[styles.title, { color: appTheme.text, fontFamily: "Rubik_700Bold" }]}>
+          <Text style={[styles.title, { color: appTheme.text, fontFamily: "Geologica_700Bold" }]}>
             {lang === "en" ? "Your journey" : "Твой путь"}
           </Text>
         </View>
@@ -180,7 +180,7 @@ export default function WorldsMapRoute() {
           <Text
             style={[
               styles.footerHintText,
-              { color: appTheme.textMuted, fontFamily: "Rubik_400Regular" },
+              { color: appTheme.textMuted, fontFamily: "Geologica_400Regular" },
             ]}
           >
             {lang === "en"
@@ -326,7 +326,7 @@ function RankCard({
             <Text
               style={[
                 cardStyles.rankIndex,
-                { color: appTheme.textMuted, fontFamily: "Rubik_500Medium" },
+                { color: appTheme.textMuted, fontFamily: "Geologica_500Medium" },
               ]}
             >
               {lang === "en" ? "RANK" : "РАНГ"} {rank}
@@ -366,7 +366,7 @@ function RankCard({
                       : isCompleted
                       ? "#5EEAD4"
                       : metaFg,
-                    fontFamily: "Rubik_600SemiBold",
+                    fontFamily: "Geologica_600SemiBold",
                   },
                 ]}
               >
@@ -375,13 +375,13 @@ function RankCard({
             </View>
           </View>
           <Text
-            style={[cardStyles.name, { color: appTheme.text, fontFamily: "Rubik_700Bold" }]}
+            style={[cardStyles.name, { color: appTheme.text, fontFamily: "Geologica_700Bold" }]}
             numberOfLines={1}
           >
             {rankName}
           </Text>
           <Text
-            style={[cardStyles.quote, { color: metaFg, fontFamily: "Rubik_400Regular" }]}
+            style={[cardStyles.quote, { color: metaFg, fontFamily: "Geologica_400Regular" }]}
             numberOfLines={2}
           >
             {quote}
@@ -390,7 +390,7 @@ function RankCard({
           <View style={cardStyles.metaRow}>
             <View style={cardStyles.metaItem}>
               <Ionicons name="layers-outline" size={12} color={metaIcon} />
-              <Text style={[cardStyles.metaText, { color: metaFg, fontFamily: "Rubik_500Medium" }]}>
+              <Text style={[cardStyles.metaText, { color: metaFg, fontFamily: "Geologica_500Medium" }]}>
                 {completedInRank}/{totalInRank}{" "}
                 {lang === "en" ? "modules" : "модулей"}
               </Text>
@@ -398,7 +398,7 @@ function RankCard({
             {!isLocked && (
               <View style={cardStyles.metaItem}>
                 <Ionicons name="mic-outline" size={12} color={metaIcon} />
-                <Text style={[cardStyles.metaText, { color: metaFg, fontFamily: "Rubik_500Medium" }]}>
+                <Text style={[cardStyles.metaText, { color: metaFg, fontFamily: "Geologica_500Medium" }]}>
                   {recordingsCount}{" "}
                   {lang === "en"
                     ? recordingsCount === 1 ? "recording" : "recordings"

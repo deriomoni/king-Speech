@@ -310,7 +310,7 @@ function AudioPlayer({ uri, waveform, onPlaybackComplete }: { uri: string; wavef
             );
           })}
         </View>
-        <Text style={[ap.time, { color: "#6B6880", fontFamily: "Nunito_400Regular" }]}>
+        <Text style={[ap.time, { color: "#6B6880", fontFamily: "Geologica_400Regular" }]}>
           {fmt(position)}{duration > 0 ? ` / ${fmt(duration)}` : ""}
         </Text>
       </View>
@@ -318,7 +318,7 @@ function AudioPlayer({ uri, waveform, onPlaybackComplete }: { uri: string; wavef
         <View style={[ap.progressFill, { backgroundColor: "#FFD166", width: `${progress * 100}%` as any }]} />
       </View>
       {!uri && (
-        <Text style={{ fontSize: 12, color: "#6B6880", textAlign: "center", fontFamily: "Nunito_400Regular" }}>
+        <Text style={{ fontSize: 12, color: "#6B6880", textAlign: "center", fontFamily: "Geologica_400Regular" }}>
           {t("recordingNotSaved")}
         </Text>
       )}
@@ -394,9 +394,9 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
     return (
       <Animated.View entering={FadeInUp.delay(100).duration(500)} style={[ac.card, { borderColor: "#0EA5E944" }]}>
         <LinearGradient colors={["#0EA5E908", "transparent"]} style={StyleSheet.absoluteFill} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} />
-        <Text style={[ac.label, { color: "#0EA5E9", fontFamily: "Nunito_600SemiBold" }]}>{t("notCounted")}</Text>
+        <Text style={[ac.label, { color: "#0EA5E9", fontFamily: "Geologica_600SemiBold" }]}>{t("notCounted")}</Text>
         <Ionicons name="book-outline" size={40} color="#0EA5E9" style={{ alignSelf: "center", marginVertical: 4 }} />
-        <Animated.Text entering={FadeIn.delay(500).duration(400)} style={[ac.feedback, { color: "rgba(240,237,232,0.9)", fontFamily: "Nunito_500Medium", textAlign: "center" }]}>
+        <Animated.Text entering={FadeIn.delay(500).duration(400)} style={[ac.feedback, { color: "rgba(240,237,232,0.9)", fontFamily: "Geologica_500Medium", textAlign: "center" }]}>
           {lang === "ru"
             ? "Кажется, ты не читал текст вслух. Прочитай его и пройди уровень снова."
             : "Looks like the text wasn't read aloud. Read it and pass the level again."}
@@ -433,13 +433,13 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
     <Animated.View entering={FadeInUp.delay(100).duration(500)} style={[ac.card, { borderColor: SCORE_COLOR + "44" }]}>
       <LinearGradient colors={[SCORE_COLOR + "0D", "transparent"]} style={StyleSheet.absoluteFill} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} />
 
-      <Text style={[ac.label, { color: SCORE_COLOR, fontFamily: "Nunito_600SemiBold" }]}>{t("aiAnalysis")}</Text>
+      <Text style={[ac.label, { color: SCORE_COLOR, fontFamily: "Geologica_600SemiBold" }]}>{t("aiAnalysis")}</Text>
 
       {/* Overall summary score of the performance */}
       <Animated.View entering={ZoomIn.delay(300).duration(400)} style={ac.overallWrap}>
-        <Text style={[ac.overallNum, { color: SCORE_COLOR, fontFamily: "Rubik_700Bold" }]}>
+        <Text style={[ac.overallNum, { color: SCORE_COLOR, fontFamily: "Geologica_700Bold" }]}>
           {overall10.toFixed(1)}
-          <Text style={[ac.overallDenom, { color: "rgba(240,237,232,0.6)", fontFamily: "Rubik_600SemiBold" }]}> / 10</Text>
+          <Text style={[ac.overallDenom, { color: "rgba(240,237,232,0.6)", fontFamily: "Geologica_600SemiBold" }]}> / 10</Text>
         </Text>
       </Animated.View>
 
@@ -454,8 +454,8 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
               key={a.key}
               style={[ac.metricRow, i < arr.length - 1 && ac.metricRowBorder]}
             >
-              <Text style={[ac.metricLabel, { fontFamily: "Nunito_500Medium" }]}>{a.label}</Text>
-              <Text style={[ac.metricValue, { fontFamily: "Nunito_700Bold" }]}>{a.score.toFixed(1)}</Text>
+              <Text style={[ac.metricLabel, { fontFamily: "Geologica_500Medium" }]}>{a.label}</Text>
+              <Text style={[ac.metricValue, { fontFamily: "Geologica_700Bold" }]}>{a.score.toFixed(1)}</Text>
             </View>
           ))}
         </View>
@@ -467,8 +467,8 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
 
       {/* Score badge */}
       <Animated.View entering={ZoomIn.delay(800).duration(400)} style={[ac.scoreBadge, { backgroundColor: SCORE_COLOR + "20", borderColor: SCORE_COLOR + "60" }]}>
-        <Text style={[ac.scoreText, { color: SCORE_COLOR, fontFamily: "Nunito_700Bold" }]}>{SCORE_LABEL}</Text>
-        <Text style={[ac.xpText, { color: SCORE_COLOR, fontFamily: "Nunito_500Medium" }]}>+{xpDisplay} XP</Text>
+        <Text style={[ac.scoreText, { color: SCORE_COLOR, fontFamily: "Geologica_700Bold" }]}>{SCORE_LABEL}</Text>
+        <Text style={[ac.xpText, { color: SCORE_COLOR, fontFamily: "Geologica_500Medium" }]}>+{xpDisplay} XP</Text>
       </Animated.View>
 
       {/* Coaching tip — surfaced from /api/analyze-speech.tip so the
@@ -476,10 +476,10 @@ function AnalysisCard({ result, t, lang }: { result: AnalysisResult | null; t: (
       {tip ? (
         <Animated.View entering={FadeIn.delay(1500).duration(400)} style={ac.errorsSection}>
           <View style={[ac.divider, { backgroundColor: "#2A3348" }]} />
-          <Text style={[ac.errorsTitle, { color: SCORE_COLOR, fontFamily: "Nunito_600SemiBold" }]}>
+          <Text style={[ac.errorsTitle, { color: SCORE_COLOR, fontFamily: "Geologica_600SemiBold" }]}>
             {lang === "ru" ? "Совет на следующий раз" : "Tip for next take"}
           </Text>
-          <Text style={[ac.feedback, { color: "rgba(240,237,232,0.85)", fontFamily: "Nunito_500Medium", textAlign: "left" }]}>
+          <Text style={[ac.feedback, { color: "rgba(240,237,232,0.85)", fontFamily: "Geologica_500Medium", textAlign: "left" }]}>
             {tip}
           </Text>
         </Animated.View>
@@ -820,8 +820,8 @@ export default function ShowtimePlaybackScreen() {
 
       <Animated.View style={[pb.header, { paddingTop: topPad + 10 }, headerStyle]}>
         <View style={pb.headerCenter}>
-          <Text style={[pb.headerTitle, { fontFamily: "Nunito_700Bold" }]}>{t("yourPerformance")}</Text>
-          {title ? <Text style={[pb.headerSub, { fontFamily: "Nunito_400Regular" }]}>«{title}»</Text> : null}
+          <Text style={[pb.headerTitle, { fontFamily: "Geologica_700Bold" }]}>{t("yourPerformance")}</Text>
+          {title ? <Text style={[pb.headerSub, { fontFamily: "Geologica_400Regular" }]}>«{title}»</Text> : null}
         </View>
       </Animated.View>
 
@@ -836,7 +836,7 @@ export default function ShowtimePlaybackScreen() {
         <Animated.View style={[contentStyle, pb.content]}>
           <View style={pb.sectionLabel}>
             <Ionicons name="headset-outline" size={16} color="#FFD166" />
-            <Text style={[pb.sectionLabelText, { color: "#FFD166", fontFamily: "Nunito_600SemiBold" }]}>
+            <Text style={[pb.sectionLabelText, { color: "#FFD166", fontFamily: "Geologica_600SemiBold" }]}>
               {t("performanceRecording")}
             </Text>
           </View>
@@ -846,7 +846,7 @@ export default function ShowtimePlaybackScreen() {
           {!hasListenedFully && recordingUri && (
             <View style={pb.listenHint}>
               <Ionicons name="headset" size={14} color="rgba(255,209,102,0.7)" />
-              <Text style={[pb.listenHintText, { fontFamily: "Nunito_400Regular" }]}>
+              <Text style={[pb.listenHintText, { fontFamily: "Geologica_400Regular" }]}>
                 {t("listenToEnd")}
               </Text>
             </View>
@@ -856,7 +856,7 @@ export default function ShowtimePlaybackScreen() {
           {analyzing && (
             <Animated.View entering={FadeIn.duration(300)} style={pb.analyzingCard}>
               <ActivityIndicator color="#FFD166" size="small" />
-              <Text style={[pb.analyzingText, { color: "rgba(240,237,232,0.7)", fontFamily: "Nunito_400Regular" }]}>
+              <Text style={[pb.analyzingText, { color: "rgba(240,237,232,0.7)", fontFamily: "Geologica_400Regular" }]}>
                 {t("aiAnalyzing")}
               </Text>
             </Animated.View>
@@ -869,7 +869,7 @@ export default function ShowtimePlaybackScreen() {
           {/* Tips card */}
           {!analysisResult && !analyzing && (
             <View style={[pb.tipsCard, { borderColor: "#2A3348" }]}>
-              <Text style={[pb.tipsTitle, { color: "#F0EDE8", fontFamily: "Nunito_600SemiBold" }]}>
+              <Text style={[pb.tipsTitle, { color: "#F0EDE8", fontFamily: "Geologica_600SemiBold" }]}>
                 {t("whatToEvaluate")}
               </Text>
               {[
@@ -881,9 +881,9 @@ export default function ShowtimePlaybackScreen() {
               ].map((tip, i) => (
                 <Animated.View key={i} entering={FadeInDown.delay(600 + i * 80).duration(350)} style={pb.tipRow}>
                   <View style={[pb.tipNum, { backgroundColor: "#0B1426" }]}>
-                    <Text style={[pb.tipNumText, { color: "#FFD166", fontFamily: "Nunito_700Bold" }]}>{i + 1}</Text>
+                    <Text style={[pb.tipNumText, { color: "#FFD166", fontFamily: "Geologica_700Bold" }]}>{i + 1}</Text>
                   </View>
-                  <Text style={[pb.tipText, { color: "rgba(240,237,232,0.75)", fontFamily: "Nunito_400Regular" }]}>{tip}</Text>
+                  <Text style={[pb.tipText, { color: "rgba(240,237,232,0.75)", fontFamily: "Geologica_400Regular" }]}>{tip}</Text>
                 </Animated.View>
               ))}
             </View>
@@ -900,7 +900,7 @@ export default function ShowtimePlaybackScreen() {
               style={({ pressed }) => [pb.retryBtn, { backgroundColor: "rgba(255,209,102,0.12)", borderColor: "#FFD166", opacity: pressed ? 0.8 : 1 }]}
             >
               <Ionicons name="refresh" size={18} color="#FFD166" />
-              <Text style={[pb.retryBtnText, { color: "#FFD166", fontFamily: "Nunito_600SemiBold" }]}>{t("again")}</Text>
+              <Text style={[pb.retryBtnText, { color: "#FFD166", fontFamily: "Geologica_600SemiBold" }]}>{t("again")}</Text>
             </Pressable>
             <Pressable
               onPress={handleDone}
@@ -920,14 +920,14 @@ export default function ShowtimePlaybackScreen() {
               ) : isSilent ? (
                 <>
                   <Ionicons name="book-outline" size={18} color="#666" />
-                  <Text style={[pb.doneBtnText, { color: "#555", fontFamily: "Nunito_700Bold" }]}>
+                  <Text style={[pb.doneBtnText, { color: "#555", fontFamily: "Geologica_700Bold" }]}>
                     {lang === "ru" ? "Прочитай текст" : "Read the text"}
                   </Text>
                 </>
               ) : (
                 <>
                   <Ionicons name="arrow-forward" size={18} color="#FFD166" />
-                  <Text style={[pb.doneBtnText, { color: "#FFD166", fontFamily: "Nunito_700Bold" }]}>{t("forward")}</Text>
+                  <Text style={[pb.doneBtnText, { color: "#FFD166", fontFamily: "Geologica_700Bold" }]}>{t("forward")}</Text>
                 </>
               )}
             </Pressable>
@@ -999,7 +999,7 @@ const listenPrompt = StyleSheet.create({
   title: {
     color: "#fff",
     fontSize: 19,
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
     textAlign: "center",
   },
   body: {
@@ -1007,7 +1007,7 @@ const listenPrompt = StyleSheet.create({
     fontSize: 14.5,
     lineHeight: 21,
     textAlign: "center",
-    fontFamily: "Nunito_400Regular",
+    fontFamily: "Geologica_400Regular",
   },
   btn: {
     marginTop: 8,
@@ -1021,7 +1021,7 @@ const listenPrompt = StyleSheet.create({
   btnText: {
     color: "#2A1E00",
     fontSize: 15,
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Geologica_700Bold",
   },
   skipBtn: {
     marginTop: 2,
@@ -1033,7 +1033,7 @@ const listenPrompt = StyleSheet.create({
   skipBtnText: {
     color: "rgba(255,255,255,0.55)",
     fontSize: 14,
-    fontFamily: "Nunito_500Medium",
+    fontFamily: "Geologica_500Medium",
   },
 });
 
