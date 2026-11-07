@@ -1,76 +1,122 @@
-import React, { useState } from "react";
+// Show Time tab — Figma "Screen / 03b · Show Time — full" (17:660 dark, 17:759 light).
+import React, { useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
   Platform,
-  Dimensions,
+  ScrollView,
+  TextInput,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  useAnimatedScrollHandler,
-  interpolate,
-  Extrapolation,
-  FadeIn,
-  FadeInDown,
-} from "react-native-reanimated";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
-import Svg, { Path } from "react-native-svg";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { getSpeechThemes } from "@/app/showtime-stage";
 import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
-import { useAppColors } from "@/hooks/useAppColors";
 import { useGame } from "@/context/GameContext";
-import { VinylGallery } from "@/components/showtime/VinylGallery";
-import { ShowTimeLogo, ShowTimeLogoLight } from "@/components/showtime/ShowTimeLogo";
+import { ThemeCoverGallery } from "@/components/showtime/ThemeCoverGallery";
+import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
+import {
+  ChevronForwardIcon,
+  OpenCatalogIcon,
+  PlayCircleIcon,
+  RolesMaskIcon,
+  SearchIcon,
+  TipBubbleIcon,
+} from "@/components/showtime/ShowTimeIcons";
+import {
+  THEME_CATEGORIES,
+  categoryOf,
+  type ThemeCategoryId,
+} from "@/components/showtime/themeCategories";
 import CoinIcon from "@/components/CoinIcon";
 import AppDialog from "@/components/AppDialog";
 
-const { width: SW } = Dimensions.get("window");
+const CAROUSEL_COUNT = 10;
+const COLLAPSED_TILES = 6;
+const SHOW_TIME_COST = 50;
+
+// "#RRGGBB" + alpha → rgba() (used to fade the catalog veil into the card colour).
+function withAlpha(hex: string, a: number) {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return hex;
+  const v = parseInt(m[1], 16);
+  return `rgba(${(v >> 16) & 255},${(v >> 8) & 255},${v & 255},${a})`;
+}
 
 export default function ShowTimeScreen() {
   const insets = useSafeAreaInsets();
-  const { t, lang } = useLang();
-  const { themeMode } = useTheme();
-  const { colors } = useAppColors();
+  const { lang } = useLang();
+  const en = lang === "en";
+  const { theme: c, themeMode } = useTheme();
   const isLight = themeMode === "light";
-  // Background follows the app theme (same as the Path): app dark in dark mode,
-  // app light in light mode — no bespoke navy stage tint.
-  const bgGradient: [string, string, string] = [
-    colors.background,
-    colors.backgroundSecondary,
-    colors.background,
-  ];
-  const bgColor = colors.background;
-  const ink = isLight ? "#241934" : "#E8E4D8"; // section heading
-  const inkSub = isLight ? "rgba(36,25,52,0.62)" : "rgba(255,255,255,0.7)";
-  const inkFaint = isLight ? "rgba(36,25,52,0.45)" : "rgba(255,255,255,0.35)";
-  const cardBg = isLight ? "rgba(36,25,52,0.035)" : "rgba(255,255,255,0.03)";
-  const chipBg = isLight ? "rgba(36,25,52,0.06)" : "rgba(255,255,255,0.06)";
+  const { width: winW } = useWindowDimensions();
   const { coins, showTimeFreeAvailable, consumeShowTimeFree, spendCoins } = useGame();
-  const SHOW_TIME_COST = 50;
+
+  // Figma tokens not in ThemeContext.
+  const stroke = isLight ? "rgba(38,38,40,0.08)" : "rgba(240,238,233,0.06)"; // stroke/shape
+  const inkFaint = isLight ? "rgba(38,38,40,0.35)" : "rgba(240,238,233,0.35)"; // showtime/ink-faint
+  const inkSub = isLight ? "rgba(38,38,40,0.7)" : "rgba(240,238,233,0.7)"; // showtime/ink-sub
+  const bgMid = isLight ? c.bgSecondary : "#2E2E30"; // showtime/bg-mid
+
   const [payModal, setPayModal] = useState(false);
-  const [selectedIdx, setSelectedIdx] = useState(0);
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const [query, setQuery] = useState("");
+  const [activeCat, setActiveCat] = useState<ThemeCategoryId>("popular");
+  const [expanded, setExpanded] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const catalogY = useRef(0);
+
+  const topPad = Platform.OS === "web" ? 54 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   const speechThemes = getSpeechThemes(lang);
-  const THEME_KEYS = Object.keys(speechThemes).slice(0, 10);
-  const safeIdx = Math.max(0, Math.min(THEME_KEYS.length - 1, selectedIdx));
-  const theme = speechThemes[THEME_KEYS[safeIdx]];
+  const ALL_KEYS = useMemo(() => Object.keys(speechThemes), [speechThemes]);
+  const BASE_KEYS = useMemo(() => ALL_KEYS.slice(0, CAROUSEL_COUNT), [ALL_KEYS]);
+  const [selectedKey, setSelectedKey] = useState<string>(() => BASE_KEYS[0]);
+  const safeKey = speechThemes[selectedKey] ? selectedKey : BASE_KEYS[0];
+
+  // A theme picked from the catalog that is not among the "актуальные" ones is
+  // put at the front of the carousel, so the carousel always holds the selection.
+  const carouselKeys = useMemo(
+    () => (BASE_KEYS.includes(safeKey) ? BASE_KEYS : [safeKey, ...BASE_KEYS.slice(0, CAROUSEL_COUNT - 1)]),
+    [BASE_KEYS, safeKey],
+  );
+  const selectedIdx = Math.max(0, carouselKeys.indexOf(safeKey));
+  const theme = speechThemes[safeKey];
   const randomSpeech = theme.speeches[0];
 
-  const handleThemeSelect = (idx: number) => {
-    setSelectedIdx(idx);
-    if (Platform.OS !== "web") {
-      Haptics.selectionAsync();
-    }
+  const q = query.trim().toLowerCase();
+  const catalogKeys = useMemo(() => {
+    if (q) return ALL_KEYS.filter((k) => speechThemes[k].title.toLowerCase().includes(q));
+    if (activeCat === "popular") return BASE_KEYS;
+    return ALL_KEYS.filter((k) => categoryOf(k) === activeCat);
+  }, [q, activeCat, ALL_KEYS, BASE_KEYS, speechThemes]);
+  const canCollapse = catalogKeys.length > COLLAPSED_TILES;
+  const showAll = expanded || !canCollapse;
+  const visibleTiles = showAll ? catalogKeys : catalogKeys.slice(0, COLLAPSED_TILES);
+
+  const cardW = Math.min(winW, 480) - 40;
+  const tileSize = Math.floor((cardW - 4 - 34 - 16) / 3);
+
+  const haptic = () => {
+    if (Platform.OS !== "web") Haptics.selectionAsync();
+  };
+
+  const handleCarouselSelect = (idx: number) => {
+    const key = carouselKeys[idx];
+    if (key) setSelectedKey(key);
+    haptic();
+  };
+
+  const handleTilePress = (key: string) => {
+    setSelectedKey(key);
+    haptic();
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
   };
 
   const goToStage = () => {
@@ -98,187 +144,262 @@ export default function ShowTimeScreen() {
     }
   };
 
-  const scrollY = useSharedValue(0);
-  const onScroll = useAnimatedScrollHandler((e) => {
-    scrollY.value = e.contentOffset.y;
-  });
-  const tipsAnim = useAnimatedStyle(() => {
-    const scale = interpolate(scrollY.value, [0, 220], [0.72, 1.05], Extrapolation.CLAMP);
-    return { transform: [{ scale }] };
-  });
-  const logoAnim = useAnimatedStyle(() => {
-    const scale = interpolate(scrollY.value, [0, 200], [1, 0.58], Extrapolation.CLAMP);
-    const rotateX = interpolate(scrollY.value, [0, 200], [0, 38], Extrapolation.CLAMP);
-    const translateY = interpolate(scrollY.value, [0, 200], [0, -18], Extrapolation.CLAMP);
-    const opacity = interpolate(scrollY.value, [0, 200], [1, 0.45], Extrapolation.CLAMP);
-    return {
-      opacity,
-      transform: [
-        { perspective: 600 },
-        { translateY },
-        { rotateX: `${rotateX}deg` },
-        { scale },
-      ],
-    };
-  });
+  const durationLine =
+    theme.timerSeconds !== null
+      ? en
+        ? `${theme.timerSeconds} sec speech`
+        : `${theme.timerSeconds} сек выступления`
+      : en
+        ? "1-2 min speech"
+        : "1-2 мин выступления";
 
   return (
-    <View style={[st.container, { backgroundColor: bgColor }]}>
+    <View style={[st.container, { backgroundColor: c.bg }]}>
       <LinearGradient
-        colors={bgGradient}
+        colors={[c.bg, bgMid, c.bg]}
         style={StyleSheet.absoluteFill}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       />
-      <Animated.ScrollView
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-        contentContainerStyle={[st.scroll, { paddingTop: topPad + 12, paddingBottom: bottomPad + 160 }]}
+      <ScrollView
+        ref={scrollRef}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[st.scroll, { paddingTop: topPad + 5, paddingBottom: bottomPad + 120 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View entering={FadeIn.duration(400)} style={st.header}>
-          <Animated.View style={logoAnim}>
-            {isLight ? (
-              <ShowTimeLogoLight width={Math.min(SW * 0.46, 210)} />
-            ) : (
-              <ShowTimeLogo width={Math.min(SW * 0.46, 200)} color="#F5A623" />
-            )}
-          </Animated.View>
-        </Animated.View>
-
-        <Animated.View entering={FadeInDown.delay(150).duration(400)}>
-          <Text style={[st.sectionLabel, st.galleryHeading, { fontFamily: "Geologica_600SemiBold", color: ink }]}>
-            {t("chooseTopic")}
-          </Text>
-          <VinylGallery
-            themes={THEME_KEYS.map((k) => speechThemes[k])}
-            selectedIdx={safeIdx}
-            onSelect={handleThemeSelect}
-            isLight={isLight}
-          />
-        </Animated.View>
-
-        <Animated.View entering={FadeInDown.delay(350).duration(400)}>
-          <View style={[st.previewCard, { borderColor: theme.accentColor + "25", backgroundColor: cardBg }]}>
-            <LinearGradient
-              colors={[theme.accentColor + "0A", "transparent"]}
-              style={StyleSheet.absoluteFill}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
+        {/* Header: logo + search */}
+        <Animated.View entering={FadeIn.duration(400)} style={st.headerRow}>
+          <ShowTimeLogo width={83} color={isLight ? c.text : c.accent} />
+          <View style={[st.search, { backgroundColor: c.cardBorder, borderColor: stroke }]}>
+            <TextInput
+              value={query}
+              onChangeText={(v) => {
+                setQuery(v);
+                setExpanded(false);
+              }}
+              onSubmitEditing={() => scrollRef.current?.scrollTo({ y: catalogY.current - 12, animated: true })}
+              placeholder={en ? "Find a topic" : "Найти тему"}
+              placeholderTextColor={c.textMuted}
+              returnKeyType="search"
+              style={[st.searchInput, { color: c.text }, Platform.OS === "web" && ({ outlineStyle: "none" } as any)]}
             />
-            <View style={st.previewHeader}>
-              <View style={[st.previewThemeDot, { backgroundColor: theme.accentColor }]} />
-              <Text style={[st.previewThemeName, { fontFamily: "Geologica_600SemiBold", color: theme.accentColor }]}>
-                {theme.title}
-              </Text>
-              {theme.timerSeconds !== null && (
-                <View style={[st.previewTimerBadge, { backgroundColor: chipBg }]}>
-                  <Ionicons name="time-outline" size={12} color={inkFaint} />
-                  <Text style={[st.previewTimerText, { fontFamily: "Geologica_400Regular", color: inkFaint }]}>{theme.timerSeconds} {t("sec")}</Text>
-                </View>
-              )}
-            </View>
-            <Text style={[st.previewInterior, { fontFamily: "Geologica_400Regular", color: inkFaint }]}>{theme.interior}</Text>
-            <View style={[st.previewDivider, isLight && { backgroundColor: "rgba(36,25,52,0.10)" }]} />
-            <Text style={[st.previewSpeechTitle, { fontFamily: "Geologica_600SemiBold", color: inkSub }]}>
-              {randomSpeech.title}
-            </Text>
-            <View style={st.previewLines}>
-              {randomSpeech.lines.slice(0, 4).map((line, i) => (
-                <Text
-                  key={i}
-                  style={[st.previewLine, { fontFamily: "Geologica_400Regular", opacity: 0.6 - i * 0.1, color: isLight ? "#241934" : "#fff" }]}
-                  numberOfLines={2}
-                  ellipsizeMode="tail"
-                >
-                  {line}
-                </Text>
-              ))}
-              <Text style={[st.previewLine, { fontFamily: "Geologica_400Regular", opacity: 0.2, color: isLight ? "#241934" : "#fff" }]}>...</Text>
-            </View>
+            <SearchIcon color={c.text} />
           </View>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(450).duration(400)}>
-          <Pressable
-            onPress={handleStart}
-            style={({ pressed }) => [
-              st.startBtn,
-              { backgroundColor: theme.accentColor, shadowColor: theme.accentColor, opacity: pressed ? 0.85 : 1 },
-            ]}
-          >
-            <Ionicons name="play-circle" size={22} color="#1A1A2E" />
-            <Text style={[st.startBtnText, { color: "#1A1A2E", fontFamily: "Geologica_700Bold" }]}>
-              {t("startTraining")}
-            </Text>
-            {showTimeFreeAvailable ? null : (
-              <View style={st.startBtnCost}>
-                <Text style={st.startBtnCostText}>{SHOW_TIME_COST}</Text>
-                <CoinIcon size={16} color="#1A1A2E" />
-              </View>
-            )}
-          </Pressable>
+        <Text style={[st.sectionHeading, { color: c.text }]}>
+          {en ? "Trending topics for you" : "Актуальные темы для вас"}
+        </Text>
+
+        <Animated.View entering={FadeInDown.delay(150).duration(400)}>
+          <ThemeCoverGallery
+            themes={carouselKeys.map((k) => speechThemes[k])}
+            selectedIdx={selectedIdx}
+            onSelect={handleCarouselSelect}
+          />
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(500).duration(400)}>
-          <Pressable
-            onPress={() => {
-              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.push("/roles");
-            }}
-            style={({ pressed }) => [
-              st.rolesEntry,
-              { opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
-            ]}
-          >
-            <Svg width={27} height={36} viewBox="0 0 226 307">
-              <Path fillRule="evenodd" clipRule="evenodd" d="M139.222 0V307C101.166 306.825 60.5922 290.874 36.7222 262C36.7222 262 0.722253 226.418 0.222241 168.709C-0.277771 111 0.222203 0 0.222203 0H139.222ZM106.409 103.131H53.3152C53.3152 96.1586 54.6885 89.2546 57.3568 82.813C60.025 76.3714 63.9359 70.5184 68.8661 65.5882C73.7964 60.6581 79.6494 56.7473 86.0911 54.0792C92.5328 51.4111 99.4369 50.0379 106.409 50.038V103.131ZM139.222 166.869H53.3152C53.3152 189.653 62.3661 211.504 78.4768 227.614C94.5875 243.725 116.438 252.776 139.222 252.776V166.869ZM172.035 103.131H225.129C225.129 96.1586 223.756 89.2546 221.088 82.813C218.419 76.3714 214.509 70.5184 209.578 65.5882C204.648 60.6581 198.795 56.7473 192.353 54.0792C185.912 51.4111 179.008 50.0379 172.035 50.038V103.131ZM139.222 166.869H225.129C225.129 178.15 222.907 189.321 218.59 199.744C214.273 210.167 207.945 219.637 199.968 227.614C191.99 235.592 182.52 241.919 172.097 246.237C161.675 250.554 150.504 252.776 139.222 252.776V166.869Z" fill={ink} />
-            </Svg>
+        {/* Selected theme */}
+        <View style={st.themeInfo}>
+          <View style={st.titleRow}>
+            <Text style={[st.themeTitle, { color: c.accentInk }]} numberOfLines={2}>
+              {en ? `“${theme.title}”` : `«${theme.title}»`}
+            </Text>
+            <Text style={[st.counter, { color: inkFaint }]}>
+              {selectedIdx + 1} / {carouselKeys.length}
+            </Text>
+          </View>
+          <Text style={[st.desc, { color: c.textMuted }]}>{durationLine}</Text>
+          {randomSpeech?.lines?.[0] ? (
+            <Text style={[st.desc, { color: c.textMuted }]} numberOfLines={1}>
+              {randomSpeech.lines[0]}
+            </Text>
+          ) : null}
+        </View>
+
+        <Pressable
+          onPress={handleStart}
+          style={({ pressed }) => [
+            st.startBtn,
+            { backgroundColor: c.accent, borderColor: c.ctaStroke, opacity: pressed ? 0.85 : 1 },
+          ]}
+        >
+          <PlayCircleIcon color="#3A3A3B" />
+          <Text style={st.startBtnText}>{en ? "Start performance" : "Начать выступление"}</Text>
+          {showTimeFreeAvailable ? null : (
+            <View style={st.startBtnCost}>
+              <Text style={st.startBtnCostText}>{SHOW_TIME_COST}</Text>
+              <CoinIcon size={16} color="#3A3A3B" />
+            </View>
+          )}
+        </Pressable>
+
+        {/* Каталог тем */}
+        <View
+          onLayout={(e) => (catalogY.current = e.nativeEvent.layout.y)}
+          style={[st.catalog, { backgroundColor: c.card, borderColor: stroke }]}
+        >
+          <View style={st.catalogHead}>
+            <Text style={[st.catalogTitle, { color: c.text }]}>
+              {q ? (en ? `Found: ${catalogKeys.length}` : `Найдено: ${catalogKeys.length}`) : en ? "Topic catalog" : "Каталог тем"}
+            </Text>
+            {/* TODO(design): ↗ should open the full catalog screen (Flows 175:1940); until it exists it expands the grid. */}
+            <Pressable hitSlop={10} onPress={() => setExpanded((v) => !v)} accessibilityRole="button">
+              <OpenCatalogIcon color={c.text} />
+            </Pressable>
+          </View>
+
+          {!q && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={st.tabsScroll}
+              contentContainerStyle={st.tabs}
+            >
+              {THEME_CATEGORIES.map((cat) => {
+                const active = cat.id === activeCat;
+                return (
+                  <Pressable
+                    key={cat.id}
+                    onPress={() => {
+                      setActiveCat(cat.id);
+                      setExpanded(false);
+                      haptic();
+                    }}
+                    style={st.tab}
+                  >
+                    <Text
+                      style={[
+                        st.tabText,
+                        active
+                          ? { color: c.text, fontFamily: "Geologica_800ExtraBold" }
+                          : { color: c.textMuted, fontFamily: "Geologica_700Bold" },
+                      ]}
+                    >
+                      {en ? cat.en : cat.ru}
+                    </Text>
+                    <View style={[st.tabUnderline, { backgroundColor: active ? c.accent : "transparent" }]} />
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          )}
+
+          {catalogKeys.length === 0 ? (
+            <Text style={[st.empty, { color: c.textMuted }]}>
+              {en ? "Nothing found" : "Ничего не найдено"}
+            </Text>
+          ) : (
+            <View style={st.grid}>
+              {visibleTiles.map((k, i) => {
+                const sel = k === safeKey;
+                const tileBg = sel ? c.accent : i % 2 === 1 ? c.bg : c.cardBorder;
+                return (
+                  <Pressable
+                    key={k}
+                    onPress={() => handleTilePress(k)}
+                    style={({ pressed }) => [
+                      st.tile,
+                      {
+                        width: tileSize,
+                        height: tileSize,
+                        backgroundColor: tileBg,
+                        borderColor: sel ? c.ctaStroke : stroke,
+                        borderWidth: sel ? 4 : 2,
+                        paddingLeft: sel ? 8 : 9,
+                        paddingBottom: sel ? 10 : 12,
+                        opacity: pressed ? 0.85 : 1,
+                      },
+                    ]}
+                  >
+                    <Text style={[st.tileText, { color: sel ? c.accentText : c.text }]} numberOfLines={3}>
+                      {speechThemes[k].title}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+
+          {canCollapse && !showAll && (
+            <View pointerEvents="box-none" style={[st.veilWrap, { top: 17 + 22 + 14 + 27 + 18 + tileSize + 1 }]}>
+              <LinearGradient
+                pointerEvents="none"
+                colors={[withAlpha(c.card, 0.2), withAlpha(c.card, 0.85), c.card]}
+                locations={[0, 0.45, 1]}
+                style={StyleSheet.absoluteFill}
+              />
+              <Pressable onPress={() => setExpanded(true)} style={st.seeAll} hitSlop={6}>
+                <Text style={[st.seeAllText, { color: c.text }]}>
+                  {en ? "See all topics" : "Смотреть все темы"}
+                </Text>
+              </Pressable>
+            </View>
+          )}
+          {canCollapse && showAll && (
+            <Pressable onPress={() => setExpanded(false)} style={[st.seeAll, st.seeAllInline]}>
+              <Text style={[st.seeAllText, { color: c.text }]}>{en ? "Show less" : "Свернуть"}</Text>
+            </Pressable>
+          )}
+        </View>
+
+        {/* Роли */}
+        <Pressable
+          onPress={() => {
+            if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            router.push("/roles");
+          }}
+          style={({ pressed }) => [st.rolesEntry, { opacity: pressed ? 0.85 : 1 }]}
+        >
+          <RolesMaskIcon color={c.text} />
+          <View style={{ flex: 1 }}>
+            <Text style={[st.rolesTitle, { color: c.text }]}>{en ? "Roles" : "Роли"}</Text>
+            <Text style={[st.rolesSub, { color: inkSub }]}>
+              {en ? "Play a character & train adaptability" : "Играй персонажа и тренируй адаптивность"}
+            </Text>
+          </View>
+          <ChevronForwardIcon color={inkFaint} />
+        </Pressable>
+
+        {/* Советы выступающему — card deck */}
+        <Pressable
+          onPress={() => {
+            if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/speaker-tips");
+          }}
+          style={({ pressed }) => [st.deck, { opacity: pressed ? 0.85 : 1 }]}
+          accessibilityRole="button"
+        >
+          <View style={[st.deckCard, st.deckBack2, { backgroundColor: c.card, borderColor: stroke }]} />
+          <View style={[st.deckCard, st.deckBack1, { backgroundColor: c.card, borderColor: stroke }]} />
+          <View style={[st.deckCard, st.deckFront, { backgroundColor: c.card, borderColor: stroke }]}>
+            <View style={[st.tipBadge, { backgroundColor: c.accent }]}>
+              <TipBubbleIcon color={c.accentText} />
+            </View>
             <View style={{ flex: 1 }}>
-              <Text style={[st.rolesEntryTitle, { color: ink, fontFamily: "Geologica_800ExtraBold" }]}>
-                {lang === "en" ? "Roles" : "Роли"}
+              <Text style={[st.tipsTitle, { color: c.text }]} numberOfLines={1}>
+                {en ? "Speaker tips" : "Советы выступающему"}
               </Text>
-              <Text style={[st.rolesEntrySub, { color: inkSub, fontFamily: "Geologica_400Regular" }]}>
-                {lang === "en"
-                  ? "Play a character & train adaptability"
-                  : "Играй персонажа и тренируй адаптивность"}
+              <Text style={[st.tipsSub, { color: c.textMuted }]} numberOfLines={1}>
+                {en ? "Pauses, voice, gestures and the room" : "Паузы, голос, жесты и работа с залом"}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={22} color={inkFaint} />
-          </Pressable>
-        </Animated.View>
-
-        {/* Speaker tips. The mascot that used to peek over this button is gone
-            — the button carries the row on its own. */}
-        <Animated.View entering={FadeInDown.delay(550).duration(400)} style={[st.tipsUnit, tipsAnim]}>
-          <Pressable
-            onPress={() => {
-              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push("/speaker-tips");
-            }}
-            style={({ pressed }) => [st.tipsBtn, { opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
-            accessibilityRole="button"
-          >
-            <View style={st.tipsBtnIcon}>
-              <Ionicons name="bulb" size={18} color="#FFD857" />
+            <View style={{ marginLeft: -12 }}>
+              <ChevronForwardIcon color={inkFaint} />
             </View>
-            <Text style={[st.tipsBtnText, { fontFamily: "Geologica_600SemiBold" }]}>
-              {t("speakerTips")}
-            </Text>
-            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
-          </Pressable>
-        </Animated.View>
-      </Animated.ScrollView>
+          </View>
+        </Pressable>
+      </ScrollView>
 
       <AppDialog
         visible={payModal}
-        title={lang === "en" ? "Enter Show Time again?" : "Ещё один выход в Show Time?"}
+        title={en ? "Enter Show Time again?" : "Ещё один выход в Show Time?"}
         message={
           coins >= SHOW_TIME_COST
-            ? lang === "en"
+            ? en
               ? `Today's free entry is used. This one costs ${SHOW_TIME_COST} coins. You have ${coins}.`
               : `Бесплатный выход на сегодня использован. Этот стоит ${SHOW_TIME_COST} монет. У вас ${coins}.`
-            : lang === "en"
+            : en
               ? `Not enough coins — you need ${SHOW_TIME_COST} and have ${coins}. Earn more by finishing levels.`
               : `Не хватает монет — нужно ${SHOW_TIME_COST}, у вас ${coins}. Зарабатывайте, проходя уровни.`
         }
@@ -286,10 +407,10 @@ export default function ShowTimeScreen() {
         buttons={
           coins >= SHOW_TIME_COST
             ? [
-                { label: lang === "en" ? "Cancel" : "Отмена", variant: "secondary", onPress: () => setPayModal(false) },
-                { label: lang === "en" ? `Enter · ${SHOW_TIME_COST}` : `Выйти · ${SHOW_TIME_COST}`, variant: "primary", onPress: confirmPaidEntry },
+                { label: en ? "Cancel" : "Отмена", variant: "secondary", onPress: () => setPayModal(false) },
+                { label: en ? `Enter · ${SHOW_TIME_COST}` : `Выйти · ${SHOW_TIME_COST}`, variant: "primary", onPress: confirmPaidEntry },
               ]
-            : [{ label: lang === "en" ? "Got it" : "Понятно", variant: "primary", onPress: () => setPayModal(false) }]
+            : [{ label: en ? "Got it" : "Понятно", variant: "primary", onPress: () => setPayModal(false) }]
         }
       />
     </View>
@@ -298,82 +419,43 @@ export default function ShowTimeScreen() {
 
 const st = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 20, gap: 18 },
+  scroll: { paddingHorizontal: 20, width: "100%", maxWidth: 480, alignSelf: "center" },
 
-  header: { alignItems: "center", justifyContent: "center", paddingVertical: 4 },
-
-  sectionLabel: { fontSize: 16, color: "#E8E4D8", marginBottom: 8, marginTop: 4 },
-  galleryHeading: { textAlign: "center", marginBottom: 4 },
-
-  previewCard: {
-    borderRadius: 20,
-    padding: 18,
-    borderWidth: 1,
-    backgroundColor: "rgba(255,255,255,0.03)",
-    gap: 10,
-    overflow: "hidden",
-  },
-  previewHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
-  previewThemeDot: { width: 10, height: 10, borderRadius: 5 },
-  previewThemeName: { fontSize: 16, flex: 1 },
-  previewTimerBadge: {
+  headerRow: { flexDirection: "row", alignItems: "center", gap: 15, paddingLeft: 4, marginBottom: 8 },
+  search: {
+    flex: 1,
+    height: 44,
+    borderRadius: 32,
+    borderWidth: 2,
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    paddingLeft: 17,
+    paddingRight: 17,
+    gap: 8,
   },
-  previewTimerText: { fontSize: 11, color: "rgba(255,255,255,0.5)" },
-  previewInterior: { fontSize: 12, color: "rgba(255,255,255,0.35)", lineHeight: 16 },
-  previewDivider: { height: 1, backgroundColor: "rgba(255,255,255,0.06)", marginVertical: 2 },
-  previewSpeechTitle: { fontSize: 14, color: "rgba(255,255,255,0.7)" },
-  previewLines: { gap: 3 },
-  previewLine: { fontSize: 13, color: "rgba(255,255,255,0.5)", lineHeight: 19 },
+  searchInput: { flex: 1, height: 40, fontSize: 15, fontFamily: "Geologica_600SemiBold", padding: 0 },
 
-  tipsUnit: {
-    alignItems: "center",
-    marginTop: 6,
-  },
-  tipsBtn: {
-    alignSelf: "stretch",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 11,
-    paddingHorizontal: 14,
-    borderRadius: 15,
-    backgroundColor: "#7C4DFF",
-    shadowColor: "#7C4DFF",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  tipsBtnIcon: {
-    width: 29,
-    height: 29,
-    borderRadius: 15,
-    backgroundColor: "rgba(255,255,255,0.16)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tipsBtnText: { flex: 1, color: "#FFFFFF", fontSize: 14.5 },
+  sectionHeading: { fontSize: 16, fontFamily: "Geologica_800ExtraBold", textAlign: "center", marginBottom: 2 },
+
+  themeInfo: { paddingHorizontal: 4, marginTop: 8 },
+  titleRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 6 },
+  themeTitle: { flex: 1, fontSize: 24, letterSpacing: -0.12, fontFamily: "Geologica_800ExtraBold" },
+  counter: { fontSize: 11, fontFamily: "Geologica_400Regular", marginTop: 10 },
+  desc: { fontSize: 13, lineHeight: 15.6, fontFamily: "Geologica_600SemiBold" },
 
   startBtn: {
+    alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    paddingVertical: 16,
-    borderRadius: 18,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
+    height: 50,
+    borderRadius: 32,
+    borderWidth: 4,
+    paddingLeft: 13.5,
+    paddingRight: 20,
+    gap: 8,
+    marginTop: 33,
   },
-  startBtnText: { fontSize: 18 },
+  startBtnText: { color: "#3A3A3B", fontSize: 16, fontFamily: "Geologica_700Bold" },
   startBtnCost: {
     flexDirection: "row",
     alignItems: "center",
@@ -381,114 +463,70 @@ const st = StyleSheet.create({
     marginLeft: 2,
     paddingLeft: 10,
     borderLeftWidth: 1.5,
-    borderLeftColor: "rgba(26,26,46,0.22)",
+    borderLeftColor: "rgba(58,58,59,0.22)",
   },
-  startBtnCostText: {
-    color: "#1A1A2E",
-    fontSize: 18,
-    fontFamily: "Geologica_800ExtraBold",
-  },
-  startBtnTag: {
-    marginLeft: 2,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-    backgroundColor: "rgba(26,26,46,0.16)",
-  },
-  startBtnTagText: {
-    color: "#1A1A2E",
-    fontSize: 12.5,
-    fontFamily: "Geologica_700Bold",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
+  startBtnCostText: { color: "#3A3A3B", fontSize: 16, fontFamily: "Geologica_800ExtraBold" },
 
-  modalOverlay: {
-    position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: "rgba(4,7,20,0.72)",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 32,
-    zIndex: 50,
-  },
-  modalCard: {
-    width: "100%",
-    maxWidth: 360,
-    backgroundColor: "#141B33",
+  catalog: {
+    marginTop: 32,
     borderRadius: 22,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.10)",
-    paddingVertical: 24,
-    paddingHorizontal: 22,
+    borderWidth: 2,
+    paddingTop: 15,
+    paddingHorizontal: 17,
+    paddingBottom: 29,
+    overflow: "hidden",
+  },
+  catalogHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 22 },
+  catalogTitle: { fontSize: 18, letterSpacing: -0.09, fontFamily: "Geologica_800ExtraBold" },
+  tabsScroll: { marginTop: 14, marginHorizontal: -17 },
+  tabs: { paddingHorizontal: 17, gap: 20 },
+  tab: { alignItems: "stretch" },
+  tabText: { fontSize: 14, lineHeight: 18 },
+  tabUnderline: { height: 3, borderRadius: 1.5, marginTop: 6 },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 18 },
+  tile: { borderRadius: 22, overflow: "hidden", justifyContent: "flex-end" },
+  tileText: { fontSize: 12, lineHeight: 13, fontFamily: "Geologica_800ExtraBold" },
+  empty: { fontSize: 13, fontFamily: "Geologica_600SemiBold", marginTop: 24, textAlign: "center" },
+  veilWrap: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
     alignItems: "center",
+    justifyContent: "flex-end",
+    paddingBottom: 13,
   },
-  modalIcon: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: "rgba(245,166,35,0.14)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 14,
-  },
-  modalTitle: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    lineHeight: 24,
-    textAlign: "center",
-    fontFamily: "Geologica_700Bold",
-  },
-  modalBody: {
-    color: "rgba(255,255,255,0.6)",
-    fontSize: 13.5,
-    lineHeight: 19,
-    textAlign: "center",
-    marginTop: 8,
-    fontFamily: "Geologica_400Regular",
-  },
-  modalBtns: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 20,
-    alignSelf: "stretch",
-  },
-  modalBtn: {
-    flex: 1,
-    height: 46,
-    borderRadius: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-  modalBtnGhost: {
-    backgroundColor: "rgba(255,255,255,0.07)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
-  },
-  modalBtnGhostText: {
-    color: "rgba(255,255,255,0.85)",
-    fontSize: 15,
-    fontFamily: "Geologica_700Bold",
-  },
-  modalBtnPrimary: { backgroundColor: "#F5A623" },
-  modalBtnPrimaryText: {
-    color: "#1A1A2E",
-    fontSize: 15,
-    fontFamily: "Geologica_800ExtraBold",
-  },
-  // No plate of its own: it sits straight on the screen background in both
-  // themes, so only the mark, the words and the arrow read as the control.
+  seeAll: { height: 44, paddingLeft: 22, paddingRight: 20, borderRadius: 32, justifyContent: "center" },
+  seeAllInline: { alignSelf: "center", marginTop: 12, marginBottom: -16 },
+  seeAllText: { fontSize: 15, fontFamily: "Geologica_800ExtraBold" },
+
   rolesEntry: {
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
-    padding: 16,
-    borderRadius: 20,
-    marginTop: 16,
-    marginBottom: 8,
+    height: 72,
+    paddingLeft: 16,
+    paddingRight: 14,
+    marginTop: 24,
   },
-  rolesEntryTitle: { fontSize: 18 },
-  rolesEntrySub: { fontSize: 13, marginTop: 2 },
+  rolesTitle: { fontSize: 18, letterSpacing: -0.09, fontFamily: "Geologica_800ExtraBold" },
+  rolesSub: { fontSize: 13, lineHeight: 18.2, fontFamily: "Geologica_400Regular", marginTop: 4, maxWidth: 249 },
 
+  deck: { height: 88, marginTop: 14 },
+  deckCard: { position: "absolute", height: 72, borderRadius: 22, borderWidth: 2 },
+  deckBack2: { left: 24, right: 24, top: 16, opacity: 0.35 },
+  deckBack1: { left: 12, right: 12, top: 8, opacity: 0.65 },
+  deckFront: {
+    left: 0,
+    right: 0,
+    top: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingLeft: 12,
+    paddingRight: 14,
+    gap: 14,
+  },
+  tipBadge: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  tipsTitle: { fontSize: 16, fontFamily: "Geologica_700Bold" },
+  tipsSub: { fontSize: 13, fontFamily: "Geologica_400Regular", marginTop: 4 },
 });
