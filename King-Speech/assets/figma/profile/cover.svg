@@ -1,0 +1,14 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="358" height="128" viewBox="0 0 358 128" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="Cover photo">
+<use xlink:href="#stroke0_0_53" fill="#323234"/>
+<use xlink:href="#stroke0_0_53" fill="url(#paint0_linear_0_53)"/>
+<path d="M334 1C346.703 1 357 11.2975 357 24V104C357 116.703 346.703 127 334 127H127.99C127.996 126.667 128 126.334 128 126C128 93.9675 102.033 68 70 68C38.7535 68 13.2782 92.7088 12.0469 123.653C5.42296 119.616 1 112.325 1 104V24C1 11.2975 11.2975 1 24 1H334Z" stroke-width="2" stroke="#F0EEE9" stroke-opacity="0.06"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_53" x1="-62.2889" y1="45.8" x2="69.7515" y2="232.333" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FFD857" stop-opacity="0.55"/>
+<stop offset="1" stop-color="#FFD857" stop-opacity="0"/>
+</linearGradient>
+<path id="stroke0_0_53" d="M334 1C346.703 1 357 11.2975 357 24V104C357 116.703 346.703 127 334 127H127.99C127.996 126.667 128 126.334 128 126C128 93.9675 102.033 68 70 68C38.7535 68 13.2782 92.7088 12.0469 123.653C5.42296 119.616 1 112.325 1 104V24C1 11.2975 11.2975 1 24 1H334Z"/>
+</defs>
+</svg>
