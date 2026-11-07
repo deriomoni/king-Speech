@@ -12,45 +12,92 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import Animated, { FadeIn } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { SvgXml } from "react-native-svg";
 import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
-import OreoMascot from "@/components/OreoMascot";
+import OscarMascot from "@/components/OscarMascot";
+import { KingSpeechLogo, PillButton, useInk } from "@/components/auth/AuthUI";
+import { ICON_MIC_SVG, ICON_PATH_SVG, ICON_STAR_SVG } from "@/assets/figma/auth/svgs";
 
 const { width: SW } = Dimensions.get("window");
 
+// Figma "Онбординг 1/5 … 5/5" (66:2, 66:35, 66:69, 66:103, 66:137).
+type Visual =
+  | { kind: "oscarHi" }
+  | { kind: "icon"; xml: string; w: number; h: number }
+  | { kind: "oscarTux" };
+
 interface SlideData {
-  titleKey: string;
-  subKey: string;
-  icon: string;
-  showOreo: boolean;
-  iconBg: string;
+  gold: boolean; // gold stage tile (acts II–IV) vs card tile
+  kicker: [string, string];
+  title: [string, string]; // RU, EN — "\n" splits the two headline lines
+  body: [string, string];
+  visual: Visual;
+  numeral?: string;
 }
 
 const SLIDES: SlideData[] = [
-  { titleKey: "onboarding1Title", subKey: "onboarding1Sub", icon: "hand-right", showOreo: true, iconBg: "#FFD166" },
-  { titleKey: "onboarding2Title", subKey: "onboarding2Sub", icon: "map", showOreo: false, iconBg: "#2DCB8E" },
-  { titleKey: "onboarding3Title", subKey: "onboarding3Sub", icon: "mic", showOreo: false, iconBg: "#7B61FF" },
-  { titleKey: "onboarding4Title", subKey: "onboarding4Sub", icon: "star", showOreo: false, iconBg: "#FF6B6B" },
-  { titleKey: "onboarding5Title", subKey: "onboarding5Sub", icon: "bulb", showOreo: true, iconBg: "#FFD166" },
+  {
+    gold: false,
+    kicker: ["АКТ I · ЗНАКОМСТВО", "ACT I · HELLO"],
+    title: ["Привет,\n{name}!", "Hi,\n{name}!"],
+    body: ["Давай покажу, как тут всё устроено", "Let me show you how everything works"],
+    visual: { kind: "oscarHi" },
+    numeral: "01",
+  },
+  {
+    gold: true,
+    kicker: ["АКТ II · ПУТЬ", "ACT II · PATH"],
+    title: ["Главный\nэкран", "Home\nscreen"],
+    body: ["Здесь ты видишь свой путь - уровни и задания", "Here you can see your path - levels and tasks"],
+    visual: { kind: "icon", xml: ICON_PATH_SVG, w: 120, h: 116.782 },
+    numeral: "02",
+  },
+  {
+    gold: true,
+    kicker: ["АКТ III · РЕЖИМЫ", "ACT III · MODES"],
+    title: ["Режимы\nтренировок", "Training\nmodes"],
+    body: ["Выбирай режим и нажимай «Старт»", "Pick a mode and tap “Start”"],
+    visual: { kind: "icon", xml: ICON_MIC_SVG, w: 83.0769, h: 120 },
+    numeral: "03",
+  },
+  {
+    gold: true,
+    kicker: ["АКТ IV · НАГРАДЫ", "ACT IV · REWARDS"],
+    title: ["Зарабатывай\nочки", "Earn\npoints"],
+    body: ["Проходи уровни, набирай XP и прокачивай свой голос", "Complete levels, earn XP and level up your voice"],
+    visual: { kind: "icon", xml: ICON_STAR_SVG, w: 120, h: 111.892 },
+    numeral: "04",
+  },
+  {
+    gold: false,
+    kicker: ["ФИНАЛ · СОВЕТ ДНЯ", "FINALE · DAILY TIP"],
+    title: ["Совет\nдня", "Daily\ntip"],
+    body: ["Заходи каждый день - даже 5 минут делают тебя лучше!", "Come back every day - even 5 minutes makes you better!"],
+    visual: { kind: "oscarTux" },
+  },
 ];
+
+const OSCAR_TUX = require("@/assets/figma/auth/oscar-tux-laugh.png");
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { t } = useLang();
+  const { lang } = useLang();
   const { theme } = useTheme();
+  const { ink } = useInk();
   const { user, completeOnboarding } = useAuth();
+  const en = lang === "en";
 
   const [step, setStep] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
 
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = Platform.OS === "web" ? 54 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   const isLast = step === SLIDES.length - 1;
-  const slide = SLIDES[step];
 
   const goNext = () => {
     if (isLast) {
@@ -77,31 +124,25 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <View style={[s.root, { backgroundColor: theme.bg, paddingTop: topPad, paddingBottom: bottomPad + 16 }]}>
+    <View style={[s.root, { backgroundColor: theme.bg, paddingTop: topPad + 10, paddingBottom: bottomPad + 10 }]}>
       <StatusBar barStyle={theme.mode === "dark" ? "light-content" : "dark-content"} />
 
-      {/* Skip button */}
+      {/* Logo + skip */}
       <Animated.View entering={FadeIn} style={s.topBar}>
-        <Pressable onPress={handleSkip} hitSlop={12} style={s.skipBtn}>
-          <Text style={[s.skipTxt, { color: theme.textSecondary }]}>{t("skip")}</Text>
-        </Pressable>
-        {/* Step dots */}
-        <View style={s.dots}>
-          {SLIDES.map((_, i) => (
-            <View
-              key={i}
-              style={[
-                s.dot,
-                {
-                  backgroundColor: i === step ? theme.accent : theme.cardBorder,
-                  width: i === step ? 20 : 8,
-                },
-              ]}
-            />
-          ))}
-        </View>
-        <View style={{ width: 60 }} />
+        <KingSpeechLogo width={111.3} color={theme.text} />
+        {!isLast && (
+          <Pressable onPress={handleSkip} hitSlop={12}>
+            <Text style={[s.skipTxt, { color: ink(0.55) }]}>{en ? "Skip" : "Пропустить"}</Text>
+          </Pressable>
+        )}
       </Animated.View>
+
+      {/* Progress segments */}
+      <View style={s.progress}>
+        {SLIDES.map((_, i) => (
+          <View key={i} style={[s.seg, { backgroundColor: i <= step ? theme.accent : ink(0.15) }]} />
+        ))}
+      </View>
 
       {/* Slides */}
       <ScrollView
@@ -114,176 +155,185 @@ export default function OnboardingScreen() {
         style={s.slider}
       >
         {SLIDES.map((sl, i) => (
-          <OnboardingSlide
-            key={i}
-            slide={sl}
-            isActive={i === step}
-            theme={theme}
-            t={t}
-            userName={user?.name ?? ""}
-          />
+          <OnboardingSlide key={i} slide={sl} en={en} userName={user?.name ?? ""} />
         ))}
       </ScrollView>
 
       {/* Navigation */}
       <Animated.View entering={FadeIn.delay(200)} style={s.nav}>
-        <Pressable
+        <PillButton
+          label={isLast ? (en ? "Let's go!" : "Погнали!") : en ? "Next  →" : "Далее  →"}
           onPress={goNext}
-          style={({ pressed }) => [
-            s.nextBtn,
-            {
-              backgroundColor: theme.cta,
-              opacity: pressed ? 0.88 : 1,
-            },
-          ]}
-        >
-          <Text style={[s.nextBtnTxt, { color: theme.ctaText }]}>
-            {isLast ? t("letsGo") : t("next")}
-          </Text>
-          {!isLast && (
-            <Ionicons name="arrow-forward" size={20} color={theme.ctaText} />
-          )}
-          {isLast && (
-            <Ionicons name="rocket" size={20} color={theme.ctaText} />
-          )}
-        </Pressable>
+        />
       </Animated.View>
     </View>
   );
 }
 
-interface SlideProps {
-  slide: SlideData;
-  isActive: boolean;
-  theme: any;
-  t: (key: any, vars?: Record<string, string>) => string;
-  userName: string;
-}
-
-function OnboardingSlide({ slide, isActive, theme, t, userName }: SlideProps) {
-  const title = t(slide.titleKey as any, { name: userName });
-  const sub = t(slide.subKey as any);
+function OnboardingSlide({ slide, en, userName }: { slide: SlideData; en: boolean; userName: string }) {
+  const { theme } = useTheme();
+  const { ink, stroke } = useInk();
+  const L = en ? 1 : 0;
+  const [line1, line2] = slide.title[L].replace("{name}", userName).split("\n");
+  const firstSlide = slide.visual.kind === "oscarHi";
 
   return (
     <View style={[s.slide, { width: SW }]}>
-      {/* Visual area */}
-      <View style={s.visualWrap}>
-        {slide.showOreo ? (
-          <OreoMascot size={220} shouldPlay={isActive} />
-        ) : (
-          <View style={[s.iconWrap, { backgroundColor: slide.iconBg + "22" }]}>
-            <View style={[s.iconCircle, { backgroundColor: slide.iconBg }]}>
-              <Ionicons name={slide.icon as any} size={52} color="#0B1426" />
-            </View>
+      {/* Stage tile */}
+      <View style={[s.tile, { backgroundColor: slide.gold ? theme.accent : theme.card, borderColor: stroke }]}>
+        {slide.numeral ? (
+          <View style={s.numeralClip} pointerEvents="none">
+            <Text
+              style={[s.numeral, { color: slide.gold ? "rgba(38,38,40,0.12)" : theme.accent }]}
+              numberOfLines={1}
+            >
+              {slide.numeral}
+            </Text>
+          </View>
+        ) : null}
+
+        <Text style={[s.kicker, { color: slide.gold ? "rgba(38,38,40,0.8)" : ink(0.7) }]}>{slide.kicker[L]}</Text>
+
+        {slide.visual.kind === "oscarHi" && (
+          <View style={s.oscarHi}>
+            <OscarMascot emotion="hi" size={230} />
+          </View>
+        )}
+        {slide.visual.kind === "icon" && (
+          <View style={s.icon}>
+            <SvgXml xml={slide.visual.xml} width={slide.visual.w} height={slide.visual.h} />
+          </View>
+        )}
+        {slide.visual.kind === "oscarTux" && (
+          <View style={s.tuxWrap}>
+            <Image source={OSCAR_TUX} style={s.tux} contentFit="cover" />
           </View>
         )}
       </View>
 
       {/* Text */}
-      <View style={s.textArea}>
-        <Text style={[s.slideTitle, { color: theme.text }]}>{title}</Text>
-        <Text style={[s.slideSub, { color: theme.textSecondary }]}>{sub}</Text>
-      </View>
+      <Text style={[s.slideTitle, { color: theme.text }]}>
+        {line1}
+        {line2 !== undefined ? "\n" : ""}
+        {line2 !== undefined ? (
+          <Text style={firstSlide ? { color: theme.accentInk } : undefined}>{line2}</Text>
+        ) : null}
+      </Text>
+      <Text style={[s.slideSub, { color: ink(0.7) }]}>{slide.body[L]}</Text>
     </View>
   );
 }
 
+const TILE_H = 380;
+
 const s = StyleSheet.create({
   root: {
     flex: 1,
-    paddingHorizontal: 0,
   },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 24,
-    marginBottom: 8,
-    height: 44,
-  },
-  skipBtn: {
-    width: 60,
+    height: 37,
   },
   skipTxt: {
     fontSize: 15,
-    fontFamily: "Geologica_500Medium",
+    fontFamily: "Geologica_800ExtraBold",
+    textAlign: "right",
   },
-  dots: {
+  progress: {
     flexDirection: "row",
     gap: 6,
-    alignItems: "center",
+    paddingHorizontal: 24,
+    marginTop: 17,
+    marginBottom: 22,
   },
-  dot: {
-    height: 8,
-    borderRadius: 4,
+  seg: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
   },
   slider: {
     flex: 1,
   },
   slide: {
-    flex: 1,
+    paddingHorizontal: 24,
+  },
+  tile: {
+    height: TILE_H,
+    borderRadius: 22,
+    borderWidth: 2,
+  },
+  numeralClip: {
+    position: "absolute",
+    top: -2,
+    left: -2,
+    right: -2,
+    bottom: -2,
+    borderRadius: 22,
+    overflow: "hidden",
+  },
+  numeral: {
+    position: "absolute",
+    left: 126,
+    top: 184,
+    width: 320,
+    fontSize: 230,
+    lineHeight: 230,
+    fontFamily: "Geologica_900Black",
+    letterSpacing: -13.8,
+  },
+  kicker: {
+    position: "absolute",
+    left: 20,
+    top: 20,
+    fontSize: 13,
+    fontFamily: "Geologica_900Black",
+    letterSpacing: 0.65,
+  },
+  oscarHi: {
+    position: "absolute",
+    left: -15,
+    top: 22,
+    width: 300,
+    height: 300,
+  },
+  icon: {
+    position: "absolute",
+    left: 20,
+    top: 58,
+  },
+  tuxWrap: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 32,
+    paddingTop: 24,
   },
-  visualWrap: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    maxHeight: 320,
-    width: "100%",
-  },
-  iconWrap: {
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  iconCircle: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  textArea: {
-    alignItems: "center",
-    paddingBottom: 24,
+  tux: {
+    width: 270,
+    height: 270,
+    borderRadius: 135,
   },
   slideTitle: {
-    fontSize: 30,
-    fontFamily: "Geologica_700Bold",
-    textAlign: "center",
-    marginBottom: 12,
-    letterSpacing: -0.4,
+    marginTop: 26,
+    fontSize: 42,
+    lineHeight: 46.2,
+    fontFamily: "Geologica_900Black",
+    letterSpacing: -0.84,
   },
   slideSub: {
+    marginTop: 8,
+    maxWidth: 330,
     fontSize: 16,
-    fontFamily: "Geologica_400Regular",
-    textAlign: "center",
-    lineHeight: 25,
-    maxWidth: 300,
+    lineHeight: 19.2,
+    fontFamily: "Geologica_600SemiBold",
   },
   nav: {
     paddingHorizontal: 24,
-  },
-  nextBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    borderRadius: 16,
-    paddingVertical: 18,
-    shadowColor: "#FFD166",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 5,
-  },
-  nextBtnTxt: {
-    fontSize: 17,
-    fontFamily: "Geologica_700Bold",
-    letterSpacing: 0.2,
   },
 });

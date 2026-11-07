@@ -13,6 +13,7 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated"
 import { useLang, Lang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import OscarMascot from "@/components/OscarMascot";
+import { PillButton } from "@/components/auth/AuthUI";
 
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
@@ -31,7 +32,7 @@ export default function WelcomeScreen() {
       <Animated.View entering={FadeIn.delay(200)} style={s.langRow}>
         <Pressable
           onPress={() => setLang("ru")}
-          style={[s.langBtn, lang === "ru" && { backgroundColor: theme.accent }]}
+          style={[s.langBtn, lang === "ru" && { backgroundColor: theme.accent, borderColor: theme.ctaStroke }]}
         >
           <Text style={[s.langTxt, { color: lang === "ru" ? theme.accentText : theme.textSecondary }]}>
             RU
@@ -39,7 +40,7 @@ export default function WelcomeScreen() {
         </Pressable>
         <Pressable
           onPress={() => setLang("en")}
-          style={[s.langBtn, lang === "en" && { backgroundColor: theme.accent }]}
+          style={[s.langBtn, lang === "en" && { backgroundColor: theme.accent, borderColor: theme.ctaStroke }]}
         >
           <Text style={[s.langTxt, { color: lang === "en" ? theme.accentText : theme.textSecondary }]}>
             EN
@@ -60,15 +61,7 @@ export default function WelcomeScreen() {
 
       {/* CTA */}
       <Animated.View entering={FadeInDown.delay(450).duration(500)} style={s.btnBlock}>
-        <Pressable
-          style={({ pressed }) => [
-            s.primaryBtn,
-            { backgroundColor: theme.cta, opacity: pressed ? 0.88 : 1 },
-          ]}
-          onPress={() => router.push("/(auth)/login")}
-        >
-          <Text style={[s.primaryBtnTxt, { color: theme.ctaText }]}>{t("start")}</Text>
-        </Pressable>
+        <PillButton label={t("start")} onPress={() => router.push("/(auth)/login")} />
       </Animated.View>
     </View>
   );
@@ -88,14 +81,19 @@ const s = StyleSheet.create({
     marginTop: 8,
   },
   langBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
+    height: 30,
+    minWidth: 47,
+    paddingHorizontal: 10,
+    borderRadius: 32,
+    borderWidth: 4,
+    borderColor: "transparent",
+    alignItems: "center",
+    justifyContent: "center",
   },
   langTxt: {
     fontSize: 13,
     fontFamily: "Geologica_600SemiBold",
-    letterSpacing: 0.5,
+    letterSpacing: 0.65,
   },
   videoWrap: {
     flex: 1,
@@ -110,7 +108,7 @@ const s = StyleSheet.create({
   },
   textBlock: {
     alignItems: "center",
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
     marginBottom: 8,
   },
   title: {
@@ -118,7 +116,7 @@ const s = StyleSheet.create({
     fontFamily: "Geologica_700Bold",
     textAlign: "center",
     marginBottom: 10,
-    letterSpacing: -0.5,
+    letterSpacing: -0.34,
   },
   sub: {
     fontSize: 16,
@@ -130,20 +128,5 @@ const s = StyleSheet.create({
     width: "100%",
     paddingHorizontal: 24,
     marginTop: 24,
-  },
-  primaryBtn: {
-    borderRadius: 16,
-    paddingVertical: 18,
-    alignItems: "center",
-    shadowColor: "#FFD166",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  primaryBtnTxt: {
-    fontSize: 17,
-    fontFamily: "Geologica_700Bold",
-    letterSpacing: 0.3,
   },
 });

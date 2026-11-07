@@ -16,11 +16,12 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated"
 import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
+import { KingSpeechLogo, PillButton } from "@/components/auth/AuthUI";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { theme } = useTheme();
   const {
     user,
@@ -33,7 +34,7 @@ export default function LoginScreen() {
   } = useAuth();
   const [busy, setBusy] = useState<"google" | "apple" | null>(null);
 
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = Platform.OS === "web" ? 54 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   // When the auth state flips to a signed-in user, route based on profile
@@ -98,35 +99,35 @@ export default function LoginScreen() {
     await continueOffline();
   };
 
+  const en = lang === "en";
+  // Figma "Вход · выбор способа" (65:3): a full-gold brand screen in both themes.
+  const INK = theme.accentText;
+
   return (
-    <View style={[s.root, { backgroundColor: theme.bg, paddingTop: topPad, paddingBottom: bottomPad + 24 }]}>
-      <StatusBar barStyle={theme.mode === "dark" ? "light-content" : "dark-content"} />
+    <View style={[s.root, { backgroundColor: theme.accent, paddingTop: topPad + 32, paddingBottom: bottomPad + 89 }]}>
+      <StatusBar barStyle="dark-content" />
 
-      {/* Back */}
-      <Animated.View entering={FadeIn} style={[s.backRow, { paddingTop: 4 }]}>
-        <Pressable onPress={() => router.back()} hitSlop={12} style={s.backBtn}>
-          <Ionicons name="chevron-back" size={28} color={theme.text} />
-        </Pressable>
+      <Animated.View entering={FadeIn} style={s.logoWrap}>
+        <KingSpeechLogo color={INK} />
       </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(100).duration(500)} style={s.header}>
-        {/* Crown / logo mark */}
-        <View style={[s.logoMark, { backgroundColor: theme.accent }]}>
-          <Text style={s.logoIcon}>👑</Text>
-        </View>
-        <Text style={[s.title, { color: theme.text }]}>{t("loginTitle")}</Text>
-        <Text style={[s.sub, { color: theme.textSecondary }]}>{t("loginSub")}</Text>
+      <View style={{ flex: 1 }} />
+
+      <Animated.View entering={FadeInUp.delay(100).duration(500)}>
+        <Text style={[s.headline, { color: INK }]}>{en ? "YOUR\nSTAGE." : "ТВОЙ\nВЫХОД."}</Text>
+        <Text style={[s.panelNote, { color: "rgba(38,38,40,0.75)" }]}>
+          {en ? "The stage awaits. Progress and crowns stay with you." : "Сцена ждёт. Прогресс и короны - с тобой."}
+        </Text>
       </Animated.View>
+
+      <Text style={[s.subtitle, { color: INK }]}>
+        {en ? "Sign in to save your progress and achievements" : "Войди, чтобы сохранять прогресс и достижения"}
+      </Text>
 
       {!configured && (
-        <View
-          style={[
-            s.notConfiguredBanner,
-            { backgroundColor: theme.card, borderColor: theme.cardBorder },
-          ]}
-        >
-          <Ionicons name="warning-outline" size={18} color="#FFB020" />
-          <Text style={[s.notConfiguredTxt, { color: theme.textSecondary }]}>
+        <View style={s.notConfiguredBanner}>
+          <Ionicons name="warning-outline" size={16} color={INK} />
+          <Text style={[s.notConfiguredTxt, { color: "rgba(38,38,40,0.75)" }]}>
             Облачная авторизация не настроена. Доступен только режим без входа.
           </Text>
         </View>
@@ -134,92 +135,57 @@ export default function LoginScreen() {
 
       <Animated.View entering={FadeInDown.delay(200).duration(500)} style={s.btns}>
         {/* Google */}
-        <Pressable
-          style={({ pressed }) => [
-            s.authBtn,
-            { backgroundColor: theme.card, borderColor: theme.cardBorder, opacity: pressed ? 0.85 : 1 },
-          ]}
+        <PillButton
+          label={en ? "Continue with Google" : "Войти через Google"}
           onPress={handleGoogle}
           disabled={busy !== null}
-        >
-          <View style={s.authBtnInner}>
-            <View style={s.providerIcon}>
-              <Text style={s.googleG}>G</Text>
+          busy={busy === "google"}
+          left={
+            <View style={[s.badge, { backgroundColor: INK }]}>
+              <Text style={[s.badgeTxt, { color: theme.accent }]}>G</Text>
             </View>
-            <Text style={[s.authBtnTxt, { color: theme.text }]}>{t("continueGoogle")}</Text>
-          </View>
-          {busy === "google" ? (
-            <ActivityIndicator size="small" color={theme.textSecondary} />
-          ) : (
-            <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
-          )}
-        </Pressable>
+          }
+        />
 
-        {/* Apple — iOS only */}
+        {/* Apple — iOS only (not in the Figma frame, kept as an ink pill) */}
         {Platform.OS === "ios" && (
           <Pressable
-            style={({ pressed }) => [
-              s.authBtn,
-              s.appleBtn,
-              { opacity: pressed ? 0.85 : 1 },
-            ]}
+            style={({ pressed }) => [s.appleBtn, { backgroundColor: INK, opacity: pressed ? 0.85 : 1 }]}
             onPress={handleApple}
             disabled={busy !== null}
           >
-            <View style={s.authBtnInner}>
-              <View style={[s.providerIcon, s.appleIcon]}>
-                <Ionicons name="logo-apple" size={20} color="#fff" />
-              </View>
-              <Text style={[s.authBtnTxt, { color: "#fff" }]}>{t("continueApple")}</Text>
-            </View>
+            <Ionicons name="logo-apple" size={20} color={theme.accent} />
+            <Text style={[s.appleTxt, { color: "#FFFFFF" }]}>{t("continueApple")}</Text>
             {busy === "apple" ? (
-              <ActivityIndicator size="small" color="rgba(255,255,255,0.6)" />
-            ) : (
-              <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.5)" />
-            )}
+              <View style={s.busy}>
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              </View>
+            ) : null}
           </Pressable>
         )}
 
-        {/* Divider */}
-        <View style={s.dividerRow}>
-          <View style={[s.dividerLine, { backgroundColor: theme.cardBorder }]} />
-          <Text style={[s.dividerTxt, { color: theme.textSecondary }]}>{t("orDivider")}</Text>
-          <View style={[s.dividerLine, { backgroundColor: theme.cardBorder }]} />
-        </View>
-
         {/* Email */}
-        <Pressable
-          style={({ pressed }) => [
-            s.emailBtn,
-            { borderColor: theme.cardBorder, opacity: pressed ? 0.7 : 1 },
-          ]}
+        <PillButton
+          label={en ? "Continue with email" : "Войти по email"}
+          variant="secondaryOnGold"
           onPress={handleEmail}
           disabled={busy !== null}
-        >
-          <Ionicons name="mail-outline" size={20} color={theme.textSecondary} style={{ marginRight: 10 }} />
-          <Text style={[s.emailBtnTxt, { color: theme.textSecondary }]}>{t("continueEmail")}</Text>
-        </Pressable>
-
-        {/* Continue offline — always available as a fallback so the app
-            remains playable when Firebase is not configured or the user
-            doesn't want to sign in. Uses AsyncStorage only. */}
-        <Pressable
-          style={({ pressed }) => [s.skipBtn, { opacity: pressed ? 0.6 : 1 }]}
-          onPress={handleOffline}
-          disabled={busy !== null}
-        >
-          <Text style={[s.skipBtnTxt, { color: theme.textSecondary }]}>
-            Продолжить без входа
-          </Text>
-        </Pressable>
+        />
       </Animated.View>
 
-      {/* Footer note */}
-      <Animated.View entering={FadeIn.delay(400)} style={s.footer}>
-        <Text style={[s.footerTxt, { color: theme.textSecondary }]}>
-          King Speech
+      {/* Continue offline — always available as a fallback so the app
+          remains playable when Firebase is not configured or the user
+          doesn't want to sign in. Uses AsyncStorage only. */}
+      <Pressable
+        style={({ pressed }) => [s.skipBtn, { opacity: pressed ? 0.6 : 1 }]}
+        onPress={handleOffline}
+        disabled={busy !== null}
+        hitSlop={10}
+      >
+        <Text style={[s.skipBtnTxt, { color: "#333234" }]}>
+          {en ? "Continue without signing in  →" : "Продолжить без входа  →"}
         </Text>
-      </Animated.View>
+      </Pressable>
     </View>
   );
 }
@@ -229,145 +195,87 @@ const s = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
   },
-  backRow: {
-    marginLeft: -4,
-    marginBottom: 8,
+  logoWrap: {
+    marginLeft: 12,
+    alignSelf: "flex-start",
   },
-  backBtn: {
-    padding: 4,
+  headline: {
+    marginLeft: 12,
+    fontSize: 72,
+    lineHeight: 70,
+    paddingTop: 4,
+    fontFamily: "Geologica_900Black",
+    letterSpacing: -2.16,
   },
-  header: {
-    alignItems: "center",
-    marginBottom: 40,
-    marginTop: 12,
-  },
-  logoMark: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 20,
-  },
-  logoIcon: {
-    fontSize: 36,
-  },
-  title: {
-    fontSize: 28,
-    fontFamily: "Geologica_700Bold",
-    textAlign: "center",
-    marginBottom: 8,
-    letterSpacing: -0.3,
-  },
-  sub: {
+  panelNote: {
+    marginLeft: 12,
+    marginTop: 2,
+    maxWidth: 320,
     fontSize: 15,
-    fontFamily: "Geologica_400Regular",
-    textAlign: "center",
-    lineHeight: 22,
+    lineHeight: 18,
+    fontFamily: "Geologica_700Bold",
   },
-  btns: {
-    gap: 12,
-    flex: 1,
-  },
-  authBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-  },
-  skipBtn: {
-    alignSelf: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    marginTop: 8,
-  },
-  skipBtnTxt: {
-    fontSize: 14,
-    fontFamily: "Geologica_500Medium",
-    textDecorationLine: "underline",
-  },
-  appleBtn: {
-    backgroundColor: "#000",
-    borderColor: "#000",
+  subtitle: {
+    marginTop: 34,
+    fontSize: 16,
+    lineHeight: 19,
+    fontFamily: "Geologica_600SemiBold",
   },
   notConfiguredBanner: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginHorizontal: 4,
-    marginBottom: 12,
-    paddingVertical: 10,
+    marginTop: 12,
+    paddingVertical: 8,
     paddingHorizontal: 12,
-    borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 14,
+    backgroundColor: "rgba(38,38,40,0.08)",
   },
   notConfiguredTxt: {
     flex: 1,
-    fontSize: 13,
-    fontFamily: "Geologica_500Medium",
-    lineHeight: 18,
-  },
-  authBtnInner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-  },
-  providerIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: "#F8F8F8",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  appleIcon: {
-    backgroundColor: "#1A1A1A",
-  },
-  googleG: {
-    fontSize: 18,
-    fontFamily: "Geologica_700Bold",
-    color: "#4285F4",
-  },
-  authBtnTxt: {
-    fontSize: 16,
-    fontFamily: "Geologica_600SemiBold",
-  },
-  dividerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginVertical: 4,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerTxt: {
-    fontSize: 13,
-    fontFamily: "Geologica_400Regular",
-  },
-  emailBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  emailBtnTxt: {
-    fontSize: 15,
-    fontFamily: "Geologica_500Medium",
-  },
-  footer: {
-    alignItems: "center",
-    paddingTop: 16,
-  },
-  footerTxt: {
     fontSize: 12,
-    fontFamily: "Geologica_400Regular",
-    letterSpacing: 0.5,
+    fontFamily: "Geologica_600SemiBold",
+    lineHeight: 16,
+  },
+  btns: {
+    marginTop: 26,
+    gap: 12,
+  },
+  badge: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeTxt: {
+    fontSize: 15,
+    fontFamily: "Geologica_900Black",
+  },
+  appleBtn: {
+    height: 60,
+    borderRadius: 32,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  appleTxt: {
+    fontSize: 17,
+    fontFamily: "Geologica_800ExtraBold",
+  },
+  busy: {
+    position: "absolute",
+    right: 20,
+  },
+  skipBtn: {
+    alignSelf: "center",
+    marginTop: 20,
+    paddingVertical: 0,
+  },
+  skipBtnTxt: {
+    fontSize: 15,
+    fontFamily: "Geologica_800ExtraBold",
+    textAlign: "center",
   },
 });
