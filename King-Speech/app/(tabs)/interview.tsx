@@ -6,6 +6,7 @@ import { useNavigation } from "expo-router";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useLang } from "@/context/LangContext";
 import { useAppColors } from "@/hooks/useAppColors";
+import { useTheme } from "@/context/ThemeContext";
 import { fonts } from "@/constants/colors";
 import { ROUTES, type CheatRoute } from "@/constants/cheatsheetData";
 import CheatSheetRunner from "@/components/cheatsheet/CheatSheetRunner";
@@ -59,7 +60,11 @@ export default function CheatSheetScreen() {
   const navigation = useNavigation();
   const { lang } = useLang();
   const { colors, isDark } = useAppColors();
-  const dailyText = useDailyText();
+  const { theme } = useTheme();
+  // Figma 12:202 pins this line as the subtitle; the daily rotation list
+  // above is kept for later. TODO(design): restore rotation if desired.
+  void useDailyText;
+  const dailyText = "Сначала разогрейся - слова придут сами.";
   const [activeRoute, setActiveRoute] = useState<CheatRoute | null>(null);
   // The warm-up chosen on the wheel, held during the 5-second countdown.
   const [pending, setPending] = useState<CheatRoute | null>(null);
@@ -130,6 +135,11 @@ export default function CheatSheetScreen() {
           lang={lang}
           colors={colors}
           isDark={isDark}
+          // Figma 12:202 / 12:203 — arc = getready/wheel-arc, gold dot,
+          // gold "Начать" pill with the ctaStroke border.
+          arcColor={isDark ? "rgba(240,238,233,0.16)" : "rgba(38,38,40,0.14)"}
+          markerColor={theme.accent}
+          startStyle={{ bg: theme.accent, border: theme.ctaStroke, ink: theme.accentText }}
           onStart={(route) => {
             haptic();
             setPending(route);

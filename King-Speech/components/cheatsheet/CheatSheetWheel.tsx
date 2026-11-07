@@ -107,12 +107,21 @@ export default function CheatSheetWheel({
   colors,
   isDark,
   onStart,
+  arcColor,
+  markerColor,
+  startStyle,
 }: {
   routes: CheatRoute[];
   lang: string;
   colors: AppColors;
   isDark: boolean;
   onStart: (route: CheatRoute) => void;
+  /** Figma getready/wheel-arc. Defaults to the legacy per-theme stroke. */
+  arcColor?: string;
+  /** Fixed selection dot. Defaults to the selected route's accent. */
+  markerColor?: string;
+  /** Start pill look (Figma: gold fill + ctaStroke border). Defaults to route accent. */
+  startStyle?: { bg: string; border: string; ink: string };
 }) {
   const scrollY = useSharedValue(0);
   const lastIdx = useSharedValue(0);
@@ -149,11 +158,11 @@ export default function CheatSheetWheel({
             cx={MARKER_X - 560}
             cy={WHEEL_H / 2}
             r={560}
-            stroke={isDark ? "rgba(255,255,255,0.16)" : "rgba(14,14,16,0.14)"}
+            stroke={arcColor ?? (isDark ? "rgba(255,255,255,0.16)" : "rgba(14,14,16,0.14)")}
             strokeWidth={1}
             fill="none"
           />
-          <Circle cx={MARKER_X} cy={WHEEL_H / 2} r={5} fill={selected.accent} />
+          <Circle cx={MARKER_X} cy={WHEEL_H / 2} r={5} fill={markerColor ?? selected.accent} />
         </Svg>
 
         <Animated.ScrollView
@@ -179,11 +188,27 @@ export default function CheatSheetWheel({
         }}
         style={({ pressed }) => [
           styles.startBtn,
-          { backgroundColor: selected.accent, opacity: pressed ? 0.88 : 1 },
+          startStyle
+            ? {
+                backgroundColor: startStyle.bg,
+                borderColor: startStyle.border,
+                borderWidth: 4,
+                borderRadius: 32,
+                paddingHorizontal: 26,
+              }
+            : { backgroundColor: selected.accent },
+          { opacity: pressed ? 0.88 : 1 },
         ]}
       >
-        <Ionicons name="play" size={15} color="#20160A" />
-        <Text style={styles.startTxt}>{lang === "en" ? "Start" : "Начать"}</Text>
+        <Ionicons name="play" size={15} color={startStyle?.ink ?? "#20160A"} />
+        <Text
+          style={[
+            styles.startTxt,
+            startStyle && { color: startStyle.ink, fontFamily: "Geologica_800ExtraBold" },
+          ]}
+        >
+          {lang === "en" ? "Start" : "Начать"}
+        </Text>
       </Pressable>
     </View>
   );

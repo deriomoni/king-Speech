@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useId, useState } from "react";
 import { View } from "react-native";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 
@@ -68,6 +68,9 @@ export default function BrickStroke({
   brick: string;
 }) {
   const deg = useSpin(variant === "active");
+  // Unique per brick: a shared id makes every SVG on web resolve to the first
+  // gradient defined, i.e. one module colour bleeding into all bricks.
+  const gid = "brickShine" + useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const W = width + STROKE;
   const H = height + STROKE;
   const o = STROKE / 2;
@@ -80,7 +83,7 @@ export default function BrickStroke({
       <Svg width={W} height={H}>
         {variant !== "locked" && (
           <Defs>
-            <LinearGradient id="brickShine" gradientUnits="userSpaceOnUse" {...line}>
+            <LinearGradient id={gid} gradientUnits="userSpaceOnUse" {...line}>
               <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.77} />
               <Stop offset="1" stopColor={lightenHex(brick, 0.3)} stopOpacity={0.88} />
             </LinearGradient>
@@ -96,7 +99,7 @@ export default function BrickStroke({
           fill="none"
           strokeWidth={STROKE}
           strokeLinejoin="round"
-          stroke={variant === "locked" ? "#000000" : "url(#brickShine)"}
+          stroke={variant === "locked" ? "#000000" : `url(#${gid})`}
           strokeOpacity={variant === "locked" ? 0.09 : 1}
         />
       </Svg>

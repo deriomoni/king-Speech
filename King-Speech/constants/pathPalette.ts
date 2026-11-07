@@ -185,25 +185,100 @@ function darkBg(hex: string): string {
   return hslToHex(h, clamp(s * 0.66, 0.06, 0.5), clamp(0.12 + l * 0.08, 0.1, 0.22));
 }
 
-// Dark-theme brick: keep it as designed, but lift near-black bricks so they
-// still read against the deep background (hue preserved).
-function darkBrick(hex: string): string {
-  const [h, s, l] = hexToHsl(hex);
-  if (l < 0.45) return hslToHex(h, clamp(s, 0, 0.72), 0.55);
-  return hex;
+// ── Module colours ─────────────────────────────────────────────────────────
+// Figma 255:3195 "Ранги · цвета модулей на светлом и тёмном · 5 × 67": one
+// row per rank (Новичок, Любитель, Уверенный, Мастер, Профи), 67 module colours
+// each (index 0 = module 1). Each swatch frame holds a light preview square,
+// a dark preview square and the "module" rectangle — that last fill is the
+// module colour; it is the SAME in light and dark theme. It fills completed /
+// active level bricks and the connector between completed levels
+// (Figma 232:2272 / 245:2176 "Путь · градиент модуля").
+export const RANK_MODULE_COLORS: readonly (readonly string[])[] = [
+  // Ранг 1 · Новичок
+  ["#F9AA7D", "#DE8286", "#0088B0", "#BC8D1F", "#903F75", "#487D49", "#A14D3A", "#2D62A3", "#DF7500", "#56BEAB",
+   "#E2A9A1", "#88B04B", "#A9568C", "#F4963A", "#FAAA94", "#3AB0A2", "#B65F9A", "#B0C965", "#F67866", "#ECAA79",
+   "#32BECC", "#D979A2", "#C7B63C", "#B793C0", "#FFA368", "#45BE76", "#EE819F", "#78BDD4", "#FAB75A", "#EA9575",
+   "#55A860", "#9D446E", "#008491", "#D08344", "#EB9687", "#BED38E", "#DF88B7", "#FC9E21", "#7C83BC", "#E27A53",
+   "#009B5C", "#9F5069", "#009DAE", "#FE7E03", "#FFB59B", "#A1CA7B", "#D28FB0", "#53B0AE", "#FFB181", "#FF8576",
+   "#699E6D", "#AD4D8C", "#BE752D", "#5F6DB0", "#D56231", "#7CB083", "#EC9ABE", "#D2B04C", "#E8703A", "#008763",
+   "#C84C61", "#289DBE", "#D2A172", "#5A5B9F", "#AD5D5D", "#00B89F", "#D99B7C"],
+  // Ранг 2 · Любитель
+  ["#FFB000", "#E881A6", "#C4BF71", "#D27F63", "#00A28A", "#CA9456", "#AFCB80", "#E78B90", "#52A2B4", "#DDB614",
+   "#C68F65", "#8BC28C", "#FF8D94", "#DAC483", "#DAB58F", "#00AF9D", "#BF6464", "#BDB369", "#14A3C7", "#A76C97",
+   "#D0893F", "#00A170", "#FE8863", "#D4CC9A", "#E8B5CE", "#ECA825", "#30A299", "#BB4F35", "#843E83", "#BE8A4A",
+   "#009276", "#AD3E48", "#B5B644", "#157EA0", "#A64F82", "#D69C2F", "#E95C20", "#008C45", "#0072B5", "#95424E",
+   "#AA8805", "#008C96", "#C86B3C", "#8E4483", "#C4962C", "#009499", "#CE785D", "#C0D725", "#5CA6CE", "#D2738F",
+   "#F0C05A", "#F19035", "#6DCE87", "#FCA289", "#BCA949", "#85CED1", "#EBA851", "#EA738D", "#B5C38E", "#EC935E",
+   "#00A78B", "#C5A253", "#D16277", "#487AB7", "#4B9B69", "#FFA177", "#EDC373"],
+  // Ранг 3 · Уверенный
+  ["#D9922E", "#926AA6", "#9BB53E", "#D18489", "#58C8B6", "#F7B26A", "#D9CE52", "#F0A1BF", "#60B892", "#F88F58",
+   "#AF9841", "#774D8E", "#007844", "#AC4B55", "#00ABC0", "#CF9C63", "#9D7BB0", "#B5CC39", "#F57F8E", "#7ACCB8",
+   "#F1BD89", "#BABC72", "#F5B0BD", "#64BFA4", "#E08119", "#F2AB46", "#3CADD4", "#BD7B74", "#009E82", "#CB8E16",
+   "#007BAA", "#DF7253", "#339C5E", "#B085B7", "#C9A86A", "#E86800", "#009288", "#A83E6C", "#B5BF50", "#F47327",
+   "#279D9F", "#A4596D", "#589F7E", "#DD9C6B", "#C5CC7B", "#DE98AB", "#008C69", "#DC793A", "#4F84C4", "#B59E5F",
+   "#CE5E9A", "#378661", "#B37256", "#0061A3", "#B68A3A", "#45B5AA", "#FA9A85", "#C3D363", "#DE9BC4", "#40A48E",
+   "#E1927A", "#DAB965", "#B76BA3", "#44883C", "#BE5141", "#00AAA9", "#D1A054"],
+  // Ранг 4 · Мастер
+  ["#76C1B2", "#E2B051", "#DC7178", "#7ED37F", "#FA7A35", "#7BC4C4", "#CFBB7B", "#CE8498", "#4D91C6", "#8BBA94",
+   "#E47127", "#C49BD4", "#00B1D2", "#D2CC81", "#F88180", "#CD7E4D", "#1F7349", "#0084A1", "#B8AF23", "#D75C5D",
+   "#DE8E65", "#2BAE66", "#0074A8", "#CE5B78", "#D1B272", "#87D7BE", "#F38554", "#F8A39D", "#DACD65", "#6BCD9C",
+   "#DD9760", "#BE454F", "#006CA9", "#008658", "#FF8D00", "#C65D52", "#6D5698", "#008786", "#BA9238", "#B44E5D",
+   "#5B7EBD", "#00A776", "#EE9626", "#B45865", "#7391C8", "#00B694", "#DDA758", "#FDB2AB", "#A3C57D", "#5CACCE",
+   "#E2A829", "#D37F6F", "#7E6EAC", "#007D69", "#C6973F", "#A73340", "#B34646", "#0F9D76", "#C19552", "#993C7C",
+   "#0084BD", "#7BB369", "#E9897E", "#FBAA4C", "#55C6A9", "#DEC05F", "#DD9289"],
+  // Ранг 5 · Профи
+  ["#CA6C56", "#00846B", "#7D5D99", "#D39C43", "#BC4869", "#699158", "#ED7464", "#FFA500", "#C67FAE", "#009B8C",
+   "#B65D48", "#346CB0", "#B35457", "#3AA278", "#E19640", "#6DA9D2", "#EEA0A6", "#A0DAA9", "#DB9B59", "#FBB995",
+   "#F7969E", "#539CCC", "#CDA323", "#944E87", "#008E80", "#C68463", "#CF6977", "#79B5DB", "#F7B718", "#F99471",
+   "#ED7A9E", "#4CA5C7", "#F9AC2F", "#E29A86", "#DA7E7A", "#008DB9", "#B08E51", "#973C6C", "#A2574B", "#4960A8",
+   "#B45422", "#CA628F", "#B9A023", "#007CB7", "#9F4440", "#008778", "#D27D56", "#E4BF45", "#E290B2", "#4ABBD5",
+   "#D18E54", "#C96551", "#4DB560", "#F6909D", "#FFB865", "#58C9D4", "#F48037", "#CE6BA4", "#CEC153", "#6EA2D5",
+   "#EA6B6A", "#66BC91", "#F5A26F", "#5BACC3", "#F18AAD", "#F3C12C", "#EDAA86"],
+];
+
+// The five reference variants shown in Figma 232:2272 ("Путь · градиент
+// модуля · 5 вариантов"): Терракота, Охра, Олива, Пыльный синий, Слива.
+// Reference only — the live palette is RANK_MODULE_COLORS.
+export const PATH_MODULE_SAMPLES = ["#E7725B", "#D6862F", "#8E844B", "#6798BF", "#7F4882"] as const;
+
+// Rank (1..5) a global module number belongs to. Mirrors RANKS_MODULAR in
+// context/GameContext (1–14, 15–28, 29–41, 42–54, 55–67); duplicated so this
+// constants module stays free of a context import.
+function rankForModule(moduleNum: number): number {
+  if (moduleNum <= 14) return 1;
+  if (moduleNum <= 28) return 2;
+  if (moduleNum <= 41) return 3;
+  if (moduleNum <= 54) return 4;
+  return 5;
 }
 
-/** The { bg, brick } colours for a module, resolved for the active theme. */
+/**
+ * Colour of module `moduleNum` (1..67; wraps beyond 67). `rankIndex` (1..5)
+ * picks the rank row — by default the rank that module belongs to.
+ */
+export function getModuleColor(moduleNum: number, rankIndex?: number): string {
+  const n = (((Math.max(1, Math.floor(moduleNum) || 1) - 1) % 67) + 67) % 67 + 1;
+  const r = Math.min(5, Math.max(1, rankIndex ?? rankForModule(n)));
+  return RANK_MODULE_COLORS[r - 1][n - 1];
+}
+
+/**
+ * The { bg, brick } colours for a module, resolved for the active theme.
+ * `brick` = the Figma module colour (identical in both themes). `bg` = the
+ * legacy per-module background (the Path no longer paints it; level screens
+ * and the pattern layer still read it).
+ */
 export function getPathColors(
   moduleNum: number,
   isDark: boolean,
+  rankIndex?: number,
 ): PathPair {
   const p =
     PATH_PALETTE[(Math.max(1, moduleNum) - 1) % PATH_PALETTE.length] ??
     PATH_PALETTE[0];
   return {
     bg: isDark ? darkBg(p.bg) : p.bg,
-    brick: isDark ? darkBrick(p.brick) : p.brick,
+    brick: getModuleColor(moduleNum, rankIndex),
   };
 }
 

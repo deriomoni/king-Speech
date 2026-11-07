@@ -41,12 +41,19 @@ import { useAppColors } from "@/hooks/useAppColors";
 import { useDevTools } from "@/context/DevToolsContext";
 import { PathGradientBackground } from "@/components/path/PathGradientBackground";
 import { PathPatternBackground } from "@/components/path/PathPatternBackground";
-import { getPathColors, darkenHex, readableText } from "@/constants/pathPalette";
+import { getPathColors, darkenHex } from "@/constants/pathPalette";
+import { useTheme } from "@/context/ThemeContext";
 import FinalPortal from "@/components/path/FinalPortal";
 import { getRankTheme } from "@/components/path/rankTheme";
 import PathScrubber from "@/components/path/PathScrubber";
 import LevelIcon, { levelIconKind } from "@/components/path/LevelIcon";
 import BrickStroke from "@/components/path/BrickStroke";
+
+// Figma variable path/connector — the thread between levels not yet walked.
+const PATH_CONNECTOR = {
+  dark: "rgba(240,238,233,0.07)",
+  light: "rgba(38,38,40,0.08)",
+} as const;
 
 function GlowRing({ color, radius }: { color: string; radius: number }) {
   // Soft, breathing halo behind the active tile. Rendered as a filled tile-
@@ -275,8 +282,10 @@ function StepBlock({
     : isAvail
       ? levelColorDark
       : "#CACAD4";
-  // Ink adapts to the brick's lightness so text/icons read on any palette tile.
-  const onFace = readableText(faceColor);
+  // Figma 232:2272: completed / active bricks are filled with the module
+  // colour and always carry white ink (title 100%, subtitle 78%, icon white
+  // with cut-outs in the brick colour).
+  const onFace = "#FFFFFF";
   const textColor = isLocked ? "#A0A0B0" : onFace;
   const iconColor = isLocked ? "#B0B0C0" : onFace;
 
@@ -350,12 +359,12 @@ function StepBlock({
           />
 
           <View style={styles.stepLeft}>
-            {isDone ? (
-              <Ionicons name="checkmark" size={22} color={iconColor} />
-            ) : levelIconKind(item.id) ? (
+            {levelIconKind(item.id) ? (
               // Level glyph in every not-yet-completed state (locked bricks
               // used to show a padlock). Cut-outs take the face colour.
               <LevelIcon levelId={item.id} color={iconColor} hole={faceColor} />
+            ) : isDone ? (
+              <Ionicons name="checkmark" size={22} color={iconColor} />
             ) : isLocked ? (
               <Ionicons name="lock-closed" size={20} color={iconColor} />
             ) : (
@@ -379,9 +388,7 @@ function StepBlock({
                 {
                   color: isLocked
                     ? "#B8B8C8"
-                    : onFace === "#FFFFFF"
-                      ? "rgba(255,255,255,0.78)"
-                      : "rgba(26,26,46,0.62)",
+                    : "rgba(255,255,255,0.78)",
                   fontFamily: rankTheme.fontFamily,
                 },
               ]}
@@ -428,6 +435,7 @@ function ModuleDivider({
   colors: import("@/constants/colors").AppColors;
   lang: Lang;
 }) {
+  const { theme } = useTheme();
   const mc = MODULE_COLORS[moduleNum];
   const quote = getModuleQuote(moduleNum, lang);
   if (!mc || !quote) return null;
@@ -436,7 +444,8 @@ function ModuleDivider({
     <View style={styles.moduleDivider}>
       {/* No box, no colored number circle, no vertical dashes — just the module
           number and text on the Path background. */}
-      <Text style={[styles.moduleNumText, { color: mc.color, fontFamily: "Geologica_700Bold" }]}>
+      {/* Figma 232:2272 binds the number to accent/ink (gold on dark, ink on light). */}
+      <Text style={[styles.moduleNumText, { color: theme.accentInk, fontFamily: "Geologica_700Bold" }]}>
         {moduleNum}
       </Text>
       {lang === "ru" && getModuleName(moduleNum) ? (
@@ -528,6 +537,8 @@ export default function PathScreen() {
     isLast?: boolean;
     /** True when the next row is a module divider — suppress the dangling thread. */
     nextIsDivider?: boolean;
+    /** True when the row right below is a completed level. */
+    lowerDone?: boolean;
     key: string;
   }> = [];
 
@@ -584,6 +595,9 @@ export default function PathScreen() {
     // A module boundary (divider next, or end of list) has no brick to connect
     // to — mark it so the connector isn't drawn as a dangling stub.
     r.nextIsDivider = !next || next.type === "divider";
+    // The thread below a row leads down to the previous level; it is "walked"
+    // (module colour) once that lower level is completed — Figma 232:2272.
+    r.lowerDone = next?.type === "step" && next.step?.status === "completed";
   }
 
   const activeStep = renderItems.find(
@@ -997,7 +1011,7 @@ export default function PathScreen() {
                       ? rankTheme.accent
                       : portalStatus === "completed"
                         ? rankTheme.accent + "AA"
-                        : colors.border
+                        : PATH_CONNECTOR[themeMode]
                   }
                 />
               </AnimatedRow>
@@ -1039,13 +1053,7 @@ export default function PathScreen() {
                 <SnakeConnector
                   fromSide={side}
                   toSide={ri.toSide ?? (side === "right" ? "left" : "right")}
-                  color={
-                    item.status === "completed"
-                      ? item.color
-                      : item.status === "available"
-                        ? item.color + "AA"
-                        : colors.border
-                  }
+                  color={ri.lowerDone ? item.color : PATH_CONNECTOR[themeMode]}
                 />
               )}
             </AnimatedRow>

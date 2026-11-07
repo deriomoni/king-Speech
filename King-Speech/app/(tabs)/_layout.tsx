@@ -28,7 +28,6 @@ type BottomTabBarProps = {
 };
 import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
-import { sonic } from "@/constants/colors";
 import {
   IconHome,
   IconCheatSheet,
@@ -56,42 +55,34 @@ const TAB_HEIGHT = 64;
 const ICON_SIZE = 30;
 const PILL_HEIGHT = 44;
 const BAR_PAD = 8;
+const BAR_BORDER = 5; // tab/border stroke width
 
 // Per-theme color tokens for the tab bar. Dark is the canonical look —
 // light mirrors it with inverted glass + soft slate inactive icons so the
 // bar reads cleanly on the light Path canvas.
 const TAB_TOKENS = {
+  // Values = Figma variables tab/* (component 2:117 dark, 17:858 light).
   dark: {
-    barBg: "#0E0E10",
-    gradient: ["#1F1F28", "#0E0E10"] as const,
-    topHighlight: "rgba(255,255,255,0.16)",
-    border: "rgba(255,255,255,0.06)",
-    inactive: "#7A7A82",
-    active: "#FFFFFF",
-    pillBorder: "rgba(148,104,251,0.50)",
-    pillGradient: ["rgba(148,104,251,0.32)", "rgba(106,79,244,0.18)"] as const,
-    purpleWash: [
-      "rgba(148,104,251,0.14)",
-      "rgba(148,104,251,0)",
-      "rgba(148,104,251,0.14)",
-    ] as const,
-    shadowOpacity: 0.32,
+    barBg: "#262628", // tab/bg
+    gradient: ["#323234", "#262628"] as const, // tab/glass-top → glass-bottom
+    topHighlight: "rgba(240,238,233,0.14)", // tab/highlight
+    border: "rgba(240,238,233,0.06)", // tab/border
+    inactive: "#81807F", // tab/icon-inactive
+    active: "#FFD857", // tab/icon-active
+    pillBorder: "rgba(255,216,87,0.55)", // tab/pill-border
+    pillGradient: ["rgba(255,216,87,0.30)", "rgba(255,216,87,0.16)"] as const, // tab/pill-from → pill-to
+    shadowColor: "rgba(255,216,87,0.22)", // tab/shadow
   },
   light: {
-    barBg: "#FFFFFF",
-    gradient: ["#FFFFFF", "#F4F4F6"] as const,
-    topHighlight: "rgba(255,255,255,0.9)",
-    border: "rgba(14,14,16,0.08)",
-    inactive: "#9A9AA4",
-    active: "#0E0E10",
-    pillBorder: "rgba(148,104,251,0.55)",
-    pillGradient: ["rgba(148,104,251,0.22)", "rgba(106,79,244,0.10)"] as const,
-    purpleWash: [
-      "rgba(148,104,251,0.10)",
-      "rgba(148,104,251,0)",
-      "rgba(148,104,251,0.10)",
-    ] as const,
-    shadowOpacity: 0.14,
+    barBg: "#FAF9F6",
+    gradient: ["#FAF9F6", "#F4F3F0"] as const,
+    topHighlight: "rgba(250,249,246,0.9)",
+    border: "rgba(38,38,40,0.08)",
+    inactive: "#A5A5A4",
+    active: "#262628",
+    pillBorder: "rgba(255,216,87,1)",
+    pillGradient: ["rgba(255,216,87,0.55)", "rgba(255,216,87,0.35)"] as const,
+    shadowColor: "rgba(255,216,87,0.20)",
   },
 } as const;
 
@@ -119,7 +110,7 @@ function SonicTabBar({ state, emitter, navigateToTab, descriptors }: BottomTabBa
   const focusedIndex = SLOTS.findIndex((s) => s.routeName === focusedRoute);
 
   const [barWidth, setBarWidth] = React.useState(0);
-  const slotWidth = barWidth > 0 ? (barWidth - BAR_PAD * 2) / SLOTS.length : 0;
+  const slotWidth = barWidth > 0 ? (barWidth - BAR_BORDER * 2 - BAR_PAD * 2) / SLOTS.length : 0;
   const pillWidth = slotWidth > 0 ? slotWidth * 0.82 : 0;
 
   const pillX = useSharedValue(0);
@@ -176,7 +167,7 @@ function SonicTabBar({ state, emitter, navigateToTab, descriptors }: BottomTabBa
           {
             backgroundColor: tk.barBg,
             borderColor: tk.border,
-            shadowOpacity: tk.shadowOpacity,
+            shadowColor: tk.shadowColor,
           },
         ]}
         onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
@@ -203,7 +194,7 @@ function SonicTabBar({ state, emitter, navigateToTab, descriptors }: BottomTabBa
               styles.pill,
               {
                 height: PILL_HEIGHT,
-                top: (TAB_HEIGHT - PILL_HEIGHT) / 2,
+                top: (TAB_HEIGHT - BAR_BORDER * 2 - PILL_HEIGHT) / 2,
                 borderRadius: PILL_HEIGHT / 2,
               },
               pillStyle,
@@ -323,8 +314,8 @@ const styles = StyleSheet.create({
     height: TAB_HEIGHT,
     borderRadius: TAB_HEIGHT / 2,
     overflow: "hidden",
-    borderWidth: 1,
-    shadowColor: sonic.primary,
+    borderWidth: BAR_BORDER,
+    shadowOpacity: 1,
     shadowRadius: 28,
     shadowOffset: { width: 0, height: 14 },
     elevation: 14,
