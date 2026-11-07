@@ -8,6 +8,7 @@ import type { WarmupScoreResult } from "@/services/warmupScoring";
 import { warmupFonts, warmupTheme } from "@/components/warmup/warmupTheme";
 import { getPathColors } from "@/constants/pathPalette";
 import { useAppColors } from "@/hooks/useAppColors";
+import { useTheme } from "@/context/ThemeContext";
 
 export interface WarmupCompletePayload {
   scores: number[];
@@ -35,6 +36,7 @@ export default function WarmupLevelView({
 }: Props) {
   const data = getNormalizedWarmup(moduleId);
   const { colors } = useAppColors();
+  const { theme } = useTheme();
   // Background follows the app theme (light in light mode, dark in dark mode);
   // the module hue is used only as a small accent.
   const pal = getPathColors(moduleId, true);
@@ -85,7 +87,7 @@ export default function WarmupLevelView({
 
       {step === "transition" && (
         <View style={[styles.transition, { paddingTop: topPad, backgroundColor: colors.background }]}>
-          <Text style={[styles.transitionText, { color: moduleColor }]}>Задание 2 из 2</Text>
+          <Text style={[styles.transitionText, { color: theme.accentInk }]}>Задание 2 из 2</Text>
         </View>
       )}
 
@@ -112,6 +114,6 @@ const styles = StyleSheet.create({
   transitionText: {
     fontFamily: warmupFonts.title,
     fontSize: 24,
-    color: warmupTheme.gold,
+    letterSpacing: -0.12,
   },
 });

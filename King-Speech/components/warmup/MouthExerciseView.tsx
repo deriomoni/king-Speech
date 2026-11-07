@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, Pressable, Modal } from "react-native";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -12,8 +12,11 @@ import Animated, {
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import type { WarmupMouth } from "@/constants/contentLoader";
-import { warmupFonts, warmupTheme } from "@/components/warmup/warmupTheme";
+import { warmupFonts } from "@/components/warmup/warmupTheme";
 import { useAppColors } from "@/hooks/useAppColors";
+import { useTheme } from "@/context/ThemeContext";
+import { MouthHelpDialog } from "@/components/warmup/WarmupHelpDialog";
+import IllustratedExerciseView, { ILLUSTRATED_EXERCISES } from "@/components/warmup/IllustratedExerciseView";
 
 // Timing model:
 //  · NAME_SEC   — the exercise name + short description are shown with a
@@ -107,7 +110,9 @@ function resolveMouth(ex: WarmupMouth): MouthInfo {
   };
 }
 
-type Phase = "idle" | "name" | "running";
+// "illustrated" — after the module exercise, the illustrated drills from Figma
+// (звук из груди, трубочка в сторону, речь с пробкой, язык по кругу) run in order.
+type Phase = "idle" | "name" | "running" | "illustrated";
 
 interface Props {
   exercise: WarmupMouth;
@@ -123,7 +128,9 @@ export default function MouthExerciseView({
   onBack,
 }: Props) {
   const { colors } = useAppColors();
-  const accent = warmupTheme.gold;
+  const { theme } = useTheme();
+  // Gold used as text: gold on dark, ink on light.
+  const accent = theme.accentInk;
 
   const { steps, desc, tip } = resolveMouth(exercise);
 
@@ -133,6 +140,20 @@ export default function MouthExerciseView({
   const [reading, setReading] = useState(false);
   const [count, setCount] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
+  const [extraIdx, setExtraIdx] = useState(0);
+
+  const startIllustrated = () => {
+    setExtraIdx(0);
+    setPhase("illustrated");
+  };
+  const nextIllustrated = () => {
+    if (extraIdx + 1 >= ILLUSTRATED_EXERCISES.length) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      onCompleteRef.current();
+      return;
+    }
+    setExtraIdx((i) => i + 1);
+  };
 
   const barP = useSharedValue(0);
   const onCompleteRef = useRef(onComplete);
@@ -180,8 +201,7 @@ export default function MouthExerciseView({
     const runSeg = (k: number) => {
       if (cancelled) return;
       if (k >= schedule.length) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-        onCompleteRef.current();
+        setPhase("illustrated");
         return;
       }
       const seg = schedule[k];
@@ -215,6 +235,18 @@ export default function MouthExerciseView({
 
   const stepText = steps[taskIdx % steps.length];
 
+  if (phase === "illustrated") {
+    return (
+      <IllustratedExerciseView
+        exercise={ILLUSTRATED_EXERCISES[extraIdx]}
+        topPad={topPad}
+        onDone={nextIllustrated}
+        onSkip={nextIllustrated}
+        onBack={onBack}
+      />
+    );
+  }
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: topPad + 8 }]}>
       {/* Header: back + help */}
@@ -238,10 +270,13 @@ export default function MouthExerciseView({
           <Animated.View entering={FadeInDown.delay(120).duration(420)} style={styles.idleActions}>
             <Pressable
               onPress={start}
-              style={({ pressed }) => [styles.cta, { backgroundColor: accent, opacity: pressed ? 0.9 : 1 }]}
+              style={({ pressed }) => [
+                styles.cta,
+                { backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.9 : 1 },
+              ]}
             >
-              <Ionicons name="play" size={16} color={warmupTheme.onGold} />
-              <Text style={styles.ctaText}>Старт</Text>
+              <Ionicons name="play" size={13} color={theme.accentText} />
+              <Text style={[styles.ctaText, { color: theme.accentText }]}>Старт</Text>
             </Pressable>
             <Pressable onPress={onBack} hitSlop={8} style={styles.backLink}>
               <Text style={[styles.backLinkText, { color: colors.textMuted }]}>Вернуться назад</Text>
@@ -285,7 +320,7 @@ export default function MouthExerciseView({
             {!!tip && <Text style={[styles.tip, { color: colors.textSecondary }]}>{tip}</Text>}
             {!reading && (
               <View style={[styles.track, { backgroundColor: colors.border }]}>
-                <Animated.View style={[styles.fill, { backgroundColor: accent }, barStyle]} />
+                <Animated.View style={[styles.fill, { backgroundColor: theme.accent }, barStyle]} />
               </View>
             )}
           </View>
@@ -295,34 +330,22 @@ export default function MouthExerciseView({
             {steps.map((_, i) => (
               <View
                 key={i}
-                style={[styles.dot, { backgroundColor: i <= taskIdx ? accent : colors.border }]}
+                style={[styles.dot, { backgroundColor: i <= taskIdx ? theme.accent : colors.border }]}
               />
             ))}
           </View>
 
           {/* Skip */}
           <View style={styles.footer}>
-            <Pressable onPress={onComplete} hitSlop={8} style={styles.skip}>
+            <Pressable onPress={startIllustrated} hitSlop={8} style={styles.skip}>
               <Text style={[styles.skipText, { color: colors.textMuted }]}>Пропустить →</Text>
             </Pressable>
           </View>
         </>
       )}
 
-      {/* Help */}
-      <Modal visible={showHelp} transparent animationType="fade" onRequestClose={() => setShowHelp(false)}>
-        <Pressable style={styles.helpOverlay} onPress={() => setShowHelp(false)}>
-          <Pressable style={[styles.helpCard, { backgroundColor: colors.backgroundSecondary }]} onPress={() => {}}>
-            <Pressable onPress={() => setShowHelp(false)} hitSlop={12} style={styles.helpClose}>
-              <Ionicons name="close" size={22} color={colors.textMuted} />
-            </Pressable>
-            <Text style={[styles.helpTitle, { color: colors.text }]}>Как выполнять?</Text>
-            <Text style={[styles.helpText, { color: colors.textSecondary }]}>
-              Сначала появится название упражнения и короткое описание. Затем — задание и подсказка, как его выполнять. Повторяй движение вместе с таймером, спокойно и без напряжения.
-            </Text>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      {/* Help (Figma 37:5074) */}
+      <MouthHelpDialog visible={showHelp} onClose={() => setShowHelp(false)} />
     </View>
   );
 }
@@ -340,9 +363,10 @@ const styles = StyleSheet.create({
     gap: 9,
     paddingHorizontal: 40,
     height: 56,
-    borderRadius: 28,
+    borderRadius: 32,
+    borderWidth: 4,
   },
-  ctaText: { color: warmupTheme.onGold, fontSize: 17, fontFamily: warmupFonts.title },
+  ctaText: { fontSize: 17, fontFamily: warmupFonts.title },
   backLink: { marginTop: 18, padding: 8 },
   backLinkText: { fontFamily: warmupFonts.body, fontSize: 15 },
 
@@ -399,14 +423,4 @@ const styles = StyleSheet.create({
   footer: { paddingBottom: 24, alignItems: "center" },
   skip: { padding: 10 },
   skipText: { fontFamily: warmupFonts.body, fontSize: 14 },
-  helpOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(10,10,14,0.4)",
-    justifyContent: "center",
-    padding: 28,
-  },
-  helpCard: { borderRadius: 22, padding: 24, paddingTop: 26 },
-  helpClose: { position: "absolute", top: 14, right: 14, padding: 4, zIndex: 2 },
-  helpTitle: { fontFamily: warmupFonts.title, fontSize: 20 },
-  helpText: { fontFamily: warmupFonts.body, fontSize: 15, lineHeight: 23, marginTop: 10 },
 });

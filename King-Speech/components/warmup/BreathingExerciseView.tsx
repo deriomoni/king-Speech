@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, StyleSheet, Platform, Modal, Dimensions } from "react-native";
+import { View, Text, Pressable, StyleSheet, Platform, Dimensions } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -16,6 +16,8 @@ import Svg, { Path } from "react-native-svg";
 import * as Haptics from "expo-haptics";
 import { warmupTheme, warmupFonts } from "@/components/warmup/warmupTheme";
 import { useAppColors } from "@/hooks/useAppColors";
+import { useTheme } from "@/context/ThemeContext";
+import { BreathingHelpDialog } from "@/components/warmup/WarmupHelpDialog";
 
 /**
  * Breathing warm-up — the first Разогрев task. A guided breathing drill
@@ -35,9 +37,10 @@ interface Phase {
   color: string;
 }
 
+// Figma (37:7848 / 37:7881 / 37:7905): every phase is gold — no purple/teal.
 const C_INHALE = warmupTheme.gold;
-const C_HOLD = "#9B7BFF";
-const C_EXHALE = "#22A79A";
+const C_HOLD = warmupTheme.gold;
+const C_EXHALE = warmupTheme.gold;
 
 const PATTERN: Phase[] = [
   { type: "inhale", label: "Вдох", sec: 3, via: "носом", color: C_INHALE },
@@ -117,6 +120,7 @@ export default function BreathingExerciseView({
   onBack: () => void;
 }) {
   const { colors } = useAppColors();
+  const { theme } = useTheme();
   const [running, setRunning] = useState(false);
   const [idx, setIdx] = useState(0);
   const [count, setCount] = useState(PATTERN[0].sec);
@@ -252,12 +256,12 @@ export default function BreathingExerciseView({
         >
           {running && phase ? (
             <>
-              <Text style={[styles.phaseLabel, { color: phaseColor }]}>{phase.label}</Text>
-              <Text style={[styles.phaseCount, { color: colors.text }]}>{count}</Text>
-              <Text style={[styles.phaseVia, { color: phaseColor }]}>{phase.via}</Text>
+              <Text style={[styles.phaseLabel, { color: theme.accentInk }]}>{phase.label}</Text>
+              <Text style={[styles.phaseCount, { color: theme.text }]}>{count}</Text>
+              <Text style={[styles.phaseVia, { color: theme.accentInk }]}>{phase.via}</Text>
             </>
           ) : (
-            <Butterfly color={phaseColor} size={113} />
+            <Butterfly color={theme.accentInk} size={113} />
           )}
         </Animated.View>
       </View>
@@ -266,9 +270,12 @@ export default function BreathingExerciseView({
         {!running ? (
           <Pressable
             onPress={start}
-            style={({ pressed }) => [styles.cta, { backgroundColor: warmupTheme.gold, opacity: pressed ? 0.9 : 1 }]}
+            style={({ pressed }) => [
+              styles.cta,
+              { backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.9 : 1 },
+            ]}
           >
-            <Text style={styles.ctaText}>Начать</Text>
+            <Text style={[styles.ctaText, { color: theme.accentText }]}>Начать</Text>
           </Pressable>
         ) : (
           <Pressable onPress={onComplete} hitSlop={8} style={styles.skip}>
@@ -277,30 +284,8 @@ export default function BreathingExerciseView({
         )}
       </View>
 
-      {/* Help */}
-      <Modal visible={showHelp} transparent animationType="fade" onRequestClose={() => setShowHelp(false)}>
-        <Pressable style={styles.helpOverlay} onPress={() => setShowHelp(false)}>
-          <Pressable style={[styles.helpCard, { backgroundColor: colors.backgroundSecondary }]} onPress={() => {}}>
-            <Pressable onPress={() => setShowHelp(false)} hitSlop={12} style={styles.helpClose}>
-              <Ionicons name="close" size={22} color={colors.textMuted} />
-            </Pressable>
-            <Text style={[styles.helpTitle, { color: colors.text }]}>Как выполнять?</Text>
-            <Text style={[styles.helpText, { color: colors.textSecondary }]}>
-              Дышите вместе с кругом: расширяется — вдох, сжимается — выдох. Текст на круге подскажет ритм.
-            </Text>
-            <Text style={[styles.helpText, { color: colors.textSecondary }]}>
-              Дыхательная разминка — базовое упражнение перед выступлением. Успокаивает дыхание, снимает напряжение и готовит связки к работе.
-            </Text>
-            <Text style={[styles.helpSub, { color: colors.text }]}>Разминка рта</Text>
-            <Text style={[styles.helpText, { color: colors.textSecondary }]}>
-              Простые упражнения для мышц языка, губ и голосовых связок. Подсказки по выполнению задания появятся на экране.
-            </Text>
-            <Text style={[styles.helpFoot, { color: colors.textMuted }]}>
-              Уровень не требует микрофона. За выполнение задания начисляется 10 баллов. При желании уровень можно пройти повторно.
-            </Text>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      {/* Help (Figma 37:5023) */}
+      <BreathingHelpDialog visible={showHelp} onClose={() => setShowHelp(false)} />
     </View>
   );
 }
@@ -316,7 +301,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 17, fontFamily: warmupFonts.title },
   cycle: {
     fontSize: 13,
-    letterSpacing: 1.2,
+    letterSpacing: 0.65,
     textAlign: "center",
     marginTop: 10,
     textTransform: "uppercase",
@@ -347,25 +332,12 @@ const styles = StyleSheet.create({
   cta: {
     width: "100%",
     height: 54,
-    borderRadius: 27,
+    borderRadius: 32,
+    borderWidth: 4,
     alignItems: "center",
     justifyContent: "center",
   },
-  ctaText: { color: warmupTheme.onGold, fontSize: 16, fontFamily: warmupFonts.title },
+  ctaText: { fontSize: 16, fontFamily: warmupFonts.title },
   skip: { padding: 10 },
   skipText: { fontSize: 14, fontFamily: warmupFonts.body },
-  helpOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(10,10,14,0.4)",
-    justifyContent: "center",
-    padding: 28,
-  },
-  helpCard: { borderRadius: 22, padding: 24, paddingTop: 26, gap: 12 },
-  helpClose: { position: "absolute", top: 14, right: 14, padding: 4, zIndex: 2 },
-  helpTitle: { fontSize: 20, fontFamily: warmupFonts.title, marginBottom: 2 },
-  helpRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  dot: { width: 8, height: 8, borderRadius: 4, marginTop: 7 },
-  helpText: { fontSize: 15, lineHeight: 22, fontFamily: warmupFonts.body },
-  helpSub: { fontSize: 16, marginTop: 4, fontFamily: warmupFonts.title },
-  helpFoot: { fontSize: 13.5, lineHeight: 20, marginTop: 4, fontFamily: warmupFonts.body },
 });
