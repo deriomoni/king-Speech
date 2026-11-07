@@ -8,11 +8,9 @@ import Animated, {
   SlideOutLeft,
   ZoomIn,
 } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import WaveformVoiceRecorder from "@/components/WaveformVoiceRecorder";
-import OscarMascot from "@/components/OscarMascot";
 import { toneFor } from "@/components/ScoreFlower";
 import { analyzeGenericTask, type TaskAnalysisResult } from "@/services/analyzeGenericTask";
 import { scoreLiteracy, type LiteracyResult } from "@/services/literacyScore";
@@ -24,6 +22,16 @@ import { useGame } from "@/context/GameContext";
 import CoinIcon from "@/components/CoinIcon";
 import { brand } from "@/constants/colors";
 import { readableText } from "@/constants/pathPalette";
+import { useTheme } from "@/context/ThemeContext";
+import { aggregateAnalyses } from "@/services/analyzeGenericTask";
+import { Image } from "expo-image";
+
+// Figma "Оскар · все позы" exports (04/05): the corridor illustration. Keyed to
+// transparent so they sit on the dark illustration well in both themes.
+const CORRIDOR_ART = {
+  interview: require("@/assets/figma/levels/oscar-corridor-interview.png"),
+  tongue: require("@/assets/figma/levels/oscar-corridor-tongue.png"),
+};
 
 // ───────────────────────────────────────────────────────────────────────────
 // One-task-per-screen flow for generic "speak this" levels (tongue twisters,
@@ -141,6 +149,9 @@ interface AnswerAudio {
   durationSec: number;
 }
 
+/** Replay waveform per answer slot (normalized 0..1 bars), kept in memory only. */
+type Waveform = number[];
+
 function base64ToBlob(b64: string, mime: string): Blob {
   const bin = atob(b64);
   const arr = new Uint8Array(bin.length);
@@ -218,6 +229,10 @@ export default function TaskFlowView({
   const [corridor, setCorridor] = useState(deferred);
   const [devRows, setDevRows] = useState<DevRow[] | null>(null);
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+  // Replay progress (0..1) of the answer currently playing — drives the
+  // playhead of the Figma "Recorder bar · Playback" in the breakdown.
+  const [playProgress, setPlayProgress] = useState(0);
+  const { theme, themeMode } = useTheme();
 
   const analysesRef = useRef<SpeechAnalysis[]>([]);
   const scoresRef = useRef<number[]>([]);
@@ -226,6 +241,7 @@ export default function TaskFlowView({
   const pendingRef = useRef<Array<Promise<TaskAnalysisResult> | null>>([]);
   // In-memory recorded answers (never persisted) + active playback handle.
   const audioRef = useRef<Array<AnswerAudio | null>>([]);
+  const waveRef = useRef<Array<Waveform | null>>([]);
   const playbackRef = useRef<{ sound?: any; url?: string; el?: any; files: string[] }>({ files: [] });
 
   // On unmount: drop every in-memory answer, revoke URLs, unload the player and
@@ -243,6 +259,7 @@ export default function TaskFlowView({
         } catch {}
       }
       audioRef.current = [];
+      waveRef.current = [];
     };
   }, []);
 
@@ -253,6 +270,7 @@ export default function TaskFlowView({
     if (pb.sound) { try { await pb.sound.unloadAsync?.(); } catch {} pb.sound = undefined; }
     pb.el = undefined;
     setPlayingIndex(null);
+    setPlayProgress(0);
   };
 
   const playAnswer = async (i: number) => {
@@ -270,8 +288,14 @@ export default function TaskFlowView({
         const el = new (window as any).Audio(url);
         playbackRef.current.url = url;
         playbackRef.current.el = el;
-        el.onended = () => { try { URL.revokeObjectURL(url); } catch {} setPlayingIndex(null); };
+        el.onended = () => { try { URL.revokeObjectURL(url); } catch {} setPlayingIndex(null); setPlayProgress(0); };
         el.onerror = () => setPlayingIndex(null);
+        // MediaRecorder webm blobs often report duration=Infinity — fall back
+        // to the recorded length.
+        el.ontimeupdate = () => {
+          const d = Number.isFinite(el.duration) && el.duration > 0 ? el.duration : a.durationSec;
+          if (d > 0) setPlayProgress(Math.min(1, el.currentTime / d));
+        };
         await el.play();
       } catch {
         setPlayingIndex(null);
@@ -288,7 +312,10 @@ export default function TaskFlowView({
         const { sound } = await Audio.Sound.createAsync({ uri: path });
         playbackRef.current.sound = sound;
         sound.setOnPlaybackStatusUpdate((s: any) => {
-          if (s?.didJustFinish) setPlayingIndex(null);
+          if (s?.durationMillis > 0 && s?.positionMillis != null) {
+            setPlayProgress(Math.min(1, s.positionMillis / s.durationMillis));
+          }
+          if (s?.didJustFinish) { setPlayingIndex(null); setPlayProgress(0); }
         });
         await sound.playAsync();
       } catch {
@@ -302,11 +329,7 @@ export default function TaskFlowView({
   const isLast = index >= total - 1;
 
   // 7s mascot corridor before the interview begins (mirrors the reading level).
-  useEffect(() => {
-    if (!deferred) return;
-    const t = setTimeout(() => setCorridor(false), INTERVIEW_CORRIDOR_MS);
-    return () => clearTimeout(t);
-  }, [deferred]);
+  // The timer lives in <LevelCorridor> so press-and-hold can pause it.
 
   // ── Standard (tongue-twister) flow: analyze each take inline ────────────────
   const handleRecordingComplete = async (durationSeconds: number, audioBase64?: string) => {
@@ -443,9 +466,15 @@ export default function TaskFlowView({
     setDevRows(rows);
   };
 
-  const handleInterviewRecorded = (durationSeconds: number, audioBase64?: string, mimeType?: string) => {
+  const handleInterviewRecorded = (
+    durationSeconds: number,
+    audioBase64?: string,
+    mimeType?: string,
+    waveform?: number[],
+  ) => {
     const i = index;
     const t = tasks[i];
+    waveRef.current[i] = waveform && waveform.length ? waveform : null;
     // Keep the take in memory only (for replay) — never written to storage.
     if (audioBase64) {
       audioRef.current[i] = {
@@ -497,52 +526,36 @@ export default function TaskFlowView({
     ? ru ? "Скороговорка" : "Tongue twister"
     : ru ? "Задание" : "Task";
 
-  const cardBg = deferred ? colors.backgroundSecondary : undefined;
+  const isDarkTheme = themeMode === "dark";
+  // Figma stroke/shape — the 2pt hairline around cards.
+  const shapeStroke = isDarkTheme ? "rgba(240,238,233,0.06)" : "rgba(38,38,40,0.08)";
+  const cardBg = deferred ? theme.card : undefined;
+  const replaceDisabled = !canReplaceQuestion || coins < REPLACE_Q_COST;
 
   return (
     <View style={{ flex: 1 }}>
-      {/* Header: exit + progress segments */}
+      {/* Header: exit + numbered step progress (Figma "Step progress" 174:1892) */}
       <View style={[st.header, { paddingTop: topPad + 8 }]}>
         <Pressable onPress={onExit} hitSlop={12} style={({ pressed }) => [st.exitBtn, { opacity: pressed ? 0.6 : 1 }]}>
-          <Ionicons name="close" size={24} color={ink} />
+          <Ionicons name="close" size={22} color={ink} />
         </Pressable>
-        <View style={st.dotsRow}>
-          {tasks.map((_, i) => {
-            const done = deferred
-              ? i < index
-              : i < index || (i === index && phase === "scored");
-            const active = i === index;
-            return (
-              <View
-                key={i}
-                style={[
-                  st.dot,
-                  {
-                    flex: 1,
-                    backgroundColor: done
-                      ? brand.gold
-                      : active
-                      ? brand.violet
-                      : isDark
-                      ? "rgba(255,255,255,0.14)"
-                      : "rgba(14,14,16,0.12)",
-                  },
-                ]}
-              />
-            );
-          })}
-        </View>
-        <View style={{ width: 40 }} />
+        <StepProgress
+          total={total}
+          current={index}
+          doneThrough={deferred ? index - 1 : phase === "scored" ? index : index - 1}
+          isDark={screenBg ? ink === "#FFFFFF" : isDarkTheme}
+        />
+        <View style={st.exitBtn} />
       </View>
 
       {/* Level title (small) */}
       <View style={st.titleWrap}>
-        <Text style={[st.kicker, { color: accent, fontFamily: "Geologica_600SemiBold" }]}>
+        <Text style={[st.kicker, { color: screenBg ? accent : theme.accentInk, fontFamily: "Geologica_600SemiBold" }]}>
           {isInterview
             ? `${ru ? "Вопрос" : "Question"} ${index + 1}/${total}`
             : isTongue
             ? `${ru ? "Скороговорка" : "Tongue twister"} ${index + 1}/${total}`
-            : `${kindLabel.toUpperCase()} · ${index + 1}/${total}`}
+            : `${kindLabel} ${index + 1}/${total}`}
         </Text>
         <Text numberOfLines={1} style={[st.levelTitle, { color: ink, fontFamily: "Geologica_700Bold" }]}>
           {title}
@@ -561,20 +574,12 @@ export default function TaskFlowView({
             style={[
               st.card,
               deferred
-                ? { backgroundColor: cardBg, borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(20,22,26,0.08)" }
-                : { borderColor: brand.borderViolet },
+                ? { backgroundColor: cardBg, borderColor: shapeStroke }
+                : { borderColor: shapeStroke, backgroundColor: theme.card },
             ]}
           >
-            {!deferred ? (
-              <LinearGradient
-                colors={isDark ? ["#1C1830", "#141221"] : ["#F3EFFB", "#EDE7FA"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFill}
-              />
-            ) : null}
             {task.instruction && !deferred ? (
-              <Text style={[st.instruction, { color: isDark ? "rgba(242,238,251,0.6)" : colors.textSecondary, fontFamily: "Geologica_600SemiBold" }]}>
+              <Text style={[st.instruction, { color: theme.textSecondary, fontFamily: "Geologica_600SemiBold" }]}>
                 {task.instruction}
               </Text>
             ) : null}
@@ -582,10 +587,7 @@ export default function TaskFlowView({
             <Animated.Text
               key={`q-${index}-${replaceCounts[index] ?? 0}`}
               entering={deferred ? FadeIn.duration(1500) : undefined}
-              style={[
-                st.contentText,
-                { color: deferred ? colors.text : isDark ? "#F5F1FF" : colors.text, fontFamily: "Geologica_700Bold" },
-              ]}
+              style={[st.contentText, { color: theme.text, fontFamily: "Geologica_700Bold" }]}
             >
               {(questionOverrides[index] ?? task.content) || task.title}
             </Animated.Text>
@@ -599,25 +601,20 @@ export default function TaskFlowView({
           <Animated.View entering={FadeIn.duration(300)} style={st.replaceQWrap}>
             <Pressable
               onPress={replaceQuestion}
-              disabled={!canReplaceQuestion || coins < REPLACE_Q_COST}
+              disabled={replaceDisabled}
               style={({ pressed }) => [
                 st.replaceQBtn,
                 {
-                  backgroundColor: colors.backgroundSecondary,
-                  borderColor: colors.border,
-                  opacity:
-                    !canReplaceQuestion || coins < REPLACE_Q_COST
-                      ? 0.5
-                      : pressed
-                        ? 0.7
-                        : 1,
+                  backgroundColor: theme.card,
+                  borderColor: theme.cardBorder,
+                  opacity: replaceDisabled ? 0.5 : pressed ? 0.7 : 1,
                 },
               ]}
               accessibilityRole="button"
               accessibilityLabel={ru ? "Другой вопрос" : "Another question"}
             >
-              <Ionicons name="shuffle" size={16} color={ink} />
-              <Text style={[st.replaceQText, { color: ink, fontFamily: "Geologica_700Bold" }]}>
+              <Ionicons name="shuffle" size={15} color={theme.text} />
+              <Text style={[st.replaceQText, { color: theme.text, fontFamily: "Geologica_700Bold" }]}>
                 {usedHere >= replaceLimit
                   ? ru
                     ? "Замен больше нет"
@@ -627,9 +624,9 @@ export default function TaskFlowView({
                     : "Another question"}
               </Text>
               {usedHere < replaceLimit ? (
-                <View style={[st.replaceQCost, { backgroundColor: colors.border }]}>
-                  <CoinIcon size={11} color={ink} />
-                  <Text style={[st.replaceQCostText, { color: ink }]}>{REPLACE_Q_COST}</Text>
+                <View style={[st.replaceQCost, { backgroundColor: isDarkTheme ? "rgba(240,238,233,0.08)" : "rgba(38,38,40,0.06)" }]}>
+                  <Text style={[st.replaceQCostText, { color: theme.text }]}>{REPLACE_Q_COST}</Text>
+                  <CoinIcon size={9} color={theme.text} />
                 </View>
               ) : null}
             </Pressable>
@@ -652,13 +649,17 @@ export default function TaskFlowView({
             <WaveformVoiceRecorder
               onRecordingComplete={deferred ? handleInterviewRecorded : handleRecordingComplete}
               colors={colors}
-              startLabel={isInterview ? (ru ? "Ответить" : "Answer") : isTongue ? (ru ? "Прочитать" : "Read") : undefined}
+              startLabel={isInterview ? (ru ? "Ответить" : "Answer") : isTongue ? (ru ? "Начать" : "Start") : undefined}
             />
           </Animated.View>
         ) : phase === "analyzing" ? (
-          <Animated.View key="ana" entering={FadeIn.duration(200)} style={[st.controlSlot, st.pill, { backgroundColor: brand.gold }]}>
-            <ActivityIndicator size="small" color={brand.onGold} />
-            <Text style={[st.pillText, { color: brand.onGold, fontFamily: "Geologica_800ExtraBold" }]}>
+          <Animated.View
+            key="ana"
+            entering={FadeIn.duration(200)}
+            style={[st.analyzingPill, { backgroundColor: theme.accent, borderColor: theme.ctaStroke }]}
+          >
+            <ActivityIndicator size="small" color={theme.accentText} />
+            <Text style={[st.pillText, { color: theme.accentText, fontFamily: "Geologica_800ExtraBold" }]}>
               {ru ? "Анализирую…" : "Analyzing…"}
             </Text>
           </Animated.View>
@@ -668,12 +669,15 @@ export default function TaskFlowView({
             <Animated.View entering={ZoomIn.duration(420)}>
               <Pressable
                 onPress={advance}
-                style={({ pressed }) => [st.pill, st.nextPill, { opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
+                style={({ pressed }) => [
+                  st.pill,
+                  { backgroundColor: theme.accent, borderColor: theme.ctaStroke, borderWidth: 4, opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+                ]}
               >
-                <Text style={[st.pillText, { color: brand.onGold, fontFamily: "Geologica_800ExtraBold" }]}>
+                <Text style={[st.pillText, { color: theme.accentText, fontFamily: "Geologica_800ExtraBold" }]}>
                   {isLast ? (ru ? "Смотреть оценку" : "See score") : (ru ? "Далее" : "Next")}
                 </Text>
-                <Ionicons name="arrow-forward" size={20} color={brand.onGold} />
+                <Ionicons name="arrow-forward" size={20} color={theme.accentText} />
               </Pressable>
             </Animated.View>
             <Pressable onPress={retryTake} hitSlop={8} style={({ pressed }) => [st.retryLink, { opacity: pressed ? 0.5 : 1 }]}>
@@ -686,49 +690,183 @@ export default function TaskFlowView({
         )}
       </View>
 
-      {/* Darken curtain before the flower blooms */}
+      {/* Fade curtain before the level score screen */}
       {darken ? (
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
           <Animated.View
             entering={FadeIn.duration(420)}
             pointerEvents="none"
-            style={{ flex: 1, backgroundColor: brand.ink }}
+            style={{ flex: 1, backgroundColor: theme.bg }}
           />
         </View>
       ) : null}
 
-      {/* Interview corridor — 7s mascot loading curtain on entry */}
+      {/* Corridor — 7s story-style curtain on entry (Figma 37:5228 / 37:6974) */}
       {corridor ? (
-        <View style={[st.corridor, { backgroundColor: colors.background }]} pointerEvents="box-none">
-          <Animated.View exiting={FadeOut.duration(420)} style={st.corridorInner}>
-            <OscarMascot emotion="happy" size={180} />
-            <Text style={[st.corridorQuote, { color: colors.text, fontFamily: "Geologica_700Bold" }]}>
-              {isTongue
-                ? ru ? "Медленно и чётко. Скорость придёт." : "Slow and clear. Speed will come."
-                : ru ? "Дыши ровно. Говори как есть." : "Breathe easy. Speak your mind."}
-            </Text>
-            <Text style={[st.corridorHint, { color: colors.textMuted, fontFamily: "Geologica_600SemiBold" }]}>
-              {(isTongue ? (ru ? "Готовим скороговорки" : "Preparing tongue twisters") : ru ? "Готовим интервью" : "Preparing the interview").toUpperCase()}
-            </Text>
-          </Animated.View>
-        </View>
+        <LevelCorridor
+          isTongue={isTongue}
+          ru={ru}
+          topPad={topPad}
+          bottomPad={bottomPad}
+          onDone={() => setCorridor(false)}
+          onExit={onExit}
+        />
       ) : null}
 
-      {/* Developer report — transcripts + scoring breakdown (test build) */}
+      {/* Answer / tongue-twister breakdown (Figma 205:2052 / 208:2157) */}
       {devRows ? (
         <DevReport
           rows={devRows}
+          waves={waveRef.current}
           ru={ru}
           isTongue={isTongue}
-          colors={colors}
-          isDark={isDark}
           topPad={topPad}
           bottomPad={bottomPad}
           playingIndex={playingIndex}
+          playProgress={playProgress}
           onPlay={playAnswer}
           onContinue={finishFromDev}
         />
       ) : null}
+    </View>
+  );
+}
+
+// Figma "Step progress" (174:1892): numbered 28pt circles on an 8pt track. The
+// active step wears the gold CTA ring; completed steps fill the track gold.
+function StepProgress({
+  total,
+  current,
+  doneThrough,
+  isDark,
+}: {
+  total: number;
+  current: number;
+  doneThrough: number;
+  isDark: boolean;
+}) {
+  const { theme } = useTheme();
+  const todoFill = isDark ? "#626161" : "rgba(38,38,40,0.12)";
+  const trackFill = isDark ? "#4E4E4F" : "rgba(38,38,40,0.08)";
+  const todoInk = isDark ? "rgba(240,238,233,0.55)" : "rgba(38,38,40,0.5)";
+  const n = Math.max(1, total);
+  // Gold track reaches the furthest step that is done or active.
+  const reach = Math.max(0, Math.min(n - 1, Math.max(current, doneThrough + 1)));
+  const frac = n > 1 ? reach / (n - 1) : 0;
+  return (
+    <View style={st.stepWrap}>
+      <View style={[st.stepTrack, { backgroundColor: trackFill }]}>
+        <View style={[st.stepTrackDone, { width: `${frac * 100}%`, backgroundColor: theme.accent }]} />
+      </View>
+      {Array.from({ length: n }).map((_, i) => {
+        const active = i === current;
+        const done = i <= doneThrough || i < current;
+        return (
+          <View
+            key={i}
+            style={[
+              st.stepDot,
+              active
+                ? { backgroundColor: theme.accent, borderWidth: 4, borderColor: theme.ctaStroke, width: 32, height: 32, borderRadius: 16, margin: -2 }
+                : { backgroundColor: done ? theme.accent : todoFill },
+            ]}
+          >
+            <Text style={[st.stepNum, { color: active || done ? "#262628" : todoInk }]}>{i + 1}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+// Corridor before an interview / tongue-twister level: a story bar fills over
+// 7s, a cream quote card with Oscar, and "hold to pause". Holding anywhere on
+// the screen pauses the countdown.
+const CORRIDOR_QUOTES = {
+  interview: { ru: ["Заговори, чтобы я тебя увидел.", "Сократ"], en: ["Speak, so that I may see you.", "Socrates"] },
+  tongue: { ru: ["Кто ясно мыслит, тот ясно излагает.", "Никола Буало"], en: ["What is well conceived is clearly said.", "Nicolas Boileau"] },
+};
+
+function LevelCorridor({
+  isTongue,
+  ru,
+  topPad,
+  bottomPad,
+  onDone,
+  onExit,
+}: {
+  isTongue: boolean;
+  ru: boolean;
+  topPad: number;
+  bottomPad: number;
+  onDone: () => void;
+  onExit: () => void;
+}) {
+  const { theme, themeMode } = useTheme();
+  const isDark = themeMode === "dark";
+  const [elapsed, setElapsed] = useState(0);
+  const pausedRef = useRef(false);
+  const doneRef = useRef(false);
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
+
+  useEffect(() => {
+    const STEP = 50;
+    const id = setInterval(() => {
+      if (pausedRef.current) return;
+      setElapsed((e) => {
+        const next = e + STEP;
+        if (next >= INTERVIEW_CORRIDOR_MS && !doneRef.current) {
+          doneRef.current = true;
+          setTimeout(() => onDoneRef.current(), 0);
+        }
+        return Math.min(next, INTERVIEW_CORRIDOR_MS);
+      });
+    }, STEP);
+    return () => clearInterval(id);
+  }, []);
+
+  const [quote, author] = CORRIDOR_QUOTES[isTongue ? "tongue" : "interview"][ru ? "ru" : "en"];
+  const progress = elapsed / INTERVIEW_CORRIDOR_MS;
+
+  return (
+    <View style={[st.corridor, { backgroundColor: theme.bg }]}>
+      <Pressable
+        style={st.corridorPress}
+        onPressIn={() => { pausedRef.current = true; }}
+        onPressOut={() => { pausedRef.current = false; }}
+        accessibilityLabel={ru ? "Удерживай, чтобы поставить на паузу" : "Hold to pause"}
+      >
+        <View style={[st.storyTrack, { top: topPad - 9, backgroundColor: isDark ? "rgba(240,238,233,0.25)" : "rgba(38,38,40,0.15)" }]}>
+          <View style={[st.storyFill, { width: `${progress * 100}%`, backgroundColor: theme.text }]} />
+        </View>
+
+        <Animated.View exiting={FadeOut.duration(420)} style={st.corridorCard}>
+          <View style={st.corridorArt}>
+            <Image
+              source={isTongue ? CORRIDOR_ART.tongue : CORRIDOR_ART.interview}
+              style={{ width: "100%", height: "100%" }}
+              contentFit="cover"
+            />
+          </View>
+          <Text style={st.corridorQuote}>{quote}</Text>
+          <Text style={st.corridorAuthor}>{`- ${author}`}</Text>
+        </Animated.View>
+
+        <Text style={[st.corridorHint, { bottom: bottomPad + 33, color: isDark ? "rgba(240,238,233,0.35)" : theme.textMuted }]}>
+          {ru ? "Удерживай экран, чтобы поставить на паузу" : "Hold the screen to pause"}
+        </Text>
+      </Pressable>
+
+      <Pressable
+        onPress={onExit}
+        hitSlop={14}
+        style={({ pressed }) => [st.corridorClose, { top: topPad + 10, opacity: pressed ? 0.6 : 1 }]}
+        accessibilityRole="button"
+        accessibilityLabel={ru ? "Выйти" : "Exit"}
+      >
+        <Ionicons name="close" size={22} color={theme.text} />
+      </Pressable>
     </View>
   );
 }
@@ -755,338 +893,348 @@ function MiniScore({ analysis, ru }: { analysis: SpeechAnalysis; ru: boolean }) 
   );
 }
 
-// Answer breakdown shown at the end of an interview level. Lists each answer's
-// transcription, duration, a replay control, and a per-aspect score with a
-// short explanation of what each aspect measures.
-interface AspectInfo {
-  key: keyof SpeechAnalysis["score"];
-  label: string;
-  desc: string;
-  internal?: boolean;
+// Answer breakdown shown at the end of an interview / tongue-twister level
+// (Figma 205:2052 "Разбор ответов" / 208:2157 "Разбор скороговорок"): big
+// average score, one summary card (tip + notes), then a card per answer with
+// the question, a replay "Recorder bar · Playback" and a collapsible
+// "Характеристики" block (transcript + per-aspect bars).
+
+// Deterministic placeholder waveform when a take has no captured bars.
+const FALLBACK_WAVE = [0.35, 0.55, 0.25, 0.75, 0.45, 0.9, 0.6, 0.3, 0.7, 1, 0.5, 0.4, 0.85, 0.65, 0.25, 0.55, 0.95, 0.75, 0.35, 0.6, 0.45, 0.8, 0.3, 0.7, 0.9, 0.5, 0.65, 0.4, 0.75, 0.55];
+const PLAYBACK_BARS = 30;
+
+function resampleWave(src: number[] | null | undefined, n: number): number[] {
+  const w = src && src.length ? src : FALLBACK_WAVE;
+  if (w.length === n) return w;
+  return Array.from({ length: n }, (_, i) => {
+    const a = Math.floor((i * w.length) / n);
+    const b = Math.max(a + 1, Math.floor(((i + 1) * w.length) / n));
+    let m = 0;
+    for (let k = a; k < b && k < w.length; k++) m = Math.max(m, w[k]);
+    return m;
+  });
 }
+
+function fmtClock(sec: number): string {
+  const s = Math.max(0, Math.round(sec));
+  return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+}
+
+// Figma "Recorder bar" · state Playback: gold play disc, waveform with a gold
+// playhead (played part solid, rest 30%), duration on the right.
+function PlaybackBar({
+  wave,
+  durationSec,
+  playing,
+  progress,
+  disabled,
+  onPress,
+  ru,
+}: {
+  wave: number[];
+  durationSec: number;
+  playing: boolean;
+  progress: number;
+  disabled: boolean;
+  onPress: () => void;
+  ru: boolean;
+}) {
+  const { theme, themeMode } = useTheme();
+  const isDark = themeMode === "dark";
+  const [w, setW] = useState(0);
+  const bars = resampleWave(wave, PLAYBACK_BARS);
+  // At rest the whole take reads solid; while playing, bars right of the
+  // playhead dim to 30%.
+  const showHead = playing || progress > 0;
+  const played = showHead ? progress : 1;
+  const dim = isDark ? "rgba(240,238,233,0.3)" : "rgba(38,38,40,0.25)";
+  return (
+    <View
+      style={[
+        st.pbBar,
+        {
+          backgroundColor: theme.cardElevated,
+          borderColor: isDark ? "rgba(240,238,233,0.45)" : "rgba(38,38,40,0.3)",
+        },
+      ]}
+    >
+      <Pressable
+        onPress={onPress}
+        disabled={disabled}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={playing ? (ru ? "Остановить" : "Stop") : ru ? "Прослушать запись" : "Play recording"}
+        style={({ pressed }) => [
+          st.pbPlay,
+          { backgroundColor: theme.accent, opacity: disabled ? 0.45 : pressed ? 0.8 : 1 },
+        ]}
+      >
+        {playing ? (
+          <View style={[st.pbStop, { backgroundColor: theme.accentText }]} />
+        ) : (
+          <Ionicons name="play" size={16} color={theme.accentText} style={{ marginLeft: 2 }} />
+        )}
+      </Pressable>
+      <View style={st.pbWave} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
+        {bars.map((v, i) => (
+          <View
+            key={i}
+            style={[
+              st.pbWaveBar,
+              {
+                height: 6 + v * 28,
+                backgroundColor: (i + 0.5) / bars.length <= played ? theme.text : dim,
+              },
+            ]}
+          />
+        ))}
+        {showHead && w > 0 ? (
+          <View pointerEvents="none" style={[st.pbHead, { left: Math.max(0, Math.min(w - 2, progress * w)) - 2.5 }]}>
+            <View style={[st.pbHeadDot, { backgroundColor: theme.accent }]} />
+            <View style={[st.pbHeadLine, { backgroundColor: theme.accent }]} />
+          </View>
+        ) : null}
+      </View>
+      <Text style={[st.pbTime, { color: isDark ? "rgba(240,238,233,0.6)" : theme.textSecondary }]}>
+        {fmtClock(durationSec)}
+      </Text>
+    </View>
+  );
+}
+
+function MetricRow({ label, value, isDark }: { label: string; value: number | null; isDark: boolean }) {
+  const { theme } = useTheme();
+  const v = value == null ? null : Math.max(0, Math.min(10, value));
+  return (
+    <View style={st.metricRow}>
+      <Text numberOfLines={1} style={[st.metricLabel, { color: isDark ? "rgba(240,238,233,0.85)" : theme.text }]}>
+        {label}
+      </Text>
+      <View style={[st.metricTrack, { backgroundColor: isDark ? "rgba(240,238,233,0.08)" : "rgba(38,38,40,0.08)" }]}>
+        {v ? <View style={[st.metricFill, { width: `${v * 10}%`, backgroundColor: theme.accent }]} /> : null}
+      </View>
+      <Text
+        style={[
+          st.metricValue,
+          { color: v == null ? (isDark ? "rgba(240,238,233,0.35)" : theme.textMuted) : theme.text },
+        ]}
+      >
+        {v == null ? "-" : fmtScore(v)}
+      </Text>
+    </View>
+  );
+}
+
 function DevReport({
   rows,
+  waves,
   ru,
   isTongue,
-  colors,
-  isDark,
   topPad,
   bottomPad,
   playingIndex,
+  playProgress,
   onPlay,
   onContinue,
 }: {
   rows: DevRow[];
+  waves: Array<Waveform | null>;
   ru: boolean;
   isTongue: boolean;
-  colors: import("@/constants/colors").AppColors;
-  isDark: boolean;
   topPad: number;
   bottomPad: number;
   playingIndex: number | null;
+  playProgress: number;
   onPlay: (index: number) => void;
   onContinue: () => void;
 }) {
+  const { theme, themeMode } = useTheme();
+  const isDark = themeMode === "dark";
   const overalls = rows.map((r) => r.overall10);
   const avg = overalls.reduce((s, v) => s + v, 0) / Math.max(1, overalls.length);
   const aiUsed = rows.filter((r) => r.ai?.available).length;
-  const border = isDark ? "rgba(255,255,255,0.08)" : "rgba(20,22,26,0.08)";
+  // First card opens expanded, the rest collapsed (as in the design).
+  const [open, setOpen] = useState<Record<number, boolean>>({ 0: true });
 
-  // Scored aspects (v2). Grammar/literacy is rendered separately above these as
-  // the weight-40 core. Tempo & pauses are NOT here — they are internal signals.
-  const ASPECTS: AspectInfo[] = ru
-    ? [
-        { key: "confidence", label: "Уверенность", desc: "Устойчивость голоса, завершённость интонации, беглость без запинок." },
-        { key: "expressiveness", label: "Выразительность", desc: "Интонационный диапазон и эмоциональная вовлечённость." },
-        { key: "clarity", label: "Чёткость", desc: "Разборчивость дикции: чистота согласных и уверенность распознавания." },
-        { key: "volume", label: "Громкость", desc: "Фактическая громкость голоса — не тихо и без перегруза." },
-      ]
-    : [
-        { key: "confidence", label: "Confidence", desc: "Voice stability, finished intonation, fluency without stumbles." },
-        { key: "expressiveness", label: "Expressiveness", desc: "Pitch range and emotional engagement." },
-        { key: "clarity", label: "Clarity", desc: "Diction intelligibility: clean consonants and recognition confidence." },
-        { key: "volume", label: "Volume", desc: "Actual loudness of your voice — not too quiet, no clipping." },
-      ];
+  // Summary: coaching tip + up to 3 notes merged across all takes.
+  const agg = aggregateAnalyses(rows.map((r) => r.analysis), ru ? "ru" : "en");
+  const tip = (agg.tip || "").trim();
+  const notes = (agg.recommendations || [])
+    .map((n) => n.trim())
+    .filter((n) => n && n.toLowerCase() !== tip.toLowerCase())
+    .slice(0, 3);
+
+  const cardStyle = {
+    backgroundColor: isDark ? "rgba(240,238,233,0.05)" : theme.card,
+    borderColor: isDark ? "rgba(240,238,233,0.08)" : theme.cardBorder,
+  };
+  const labelColor = isDark ? "rgba(240,238,233,0.5)" : theme.textSecondary;
+  const dimColor = isDark ? "rgba(240,238,233,0.35)" : theme.textMuted;
+  const dividerColor = isDark ? "rgba(240,238,233,0.08)" : theme.cardBorder;
 
   return (
-    <View style={[st.devRoot, { backgroundColor: colors.background }]}>
+    <View style={[st.devRoot, { backgroundColor: theme.bg }]}>
       <ScrollView
-        contentContainerStyle={{ paddingTop: topPad + 20, paddingBottom: bottomPad + 100, paddingHorizontal: 20, gap: 14 }}
+        contentContainerStyle={{ paddingTop: topPad + 55, paddingBottom: bottomPad + 40, paddingHorizontal: 20 }}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[st.devTitle, { color: colors.text, fontFamily: "Geologica_700Bold" }]}>
-          {isTongue ? (ru ? "Разбор скороговорок" : "Tongue-twister review") : ru ? "Разбор ответов" : "Answer breakdown"}
-        </Text>
-        <Text style={[st.devLede, { color: colors.textSecondary, fontFamily: "Geologica_600SemiBold" }]}>
-          {isTongue
-            ? ru
-              ? "Что распозналось и сколько слов совпало с текстом скороговорки."
-              : "What was recognized and how many words matched the text."
-            : ru
-            ? "Твоя речь, распознанная в текст, и из чего сложилась оценка."
-            : "Your speech turned into text, and what the score is built from."}
+        <Text style={[st.devTitle, { color: theme.text }]}>
+          {isTongue ? (ru ? "Разбор\nскороговорок" : "Tongue-twister\nreview") : ru ? "Разбор ответов" : "Answer breakdown"}
         </Text>
 
-        {/* Aggregate */}
-        <View style={[st.devCard, { backgroundColor: colors.backgroundSecondary, borderColor: border }]}>
-          <Text style={[st.devAggScore, { color: colors.text, fontFamily: "Geologica_700Bold" }]}>
-            {fmtScore(avg)}<Text style={[st.devAggMax, { color: colors.textMuted }]}> / 10</Text>
-          </Text>
-          <Text style={[st.devAggNote, { color: colors.textSecondary, fontFamily: "Geologica_600SemiBold" }]}>
-            {isTongue
-              ? ru
-                ? `Средняя из ${rows.length} (${overalls.map((v) => fmtScore(v)).join(" + ")}) ÷ ${rows.length}. Каждая = 50% точность текста + 20% чёткость + 15% уверенность + 8% выразительность + 7% громкость.`
-                : `Average of ${rows.length} (${overalls.map((v) => fmtScore(v)).join(" + ")}) ÷ ${rows.length}. Each = 50% text accuracy + 20% clarity + 15% confidence + 8% expressiveness + 7% volume.`
-              : ru
-              ? `Средняя из ${rows.length} ответов (${overalls.map((v) => fmtScore(v)).join(" + ")}) ÷ ${rows.length}. Каждый ответ = 90% наш механизм + 10% ИИ (ответил ли на вопрос + грамотность).`
-              : `Average of ${rows.length} answers (${overalls.map((v) => fmtScore(v)).join(" + ")}) ÷ ${rows.length}. Each answer = 90% our mechanism + 10% AI (answered the question + literacy).`}
-          </Text>
-          {!isTongue && aiUsed === 0 ? (
-            <Text style={[st.devAggNote, { color: colors.textMuted, fontFamily: "Geologica_600SemiBold" }]}>
-              {ru ? "ИИ-разбор сейчас недоступен — оценка полностью по нашему механизму." : "AI review is currently unavailable — scored entirely by our mechanism."}
-            </Text>
-          ) : null}
+        <View style={{ marginTop: 28, gap: 4 }}>
+          <Text style={[st.devLabel, { color: labelColor }]}>{ru ? "ОЦЕНКА" : "SCORE"}</Text>
+          <View style={st.devScoreRow}>
+            <Text style={[st.devScore, { color: theme.accentInk }]}>{fmtScore(avg)}</Text>
+            <Text style={[st.devScoreMax, { color: dimColor }]}>/10</Text>
+          </View>
         </View>
 
-        {/* Per-answer rows */}
-        {rows.map((r, i) => {
-          const a = r.analysis;
-          const wordCount = r.transcript.trim().split(/\s+/).filter(Boolean).length;
-          const isPlaying = playingIndex === i;
-          const hasAudio = r.durationSec > 0;
-          return (
-            <View key={i} style={[st.devCard, { backgroundColor: colors.backgroundSecondary, borderColor: border }]}>
-              <View style={st.devRowHead}>
-                <Text style={[st.devQNum, { color: colors.textMuted, fontFamily: "Geologica_600SemiBold" }]}>
-                  {(isTongue ? (ru ? "СКОРОГОВОРКА " : "TWISTER ") : ru ? "ВОПРОС " : "QUESTION ") + (i + 1) + (hasAudio ? " · " + fmtDuration(r.durationSec) : "")}
-                </Text>
-                <Text style={[st.devScore, { color: toneFor(r.overall10), fontFamily: "Geologica_700Bold" }]}>
-                  {fmtScore(r.overall10)}
-                </Text>
-              </View>
-              <Text style={[st.devQ, { color: colors.text, fontFamily: "Geologica_700Bold" }]}>{r.question}</Text>
-
-              {/* ИИ-судья (только интервью): ответил ли на вопрос (главное) + грамотность */}
-              {!isTongue ? (
-                r.ai && r.ai.available ? (
-                  <View style={[st.aiRow, { borderColor: toneFor(r.ai.relevance ?? 0) + "55", backgroundColor: toneFor(r.ai.relevance ?? 0) + (isDark ? "1E" : "12") }]}>
-                    <Ionicons
-                      name={r.ai.verdict === "yes" ? "checkmark-circle" : r.ai.verdict === "off" ? "close-circle" : "alert-circle"}
-                      size={17}
-                      color={toneFor(r.ai.relevance ?? 0)}
-                    />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[st.aiTitle, { color: colors.text, fontFamily: "Geologica_800ExtraBold" }]}>
-                        {`${verdictLabel(r.ai.verdict, ru)} · ${ru ? "ответ" : "answer"} ${fmtScore(r.ai.relevance ?? 0)}/10 · ${ru ? "грамотность" : "literacy"} ${fmtScore(r.ai.competence ?? 0)}/10`}
-                      </Text>
-                      {r.ai.note ? (
-                        <Text style={[st.aiNote, { color: colors.textSecondary, fontFamily: "Geologica_400Regular" }]}>{r.ai.note}</Text>
-                      ) : null}
+        {/* Summary — tip + notes */}
+        {tip || notes.length || (!isTongue && aiUsed === 0) ? (
+          <View style={[st.devCard, cardStyle, { marginTop: 28, gap: 16 }]}>
+            {tip ? (
+              <>
+                <Text style={[st.devLabel, { color: theme.accentInk }]}>{ru ? "СОВЕТ" : "TIP"}</Text>
+                <Text style={[st.devTip, { color: theme.text }]}>{tip}</Text>
+              </>
+            ) : null}
+            {tip && notes.length ? <View style={[st.devDivider, { backgroundColor: dividerColor }]} /> : null}
+            {notes.length ? (
+              <>
+                <Text style={[st.devLabel, { color: labelColor }]}>{ru ? "ЗАМЕЧАНИЯ" : "NOTES"}</Text>
+                <View style={{ gap: 10 }}>
+                  {notes.map((n, k) => (
+                    <View key={k} style={st.devNoteRow}>
+                      <View style={[st.devNoteDot, { backgroundColor: theme.accent }]} />
+                      <Text style={[st.devNote, { color: isDark ? "rgba(240,238,233,0.9)" : theme.text }]}>{n}</Text>
                     </View>
-                  </View>
-                ) : (
-                  <Text style={[st.aiOffline, { color: colors.textMuted, fontFamily: "Geologica_600SemiBold" }]}>
-                    {ru ? "ИИ-разбор недоступен — оценка по нашему механизму." : "AI review unavailable — scored by our mechanism."}
-                  </Text>
-                )
-              ) : null}
-
-              {hasAudio ? (
-                <Pressable
-                  onPress={() => onPlay(i)}
-                  style={({ pressed }) => [
-                    st.playBtn,
-                    { borderColor: brand.violet + "66", backgroundColor: brand.violet + (isDark ? "22" : "14"), opacity: pressed ? 0.7 : 1 },
-                  ]}
-                >
-                  <Ionicons name={isPlaying ? "stop" : "play"} size={15} color={brand.violet} />
-                  <Text style={[st.playText, { color: brand.violet, fontFamily: "Geologica_700Bold" }]}>
-                    {isPlaying ? (ru ? "Остановить" : "Stop") : (ru ? "Прослушать запись" : "Play recording")}
-                  </Text>
-                </Pressable>
-              ) : null}
-
-              <Text style={[st.devSubLabel, { color: colors.textMuted, fontFamily: "Geologica_600SemiBold" }]}>
-                {ru ? `ТРАНСКРИБАЦИЯ · ${wordCount} сл.` : `TRANSCRIPTION · ${wordCount} w.`}
+                  ))}
+                </View>
+              </>
+            ) : null}
+            {!isTongue && aiUsed === 0 ? (
+              <Text style={[st.devAiNote, { color: isDark ? "rgba(240,238,233,0.4)" : theme.textMuted }]}>
+                {ru
+                  ? "ИИ-разбор сейчас недоступен - оценка по нашему механизму."
+                  : "AI review is currently unavailable - scored by our mechanism."}
               </Text>
-              <Text style={[st.devTranscript, { color: colors.textSecondary, fontFamily: "Geologica_400Regular" }]}>
-                {r.transcript ? `«${r.transcript}»` : ru ? "— пусто (не распознано / нет связи с сервером) —" : "— empty (not recognized / no server) —"}
-              </Text>
+            ) : null}
+          </View>
+        ) : null}
 
-              {/* Точность текста — ядро для скороговорок (вес 50) */}
-              {isTongue && r.accuracy ? (
-                <View style={[st.litCard, { borderColor: toneFor(r.accuracy.score10) + "44", backgroundColor: toneFor(r.accuracy.score10) + (isDark ? "1E" : "12") }]}>
-                  <View style={st.litHead}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[st.litTitle, { color: colors.text, fontFamily: "Geologica_800ExtraBold" }]}>
-                        {ru ? "Точность текста" : "Text accuracy"}
-                        <Text style={[st.aspTag, { color: colors.textMuted, fontFamily: "Geologica_600SemiBold" }]}>{ru ? "  · вес 50" : "  · w 50"}</Text>
-                      </Text>
-                      <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Geologica_400Regular" }]}>
-                        {ru ? "Каждое слово скороговорки — попало в распознанный текст или нет. Повторы не штрафуют." : "Each word of the text — did it land in the recognized speech? Repeats don't count against you."}
-                      </Text>
-                    </View>
-                    <Text style={[st.litScore, { color: toneFor(r.accuracy.score10), fontFamily: "Geologica_700Bold" }]}>
-                      {r.accuracy.available ? fmtScore(r.accuracy.score10) : "—"}
-                    </Text>
-                  </View>
-                  {r.accuracy.available ? (
-                    <>
-                      <Text style={[st.litSub, { color: colors.textMuted, fontFamily: "Geologica_700Bold" }]}>
-                        {ru
-                          ? `Точность ${Math.round(r.accuracy.accuracy * 100)}% · слов ${r.accuracy.matched}/${r.accuracy.total} · пропущено ${r.accuracy.missed}`
-                          : `Accuracy ${Math.round(r.accuracy.accuracy * 100)}% · words ${r.accuracy.matched}/${r.accuracy.total} · missed ${r.accuracy.missed}`}
-                      </Text>
-                      {r.accuracy.missedWords.length ? (
-                        <>
-                          <Text style={[st.aspDesc, { color: colors.textMuted, fontFamily: "Geologica_600SemiBold" }]}>
-                            {ru ? "Пропущенные слова:" : "Missed words:"}
-                          </Text>
-                          <View style={st.litViolWrap}>
-                            {r.accuracy.missedWords.slice(0, 14).map((w, k) => (
-                              <View key={`${w}-${k}`} style={[st.litChip, { backgroundColor: toneFor(2) + "22" }]}>
-                                <Text style={[st.litChipText, { color: toneFor(2), fontFamily: "Geologica_700Bold" }]}>{w}</Text>
-                              </View>
-                            ))}
-                          </View>
-                        </>
-                      ) : (
-                        <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Geologica_400Regular" }]}>
-                          {ru ? "Все слова произнесены — отлично!" : "Every word was said — great!"}
-                        </Text>
-                      )}
-                    </>
-                  ) : (
-                    <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Geologica_400Regular" }]}>
-                      {ru ? "Речь не распозналась — проверь микрофон/связь." : "Speech wasn't recognized — check mic/connection."}
-                    </Text>
-                  )}
-                </View>
-              ) : null}
-
-              {/* Грамотность — ядро оценки (вес 40, только интервью) */}
-              {!isTongue && r.literacy ? (
-                <View style={[st.litCard, { borderColor: toneFor(r.literacy.overall10) + "44", backgroundColor: toneFor(r.literacy.overall10) + (isDark ? "1E" : "12") }]}>
-                <View style={st.litHead}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[st.litTitle, { color: colors.text, fontFamily: "Geologica_800ExtraBold" }]}>
-                      {ru ? "Грамотность" : "Literacy"}
-                      <Text style={[st.aspTag, { color: colors.textMuted, fontFamily: "Geologica_600SemiBold" }]}>{ru ? "  · вес 40" : "  · w 40"}</Text>
-                    </Text>
-                    <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Geologica_400Regular" }]}>
-                      {ru
-                        ? "Слова-паразиты и грамматика словоформ. Главный параметр речи."
-                        : "Filler words and word-form grammar. The core of the score."}
-                    </Text>
-                  </View>
-                  <Text style={[st.litScore, { color: toneFor(r.literacy.overall10), fontFamily: "Geologica_700Bold" }]}>
-                    {r.literacy.available ? fmtScore(r.literacy.overall10) : "—"}
-                  </Text>
-                </View>
-
-                {r.literacy.available ? (
-                  <>
-                    <Text style={[st.litSub, { color: colors.textMuted, fontFamily: "Geologica_700Bold" }]}>
-                      {ru
-                        ? `Паразиты ${fmtScore(r.literacy.g1 / 10)} · Словоформы ${fmtScore(r.literacy.g2 / 10)} · Построение ${fmtScore(r.literacy.g3 / 10)}`
-                        : `Fillers ${fmtScore(r.literacy.g1 / 10)} · Word forms ${fmtScore(r.literacy.g2 / 10)} · Structure ${fmtScore(r.literacy.g3 / 10)}`}
-                    </Text>
-                    {r.literacy.incomplete ? (
-                      <Text style={[st.litHabit, { color: toneFor(3), fontFamily: "Geologica_800ExtraBold" }]}>
-                        {ru
-                          ? "Мысль звучит незавершённой или ответ слишком короткий."
-                          : "The thought sounds unfinished or the answer is too short."}
-                      </Text>
-                    ) : null}
-                    {r.literacy.habit ? (
-                      <Text style={[st.litHabit, { color: colors.text, fontFamily: "Geologica_800ExtraBold" }]}>
-                        {ru ? `Твоё слово-паразит: «${r.literacy.habit.lemma}» ×${r.literacy.habit.count}` : `Your filler word: “${r.literacy.habit.lemma}” ×${r.literacy.habit.count}`}
-                      </Text>
-                    ) : null}
-                    {r.literacy.violations.length ? (
-                      <View style={st.litViolWrap}>
-                        {r.literacy.violations.map((v) => (
-                          <View key={v.lemma} style={[st.litChip, { backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(20,22,26,0.05)" }]}>
-                            <Text style={[st.litChipText, { color: colors.textSecondary, fontFamily: "Geologica_700Bold" }]}>
-                              «{v.lemma}» ×{v.count}
-                            </Text>
-                          </View>
-                        ))}
-                      </View>
-                    ) : (
-                      <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Geologica_400Regular" }]}>
-                        {ru ? "Паразитов и грубых форм не найдено — чисто." : "No fillers or bad forms found — clean."}
-                      </Text>
-                    )}
-                  </>
-                ) : (
-                  <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Geologica_400Regular" }]}>
-                    {ru ? "Недостаточно распознанного текста для оценки грамотности." : "Not enough recognized text to score literacy."}
-                  </Text>
-                )}
-                </View>
-              ) : null}
-
-              {/* Per-aspect rows with a short explanation each */}
-              <View style={st.aspList}>
-                {ASPECTS.map((asp) => (
-                  <View key={asp.key} style={st.aspRow}>
-                    <Text style={[st.aspVal, { color: asp.internal ? colors.textMuted : toneFor(Number(a.score[asp.key] ?? 0)), fontFamily: "Geologica_700Bold" }]}>
-                      {fmtScore(Number(a.score[asp.key] ?? 0))}
-                    </Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[st.aspLabel, { color: colors.text, fontFamily: "Geologica_800ExtraBold" }]}>
-                        {asp.label}
-                        {asp.internal ? (
-                          <Text style={[st.aspTag, { color: colors.textMuted, fontFamily: "Geologica_600SemiBold" }]}>
-                            {ru ? "  · внутр." : "  · internal"}
-                          </Text>
-                        ) : null}
-                      </Text>
-                      <Text style={[st.aspDesc, { color: colors.textSecondary, fontFamily: "Geologica_400Regular" }]}>
-                        {asp.desc}
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-
-              {a.recommendations && a.recommendations.length ? (
-                <Text style={[st.devNote, { color: colors.textSecondary, fontFamily: "Geologica_400Regular" }]}>
-                  {(ru ? "Замечания: " : "Notes: ") + a.recommendations.join(" · ")}
-                </Text>
-              ) : null}
-            </View>
-          );
-        })}
-
-        <Text style={[st.devPrivacy, { color: colors.textMuted, fontFamily: "Geologica_600SemiBold" }]}>
-          {ru
-            ? "Записи не сохраняются на устройстве и удаляются при выходе из уровня."
-            : "Recordings are never saved on the device and are erased when you leave the level."}
+        <Text style={[st.devLabel, { color: labelColor, marginTop: 36, marginBottom: 12 }]}>
+          {isTongue ? (ru ? "СКОРОГОВОРКИ" : "TONGUE TWISTERS") : ru ? "ОТВЕТЫ" : "ANSWERS"}
         </Text>
-      </ScrollView>
 
-      <View style={[st.devFooter, { paddingBottom: bottomPad + 16, backgroundColor: colors.background }]}>
-        <Pressable onPress={onContinue} style={({ pressed }) => [st.pill, st.nextPill, { opacity: pressed ? 0.9 : 1 }]}>
-          <Text style={[st.pillText, { color: brand.onGold, fontFamily: "Geologica_800ExtraBold" }]}>
-            {ru ? "Продолжить" : "Continue"}
-          </Text>
-          <Ionicons name="arrow-forward" size={20} color={brand.onGold} />
+        <View style={{ gap: 12 }}>
+          {rows.map((r, i) => {
+            const a = r.analysis;
+            const wordCount = r.transcript.trim().split(/\s+/).filter(Boolean).length;
+            const hasAudio = r.durationSec > 0;
+            const expanded = !!open[i];
+            const core = isTongue
+              ? { label: ru ? "Точность текста" : "Text accuracy", value: r.accuracy?.available ? r.accuracy.score10 : null }
+              : { label: ru ? "Грамотность" : "Literacy", value: r.literacy?.available ? r.literacy.overall10 : null };
+            const metrics: Array<{ label: string; value: number | null }> = [
+              core,
+              { label: ru ? "Уверенность" : "Confidence", value: Number(a.score.confidence ?? 0) },
+              { label: ru ? "Выразительность" : "Expressiveness", value: Number(a.score.expressiveness ?? 0) },
+              { label: ru ? "Чёткость" : "Clarity", value: Number(a.score.clarity ?? 0) },
+              { label: ru ? "Громкость" : "Volume", value: Number(a.score.volume ?? 0) },
+            ];
+            return (
+              <View key={i} style={[st.devCard, cardStyle, { gap: 14 }]}>
+                <View style={st.devRowHead}>
+                  <Text style={[st.devLabel, { color: labelColor }]}>
+                    {(isTongue ? (ru ? "СКОРОГОВОРКА " : "TWISTER ") : ru ? "ВОПРОС " : "QUESTION ") +
+                      (i + 1) +
+                      (hasAudio ? " · " + fmtDuration(r.durationSec) : "")}
+                  </Text>
+                  <View style={st.devAnsScore}>
+                    <Text style={[st.devAnsScoreNum, { color: theme.accentInk }]}>{fmtScore(r.overall10)}</Text>
+                    <Text style={[st.devAnsScoreMax, { color: dimColor }]}>/10</Text>
+                  </View>
+                </View>
+                <Text style={[st.devQ, { color: theme.text }]}>{r.question}</Text>
+
+                <PlaybackBar
+                  wave={waves[i] ?? []}
+                  durationSec={r.durationSec}
+                  playing={playingIndex === i}
+                  progress={playingIndex === i ? playProgress : 0}
+                  disabled={!hasAudio}
+                  onPress={() => onPlay(i)}
+                  ru={ru}
+                />
+
+                <View style={[st.devDivider, { backgroundColor: dividerColor }]} />
+                <Pressable
+                  onPress={() => setOpen((m) => ({ ...m, [i]: !m[i] }))}
+                  style={st.devToggle}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded }}
+                >
+                  <Text style={[st.devToggleText, { color: isDark ? "rgba(240,238,233,0.7)" : theme.textSecondary }]}>
+                    {ru ? "Характеристики" : "Breakdown"}
+                  </Text>
+                  <View style={[st.devChevron, { backgroundColor: isDark ? "rgba(240,238,233,0.08)" : "rgba(38,38,40,0.06)" }]}>
+                    <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={16} color={theme.text} />
+                  </View>
+                </Pressable>
+
+                {expanded ? (
+                  <View style={{ gap: 16 }}>
+                    <View style={{ gap: 6 }}>
+                      <Text style={[st.devSubLabel, { color: isDark ? "rgba(240,238,233,0.4)" : theme.textMuted }]}>
+                        {ru ? `ТРАНСКРИБАЦИЯ · ${wordCount} сл.` : `TRANSCRIPTION · ${wordCount} w.`}
+                      </Text>
+                      <Text style={[st.devTranscript, { color: r.transcript ? theme.textSecondary : isDark ? "rgba(240,238,233,0.45)" : theme.textMuted }]}>
+                        {r.transcript
+                          ? `«${r.transcript}»`
+                          : isTongue
+                            ? ru ? "Речь не распознана - проверь микрофон и связь" : "Speech not recognized - check mic and connection"
+                            : ru ? "Речь не распознана - нет связи с сервером" : "Speech not recognized - no connection to the server"}
+                      </Text>
+                    </View>
+                    <View style={{ gap: 12 }}>
+                      {metrics.map((m) => (
+                        <MetricRow key={m.label} label={m.label} value={m.value} isDark={isDark} />
+                      ))}
+                    </View>
+                  </View>
+                ) : null}
+              </View>
+            );
+          })}
+        </View>
+
+        <Pressable
+          onPress={onContinue}
+          style={({ pressed }) => [
+            st.devContinue,
+            { backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.9 : 1 },
+          ]}
+        >
+          <Text style={[st.devContinueText, { color: theme.accentText }]}>{ru ? "Продолжить" : "Continue"}</Text>
         </Pressable>
-      </View>
+      </ScrollView>
     </View>
   );
 }
 
 const st = StyleSheet.create({
-  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, gap: 12 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingLeft: 20, paddingRight: 20 },
   exitBtn: { width: 40, height: 40, alignItems: "flex-start", justifyContent: "center" },
-  dotsRow: { flex: 1, flexDirection: "row", gap: 6, alignItems: "center" },
-  dot: { height: 5, borderRadius: 3 },
+  // Step progress (Figma 174:1892): 258pt wide, 28pt circles over an 8pt track.
+  stepWrap: { width: 258, height: 28, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  stepTrack: { position: "absolute", left: 14, right: 14, top: 10, height: 8, borderRadius: 4, overflow: "hidden" },
+  stepTrackDone: { height: 8, borderRadius: 4 },
+  stepDot: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  stepNum: { fontFamily: "Geologica_900Black", fontSize: 13 },
   titleWrap: { paddingHorizontal: 28, paddingTop: 18, gap: 4 },
-  kicker: { fontSize: 12, letterSpacing: 1.6 },
-  levelTitle: { fontSize: 22, lineHeight: 28 },
+  kicker: { fontSize: 12 },
+  levelTitle: { fontSize: 22, lineHeight: 28, letterSpacing: -0.11 },
   stage: { flex: 1 },
   // Absolutely filled so the entering and exiting cards overlap in the SAME
   // spot during a swap (slide / cross-fade) instead of stacking in flow — the
@@ -1097,39 +1245,41 @@ const st = StyleSheet.create({
     paddingHorizontal: 22,
   },
   card: {
-    borderRadius: 28,
-    borderWidth: 1,
+    borderRadius: 22,
+    borderWidth: 2,
     overflow: "hidden",
     paddingVertical: 40,
-    paddingHorizontal: 26,
+    paddingHorizontal: 24,
     minHeight: 220,
     justifyContent: "center",
     gap: 16,
   },
   instruction: { fontSize: 14, lineHeight: 20, textAlign: "center" },
-  contentText: { fontSize: 27, lineHeight: 36, textAlign: "center", letterSpacing: 0.2 },
+  contentText: { fontSize: 27, lineHeight: 36, textAlign: "center", letterSpacing: -0.27 },
   controls: { paddingHorizontal: 24, alignItems: "center", gap: 12, minHeight: 150, justifyContent: "flex-end" },
   controlSlot: { width: "100%", alignItems: "center", minHeight: 64, justifyContent: "center" },
   emptyHint: { fontSize: 13, lineHeight: 18, textAlign: "center", paddingHorizontal: 12 },
   replaceQWrap: { alignItems: "center" },
+  // "Другой вопрос" (Figma 37:5316): 40pt pill, 2pt hairline.
   replaceQBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 7,
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    borderWidth: 1,
+    gap: 8,
+    height: 40,
+    paddingLeft: 16,
+    paddingRight: 10,
+    borderRadius: 32,
+    borderWidth: 2,
   },
   replaceQText: { fontSize: 13.5 },
   replaceQCost: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
+    gap: 4,
+    height: 20,
     marginLeft: 2,
-    paddingVertical: 2,
     paddingHorizontal: 7,
-    borderRadius: 10,
+    borderRadius: 32,
   },
   replaceQCostText: { fontSize: 12, fontFamily: "Geologica_800ExtraBold" },
   scoredWrap: { width: "100%", alignItems: "center", gap: 12 },
@@ -1140,18 +1290,22 @@ const st = StyleSheet.create({
     gap: 10,
     minWidth: 240,
     paddingHorizontal: 30,
-    paddingVertical: 16,
-    borderRadius: 30,
+    height: 56,
+    borderRadius: 32,
   },
-  nextPill: {
-    backgroundColor: brand.gold,
-    ...Platform.select({
-      ios: { shadowColor: brand.gold, shadowOpacity: 0.4, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } },
-      android: { elevation: 6 },
-      default: {},
-    }),
+  // "Анализирую…" (Figma 37:5601): full-width 64pt gold pill.
+  analyzingPill: {
+    width: "100%",
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    marginBottom: 6,
   },
-  pillText: { fontSize: 16, letterSpacing: 0.3 },
+  pillText: { fontSize: 16 },
   retryLink: { flexDirection: "row", alignItems: "center", gap: 5, paddingVertical: 4 },
   retryText: { fontSize: 13 },
   mini: {
@@ -1168,81 +1322,105 @@ const st = StyleSheet.create({
   miniVerdict: { fontSize: 16 },
   starsRow: { flexDirection: "row", gap: 3, marginTop: 3 },
 
-  // Interview corridor
-  // Outer plain View carries absolute-fill + zIndex; the animated inner view
-  // fills it and keeps the centering (reanimated 4 layout anim would otherwise
-  // override position:absolute and stack the overlay in flow).
+  // Corridor (Figma 37:5228). Outer plain View carries absolute fill + zIndex;
+  // layout animations live on inner views only.
   corridor: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 40,
     zIndex: 20,
     elevation: 20,
   },
-  corridorInner: {
-    alignItems: "center",
+  corridorPress: { flex: 1, alignItems: "center", justifyContent: "center", paddingBottom: 80 },
+  storyTrack: { position: "absolute", left: 16, right: 16, height: 3, borderRadius: 1.5, overflow: "hidden" },
+  storyFill: { height: 3, borderRadius: 1.5 },
+  corridorClose: { position: "absolute", right: 22, width: 24, height: 24, alignItems: "center", justifyContent: "center" },
+  corridorCard: {
+    width: 322,
+    backgroundColor: "#F0EEE9",
+    borderWidth: 2,
+    borderColor: "#262628",
+    borderRadius: 22,
+    padding: 15,
+    paddingBottom: 24,
   },
-  corridorQuote: { fontSize: 22, lineHeight: 30, textAlign: "center", marginTop: 24 },
-  corridorHint: { fontSize: 11, letterSpacing: 2, marginTop: 16 },
+  corridorArt: { width: 288, height: 288, borderRadius: 22, overflow: "hidden", backgroundColor: "#262628" },
+  corridorQuote: {
+    fontFamily: "Geologica_900Black",
+    fontSize: 24,
+    lineHeight: 28.8,
+    letterSpacing: -0.12,
+    color: "#262628",
+    marginTop: 18,
+    paddingHorizontal: 4,
+  },
+  corridorAuthor: {
+    fontFamily: "Geologica_700Bold",
+    fontSize: 14,
+    color: "rgba(38,38,40,0.55)",
+    marginTop: 16,
+    paddingHorizontal: 4,
+  },
+  corridorHint: { position: "absolute", left: 0, right: 0, textAlign: "center", fontFamily: "Geologica_600SemiBold", fontSize: 12 },
 
-  // Answer-breakdown report — outer plain View fills + zIndex, animated inner fills it.
+  // Answer breakdown (Figma 205:2052).
   devRoot: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 30 },
-  devTitle: { fontSize: 26, lineHeight: 31 },
-  devLede: { fontSize: 14, lineHeight: 20, marginTop: -6 },
-  devCard: { borderRadius: 18, borderWidth: 1, padding: 16, gap: 8 },
-  devAggScore: { fontSize: 40, lineHeight: 46 },
-  devAggMax: { fontSize: 20 },
-  devAggNote: { fontSize: 13, lineHeight: 19 },
-  devRowHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  devQNum: { fontSize: 11, letterSpacing: 1.2 },
-  devScore: { fontSize: 22 },
-  devQ: { fontSize: 16, lineHeight: 22 },
-  playBtn: {
+  devTitle: { fontFamily: "Geologica_900Black", fontSize: 28, lineHeight: 34, letterSpacing: -0.28 },
+  devLabel: { fontFamily: "Geologica_600SemiBold", fontSize: 12, letterSpacing: 0.6 },
+  devScoreRow: { flexDirection: "row", alignItems: "baseline", gap: 6 },
+  devScore: { fontFamily: "Geologica_900Black", fontSize: 96, lineHeight: 100, letterSpacing: -2.88 },
+  devScoreMax: { fontFamily: "Geologica_700Bold", fontSize: 30, letterSpacing: -0.3 },
+  devCard: { borderRadius: 22, borderWidth: 2, padding: 18 },
+  devTip: { fontFamily: "Geologica_700Bold", fontSize: 16, lineHeight: 19.2 },
+  devDivider: { height: 1, alignSelf: "stretch" },
+  devNoteRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  devNoteDot: { width: 6, height: 6, borderRadius: 3 },
+  devNote: { flex: 1, fontFamily: "Geologica_600SemiBold", fontSize: 15, lineHeight: 19 },
+  devAiNote: { fontFamily: "Geologica_400Regular", fontSize: 12.5, lineHeight: 17.5 },
+  devRowHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 28 },
+  devAnsScore: { flexDirection: "row", alignItems: "baseline", gap: 2 },
+  devAnsScoreNum: { fontFamily: "Geologica_900Black", fontSize: 22, letterSpacing: -0.11 },
+  devAnsScoreMax: { fontFamily: "Geologica_700Bold", fontSize: 13 },
+  devQ: { fontFamily: "Geologica_800ExtraBold", fontSize: 17, lineHeight: 20.4 },
+  devToggle: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 30 },
+  devToggleText: { fontFamily: "Geologica_700Bold", fontSize: 14 },
+  devChevron: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  devSubLabel: { fontFamily: "Geologica_600SemiBold", fontSize: 11 },
+  devTranscript: { fontFamily: "Geologica_400Regular", fontStyle: "italic", fontSize: 14, lineHeight: 18 },
+  metricRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  metricLabel: { width: 134, fontFamily: "Geologica_700Bold", fontSize: 14 },
+  metricTrack: { flex: 1, height: 6, borderRadius: 3, overflow: "hidden" },
+  metricFill: { height: 6, borderRadius: 3 },
+  metricValue: { width: 26, textAlign: "right", fontFamily: "Geologica_700Bold", fontSize: 15 },
+  devContinue: {
+    marginTop: 44,
+    height: 58,
+    borderRadius: 32,
+    borderWidth: 4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  devContinueText: { fontFamily: "Geologica_800ExtraBold", fontSize: 17 },
+
+  // Recorder bar · Playback (Figma 151:1584)
+  pbBar: {
+    height: 66,
+    borderRadius: 33,
+    borderWidth: 3.5,
     flexDirection: "row",
     alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 7,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginTop: 2,
+    paddingLeft: 9,
+    paddingRight: 18,
+    overflow: "hidden",
   },
-  playText: { fontSize: 13.5 },
-  devSubLabel: { fontSize: 10.5, letterSpacing: 1.2, marginTop: 6 },
-  devTranscript: { fontSize: 14, lineHeight: 21 },
-  aiRow: { flexDirection: "row", alignItems: "flex-start", gap: 9, borderRadius: 12, borderWidth: 1, padding: 11, marginTop: 4 },
-  aiTitle: { fontSize: 13.5, lineHeight: 19 },
-  aiNote: { fontSize: 12.5, lineHeight: 18, marginTop: 3 },
-  aiOffline: { fontSize: 12.5, lineHeight: 18, marginTop: 4 },
-  litCard: { borderRadius: 14, borderWidth: 1, padding: 13, gap: 8, marginTop: 8 },
-  litHead: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  litTitle: { fontSize: 16 },
-  litScore: { fontSize: 30, lineHeight: 32 },
-  litSub: { fontSize: 12.5, lineHeight: 18 },
-  litHabit: { fontSize: 14, lineHeight: 19 },
-  litViolWrap: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 2 },
-  litChip: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 9 },
-  litChipText: { fontSize: 12.5 },
-  aspList: { gap: 12, marginTop: 8 },
-  aspRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
-  aspVal: { fontSize: 20, minWidth: 34, textAlign: "right" },
-  aspLabel: { fontSize: 15 },
-  aspTag: { fontSize: 12 },
-  aspDesc: { fontSize: 12.5, lineHeight: 18, marginTop: 2 },
-  devNote: { fontSize: 12.5, lineHeight: 18, marginTop: 4 },
-  devPrivacy: { fontSize: 12, lineHeight: 17, textAlign: "center", marginTop: 4, paddingHorizontal: 10 },
-  devFooter: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: "center",
-    paddingTop: 12,
-  },
+  pbPlay: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  pbStop: { width: 11, height: 11, borderRadius: 2 },
+  pbWave: { flex: 1, height: 50, marginLeft: 12, marginRight: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  pbWaveBar: { width: 2.7, borderRadius: 1.4 },
+  pbHead: { position: "absolute", top: 2, width: 7, alignItems: "center" },
+  pbHeadDot: { width: 7, height: 7, borderRadius: 3.5 },
+  pbHeadLine: { width: 2.3, height: 42, borderRadius: 1.2, marginTop: -3.5 },
+  pbTime: { fontFamily: "Geologica_700Bold", fontSize: 12 },
 });

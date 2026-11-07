@@ -41,6 +41,12 @@ import ReadingLevelView from "@/components/ReadingLevelView";
 import ReadingResultsView from "@/components/ReadingResultsView";
 import { aspectsFromScore10, ASPECT_META } from "@/components/ScoreFlower";
 import OscarMascot from "@/components/OscarMascot";
+import { Image as ExpoImage } from "expo-image";
+import { useTheme } from "@/context/ThemeContext";
+
+// Figma "Оскар · все позы" exports for the level score screen, keyed to alpha.
+const OSCAR_SCORE_HAPPY = require("@/assets/figma/levels/oscar-happy.png");
+const OSCAR_SCORE_SAD = require("@/assets/figma/levels/oscar-sad.png");
 import TaskFlowView from "@/components/TaskFlowView";
 import { aggregateAnalyses } from "@/services/analyzeGenericTask";
 import WarmupLevelView from "@/components/warmup/WarmupLevelView";
@@ -338,11 +344,14 @@ export function FlowerResultWindow({
   const topPad = Platform.OS === "web" ? 28 : insets.top + 8;
   const bottomPad = Platform.OS === "web" ? 28 : insets.bottom + 10;
 
-  const tone = (v: number) => (v >= 8 ? RS_HIGH : v >= 6 ? RS_MID : v >= 4 ? "#FF9E4A" : RS_LOW);
-  const scoreColor = tone(overall);
+  const { theme } = useTheme();
+  // Figma (37:5981 / 37:6190): the score + tier are always the gold accent
+  // (ink on the light theme), regardless of tier.
+  const scoreColor = theme.accentInk;
 
-  // Oscar reacts to the result: thumbs-up for excellent, joy for good,
-  // honest sadness for a weak take. Rendered at a fixed size — never scaled.
+  // Oscar reacts to the result: thumbs-up for excellent (Rive), joy for good
+  // and sadness for a weak take — the latter two use the Figma pose exports
+  // ("Oscar 02 · Радуется", "Oscar 03 · Грустит").
   const oscarEmotion: "thumbup" | "happy" | "sad" =
     overall >= 8 ? "thumbup" : overall >= 6 ? "happy" : "sad";
   const tierLabel =
@@ -354,16 +363,12 @@ export function FlowerResultWindow({
           ? lang === "ru" ? "Неплохо" : "Not bad"
           : lang === "ru" ? "Есть над чем поработать" : "Room to grow";
 
-  // Signature purple-black canvas to match the re-skinned flower.
-  const bgColors = isDark
-    ? (["#0F0E14", "#15121F", "#0F0E14"] as const)
-    : (["#F5F3FB", "#EEEAF7", "#F5F3FB"] as const);
-  const fgText = isDark ? "#F2EEFB" : colors.text;
-  const fgMuted = isDark ? "rgba(242,238,251,0.62)" : colors.textSecondary;
-  const cardBg = isDark ? "rgba(124,77,255,0.07)" : "rgba(91,44,224,0.05)";
-  const cardBorder = isDark ? "rgba(124,120,168,0.20)" : "rgba(91,44,224,0.12)";
-  const retryBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(30,20,50,0.04)";
-  const retryBorder = isDark ? "rgba(255,255,255,0.10)" : "rgba(30,20,50,0.08)";
+  const fgText = theme.text;
+  const fgMuted = isDark ? "rgba(240,238,233,0.62)" : theme.textSecondary;
+  const cardBg = isDark ? "rgba(255,216,87,0.07)" : "rgba(255,216,87,0.14)";
+  const cardBorder = isDark ? "rgba(240,238,233,0.06)" : "rgba(38,38,40,0.08)"; // stroke/shape
+  const retryBg = isDark ? "rgba(240,238,233,0.06)" : "rgba(38,38,40,0.04)";
+  const retryBorder = isDark ? "rgba(240,238,233,0.10)" : "rgba(38,38,40,0.08)";
 
   // Merge the coaching tip + growth points into ONE message (tip leads, the
   // remaining growth points become supporting lines).
@@ -374,16 +379,22 @@ export function FlowerResultWindow({
   const hasAdvice = !!tipText || growthLines.length > 0;
 
   return (
-    <View style={{ flex: 1, backgroundColor: bgColors[0] }}>
-      <LinearGradient colors={bgColors} style={StyleSheet.absoluteFill} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} />
-
+    <View style={{ flex: 1, backgroundColor: theme.bg }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[rs.content, { paddingTop: topPad + 28, paddingBottom: bottomPad + 8 }]}
       >
         {/* Oscar leads the screen — big, centered, no card around him */}
         <Animated.View entering={FadeIn.duration(450)} style={rs.oscarSection}>
-          <OscarMascot emotion={oscarEmotion} size={312} />
+          {oscarEmotion === "thumbup" ? (
+            <OscarMascot emotion="thumbup" size={312} />
+          ) : (
+            <ExpoImage
+              source={oscarEmotion === "happy" ? OSCAR_SCORE_HAPPY : OSCAR_SCORE_SAD}
+              style={rs.oscarPose}
+              contentFit="contain"
+            />
+          )}
         </Animated.View>
 
         {/* Overall score right under the mascot — plain number, no circle */}
@@ -426,7 +437,7 @@ export function FlowerResultWindow({
         {hasAdvice ? (
           <Animated.View
             entering={FadeInDown.delay(220).duration(400)}
-            style={[rs.adviceCard, { backgroundColor: scoreColor + "12", borderColor: scoreColor + "40" }]}
+            style={[rs.adviceCard, { backgroundColor: cardBg, borderColor: cardBorder }]}
           >
             <View style={rs.adviceHead}>
               <Text style={[rs.adviceTitle, { color: scoreColor, fontFamily: "Geologica_600SemiBold" }]}>
@@ -458,10 +469,14 @@ export function FlowerResultWindow({
           ) : null}
           <Pressable
             onPress={onPrimary}
-            style={({ pressed }) => [rs.nextBtn, { backgroundColor: "#FFD857", opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
+            style={({ pressed }) => [
+              rs.nextBtn,
+              rs.flowerNextBtn,
+              { backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+            ]}
           >
-            <Text style={[rs.nextBtnText, { fontFamily: "Geologica_700Bold", color: "#3A2C00" }]}>{primaryLabel}</Text>
-            <Ionicons name="arrow-forward" size={18} color="#3A2C00" />
+            <Text style={[rs.nextBtnText, { fontFamily: "Geologica_700Bold", color: theme.accentText }]}>{primaryLabel}</Text>
+            <Ionicons name="arrow-forward" size={17} color={theme.accentText} />
           </Pressable>
         </Animated.View>
       </ScrollView>
@@ -1739,8 +1754,10 @@ const rs = StyleSheet.create({
   },
   nextBtnText: { fontSize: 16 },
 
-  // Flower result window
-  heroSection: { alignItems: "center", gap: 4, marginTop: -4 },
+  // Flower result window (Figma 37:5981 "Оценка уровня")
+  heroSection: { alignItems: "center", gap: 4, marginTop: -14 },
+  oscarPose: { width: 406, height: 406 },
+  flowerNextBtn: { height: 48, paddingVertical: 0, borderRadius: 32, borderWidth: 4 },
   scoreRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1753,10 +1770,10 @@ const rs = StyleSheet.create({
   metricsCard: {
     flexDirection: "row",
     flexWrap: "wrap",
-    borderWidth: 1,
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderWidth: 2,
+    borderRadius: 22,
+    paddingHorizontal: 13,
+    paddingVertical: 11,
     rowGap: 12,
   },
   metricItem: {
@@ -1776,7 +1793,7 @@ const rs = StyleSheet.create({
     marginTop: 8,
     marginBottom: -4,
   },
-  adviceCard: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 9 },
+  adviceCard: { borderWidth: 2, borderRadius: 22, padding: 16, gap: 9 },
   adviceHead: { flexDirection: "row", alignItems: "center", gap: 7 },
   adviceTitle: { fontSize: 13, letterSpacing: 0.6, textTransform: "uppercase" },
   adviceLead: { fontSize: 15.5, lineHeight: 22 },

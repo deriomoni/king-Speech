@@ -6,13 +6,12 @@ import {
   StyleSheet,
   Platform,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/context/ThemeContext";
 import { useLang } from "@/context/LangContext";
 import WaveformRecorder from "@/components/WaveformRecorder";
-import { useWaveformBars } from "@/hooks/useWaveformBars";
+import { useWaveformBars, WAVEFORM_BAR_MIN, WAVEFORM_BAR_MAX } from "@/hooks/useWaveformBars";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -42,7 +41,13 @@ interface Props {
    * audio encoded as base64 (no data: prefix). May be undefined if the mic
    * was unavailable; consumers must handle that gracefully.
    */
-  onRecordingComplete: (durationSeconds: number, audioBase64?: string, mimeType?: string) => void;
+  onRecordingComplete: (
+    durationSeconds: number,
+    audioBase64?: string,
+    mimeType?: string,
+    /** Normalized (0..1) amplitude bars of the take, for a replay waveform. */
+    waveform?: number[],
+  ) => void;
   colors: import("@/constants/colors").AppColors;
   /** Overrides the idle start-button label (default: "Начать запись"). */
   startLabel?: string;
@@ -54,6 +59,7 @@ export default function WaveformVoiceRecorder({
   startLabel,
 }: Props) {
   const { lang } = useLang();
+  const { theme } = useTheme();
   const [phase, setPhase] = useState<RecordingPhase>("idle");
 
   const [webStream, setWebStream] = useState<MediaStream | null>(null);
@@ -295,6 +301,9 @@ export default function WaveformVoiceRecorder({
 
   const handleStop = useCallback(async () => {
     const durationSec = elapsedSeconds;
+    const waveform = bars.map((b) =>
+      Math.max(0, Math.min(1, (b.height - WAVEFORM_BAR_MIN) / (WAVEFORM_BAR_MAX - WAVEFORM_BAR_MIN))),
+    );
     setPhase("analyzing");
 
     let audioBase64: string | undefined;
@@ -412,11 +421,11 @@ export default function WaveformVoiceRecorder({
       }
     }
 
-    onRecordingComplete(Math.max(1, durationSec), audioBase64, mimeType);
+    onRecordingComplete(Math.max(1, durationSec), audioBase64, mimeType, waveform);
     // Reset to idle so a follow-up retry from the parent shows the start pill.
     setPhase("idle");
     reset();
-  }, [awaitSessionStop, elapsedSeconds, onRecordingComplete, reset]);
+  }, [awaitSessionStop, bars, elapsedSeconds, onRecordingComplete, reset]);
 
   if (phase === "idle" || phase === "done" || phase === "analyzing") {
     const label = startLabel ?? (lang === "en" ? "Start recording" : "Начать запись");
@@ -431,17 +440,15 @@ export default function WaveformVoiceRecorder({
           testID="voice-recorder-start"
           style={({ pressed }) => [
             styles.startPillWrap,
-            { opacity: disabled ? 0.5 : pressed ? 0.9 : 1 },
+            {
+              backgroundColor: theme.accent,
+              borderColor: theme.ctaStroke,
+              opacity: disabled ? 0.5 : pressed ? 0.9 : 1,
+            },
           ]}
         >
-          <LinearGradient
-            colors={["#FFDE5C", "#FFC01E"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[StyleSheet.absoluteFill, { borderRadius: 28 }]}
-          />
-          <Ionicons name="mic" size={20} color="#3A2C00" />
-          <Text style={styles.startPillText}>{label}</Text>
+          <Ionicons name="mic" size={17} color={theme.accentText} />
+          <Text style={[styles.startPillText, { color: theme.accentText }]}>{label}</Text>
         </Pressable>
       </View>
     );
@@ -470,31 +477,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 8,
   },
+  // Figma voice-recorder-start (141:2086): 220x51 gold pill, 4pt CTA stroke.
   startPillWrap: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
     paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 28,
-    overflow: "hidden",
+    height: 51,
+    borderRadius: 32,
+    borderWidth: 4,
     minWidth: 220,
     justifyContent: "center",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#F5A623",
-        shadowOpacity: 0.35,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 6 },
-      },
-      android: { elevation: 5 },
-      default: {},
-    }),
   },
   startPillText: {
-    color: "#3A2C00",
     fontFamily: "Geologica_700Bold",
     fontSize: 16,
-    letterSpacing: 0.4,
   },
 });
