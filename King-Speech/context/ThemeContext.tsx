@@ -46,7 +46,7 @@ export const DARK = {
   green: brandColors.success,
   inputBg: "transparent",
   inputBorder: "rgba(240,238,233,0.15)",
-  tabBar: "#262628",
+  tabBar: "#18181A",
   tabBarBorder: "rgba(240,238,233,0.06)",
   shadow: "rgba(0,0,0,0.4)",
   divider: "rgba(240,238,233,0.08)",

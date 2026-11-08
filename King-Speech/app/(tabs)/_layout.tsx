@@ -53,7 +53,6 @@ const SLOTS: Slot[] = [
 
 const TAB_HEIGHT = 64;
 const ICON_SIZE = 30;
-const PILL_HEIGHT = 44;
 const BAR_PAD = 8;
 const BAR_BORDER = 5; // tab/border stroke width
 
@@ -63,14 +62,12 @@ const BAR_BORDER = 5; // tab/border stroke width
 const TAB_TOKENS = {
   // Values = Figma variables tab/* (component 2:117 dark, 17:858 light).
   dark: {
-    barBg: "#262628", // tab/bg
-    gradient: ["#323234", "#262628"] as const, // tab/glass-top → glass-bottom
+    barBg: "#18181A", // tab/bg (matches the darker app background)
+    gradient: ["#2A2A2C", "#18181A"] as const, // tab/glass-top → glass-bottom
     topHighlight: "rgba(240,238,233,0.14)", // tab/highlight
     border: "rgba(240,238,233,0.06)", // tab/border
     inactive: "#81807F", // tab/icon-inactive
     active: "#FFD857", // tab/icon-active
-    pillBorder: "rgba(255,216,87,0.55)", // tab/pill-border
-    pillGradient: ["rgba(255,216,87,0.30)", "rgba(255,216,87,0.16)"] as const, // tab/pill-from → pill-to
     shadowColor: "rgba(255,216,87,0.22)", // tab/shadow
   },
   light: {
@@ -80,8 +77,6 @@ const TAB_TOKENS = {
     border: "rgba(38,38,40,0.08)",
     inactive: "#A5A5A4",
     active: "#262628",
-    pillBorder: "rgba(255,216,87,1)",
-    pillGradient: ["rgba(255,216,87,0.55)", "rgba(255,216,87,0.35)"] as const,
     shadowColor: "rgba(255,216,87,0.20)",
   },
 } as const;
@@ -109,34 +104,7 @@ function SonicTabBar({ state, emitter, navigateToTab, descriptors }: BottomTabBa
   const focusedRoute = state.routes[state.index]?.name;
   const focusedIndex = SLOTS.findIndex((s) => s.routeName === focusedRoute);
 
-  const [barWidth, setBarWidth] = React.useState(0);
-  const slotWidth = barWidth > 0 ? (barWidth - BAR_BORDER * 2 - BAR_PAD * 2) / SLOTS.length : 0;
-  const pillWidth = slotWidth > 0 ? slotWidth * 0.82 : 0;
-
-  const pillX = useSharedValue(0);
-  const pillOpacity = useSharedValue(focusedIndex >= 0 ? 1 : 0);
-
-  React.useEffect(() => {
-    if (slotWidth === 0) return;
-    if (focusedIndex < 0) {
-      pillOpacity.value = withTiming(0, { duration: 180 });
-      return;
-    }
-    pillOpacity.value = withTiming(1, { duration: 180 });
-    const target =
-      BAR_PAD + focusedIndex * slotWidth + (slotWidth - pillWidth) / 2;
-    pillX.value = withSpring(target, {
-      damping: 18,
-      stiffness: 200,
-      mass: 0.7,
-    });
-  }, [focusedIndex, slotWidth, pillWidth]);
-
-  const pillStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: pillX.value }],
-    opacity: pillOpacity.value,
-    width: pillWidth,
-  }));
+  // No pill: the active tab is shown by its icon colour alone.
 
   if (tabBarHidden) return null;
 
@@ -170,7 +138,6 @@ function SonicTabBar({ state, emitter, navigateToTab, descriptors }: BottomTabBa
             shadowColor: tk.shadowColor,
           },
         ]}
-        onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
       >
         {/* Layer 1 — vertical glass gradient */}
         <LinearGradient
@@ -186,32 +153,6 @@ function SonicTabBar({ state, emitter, navigateToTab, descriptors }: BottomTabBa
           style={[styles.topHighlight, { backgroundColor: tk.topHighlight }]}
         />
 
-        {/* Active pill indicator */}
-        {slotWidth > 0 ? (
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.pill,
-              {
-                height: PILL_HEIGHT,
-                top: (TAB_HEIGHT - BAR_BORDER * 2 - PILL_HEIGHT) / 2,
-                borderRadius: PILL_HEIGHT / 2,
-              },
-              pillStyle,
-            ]}
-          >
-            <LinearGradient
-              colors={asGradient(tk.pillGradient)}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[StyleSheet.absoluteFill, { borderRadius: PILL_HEIGHT / 2 }]}
-            />
-            <View
-              style={[styles.pillBorder, { borderColor: tk.pillBorder }]}
-              pointerEvents="none"
-            />
-          </Animated.View>
-        ) : null}
 
         <View style={styles.row}>
           {SLOTS.map((slot, i) => (
@@ -338,15 +279,5 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-  },
-  pill: {
-    position: "absolute",
-    left: 0,
-    overflow: "hidden",
-  },
-  pillBorder: {
-    position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-    borderRadius: PILL_HEIGHT / 2,
-    borderWidth: 1,
   },
 });

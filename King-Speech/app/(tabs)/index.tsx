@@ -45,7 +45,6 @@ import { getPathBrickColor, darkenHex } from "@/constants/pathPalette";
 import { useTheme } from "@/context/ThemeContext";
 import FinalPortal from "@/components/path/FinalPortal";
 import { getRankTheme } from "@/components/path/rankTheme";
-import PathScrubber from "@/components/path/PathScrubber";
 import LevelIcon, { levelIconKind } from "@/components/path/LevelIcon";
 import BrickStroke from "@/components/path/BrickStroke";
 import DailyTipOverlay, { getDailyTip } from "@/components/DailyTipOverlay";
@@ -652,11 +651,6 @@ export default function PathScreen() {
     [scrollTopInset],
   );
 
-  // Raw, un-animated scroll for the drag scrubber (absolute content offset).
-  const scrubScrollTo = useCallback((y: number) => {
-    scrollRef.current?.scrollTo({ y: Math.max(0, y), animated: false });
-  }, []);
-
   const scrollToActive = useCallback(
     (force: boolean, animated: boolean = true) => {
       if (isOpenTestingEnabled) return;
@@ -1100,17 +1094,6 @@ export default function PathScreen() {
         </View>
       </Animated.ScrollView>
 
-      <PathScrubber
-        contentH={contentH}
-        viewportH={viewportH}
-        scrollY={scrollY}
-        topInset={scrollTopInset}
-        bottomInset={bottomPad}
-        accent={rankTheme.accent}
-        dark={colorScheme === "dark"}
-        onScrubTo={scrubScrollTo}
-      />
-
       <Animated.View
         pointerEvents={showFab ? "auto" : "none"}
         style={[
@@ -1119,8 +1102,8 @@ export default function PathScreen() {
             bottom: bottomPad + 90,
             backgroundColor:
               colorScheme === "dark"
-                ? "rgba(255,255,255,0.18)"
-                : "rgba(15,18,32,0.55)",
+                ? "rgba(255,255,255,0.10)"
+                : "rgba(15,18,32,0.32)",
           },
           fabStyle,
         ]}

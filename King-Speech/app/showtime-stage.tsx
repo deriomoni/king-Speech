@@ -5541,7 +5541,7 @@ export default function ShowtimeStageScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#262628" },
+  container: { flex: 1, backgroundColor: "#18181A" },
   audienceArea: { position: "absolute", top: 0, left: 0, right: 0, height: SH * 0.48, overflow: "hidden" },
   audienceInner: { position: "relative", width: SW, height: 180, marginTop: 80 },
   audienceFade: { position: "absolute", bottom: 0, left: 0, right: 0, height: 100 },

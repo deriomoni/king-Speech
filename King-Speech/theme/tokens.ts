@@ -1,6 +1,6 @@
 export const colors = {
   // core
-  bg: "#262628", // Figma bg/app
+  bg: "#18181A", // app background, dark theme (darker than Figma #262628 per user)
   surface: "#323234", // Figma surface/card
   border: "rgba(240,238,233,0.10)", // Figma border/card
   gold: "#FFD857", // DOMINANT accent (MAIN interface yellow): CTA buttons, rewards, progress, mascot

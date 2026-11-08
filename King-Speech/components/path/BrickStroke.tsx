@@ -7,7 +7,8 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 //   • locked   — solid black at 9%
 //   • active   — linear gradient white 77% → brick colour lightened 30% at 88%,
 //                and the gradient rotates so a shine runs around the brick
-//   • completed — the same gradient, standing still
+//   • completed — no gradient: the same thin edge as locked (black at 9%),
+//                 laid over a stroke in the brick's own colour
 
 const STROKE = 4;
 const REVOLUTION_MS = 1440; // one full lap of the shine (Figma: 8 × 0.18s)
@@ -81,13 +82,27 @@ export default function BrickStroke({
       style={{ position: "absolute", left: -o, top: -o, width: W, height: H, zIndex: 2 }}
     >
       <Svg width={W} height={H}>
-        {variant !== "locked" && (
+        {variant === "active" && (
           <Defs>
             <LinearGradient id={gid} gradientUnits="userSpaceOnUse" {...line}>
               <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.77} />
               <Stop offset="1" stopColor={lightenHex(brick, 0.3)} stopOpacity={0.88} />
             </LinearGradient>
           </Defs>
+        )}
+        {variant === "completed" && (
+          <Rect
+            x={o}
+            y={o}
+            width={width}
+            height={height}
+            rx={radius}
+            ry={radius}
+            fill="none"
+            strokeWidth={STROKE}
+            strokeLinejoin="round"
+            stroke={brick}
+          />
         )}
         <Rect
           x={o}
@@ -99,8 +114,8 @@ export default function BrickStroke({
           fill="none"
           strokeWidth={STROKE}
           strokeLinejoin="round"
-          stroke={variant === "locked" ? "#000000" : `url(#${gid})`}
-          strokeOpacity={variant === "locked" ? 0.09 : 1}
+          stroke={variant === "active" ? `url(#${gid})` : "#000000"}
+          strokeOpacity={variant === "active" ? 1 : 0.09}
         />
       </Svg>
     </View>
