@@ -9,7 +9,6 @@ import {
   SPARKLE1_SVG,
   SPARKLE2_SVG,
 } from "@/assets/figma/profile/svgs";
-import MatteGlass from "@/components/MatteGlass";
 
 // Figma "Card · Подписка (Pro)" (node 128:1130). The card is the same dark
 // glass slab in both themes (see the Light instance 12:358).
@@ -25,8 +24,7 @@ export default function ProPromoCard({
 }) {
   const en = lang === "en";
   return (
-    <View style={[styles.card, { zIndex: 0 }]}>
-      <MatteGlass radius={22} />
+    <View style={styles.card}>
       <LinearGradient
         colors={["rgba(240,238,233,0.12)", "rgba(240,238,233,0)"]}
         style={styles.sheen}

@@ -41,7 +41,6 @@ import {
   TROPHY_SVG,
   tintSvg,
 } from "@/assets/figma/profile/svgs";
-import MatteGlass from "@/components/MatteGlass";
 
 // Persisted background color the player picks for their profile screen only.
 const PROFILE_BG_KEY = "@kingspeech_profile_bg_v1";
@@ -150,12 +149,11 @@ function LinkTile({
       }}
       style={({ pressed }) => [
         styles.tile,
-        { height, paddingLeft: inset, paddingTop: inset, backgroundColor: theme.cardGlass, borderColor: strokeShape(theme), overflow: "hidden", zIndex: 0 },
+        { height, paddingLeft: inset, paddingTop: inset, backgroundColor: theme.card, borderColor: strokeShape(theme) },
         pressed && { opacity: 0.85 },
         style,
       ]}
     >
-      <MatteGlass radius={22} />
       <SvgXml xml={iconXml} width={iconW} height={iconH} />
       <SvgXml xml={arrow} width={14} height={14} style={styles.tileArrow} />
       <Text style={[styles.tileTitle, { color: theme.text, top: titleTop, left: inset }]} numberOfLines={1}>
