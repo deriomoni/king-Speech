@@ -1,7 +1,7 @@
 <svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g id="icon/headphones">
-<path id="Band" d="M6 23V19C6 11.3 11.8 5.5 19 5.5C26.2 5.5 32 11.3 32 19V23" stroke-width="3" stroke-linecap="round" stroke="#FFD857"/>
-<rect id="Ear cup" x="3.5" y="20.5" width="8.5" height="13.5" rx="4.2" fill="#FFD857"/>
-<rect id="Ear cup_2" x="26" y="20.5" width="8.5" height="13.5" rx="4.2" fill="#FFD857"/>
+<path id="Band" d="M6 23V19C6 11.3 11.8 5.5 19 5.5C26.2 5.5 32 11.3 32 19V23" stroke-width="3" stroke-linecap="round" stroke="#FFEDA8"/>
+<rect id="Ear cup" x="3.5" y="20.5" width="8.5" height="13.5" rx="4.2" fill="#FFEDA8"/>
+<rect id="Ear cup_2" x="26" y="20.5" width="8.5" height="13.5" rx="4.2" fill="#FFEDA8"/>
 </g>
 </svg>

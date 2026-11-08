@@ -76,7 +76,7 @@ import { ActivityIndicator } from "react-native";
 // Brand-aligned evaluation palette: King Speech royal gold + violet on a
 // purple-black canvas. Gold = strong, violet = good, coral = weak — the same
 // heat map the ScoreFlower petals use, so score screen + flower read as one.
-const RS_HIGH = "#FFD857";   // royal gold  (>=8)
+const RS_HIGH = "#FFEDA8";   // royal gold  (>=8)
 const RS_GREEN = "#4ADE80";  // glowing green for high metric values (>=8)
 const RS_MID  = "#B79BFF";   // light violet (>=6)
 const RS_LOW  = "#FB7185";   // coral        (<6) — honest "low" tone
@@ -367,7 +367,7 @@ export function FlowerResultWindow({
 
   const fgText = theme.text;
   const fgMuted = isDark ? "rgba(240,238,233,0.62)" : theme.textSecondary;
-  const cardBg = isDark ? "rgba(255,216,87,0.07)" : "rgba(255,216,87,0.14)";
+  const cardBg = isDark ? "rgba(255,237,168,0.07)" : "rgba(255,237,168,0.14)";
   const cardBorder = isDark ? "rgba(240,238,233,0.06)" : "rgba(38,38,40,0.08)"; // stroke/shape
   const retryBg = isDark ? "rgba(240,238,233,0.06)" : "rgba(38,38,40,0.04)";
   const retryBorder = isDark ? "rgba(240,238,233,0.10)" : "rgba(38,38,40,0.08)";

@@ -2,8 +2,8 @@
 <circle id="Halo" cx="150" cy="150" r="150" fill="url(#paint0_radial_0_30)"/>
 <defs>
 <radialGradient id="paint0_radial_0_30" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(150 150) scale(150)">
-<stop stop-color="#FFD857" stop-opacity="0.55"/>
-<stop offset="1" stop-color="#FFD857" stop-opacity="0"/>
+<stop stop-color="#FFEDA8" stop-opacity="0.55"/>
+<stop offset="1" stop-color="#FFEDA8" stop-opacity="0"/>
 </radialGradient>
 </defs>
 </svg>

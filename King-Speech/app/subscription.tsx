@@ -131,7 +131,7 @@ export default function SubscriptionScreen() {
     <View style={[styles.card, styles.cardShadow,
         !isDark && { shadowOpacity: 0.18 }, { borderColor: "#FFF5D1", overflow: "hidden" }]}>
       <LinearGradient
-        colors={["#FFED9E", "#FFD857", "#FABD33"]}
+        colors={["#FFED9E", "#FFEDA8", "#FABD33"]}
         locations={[0, 0.393, 0.714]}
         start={{ x: 0.2, y: 0 }}
         end={{ x: 0.8, y: 1 }}
@@ -194,8 +194,8 @@ export default function SubscriptionScreen() {
       <Svg pointerEvents="none" style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 362 360">
         <Defs>
           <RadialGradient id="empGlow" cx="60.3" cy="278.2" rx="201.1" ry="163.6" gradientUnits="userSpaceOnUse">
-            <Stop offset="0" stopColor="#FFD857" stopOpacity="0.35" />
-            <Stop offset="1" stopColor="#FFD857" stopOpacity="0" />
+            <Stop offset="0" stopColor="#FFEDA8" stopOpacity="0.35" />
+            <Stop offset="1" stopColor="#FFEDA8" stopOpacity="0" />
           </RadialGradient>
         </Defs>
         <Rect x="0" y="0" width="362" height="360" fill="url(#empGlow)" />
@@ -276,8 +276,8 @@ export default function SubscriptionScreen() {
         >
           <Defs>
             <RadialGradient id="pageGlow" cx="201" cy="541.8" rx="182.7" ry="436.9" gradientUnits="userSpaceOnUse">
-              <Stop offset="0" stopColor="#FFD857" stopOpacity={isDark ? 0.38 : 0.3} />
-              <Stop offset="1" stopColor="#FFD857" stopOpacity="0" />
+              <Stop offset="0" stopColor="#FFEDA8" stopOpacity={isDark ? 0.38 : 0.3} />
+              <Stop offset="1" stopColor="#FFEDA8" stopOpacity="0" />
             </RadialGradient>
           </Defs>
           <Rect x="0" y="0" width="402" height="1100" fill="url(#pageGlow)" />
@@ -400,7 +400,7 @@ export default function SubscriptionScreen() {
                         open
                           ? isDark
                             ? CHEVRON_UP_SVG
-                            : CHEVRON_UP_SVG.replace("#FFD857", "#262628")
+                            : CHEVRON_UP_SVG.replace("#FFEDA8", "#262628")
                           : isDark
                             ? CHEVRON_DOWN_SVG
                             : CHEVRON_DOWN_SVG.replace("#F0EEE9", "#262628")
@@ -419,7 +419,7 @@ export default function SubscriptionScreen() {
         {/* Support */}
         <View style={[styles.support, { backgroundColor: ink(0.05), borderColor: ink(0.12) }]}>
           <SvgXml
-            xml={isDark ? ICON_PLATE_SVG : ICON_PLATE_SVG.split("#FFD857").join("#B88A00")}
+            xml={isDark ? ICON_PLATE_SVG : ICON_PLATE_SVG.split("#FFEDA8").join("#B88A00")}
             width={48}
             height={48}
           />

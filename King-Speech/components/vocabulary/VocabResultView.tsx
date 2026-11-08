@@ -88,8 +88,8 @@ export default function VocabResultView({
                 styles.chip,
                 found
                   ? {
-                      backgroundColor: isDark ? "rgba(255,216,87,0.14)" : "rgba(255,216,87,0.35)",
-                      borderColor: isDark ? "rgba(255,216,87,0.45)" : "rgba(255,189,47,0.7)",
+                      backgroundColor: isDark ? "rgba(255,237,168,0.14)" : "rgba(255,237,168,0.35)",
+                      borderColor: isDark ? "rgba(255,237,168,0.45)" : "rgba(230,205,130,0.7)",
                     }
                   : { backgroundColor: ink(0.05), borderColor: isDark ? "rgba(240,238,233,0.06)" : "rgba(38,38,40,0.08)" },
               ]}

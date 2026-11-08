@@ -347,7 +347,7 @@ export default function ReadingResultsView({
 
   const accent = theme.accent; // gold fill (both themes)
   const accentInk = theme.accentInk; // gold as text/icon (ink on light)
-  const tint = readingTint(moduleColor || "#FFD857", dark);
+  const tint = readingTint(moduleColor || "#FFEDA8", dark);
 
   // When there's no audio to play back (mic blocked), don't trap the player —
   // unlock the rating immediately so they can still self-assess and continue.

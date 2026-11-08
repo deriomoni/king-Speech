@@ -5267,7 +5267,7 @@ export default function ShowtimeStageScreen() {
               <SvgXml
                 xml={stageLineArtXml
                   .replace(/__INK__/g, isDarkUi ? "#F0EEE9" : "#262628")
-                  .replace(/__GOLD__/g, "#FFD857")}
+                  .replace(/__GOLD__/g, "#FFEDA8")}
                 width={321.6}
                 height={200}
               />
@@ -5556,7 +5556,7 @@ const s = StyleSheet.create({
   speedText: { fontSize: 17, color: "rgba(255,255,255,0.9)", letterSpacing: 0.3, textShadowColor: "rgba(0,0,0,0.5)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 5 },
   headerCenter: { flex: 1, alignItems: "center", gap: 2 },
   liveTag: { flexDirection: "row", alignItems: "center", gap: 5, height: 22, backgroundColor: "rgba(38,38,40,0.72)", paddingHorizontal: 9, borderRadius: 32 },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#FFD857" },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#FFEDA8" },
   liveText: { fontSize: 10, color: "#F0EEE9", letterSpacing: 0.5 },
   speechTitle: { fontSize: 13, color: "rgba(17,17,20,0.6)" },
   headerRight: { minWidth: 52, alignItems: "flex-end", gap: 4 },

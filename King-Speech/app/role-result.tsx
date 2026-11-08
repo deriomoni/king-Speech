@@ -59,8 +59,8 @@ const CARD_BG = "#221838";
 const TEXT = "#F5F0FF";
 const MUTED = "#A79CC4";
 // Brand accents (theme/tokens): gold = the action you tap, violet = support.
-const GOLD = "#FFD857";
-const GOLD_SOFT = "#FFE68C";
+const GOLD = "#FFEDA8";
+const GOLD_SOFT = "#FFF4CC";
 const ON_GOLD = "#3A2C00";
 const VIOLET = "#7C4DFF";
 const ON_VIOLET = "#F1EBFF";
@@ -581,7 +581,7 @@ export default function RoleResultScreen() {
           <Animated.View entering={FadeInDown}>
             {isNew && (
               <Animated.View entering={ZoomIn.duration(420)} style={styles.unlockBanner}>
-                <LinearGradient colors={["#FFDE5C33", "transparent"]} style={StyleSheet.absoluteFill} />
+                <LinearGradient colors={["#FFEDA833", "transparent"]} style={StyleSheet.absoluteFill} />
                 <Ionicons name="trophy" size={20} color={GOLD} />
                 <Text style={styles.unlockText}>{lang === "en" ? "New role added to your collection!" : "Новая роль в твоей коллекции!"}</Text>
               </Animated.View>
@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
 
   scanner: { width: 120, height: 120, borderRadius: 60, opacity: 0.8 },
 
-  unlockBanner: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#FFC01E1A", borderWidth: 1, borderColor: "#FFC01E55", borderRadius: 16, padding: 14, marginBottom: 16, overflow: "hidden" },
+  unlockBanner: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#F2D98F1A", borderWidth: 1, borderColor: "#F2D98F55", borderRadius: 16, padding: 14, marginBottom: 16, overflow: "hidden" },
   unlockText: { color: GOLD, fontFamily: "Geologica_800ExtraBold", fontSize: 14, flex: 1 },
   overallStars: { flexDirection: "row", justifyContent: "center", gap: 10, marginBottom: 20 },
 
@@ -831,7 +831,7 @@ const styles = StyleSheet.create({
 
   feedbackCard: { backgroundColor: CARD_BG, borderRadius: 22, padding: 20, marginBottom: 16 },
   feedbackText: { color: TEXT, fontFamily: "Geologica_400Regular", fontSize: 15, lineHeight: 22 },
-  tipRow: { flexDirection: "row", gap: 8, marginTop: 14, backgroundColor: "#FFC01E12", borderRadius: 14, padding: 12 },
+  tipRow: { flexDirection: "row", gap: 8, marginTop: 14, backgroundColor: "#F2D98F12", borderRadius: 14, padding: 12 },
   tipText: { color: "#FFE9A8", fontFamily: "Geologica_400Regular", fontSize: 13, lineHeight: 19, flex: 1 },
   aiNote: { color: MUTED, fontFamily: "Geologica_400Regular", fontSize: 12, marginTop: 12, fontStyle: "italic" },
 });

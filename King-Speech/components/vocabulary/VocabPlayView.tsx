@@ -387,8 +387,8 @@ export default function VocabPlayView({
                 style={[
                   styles.hintCard,
                   {
-                    backgroundColor: isDark ? "rgba(255,216,87,0.06)" : "rgba(255,216,87,0.12)",
-                    borderColor: isDark ? "rgba(255,216,87,0.45)" : "rgba(255,189,47,0.65)",
+                    backgroundColor: isDark ? "rgba(255,237,168,0.06)" : "rgba(255,237,168,0.12)",
+                    borderColor: isDark ? "rgba(255,237,168,0.45)" : "rgba(230,205,130,0.65)",
                   },
                 ]}
               >

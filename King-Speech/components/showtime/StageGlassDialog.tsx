@@ -93,8 +93,8 @@ export default function StageGlassDialog({
                   ry={size.h * 0.32}
                   gradientUnits="userSpaceOnUse"
                 >
-                  <Stop offset="0" stopColor="#FFD857" stopOpacity={isDark ? 0.14 : 0.2} />
-                  <Stop offset="1" stopColor="#FFD857" stopOpacity={0} />
+                  <Stop offset="0" stopColor="#FFEDA8" stopOpacity={isDark ? 0.14 : 0.2} />
+                  <Stop offset="1" stopColor="#FFEDA8" stopOpacity={0} />
                 </RadialGradient>
                 <SvgLinear id="stSheen" x1="0" y1="0" x2="0" y2="1">
                   <Stop offset="0" stopColor={isDark ? "#F0EEE9" : "#FFFFFF"} stopOpacity={isDark ? 0.06 : 0.5} />

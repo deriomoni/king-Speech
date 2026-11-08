@@ -20,7 +20,7 @@
 </filter>
 <linearGradient id="paint0_linear_0_25" x1="92" y1="8" x2="92" y2="127.666" gradientUnits="userSpaceOnUse">
 <stop stop-color="#FFF2BF"/>
-<stop offset="0.6" stop-color="#FFD857"/>
+<stop offset="0.6" stop-color="#FFEDA8"/>
 <stop offset="1" stop-color="#EDA81F"/>
 </linearGradient>
 </defs>

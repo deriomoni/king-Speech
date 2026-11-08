@@ -68,10 +68,10 @@ const TAB_TOKENS = {
     topHighlight: "rgba(240,238,233,0.14)", // tab/highlight
     border: "rgba(240,238,233,0.06)", // tab/border
     inactive: "#81807F", // tab/icon-inactive
-    active: "#FFD857", // tab/icon-active
-    pillBorder: "rgba(255,216,87,0.55)", // tab/pill-border
-    pillGradient: ["rgba(255,216,87,0.30)", "rgba(255,216,87,0.16)"] as const, // tab/pill-from → pill-to
-    shadowColor: "rgba(255,216,87,0.22)", // tab/shadow
+    active: "#FFEDA8", // tab/icon-active
+    pillBorder: "rgba(255,237,168,0.55)", // tab/pill-border
+    pillGradient: ["rgba(255,237,168,0.30)", "rgba(255,237,168,0.16)"] as const, // tab/pill-from → pill-to
+    shadowColor: "rgba(255,237,168,0.22)", // tab/shadow
   },
   light: {
     barBg: "#FAF9F6",
@@ -80,9 +80,9 @@ const TAB_TOKENS = {
     border: "rgba(38,38,40,0.08)",
     inactive: "#A5A5A4",
     active: "#262628",
-    pillBorder: "rgba(255,216,87,1)",
-    pillGradient: ["rgba(255,216,87,0.55)", "rgba(255,216,87,0.35)"] as const,
-    shadowColor: "rgba(255,216,87,0.20)",
+    pillBorder: "rgba(255,237,168,1)",
+    pillGradient: ["rgba(255,237,168,0.55)", "rgba(255,237,168,0.35)"] as const,
+    shadowColor: "rgba(255,237,168,0.20)",
   },
 } as const;
 

@@ -545,7 +545,7 @@ export default function ProfileScreen() {
         <Animated.View entering={FadeInDown.delay(340).duration(400)} style={[styles.section, styles.tilesRow]}>
           <LinkTile
             theme={theme}
-            iconXml={tintSvg(PEN_SVG, "#FFD857", iconInk)}
+            iconXml={tintSvg(PEN_SVG, "#FFEDA8", iconInk)}
             iconW={26}
             iconH={26}
             title={en ? "Become an author" : "Стать автором"}
@@ -561,7 +561,7 @@ export default function ProfileScreen() {
           />
           <LinkTile
             theme={theme}
-            iconXml={tintSvg(TROPHY_SVG, "#FFD857", iconInk)}
+            iconXml={tintSvg(TROPHY_SVG, "#FFEDA8", iconInk)}
             iconW={26}
             iconH={26}
             title={en ? "Awards" : "Награды"}
@@ -750,9 +750,9 @@ const styles = StyleSheet.create({
     height: AVATAR_SIZE,
     borderRadius: AVATAR_SIZE / 2,
     ...(Platform.OS === "web"
-      ? ({ boxShadow: "0px 6.5px 19.5px rgba(255,216,87,0.25)" } as any)
+      ? ({ boxShadow: "0px 6.5px 19.5px rgba(255,237,168,0.25)" } as any)
       : {
-          shadowColor: "#FFD857",
+          shadowColor: "#FFEDA8",
           shadowOpacity: 0.25,
           shadowRadius: 10,
           shadowOffset: { width: 0, height: 6.5 },
@@ -803,9 +803,9 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     marginTop: 2,
     ...(Platform.OS === "web"
-      ? ({ boxShadow: "0px 0px 5px rgba(255,216,87,0.55)" } as any)
+      ? ({ boxShadow: "0px 0px 5px rgba(255,237,168,0.55)" } as any)
       : {
-          shadowColor: "#FFD857",
+          shadowColor: "#FFEDA8",
           shadowOpacity: 0.55,
           shadowRadius: 5,
           shadowOffset: { width: 0, height: 0 },

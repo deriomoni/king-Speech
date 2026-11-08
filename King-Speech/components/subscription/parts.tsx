@@ -9,7 +9,7 @@ import {
 } from "@/assets/figma/new/svgs";
 
 export const INK = "#262628";
-export const GOLD = "#FFD857";
+export const GOLD = "#FFEDA8";
 export const CREAM = "#F0EEE9";
 
 export type CheckTone = "free" | "royal" | "emperor";
@@ -91,11 +91,11 @@ export function PriceTile({
     box = selected
       ? { backgroundColor: INK, borderColor: INK, borderWidth: 2 }
       : { backgroundColor: "rgba(38,38,40,0.08)", borderColor: "rgba(38,38,40,0.15)", borderWidth: 2 };
-    labelColor = selected ? "rgba(255,216,87,0.85)" : "rgba(38,38,40,0.6)";
+    labelColor = selected ? "rgba(255,237,168,0.85)" : "rgba(38,38,40,0.6)";
     priceColor = selected ? GOLD : INK;
   } else {
     box = selected
-      ? { backgroundColor: GOLD, borderColor: "rgba(255,189,47,0.73)", borderWidth: 4 }
+      ? { backgroundColor: GOLD, borderColor: "rgba(230,205,130,0.73)", borderWidth: 4 }
       : { backgroundColor: "rgba(240,238,233,0.08)", borderColor: "rgba(240,238,233,0.15)", borderWidth: 2 };
     labelColor = selected ? "rgba(38,38,40,0.85)" : "rgba(240,238,233,0.6)";
     priceColor = selected ? INK : CREAM;

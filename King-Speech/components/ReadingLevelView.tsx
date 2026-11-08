@@ -126,7 +126,7 @@ export default function ReadingLevelView({
   const dark = themeMode === "dark";
   const ink = theme.text;
   const inkFaint = readingInk(dark, 0.46);
-  const tint = readingTint(moduleColor || accentColor || "#FFD857", dark);
+  const tint = readingTint(moduleColor || accentColor || "#FFEDA8", dark);
   // "Читать" — Figma 62:123: neutral pill with the stroke/shape rim.
   const btnBg = dark ? "#555455" : "#262628";
   const btnRim = dark ? "rgba(240,238,233,0.06)" : "rgba(38,38,40,0.08)";
