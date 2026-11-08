@@ -137,7 +137,6 @@ export function ListRow({
       }}
       style={({ pressed }) => [
         styles.row,
-        divider && { borderBottomWidth: 1, borderBottomColor: theme.divider },
         pressed && onPress ? { backgroundColor: theme.rowPressed } : null,
       ]}
     >
@@ -146,60 +145,17 @@ export function ListRow({
         {label}
       </Text>
       <View style={{ flex: 1 }} />
-      {value ? <Text style={[styles.rowValue, { color: theme.text }]}>{value}</Text> : null}
+      {value ? <Text style={[styles.rowValue, { color: theme.textMuted }]}>{value}</Text> : null}
       {right ?? (onPress ? <Chevron theme={theme} /> : null)}
+      {divider ? (
+        <View pointerEvents="none" style={[styles.rowDivider, { backgroundColor: theme.divider }]} />
+      ) : null}
     </Pressable>
   );
 }
 
 export function Chevron({ theme }: { theme: Theme }) {
   return <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />;
-}
-
-/** Half-width tile from the "Звук и уведомления" grid. */
-export function ToggleTile({
-  theme,
-  themeMode,
-  icon,
-  label,
-  sub,
-  value,
-  onValueChange,
-}: {
-  theme: Theme;
-  themeMode: "light" | "dark";
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  sub?: string;
-  value: boolean;
-  onValueChange: (v: boolean) => void;
-}) {
-  return (
-    <View
-      style={[
-        styles.tile,
-        { backgroundColor: theme.card, borderColor: shapeStroke(themeMode) },
-      ]}
-    >
-      <View style={styles.tileHead}>
-        <Ionicons name={icon} size={22} color={theme.text} style={{ marginTop: 3 }} />
-        <GoldSwitch value={value} onValueChange={onValueChange} theme={theme} themeMode={themeMode} />
-      </View>
-      <View style={[styles.tileText, { top: sub ? 55 : 63 }]}>
-        <Text style={[styles.tileLabel, { color: theme.text }]}>{label}</Text>
-        {sub ? (
-          <Text
-            style={[
-              styles.tileSub,
-              { color: themeMode === "dark" ? theme.textMuted : theme.textSecondary },
-            ]}
-          >
-            {sub}
-          </Text>
-        ) : null}
-      </View>
-    </View>
-  );
 }
 
 const styles = StyleSheet.create({
@@ -227,14 +183,15 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   sectionLabel: {
-    fontSize: 13,
-    fontFamily: "Geologica_700Bold",
-    letterSpacing: 0.65,
+    fontSize: 12,
+    fontFamily: "Geologica_600SemiBold",
+    letterSpacing: 0.8,
     textTransform: "uppercase",
-    paddingLeft: 4,
-    marginBottom: 12,
+    paddingLeft: 16,
+    marginBottom: 8,
+    opacity: 0.5,
   },
-  card: { borderRadius: 22, borderWidth: 2, overflow: "hidden" },
+  card: { borderRadius: 20, borderWidth: 1, overflow: "hidden" },
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -243,17 +200,7 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   rowIcon: { width: 22, alignItems: "center", marginRight: 14 },
+  rowDivider: { position: "absolute", left: 52, right: 0, bottom: 0, height: StyleSheet.hairlineWidth },
   rowLabel: { fontSize: 15, fontFamily: "Geologica_400Regular", flexShrink: 1 },
   rowValue: { fontSize: 14, fontFamily: "Geologica_400Regular", marginRight: 9 },
-  tile: { flex: 1, height: 104, borderRadius: 22, borderWidth: 2 },
-  tileHead: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingTop: 11,
-    paddingLeft: 13,
-    paddingRight: 15,
-  },
-  tileText: { position: "absolute", left: 13, right: 13 },
-  tileLabel: { fontSize: 14, fontFamily: "Geologica_600SemiBold" },
-  tileSub: { fontSize: 12, fontFamily: "Geologica_400Regular", marginTop: 3 },
 });

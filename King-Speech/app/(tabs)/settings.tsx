@@ -15,77 +15,58 @@ import {
   ListRow,
   SectionLabel,
   ThemedSvg,
-  ToggleTile,
   tapHaptic,
 } from "@/components/settings/SettingsParts";
 import { kingSpeechLogoXml } from "@/assets/figma/settings/logo";
 import { bekWaveLogoXml } from "@/assets/figma/settings/bekwave";
-import { crownOutlineXml } from "@/assets/figma/settings/crown";
-import { starOutlineXml } from "@/assets/figma/settings/star";
 
-const SIGN_OUT = "#E5484D";
-
-// Figma tokens settings/opt-* (theme segmented control) + button/secondary-gray.
-const OPT = {
-  dark: {
-    selectedBg: "#FFD857",
-    selectedBorder: "transparent",
-    selectedInk: "#262628",
-    idleBorder: "rgba(240,238,233,0.2)",
-    idleIcon: "#FFD857",
-  },
-  light: {
-    selectedBg: "#E5E4E1",
-    selectedBorder: "transparent",
-    selectedInk: "#262628",
-    idleBorder: "rgba(38,38,40,0.15)",
-    idleIcon: "rgba(38,38,40,0.42)",
-  },
-};
-const SECONDARY_GRAY = {
-  dark: { bg: "#464647", border: "#676666" },
-  light: { bg: "#E5E4E1", border: "#BFBEBC" },
+// Muted segmented control: neutral track, the selected segment is just a
+// slightly lighter chip — no accent colour, no outline.
+const SEG = {
+  dark: { track: "rgba(240,238,233,0.06)", chip: "rgba(240,238,233,0.14)" },
+  light: { track: "rgba(38,38,40,0.06)", chip: "#FFFFFF" },
 };
 
-function ThemeOption({
+function ThemeSegment({
   theme,
   themeMode,
-  mode,
-  label,
+  labels,
   onSelect,
 }: {
   theme: Theme;
   themeMode: ThemeMode;
-  mode: ThemeMode;
-  label: string;
+  labels: { light: string; dark: string };
   onSelect: (m: ThemeMode) => void;
 }) {
-  const selected = themeMode === mode;
-  const o = OPT[themeMode];
+  const s = SEG[themeMode];
   return (
-    <Pressable
-      onPress={() => {
-        tapHaptic();
-        onSelect(mode);
-      }}
-      style={[
-        styles.themeOption,
-        {
-          backgroundColor: selected ? o.selectedBg : "transparent",
-          borderColor: selected ? o.selectedBorder : o.idleBorder,
-        },
-      ]}
-    >
-      <Ionicons
-        name={mode === "dark" ? "moon" : "sunny-outline"}
-        size={20}
-        color={selected ? o.selectedInk : o.idleIcon}
-      />
-      <Text style={[styles.themeOptionLabel, { color: selected ? o.selectedInk : theme.text }]}>
-        {label}
-      </Text>
-      {selected && <Ionicons name="checkmark" size={18} color={o.selectedInk} />}
-    </Pressable>
+    <View style={[styles.segTrack, { backgroundColor: s.track }]}>
+      {(["light", "dark"] as const).map((mode) => {
+        const selected = themeMode === mode;
+        return (
+          <Pressable
+            key={mode}
+            accessibilityRole="button"
+            accessibilityState={{ selected }}
+            onPress={() => {
+              if (selected) return;
+              tapHaptic();
+              onSelect(mode);
+            }}
+            style={[styles.seg, selected && { backgroundColor: s.chip }]}
+          >
+            <Ionicons
+              name={mode === "dark" ? "moon-outline" : "sunny-outline"}
+              size={15}
+              color={selected ? theme.text : theme.textMuted}
+            />
+            <Text style={[styles.segLabel, { color: selected ? theme.text : theme.textMuted }]}>
+              {labels[mode]}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
@@ -113,9 +94,11 @@ export default function SettingsScreen() {
   const initial = (userName.trim()[0] || "K").toUpperCase();
   const authLabel =
     user?.authMethod === "google" ? "Google" : user?.authMethod === "apple" ? "Apple" : "Email";
-  const gray = SECONDARY_GRAY[themeMode];
   const icon = (name: keyof typeof Ionicons.glyphMap) => (
-    <Ionicons name={name} size={22} color={theme.text} />
+    <Ionicons name={name} size={20} color={theme.text} />
+  );
+  const sw = (value: boolean, onChange: (v: boolean) => void) => (
+    <GoldSwitch value={value} onValueChange={onChange} theme={theme} themeMode={themeMode} />
   );
 
   return (
@@ -133,160 +116,131 @@ export default function SettingsScreen() {
           <Text style={[styles.pageTitle, { color: theme.text }]}>{t("settings")}</Text>
         </Animated.View>
 
-        {/* Account + plan */}
+        {/* Account */}
         <Animated.View entering={FadeInDown.delay(40).duration(400)}>
-          <Card theme={theme} themeMode={themeMode} style={styles.accountCard}>
+          <SectionLabel theme={theme}>{en ? "Account" : "Аккаунт"}</SectionLabel>
+          <Card theme={theme} themeMode={themeMode}>
             <Pressable
               onPress={() => {
                 tapHaptic();
                 // Account screen hosts sign-out / account management.
                 router.push("/account" as any);
               }}
-              style={styles.accountTop}
+              style={({ pressed }) => [
+                styles.accountRow,
+                pressed && { backgroundColor: theme.rowPressed },
+              ]}
             >
               <View style={[styles.avatar, { backgroundColor: theme.accent }]}>
                 <Text style={[styles.avatarInitial, { color: theme.accentText }]}>{initial}</Text>
               </View>
-              <View style={{ flex: 1, marginLeft: 14 }}>
+              <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={[styles.accountName, { color: theme.text }]} numberOfLines={1}>
                   {userName}
                 </Text>
-                <Text
-                  style={[
-                    styles.accountSub,
-                    { color: themeMode === "dark" ? theme.textMuted : theme.textSecondary },
-                  ]}
-                >
+                <Text style={[styles.accountSub, { color: theme.textMuted }]} numberOfLines={1}>
                   {en ? `Signed in with ${authLabel}` : `Вход через ${authLabel}`}
                 </Text>
               </View>
               <Chevron theme={theme} />
-            </Pressable>
-            <View style={[styles.accountDivider, { backgroundColor: theme.text }]} />
-            <View style={styles.planRow}>
-              <ThemedSvg
-                xml={crownOutlineXml}
-                width={22}
-                height={22}
-                fg={theme.text}
-                bg={themeMode === "dark" ? "#2E2E30" : "#373738"}
+              <View
+                pointerEvents="none"
+                style={[styles.inset, { left: 16, backgroundColor: theme.divider }]}
               />
-              <Text style={[styles.planLabel, { color: theme.text }]}>
-                {en ? "Free plan" : "Бесплатный план"}
-              </Text>
-              <View style={{ flex: 1 }} />
-              <Pressable
-                onPress={() => {
-                  tapHaptic();
-                  router.push("/subscription" as any);
-                }}
-                style={[
-                  styles.upgradeBtn,
-                  { backgroundColor: theme.accent, borderColor: theme.ctaStroke },
-                ]}
-              >
-                <Text style={[styles.upgradeLabel, { color: theme.accentText }]}>
-                  {en ? "Upgrade" : "Улучшить"}
-                </Text>
-              </Pressable>
-            </View>
+            </Pressable>
+            <ListRow
+              theme={theme}
+              icon={icon("diamond-outline")}
+              label={en ? "Free plan" : "Бесплатный план"}
+              onPress={() => router.push("/subscription" as any)}
+              right={
+                <View style={styles.upgradeRight}>
+                  <Text style={[styles.upgradeLabel, { color: theme.accentInk }]}>
+                    {en ? "Upgrade" : "Улучшить"}
+                  </Text>
+                  <Chevron theme={theme} />
+                </View>
+              }
+            />
           </Card>
         </Animated.View>
 
-        {/* Sound & notifications */}
+        {/* Sound & notifications — one grouped card */}
         <Animated.View entering={FadeInDown.delay(80).duration(400)}>
           <SectionLabel theme={theme}>
             {en ? "Sound & notifications" : "Звук и уведомления"}
           </SectionLabel>
-          <View style={styles.grid}>
-            <View style={styles.gridRow}>
-              <ToggleTile
-                theme={theme}
-                themeMode={themeMode}
-                icon="volume-high-outline"
-                label={t("soundEffects")}
-                value={sound}
-                onValueChange={setSound}
-              />
-              <ToggleTile
-                theme={theme}
-                themeMode={themeMode}
-                icon="phone-portrait-outline"
-                label={t("vibration")}
-                value={vibration}
-                onValueChange={setVibration}
-              />
-            </View>
-            <View style={styles.gridRow}>
-              <ToggleTile
-                theme={theme}
-                themeMode={themeMode}
-                icon="notifications-outline"
-                label={t("pushNotifications")}
-                value={notifications}
-                onValueChange={setNotifications}
-              />
-              <ToggleTile
-                theme={theme}
-                themeMode={themeMode}
-                icon="alarm-outline"
-                label={en ? "Reminder" : "Напоминание"}
-                sub={en ? "every day at 09:00" : "каждый день в 09:00"}
-                value={reminder}
-                onValueChange={setReminder}
-              />
-            </View>
-          </View>
-        </Animated.View>
-
-        {/* Appearance + language */}
-        <Animated.View entering={FadeInDown.delay(120).duration(400)}>
-          <SectionLabel theme={theme}>{en ? "Appearance" : "Оформление"}</SectionLabel>
-          <Card theme={theme} themeMode={themeMode} style={styles.themeRow}>
-            <ThemeOption
+          <Card theme={theme} themeMode={themeMode}>
+            <ListRow
               theme={theme}
-              themeMode={themeMode}
-              mode="light"
-              label={t("light")}
-              onSelect={setTheme}
+              icon={icon("volume-high-outline")}
+              label={t("soundEffects")}
+              divider
+              right={sw(sound, setSound)}
             />
-            <ThemeOption
+            <ListRow
               theme={theme}
-              themeMode={themeMode}
-              mode="dark"
-              label={t("dark")}
-              onSelect={setTheme}
+              icon={icon("phone-portrait-outline")}
+              label={t("vibration")}
+              divider
+              right={sw(vibration, setVibration)}
+            />
+            <ListRow
+              theme={theme}
+              icon={icon("notifications-outline")}
+              label={t("pushNotifications")}
+              divider
+              right={sw(notifications, setNotifications)}
+            />
+            <ListRow
+              theme={theme}
+              icon={icon("alarm-outline")}
+              label={en ? "Daily reminder · 09:00" : "Напоминание · 09:00"}
+              right={sw(reminder, setReminder)}
             />
           </Card>
+        </Animated.View>
 
-          <Pressable
-            onPress={() => {
-              tapHaptic();
-              setShowLangs(!showLangs);
-            }}
-            style={[styles.langPill, { backgroundColor: gray.bg, borderColor: gray.border }]}
-          >
-            <Ionicons name="language-outline" size={22} color={theme.text} />
-            <Text style={[styles.langLabel, { color: theme.text }]}>{t("language")}</Text>
-            <View style={{ flex: 1 }} />
-            <Text style={[styles.langValue, { color: theme.text }]}>
-              {appLang === "ru" ? "Русский" : "English"}
-            </Text>
-            <Ionicons
-              name={showLangs ? "chevron-down" : "chevron-forward"}
-              size={16}
-              color={theme.textMuted}
+        {/* Appearance: theme + language in one card */}
+        <Animated.View entering={FadeInDown.delay(120).duration(400)}>
+          <SectionLabel theme={theme}>{en ? "Appearance" : "Оформление"}</SectionLabel>
+          <Card theme={theme} themeMode={themeMode}>
+            <ListRow
+              theme={theme}
+              icon={icon("contrast-outline")}
+              label={en ? "Theme" : "Тема"}
+              divider
+              right={
+                <ThemeSegment
+                  theme={theme}
+                  themeMode={themeMode}
+                  labels={{ light: t("light"), dark: t("dark") }}
+                  onSelect={setTheme}
+                />
+              }
             />
-          </Pressable>
-          {showLangs && (
-            <Card theme={theme} themeMode={themeMode} style={{ marginTop: 8 }}>
-              {(["ru", "en"] as const).map((code, i) => (
+            <ListRow
+              theme={theme}
+              icon={icon("globe-outline")}
+              label={t("language")}
+              value={appLang === "ru" ? "Русский" : "English"}
+              divider={showLangs}
+              onPress={() => setShowLangs(!showLangs)}
+              right={
+                <Ionicons
+                  name={showLangs ? "chevron-down" : "chevron-forward"}
+                  size={16}
+                  color={theme.textMuted}
+                />
+              }
+            />
+            {showLangs &&
+              (["ru", "en"] as const).map((code, i) => (
                 <ListRow
                   key={code}
                   theme={theme}
                   icon={null}
                   label={code === "ru" ? "Русский" : "English"}
-                  labelColor={appLang === code ? theme.accentInk : theme.text}
                   divider={i === 0}
                   onPress={() => {
                     setAppLang(code);
@@ -294,18 +248,17 @@ export default function SettingsScreen() {
                   }}
                   right={
                     appLang === code ? (
-                      <Ionicons name="checkmark" size={18} color={theme.accentInk} />
+                      <Ionicons name="checkmark" size={18} color={theme.text} />
                     ) : (
                       <View />
                     )
                   }
                 />
               ))}
-            </Card>
-          )}
+          </Card>
         </Animated.View>
 
-        {/* Support + credits */}
+        {/* Support */}
         <Animated.View entering={FadeInDown.delay(160).duration(400)}>
           <SectionLabel theme={theme}>{en ? "Support" : "Поддержка"}</SectionLabel>
           <Card theme={theme} themeMode={themeMode}>
@@ -329,7 +282,7 @@ export default function SettingsScreen() {
             />
             <ListRow
               theme={theme}
-              icon={<ThemedSvg xml={starOutlineXml} width={20} height={20} fg={theme.text} />}
+              icon={icon("star-outline")}
               label={en ? "Rate the app" : "Оценить приложение"}
               divider
               onPress={() => {
@@ -340,20 +293,10 @@ export default function SettingsScreen() {
               theme={theme}
               icon={icon("lock-closed-outline")}
               label={en ? "Privacy policy" : "Политика конфиденциальности"}
-              divider
               onPress={() => {
                 // TODO(design): privacy policy URL/screen not defined yet.
               }}
             />
-            <View style={styles.credits}>
-              <Text style={[styles.creditsLabel, { color: theme.textMuted }]}>
-                {en ? "APP CREATED BY" : "ПРИЛОЖЕНИЕ СОЗДАНО"}
-              </Text>
-              <ThemedSvg xml={bekWaveLogoXml} width={194.962} height={26} fg={theme.text} />
-              <Text style={[styles.version, { color: theme.textMuted }]}>
-                {en ? "Version 1.0.0" : "Версия 1.0.0"}
-              </Text>
-            </View>
           </Card>
         </Animated.View>
 
@@ -365,15 +308,8 @@ export default function SettingsScreen() {
               theme={theme}
               icon={icon("construct-outline")}
               label={t("openTesting")}
-              divider
-              right={
-                <GoldSwitch
-                  value={isOpenTestingEnabled}
-                  onValueChange={setOpenTestingEnabled}
-                  theme={theme}
-                  themeMode={themeMode}
-                />
-              }
+              divider={__DEV__}
+              right={sw(isOpenTestingEnabled, setOpenTestingEnabled)}
             />
             {/* Dev-only Skip mode. Gated behind __DEV__ so it never ships to players. */}
             {__DEV__ && (
@@ -381,19 +317,24 @@ export default function SettingsScreen() {
                 theme={theme}
                 icon={icon("play-skip-forward-outline")}
                 label="Skip уровней (dev)"
-                divider
-                right={
-                  <GoldSwitch
-                    value={isDevSkipEnabled}
-                    onValueChange={setDevSkipEnabled}
-                    theme={theme}
-                    themeMode={themeMode}
-                  />
-                }
+                right={sw(isDevSkipEnabled, setDevSkipEnabled)}
               />
             )}
           </Card>
         </Animated.View>
+
+        {/* Credits — quiet footer, outside the cards */}
+        <View style={styles.credits}>
+          <Text style={[styles.creditsLabel, { color: theme.textMuted }]}>
+            {en ? "APP CREATED BY" : "ПРИЛОЖЕНИЕ СОЗДАНО"}
+          </Text>
+          <View style={{ opacity: 0.7 }}>
+            <ThemedSvg xml={bekWaveLogoXml} width={150} height={20} fg={theme.text} />
+          </View>
+          <Text style={[styles.version, { color: theme.textMuted }]}>
+            {en ? "Version 1.0.0" : "Версия 1.0.0"}
+          </Text>
+        </View>
       </ScrollView>
     </View>
   );
@@ -408,55 +349,36 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
     marginTop: 16,
   },
-  accountCard: { paddingHorizontal: 15, paddingTop: 15, paddingBottom: 12 },
-  accountTop: { flexDirection: "row", alignItems: "center", height: 56 },
+  accountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  inset: { position: "absolute", right: 0, bottom: 0, height: StyleSheet.hairlineWidth },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarInitial: { fontSize: 24, fontFamily: "Geologica_700Bold" },
-  accountName: { fontSize: 18, fontFamily: "Geologica_700Bold" },
-  accountSub: { fontSize: 13, fontFamily: "Geologica_400Regular", marginTop: 3 },
-  accountDivider: { height: 1, opacity: 0.1, marginTop: 18 },
-  planRow: { flexDirection: "row", alignItems: "center", marginTop: 11, height: 34 },
-  planLabel: { fontSize: 15, fontFamily: "Geologica_600SemiBold", marginLeft: 10 },
-  upgradeBtn: {
-    borderWidth: 2,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-  },
-  upgradeLabel: { fontSize: 13, fontFamily: "Geologica_700Bold" },
-  grid: { gap: 12 },
-  gridRow: { flexDirection: "row", gap: 12 },
-  themeRow: { flexDirection: "row", gap: 10, paddingHorizontal: 10, paddingVertical: 10 },
-  themeOption: {
-    flex: 1,
-    height: 53,
+  avatarInitial: { fontSize: 19, fontFamily: "Geologica_700Bold" },
+  accountName: { fontSize: 16, fontFamily: "Geologica_600SemiBold" },
+  accountSub: { fontSize: 13, fontFamily: "Geologica_400Regular", marginTop: 2 },
+  upgradeRight: { flexDirection: "row", alignItems: "center", gap: 6 },
+  upgradeLabel: { fontSize: 14, fontFamily: "Geologica_600SemiBold" },
+  segTrack: { flexDirection: "row", borderRadius: 10, padding: 2 },
+  seg: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderRadius: 32,
-    borderWidth: 2,
+    gap: 5,
+    paddingHorizontal: 10,
+    height: 30,
+    borderRadius: 8,
   },
-  themeOptionLabel: { fontSize: 15, fontFamily: "Geologica_700Bold" },
-  langPill: {
-    marginTop: 12,
-    height: 58,
-    borderRadius: 32,
-    borderWidth: 2,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingLeft: 16,
-    paddingRight: 16,
-  },
-  langLabel: { fontSize: 15, fontFamily: "Geologica_400Regular", marginLeft: 14 },
-  langValue: { fontSize: 14, fontFamily: "Geologica_400Regular", marginRight: 9 },
-  credits: { alignItems: "center", paddingTop: 21, paddingBottom: 19, gap: 12 },
-  creditsLabel: { fontSize: 11, fontFamily: "Geologica_900Black", letterSpacing: 0.55 },
-  version: { fontSize: 13, fontFamily: "Geologica_600SemiBold" },
+  segLabel: { fontSize: 13, fontFamily: "Geologica_500Medium" },
+  credits: { alignItems: "center", paddingTop: 8, gap: 8 },
+  creditsLabel: { fontSize: 10, fontFamily: "Geologica_600SemiBold", letterSpacing: 0.8 },
+  version: { fontSize: 12, fontFamily: "Geologica_400Regular" },
 });
