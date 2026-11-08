@@ -39,6 +39,8 @@ import { useDevTools } from "@/context/DevToolsContext";
 import VoiceRecorder from "@/components/WaveformVoiceRecorder";
 import ReadingLevelView from "@/components/ReadingLevelView";
 import ReadingResultsView from "@/components/ReadingResultsView";
+import { READING_BG_DARK } from "@/components/reading/readingTheme";
+import StageGlassDialog from "@/components/showtime/StageGlassDialog";
 import { aspectsFromScore10, ASPECT_META } from "@/components/ScoreFlower";
 import OscarMascot from "@/components/OscarMascot";
 import { Image as ExpoImage } from "expo-image";
@@ -829,6 +831,8 @@ export default function LevelScreen() {
   const [showReadingReview, setShowReadingReview] = useState(false);
   const [readingAudioUri, setReadingAudioUri] = useState<string | null>(null);
   const [readingWaveform, setReadingWaveform] = useState<number[] | null>(null);
+  // When each line lit up during the capture — replays the karaoke on listen-back.
+  const [readingLineTimes, setReadingLineTimes] = useState<number[] | null>(null);
   const [readingDurationSec, setReadingDurationSec] = useState(0);
   const [readingSaving, setReadingSaving] = useState(false);
 
@@ -916,6 +920,8 @@ export default function LevelScreen() {
   }, []);
   const cancelReadingExit = React.useCallback(() => {
     setReadingExitConfirm(false);
+    // Asked from the listen-back screen: drop the review first.
+    setShowReadingReview(false);
     setReadingRestartSignal((n) => n + 1); // countdown → read again from line 1
   }, []);
 
@@ -1024,12 +1030,14 @@ export default function LevelScreen() {
     audioBase64?: string,
     audioUri?: string,
     waveform?: number[],
+    lineTimesMs?: number[],
   ) => {
     if (isReadingLevel) {
       // Reading levels open the self-review screen immediately (so the player
       // can listen back) and analyze in the background — no blocking loader.
       setReadingAudioUri(audioUri ?? null);
       setReadingWaveform(waveform ?? null);
+      setReadingLineTimes(lineTimesMs ?? null);
       setReadingDurationSec(durationSeconds);
       setCurrentAnalysis(null);
       setShowReadingReview(true);
@@ -1383,14 +1391,17 @@ export default function LevelScreen() {
     const author = readingMeta?.author;
     const workTitle = readingMeta?.workTitle;
     const category = readingMeta?.category;
-    // Reading wears the module's Path background (light theme = the raw palette
-    // color, dark theme = the muted variant), same as the map.
-    const readingBg = getPathColors(level.module, isDark).bg;
+    // Reading runs on a neutral page (Figma 312:4346: #0E0E10 dark / app bg
+    // light); the MODULE colour (67-colour ranks palette) only tints the
+    // current line, the progress fill and the listen-back kicker.
+    const readingBg = isDark ? READING_BG_DARK : colors.background;
+    const readingModuleColor = getPathColors(level.module, isDark).brick;
     return (
       <View style={[styles.container, { backgroundColor: readingBg }]}>
         <ReadingLevelView
           fullText={fullText}
           accentColor={accent}
+          moduleColor={readingModuleColor}
           bgColor={readingBg}
           colors={colors}
           topPad={topPad}
@@ -1418,6 +1429,10 @@ export default function LevelScreen() {
               category={category}
               audioUri={readingAudioUri ?? ""}
               waveform={readingWaveform ?? undefined}
+              fullText={fullText}
+              lineTimesMs={readingLineTimes ?? undefined}
+              moduleColor={readingModuleColor}
+              onClose={() => setReadingExitConfirm(true)}
               durationSec={readingDurationSec}
               analysis={currentAnalysis}
               analyzing={analyzing}
@@ -1464,62 +1479,43 @@ export default function LevelScreen() {
         <Pressable
           onPress={openReadingExit}
           hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel={lang === "ru" ? "Выйти из чтения" : "Leave the reading"}
           style={({ pressed }) => [
             styles.closeBtnAbs,
-            { top: topPad + 8, opacity: pressed ? 0.6 : 1 },
+            { top: topPad + 8, opacity: pressed ? 0.6 : 1, backgroundColor: "transparent" },
           ]}
         >
-          <Ionicons name="close" size={24} color={readableText(readingBg)} />
+          <Ionicons name="close" size={24} color={colors.text} />
         </Pressable>
         )}
 
-        {/* Exit confirmation — Yes → map, No → restart reading from the top. */}
-        <Modal
+        {/* Exit confirmation (Figma 37:2945 liquid glass) — «Читать заново»
+            restarts the reading from the top, «Выйти» → map. */}
+        <StageGlassDialog
           visible={readingExitConfirm}
-          transparent
-          animationType="fade"
+          title={lang === "ru" ? "Выйти из чтения?" : "Leave the reading?"}
+          message={
+            lang === "ru"
+              ? "Прогресс этого чтения не сохранится — придётся читать заново."
+              : "This reading won't be saved — you'll have to read it again."
+          }
           onRequestClose={cancelReadingExit}
-        >
-          <View style={styles.readingExitBackdrop}>
-            <View
-              style={[
-                styles.readingExitCard,
-                { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
-              ]}
-            >
-              <Text style={[styles.readingExitTitle, { color: colors.text }]}>
-                {lang === "ru" ? "Выйти из чтения?" : "Leave the reading?"}
-              </Text>
-              <Text style={[styles.readingExitMsg, { color: colors.textSecondary }]}>
-                {lang === "ru"
-                  ? "Прогресс этого чтения не сохранится — придётся читать заново."
-                  : "This reading won't be saved — you'll have to read it again."}
-              </Text>
-              <Pressable
-                onPress={confirmReadingExit}
-                style={({ pressed }) => [
-                  styles.readingExitLeave,
-                  { opacity: pressed ? 0.85 : 1 },
-                ]}
-              >
-                <Text style={styles.readingExitLeaveTxt}>
-                  {lang === "ru" ? "Да, выйти" : "Yes, leave"}
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={cancelReadingExit}
-                style={({ pressed }) => [
-                  styles.readingExitStay,
-                  { borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Text style={[styles.readingExitStayTxt, { color: colors.text }]}>
-                  {lang === "ru" ? "Нет, читать заново" : "No, read again"}
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-        </Modal>
+          dismissOnBackdrop={false}
+          overlay={0.55}
+          buttons={[
+            {
+              label: lang === "ru" ? "Читать заново" : "Read again",
+              variant: "secondary",
+              onPress: cancelReadingExit,
+            },
+            {
+              label: lang === "ru" ? "Выйти" : "Leave",
+              variant: "primary",
+              onPress: confirmReadingExit,
+            },
+          ]}
+        />
 
         <DevSkipButton levelId={levelId} onPreviewResults={handlePreviewResults} />
       </View>

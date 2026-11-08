@@ -28,11 +28,12 @@ export interface WordColors {
 interface SpanProps {
   text: string;
   color: string;
+  fontFamily?: string;
 }
 
 // Memoized so a token only repaints when its resolved color changes.
-const Span = React.memo(function Span({ text, color }: SpanProps) {
-  return <Text style={{ color }}>{text}</Text>;
+const Span = React.memo(function Span({ text, color, fontFamily }: SpanProps) {
+  return <Text style={fontFamily ? { color, fontFamily } : { color }}>{text}</Text>;
 });
 
 interface Props {
@@ -49,6 +50,8 @@ interface Props {
    *  screen can map the active line → a scroll offset for autoscroll. */
   onTextLayout?: (lines: TextLayoutLine[]) => void;
   align?: "left" | "center";
+  /** Optional face for the CURRENT line only (Figma: Literata SemiBold). */
+  activeFontFamily?: string;
 }
 
 function ReadingTextInner({
@@ -61,9 +64,16 @@ function ReadingTextInner({
   maxWidth,
   onTextLayout,
   align = "left",
+  activeFontFamily,
 }: Props) {
+  // Lines already read keep the `read` tone, the current one lights up, the
+  // rest wait in `unread` (Figma 312:4346: 60% · module tint · 26%).
   const colorFor = (lineIndex: number): string =>
-    lineIndex === activeLine ? colors.active : colors.unread;
+    lineIndex === activeLine
+      ? colors.active
+      : activeLine >= 0 && lineIndex < activeLine
+        ? colors.read
+        : colors.unread;
 
   return (
     <Text
@@ -79,7 +89,12 @@ function ReadingTextInner({
       }}
     >
       {tokens.map((tk, i) => (
-        <Span key={i} text={tk.text} color={colorFor(tk.lineIndex)} />
+        <Span
+          key={i}
+          text={tk.text}
+          color={colorFor(tk.lineIndex)}
+          fontFamily={tk.lineIndex === activeLine ? activeFontFamily : undefined}
+        />
       ))}
     </Text>
   );

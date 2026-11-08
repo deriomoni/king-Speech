@@ -32,12 +32,28 @@ import { useReadingCapture } from "@/hooks/useReadingCapture";
 import { getAuthorBio } from "@/constants/authorBios";
 import OscarMascot from "@/components/OscarMascot";
 import type { AppColors } from "@/constants/colors";
+import { useTheme } from "@/context/ThemeContext";
+import { useFonts, Literata_600SemiBold } from "@expo-google-fonts/literata";
+import {
+  ReadingGlassCard,
+  readingInk,
+  readingTint,
+} from "@/components/reading/readingTheme";
+
+// Figma 312:4346 reading canvas: Literata 20 on a 34pt line step. The IDLE
+// cover shows the same canvas scaled to 16.56pt (37:5850).
+const BODY_SIZE = 20;
+const BODY_LINE = 34;
+const IDLE_BODY_SCALE = 16.56 / 20;
 
 type ReadingCategory = "prose" | "poetry" | "fable";
 
 interface Props {
   fullText: string;
   accentColor: string;
+  /** Module colour (getPathColors(module).brick) — tints the current line
+   *  and the progress fill. */
+  moduleColor?: string;
   /** Per-module Path background color (already theme-resolved). */
   bgColor: string;
   colors: AppColors;
@@ -51,6 +67,8 @@ interface Props {
     audioBase64?: string,
     audioUri?: string,
     waveform?: number[],
+    /** When each line lit up, ms from the start of the capture (by line k). */
+    lineTimesMs?: number[],
   ) => void;
   resetSignal: number;
   /** Bumped to restart the reading from the top (countdown → read again). */
@@ -70,21 +88,9 @@ const BEZ = Easing.bezier(0.22, 1, 0.36, 1);
 const READING_HEADER_H = 46; // collapsed caption header height
 const LOADING_MS = 5000;
 
+// Figma cover hero: Geologica Bold 40 (37:5850). Very long titles step down.
 function heroSizeFor(title: string): number {
-  const n = title.length;
-  if (n > 18) return R.type.heroSizeSm;
-  if (n > 12) return R.type.heroSizeMd;
-  return R.type.heroSizeLg;
-}
-
-function isDarkBg(hex: string): boolean {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) return true;
-  const n = parseInt(m[1], 16);
-  const r = (n >> 16) & 255,
-    g = (n >> 8) & 255,
-    b = n & 255;
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.5;
+  return title.length > 34 ? 34 : 40;
 }
 
 const WORD_RE = /[\p{L}\p{N}]+(?:[’'\-][\p{L}\p{N}]+)*/gu;
@@ -95,6 +101,7 @@ function wordsIn(text: string): number {
 export default function ReadingLevelView({
   fullText,
   accentColor,
+  moduleColor,
   bgColor,
   colors,
   topPad,
@@ -110,27 +117,24 @@ export default function ReadingLevelView({
   about,
 }: Props) {
   const { lang } = useLang();
+  const { theme, themeMode } = useTheme();
+  // Literata SemiBold is only used for the current karaoke line — load it here.
+  useFonts({ Literata_600SemiBold });
 
-  // Everything is keyed to the MODULE background now, so text/karaoke/button
-  // stay readable whether that colour is light or dark.
-  const dark = isDarkBg(bgColor);
-  const ink = dark ? "#FFFFFF" : "#1A1A2E";
-  const inkSoft = dark ? "rgba(255,255,255,0.70)" : "rgba(20,22,26,0.66)";
-  const inkFaint = dark ? "rgba(255,255,255,0.46)" : "rgba(20,22,26,0.42)";
-  // "Читать" button: black on a light background, white on a dark one. Flat, no
-  // gradient; label/icon take the opposite ink.
-  const btnBg = dark ? "#FFFFFF" : "#000000";
-  const btnInk = dark ? "#000000" : "#FFFFFF";
-  // Reading canvas ("полотно") word colours, readable on the module background.
-  const wordColors = {
-    unread: dark ? "rgba(255,255,255,0.42)" : "rgba(20,22,26,0.40)",
-    read: dark ? "rgba(255,255,255,0.42)" : "rgba(20,22,26,0.40)",
-    active: ink,
-  };
+  // Neutral reading page (Figma 312:4346): ink text, the MODULE colour only on
+  // the current line + progress fill.
+  const dark = themeMode === "dark";
+  const ink = theme.text;
+  const inkFaint = readingInk(dark, 0.46);
+  const tint = readingTint(moduleColor || accentColor || "#FFD857", dark);
+  // "Читать" — Figma 62:123: neutral pill with the stroke/shape rim.
+  const btnBg = dark ? "#555455" : "#262628";
+  const btnRim = dark ? "rgba(240,238,233,0.06)" : "rgba(38,38,40,0.08)";
+  const btnInk = "#FFFFFF";
 
   const displayTitle = workTitle ?? title;
   const heroSize = heroSizeFor(displayTitle);
-  const heroLine = Math.round(heroSize * R.type.heroLineRatio);
+  const heroLine = Math.round(heroSize * 1.025);
 
   const genre =
     category === "poetry"
@@ -144,7 +148,7 @@ export default function ReadingLevelView({
         : lang === "ru"
           ? "Проза"
           : "Prose";
-  const kicker = [author, genre].filter(Boolean).join("  ·  ");
+  const kicker = [author, genre].filter(Boolean).join(" · ");
 
   const { tokens } = useMemo(() => tokenizeReading(fullText), [fullText]);
   const lines = useMemo(() => readingLines(tokens), [tokens]);
@@ -158,6 +162,19 @@ export default function ReadingLevelView({
   const isRecording = phase === "recording";
   const showCountdown = phase === "countdown";
   const busy = isRecording || showCountdown;
+  // Reading phase = the karaoke canvas is up (recording, or wrapping up).
+  const reading = isRecording || phase === "saving";
+
+  // Canvas word colours. IDLE: one calm tone (the body itself is dimmed by its
+  // container opacity, Figma 37:5850). READING (312:4346): read 60% · current =
+  // module tint · upcoming 26%.
+  const wordColors = useMemo(
+    () =>
+      reading
+        ? { read: readingInk(dark, 0.6), active: tint, unread: readingInk(dark, 0.26) }
+        : { read: readingInk(dark, 0.42), active: tint, unread: readingInk(dark, 0.42) },
+    [reading, dark, tint],
+  );
 
   const activeLine = activeK >= 0 && activeK < lines.length ? lines[activeK].line : -1;
 
@@ -203,6 +220,8 @@ export default function ReadingLevelView({
     btnP.value = withDelay(160, withTiming(0, { duration: 280, easing: BEZ }));
   };
 
+  const lineTimesRef = useRef<number[]>([]);
+  const recStartRef = useRef<number>(0);
   const countdownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const generationRef = useRef<number>(0);
 
@@ -265,6 +284,7 @@ export default function ReadingLevelView({
     let timer: ReturnType<typeof setTimeout>;
     const advance = (k: number) => {
       if (cancelled) return;
+      lineTimesRef.current[k] = Date.now();
       setActiveK(k);
       if (k >= lines.length - 1) {
         // Reached the end of the poem — auto-finish once the last line has had
@@ -286,10 +306,15 @@ export default function ReadingLevelView({
   }, [phase, lines.length]);
 
   const beginRecording = async () => {
+    lineTimesRef.current = [];
+    recStartRef.current = Date.now();
     setPhase("recording");
     enterReading();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     await begin();
+    // The capture really starts once begin() resolves — line times are
+    // measured from here so playback can re-light the same lines.
+    recStartRef.current = Date.now();
   };
 
   const runCountdown = () => {
@@ -336,7 +361,12 @@ export default function ReadingLevelView({
     setPhase("saving");
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const { durationSec, audioBase64, audioUri, waveform } = await finish();
-    onRecordingComplete(durationSec, audioBase64, audioUri, waveform);
+    const t0 = recStartRef.current;
+    const lineTimesMs = lines.map((_, k) => {
+      const t = lineTimesRef.current[k];
+      return t ? Math.max(0, t - t0) : -1;
+    });
+    onRecordingComplete(durationSec, audioBase64, audioUri, waveform, lineTimesMs);
   };
 
   const cycleSpeed = () => {
@@ -387,7 +417,7 @@ export default function ReadingLevelView({
   const bodyStyle = useAnimatedStyle(() => ({
     opacity: interpolate(bodyP.value, [0, 1], [R.idleBodyOpacity, 1]),
     transform: [
-      { scale: interpolate(bodyP.value, [0, 1], [R.idleBodyScale, 1]) },
+      { scale: interpolate(bodyP.value, [0, 1], [IDLE_BODY_SCALE, 1]) },
     ],
   }));
   const fadeMaskStyle = useAnimatedStyle(() => ({
@@ -404,13 +434,23 @@ export default function ReadingLevelView({
     opacity: stopP.value,
     transform: [{ scale: interpolate(stopP.value, [0, 1], [0.9, 1]) }],
   }));
-  // Footer controls fade away smoothly once reading starts.
-  const footerStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(btnP.value, [0, 1], [1, 0]),
-  }));
+  // Reading progress strip (Figma 312:4372/4373) — fades in with the canvas,
+  // the module-tinted fill follows the current line.
+  const progP = useSharedValue(0);
+  useEffect(() => {
+    const n = lines.length || 1;
+    const target = activeK >= 0 ? Math.min(1, (activeK + 0.5) / n) : 0;
+    progP.value = withTiming(target, { duration: 600, easing: BEZ });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeK, lines.length]);
+  const progressWrapStyle = useAnimatedStyle(() => ({ opacity: phaseP.value }));
+  const progressFillStyle = useAnimatedStyle(() => ({ width: `${progP.value * 100}%` }));
 
   const speedLabel = R.pace.labels[speedIdx] ?? "1×";
   const bio = getAuthorBio(author);
+  // Info sheet ink (Figma 37:2876): heading ink, meta #969593, body #CCCAC6.
+  const infoMeta = dark ? "#969593" : "rgba(38,38,40,0.5)";
+  const infoBody = dark ? "#CCCAC6" : "rgba(38,38,40,0.78)";
 
   return (
     <View style={[st.container, { backgroundColor: bgColor }]}>
@@ -442,10 +482,10 @@ export default function ReadingLevelView({
           >
             <Text
               style={{
-                fontFamily: R.type.heroFont,
+                fontFamily: "Geologica_700Bold",
                 fontSize: heroSize,
                 lineHeight: heroLine,
-                letterSpacing: R.type.heroTracking,
+                letterSpacing: -heroSize * 0.02,
                 color: ink,
               }}
             >
@@ -455,12 +495,11 @@ export default function ReadingLevelView({
               <Text
                 numberOfLines={1}
                 style={{
-                  marginTop: 18,
-                  fontFamily: R.type.kickerFont,
-                  fontSize: R.type.kickerSize,
-                  letterSpacing: R.type.kickerTracking,
-                  color: ink,
-                  opacity: R.type.kickerOpacity,
+                  marginTop: 11,
+                  fontFamily: "Geologica_700Bold",
+                  fontSize: 11,
+                  letterSpacing: 0.55,
+                  color: readingInk(dark, 0.55),
                 }}
               >
                 {kicker.toUpperCase()}
@@ -471,13 +510,7 @@ export default function ReadingLevelView({
           <Animated.View style={[st.captionAbs, captionStyle]} pointerEvents="none">
             <Text
               numberOfLines={1}
-              style={{
-                fontFamily: R.type.kickerFont,
-                fontSize: 20,
-                letterSpacing: 0.2,
-                color: ink,
-                opacity: 0.85,
-              }}
+              style={{ fontFamily: "Geologica_700Bold", fontSize: 15, color: ink }}
             >
               {displayTitle}
             </Text>
@@ -486,11 +519,10 @@ export default function ReadingLevelView({
                 numberOfLines={1}
                 style={{
                   marginTop: 3,
-                  fontFamily: R.type.metaFont,
-                  fontSize: R.type.metaSize,
-                  letterSpacing: R.type.metaTracking,
-                  color: ink,
-                  opacity: R.type.metaOpacity,
+                  fontFamily: "Geologica_600SemiBold",
+                  fontSize: 11,
+                  letterSpacing: 0.55,
+                  color: readingInk(dark, 0.45),
                 }}
               >
                 {author.toUpperCase()}
@@ -512,25 +544,39 @@ export default function ReadingLevelView({
             activeLine={activeLine}
             colors={wordColors}
             fontFamily={R.type.bodyFont}
-            fontSize={R.type.bodySize}
-            lineHeight={Math.round(R.type.bodySize * R.type.bodyLineRatio)}
+            activeFontFamily="Literata_600SemiBold"
+            fontSize={BODY_SIZE}
+            lineHeight={BODY_LINE}
             onTextLayout={onCanvasTextLayout}
           />
         </Animated.View>
       </ScrollView>
 
-      {/* Footer: reading speed + learn more — plain text, fade out while reading */}
+      {/* Reading progress — module tint on a 12% track (READING only) */}
       <Animated.View
-        style={[st.footer, { bottom: bottomPad + 22 }, footerStyle]}
-        pointerEvents={busy ? "none" : "auto"}
+        pointerEvents="none"
+        style={[st.progressTrack, { bottom: bottomPad + 47, backgroundColor: readingInk(dark, 0.12) }, progressWrapStyle]}
+      >
+        <Animated.View style={[st.progressFill, { backgroundColor: tint }, progressFillStyle]} />
+      </Animated.View>
+
+      {/* Footer: reading speed + learn more — stays put; quieter while reading */}
+      <View
+        style={[st.footer, { bottom: bottomPad + (reading ? 12 : 22) }]}
+        pointerEvents={showCountdown ? "none" : "box-none"}
       >
         <Pressable
           onPress={cycleSpeed}
-          disabled={busy}
+          disabled={showCountdown}
           hitSlop={10}
           style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
         >
-          <Text style={[st.speedText, { color: inkSoft, fontFamily: R.type.metaFont }]}>
+          <Text
+            style={[
+              st.speedText,
+              { color: readingInk(dark, reading ? 0.6 : 0.7), fontSize: reading ? 12 : 15 },
+            ]}
+          >
             {speedLabel}
           </Text>
         </Pressable>
@@ -541,11 +587,11 @@ export default function ReadingLevelView({
           hitSlop={10}
           style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
         >
-          <Text style={[st.learnText, { color: inkSoft, fontFamily: R.type.metaFont }]}>
+          <Text style={[st.learnText, { color: readingInk(dark, reading ? 0.6 : 0.7) }]}>
             {(lang === "ru" ? "Узнать больше" : "Learn more").toUpperCase()}
           </Text>
         </Pressable>
-      </Animated.View>
+      </View>
 
       {/* Start button — centered (IDLE) */}
       <Animated.View
@@ -557,11 +603,15 @@ export default function ReadingLevelView({
           disabled={phase !== "idle"}
           style={({ pressed }) => [
             st.startBtn,
-            { backgroundColor: btnBg, transform: [{ scale: pressed ? 0.96 : 1 }] },
+            {
+              backgroundColor: btnBg,
+              borderColor: btnRim,
+              transform: [{ scale: pressed ? 0.96 : 1 }],
+            },
           ]}
         >
-          <Ionicons name="play" size={15} color={btnInk} />
-          <Text style={[st.startLabel, { fontFamily: R.type.heroFont, color: btnInk }]}>
+          <Ionicons name="play" size={13} color={btnInk} />
+          <Text style={[st.startLabel, { color: btnInk }]}>
             {lang === "ru" ? "Читать" : "Read"}
           </Text>
         </Pressable>
@@ -582,13 +632,11 @@ export default function ReadingLevelView({
               key={`cd-${countdown}`}
               entering={FadeIn.duration(200)}
               exiting={FadeOut.duration(200)}
-              style={[st.countdownNum, { color: ink, fontFamily: R.type.heroFont }]}
+              style={[st.countdownNum, { color: ink }]}
             >
               {countdown}
             </Animated.Text>
-            <Text
-              style={[st.countdownHint, { color: inkFaint, fontFamily: R.type.kickerFont }]}
-            >
+            <Text style={[st.countdownHint, { color: inkFaint }]}>
               {(lang === "ru" ? "Приготовься" : "Get ready").toUpperCase()}
             </Text>
           </Animated.View>
@@ -605,64 +653,56 @@ export default function ReadingLevelView({
                 ? "Речь — это сцена. Выходи и говори."
                 : "Speech is a stage. Step up and speak."}
             </Text>
-            <Text style={[st.loadHint, { color: inkFaint, fontFamily: R.type.kickerFont }]}>
+            <Text style={[st.loadHint, { color: inkFaint }]}>
               {(lang === "ru" ? "Готовим полотно" : "Preparing the canvas").toUpperCase()}
             </Text>
           </Animated.View>
         </View>
       )}
 
-      {/* "Узнать больше" sheet — neutral text only, author name big, ✕ top-right */}
+      {/* "Узнать больше" — Figma 37:2876 liquid-glass card, ✕ top-right */}
       <Modal
         visible={showInfo}
         transparent
         animationType="fade"
         onRequestClose={() => setShowInfo(false)}
       >
-        <Pressable style={st.infoOverlay} onPress={() => setShowInfo(false)}>
-          <Pressable
-            style={[st.infoCard, { backgroundColor: colors.backgroundSecondary }]}
-            onPress={() => {}}
-          >
-            <Pressable
-              onPress={() => setShowInfo(false)}
-              hitSlop={12}
-              style={({ pressed }) => [st.infoClose, { opacity: pressed ? 0.6 : 1 }]}
-            >
-              <Ionicons name="close" size={22} color={colors.textSecondary} />
-            </Pressable>
+        <Pressable
+          style={[st.infoOverlay, { backgroundColor: dark ? "rgba(14,14,16,0.6)" : "rgba(38,38,40,0.32)" }]}
+          onPress={() => setShowInfo(false)}
+        >
+          <Pressable onPress={() => {}} style={st.infoPress}>
+            <ReadingGlassCard isDark={dark} style={st.infoCard}>
+              <Pressable
+                onPress={() => setShowInfo(false)}
+                hitSlop={12}
+                accessibilityRole="button"
+                accessibilityLabel={lang === "ru" ? "Закрыть" : "Close"}
+                style={({ pressed }) => [st.infoClose, { opacity: pressed ? 0.6 : 1 }]}
+              >
+                <Ionicons name="close" size={22} color={readingInk(dark, 0.85)} />
+              </Pressable>
 
-            {author ? (
-              <Text style={[st.infoAuthor, { color: colors.text, fontFamily: R.type.kickerFont }]}>
-                {author}
-              </Text>
-            ) : null}
-            {bio?.life ? (
-              <Text style={[st.infoLife, { color: colors.textMuted, fontFamily: R.type.metaFont }]}>
-                {bio.life}
-              </Text>
-            ) : null}
-            {bio?.bio ? (
-              <Text style={[st.infoText, { color: colors.textSecondary, fontFamily: R.type.bodyFont }]}>
-                {bio.bio}
-              </Text>
-            ) : null}
+              {author ? (
+                <Text style={[st.infoAuthor, { color: ink }]}>{author}</Text>
+              ) : null}
+              {bio?.life ? (
+                <Text style={[st.infoLife, { color: infoMeta }]}>{bio.life}</Text>
+              ) : null}
+              {bio?.bio ? (
+                <Text style={[st.infoText, { color: infoBody }]}>{bio.bio}</Text>
+              ) : null}
 
-            <View style={[st.infoDivider, { backgroundColor: colors.border }]} />
+              <View style={[st.infoDivider, { backgroundColor: theme.divider }]} />
 
-            <Text style={[st.infoWork, { color: colors.text, fontFamily: R.type.bodyFont }]}>
-              {displayTitle}
-            </Text>
-            {year ? (
-              <Text style={[st.infoLife, { color: colors.textMuted, fontFamily: R.type.metaFont }]}>
-                {year}
-              </Text>
-            ) : null}
-            {about ? (
-              <Text style={[st.infoText, { color: colors.textSecondary, fontFamily: R.type.bodyFont }]}>
-                {about}
-              </Text>
-            ) : null}
+              <Text style={[st.infoWork, { color: ink }]}>{displayTitle}</Text>
+              {year ? (
+                <Text style={[st.infoLife, { color: infoMeta }]}>{year}</Text>
+              ) : null}
+              {about ? (
+                <Text style={[st.infoText, { color: infoBody }]}>{about}</Text>
+              ) : null}
+            </ReadingGlassCard>
           </Pressable>
         </Pressable>
       </Modal>
@@ -677,13 +717,15 @@ const st = StyleSheet.create({
   header: { justifyContent: "flex-start", overflow: "hidden" },
   captionAbs: { position: "absolute", left: 0, top: 0, right: 0 },
   bodyWrap: { marginTop: 34, transformOrigin: "left top" },
-  fadeMask: {
+  progressTrack: {
     position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 240,
+    left: 30,
+    right: 30,
+    height: 3,
+    borderRadius: 2,
+    overflow: "hidden",
   },
+  progressFill: { height: 3, borderRadius: 2 },
   footer: {
     position: "absolute",
     left: 30,
@@ -692,49 +734,27 @@ const st = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  speedText: { fontSize: 15, letterSpacing: 0.5 },
-  learnText: { fontSize: R.type.metaSize + 1, letterSpacing: R.type.metaTracking },
+  speedText: { fontFamily: "Geologica_700Bold" },
+  learnText: { fontFamily: "Geologica_700Bold", fontSize: 11, letterSpacing: 0.55 },
   centerDock: {
     position: "absolute",
     left: 0,
     right: 0,
     alignItems: "center",
   },
+  // Figma 62:123 — 154×51 pill, 2pt rim, radius 32.
   startBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 34,
-    paddingVertical: 16,
-    borderRadius: 18,
-    overflow: "hidden",
-  },
-  startGlow: {
-    position: "absolute",
-    left: 6,
-    right: 6,
-    top: 10,
-    bottom: -8,
-    borderRadius: 20,
-    opacity: 0.28,
-  },
-  startLabel: { fontSize: 16, letterSpacing: 0.3 },
-  stopBtn: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: "center",
     justifyContent: "center",
-  },
-  stopHalo: {
-    position: "absolute",
-    width: 64,
-    height: 64,
+    gap: 13,
+    height: 51,
+    minWidth: 154,
+    paddingHorizontal: 36,
     borderRadius: 32,
-    borderWidth: 1,
-    opacity: 0.4,
+    borderWidth: 2,
   },
-  stopSquare: { width: 20, height: 20, borderRadius: 5 },
+  startLabel: { fontFamily: "Geologica_800ExtraBold", fontSize: 16 },
   overlay: {
     position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
     alignItems: "center",
@@ -750,20 +770,21 @@ const st = StyleSheet.create({
     textAlign: "center",
     marginTop: 26,
   },
-  loadHint: { fontSize: 11, letterSpacing: 2, marginTop: 18 },
-  countdownNum: { fontSize: 140, lineHeight: 150 },
-  countdownHint: { fontSize: 12, marginTop: 8, letterSpacing: 2 },
+  loadHint: { fontFamily: "Geologica_700Bold", fontSize: 11, letterSpacing: 2, marginTop: 18 },
+  countdownNum: { fontFamily: "Geologica_700Bold", fontSize: 140, lineHeight: 150 },
+  countdownHint: { fontFamily: "Geologica_700Bold", fontSize: 12, marginTop: 8, letterSpacing: 2 },
   infoOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.55)",
     justifyContent: "center",
-    padding: 28,
+    alignItems: "center",
+    paddingHorizontal: 28,
   },
-  infoCard: { borderRadius: 22, padding: 24, paddingTop: 28 },
-  infoClose: { position: "absolute", top: 14, right: 14, padding: 4, zIndex: 2 },
-  infoAuthor: { fontSize: 28, letterSpacing: 0.2 },
-  infoLife: { fontSize: 13, letterSpacing: 0.5, marginTop: 4 },
-  infoText: { fontSize: 16, lineHeight: 25, marginTop: 10 },
-  infoDivider: { height: StyleSheet.hairlineWidth, marginVertical: 18, opacity: 0.6 },
-  infoWork: { fontSize: 19, lineHeight: 26 },
+  infoPress: { width: "100%", maxWidth: 346, alignItems: "center" },
+  infoCard: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 26 },
+  infoClose: { position: "absolute", top: 12, right: 12, padding: 4, zIndex: 2 },
+  infoAuthor: { fontFamily: "Geologica_700Bold", fontSize: 28, letterSpacing: -0.28, paddingRight: 12 },
+  infoLife: { fontFamily: "Geologica_700Bold", fontSize: 13, marginTop: 2 },
+  infoText: { fontFamily: "Literata_400Regular", fontSize: 16, lineHeight: 25, marginTop: 10 },
+  infoDivider: { height: 1, marginTop: 14, marginBottom: 18 },
+  infoWork: { fontFamily: "Literata_400Regular", fontSize: 19, lineHeight: 26 },
 });
