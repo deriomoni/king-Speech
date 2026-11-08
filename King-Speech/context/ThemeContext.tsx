@@ -20,6 +20,8 @@ export const DARK = {
   bgSecondary: brandColors.surface,
   card: brandColors.surface,
   cardElevated: "#3A3A3C",
+  // Translucent fill for matte-glass cards (components/MatteGlass paints the texture).
+  cardGlass: "rgba(50,50,52,0.38)",
   cardBorder: brandColors.border,
   glassFill: "rgba(240,238,233,0.05)",
   glassBorder: "rgba(240,238,233,0.10)",
@@ -60,6 +62,7 @@ export const LIGHT = {
   bgSecondary: "#F4F3F0",
   card: "#EFEEEC", // Figma surface/card · Light
   cardElevated: "#FFFFFF",
+  cardGlass: "rgba(255,255,255,0.45)",
   cardBorder: "rgba(38,38,40,0.08)",
   glassFill: "rgba(250,249,246,0.72)",
   glassBorder: "rgba(38,38,40,0.08)",

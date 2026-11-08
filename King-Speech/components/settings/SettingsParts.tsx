@@ -5,6 +5,7 @@ import { SvgXml } from "react-native-svg";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import type { Theme } from "@/context/ThemeContext";
+import MatteGlass from "@/components/MatteGlass";
 
 /** Figma "stroke/shape" — the 2px hairline around cards. */
 export function shapeStroke(themeMode: "light" | "dark") {
@@ -99,10 +100,11 @@ export function Card({
     <View
       style={[
         styles.card,
-        { backgroundColor: theme.card, borderColor: shapeStroke(themeMode) },
+        { backgroundColor: theme.cardGlass, borderColor: shapeStroke(themeMode), overflow: "hidden", zIndex: 0 },
         style,
       ]}
     >
+      <MatteGlass radius={22} />
       {children}
     </View>
   );
@@ -178,9 +180,10 @@ export function ToggleTile({
     <View
       style={[
         styles.tile,
-        { backgroundColor: theme.card, borderColor: shapeStroke(themeMode) },
+        { backgroundColor: theme.cardGlass, borderColor: shapeStroke(themeMode), overflow: "hidden", zIndex: 0 },
       ]}
     >
+      <MatteGlass radius={22} />
       <View style={styles.tileHead}>
         <Ionicons name={icon} size={22} color={theme.text} style={{ marginTop: 3 }} />
         <GoldSwitch value={value} onValueChange={onValueChange} theme={theme} themeMode={themeMode} />
@@ -234,7 +237,7 @@ const styles = StyleSheet.create({
     paddingLeft: 4,
     marginBottom: 12,
   },
-  card: { borderRadius: 22, borderWidth: 2, overflow: "hidden" },
+  card: { borderRadius: 22, borderWidth: 2, overflow: "hidden", zIndex: 0 },
   row: {
     flexDirection: "row",
     alignItems: "center",

@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import type { Theme } from "@/context/ThemeContext";
+import MatteGlass from "@/components/MatteGlass";
 
 // Figma "Card · В ударе" (node 117:1091): "N дня подряд в ударе" + a Mon..Sun
 // row of day rings. Activity is derived from real dated data (timestamps of
@@ -117,7 +118,8 @@ export default function StreakCard({
   const stroke = isDark ? "rgba(240,238,233,0.06)" : "rgba(38,38,40,0.08)";
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.card, borderColor: stroke }]}>
+    <View style={[styles.card, { backgroundColor: theme.cardGlass, borderColor: stroke, overflow: "hidden", zIndex: 0 }]}>
+      <MatteGlass radius={22} />
       <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
         <Text style={[styles.titleNum, { color: theme.accentInk }]}>{streak}</Text>
         {lang === "en"

@@ -36,6 +36,7 @@ import {
 } from "@/components/showtime/themeCategories";
 import CoinIcon from "@/components/CoinIcon";
 import StageGlassDialog from "@/components/showtime/StageGlassDialog";
+import MatteGlass from "@/components/MatteGlass";
 
 const CAROUSEL_COUNT = 10;
 const COLLAPSED_TILES = 6;
@@ -238,8 +239,9 @@ export default function ShowTimeScreen() {
         {/* Каталог тем */}
         <View
           onLayout={(e) => (catalogY.current = e.nativeEvent.layout.y)}
-          style={[st.catalog, { backgroundColor: c.card, borderColor: stroke }]}
+          style={[st.catalog, { backgroundColor: c.cardGlass, borderColor: stroke, overflow: "hidden", zIndex: 0 }]}
         >
+          <MatteGlass radius={22} />
           <View style={st.catalogHead}>
             <Text style={[st.catalogTitle, { color: c.text }]}>
               {q ? (en ? `Found: ${catalogKeys.length}` : `Найдено: ${catalogKeys.length}`) : en ? "Topic catalog" : "Каталог тем"}
@@ -373,7 +375,8 @@ export default function ShowTimeScreen() {
         >
           <View style={[st.deckCard, st.deckBack2, { backgroundColor: c.card, borderColor: stroke }]} />
           <View style={[st.deckCard, st.deckBack1, { backgroundColor: c.card, borderColor: stroke }]} />
-          <View style={[st.deckCard, st.deckFront, { backgroundColor: c.card, borderColor: stroke }]}>
+          <View style={[st.deckCard, st.deckFront, { backgroundColor: c.card, borderColor: stroke, overflow: "hidden", zIndex: 0 }]}>
+            <MatteGlass radius={22} />
             <View style={[st.tipBadge, { backgroundColor: c.accent }]}>
               <TipBubbleIcon color={c.accentText} />
             </View>
