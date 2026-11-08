@@ -95,7 +95,7 @@ export function PriceTile({
     priceColor = selected ? GOLD : INK;
   } else {
     box = selected
-      ? { backgroundColor: GOLD, borderColor: "rgba(255,189,47,0.73)", borderWidth: 4 }
+      ? { backgroundColor: GOLD, borderColor: "transparent", borderWidth: 4 }
       : { backgroundColor: "rgba(240,238,233,0.08)", borderColor: "rgba(240,238,233,0.15)", borderWidth: 2 };
     labelColor = selected ? "rgba(38,38,40,0.85)" : "rgba(240,238,233,0.6)";
     priceColor = selected ? INK : CREAM;

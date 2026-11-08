@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     backgroundColor: "#FFD857",
     borderWidth: 4,
-    borderColor: "rgba(255,189,47,0.73)",
+    borderColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
   },

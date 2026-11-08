@@ -45,7 +45,7 @@ const SHEET_BG = "#F0EEE9";
 const INK = "#262628";
 const INK_MUTED = "#807F7E";
 const GOLD = "#FFD857";
-const GOLD_STROKE = "rgba(255,189,47,0.73)";
+const GOLD_STROKE = "transparent";
 
 // Clean white / black roles theme.
 const BG = "#FFFFFF";
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
   // Gold CTA (Figma): #FFD857 fill with the 4pt amber stroke, ink label.
   spinCta: {
     marginTop: 20, height: 56, borderRadius: 32, overflow: "hidden",
-    backgroundColor: "#FFD857", borderWidth: 4, borderColor: "rgba(255,189,47,0.73)",
+    backgroundColor: "#FFD857", borderWidth: 4, borderColor: "transparent",
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
   },
   spinCtaText: { color: "#262628", fontFamily: "Geologica_800ExtraBold", fontSize: 17 },

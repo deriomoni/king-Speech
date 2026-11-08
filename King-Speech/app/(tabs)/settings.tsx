@@ -29,14 +29,14 @@ const SIGN_OUT = "#E5484D";
 const OPT = {
   dark: {
     selectedBg: "#FFD857",
-    selectedBorder: "rgba(255,189,47,0.73)",
+    selectedBorder: "transparent",
     selectedInk: "#262628",
     idleBorder: "rgba(240,238,233,0.2)",
     idleIcon: "#FFD857",
   },
   light: {
     selectedBg: "#E5E4E1",
-    selectedBorder: "rgba(255,189,47,0.73)",
+    selectedBorder: "transparent",
     selectedInk: "#262628",
     idleBorder: "rgba(38,38,40,0.15)",
     idleIcon: "rgba(38,38,40,0.42)",

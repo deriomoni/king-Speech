@@ -34,7 +34,9 @@ export const DARK = {
   accentText: brandColors.onGold,
   accentDim: "rgba(255,216,87,0.18)",
   accentGlow: "rgba(255,216,87,0.40)",
-  ctaStroke: "rgba(255,189,47,0.73)",
+  // The thick amber rim around gold buttons was removed (user: too harsh). Kept as a
+  // transparent border so button sizes don't shift.
+  ctaStroke: "transparent",
   cta: brandColors.gold,
   ctaText: brandColors.onGold,
   yellow: brandColors.gold,
@@ -70,7 +72,7 @@ export const LIGHT = {
   accentText: "#262628",
   accentDim: "rgba(255,216,87,0.30)",
   accentGlow: "rgba(255,216,87,0.30)",
-  ctaStroke: "rgba(255,189,47,0.73)",
+  ctaStroke: "transparent",
   cta: brandColors.gold,
   ctaText: brandColors.onGold,
   yellow: brandColors.gold,

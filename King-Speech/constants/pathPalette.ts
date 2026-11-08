@@ -282,6 +282,26 @@ export function getPathColors(
   };
 }
 
+// Dark-theme brick: keep it as designed, but lift near-black bricks so they
+// still read against the deep background (hue preserved).
+function darkBrick(hex: string): string {
+  const [h, s, l] = hexToHsl(hex);
+  if (l < 0.45) return hslToHex(h, clamp(s, 0, 0.72), 0.55);
+  return hex;
+}
+
+/**
+ * Brick colour of the Path tab's level bricks: the curated per-module
+ * { bg, brick } palette (PATH_PALETTE), as the Path had it before the
+ * 67-colour module palette. Other screens keep getPathColors().brick.
+ */
+export function getPathBrickColor(moduleNum: number, isDark: boolean): string {
+  const p =
+    PATH_PALETTE[(Math.max(1, moduleNum) - 1) % PATH_PALETTE.length] ??
+    PATH_PALETTE[0];
+  return isDark ? darkBrick(p.brick) : p.brick;
+}
+
 // ── background pattern ink ─────────────────────────────────────────────────
 // The symbol pattern drawn over the Path background is TONE-ON-TONE: it is the
 // module's own background colour pushed a step darker (on light fills) or a

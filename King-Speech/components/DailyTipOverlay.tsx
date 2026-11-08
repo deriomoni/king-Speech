@@ -101,8 +101,12 @@ function Title({ tip }: { tip: DailyTip }) {
   if (italic) rest = rest.slice(italic.length);
   const bold = tip.titleBold && rest.endsWith(tip.titleBold) ? tip.titleBold : "";
   if (bold) rest = rest.slice(0, rest.length - bold.length);
+  // The paper is a fixed 300×350 sheet: the first title line must fit its 250pt
+  // width, so long first lines step the size down (~15 chars fit at 30pt).
+  const firstLine = (italic + rest).trim().length;
+  const size = firstLine <= 14 ? 30 : Math.max(22, Math.floor((30 * 14) / firstLine));
   return (
-    <Text style={styles.title}>
+    <Text style={[styles.title, { fontSize: size, lineHeight: Math.round(size * 1.1) }]}>
       {italic ? <Text style={styles.titleItalic}>{italic}</Text> : null}
       {rest.trimEnd()}
       {bold ? <Text style={styles.titleBold}>{"\n" + bold}</Text> : null}
@@ -110,10 +114,10 @@ function Title({ tip }: { tip: DailyTip }) {
   );
 }
 
-function Body({ tip }: { tip: DailyTip }) {
+function Body({ tip, long }: { tip: DailyTip; long?: boolean }) {
   const lead = tip.bodyItalicLead && tip.body.startsWith(tip.bodyItalicLead) ? tip.bodyItalicLead : "";
   return (
-    <Text style={styles.body}>
+    <Text style={[styles.body, long && styles.textLong]}>
       {lead ? <Text style={styles.bodyItalic}>{lead}</Text> : null}
       {tip.body.slice(lead.length)}
     </Text>
@@ -131,6 +135,8 @@ export default function DailyTipOverlay({
 }) {
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 54 : insets.top;
+  // Long tips get slightly smaller body type so everything fits the fixed sheet.
+  const long = tip.body.length + (tip.action?.length ?? 0) > 130;
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
@@ -166,13 +172,14 @@ export default function DailyTipOverlay({
                 <Text style={styles.label}>СОВЕТ ДНЯ</Text>
                 <Title tip={tip} />
                 <View style={{ marginTop: 16 }}>
-                  <Body tip={tip} />
+                  <Body tip={tip} long={long} />
                 </View>
-                {tip.action ? <Text style={styles.action}>{tip.action}</Text> : null}
-              </View>
-              <View style={styles.dayRow}>
-                <Text style={styles.dayWord}>день</Text>
-                <Text style={styles.dayNum}>{tip.day}</Text>
+                {tip.action ? <Text style={[styles.action, long && styles.textLong]}>{tip.action}</Text> : null}
+                {/* In flow under the text so a long tip can never run into it. */}
+                <View style={styles.dayRow}>
+                  <Text style={styles.dayWord}>день</Text>
+                  <Text style={styles.dayNum}>{tip.day}</Text>
+                </View>
               </View>
             </View>
           </Animated.View>
@@ -232,7 +239,8 @@ const styles = StyleSheet.create({
     color: "rgba(38,38,40,0.8)",
     fontFamily: "Geologica_300Light",
   },
-  dayRow: { position: "absolute", right: 34, bottom: 22, flexDirection: "row", alignItems: "baseline" },
+  dayRow: { alignSelf: "flex-end", marginTop: 6, marginRight: 6, flexDirection: "row", alignItems: "baseline" },
+  textLong: { fontSize: 13.5, lineHeight: 19 },
   dayWord: {
     fontSize: 18,
     fontFamily: "Geologica_300Light",
@@ -249,7 +257,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     backgroundColor: "#FFD857",
     borderWidth: 4,
-    borderColor: "rgba(255,189,47,0.73)",
+    borderColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
   },

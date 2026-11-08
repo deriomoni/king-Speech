@@ -41,7 +41,7 @@ import { useAppColors } from "@/hooks/useAppColors";
 import { useDevTools } from "@/context/DevToolsContext";
 import { PathGradientBackground } from "@/components/path/PathGradientBackground";
 import { PathPatternBackground } from "@/components/path/PathPatternBackground";
-import { getPathColors, darkenHex } from "@/constants/pathPalette";
+import { getPathBrickColor, darkenHex } from "@/constants/pathPalette";
 import { useTheme } from "@/context/ThemeContext";
 import FinalPortal from "@/components/path/FinalPortal";
 import { getRankTheme } from "@/components/path/rankTheme";
@@ -533,7 +533,7 @@ export default function PathScreen() {
     .sort((a, b) => a.levelNumber - b.levelNumber)
     .map((l) => {
       // Tile ("brick") colour comes from the curated Path palette, per module.
-      const brick = getPathColors(l.module, isDark).brick;
+      const brick = getPathBrickColor(l.module, isDark);
       return {
         id: l.id,
         levelNumber: l.levelNumber,
@@ -953,14 +953,14 @@ export default function PathScreen() {
             <View
               style={[
                 styles.devBgSwatch,
-                { backgroundColor: getPathColors(bgModule, isDark).brick },
+                { backgroundColor: getPathBrickColor(bgModule, isDark) },
               ]}
             />
             <Text
               style={[styles.devRankValue, { fontFamily: "Geologica_700Bold" }]}
             >
               модуль {bgModule} · ступени{" "}
-              {getPathColors(bgModule, isDark).brick}
+              {getPathBrickColor(bgModule, isDark)}
             </Text>
           </View>
         </View>
