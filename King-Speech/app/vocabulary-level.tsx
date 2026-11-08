@@ -1,25 +1,10 @@
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useCallback,
-} from "react";
-import {
-  Alert,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   getSpeechRecognitionModule,
   type ExpoSpeechRecognitionResultEvent,
@@ -31,14 +16,10 @@ import Animated, {
   Easing,
   Extrapolation,
   FadeIn,
-  FadeInDown,
-  FadeOut,
   interpolate,
-  interpolateColor,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
-  withRepeat,
   withSequence,
   withTiming,
   cancelAnimation,
@@ -46,19 +27,26 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  POS_LABELS_RU,
-  DIFFICULTY_LABEL_RU,
-  VOCAB_WORDS_RU,
-  VocabWord,
-  checkSynonymAdvanced,
-} from "@/constants/vocabularyData";
+import { VOCAB_WORDS_RU, VocabWord, checkSynonymAdvanced } from "@/constants/vocabularyData";
 import { useGame, MODULE_COLORS } from "@/context/GameContext";
 import { useModuleTransition } from "@/context/ModuleTransitionContext";
-import { WAVEFORM_BAR_MAX, useWaveformBars } from "@/hooks/useWaveformBars";
-import { useAppColors } from "@/hooks/useAppColors";
-import CoinIcon from "@/components/CoinIcon";
-import AppDialog from "@/components/AppDialog";
+import { useTheme } from "@/context/ThemeContext";
+import { useWaveformBars } from "@/hooks/useWaveformBars";
+import LevelIcon from "@/components/path/LevelIcon";
+import VocabPlayView, {
+  EXTRA_TIME_COST,
+  HINT_COST,
+  REPLACE_COST,
+  type VocabAdFor,
+  type VocabModal,
+} from "@/components/vocabulary/VocabPlayView";
+import VocabResultView from "@/components/vocabulary/VocabResultView";
+import type { TimerState } from "@/components/vocabulary/Timer";
+
+// Figma «07 · Уровень 6 · Словарный запас» (34:981): Как играть (148:397),
+// Выбери слово (148:444), Барабан слов (148:469), Отсчёт (149:415),
+// Игра · слушаю / подсказка / найдены синонимы (149:441, 149:510, 196:2013),
+// Время вышло (37:6698) and the replace / ad pop-ups (37:4929, 37:4790, 37:4629).
 
 type Phase = "tutorial" | "spin" | "play" | "result";
 type FeedItem = { id: string; word: string; status: "correct" | "wrong" };
@@ -66,39 +54,43 @@ type FeedItem = { id: string; word: string; status: "correct" | "wrong" };
 const TUTORIAL_KEY = "vocab_tutorial_seen";
 const SESSION_SHOWN_KEY = "@kingspeech_vocab_session_shown_v1";
 
-const RED = "#FF3B30";
-const BG = "#0A0F28";
-const GREEN_BG = "rgba(39,80,10,0.55)";
-const GREEN_BORDER = "#639922";
-const GREEN_TEXT = "#C0DD97";
-
 let sessionResetDone = false;
 
 function makeId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-const TOP_PAD = Platform.OS === "web" ? 80 : 56;
+// Screen paddings: the design puts the top bar 8pt under a 54pt status bar.
+function usePads() {
+  const insets = useSafeAreaInsets();
+  const web = Platform.OS === "web";
+  return {
+    top: web ? 54 : insets.top,
+    bottom: web ? 28 : Math.max(16, insets.bottom - 6),
+    insetBottom: web ? 0 : insets.bottom,
+  };
+}
 
-// Reveal only the first 3 letters of a synonym; mask the rest with crosses so
-// the hint nudges without giving the whole answer away. Spaces are preserved.
-function maskSynonym(word: string): string {
-  const reveal = 3;
-  let shown = 0;
-  let out = "";
-  for (const ch of word) {
-    if (ch === " " || ch === "-") {
-      out += ch;
-      continue;
-    }
-    if (shown < reveal) {
-      out += ch;
-      shown += 1;
-    } else {
-      out += "×";
-    }
-  }
-  return out;
+function useInk() {
+  const { theme, themeMode } = useTheme();
+  const isDark = themeMode === "dark";
+  const ink = (a: number) => (isDark ? `rgba(240,238,233,${a})` : `rgba(38,38,40,${a})`);
+  return { theme, isDark, ink };
+}
+
+function CloseButton({ onPress }: { onPress: () => void }) {
+  const { theme } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={10}
+      accessibilityRole="button"
+      accessibilityLabel="Закрыть"
+      style={({ pressed }) => [styles.close, { opacity: pressed ? 0.6 : 1 }]}
+    >
+      <Ionicons name="close" size={26} color={theme.text} />
+    </Pressable>
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -111,7 +103,7 @@ export default function VocabularyLevelScreen() {
     moduleId?: string;
   }>();
   const levelId = String(params.levelId ?? "vocabulary");
-  const { colors } = useAppColors();
+  const { theme } = useTheme();
   const { addXP, markLevelComplete } = useGame();
   const { triggerModuleTransition } = useModuleTransition();
   // Vocabulary is a module's LAST level, so finishing it crosses into the next
@@ -170,11 +162,11 @@ export default function VocabularyLevelScreen() {
   }, []);
 
   if (!tutorialChecked) {
-    return <View style={[styles.root, { backgroundColor: colors.background }]} />;
+    return <View style={[styles.root, { backgroundColor: theme.bg }]} />;
   }
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background }]}>
+    <View style={[styles.root, { backgroundColor: theme.bg }]}>
       {phase === "tutorial" && (
         <TutorialPhase
           onDone={handleTutorialDone}
@@ -203,7 +195,6 @@ export default function VocabularyLevelScreen() {
         <PlayPhase
           word={selectedWord}
           foundSynonyms={foundSynonyms}
-          score={score}
           feed={feed}
           onAddCorrect={(syn) => {
             setFoundSynonyms((p) => (p.includes(syn) ? p : [...p, syn]));
@@ -273,7 +264,7 @@ export default function VocabularyLevelScreen() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PHASE 0 — TUTORIAL
+// PHASE 0 — TUTORIAL · «Как играть» (148:397)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function TutorialPhase({
@@ -283,42 +274,50 @@ function TutorialPhase({
   onDone: () => void;
   onClose: () => void;
 }) {
-  const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 80 : insets.top + 12;
-  const rules: { n: number; text: string }[] = [
-    { n: 1, text: "Нажми Стоп — получишь слово" },
-    { n: 2, text: "Нажми Старт и говори синонимы" },
-    { n: 3, text: "За каждый синоним +3 очка" },
-    { n: 4, text: "Чем больше слов, тем выше балл" },
+  const { theme, ink } = useInk();
+  const pads = usePads();
+  const rules = [
+    "Нажми «Стоп» - получишь слово",
+    "Нажми «Старт» и говори синонимы",
+    "За каждый синоним +3 очка",
+    "Чем больше слов - тем выше балл",
   ];
 
   return (
-    <View style={styles.tutorialRoot}>
-      <View style={[styles.topBar, { paddingTop: topPad }]}>
-        <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={12}>
-          <Ionicons name="close" size={24} color="#fff" />
-        </Pressable>
-        <Text style={styles.topTitle}>Словарный запас</Text>
-        <View style={styles.closeBtn} />
+    <View
+      style={[
+        styles.tutorialRoot,
+        { paddingTop: pads.top + 8, paddingBottom: Platform.OS === "web" ? 48 : pads.insetBottom + 14 },
+      ]}
+    >
+      <View style={styles.topBar}>
+        <CloseButton onPress={onClose} />
       </View>
 
-      <View style={styles.tutorialHeader}>
-        <View style={styles.tutorialIconCircle}>
-          <Ionicons name="book-outline" size={48} color={RED} />
-        </View>
-        <Text style={styles.tutorialH1}>Как играть</Text>
-        <Text style={styles.tutorialH2}>Прочитай перед началом</Text>
-      </View>
+      <View style={{ flex: 1 }} />
 
-      <View style={styles.rulesCard}>
-        {rules.map((r) => (
-          <View key={r.n} style={styles.ruleRow}>
-            <View style={styles.ruleNum}>
-              <Text style={styles.ruleNumText}>{r.n}</Text>
+      <Text style={[styles.tutTitle, { color: theme.text }]}>Словарный запас</Text>
+      <Text style={[styles.tutSub, { color: ink(0.6) }]}>Синонимы на скорость</Text>
+
+      <View style={[styles.steps, { backgroundColor: ink(0.06), borderColor: ink(0.1) }]}>
+        {rules.map((text, i) => (
+          <View key={i}>
+            {i > 0 ? <View style={[styles.stepSep, { backgroundColor: ink(0.08) }]} /> : null}
+            <View style={styles.stepRow}>
+              <View style={[styles.stepNum, { backgroundColor: "rgba(255,216,87,0.16)" }]}>
+                <Text style={[styles.stepNumText, { color: theme.accentInk }]}>{i + 1}</Text>
+              </View>
+              <Text style={[styles.stepText, { color: theme.text }]}>{text}</Text>
             </View>
-            <Text style={styles.ruleText}>{r.text}</Text>
           </View>
         ))}
+      </View>
+
+      <View style={styles.tip}>
+        <View style={[styles.tipDot, { backgroundColor: theme.accent }]} />
+        <Text style={[styles.tipText, { color: ink(0.5) }]}>
+          Говори вслух - микрофон засчитает каждое слово
+        </Text>
       </View>
 
       <View style={{ flex: 1 }} />
@@ -327,108 +326,69 @@ function TutorialPhase({
         onPress={onDone}
         style={({ pressed }) => [
           styles.primaryBtn,
-          { opacity: pressed ? 0.85 : 1 },
+          { backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.85 : 1 },
         ]}
         accessibilityRole="button"
         accessibilityLabel="Понятно, начать"
       >
-        <Text style={styles.primaryBtnText}>Понятно, начать</Text>
+        <Text style={[styles.primaryBtnText, { color: theme.accentText }]}>Понятно, начать</Text>
       </Pressable>
     </View>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PHASE 1 — SPIN
+// PHASE 1 — SPIN · «Выбери слово» (148:444) + «Барабан слов» (148:469)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Text Scroller reel geometry — VERTICAL list (like the Lottie reference):
-// deep-purple background, the whole word column tilted a few degrees, words
-// slide vertically; the centred word is crisp white, neighbours are lilac and
-// progressively blurred with distance.
-const ROW_SPACING = 76; // vertical distance between neighbouring words (at the centre)
+// Vertical word drum. The centred word sits in a gold selection pill; its
+// neighbours shrink (36 → 26 → 20pt) and fade (100% → 40% → 15%), and the
+// top/bottom edges dissolve into the background.
+const ROW_SPACING = 84; // distance between neighbouring words
+const ROW_H = 46; // line box of the 36pt centre word
+const CENTER_OFFSET = 28; // drum centre sits 28pt below the window centre
 const REEL_LEN = 72; // long enough to keep sweeping for the full auto-stop window
 const SETTLE_COLS = 3; // slots to glide past after STOP for a natural landing
 const SPIN_SPEED = 4.2; // words per second while spinning
 
-// Hoop rail geometry — the words themselves stay perfectly level (no tilt,
-// no perspective), but they RIDE a curved rail: each word sits 7.5° further
-// along a big circle, so the column of words bends away to the LEFT at the
-// top and bottom while every word stays horizontal — like the reference.
-const STEP_ANGLE = Math.PI / 24; // 7.5° per word along the rail
-const HOOP_R = ROW_SPACING / STEP_ANGLE; // keeps centre spacing = ROW_SPACING
-
-// Reference palette (darker variant, as requested)
-const REEL_BG = "#25002E";
-const REEL_NEAR = "#9E6CA9";
-const REEL_FAR = "#5C2B64";
-
-// One word of the vertical reel. Its position / colour / blur are derived
-// purely from its vertical distance to the live scroll position, so a single
-// continuous animation drives the whole effect.
 function ReelRow({
   word,
   index,
   pos,
   popScale,
   landed,
-  centerColor,
-  nearColor,
-  farColor,
+  color,
 }: {
   word: string;
   index: number;
   pos: SharedValue<number>;
   popScale: SharedValue<number>;
   landed: boolean;
-  centerColor: string;
-  nearColor: string;
-  farColor: string;
+  color: string;
 }) {
-  const isWeb = Platform.OS === "web";
   const style = useAnimatedStyle(() => {
     const rel = index - pos.value;
     const d = Math.abs(rel);
-    // Straight vertical column, centred (top → bottom); no left curve.
-    const translateY = rel * ROW_SPACING;
-    const translateX = 0;
-    const scale = landed ? popScale.value : 1;
-    // Fade to fully transparent quickly toward the edges, so words dissolve into
-    // the background well before the window edge (stronger top/bottom fade).
-    const opacity = interpolate(
-      d,
-      [0, 1.5, 3],
-      [1, 0.4, 0],
-      Extrapolation.CLAMP,
-    );
-    const color = interpolateColor(
-      Math.min(d, 3),
-      [0, 1.5, 3],
-      [centerColor, nearColor, farColor],
-    );
-    const base = {
+    const opacity = interpolate(d, [0, 1, 2, 3], [1, 0.4, 0.15, 0], Extrapolation.CLAMP);
+    const size = interpolate(d, [0, 1, 2], [1, 26 / 36, 20 / 36], Extrapolation.CLAMP);
+    const scale = size * (landed ? popScale.value : 1);
+    return {
       opacity,
-      color,
-      transform: [{ translateY }, { translateX }, { scale }],
+      transform: [{ translateY: rel * ROW_SPACING }, { scale }],
     };
-    if (isWeb) {
-      const blur = interpolate(d, [0, 0.5, 1, 2, 3], [0, 1.2, 3.5, 7, 11], Extrapolation.CLAMP);
-      return { ...base, filter: `blur(${blur.toFixed(2)}px)` } as any;
-    }
-    return base;
   });
 
   return (
-    <Animated.Text style={[styles.reelRow, style]} numberOfLines={1}>
+    <Animated.Text style={[styles.reelRow, { color }, style]} numberOfLines={1}>
       {word.charAt(0).toUpperCase() + word.slice(1)}
     </Animated.Text>
   );
 }
 
-// Intro: "Выбери слово" appears STATICALLY, centred, over a solid theme
-// background for ~1s, then fades out — after which the real title fades in and
-// the reel begins.
-function SpinIntro({ colors, onDone }: { colors: { text: string; background: string }; onDone: () => void }) {
+// Intro «Выбери слово» (148:444): a big two-line title over a clean
+// background for ~1s, then it fades out and the drum is revealed.
+function SpinIntro({ onDone }: { onDone: () => void }) {
+  const { theme, ink } = useInk();
   const [visible, setVisible] = useState(true);
   const op = useSharedValue(1);
   const doneRef = useRef(onDone);
@@ -452,18 +412,29 @@ function SpinIntro({ colors, onDone }: { colors: { text: string; background: str
   const wrapStyle = useAnimatedStyle(() => ({ opacity: op.value }));
   if (!visible) return null;
   return (
-    <Animated.View
-      pointerEvents="none"
-      style={[StyleSheet.absoluteFill, { backgroundColor: colors.background, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 }, wrapStyle]}
-    >
-      <Text
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        style={{ color: colors.text, fontFamily: "Geologica_700Bold", fontSize: 34, letterSpacing: 0.3, textAlign: "center" }}
-      >
-        Выбери слово
-      </Text>
+    <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, wrapStyle]}>
+      <View style={[styles.introWrap, { backgroundColor: theme.bg }]}>
+        <Text style={[styles.introTitle, { color: theme.text }]}>{"Выбери\nслово"}</Text>
+        <Text style={[styles.introSub, { color: ink(0.5) }]}>Останови барабан - получишь слово</Text>
+      </View>
     </Animated.View>
+  );
+}
+
+// «Словарный запас» chip with the level glyph on a gold tile (148:473).
+function LevelChip() {
+  const { theme, ink } = useInk();
+  return (
+    <View style={[styles.levelChip, { backgroundColor: ink(0.06), borderColor: ink(0.1) }]}>
+      <View style={[styles.levelTile, { backgroundColor: theme.accent }]}>
+        <View style={styles.levelIconBox}>
+          <View style={styles.levelIconScale}>
+            <LevelIcon levelId="vocabulary" color="#262628" hole={theme.accent} />
+          </View>
+        </View>
+      </View>
+      <Text style={[styles.levelChipText, { color: theme.text }]}>Словарный запас</Text>
+    </View>
   );
 }
 
@@ -476,12 +447,8 @@ function SpinPhase({
   onPicked: (w: VocabWord) => void;
   onClose: () => void;
 }) {
-  const { colors, isDark } = useAppColors();
-  // Reel word colours follow the theme: centre = crisp text, neighbours fade out.
-  const reelCenter = colors.text;
-  const reelNear = colors.textSecondary;
-  const reelFar = isDark ? "rgba(244,241,234,0.18)" : "rgba(20,22,26,0.18)";
-  // The title appears only once the intro animation has landed in its place.
+  const { theme, isDark, ink } = useInk();
+  const pads = usePads();
   const [introDone, setIntroDone] = useState(false);
   // A finite reel of Russian words, frozen ONCE at mount. Because the strip is
   // built here (not derived from a live pool), the parent recording the picked
@@ -497,9 +464,7 @@ function SpinPhase({
     );
   });
 
-  // Start near the END of the reel and count DOWN toward the start so the strip
-  // slides to the RIGHT — new words enter from the left edge (the direction the
-  // reference sweeps).
+  // Start near the END of the reel and count DOWN toward the start.
   const START_POS = REEL_LEN - 2;
   const pos = useSharedValue(START_POS);
   const popScale = useSharedValue(1);
@@ -507,12 +472,10 @@ function SpinPhase({
   const stoppedRef = useRef(false);
 
   const isSpinning = landIndex == null;
-  const center = landIndex != null ? reel[landIndex] : null;
 
   // Continuous constant-speed sweep — starts immediately at mount (behind the
   // intro overlay) at FULL speed, so by the time the reel is revealed it's
-  // already mid-spin. The player never sees it idle, loading, or ramping up.
-  // Runs comfortably longer than the auto-stop so it can never run dry first.
+  // already mid-spin.
   useEffect(() => {
     const travel = SPIN_SPEED * 11;
     const farTarget = Math.max(START_POS - travel, SETTLE_COLS + 1);
@@ -528,7 +491,7 @@ function SpinPhase({
     (idx: number) => {
       setLandIndex(idx);
       popScale.value = withSequence(
-        withTiming(1.16, { duration: 220 }),
+        withTiming(1.12, { duration: 220 }),
         withTiming(1, { duration: 260 }),
       );
       if (Platform.OS !== "web") {
@@ -540,8 +503,7 @@ function SpinPhase({
   );
 
   // Glide to a clean landing on STOP / auto-stop. Guarded so the button and the
-  // 6s timeout can't both trigger a landing. Continues in the same direction
-  // (counting down) for a natural deceleration.
+  // timeout can't both trigger a landing.
   const stop = useCallback(() => {
     if (stoppedRef.current) return;
     stoppedRef.current = true;
@@ -556,92 +518,95 @@ function SpinPhase({
     );
   }, [pos, finishPick]);
 
-  // Auto-stop after 6s if the player hasn't pressed STOP.
   const stopRef = useRef(stop);
   useEffect(() => {
     stopRef.current = stop;
   }, [stop]);
-  // Auto-pick 7s after the reel is revealed (it's already spinning at full speed
-  // behind the intro). The sweep window is far longer, so it never runs dry.
+  // Auto-pick 7s after the reel is revealed.
   useEffect(() => {
     if (!introDone) return;
     const autoId = setTimeout(() => stopRef.current(), 7000);
     return () => clearTimeout(autoId);
   }, [introDone]);
 
-  const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 80 : insets.top + 12;
-  return (
-    <View style={[styles.spinRoot, { backgroundColor: colors.background }]}>
-      <View style={[styles.topBar, { paddingTop: topPad }]}>
-        <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={12}>
-          <Ionicons name="close" size={24} color={colors.text} />
-        </Pressable>
-        {introDone ? (
-          <Animated.Text entering={FadeIn.duration(450)} style={[styles.topTitle, { color: colors.text }]}>
-            Выбери слово
-          </Animated.Text>
-        ) : (
-          <View />
-        )}
-        <View style={{ width: 36 }} />
-      </View>
+  const fadeFrom = theme.bg;
+  const fadeTo = isDark ? "rgba(38,38,40,0)" : "rgba(250,249,246,0)";
 
-      <View style={{ flex: 1 }}>
-        {/* Reel — words scroll down the centre; edges fade into the background
-            (fade + blur, no visible overlay). */}
-        <View style={styles.reelWindow}>
-          {/* Rendered only after the intro clears, so its centre word can never
-              overlap the fading "Выбери слово" intro text. Fades in over a clean
-              background, sits still for 1s, then sweeps. */}
-          {introDone ? (
-            <Animated.View entering={FadeIn.duration(320)} style={styles.reelTilt}>
-              {reel.map((w, i) => (
-                <ReelRow
-                  key={i}
-                  word={w.word}
-                  index={i}
-                  pos={pos}
-                  popScale={popScale}
-                  landed={landIndex === i}
-                  centerColor={reelCenter}
-                  nearColor={reelNear}
-                  farColor={reelFar}
-                />
-              ))}
-            </Animated.View>
-          ) : null}
+  return (
+    <View style={[styles.spinRoot, { backgroundColor: theme.bg, paddingTop: pads.top + 8 }]}>
+      <View style={styles.topBar}>
+        <CloseButton onPress={onClose} />
+        <View pointerEvents="none" style={styles.topCenter}>
+          <LevelChip />
         </View>
       </View>
 
-      <View style={[styles.stopBtnWrap, { paddingBottom: (Platform.OS === "web" ? 32 : 24) + insets.bottom }]}>
+      <View style={styles.reelWindow}>
+        {/* Gold selection pill (148:483). */}
+        <View
+          pointerEvents="none"
+          style={[
+            styles.selection,
+            { borderColor: theme.accent, backgroundColor: isDark ? "rgba(255,216,87,0.08)" : "rgba(255,216,87,0.16)" },
+          ]}
+        />
+        {introDone ? (
+          <Animated.View entering={FadeIn.duration(320)} style={StyleSheet.absoluteFill}>
+            {reel.map((w, i) => (
+              <ReelRow
+                key={i}
+                word={w.word}
+                index={i}
+                pos={pos}
+                popScale={popScale}
+                landed={landIndex === i}
+                color={theme.text}
+              />
+            ))}
+          </Animated.View>
+        ) : null}
+        <LinearGradient
+          pointerEvents="none"
+          colors={[fadeFrom, fadeFrom, fadeTo]}
+          locations={[0, 0.2, 1]}
+          style={styles.fadeTop}
+        />
+        <LinearGradient pointerEvents="none" colors={[fadeTo, fadeFrom]} style={styles.fadeBottom} />
+      </View>
+
+      <View style={[styles.stopWrap, { paddingBottom: Platform.OS === "web" ? 58 : pads.insetBottom + 24 }]}>
         <Pressable
           onPress={() => stop()}
           disabled={!isSpinning}
           style={({ pressed }) => [
             styles.stopRound,
-            { opacity: pressed || !isSpinning ? 0.85 : 1 },
+            {
+              backgroundColor: theme.accent,
+              borderColor: theme.ctaStroke,
+              opacity: pressed || !isSpinning ? 0.85 : 1,
+              transform: [{ scale: pressed ? 0.96 : 1 }],
+            },
           ]}
           accessibilityRole="button"
           accessibilityLabel="Стоп"
         >
-          <Text style={styles.stopRoundText}>СТОП</Text>
+          <Text style={[styles.stopRoundText, { color: theme.accentText }]}>СТОП</Text>
         </Pressable>
+        <Text style={[styles.stopCaption, { color: ink(0.45) }]}>Нажми, чтобы остановить</Text>
       </View>
 
-      <SpinIntro colors={colors} onDone={() => setIntroDone(true)} />
+      <SpinIntro onDone={() => setIntroDone(true)} />
     </View>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PHASE 2 — PLAY
+// PHASE 2 — PLAY · «Отсчёт» + «Игра» (149:415 / 149:441 / 149:510 / 196:2013)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function PlayPhase({
   word,
   foundSynonyms,
-  score,
   feed,
   onAddCorrect,
   onAddWrong,
@@ -651,7 +616,6 @@ function PlayPhase({
 }: {
   word: VocabWord;
   foundSynonyms: string[];
-  score: number;
   feed: FeedItem[];
   onAddCorrect: (syn: string) => void;
   onAddWrong: (text: string) => void;
@@ -659,23 +623,20 @@ function PlayPhase({
   onExit: () => void;
   onReplace: () => void;
 }) {
-  const { colors } = useAppColors();
   const { coins, spendCoins } = useGame();
+  const pads = usePads();
 
-  // Coin costs. If the player is short, they can watch a (simulated) rewarded
-  // ad instead of paying.
-  const HINT_COST = 30;
-  const REPLACE_COST = 15;
-  const EXTRA_TIME_COST = 25;
-  // Which of the two side buttons has an open modal, if any.
-  const [modal, setModal] = useState<null | "replace" | "hint">(null);
+  // Open confirm pop-up, if any (replace word / exit).
+  const [modal, setModal] = useState<VocabModal>(null);
   // A simulated rewarded-ad flow. `adFor` remembers what the ad unlocks.
-  const [adFor, setAdFor] = useState<null | "replace" | "hint" | "time">(null);
+  const [adFor, setAdFor] = useState<VocabAdFor>(null);
   // Once revealed, the hint stays on screen for the rest of the round.
   const [hintRevealed, setHintRevealed] = useState(false);
   // Extra time (×2 the word's allotted time) — one grant per round.
   const [extraTimeUsed, setExtraTimeUsed] = useState(false);
-  // Game is paused (timer frozen) while a confirm/hint/ad modal is open.
+  // Green "time added" flash on the timer.
+  const [timeAddedFlash, setTimeAddedFlash] = useState(false);
+  // Game is paused (timer frozen) while a confirm/ad modal is open.
   const paused = modal !== null || adFor !== null;
   const [stage, setStage] = useState<"countdown" | "active">("countdown");
   const [countdown, setCountdown] = useState(3);
@@ -706,20 +667,13 @@ function PlayPhase({
   const wrongShownRef = useRef<Set<string>>(new Set());
   const [allFoundBanner, setAllFoundBanner] = useState(false);
   // Synchronous set of normalized matched synonyms — used to dedupe within
-  // a single recognition event (state updates from onAddCorrect would
-  // otherwise lag behind tight loops).
+  // a single recognition event.
   const matchedNormSetRef = useRef<Set<string>>(new Set());
-  const foundRef = useRef<string[]>(foundSynonyms);
-  useEffect(() => {
-    foundRef.current = foundSynonyms;
-  }, [foundSynonyms]);
 
   const normForDedup = (s: string) => s.toLowerCase().trim().replace(/ё/g, "е");
 
   // Stable refs for prop callbacks + word synonyms so that startRecognition
-  // doesn't change identity on every parent re-render. Without this, the
-  // countdown effect would re-subscribe (and clear its setTimeout) on each
-  // render, occasionally postponing the auto-start indefinitely.
+  // doesn't change identity on every parent re-render.
   const onAddCorrectRef = useRef(onAddCorrect);
   const onAddWrongRef = useRef(onAddWrong);
   const synonymsRef = useRef(word.synonyms);
@@ -752,17 +706,14 @@ function PlayPhase({
   useEffect(() => {
     if (stage !== "active" || paused) return;
     const id = setInterval(() => {
-      // Pure updater — NO side effects. Calling onFinish() (a parent setter)
-      // from inside a setState updater fires "Cannot update a component while
-      // rendering a different component". Finishing is handled by the effect
-      // below, which reacts to timeLeft hitting zero.
+      // Pure updater — finishing is handled by the effect below.
       setTimeLeft((t) => (t <= 1 ? 0 : t - 1));
     }, 1000);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, paused]);
 
-  // Time's up → finish. Side effects live here, outside the setTimeLeft updater.
+  // Time's up → finish.
   useEffect(() => {
     if (stage === "active" && timeLeft <= 0 && !finishedRef.current) {
       finishedRef.current = true;
@@ -772,12 +723,7 @@ function PlayPhase({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, stage]);
 
-  // ── Real microphone capture for the waveform ──────────────────────────────
-  // On web we grab a getUserMedia stream — Web Speech API is happy to share it.
-  // On native we DO NOT open a separate expo-av Recording: the speech
-  // recognizer (Apple Speech / Android SpeechRecognizer) owns the AVAudioSession,
-  // and a parallel expo-av recorder would either fail to start or kick the
-  // recognizer off the mic. Native waveform stays flat — acceptable trade-off.
+  // ── Real microphone capture for the waveform (web) ───────────────────────
   const startMicCapture = useCallback(async () => {
     if (Platform.OS !== "web") return;
     try {
@@ -803,9 +749,6 @@ function PlayPhase({
   }, [resetBars]);
 
   // Pre-warm the mic as soon as PlayPhase mounts (during countdown).
-  // This makes the browser permission prompt appear with a fresh user
-  // gesture (the STOP click or spin auto-pick), so recording is fully
-  // ready by the time the countdown reaches "СТАРТ".
   useEffect(() => {
     startMicCapture();
     return () => {
@@ -815,10 +758,6 @@ function PlayPhase({
   }, []);
 
   // ── Speech recognition (cross-platform via expo-speech-recognition) ──────
-  // Same API on iOS (SFSpeechRecognizer), Android (SpeechRecognizer) and Web
-  // (Web Speech API). We register listeners once per start session, get
-  // streaming interim results, and feed each token through the local
-  // checkSynonymAdvanced — no server, no network round-trip.
   const removeSrListeners = useCallback(() => {
     for (const sub of srSubsRef.current) {
       try {
@@ -862,10 +801,7 @@ function PlayPhase({
           }
         }
       }
-      // One "wrong" card per FINAL result that produced no match. Silent on
-      // interim results and on already-counted repeats (spec). Dedupe by the
-      // joined final transcript so a recognizer that replays the same final
-      // payload after a restart doesn't spawn duplicate red cards.
+      // One "wrong" card per FINAL result that produced no match.
       if (
         event.isFinal &&
         !matchedThisEvent &&
@@ -911,35 +847,29 @@ function PlayPhase({
     // Clear any leftover listeners from a previous (e.g. hot-reloaded) session.
     removeSrListeners();
 
+    srSubsRef.current.push(sr.addListener("result", handleSrResult));
     srSubsRef.current.push(
-      sr.addListener("result", handleSrResult),
-    );
-    srSubsRef.current.push(
-      sr.addListener(
-        "error",
-        (event: ExpoSpeechRecognitionErrorEvent) => {
-          // Terminal errors → fall back to text input.
-          if (
-            event.error === "not-allowed" ||
-            event.error === "service-not-allowed" ||
-            event.error === "audio-capture" ||
-            event.error === "language-not-supported"
-          ) {
-            isPlayingRef.current = false;
-            removeSrListeners();
-            try {
-              sr.abort();
-            } catch {}
-            setRecognitionError(
-              event.error === "audio-capture"
-                ? "Микрофон недоступен. Введи синоним вручную."
-                : "Распознавание речи запрещено. Введи синоним вручную.",
-            );
-          }
-          // Transient (no-speech / busy / network / speech-timeout) → the
-          // "end" listener will restart automatically while isPlayingRef holds.
-        },
-      ),
+      sr.addListener("error", (event: ExpoSpeechRecognitionErrorEvent) => {
+        // Terminal errors → fall back to text input.
+        if (
+          event.error === "not-allowed" ||
+          event.error === "service-not-allowed" ||
+          event.error === "audio-capture" ||
+          event.error === "language-not-supported"
+        ) {
+          isPlayingRef.current = false;
+          removeSrListeners();
+          try {
+            sr.abort();
+          } catch {}
+          setRecognitionError(
+            event.error === "audio-capture"
+              ? "Микрофон недоступен. Введи синоним вручную."
+              : "Распознавание речи запрещено. Введи синоним вручную.",
+          );
+        }
+        // Transient errors → the "end" listener restarts automatically.
+      }),
     );
     srSubsRef.current.push(
       sr.addListener("end", () => {
@@ -957,8 +887,6 @@ function PlayPhase({
     );
 
     const tryStart = (attempt = 0) => {
-      // Bail out if the round was torn down between attempts — prevents
-      // a delayed retry from re-arming SR after stopRecognition().
       if (!isPlayingRef.current) return;
       try {
         sr.start({
@@ -999,6 +927,7 @@ function PlayPhase({
     return () => {
       stopRecognition();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Countdown 3 → 2 → 1 → СТАРТ → auto-start recognition + timer.
@@ -1024,13 +953,6 @@ function PlayPhase({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, countdown]);
 
-  const handleStopActive = () => {
-    if (finishedRef.current) return;
-    finishedRef.current = true;
-    stopRecognition();
-    onFinish();
-  };
-
   const submitFallback = () => {
     const text = fallbackInput.trim();
     if (!text) return;
@@ -1051,18 +973,10 @@ function PlayPhase({
     }
   };
 
-  const handleExitPress = () => {
-    Alert.alert("Выйти?", "Прогресс этого задания не сохранится", [
-      { text: "Остаться", style: "cancel" },
-      {
-        text: "Выйти",
-        style: "destructive",
-        onPress: () => {
-          stopRecognition();
-          onExit();
-        },
-      },
-    ]);
+  const confirmExit = () => {
+    setModal(null);
+    stopRecognition();
+    onExit();
   };
 
   // ── Replace-word & hint (coins / rewarded ad) ────────────────────────────
@@ -1098,12 +1012,13 @@ function PlayPhase({
     }
   };
 
-  // "Доп. время" → doubles the word's allotted time (adds one more full
-  // allotment to the remaining clock, so the total budget becomes ×2). Pay with
-  // coins, or watch a rewarded ad when short.
+  // "×2" → doubles the word's allotted time (adds one more full allotment to
+  // the remaining clock). Pay with coins, or watch a rewarded ad when short.
   const grantExtraTime = () => {
     setExtraTimeUsed(true);
     setTimeLeft((t) => t + word.timerSeconds);
+    setTimeAddedFlash(true);
+    setTimeout(() => setTimeAddedFlash(false), 1600);
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     }
@@ -1131,377 +1046,53 @@ function PlayPhase({
     }
   };
 
-  // ── Timer animations ─────────────────────────────────────────────────────
-  const bgOpacity = useSharedValue(0);
-  useEffect(() => {
-    if (stage !== "active") return;
-    // Low-time cue is a smooth red pulse only — no shake. Paused freezes it.
-    if (!paused && timeLeft > 0 && timeLeft <= 10) {
-      const peak = timeLeft <= 5 ? 0.08 : 0.05;
-      const step = timeLeft <= 5 ? 520 : 700;
-      bgOpacity.value = withRepeat(
-        withSequence(
-          withTiming(peak, { duration: step }),
-          withTiming(0, { duration: step }),
-        ),
-        -1,
-        false,
-      );
-    } else {
-      cancelAnimation(bgOpacity);
-      bgOpacity.value = withTiming(0, { duration: 220 });
-    }
-    return () => {
-      cancelAnimation(bgOpacity);
-    };
-  }, [timeLeft, stage, paused, bgOpacity]);
+  // Timer component state: green flash on bonus, red in the last 10 seconds.
+  const timerState: TimerState = timeAddedFlash
+    ? "added"
+    : stage === "active" && timeLeft > 0 && timeLeft <= 10
+      ? "low"
+      : "default";
+  const timeTotal = word.timerSeconds * (extraTimeUsed ? 2 : 1);
 
-  const timerStyle = useAnimatedStyle(() => ({}));
-  const bgStyle = useAnimatedStyle(() => ({
-    backgroundColor: `rgba(255,59,48,${bgOpacity.value})`,
-  }));
-
-  const timerColor = timeLeft <= 10 && timeLeft > 0 ? RED : colors.text;
-  const timerText = `${String(Math.floor(timeLeft / 60)).padStart(2, "0")}:${String(
-    timeLeft % 60,
-  ).padStart(2, "0")}`;
-
-  // Auto-scroll feed to bottom.
-  const feedScrollRef = useRef<ScrollView>(null);
-  useEffect(() => {
-    feedScrollRef.current?.scrollToEnd({ animated: true });
-  }, [feed.length]);
-
-  const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 80 : insets.top + 12;
   return (
-    <View style={[styles.playRoot, { paddingBottom: 24 + insets.bottom }]}>
-      <Animated.View
-        pointerEvents="none"
-        style={[StyleSheet.absoluteFillObject, bgStyle]}
-      />
-
-      <View style={[styles.topBar, { paddingTop: topPad }]}>
-        <Pressable
-          onPress={handleExitPress}
-          style={styles.closeBtn}
-          hitSlop={12}
-        >
-          <Ionicons name="close" size={24} color={colors.text} />
-        </Pressable>
-        <Animated.View style={timerStyle}>
-          <Text style={[styles.playTimer, { color: timerColor }]}>
-            {timerText}
-          </Text>
-        </Animated.View>
-        {stage === "active" ? (
-          <Pressable
-            onPress={requestExtraTime}
-            disabled={extraTimeUsed}
-            style={({ pressed }) => [
-              styles.timeBtn,
-              { opacity: extraTimeUsed ? 0.4 : pressed ? 0.75 : 1 },
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Добавить время ×2"
-          >
-            {extraTimeUsed ? (
-              <Ionicons name="checkmark" size={15} color="#FFFFFF" />
-            ) : (
-              <Ionicons name="time" size={15} color="#FFFFFF" />
-            )}
-            <Text style={styles.timeBtnText}>×2</Text>
-            {!extraTimeUsed ? (
-              <View style={styles.timeCostPill}>
-                {coins >= EXTRA_TIME_COST ? (
-                  <>
-                    <CoinIcon size={10} color="#FFFFFF" />
-                    <Text style={styles.timeCostText}>{EXTRA_TIME_COST}</Text>
-                  </>
-                ) : (
-                  <Ionicons name="play" size={10} color="#FFFFFF" />
-                )}
-              </View>
-            ) : null}
-          </Pressable>
-        ) : (
-          <View style={{ width: 36 }} />
-        )}
-      </View>
-
-      <View style={styles.playWordBlock}>
-        <Text style={[styles.playWord, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit>
-          {word.word.toUpperCase()}
-        </Text>
-        {/* Characteristics (part of speech · difficulty) show ONLY while the
-            player is actually speaking (the play screen), never on the preview. */}
-        {stage === "active" ? (
-          <Text style={[styles.playMeta, { color: colors.textMuted }]}>
-            {`${POS_LABELS_RU[word.partOfSpeech]} · ${DIFFICULTY_LABEL_RU[word.difficulty]}`}
-          </Text>
-        ) : null}
-      </View>
-
-      {stage === "countdown" ? (
-        <View style={styles.countdownBody}>
-          <View style={{ flex: 1 }} />
-          <Animated.Text
-            key={countdown}
-            entering={FadeInDown.duration(180)}
-            style={[styles.countdownNumber, { color: colors.text }]}
-          >
-            {countdown === 0 ? "СТАРТ" : countdown}
-          </Animated.Text>
-          <Text style={[styles.countdownHint, { color: colors.textMuted }]}>Готовься называть синонимы</Text>
-          <View style={{ flex: 1 }} />
-        </View>
-      ) : (
-        <>
-          <View style={styles.waveStrip}>
-            {bars.map((b) => (
-              <View
-                key={b.id}
-                style={[
-                  styles.waveBar,
-                  {
-                    height: Math.max(4, (b.height / WAVEFORM_BAR_MAX) * 40),
-                    opacity: b.opacity,
-                  },
-                ]}
-              />
-            ))}
-          </View>
-
-          <ScrollView
-            ref={feedScrollRef}
-            style={styles.feedScroll}
-            contentContainerStyle={styles.feedContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {feed.map((item) =>
-              item.status === "correct" ? (
-                <Animated.View
-                  key={item.id}
-                  entering={FadeInDown.duration(200)}
-                  style={styles.feedCorrect}
-                >
-                  <Text style={styles.feedCorrectText}>+ {item.word} +3</Text>
-                </Animated.View>
-              ) : (
-                <Animated.View
-                  key={item.id}
-                  entering={FadeInDown.duration(200)}
-                  exiting={FadeOut.duration(300)}
-                  style={styles.feedWrong}
-                >
-                  <Text style={styles.feedWrongText}>x {item.word}</Text>
-                </Animated.View>
-              ),
-            )}
-          </ScrollView>
-
-          <Text style={[styles.playCounter, { color: colors.textSecondary }]}>
-            {foundSynonyms.length} из {word.synonyms.length}
-          </Text>
-
-          {allFoundBanner ? (
-            <View style={styles.allFoundBanner}>
-              <Text style={styles.allFoundText}>
-                Отлично! Все синонимы найдены!
-              </Text>
-            </View>
-          ) : null}
-
-          {hintRevealed ? (
-            <Animated.View entering={FadeIn.duration(220)} style={styles.hintPanel}>
-              <View style={styles.hintPanelHead}>
-                <Ionicons name="bulb" size={14} color="#FFD857" />
-                <Text style={styles.hintPanelTitle}>Подсказка</Text>
-              </View>
-              <View style={styles.hintChips}>
-                {word.synonyms.map((syn) => {
-                  const done = foundSynonyms.some(
-                    (f) => normForDedup(f) === normForDedup(syn),
-                  );
-                  return (
-                    <View
-                      key={syn}
-                      style={[
-                        styles.hintChip,
-                        done && styles.hintChipDone,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.hintChipText,
-                          done && styles.hintChipTextDone,
-                        ]}
-                      >
-                        {done ? syn : maskSynonym(syn)}
-                      </Text>
-                    </View>
-                  );
-                })}
-              </View>
-            </Animated.View>
-          ) : null}
-
-          <View style={styles.activeRow}>
-            <Pressable
-              onPress={handleStopActive}
-              style={({ pressed }) => [
-                styles.activeRowSide,
-                { opacity: pressed ? 0.7 : 1 },
-              ]}
-              accessibilityLabel="Стоп"
-            >
-              <Ionicons name="stop" size={20} color={RED} />
-            </Pressable>
-
-            <View style={styles.activeRowCenter}>
-              <Text style={[styles.activeRowCenterText, { color: colors.textSecondary }]}>
-                {paused ? "Пауза" : "Слушаю…"}
-              </Text>
-            </View>
-
-            <View style={styles.activeRowSide}>
-              <Ionicons name="mic" size={20} color={RED} />
-            </View>
-          </View>
-
-          {recognitionError ? (
-            <View style={styles.fallbackBox}>
-              <Text style={styles.fallbackText}>{recognitionError}</Text>
-              <View style={styles.fallbackRow}>
-                <TextInput
-                  value={fallbackInput}
-                  onChangeText={setFallbackInput}
-                  placeholder="Введите синоним"
-                  placeholderTextColor="rgba(255,255,255,0.4)"
-                  style={styles.fallbackInput}
-                  onSubmitEditing={submitFallback}
-                  returnKeyType="send"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-                <Pressable
-                  onPress={submitFallback}
-                  style={({ pressed }) => [
-                    styles.fallbackSend,
-                    { opacity: pressed ? 0.8 : 1 },
-                  ]}
-                >
-                  <Ionicons name="send" size={18} color="#fff" />
-                </Pressable>
-              </View>
-            </View>
-          ) : null}
-
-          {/* Bottom corner actions */}
-          <View pointerEvents="box-none" style={styles.cornerRow}>
-            <Pressable
-              onPress={() => setModal("replace")}
-              style={({ pressed }) => [
-                styles.cornerBtn,
-                {
-                  backgroundColor: colors.backgroundSecondary,
-                  borderColor: colors.border,
-                  opacity: pressed ? 0.75 : 1,
-                },
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Заменить слово"
-            >
-              <Ionicons name="refresh" size={16} color={colors.text} />
-              <Text style={[styles.cornerBtnText, { color: colors.text }]}>
-                Заменить
-              </Text>
-              <View
-                style={[
-                  styles.cornerCostPill,
-                  { backgroundColor: colors.border },
-                ]}
-              >
-                {coins >= REPLACE_COST ? (
-                  <>
-                    <CoinIcon size={11} color={colors.text} />
-                    <Text style={[styles.cornerCostText, { color: colors.text }]}>
-                      {REPLACE_COST}
-                    </Text>
-                  </>
-                ) : (
-                  <Ionicons name="play" size={11} color={colors.text} />
-                )}
-              </View>
-            </Pressable>
-
-            <Pressable
-              onPress={requestHint}
-              disabled={hintRevealed}
-              style={({ pressed }) => [
-                styles.cornerBtn,
-                styles.cornerBtnHint,
-                { opacity: hintRevealed ? 0.45 : pressed ? 0.75 : 1 },
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Подсказка"
-            >
-              <Ionicons name="bulb" size={16} color="#1B1300" />
-              <Text style={styles.cornerBtnTextDark}>Подсказка</Text>
-              <View style={styles.cornerCostPill}>
-                {coins >= HINT_COST ? (
-                  <>
-                    <CoinIcon size={11} color="#1B1300" />
-                    <Text style={styles.cornerCostText}>{HINT_COST}</Text>
-                  </>
-                ) : (
-                  <Ionicons name="play" size={11} color="#1B1300" />
-                )}
-              </View>
-            </Pressable>
-          </View>
-
-          {/* Replace-word confirmation — shared AppDialog */}
-          <AppDialog
-            visible={modal === "replace"}
-            title="Вы точно хотите заменить слово?"
-            message={
-              coins >= REPLACE_COST
-                ? `Замена стоит ${REPLACE_COST} монет. У вас ${coins}.`
-                : `Не хватает монет (нужно ${REPLACE_COST}). Можно посмотреть рекламу.`
-            }
-            onRequestClose={() => setModal(null)}
-            buttons={[
-              { label: "Нет", variant: "secondary", onPress: () => setModal(null) },
-              { label: "Да", variant: "primary", onPress: confirmReplace },
-            ]}
-          />
-
-          {/* Simulated rewarded ad — shared AppDialog */}
-          <AppDialog
-            visible={!!adFor}
-            title={
-              adFor === "replace"
-                ? "Реклама за замену слова"
-                : adFor === "time"
-                  ? "Реклама за доп. время"
-                  : "Реклама за подсказку"
-            }
-            message="Досмотрите короткий ролик, чтобы получить награду."
-            onRequestClose={() => setAdFor(null)}
-            buttons={[
-              { label: "Отмена", variant: "secondary", onPress: () => setAdFor(null) },
-              { label: "Смотреть", variant: "primary", onPress: onAdComplete },
-            ]}
-          />
-        </>
-      )}
-    </View>
+    <VocabPlayView
+      word={word}
+      stage={stage}
+      countdown={countdown}
+      timeLeft={timeLeft}
+      timeTotal={timeTotal}
+      timerState={timerState}
+      foundSynonyms={foundSynonyms}
+      wrongItems={feed.filter((f) => f.status === "wrong")}
+      bars={bars}
+      paused={paused}
+      hintRevealed={hintRevealed}
+      allFoundBanner={allFoundBanner}
+      coins={coins}
+      extraTimeUsed={extraTimeUsed}
+      recognitionError={recognitionError}
+      fallbackInput={fallbackInput}
+      onFallbackChange={setFallbackInput}
+      onFallbackSubmit={submitFallback}
+      modal={modal}
+      adFor={adFor}
+      topPad={pads.top}
+      bottomPad={pads.bottom}
+      onClosePress={() => setModal("exit")}
+      onReplacePress={() => setModal("replace")}
+      onHintPress={requestHint}
+      onExtraTimePress={requestExtraTime}
+      onConfirmReplace={confirmReplace}
+      onConfirmExit={confirmExit}
+      onDismissModal={() => setModal(null)}
+      onAdCancel={() => setAdFor(null)}
+      onAdComplete={onAdComplete}
+    />
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PHASE 3 — RESULT
+// PHASE 3 — RESULT · «Время вышло» (37:6698)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ResultPhase({
@@ -1515,103 +1106,16 @@ function ResultPhase({
   score: number;
   onNext: () => void;
 }) {
-  const { colors, isDark } = useAppColors();
-  const [animFound, setAnimFound] = useState(0);
-  const [animScore, setAnimScore] = useState(0);
-
-  useEffect(() => {
-    const start = Date.now();
-    const dur = 1200;
-    const finalFound = foundSynonyms.length;
-    const finalScore = score;
-    const ease = (t: number) => 1 - Math.pow(1 - t, 3);
-    const id = setInterval(() => {
-      const elapsed = Date.now() - start;
-      const t = Math.min(1, elapsed / dur);
-      const eased = ease(t);
-      setAnimFound(Math.round(eased * finalFound));
-      setAnimScore(Math.round(eased * finalScore));
-      if (t >= 1) clearInterval(id);
-    }, 30);
-    return () => clearInterval(id);
-  }, [foundSynonyms.length, score]);
-
-  // Full synonym set with found/missed split, so the player sees every word
-  // that fit — including the ones they missed (that's how they learn).
-  const total = word.synonyms.length;
-  const isFound = (s: string) =>
-    foundSynonyms.some((f) => f.trim().toLowerCase() === s.trim().toLowerCase());
-  const foundCount = word.synonyms.filter(isFound).length;
-  const missedCount = Math.max(0, total - foundCount);
-
-  const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 80 : insets.top + 12;
-
+  const pads = usePads();
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={[styles.resultContent, { paddingTop: topPad, paddingBottom: 48 + insets.bottom }]}
-      showsVerticalScrollIndicator={false}
-    >
-      <Text style={[styles.resultTitle, { color: colors.text, fontFamily: "Geologica_700Bold" }]}>Время вышло!</Text>
-      <Text style={[styles.resultWord, { color: colors.textSecondary, fontFamily: "Geologica_500Medium" }]}>Слово: {word.word.toUpperCase()}</Text>
-
-      <Text style={[styles.resultBigCount, { color: colors.text, fontFamily: "Geologica_700Bold" }]}>{animFound} / {total}</Text>
-      <Text style={[styles.resultScore, { color: colors.textSecondary, fontFamily: "Geologica_600SemiBold" }]}>+{animScore} очков</Text>
-
-      <View style={styles.progressTrack}>
-        <Animated.View
-          entering={FadeInDown.duration(400)}
-          style={[styles.progressFill, { width: `${total ? (foundCount / total) * 100 : 0}%` }]}
-        />
-      </View>
-
-      <Text style={[styles.synSectionLabel, { color: colors.textSecondary, fontFamily: "Geologica_600SemiBold" }]}>Синонимы к слову «{word.word}»</Text>
-      <View style={styles.synList}>
-        {word.synonyms.map((syn, idx) => {
-          const found = isFound(syn);
-          return (
-            <Animated.View
-              key={`${syn}-${idx}`}
-              entering={FadeInDown.delay(idx * 55).duration(240)}
-              style={[
-                found ? styles.foundChip : styles.missedChip,
-                found
-                  ? (isDark ? null : { backgroundColor: "rgba(99,153,34,0.16)" })
-                  : { backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(20,22,26,0.05)", borderColor: colors.border },
-              ]}
-            >
-              <Text
-                style={[
-                  found ? styles.foundChipText : styles.missedChipText,
-                  { fontFamily: "Geologica_500Medium", color: found ? (isDark ? "#C0DD97" : "#2F6B12") : colors.textMuted },
-                ]}
-              >
-                {found ? "✓ " : ""}{syn}
-              </Text>
-            </Animated.View>
-          );
-        })}
-      </View>
-      <Text style={[styles.statsLine, { color: colors.textMuted, fontFamily: "Geologica_500Medium" }]}>
-        Назвал {foundCount} · Пропустил {missedCount}
-      </Text>
-      {foundCount === 0 ? (
-        <Text style={[styles.resultEncourage, { color: colors.textSecondary, fontFamily: "Geologica_500Medium" }]}>В следующий раз получится!</Text>
-      ) : null}
-
-      <Pressable
-        onPress={onNext}
-        style={({ pressed }) => [
-          styles.primaryBtn,
-          { opacity: pressed ? 0.85 : 1, marginTop: 28 },
-        ]}
-        accessibilityRole="button"
-        accessibilityLabel="Далее"
-      >
-        <Text style={styles.primaryBtnText}>Далее</Text>
-      </Pressable>
-    </ScrollView>
+    <VocabResultView
+      word={word}
+      foundSynonyms={foundSynonyms}
+      score={score}
+      onNext={onNext}
+      topPad={pads.top}
+      bottomPad={pads.insetBottom}
+    />
   );
 }
 
@@ -1620,672 +1124,118 @@ function ResultPhase({
 // ─────────────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: BG },
+  root: { flex: 1 },
 
-  // Top bar shared
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: TOP_PAD,
-    paddingBottom: 8,
-  },
-  topTitle: {
-    color: "#fff",
-    fontSize: 19,
-    fontFamily: "Geologica_700Bold",
-  },
-  closeBtn: {
-    width: 36,
-    height: 36,
+  topBar: { height: 42, flexDirection: "row", alignItems: "center", paddingHorizontal: 24 },
+  topCenter: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.06)",
   },
+  close: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
 
   // Tutorial
-  tutorialRoot: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 32,
+  tutorialRoot: { flex: 1 },
+  tutTitle: { fontFamily: "Geologica_900Black", fontSize: 32, letterSpacing: -0.32, textAlign: "center" },
+  tutSub: { marginTop: 2, fontFamily: "Geologica_600SemiBold", fontSize: 16, textAlign: "center" },
+  steps: {
+    marginTop: 32,
+    marginHorizontal: 24,
+    borderWidth: 2,
+    borderRadius: 22,
+    paddingHorizontal: 15,
+    paddingVertical: 15,
   },
-  tutorialHeader: {
-    alignItems: "center",
+  stepRow: { flexDirection: "row", alignItems: "center", gap: 14, minHeight: 32 },
+  stepSep: { height: 1, marginLeft: 46, marginVertical: 15 },
+  stepNum: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  stepNumText: { fontFamily: "Geologica_900Black", fontSize: 15 },
+  stepText: { flex: 1, fontFamily: "Geologica_600SemiBold", fontSize: 15, lineHeight: 18 },
+  tip: {
     marginTop: 24,
-    marginBottom: 28,
-  },
-  tutorialIconCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,59,48,0.10)",
-    borderWidth: 1,
-    borderColor: "rgba(255,59,48,0.25)",
-    marginBottom: 16,
-  },
-  tutorialH1: {
-    color: "#fff",
-    fontSize: 22,
-    fontWeight: "700",
-    fontFamily: "Geologica_700Bold",
-  },
-  tutorialH2: {
-    color: "rgba(255,255,255,0.5)",
-    fontSize: 14,
-    marginTop: 6,
-  },
-  rulesCard: {
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: 14,
-    padding: 18,
-    gap: 14,
-  },
-  ruleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 24,
   },
-  ruleNum: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+  tipDot: { width: 6, height: 6, borderRadius: 3 },
+  tipText: { fontFamily: "Geologica_600SemiBold", fontSize: 13 },
+  primaryBtn: {
+    marginHorizontal: 24,
+    height: 56,
+    borderRadius: 32,
+    borderWidth: 4,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,59,48,0.2)",
   },
-  ruleNumText: {
-    color: RED,
-    fontSize: 11,
-    fontWeight: "600",
-    fontFamily: "Geologica_600SemiBold",
-  },
-  ruleText: {
-    flex: 1,
-    color: "rgba(255,255,255,0.65)",
-    fontSize: 13,
-    lineHeight: 19,
-  },
+  primaryBtnText: { fontFamily: "Geologica_900Black", fontSize: 17 },
 
   // Spin
   spinRoot: { flex: 1 },
-  spinSubtitle: {
-    color: "rgba(255,255,255,0.55)",
-    fontSize: 14,
+  levelChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingLeft: 6,
+    paddingRight: 14,
+    paddingVertical: 4,
+    borderWidth: 2,
+    borderRadius: 32,
+  },
+  levelTile: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  levelIconBox: { width: 18, height: 18, overflow: "visible" },
+  levelIconScale: { position: "absolute", left: -4, top: -4, transform: [{ scale: 18 / 26 }] },
+  levelChipText: { fontFamily: "Geologica_800ExtraBold", fontSize: 13 },
+  introWrap: { flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 72, paddingHorizontal: 24 },
+  introTitle: {
+    fontFamily: "Geologica_900Black",
+    fontSize: 56,
+    lineHeight: 56,
+    letterSpacing: -1.12,
     textAlign: "center",
-    paddingHorizontal: 24,
-    marginTop: 4,
   },
-  reelWindow: {
-    flex: 1,
-    width: "100%",
-    overflow: "hidden",
-  },
-  reelTilt: {
-    flex: 1,
-    justifyContent: "center",
+  introSub: { marginTop: 16, fontFamily: "Geologica_600SemiBold", fontSize: 15, textAlign: "center" },
+  reelWindow: { flex: 1, overflow: "hidden" },
+  selection: {
+    position: "absolute",
+    left: 24,
+    right: 24,
+    top: "50%",
+    marginTop: CENTER_OFFSET - 38,
+    height: 76,
+    borderRadius: 32,
+    borderWidth: 4,
   },
   reelRow: {
     position: "absolute",
     left: 0,
     right: 0,
     top: "50%",
-    marginTop: -ROW_SPACING / 2,
-    height: ROW_SPACING,
-    fontSize: 34,
-    lineHeight: ROW_SPACING,
+    marginTop: CENTER_OFFSET - ROW_H / 2,
+    height: ROW_H,
+    lineHeight: ROW_H,
+    fontSize: 36,
+    letterSpacing: -0.72,
     textAlign: "center",
-    paddingHorizontal: 24,
-    fontFamily: "Geologica_800ExtraBold",
+    paddingHorizontal: 40,
+    fontFamily: "Geologica_900Black",
   },
-  reelPointer: {
-    position: "absolute",
-    left: 6,
-    top: "50%",
-    marginTop: -15,
-  },
-  rouletteMeta: {
-    color: "rgba(255,255,255,0.35)",
-    fontSize: 12,
-    textAlign: "center",
-    marginTop: 14,
-  },
-  stopBtnWrap: {
-    alignItems: "center",
-    paddingBottom: Platform.OS === "web" ? 32 : 24,
-  },
+  fadeTop: { position: "absolute", left: 0, right: 0, top: 0, height: 176 },
+  fadeBottom: { position: "absolute", left: 0, right: 0, bottom: 0, height: 140 },
+  stopWrap: { alignItems: "center" },
   stopRound: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: RED,
+    width: 104,
+    height: 104,
+    borderRadius: 52,
+    borderWidth: 4,
     alignItems: "center",
     justifyContent: "center",
   },
-  stopRoundText: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "700",
-    letterSpacing: 3,
-    fontFamily: "Geologica_700Bold",
-  },
-
-  // Play
-  playRoot: { flex: 1, paddingBottom: 24 },
-  playTimer: {
-    fontSize: 18,
-    fontWeight: "700",
-    fontFamily: "Geologica_700Bold",
-    letterSpacing: 1.5,
-  },
-  playWordBlock: { alignItems: "center", marginTop: 18, marginBottom: 8 },
-  playWord: {
-    color: "#fff",
-    fontSize: 32,
-    fontWeight: "700",
-    letterSpacing: 6,
-    textAlign: "center",
-    paddingHorizontal: 20,
-    fontFamily: "Geologica_700Bold",
-  },
-  playMeta: {
-    color: "rgba(255,255,255,0.5)",
-    fontSize: 13,
-    marginTop: 8,
-  },
-
-  countdownBody: {
-    flex: 1,
-    paddingHorizontal: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  countdownNumber: {
-    color: "#fff",
-    fontSize: 96,
-    fontWeight: "800",
-    textAlign: "center",
-    fontFamily: "Geologica_700Bold",
-    letterSpacing: 2,
-  },
-  countdownHint: {
-    color: "rgba(255,255,255,0.45)",
-    fontSize: 14,
-    marginTop: 18,
-    textAlign: "center",
-  },
-
-  waveStrip: {
-    marginHorizontal: 24,
-    marginTop: 12,
-    marginBottom: 12,
-    height: 40,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 3,
-    overflow: "hidden",
-  },
-  waveBar: {
-    width: 3,
-    borderRadius: 2,
-    backgroundColor: RED,
-  },
-  activeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginHorizontal: 20,
-    marginTop: 12,
-    gap: 12,
-  },
-  activeRowSide: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,59,48,0.10)",
-    borderWidth: 1,
-    borderColor: "rgba(255,59,48,0.28)",
-  },
-  activeRowCenter: {
-    flex: 1,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,59,48,0.06)",
-    borderWidth: 1,
-    borderColor: "rgba(255,59,48,0.18)",
-  },
-  activeRowCenterText: {
-    color: "rgba(255,255,255,0.8)",
-    fontSize: 14,
-    fontWeight: "600",
-    fontFamily: "Geologica_600SemiBold",
-  },
-  feedScroll: {
-    flexGrow: 0,
-    maxHeight: 160,
-    marginHorizontal: 20,
-    marginTop: 4,
-  },
-  allFoundBanner: {
-    marginHorizontal: 20,
-    marginTop: 10,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: "rgba(99,153,34,0.18)",
-    borderWidth: 1,
-    borderColor: GREEN_BORDER,
-    alignItems: "center",
-  },
-  allFoundText: {
-    color: GREEN_TEXT,
-    fontSize: 14,
-    fontWeight: "700",
-    fontFamily: "Geologica_700Bold",
-  },
-  feedContent: { paddingVertical: 4, gap: 6 },
-  feedCorrect: {
-    backgroundColor: GREEN_BG,
-    borderColor: GREEN_BORDER,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-  },
-  feedCorrectText: { color: GREEN_TEXT, fontSize: 14, fontWeight: "600" },
-  feedWrong: {
-    backgroundColor: "rgba(160,40,40,0.45)",
-    borderColor: "rgba(255,59,48,0.35)",
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-  },
-  feedWrongText: { color: "rgba(255,255,255,0.35)", fontSize: 14 },
-  playCounter: {
-    color: "rgba(255,255,255,0.7)",
-    fontSize: 14,
-    textAlign: "center",
-    marginTop: 12,
-    marginBottom: 4,
-  },
-
-  fallbackBox: {
-    marginHorizontal: 20,
-    marginTop: 12,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderRadius: 12,
-    padding: 12,
-  },
-  fallbackText: {
-    color: "rgba(255,255,255,0.55)",
-    fontSize: 12,
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  fallbackRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  fallbackInput: {
-    flex: 1,
-    height: 40,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    color: "#fff",
-  },
-  fallbackSend: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: RED,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  // Hint reveal panel
-  hintPanel: {
-    marginHorizontal: 20,
-    marginTop: 12,
-    backgroundColor: "rgba(255,197,49,0.10)",
-    borderColor: "rgba(255,197,49,0.30)",
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 12,
-  },
-  hintPanelHead: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 10,
-  },
-  hintPanelTitle: {
-    color: "#FFD857",
-    fontSize: 12.5,
-    fontFamily: "Geologica_600SemiBold",
-    letterSpacing: 0.3,
-    textTransform: "uppercase",
-  },
-  hintChips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  hintChip: {
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderColor: "rgba(255,255,255,0.14)",
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 6,
-    paddingHorizontal: 11,
-  },
-  hintChipDone: {
-    backgroundColor: GREEN_BG,
-    borderColor: GREEN_BORDER,
-  },
-  hintChipText: {
-    color: "rgba(255,255,255,0.9)",
-    fontSize: 15,
-    letterSpacing: 2,
-    fontFamily: "Geologica_500Medium",
-  },
-  hintChipTextDone: { color: GREEN_TEXT, letterSpacing: 0.2 },
-
-  // Top-bar extra-time (×2) button
-  timeBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 18,
-    backgroundColor: "#4C6EF5",
-  },
-  timeBtnText: {
-    color: "#FFFFFF",
-    fontSize: 13,
-    fontFamily: "Geologica_700Bold",
-  },
-  timeCostPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-    marginLeft: 1,
-    paddingVertical: 1,
-    paddingHorizontal: 5,
-    borderRadius: 9,
-    backgroundColor: "rgba(0,0,0,0.18)",
-  },
-  timeCostText: {
-    color: "#FFFFFF",
-    fontSize: 11,
-    fontFamily: "Geologica_700Bold",
-  },
-
-  // Bottom corner actions
-  cornerRow: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    bottom: Platform.OS === "web" ? 22 : 30,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-  },
-  cornerBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 22,
-    backgroundColor: "rgba(255,255,255,0.10)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
-  },
-  cornerBtnHint: {
-    backgroundColor: "#FFD857",
-    borderColor: "#FFD857",
-  },
-  cornerBtnText: {
-    color: "#FFFFFF",
-    fontSize: 13,
-    fontFamily: "Geologica_600SemiBold",
-  },
-  cornerBtnTextDark: {
-    color: "#1B1300",
-    fontSize: 13,
-    fontFamily: "Geologica_600SemiBold",
-  },
-  cornerCostPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-    marginLeft: 2,
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 10,
-    backgroundColor: "rgba(0,0,0,0.14)",
-  },
-  cornerCostText: {
-    color: "#1B1300",
-    fontSize: 12,
-    fontFamily: "Geologica_700Bold",
-  },
-
-  // Modals (replace confirm + rewarded ad)
-  modalOverlay: {
-    position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: "rgba(4,7,20,0.72)",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 32,
-    zIndex: 50,
-  },
-  modalCard: {
-    width: "100%",
-    maxWidth: 360,
-    backgroundColor: "#141B33",
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.10)",
-    paddingVertical: 24,
-    paddingHorizontal: 22,
-    alignItems: "center",
-  },
-  modalIcon: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: "rgba(138,180,255,0.14)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 14,
-  },
-  adBadge: {
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: "rgba(255,197,49,0.16)",
-    marginBottom: 14,
-  },
-  adBadgeText: {
-    color: "#FFD857",
-    fontSize: 11,
-    letterSpacing: 1.5,
-    fontFamily: "Geologica_700Bold",
-  },
-  modalTitle: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    lineHeight: 24,
-    textAlign: "center",
-    fontFamily: "Geologica_600SemiBold",
-  },
-  modalBody: {
-    color: "rgba(255,255,255,0.6)",
-    fontSize: 13.5,
-    lineHeight: 19,
-    textAlign: "center",
-    marginTop: 8,
-    fontFamily: "Geologica_400Regular",
-  },
-  modalBtns: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 20,
-    alignSelf: "stretch",
-  },
-  modalBtn: {
-    flex: 1,
-    height: 46,
-    borderRadius: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-  modalBtnGhost: {
-    backgroundColor: "rgba(255,255,255,0.07)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
-  },
-  modalBtnGhostText: {
-    color: "rgba(255,255,255,0.85)",
-    fontSize: 15,
-    fontFamily: "Geologica_600SemiBold",
-  },
-  modalBtnPrimary: { backgroundColor: "#4C6EF5" },
-  modalBtnPrimaryText: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontFamily: "Geologica_600SemiBold",
-  },
-
-  // Result
-  resultContent: {
-    paddingTop: TOP_PAD,
-    paddingHorizontal: 24,
-    paddingBottom: 48,
-    alignItems: "center",
-  },
-  resultTitle: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "700",
-    fontFamily: "Geologica_700Bold",
-  },
-  resultWord: {
-    color: "rgba(255,255,255,0.5)",
-    fontSize: 14,
-    marginTop: 8,
-    letterSpacing: 1,
-  },
-  resultBigCount: {
-    color: "#fff",
-    fontSize: 64,
-    fontWeight: "800",
-    marginTop: 28,
-    fontFamily: "Geologica_700Bold",
-  },
-  resultScore: {
-    color: RED,
-    fontSize: 28,
-    fontWeight: "700",
-    marginTop: 12,
-    fontFamily: "Geologica_700Bold",
-  },
-  resultSubtitle: {
-    color: "rgba(255,255,255,0.55)",
-    fontSize: 14,
-    marginTop: 28,
-    marginBottom: 12,
-    alignSelf: "flex-start",
-    fontFamily: "Geologica_500Medium",
-  },
-  resultEncourage: {
-    color: "rgba(255,255,255,0.65)",
-    fontSize: 16,
-    marginTop: 32,
-    textAlign: "center",
-    fontStyle: "italic",
-  },
-  synList: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    width: "100%",
-    gap: 8,
-  },
-  foundChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    backgroundColor: "rgba(39,80,10,0.55)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: GREEN_BORDER,
-  },
-  foundChipText: {
-    color: "#C0DD97",
-    fontSize: 13,
-    fontWeight: "500",
-    fontFamily: "Geologica_500Medium",
-  },
-  missedChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.14)",
-  },
-  missedChipText: {
-    color: "rgba(255,255,255,0.5)",
-    fontSize: 13,
-    fontWeight: "500",
-    fontFamily: "Geologica_500Medium",
-  },
-  progressTrack: {
-    width: "100%",
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    marginTop: 22,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    borderRadius: 5,
-    backgroundColor: GREEN_BORDER,
-  },
-  synSectionLabel: {
-    color: "rgba(255,255,255,0.6)",
-    fontSize: 14,
-    marginTop: 28,
-    marginBottom: 14,
-    alignSelf: "flex-start",
-    fontFamily: "Geologica_600SemiBold",
-  },
-  statsLine: {
-    color: "rgba(255,255,255,0.6)",
-    fontSize: 14,
-    marginTop: 18,
-    fontFamily: "Geologica_500Medium",
-  },
-
-  // Shared primary button
-  primaryBtn: {
-    width: "100%",
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: RED,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  primaryBtnText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "600",
-    fontFamily: "Geologica_600SemiBold",
-  },
+  stopRoundText: { fontFamily: "Geologica_900Black", fontSize: 18, letterSpacing: 0.36 },
+  stopCaption: { marginTop: 16, fontFamily: "Geologica_600SemiBold", fontSize: 13, textAlign: "center" },
 });

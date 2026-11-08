@@ -17,6 +17,8 @@ export interface GlassBtn {
   label: string;
   onPress: () => void;
   variant?: GlassBtnVariant;
+  /** Optional node after the label (e.g. a cost + coin). */
+  trailing?: React.ReactNode;
 }
 
 export default function StageGlassDialog({
@@ -30,6 +32,7 @@ export default function StageGlassDialog({
   dismissOnBackdrop = true,
   placement = "center",
   overlay = 0.78,
+  children,
 }: {
   visible: boolean;
   title: string;
@@ -44,6 +47,8 @@ export default function StageGlassDialog({
   placement?: "center" | "lower";
   /** How much the screen behind the card is dimmed (0 = not at all). */
   overlay?: number;
+  /** Extra content between the message and the buttons (e.g. a cost row). */
+  children?: React.ReactNode;
 }) {
   const { theme, themeMode } = useTheme();
   const isDark = themeMode === "dark";
@@ -101,6 +106,7 @@ export default function StageGlassDialog({
             {icon ? <View style={{ marginBottom: 2 }}>{icon}</View> : null}
             <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
             {message ? <Text style={[styles.message, { color: msgColor }]}>{message}</Text> : null}
+            {children}
 
             <View style={[stacked ? styles.btnsStacked : styles.btnsRow]}>
               {buttons.map((b, i) => {
@@ -133,6 +139,7 @@ export default function StageGlassDialog({
                     >
                       {b.label}
                     </Text>
+                    {b.trailing ?? null}
                   </Pressable>
                 );
               })}
@@ -171,7 +178,7 @@ const styles = StyleSheet.create({
   message: { fontFamily: "Geologica_600SemiBold", fontSize: 14, lineHeight: 20, textAlign: "center" },
   btnsRow: { flexDirection: "row", gap: 12, alignSelf: "stretch", paddingTop: 16 },
   btnsStacked: { alignItems: "center", alignSelf: "stretch", gap: 2, paddingTop: 2 },
-  btn: { flex: 1, height: 52, borderRadius: 32, alignItems: "center", justifyContent: "center" },
+  btn: { flex: 1, height: 52, borderRadius: 32, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 6 },
   btnHug: { height: 48, borderRadius: 24, paddingHorizontal: 28, alignItems: "center", justifyContent: "center" },
   btnTextPrimary: { fontFamily: "Geologica_900Black", fontSize: 16 },
   btnTextHug: { fontFamily: "Geologica_700Bold", fontSize: 15 },
