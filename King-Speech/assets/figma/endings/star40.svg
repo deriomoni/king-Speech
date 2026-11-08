@@ -1,0 +1,27 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="55.8501" height="54.1173" viewBox="0 0 55.8501 54.1173" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="Star">
+<g id="Star_2" filter="url(#filter0_d_0_13)">
+<use xlink:href="#stroke0_0_13" fill="url(#paint0_linear_0_13)"/>
+<mask id="stroke1_0_13" fill="white">
+<use xlink:href="#stroke0_0_13"/>
+</mask>
+<path d="M21.7618 22.3107L16.3376 22.3109C14.0534 22.311 13.1298 25.2538 15.0044 26.5591L19.2193 29.494C20.072 30.0878 20.4293 31.1739 20.0957 32.158L18.446 37.0243C17.7232 39.1566 20.1413 40.9749 21.989 39.6884L26.5918 36.4839C27.3931 35.926 28.457 35.926 29.2583 36.4839L33.861 39.6884C35.7088 40.9749 38.1269 39.1566 37.4041 37.0243L35.7544 32.158C35.4208 31.1739 35.7781 30.0878 36.6308 29.494L40.8457 26.5591C42.7203 25.2538 41.7967 22.311 39.5125 22.3109L34.0883 22.3107C33.0884 22.3107 32.1997 21.6736 31.8786 20.7267L30.1348 15.584C29.4186 13.472 26.4315 13.472 25.7153 15.584L23.9715 20.7267C23.6504 21.6736 22.7617 22.3107 21.7618 22.3107Z" stroke-width="4" stroke="#FFF5D1" mask="url(#stroke1_0_13)"/>
+</g>
+</g>
+<defs>
+<filter id="filter0_d_0_13" x="0" y="-4.76837e-07" width="55.8501" height="54.1173" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset/>
+<feGaussianBlur stdDeviation="7"/>
+<feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 0.847059 0 0 0 0 0.341176 0 0 0 0.7 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_0_13"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_0_13" result="shape"/>
+</filter>
+<linearGradient id="paint0_linear_0_13" x1="27.925" y1="9.06733" x2="27.925" y2="47.4007" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FFF2C2"/>
+<stop offset="1" stop-color="#FFD857"/>
+</linearGradient>
+<path id="stroke0_0_13" d="M25.7153 15.584C26.4315 13.472 29.4186 13.472 30.1348 15.584L31.8786 20.7267C32.1997 21.6736 33.0884 22.3107 34.0883 22.3107L39.5125 22.3109C41.7967 22.311 42.7203 25.2538 40.8457 26.5591L36.6308 29.494C35.7781 30.0878 35.4208 31.1739 35.7544 32.158L37.4041 37.0243C38.1269 39.1566 35.7088 40.9749 33.861 39.6884L29.2583 36.4839C28.457 35.926 27.3931 35.926 26.5918 36.4839L21.989 39.6884C20.1413 40.9749 17.7232 39.1566 18.446 37.0243L20.0957 32.158C20.4293 31.1739 20.072 30.0878 19.2193 29.494L15.0044 26.5591C13.1298 25.2538 14.0534 22.311 16.3376 22.3109L21.7618 22.3107C22.7617 22.3107 23.6504 21.6736 23.9715 20.7267L25.7153 15.584Z"/>
+</defs>
+</svg>

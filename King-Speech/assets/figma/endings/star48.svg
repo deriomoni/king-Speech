@@ -1,0 +1,27 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="61.4201" height="59.3408" viewBox="0 0 61.4201 59.3408" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="Star">
+<g id="Star_2" filter="url(#filter0_d_0_9)">
+<use xlink:href="#stroke0_0_9" fill="url(#paint0_linear_0_9)"/>
+<mask id="stroke1_0_9" fill="white">
+<use xlink:href="#stroke0_0_9"/>
+</mask>
+<path d="M23.3142 23.9728L16.8052 23.9731C14.0641 23.9732 12.9558 27.5045 15.2052 29.0709L20.2631 32.5928C21.2864 33.3054 21.7152 34.6087 21.3149 35.7896L19.3352 41.6292C18.4678 44.188 21.3695 46.3698 23.5868 44.8261L29.1102 40.9806C30.0717 40.3112 31.3484 40.3112 32.3099 40.9806L37.8332 44.8261C40.0506 46.3698 42.9523 44.188 42.0849 41.6292L40.1052 35.7896C39.7049 34.6087 40.1337 33.3054 41.157 32.5928L46.2149 29.0709C48.4643 27.5045 47.356 23.9732 44.6149 23.9731L38.1059 23.9728C36.9061 23.9728 35.8396 23.2083 35.4543 22.072L33.3617 15.9008C32.5023 13.3664 28.9178 13.3664 28.0583 15.9008L25.9658 22.072C25.5805 23.2083 24.514 23.9728 23.3142 23.9728Z" stroke-width="4" stroke="#FFF5D1" mask="url(#stroke1_0_9)"/>
+</g>
+</g>
+<defs>
+<filter id="filter0_d_0_9" x="0" y="0" width="61.4201" height="59.3408" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset/>
+<feGaussianBlur stdDeviation="7"/>
+<feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 0.847059 0 0 0 0 0.341176 0 0 0 0.7 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_0_9"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_0_9" result="shape"/>
+</filter>
+<linearGradient id="paint0_linear_0_9" x1="30.71" y1="8.0808" x2="30.71" y2="54.0808" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FFF2C2"/>
+<stop offset="1" stop-color="#FFD857"/>
+</linearGradient>
+<path id="stroke0_0_9" d="M28.0583 15.9008C28.9178 13.3664 32.5023 13.3664 33.3617 15.9008L35.4543 22.072C35.8396 23.2083 36.9061 23.9728 38.1059 23.9728L44.6149 23.9731C47.356 23.9732 48.4643 27.5045 46.2148 29.0709L41.157 32.5928C40.1337 33.3054 39.7049 34.6087 40.1052 35.7896L42.0849 41.6292C42.9523 44.188 40.0506 46.3698 37.8332 44.8261L32.3099 40.9806C31.3484 40.3112 30.0717 40.3112 29.1102 40.9806L23.5868 44.8261C21.3695 46.3698 18.4678 44.188 19.3352 41.6292L21.3149 35.7896C21.7152 34.6087 21.2864 33.3054 20.2631 32.5928L15.2052 29.0709C12.9558 27.5045 14.0641 23.9732 16.8052 23.9731L23.3142 23.9728C24.514 23.9728 25.5805 23.2083 25.9658 22.072L28.0583 15.9008Z"/>
+</defs>
+</svg>

@@ -35,7 +35,7 @@ import {
   type ThemeCategoryId,
 } from "@/components/showtime/themeCategories";
 import CoinIcon from "@/components/CoinIcon";
-import AppDialog from "@/components/AppDialog";
+import StageGlassDialog from "@/components/showtime/StageGlassDialog";
 
 const CAROUSEL_COUNT = 10;
 const COLLAPSED_TILES = 6;
@@ -137,6 +137,7 @@ export default function ShowTimeScreen() {
     }
   };
 
+  const canPay = coins >= SHOW_TIME_COST;
   const confirmPaidEntry = () => {
     if (spendCoins(SHOW_TIME_COST)) {
       setPayModal(false);
@@ -391,33 +392,67 @@ export default function ShowTimeScreen() {
         </Pressable>
       </ScrollView>
 
-      <AppDialog
+      {/* Figma 37:4261 «Ещё один выход (50 монет)» / 37:3896 «Не хватает монет»:
+          Liquid Glass card, cost line with a coin, "Выйти · 50 🪙" — disabled
+          (secondary look) when the balance is short. */}
+      <StageGlassDialog
         visible={payModal}
         title={en ? "Enter Show Time again?" : "Ещё один выход в Show Time?"}
         message={
-          coins >= SHOW_TIME_COST
+          canPay
             ? en
-              ? `Today's free entry is used. This one costs ${SHOW_TIME_COST} coins. You have ${coins}.`
-              : `Бесплатный выход на сегодня использован. Этот стоит ${SHOW_TIME_COST} монет. У вас ${coins}.`
+              ? "Today's free entry is used."
+              : "Бесплатный выход на сегодня использован."
             : en
-              ? `Not enough coins — you need ${SHOW_TIME_COST} and have ${coins}. Earn more by finishing levels.`
-              : `Не хватает монет — нужно ${SHOW_TIME_COST}, у вас ${coins}. Зарабатывайте, проходя уровни.`
+              ? "Not enough coins — earn them by finishing levels."
+              : "Не хватает монет - зарабатывайте их, проходя уровни."
         }
+        overlay={0.6}
         onRequestClose={() => setPayModal(false)}
-        buttons={
-          coins >= SHOW_TIME_COST
-            ? [
-                { label: en ? "Cancel" : "Отмена", variant: "secondary", onPress: () => setPayModal(false) },
-                { label: en ? `Enter · ${SHOW_TIME_COST}` : `Выйти · ${SHOW_TIME_COST}`, variant: "primary", onPress: confirmPaidEntry },
-              ]
-            : [{ label: en ? "Got it" : "Понятно", variant: "primary", onPress: () => setPayModal(false) }]
-        }
-      />
+        buttons={[
+          { label: en ? "Cancel" : "Отмена", variant: "secondary", onPress: () => setPayModal(false) },
+          {
+            label: en ? "Enter ·" : "Выйти ·",
+            variant: "primary",
+            disabled: !canPay,
+            onPress: confirmPaidEntry,
+            trailing: (
+              <View style={st.payTrail}>
+                <Text
+                  style={[
+                    st.payTrailText,
+                    { color: canPay ? c.accentText : "rgba(240,238,233,0.35)" },
+                  ]}
+                >
+                  {SHOW_TIME_COST}
+                </Text>
+                <CoinIcon size={20} color={canPay ? c.accentText : "rgba(240,238,233,0.35)"} />
+              </View>
+            ),
+          },
+        ]}
+      >
+        <View style={st.payCostRow}>
+          <Text style={[st.payCostLabel, { color: isLight ? "rgba(38,38,40,0.6)" : "rgba(240,238,233,0.6)" }]}>
+            {en ? "This entry costs" : "Этот выход стоит"}
+          </Text>
+          <Text style={[st.payCostValue, { color: isLight ? "rgba(38,38,40,0.9)" : "rgba(240,238,233,0.9)" }]}>
+            {SHOW_TIME_COST}
+          </Text>
+          <CoinIcon size={16} color={c.accent} />
+        </View>
+      </StageGlassDialog>
     </View>
   );
 }
 
 const st = StyleSheet.create({
+  // Pay-for-entry dialog (cost line + coin trailing on the CTA).
+  payCostRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 },
+  payCostLabel: { fontFamily: "Geologica_600SemiBold", fontSize: 14 },
+  payCostValue: { fontFamily: "Geologica_900Black", fontSize: 14 },
+  payTrail: { flexDirection: "row", alignItems: "center", gap: 6 },
+  payTrailText: { fontFamily: "Geologica_900Black", fontSize: 16 },
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20, width: "100%", maxWidth: 480, alignSelf: "center" },
 

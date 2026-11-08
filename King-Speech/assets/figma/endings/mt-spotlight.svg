@@ -1,0 +1,18 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="355.222" height="677" viewBox="0 0 355.222 677" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Spotlight" filter="url(#filter0_f_0_34)" style="mix-blend-mode:screen">
+<path d="M147.611 18.5H207.611L336.611 658.5H18.6108L147.611 18.5Z" fill="url(#paint0_linear_0_34)"/>
+<path d="M147.611 18.5H207.611L336.611 658.5H18.6108L147.611 18.5Z" stroke="black"/>
+</g>
+<defs>
+<filter id="filter0_f_0_34" x="-9.53674e-07" y="0" width="355.222" height="677" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="9" result="effect1_foregroundBlur_0_34"/>
+</filter>
+<linearGradient id="paint0_linear_0_34" x1="177.611" y1="18.5" x2="177.611" y2="658.5" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FFD857" stop-opacity="0.55"/>
+<stop offset="0.7" stop-color="#FFD857" stop-opacity="0.1"/>
+<stop offset="1" stop-color="#FFD857" stop-opacity="0"/>
+</linearGradient>
+</defs>
+</svg>

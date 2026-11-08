@@ -9,7 +9,7 @@ import { useTheme } from "@/context/ThemeContext";
  * Show Time pop-ups (Figma "Dialog / Liquid Glass": 37:3800 «Вы уверены?»,
  * 37:6850 «Подсказка», 36:1228 «Послушай себя»). A frosted card with a soft
  * gold glow behind the title, a 4pt pale rim and 32pt corners, over a dimmed
- * stage. Local to the Show Time flow — the shared AppDialog keeps its own look.
+ * stage. Also the renderer behind the shared AppDialog (every app pop-up).
  */
 export type GlassBtnVariant = "primary" | "secondary" | "link";
 
@@ -19,6 +19,8 @@ export interface GlassBtn {
   variant?: GlassBtnVariant;
   /** Optional node after the label (e.g. a cost + coin). */
   trailing?: React.ReactNode;
+  /** Inactive (e.g. not enough coins): secondary look, not pressable. */
+  disabled?: boolean;
 }
 
 export default function StageGlassDialog({
@@ -118,11 +120,13 @@ export default function StageGlassDialog({
                     </Pressable>
                   );
                 }
-                const primary = v === "primary";
+                const primary = v === "primary" && !b.disabled;
                 return (
                   <Pressable
                     key={i}
-                    onPress={b.onPress}
+                    onPress={b.disabled ? undefined : b.onPress}
+                    disabled={b.disabled}
+                    accessibilityState={{ disabled: !!b.disabled }}
                     style={({ pressed }) => [
                       stacked ? styles.btnHug : styles.btn,
                       primary
@@ -133,7 +137,7 @@ export default function StageGlassDialog({
                   >
                     <Text
                       style={[
-                        primary ? (stacked ? styles.btnTextHug : styles.btnTextPrimary) : styles.btnTextSecondary,
+                        primary || b.disabled ? (stacked ? styles.btnTextHug : styles.btnTextPrimary) : styles.btnTextSecondary,
                         { color: primary ? theme.accentText : "#FFFFFF" },
                       ]}
                     >

@@ -39,7 +39,13 @@ const H_PAD = 20;
 const CARD_W = (Math.min(SW, 520) - H_PAD * 2 - CARD_GAP) / 2;
 const CARD_ART = Math.floor(CARD_W - 28); // fills the card inside its 14pt padding
 const SPIN_W = Math.min(SW - 72, 300);
-const SPIN_ART = Math.floor(SPIN_W - 44);
+const SPIN_ART = 132; // Figma 37:3454: ~121pt illustration in a 300×240 card
+// Popups (Figma 37:3007 / 37:3454 / 37:3395) — light-only screen, Figma light tokens.
+const SHEET_BG = "#F0EEE9";
+const INK = "#262628";
+const INK_MUTED = "#807F7E";
+const GOLD = "#FFD857";
+const GOLD_STROKE = "rgba(255,189,47,0.73)";
 
 // Clean white / black roles theme.
 const BG = "#FFFFFF";
@@ -108,7 +114,7 @@ function ModePicker({
           <Pressable onPress={() => {}}>
             <View style={styles.sheetHandle} />
             <View style={styles.sheetArtBox}>
-              <RoleArt id={role.id} size={148} radius={20} />
+              <RoleArt id={role.id} size={96} radius={14} />
             </View>
             <Text style={styles.sheetTitle}>{tx(role.title, lang)}</Text>
             <Text style={styles.sheetScene}>{tx(role.scene, lang)}</Text>
@@ -121,8 +127,7 @@ function ModePicker({
               onPress={() => { haptic(Haptics.ImpactFeedbackStyle.Medium); onPick("scripted"); }}
               style={({ pressed }) => [styles.modeBtn, { opacity: pressed ? 0.9 : 1 }]}
             >
-              <LinearGradient colors={["#6C5CE7", "#4834B0"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-              <Ionicons name="document-text" size={22} color="#fff" />
+              <Ionicons name="document-text" size={20} color={INK} />
               <View style={styles.modeBtnTextWrap}>
                 <Text style={styles.modeBtnTitle}>{lang === "en" ? "Read the script" : "По сценарию"}</Text>
                 <Text style={styles.modeBtnSub}>{lang === "en" ? "Read the line on the teleprompter" : "Читай реплику по суфлёру"}</Text>
@@ -133,8 +138,7 @@ function ModePicker({
               onPress={() => { haptic(Haptics.ImpactFeedbackStyle.Medium); onPick("improv"); }}
               style={({ pressed }) => [styles.modeBtn, { opacity: pressed ? 0.9 : 1 }]}
             >
-              <LinearGradient colors={["#E84393", "#B8246B"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-              <Ionicons name="flash" size={22} color="#fff" />
+              <Ionicons name="flash" size={20} color={INK} />
               <View style={styles.modeBtnTextWrap}>
                 <Text style={styles.modeBtnTitle}>{lang === "en" ? "Improvise" : "Импровизация"}</Text>
                 <Text style={styles.modeBtnSub}>{lang === "en" ? "React to the scene in your own words" : "Реагируй на сцену своими словами"}</Text>
@@ -219,8 +223,7 @@ function SpinOverlay({
               onPress={() => { haptic(Haptics.ImpactFeedbackStyle.Medium); onLanded(done); }}
               style={({ pressed }) => [styles.spinPlayBtn, { opacity: pressed ? 0.9 : 1 }]}
             >
-              <LinearGradient colors={["#FFDE5C", "#FFC01E"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-              <Ionicons name="play" size={20} color="#3A2C00" />
+              <Ionicons name="play" size={20} color={INK} />
               <Text style={styles.spinPlayText}>{lang === "en" ? "Play this role" : "Играть эту роль"}</Text>
             </Pressable>
             <Pressable onPress={onClose} style={styles.spinSkip}>
@@ -291,8 +294,7 @@ export default function RolesScreen() {
             onPress={() => { haptic(Haptics.ImpactFeedbackStyle.Medium); setSpinning(true); }}
             style={({ pressed }) => [styles.spinCta, { opacity: pressed ? 0.92 : 1 }]}
           >
-            <LinearGradient colors={["#FF7AC4", "#8E5BFF"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
-            <Ionicons name="dice" size={22} color="#fff" />
+            <Ionicons name="dice" size={22} color="#262628" />
             <Text style={styles.spinCtaText}>{lang === "en" ? "Spin for a random role" : "Крутить рулетку ролей"}</Text>
           </Pressable>
         </Animated.View>
@@ -384,15 +386,13 @@ const styles = StyleSheet.create({
   title: { color: TEXT, fontFamily: "Geologica_800ExtraBold", fontSize: 30, marginTop: 6, lineHeight: 34 },
   subtitle: { color: MUTED, fontFamily: "Geologica_400Regular", fontSize: 14, marginTop: 8, lineHeight: 20 },
 
+  // Gold CTA (Figma): #FFD857 fill with the 4pt amber stroke, ink label.
   spinCta: {
-    marginTop: 20, height: 56, borderRadius: 18, overflow: "hidden",
+    marginTop: 20, height: 56, borderRadius: 32, overflow: "hidden",
+    backgroundColor: "#FFD857", borderWidth: 4, borderColor: "rgba(255,189,47,0.73)",
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
-    ...Platform.select({
-      ios: { shadowColor: "#8E5BFF", shadowOpacity: 0.5, shadowRadius: 16, shadowOffset: { width: 0, height: 8 } },
-      android: { elevation: 8 }, default: {},
-    }),
   },
-  spinCtaText: { color: "#fff", fontFamily: "Geologica_800ExtraBold", fontSize: 17 },
+  spinCtaText: { color: "#262628", fontFamily: "Geologica_800ExtraBold", fontSize: 17 },
 
   chipsRow: { alignItems: "center", gap: 8, paddingVertical: 2 },
   chip: {
@@ -416,48 +416,45 @@ const styles = StyleSheet.create({
   cardTitle: { color: TEXT, fontFamily: "Geologica_800ExtraBold", fontSize: 16, marginTop: 2, textAlign: "center" },
   cardDesc: { color: MUTED, fontFamily: "Geologica_400Regular", fontSize: 12, marginTop: 4, lineHeight: 16, textAlign: "center" },
 
-  // Mode picker
-  sheetBackdrop: { flex: 1, backgroundColor: "#00000055", justifyContent: "flex-end" },
+  // Mode picker — Figma 37:3007 "Роли · Выбери, как играть"
+  sheetBackdrop: { flex: 1, backgroundColor: "rgba(38,38,40,0.45)", justifyContent: "flex-end" },
   sheet: {
-    backgroundColor: BG2, borderTopLeftRadius: 28, borderTopRightRadius: 28,
-    padding: 22, paddingBottom: Platform.OS === "web" ? 28 : 40,
-    borderTopWidth: 1, borderColor: "#0000000F",
+    backgroundColor: SHEET_BG, borderTopLeftRadius: 22, borderTopRightRadius: 22,
+    paddingHorizontal: 22, paddingTop: 23, paddingBottom: Platform.OS === "web" ? 28 : 40,
+    borderTopWidth: 1, borderColor: "rgba(38,38,40,0.08)",
   },
-  sheetHandle: { alignSelf: "center", width: 44, height: 5, borderRadius: 3, backgroundColor: "#00000022", marginBottom: 14 },
-  sheetArtBox: { width: 148, height: 148, alignSelf: "center", alignItems: "center", justifyContent: "center" },
-  sheetTitle: { color: TEXT, fontFamily: "Geologica_800ExtraBold", fontSize: 22, textAlign: "center", marginTop: 6 },
-  sheetScene: { color: MUTED, fontFamily: "Geologica_400Regular", fontSize: 14, textAlign: "center", marginTop: 8, lineHeight: 20 },
-  sheetChoose: { color: TEXT, fontFamily: "Geologica_700Bold", fontSize: 13, marginTop: 20, marginBottom: 10, letterSpacing: 0.5 },
+  sheetHandle: { alignSelf: "center", width: 44, height: 5, borderRadius: 3, backgroundColor: "rgba(38,38,40,0.15)", marginBottom: 18 },
+  sheetArtBox: { width: 96, height: 96, alignSelf: "center", alignItems: "center", justifyContent: "center" },
+  sheetTitle: { color: INK, fontFamily: "Geologica_800ExtraBold", fontSize: 22, letterSpacing: -0.11, textAlign: "center", marginTop: 12 },
+  sheetScene: { color: INK_MUTED, fontFamily: "Geologica_400Regular", fontSize: 14, textAlign: "center", marginTop: 10, lineHeight: 20 },
+  sheetChoose: { color: INK, fontFamily: "Geologica_700Bold", fontSize: 13, marginTop: 22, marginBottom: 12 },
   modeBtn: {
-    height: 66, borderRadius: 18, overflow: "hidden", flexDirection: "row", alignItems: "center",
-    paddingHorizontal: 18, gap: 14, marginBottom: 12,
+    height: 66, borderRadius: 24, overflow: "hidden", flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 21, gap: 17, marginBottom: 12, backgroundColor: GOLD,
   },
   modeBtnTextWrap: { flex: 1 },
-  modeBtnTitle: { color: "#fff", fontFamily: "Geologica_800ExtraBold", fontSize: 16 },
-  modeBtnSub: { color: "#FFFFFFCC", fontFamily: "Geologica_400Regular", fontSize: 12, marginTop: 2 },
+  modeBtnTitle: { color: INK, fontFamily: "Geologica_800ExtraBold", fontSize: 16 },
+  modeBtnSub: { color: "rgba(38,38,40,0.8)", fontFamily: "Geologica_400Regular", fontSize: 12, marginTop: 4 },
   sheetCancel: { alignItems: "center", paddingVertical: 12, marginTop: 2 },
-  sheetCancelText: { color: MUTED, fontFamily: "Geologica_600SemiBold", fontSize: 15 },
+  sheetCancelText: { color: INK_MUTED, fontFamily: "Geologica_600SemiBold", fontSize: 15 },
 
-  // Spin overlay
-  spinBackdrop: { flex: 1, backgroundColor: "#FFFFFFF7", alignItems: "center", justifyContent: "center", padding: 28 },
-  spinLabel: { color: TEXT, fontFamily: "Geologica_800ExtraBold", fontSize: 22, marginBottom: 22 },
+  // Spin overlay — Figma 37:3454 "Крутим…" / 37:3395 "Твоя роль!"
+  spinBackdrop: { flex: 1, backgroundColor: "rgba(240,238,233,0.93)", alignItems: "center", justifyContent: "center", padding: 28 },
+  spinLabel: { color: INK, fontFamily: "Geologica_800ExtraBold", fontSize: 22, letterSpacing: -0.11, marginBottom: 24 },
   spinCard: {
-    width: SPIN_W, minHeight: 240, borderRadius: 28, borderWidth: 2,
-    borderColor: LINE,
-    backgroundColor: CARD_BG, alignItems: "center", justifyContent: "center", padding: 22, overflow: "hidden",
-    ...Platform.select({
-      ios: { shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 20, shadowOffset: { width: 0, height: 8 } },
-      android: { elevation: 8 }, default: {},
-    }),
+    width: SPIN_W, minHeight: 240, borderRadius: 22, borderWidth: 2,
+    borderColor: "rgba(38,38,40,0.12)",
+    backgroundColor: SHEET_BG, alignItems: "center", justifyContent: "center", padding: 22, overflow: "hidden",
   },
-  spinArtBox: { width: SPIN_ART, height: SPIN_ART, alignItems: "center", justifyContent: "center", marginBottom: 6 },
-  spinTitle: { color: TEXT, fontFamily: "Geologica_800ExtraBold", fontSize: 22, textAlign: "center", marginTop: 10 },
-  spinDesc: { color: MUTED, fontFamily: "Geologica_400Regular", fontSize: 13, textAlign: "center", marginTop: 8, lineHeight: 18 },
+  spinArtBox: { width: SPIN_ART, height: SPIN_ART, alignItems: "center", justifyContent: "center" },
+  spinTitle: { color: INK, fontFamily: "Geologica_800ExtraBold", fontSize: 22, letterSpacing: -0.11, textAlign: "center", marginTop: 8 },
+  spinDesc: { color: INK_MUTED, fontFamily: "Geologica_400Regular", fontSize: 13, textAlign: "center", marginTop: 6, lineHeight: 18 },
   spinPlayBtn: {
-    marginTop: 28, height: 56, minWidth: 240, borderRadius: 28, overflow: "hidden",
+    marginTop: 28, height: 58, minWidth: 240, borderRadius: 32, overflow: "hidden", backgroundColor: GOLD,
+    borderWidth: 4, borderColor: GOLD_STROKE,
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 28,
   },
-  spinPlayText: { color: "#3A2C00", fontFamily: "Geologica_800ExtraBold", fontSize: 16 },
+  spinPlayText: { color: INK, fontFamily: "Geologica_900Black", fontSize: 16 },
   spinSkip: { paddingVertical: 14, marginTop: 4 },
-  spinSkipText: { color: MUTED, fontFamily: "Geologica_600SemiBold", fontSize: 15 },
+  spinSkipText: { color: INK_MUTED, fontFamily: "Geologica_600SemiBold", fontSize: 15 },
 });
