@@ -2,8 +2,8 @@
 <ellipse id="Floor light" cx="170" cy="35" rx="170" ry="35" fill="url(#paint0_radial_0_31)"/>
 <defs>
 <radialGradient id="paint0_radial_0_31" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(170 35) scale(170 35)">
-<stop stop-color="#FFEDA8" stop-opacity="0.55"/>
-<stop offset="1" stop-color="#FFEDA8" stop-opacity="0"/>
+<stop stop-color="#FFD857" stop-opacity="0.55"/>
+<stop offset="1" stop-color="#FFD857" stop-opacity="0"/>
 </radialGradient>
 </defs>
 </svg>

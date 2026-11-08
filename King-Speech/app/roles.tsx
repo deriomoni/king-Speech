@@ -44,8 +44,8 @@ const SPIN_ART = 132; // Figma 37:3454: ~121pt illustration in a 300×240 card
 const SHEET_BG = "#F0EEE9";
 const INK = "#262628";
 const INK_MUTED = "#807F7E";
-const GOLD = "#FFEDA8";
-const GOLD_STROKE = "rgba(230,205,130,0.73)";
+const GOLD = "#FFD857";
+const GOLD_STROKE = "rgba(255,189,47,0.73)";
 
 // Clean white / black roles theme.
 const BG = "#FFFFFF";
@@ -381,15 +381,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20,
     backgroundColor: "#FFFFFF10", borderWidth: 1, borderColor: "#FFFFFF1A",
   },
-  trophyText: { color: "#F2D98F", fontFamily: "Geologica_700Bold", fontSize: 13 },
+  trophyText: { color: "#FFC01E", fontFamily: "Geologica_700Bold", fontSize: 13 },
   kicker: { color: MUTED, fontFamily: "Geologica_700Bold", fontSize: 12, letterSpacing: 2, marginTop: 6 },
   title: { color: TEXT, fontFamily: "Geologica_800ExtraBold", fontSize: 30, marginTop: 6, lineHeight: 34 },
   subtitle: { color: MUTED, fontFamily: "Geologica_400Regular", fontSize: 14, marginTop: 8, lineHeight: 20 },
 
-  // Gold CTA (Figma): #FFEDA8 fill with the 4pt amber stroke, ink label.
+  // Gold CTA (Figma): #FFD857 fill with the 4pt amber stroke, ink label.
   spinCta: {
     marginTop: 20, height: 56, borderRadius: 32, overflow: "hidden",
-    backgroundColor: "#FFEDA8", borderWidth: 4, borderColor: "rgba(230,205,130,0.73)",
+    backgroundColor: "#FFD857", borderWidth: 4, borderColor: "rgba(255,189,47,0.73)",
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
   },
   spinCtaText: { color: "#262628", fontFamily: "Geologica_800ExtraBold", fontSize: 17 },

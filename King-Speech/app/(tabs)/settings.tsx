@@ -28,15 +28,15 @@ const SIGN_OUT = "#E5484D";
 // Figma tokens settings/opt-* (theme segmented control) + button/secondary-gray.
 const OPT = {
   dark: {
-    selectedBg: "#FFEDA8",
-    selectedBorder: "rgba(230,205,130,0.73)",
+    selectedBg: "#FFD857",
+    selectedBorder: "rgba(255,189,47,0.73)",
     selectedInk: "#262628",
     idleBorder: "rgba(240,238,233,0.2)",
-    idleIcon: "#FFEDA8",
+    idleIcon: "#FFD857",
   },
   light: {
     selectedBg: "#E5E4E1",
-    selectedBorder: "rgba(230,205,130,0.73)",
+    selectedBorder: "rgba(255,189,47,0.73)",
     selectedInk: "#262628",
     idleBorder: "rgba(38,38,40,0.15)",
     idleIcon: "rgba(38,38,40,0.42)",

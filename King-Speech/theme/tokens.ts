@@ -3,7 +3,7 @@ export const colors = {
   bg: "#262628", // Figma bg/app
   surface: "#323234", // Figma surface/card
   border: "rgba(240,238,233,0.10)", // Figma border/card
-  gold: "#FFEDA8", // DOMINANT accent (MAIN interface yellow): CTA buttons, rewards, progress, mascot
+  gold: "#FFD857", // DOMINANT accent (MAIN interface yellow): CTA buttons, rewards, progress, mascot
   purple: "#9468FB", // SUPPORT accent: secondary highlights, links, glows
   purpleDeep: "#6A4FF4",
 
@@ -62,11 +62,11 @@ export const brand = {
   violetGlow: "rgba(124,77,255,0.45)",
   onViolet: "#F1EBFF",
 
-  // gold family — action & reward (MAIN interface yellow = #FFEDA8)
-  gold: "#FFEDA8",
-  goldSoft: "#FFF4CC",
+  // gold family — action & reward (MAIN interface yellow = #FFD857)
+  gold: "#FFD857",
+  goldSoft: "#FFE68C",
   onGold: "#3A2C00",
-  goldGlow: "rgba(255,237,168,0.40)",
+  goldGlow: "rgba(255,216,87,0.40)",
 
   // violet-tinted dark neutrals (signature "purple-black")
   ink: "#0F0E14",
@@ -75,9 +75,9 @@ export const brand = {
   borderViolet: "rgba(124,120,168,0.16)",
 
   // semantic roles (use these in UI, not raw hues)
-  action: "#FFEDA8",     // primary CTA / XP / streak / crown
+  action: "#FFD857",     // primary CTA / XP / streak / crown
   onAction: "#3A2C00",
-  reward: "#FFF4CC",
+  reward: "#FFE68C",
   identity: "#7C4DFF",   // ambient brand: progress fills, selected, glows
   bgTint: "#14121C",     // score/celebration backdrop base
 } as const;
@@ -153,7 +153,7 @@ export const reading = {
   // Start CTA — the one warm gold object on the IDLE screen. Top stop is the
   // MAIN interface yellow; the gradient warms toward orange for depth.
   button: {
-    from: "#FFEDA8",
+    from: "#FFD857",
     to: "#FF9E2C",
     on: "#2A2003", // text/icon on the gold fill — never pure black
   },

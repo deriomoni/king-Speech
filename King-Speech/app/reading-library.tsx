@@ -128,7 +128,7 @@ function RecordRow({
           <Text style={[row.pillText, { color: theme.text }]}>{fmtDuration(rec.durationSec)}</Text>
         </Pressable>
         {score ? (
-          <View style={[row.pill, { backgroundColor: isDark ? "rgba(255,237,168,0.14)" : "rgba(255,237,168,0.35)" }]}>
+          <View style={[row.pill, { backgroundColor: isDark ? "rgba(255,216,87,0.14)" : "rgba(255,216,87,0.35)" }]}>
             <Text style={[row.pillText, { color: theme.accentInk }]}>{score}</Text>
           </View>
         ) : null}
@@ -239,7 +239,7 @@ export default function ReadingLibraryScreen() {
                 onPress={() => setFilter(f.key)}
                 style={[
                   styles.chip,
-                  { backgroundColor: on ? (isDark ? "rgba(255,237,168,0.16)" : "rgba(255,237,168,0.45)") : ink(0.08) },
+                  { backgroundColor: on ? (isDark ? "rgba(255,216,87,0.16)" : "rgba(255,216,87,0.45)") : ink(0.08) },
                 ]}
               >
                 <Text style={[styles.chipText, { color: on ? theme.accentInk : ink(0.7) }]}>

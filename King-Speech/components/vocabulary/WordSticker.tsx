@@ -113,9 +113,9 @@ const styles = StyleSheet.create({
   word: { fontFamily: "Geologica_700Bold" },
   badge: {
     position: "absolute",
-    backgroundColor: "#FFEDA8",
+    backgroundColor: "#FFD857",
     borderWidth: 4,
-    borderColor: "rgba(230,205,130,0.73)",
+    borderColor: "rgba(255,189,47,0.73)",
     alignItems: "center",
     justifyContent: "center",
   },

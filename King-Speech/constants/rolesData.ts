@@ -89,7 +89,7 @@ export const RARITY_META: Record<
   },
   legendary: {
     label: { ru: "Легендарная", en: "Legendary" },
-    color: "#F2D98F",
+    color: "#FFC01E",
     glow: "rgba(255,192,30,0.6)",
   },
 };

@@ -135,7 +135,7 @@ function Numeral({ n, dark, id }: { n: number; dark: boolean; id: string }) {
       <Defs>
         <SvgLinearGradient id={`num${id}`} x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0.1" stopColor="#FFF2C2" />
-          <Stop offset="0.55" stopColor="#FFEDA8" />
+          <Stop offset="0.55" stopColor="#FFD857" />
           <Stop offset="0.95" stopColor="#ED9E1F" />
         </SvgLinearGradient>
         <Filter id={`glow${id}`} x="-50%" y="-50%" width="200%" height="200%">
@@ -165,7 +165,7 @@ function Numeral({ n, dark, id }: { n: number; dark: boolean; id: string }) {
         textAnchor="middle"
         fontFamily="Geologica_900Black"
         fontSize={128}
-        fill="#FFEDA8"
+        fill="#FFD857"
         fillOpacity={0.65}
         filter={`url(#glow${id})`}
       >
@@ -331,7 +331,7 @@ export default function ModuleTransitionOverlay({
               width: d.s,
               height: d.s,
               borderRadius: d.s,
-              backgroundColor: "rgba(255,237,168,0.6)",
+              backgroundColor: "rgba(255,216,87,0.6)",
             }}
           />
         ))}
@@ -353,7 +353,7 @@ export default function ModuleTransitionOverlay({
           <View
             style={[
               styles.kicker,
-              { backgroundColor: `rgba(${ink},0.08)`, borderColor: "rgba(255,237,168,0.6)" },
+              { backgroundColor: `rgba(${ink},0.08)`, borderColor: "rgba(255,216,87,0.6)" },
             ]}
           >
             <View style={[styles.kickerDot, { backgroundColor: moduleColor, shadowColor: moduleColor }]} />
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 32,
     borderWidth: 1.5,
-    shadowColor: "#FFEDA8",
+    shadowColor: "#FFD857",
     shadowOpacity: 0.35,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 0 },

@@ -12,9 +12,9 @@ export const MT_SPOTLIGHT_SVG = `<svg width="355.222" height="677" viewBox="0 0 
 <feGaussianBlur stdDeviation="9" result="effect1_foregroundBlur_0_34"/>
 </filter>
 <linearGradient id="paint0_linear_0_34" x1="177.611" y1="18.5" x2="177.611" y2="658.5" gradientUnits="userSpaceOnUse">
-<stop stop-color="#FFEDA8" stop-opacity="0.55"/>
-<stop offset="0.7" stop-color="#FFEDA8" stop-opacity="0.1"/>
-<stop offset="1" stop-color="#FFEDA8" stop-opacity="0"/>
+<stop stop-color="#FFD857" stop-opacity="0.55"/>
+<stop offset="0.7" stop-color="#FFD857" stop-opacity="0.1"/>
+<stop offset="1" stop-color="#FFD857" stop-opacity="0"/>
 </linearGradient>
 </defs>
 </svg>`;
@@ -45,7 +45,7 @@ export const MT_FLOOR_SVG = `<svg width="340" height="70" viewBox="0 0 340 70" f
 // 18pt sparkle drawn in a 34pt box (glow padding).
 export const MT_SPARKLE_SVG = `<svg width="34" height="34" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g id="Sparkle" filter="url(#filter0_d_0_22)">
-<path d="M17 8L18.6546 15.3454L26 17L18.6546 18.6546L17 26L15.3454 18.6546L8 17L15.3454 15.3454L17 8Z" fill="#FFEDA8"/>
+<path d="M17 8L18.6546 15.3454L26 17L18.6546 18.6546L17 26L15.3454 18.6546L8 17L15.3454 15.3454L17 8Z" fill="#FFD857"/>
 </g>
 <defs>
 <filter id="filter0_d_0_22" x="0" y="0" width="34" height="34" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">

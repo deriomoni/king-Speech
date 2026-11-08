@@ -38,8 +38,8 @@ const BG = "#0E0E10"; // main interface dark (brandColors.bg)
 const TEXT = "#F5F0FF";
 const MUTED = "#A79CC4";
 // Brand accents (theme/tokens): gold is the one thing you tap.
-const GOLD = "#FFEDA8";
-const GOLD_SOFT = "#FFF4CC";
+const GOLD = "#FFD857";
+const GOLD_SOFT = "#FFE68C";
 const ON_GOLD = "#3A2C00";
 
 function haptic(style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle.Light) {
@@ -448,7 +448,7 @@ export default function RoleStageScreen() {
 
         {phase === "processing" && (
           <View style={styles.processing}>
-            <ActivityIndicator color="#F2D98F" />
+            <ActivityIndicator color="#FFC01E" />
             <Text style={styles.processingText}>{lang === "en" ? "Preparing your take..." : "Готовим твой дубль..."}</Text>
           </View>
         )}
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
 
   prompterCard: { backgroundColor: "#0B0718D9", borderRadius: 20, padding: 18, borderWidth: 1, borderColor: "#6C5CE740" },
   sceneCard: { backgroundColor: "#0B0718D9", borderRadius: 20, padding: 18, borderWidth: 1, borderColor: "#E8439340" },
-  prompterLabel: { color: "#F2D98F", fontFamily: "Geologica_700Bold", fontSize: 11, letterSpacing: 1.5, marginBottom: 8 },
+  prompterLabel: { color: "#FFC01E", fontFamily: "Geologica_700Bold", fontSize: 11, letterSpacing: 1.5, marginBottom: 8 },
   prompterText: { color: TEXT, fontFamily: "Literata_400Regular", fontSize: 22, lineHeight: 32 },
   sceneText: { color: TEXT, fontFamily: "Geologica_700Bold", fontSize: 20, lineHeight: 28 },
 

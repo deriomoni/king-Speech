@@ -205,7 +205,7 @@ export default function LevelCompleteModal({
         <Animated.Text
           style={[
             s.title,
-            { color: theme.text, textShadowColor: dark ? "rgba(255,237,168,0.5)" : "rgba(255,198,45,0.45)" },
+            { color: theme.text, textShadowColor: dark ? "rgba(255,216,87,0.5)" : "rgba(255,198,45,0.45)" },
             titlePulse,
           ]}
         >
@@ -243,7 +243,7 @@ export default function LevelCompleteModal({
                 <Text
                   style={[
                     s.value,
-                    { color: scoreColor, textShadowColor: dark ? "rgba(255,237,168,0.5)" : "transparent", textShadowRadius: 14 },
+                    { color: scoreColor, textShadowColor: dark ? "rgba(255,216,87,0.5)" : "transparent", textShadowRadius: 14 },
                   ]}
                 >
                   {scoreStr}
@@ -320,7 +320,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 32,
-    shadowColor: "#FFEDA8",
+    shadowColor: "#FFD857",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: 12,

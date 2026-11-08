@@ -59,8 +59,8 @@ export const HALO_SVG = `<svg width="300" height="300" viewBox="0 0 300 300" fil
 <circle id="Halo" cx="150" cy="150" r="150" fill="url(#paint0_radial_0_30)"/>
 <defs>
 <radialGradient id="paint0_radial_0_30" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(150 150) scale(150)">
-<stop stop-color="#FFEDA8" stop-opacity="0.55"/>
-<stop offset="1" stop-color="#FFEDA8" stop-opacity="0"/>
+<stop stop-color="#FFD857" stop-opacity="0.55"/>
+<stop offset="1" stop-color="#FFD857" stop-opacity="0"/>
 </radialGradient>
 </defs>
 </svg>`;
@@ -69,8 +69,8 @@ export const FLOOR_LIGHT_SVG = `<svg width="300" height="60" viewBox="0 0 300 60
 <ellipse id="Floor light" cx="150" cy="30" rx="150" ry="30" fill="url(#paint0_radial_0_27)"/>
 <defs>
 <radialGradient id="paint0_radial_0_27" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(150 30) scale(150 30)">
-<stop stop-color="#FFEDA8" stop-opacity="0.5"/>
-<stop offset="1" stop-color="#FFEDA8" stop-opacity="0"/>
+<stop stop-color="#FFD857" stop-opacity="0.5"/>
+<stop offset="1" stop-color="#FFD857" stop-opacity="0"/>
 </radialGradient>
 </defs>
 </svg>`;
@@ -97,7 +97,7 @@ export const STAR_SMALL_SVG = `<svg width="55.8501" height="54.1173" viewBox="0 
 </filter>
 <linearGradient id="paint0_linear_0_13" x1="27.925" y1="9.06733" x2="27.925" y2="47.4007" gradientUnits="userSpaceOnUse">
 <stop stop-color="#FFF2C2"/>
-<stop offset="1" stop-color="#FFEDA8"/>
+<stop offset="1" stop-color="#FFD857"/>
 </linearGradient>
 <path id="stroke0_0_13" d="M25.7153 15.584C26.4315 13.472 29.4186 13.472 30.1348 15.584L31.8786 20.7267C32.1997 21.6736 33.0884 22.3107 34.0883 22.3107L39.5125 22.3109C41.7967 22.311 42.7203 25.2538 40.8457 26.5591L36.6308 29.494C35.7781 30.0878 35.4208 31.1739 35.7544 32.158L37.4041 37.0243C38.1269 39.1566 35.7088 40.9749 33.861 39.6884L29.2583 36.4839C28.457 35.926 27.3931 35.926 26.5918 36.4839L21.989 39.6884C20.1413 40.9749 17.7232 39.1566 18.446 37.0243L20.0957 32.158C20.4293 31.1739 20.072 30.0878 19.2193 29.494L15.0044 26.5591C13.1298 25.2538 14.0534 22.311 16.3376 22.3109L21.7618 22.3107C22.7617 22.3107 23.6504 21.6736 23.9715 20.7267L25.7153 15.584Z"/>
 </defs>
@@ -125,7 +125,7 @@ export const STAR_BIG_SVG = `<svg width="61.4201" height="59.3408" viewBox="0 0 
 </filter>
 <linearGradient id="paint0_linear_0_9" x1="30.71" y1="8.0808" x2="30.71" y2="54.0808" gradientUnits="userSpaceOnUse">
 <stop stop-color="#FFF2C2"/>
-<stop offset="1" stop-color="#FFEDA8"/>
+<stop offset="1" stop-color="#FFD857"/>
 </linearGradient>
 <path id="stroke0_0_9" d="M28.0583 15.9008C28.9178 13.3664 32.5023 13.3664 33.3617 15.9008L35.4543 22.072C35.8396 23.2083 36.9061 23.9728 38.1059 23.9728L44.6149 23.9731C47.356 23.9732 48.4643 27.5045 46.2148 29.0709L41.157 32.5928C40.1337 33.3054 39.7049 34.6087 40.1052 35.7896L42.0849 41.6292C42.9523 44.188 40.0506 46.3698 37.8332 44.8261L32.3099 40.9806C31.3484 40.3112 30.0717 40.3112 29.1102 40.9806L23.5868 44.8261C21.3695 46.3698 18.4678 44.188 19.3352 41.6292L21.3149 35.7896C21.7152 34.6087 21.2864 33.3054 20.2631 32.5928L15.2052 29.0709C12.9558 27.5045 14.0641 23.9732 16.8052 23.9731L23.3142 23.9728C24.514 23.9728 25.5805 23.2083 25.9658 22.072L28.0583 15.9008Z"/>
 </defs>
@@ -239,7 +239,7 @@ export const TROPHY_SVG = `<svg width="300.305" height="518.07" viewBox="0 0 300
 <stop stop-color="#D18512"/>
 <stop offset="0.22" stop-color="#FFCC4D"/>
 <stop offset="0.34" stop-color="#FFF7C7"/>
-<stop offset="0.5" stop-color="#FFEDA8"/>
+<stop offset="0.5" stop-color="#FFD857"/>
 <stop offset="0.78" stop-color="#F5B329"/>
 <stop offset="1" stop-color="#B8700D"/>
 </linearGradient>
@@ -247,7 +247,7 @@ export const TROPHY_SVG = `<svg width="300.305" height="518.07" viewBox="0 0 300
 <stop stop-color="#D18512"/>
 <stop offset="0.22" stop-color="#FFCC4D"/>
 <stop offset="0.34" stop-color="#FFF7C7"/>
-<stop offset="0.5" stop-color="#FFEDA8"/>
+<stop offset="0.5" stop-color="#FFD857"/>
 <stop offset="0.78" stop-color="#F5B329"/>
 <stop offset="1" stop-color="#B8700D"/>
 </linearGradient>

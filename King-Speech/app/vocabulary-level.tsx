@@ -304,7 +304,7 @@ function TutorialPhase({
           <View key={i}>
             {i > 0 ? <View style={[styles.stepSep, { backgroundColor: ink(0.08) }]} /> : null}
             <View style={styles.stepRow}>
-              <View style={[styles.stepNum, { backgroundColor: "rgba(255,237,168,0.16)" }]}>
+              <View style={[styles.stepNum, { backgroundColor: "rgba(255,216,87,0.16)" }]}>
                 <Text style={[styles.stepNumText, { color: theme.accentInk }]}>{i + 1}</Text>
               </View>
               <Text style={[styles.stepText, { color: theme.text }]}>{text}</Text>
@@ -547,7 +547,7 @@ function SpinPhase({
           pointerEvents="none"
           style={[
             styles.selection,
-            { borderColor: theme.accent, backgroundColor: isDark ? "rgba(255,237,168,0.08)" : "rgba(255,237,168,0.16)" },
+            { borderColor: theme.accent, backgroundColor: isDark ? "rgba(255,216,87,0.08)" : "rgba(255,216,87,0.16)" },
           ]}
         />
         {introDone ? (

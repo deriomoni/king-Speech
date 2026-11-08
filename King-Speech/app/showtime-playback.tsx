@@ -637,7 +637,7 @@ export default function ShowtimePlaybackScreen() {
               ) : null}
               <View style={pb.verdictRow}>
                 <Text style={[pb.verdict, { color: theme.text }]}>{verdict}</Text>
-                <View style={[pb.xpPill, { backgroundColor: isDark ? "rgba(255,237,168,0.14)" : "rgba(255,237,168,0.35)" }]}>
+                <View style={[pb.xpPill, { backgroundColor: isDark ? "rgba(255,216,87,0.14)" : "rgba(255,216,87,0.35)" }]}>
                   <Text style={[pb.xpText, { color: theme.accentInk }]}>+{sum.xp} XP</Text>
                 </View>
               </View>
