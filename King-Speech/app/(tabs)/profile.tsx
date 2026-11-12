@@ -546,7 +546,7 @@ export default function ProfileScreen() {
               }}
               spot={{ x: 170, y: -70, size: 240 }}
               art={art(themedSvg(LIBRARY, mode), 187.5, 12, 155, 91)}
-              onPress={() => router.push("/reading-library")}
+              onPress={() => router.push("/library")}
             />
           </Animated.View>
 
