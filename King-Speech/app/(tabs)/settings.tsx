@@ -20,6 +20,13 @@ import {
 import { kingSpeechLogoXml } from "@/assets/figma/settings/logo";
 import { bekWaveLogoXml } from "@/assets/figma/settings/bekwave";
 
+// Figma "icon/crown-outline" (405:1310); __FG__ is swapped for theme.text.
+const CROWN_OUTLINE_XML = `<svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M3.5 16.5L2.6 7.6L7.4 11L11 4.6L14.6 11L19.4 7.6L18.5 16.5H3.5Z" stroke="__FG__" stroke-width="1.6" stroke-linejoin="round"/>
+<path d="M4.5 19H17.5" stroke="__FG__" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M11 13.9C11.718 13.9 12.3 13.318 12.3 12.6C12.3 11.882 11.718 11.3 11 11.3C10.282 11.3 9.7 11.882 9.7 12.6C9.7 13.318 10.282 13.9 11 13.9Z" fill="__FG__"/>
+</svg>`;
+
 // Muted segmented control: neutral track, the selected segment is just a
 // slightly lighter chip — no accent colour, no outline.
 const SEG = {
@@ -102,238 +109,266 @@ export default function SettingsScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.bg }]}>
+    <View style={[styles.container, { backgroundColor: theme.bezel }]}>
       <ScrollView
-        contentContainerStyle={[
-          styles.scroll,
-          { paddingTop: topPad + 8, paddingBottom: bottomPad + 120 },
-        ]}
+        contentContainerStyle={styles.scrollOuter}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >
-        <Animated.View entering={FadeInDown.duration(400)}>
-          <ThemedSvg xml={kingSpeechLogoXml} width={159} height={53} fg={theme.text} />
-          <Text style={[styles.pageTitle, { color: theme.text }]}>{t("settings")}</Text>
-        </Animated.View>
+        {/* Figma 05b: logo on its own top plate (rounded bottom), bezel band, then the sheet */}
+        <View
+          style={[
+            styles.headerPanel,
+            { backgroundColor: theme.bg, borderColor: theme.panelStroke, paddingTop: topPad + 20 },
+          ]}
+        >
+          <Animated.View entering={FadeInDown.duration(400)}>
+            <ThemedSvg xml={kingSpeechLogoXml} width={159} height={53} fg={theme.text} />
+          </Animated.View>
+        </View>
+        <View
+          style={[
+            styles.sheet,
+            styles.scroll,
+            {
+              backgroundColor: theme.bg,
+              borderColor: theme.panelStroke,
+              paddingBottom: bottomPad + 120,
+            },
+          ]}
+        >
+          <Animated.View entering={FadeInDown.duration(400)}>
+            <Text style={[styles.pageTitle, { color: theme.text }]}>{t("settings")}</Text>
+          </Animated.View>
 
-        {/* Account */}
-        <Animated.View entering={FadeInDown.delay(40).duration(400)}>
-          <SectionLabel theme={theme}>{en ? "Account" : "Аккаунт"}</SectionLabel>
-          <Card theme={theme} themeMode={themeMode}>
-            <Pressable
-              onPress={() => {
-                tapHaptic();
-                // Account screen hosts sign-out / account management.
-                router.push("/account" as any);
-              }}
-              style={({ pressed }) => [
-                styles.accountRow,
-                pressed && { backgroundColor: theme.rowPressed },
-              ]}
-            >
-              <View style={[styles.avatar, { backgroundColor: theme.accent }]}>
-                <Text style={[styles.avatarInitial, { color: theme.accentText }]}>{initial}</Text>
-              </View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={[styles.accountName, { color: theme.text }]} numberOfLines={1}>
-                  {userName}
-                </Text>
-                <Text style={[styles.accountSub, { color: theme.textMuted }]} numberOfLines={1}>
-                  {en ? `Signed in with ${authLabel}` : `Вход через ${authLabel}`}
-                </Text>
-              </View>
-              <Chevron theme={theme} />
-              <View
-                pointerEvents="none"
-                style={[styles.inset, { left: 16, backgroundColor: theme.divider }]}
-              />
-            </Pressable>
-            <ListRow
-              theme={theme}
-              icon={icon("diamond-outline")}
-              label={en ? "Free plan" : "Бесплатный план"}
-              onPress={() => router.push("/subscription" as any)}
-              right={
-                <View style={styles.upgradeRight}>
-                  <Text style={[styles.upgradeLabel, { color: theme.accentInk }]}>
-                    {en ? "Upgrade" : "Улучшить"}
-                  </Text>
-                  <Chevron theme={theme} />
+          {/* Account */}
+          <Animated.View entering={FadeInDown.delay(40).duration(400)}>
+            <SectionLabel theme={theme}>{en ? "Account" : "Аккаунт"}</SectionLabel>
+            <Card theme={theme} themeMode={themeMode}>
+              <Pressable
+                onPress={() => {
+                  tapHaptic();
+                  // Account screen hosts sign-out / account management.
+                  router.push("/account" as any);
+                }}
+                style={({ pressed }) => [
+                  styles.accountRow,
+                  pressed && { backgroundColor: theme.rowPressed },
+                ]}
+              >
+                <View style={[styles.avatar, { backgroundColor: theme.accent }]}>
+                  <Text style={[styles.avatarInitial, { color: theme.accentText }]}>{initial}</Text>
                 </View>
-              }
-            />
-          </Card>
-        </Animated.View>
-
-        {/* Sound & notifications — one grouped card */}
-        <Animated.View entering={FadeInDown.delay(80).duration(400)}>
-          <SectionLabel theme={theme}>
-            {en ? "Sound & notifications" : "Звук и уведомления"}
-          </SectionLabel>
-          <Card theme={theme} themeMode={themeMode}>
-            <ListRow
-              theme={theme}
-              icon={icon("volume-high-outline")}
-              label={t("soundEffects")}
-              divider
-              right={sw(sound, setSound)}
-            />
-            <ListRow
-              theme={theme}
-              icon={icon("phone-portrait-outline")}
-              label={t("vibration")}
-              divider
-              right={sw(vibration, setVibration)}
-            />
-            <ListRow
-              theme={theme}
-              icon={icon("notifications-outline")}
-              label={t("pushNotifications")}
-              divider
-              right={sw(notifications, setNotifications)}
-            />
-            <ListRow
-              theme={theme}
-              icon={icon("alarm-outline")}
-              label={en ? "Daily reminder · 09:00" : "Напоминание · 09:00"}
-              right={sw(reminder, setReminder)}
-            />
-          </Card>
-        </Animated.View>
-
-        {/* Appearance: theme + language in one card */}
-        <Animated.View entering={FadeInDown.delay(120).duration(400)}>
-          <SectionLabel theme={theme}>{en ? "Appearance" : "Оформление"}</SectionLabel>
-          <Card theme={theme} themeMode={themeMode}>
-            <ListRow
-              theme={theme}
-              icon={icon("contrast-outline")}
-              label={en ? "Theme" : "Тема"}
-              divider
-              right={
-                <ThemeSegment
-                  theme={theme}
-                  themeMode={themeMode}
-                  labels={{ light: t("light"), dark: t("dark") }}
-                  onSelect={setTheme}
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={[styles.accountName, { color: theme.text }]} numberOfLines={1}>
+                    {userName}
+                  </Text>
+                  <Text style={[styles.accountSub, { color: theme.textMuted }]} numberOfLines={1}>
+                    {en ? `Signed in with ${authLabel}` : `Вход через ${authLabel}`}
+                  </Text>
+                </View>
+                <Chevron theme={theme} />
+                <View
+                  pointerEvents="none"
+                  style={[styles.inset, { left: 16, backgroundColor: theme.divider }]}
                 />
-              }
-            />
-            <ListRow
-              theme={theme}
-              icon={icon("globe-outline")}
-              label={t("language")}
-              value={appLang === "ru" ? "Русский" : "English"}
-              divider={showLangs}
-              onPress={() => setShowLangs(!showLangs)}
-              right={
-                <Ionicons
-                  name={showLangs ? "chevron-down" : "chevron-forward"}
-                  size={16}
-                  color={theme.textMuted}
-                />
-              }
-            />
-            {showLangs &&
-              (["ru", "en"] as const).map((code, i) => (
-                <ListRow
-                  key={code}
-                  theme={theme}
-                  icon={null}
-                  label={code === "ru" ? "Русский" : "English"}
-                  divider={i === 0}
-                  onPress={() => {
-                    setAppLang(code);
-                    setShowLangs(false);
-                  }}
-                  right={
-                    appLang === code ? (
-                      <Ionicons name="checkmark" size={18} color={theme.text} />
-                    ) : (
-                      <View />
-                    )
-                  }
-                />
-              ))}
-          </Card>
-        </Animated.View>
-
-        {/* Support */}
-        <Animated.View entering={FadeInDown.delay(160).duration(400)}>
-          <SectionLabel theme={theme}>{en ? "Support" : "Поддержка"}</SectionLabel>
-          <Card theme={theme} themeMode={themeMode}>
-            <ListRow
-              theme={theme}
-              icon={icon("chatbubble-ellipses-outline")}
-              label={en ? "Feedback" : "Обратная связь"}
-              divider
-              onPress={() => {
-                // TODO(design): feedback destination not defined yet.
-              }}
-            />
-            <ListRow
-              theme={theme}
-              icon={icon("logo-instagram")}
-              label="Instagram"
-              divider
-              onPress={() => {
-                // TODO(design): Instagram profile URL not defined yet.
-              }}
-            />
-            <ListRow
-              theme={theme}
-              icon={icon("star-outline")}
-              label={en ? "Rate the app" : "Оценить приложение"}
-              divider
-              onPress={() => {
-                // TODO(design): store review prompt not wired yet.
-              }}
-            />
-            <ListRow
-              theme={theme}
-              icon={icon("lock-closed-outline")}
-              label={en ? "Privacy policy" : "Политика конфиденциальности"}
-              onPress={() => {
-                // TODO(design): privacy policy URL/screen not defined yet.
-              }}
-            />
-          </Card>
-        </Animated.View>
-
-        {/* Developer */}
-        <Animated.View entering={FadeInDown.delay(200).duration(400)}>
-          <SectionLabel theme={theme}>{t("devTools")}</SectionLabel>
-          <Card theme={theme} themeMode={themeMode}>
-            <ListRow
-              theme={theme}
-              icon={icon("construct-outline")}
-              label={t("openTesting")}
-              divider={__DEV__}
-              right={sw(isOpenTestingEnabled, setOpenTestingEnabled)}
-            />
-            {/* Dev-only Skip mode. Gated behind __DEV__ so it never ships to players. */}
-            {__DEV__ && (
+              </Pressable>
               <ListRow
                 theme={theme}
-                icon={icon("play-skip-forward-outline")}
-                label="Skip уровней (dev)"
-                right={sw(isDevSkipEnabled, setDevSkipEnabled)}
+                icon={<ThemedSvg xml={CROWN_OUTLINE_XML} width={22} height={22} fg={theme.text} />}
+                label={en ? "Free plan" : "Бесплатный план"}
+                onPress={() => router.push("/subscription" as any)}
+                right={
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      tapHaptic();
+                      router.push("/subscription" as any);
+                    }}
+                    style={({ pressed }) => [
+                      styles.upgradePill,
+                      { backgroundColor: theme.cta, opacity: pressed ? 0.85 : 1 },
+                    ]}
+                  >
+                    <Text style={[styles.upgradeLabel, { color: theme.ctaText }]}>
+                      {en ? "Upgrade" : "Улучшить"}
+                    </Text>
+                  </Pressable>
+                }
               />
-            )}
-          </Card>
-        </Animated.View>
+            </Card>
+          </Animated.View>
 
-        {/* Credits — quiet footer, outside the cards */}
-        <View style={styles.credits}>
-          <Text style={[styles.creditsLabel, { color: theme.textMuted }]}>
-            {en ? "APP CREATED BY" : "ПРИЛОЖЕНИЕ СОЗДАНО"}
-          </Text>
-          <View style={{ opacity: 0.7 }}>
-            <ThemedSvg xml={bekWaveLogoXml} width={150} height={20} fg={theme.text} />
+          {/* Sound & notifications — one grouped card */}
+          <Animated.View entering={FadeInDown.delay(80).duration(400)}>
+            <SectionLabel theme={theme}>
+              {en ? "Sound & notifications" : "Звук и уведомления"}
+            </SectionLabel>
+            <Card theme={theme} themeMode={themeMode}>
+              <ListRow
+                theme={theme}
+                icon={icon("volume-high-outline")}
+                label={t("soundEffects")}
+                divider
+                right={sw(sound, setSound)}
+              />
+              <ListRow
+                theme={theme}
+                icon={icon("phone-portrait-outline")}
+                label={t("vibration")}
+                divider
+                right={sw(vibration, setVibration)}
+              />
+              <ListRow
+                theme={theme}
+                icon={icon("notifications-outline")}
+                label={t("pushNotifications")}
+                divider
+                right={sw(notifications, setNotifications)}
+              />
+              <ListRow
+                theme={theme}
+                icon={icon("alarm-outline")}
+                label={en ? "Daily reminder · 09:00" : "Напоминание · 09:00"}
+                right={sw(reminder, setReminder)}
+              />
+            </Card>
+          </Animated.View>
+
+          {/* Appearance: theme + language in one card */}
+          <Animated.View entering={FadeInDown.delay(120).duration(400)}>
+            <SectionLabel theme={theme}>{en ? "Appearance" : "Оформление"}</SectionLabel>
+            <Card theme={theme} themeMode={themeMode}>
+              <ListRow
+                theme={theme}
+                icon={icon("contrast-outline")}
+                label={en ? "Theme" : "Тема"}
+                divider
+                right={
+                  <ThemeSegment
+                    theme={theme}
+                    themeMode={themeMode}
+                    labels={{ light: t("light"), dark: t("dark") }}
+                    onSelect={setTheme}
+                  />
+                }
+              />
+              <ListRow
+                theme={theme}
+                icon={icon("globe-outline")}
+                label={t("language")}
+                value={appLang === "ru" ? "Русский" : "English"}
+                divider={showLangs}
+                onPress={() => setShowLangs(!showLangs)}
+                right={
+                  <Ionicons
+                    name={showLangs ? "chevron-down" : "chevron-forward"}
+                    size={16}
+                    color={theme.textMuted}
+                  />
+                }
+              />
+              {showLangs &&
+                (["ru", "en"] as const).map((code, i) => (
+                  <ListRow
+                    key={code}
+                    theme={theme}
+                    icon={null}
+                    label={code === "ru" ? "Русский" : "English"}
+                    divider={i === 0}
+                    onPress={() => {
+                      setAppLang(code);
+                      setShowLangs(false);
+                    }}
+                    right={
+                      appLang === code ? (
+                        <Ionicons name="checkmark" size={18} color={theme.text} />
+                      ) : (
+                        <View />
+                      )
+                    }
+                  />
+                ))}
+            </Card>
+          </Animated.View>
+
+          {/* Support */}
+          <Animated.View entering={FadeInDown.delay(160).duration(400)}>
+            <SectionLabel theme={theme}>{en ? "Support" : "Поддержка"}</SectionLabel>
+            <Card theme={theme} themeMode={themeMode}>
+              <ListRow
+                theme={theme}
+                icon={icon("chatbubble-ellipses-outline")}
+                label={en ? "Feedback" : "Обратная связь"}
+                divider
+                onPress={() => {
+                  // TODO(design): feedback destination not defined yet.
+                }}
+              />
+              <ListRow
+                theme={theme}
+                icon={icon("logo-instagram")}
+                label="Instagram"
+                divider
+                onPress={() => {
+                  // TODO(design): Instagram profile URL not defined yet.
+                }}
+              />
+              <ListRow
+                theme={theme}
+                icon={icon("star-outline")}
+                label={en ? "Rate the app" : "Оценить приложение"}
+                divider
+                onPress={() => {
+                  // TODO(design): store review prompt not wired yet.
+                }}
+              />
+              <ListRow
+                theme={theme}
+                icon={icon("lock-closed-outline")}
+                label={en ? "Privacy policy" : "Политика конфиденциальности"}
+                onPress={() => {
+                  // TODO(design): privacy policy URL/screen not defined yet.
+                }}
+              />
+            </Card>
+          </Animated.View>
+
+          {/* Developer */}
+          <Animated.View entering={FadeInDown.delay(200).duration(400)}>
+            <SectionLabel theme={theme}>{t("devTools")}</SectionLabel>
+            <Card theme={theme} themeMode={themeMode}>
+              <ListRow
+                theme={theme}
+                icon={icon("construct-outline")}
+                label={t("openTesting")}
+                divider={__DEV__}
+                right={sw(isOpenTestingEnabled, setOpenTestingEnabled)}
+              />
+              {/* Dev-only Skip mode. Gated behind __DEV__ so it never ships to players. */}
+              {__DEV__ && (
+                <ListRow
+                  theme={theme}
+                  icon={icon("play-skip-forward-outline")}
+                  label="Skip уровней (dev)"
+                  right={sw(isDevSkipEnabled, setDevSkipEnabled)}
+                />
+              )}
+            </Card>
+          </Animated.View>
+
+          {/* Credits — quiet footer, outside the cards */}
+          <View style={styles.credits}>
+            <Text style={[styles.creditsLabel, { color: theme.textMuted }]}>
+              {en ? "APP CREATED BY" : "ПРИЛОЖЕНИЕ СОЗДАНО"}
+            </Text>
+            <View style={{ opacity: 0.7 }}>
+              <ThemedSvg xml={bekWaveLogoXml} width={150} height={20} fg={theme.text} />
+            </View>
+            <Text style={[styles.version, { color: theme.textMuted }]}>
+              {en ? "Version 1.0.0" : "Версия 1.0.0"}
+            </Text>
           </View>
-          <Text style={[styles.version, { color: theme.textMuted }]}>
-            {en ? "Version 1.0.0" : "Версия 1.0.0"}
-          </Text>
         </View>
       </ScrollView>
     </View>
@@ -342,12 +377,31 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  scrollOuter: { flexGrow: 1 },
   scroll: { paddingHorizontal: 20, gap: 24 },
+  headerPanel: {
+    paddingHorizontal: 20,
+    paddingBottom: 25,
+    borderWidth: 1.5,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    marginHorizontal: -1.5,
+  },
+  sheet: {
+    flexGrow: 1,
+    marginTop: 12,
+    marginHorizontal: -1.5,
+    paddingTop: 24,
+    borderWidth: 1.5,
+    borderBottomWidth: 0,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+  },
   pageTitle: {
     fontSize: 20,
     fontFamily: "Geologica_700Bold",
     letterSpacing: -0.1,
-    marginTop: 16,
   },
   accountRow: {
     flexDirection: "row",
@@ -366,8 +420,14 @@ const styles = StyleSheet.create({
   avatarInitial: { fontSize: 19, fontFamily: "Geologica_700Bold" },
   accountName: { fontSize: 16, fontFamily: "Geologica_600SemiBold" },
   accountSub: { fontSize: 13, fontFamily: "Geologica_400Regular", marginTop: 2 },
-  upgradeRight: { flexDirection: "row", alignItems: "center", gap: 6 },
-  upgradeLabel: { fontSize: 14, fontFamily: "Geologica_600SemiBold" },
+  upgradePill: {
+    height: 34,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  upgradeLabel: { fontSize: 13, fontFamily: "Geologica_700Bold" },
   segTrack: { flexDirection: "row", borderRadius: 10, padding: 2 },
   seg: {
     flexDirection: "row",

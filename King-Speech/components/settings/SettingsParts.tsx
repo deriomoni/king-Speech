@@ -34,8 +34,8 @@ export function tapHaptic() {
 }
 
 /**
- * Figma "Switch (on|off)": 51×31 pill. On = gold fill + 4px ctaStroke ring,
- * off = switchTrackOff fill + 2px stroke/shape ring. Thumb 27pt, #F0EEE9.
+ * Figma "Switch (on|off)": 51×31 pill. On = monochrome accent/ink fill with an
+ * ink/on-accent thumb; off = switchTrackOff fill + 2px stroke/shape ring, #F0EEE9 thumb.
  */
 export function GoldSwitch({
   value,
@@ -63,18 +63,17 @@ export function GoldSwitch({
         tapHaptic();
         onValueChange(!value);
       }}
-      style={[styles.switch, { backgroundColor: value ? theme.accent : theme.switchTrackOff }]}
+      style={[styles.switch, { backgroundColor: value ? theme.switchOn : theme.switchTrackOff }]}
     >
-      <View
-        pointerEvents="none"
-        style={[
-          styles.switchRing,
-          value
-            ? { borderWidth: 4, borderColor: theme.ctaStroke }
-            : { borderWidth: 2, borderColor: shapeStroke(themeMode) },
-        ]}
+      {!value && (
+        <View
+          pointerEvents="none"
+          style={[styles.switchRing, { borderWidth: 2, borderColor: shapeStroke(themeMode) }]}
+        />
+      )}
+      <Animated.View
+        style={[styles.thumb, { backgroundColor: value ? theme.switchThumbOn : "#F0EEE9" }, thumbStyle]}
       />
-      <Animated.View style={[styles.thumb, thumbStyle]} />
     </Pressable>
   );
 }

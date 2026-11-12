@@ -52,6 +52,17 @@ export const DARK = {
   divider: "rgba(240,238,233,0.08)",
   rowPressed: "rgba(240,238,233,0.06)",
   switchTrackOff: "rgba(240,238,233,0.18)",
+  // Figma "Screens" panel/backing tokens (variable collection 11:107).
+  switchOn: "#F0EEE9", // accent/ink
+  switchThumbOn: "#18181A", // ink/on-accent
+  bezel: "#000000", // bg/bezel
+  panelStroke: "rgba(255,255,255,0.13)", // stroke/panel
+  backingTop: "#000000",
+  backingMid: "#000000",
+  backingBottom: "#000000",
+  tileTop: "#2A2A2D",
+  tileBottom: "#0E0E10",
+  tileStroke: "rgba(255,255,255,0.08)",
 };
 
 export const LIGHT = {
@@ -88,6 +99,16 @@ export const LIGHT = {
   divider: "rgba(38,38,40,0.06)",
   rowPressed: "rgba(38,38,40,0.04)",
   switchTrackOff: "rgba(38,38,40,0.18)",
+  switchOn: "#262628",
+  switchThumbOn: "#FFFFFF",
+  bezel: "#DEDDD9",
+  panelStroke: "rgba(38,38,40,0.20)",
+  backingTop: "#CFCECA",
+  backingMid: "#F3F2EF",
+  backingBottom: "#FFFFFF",
+  tileTop: "#FFFFFF",
+  tileBottom: "#F3F2EF",
+  tileStroke: "rgba(38,38,40,0.07)",
 };
 
 export type Theme = typeof DARK | typeof LIGHT;
