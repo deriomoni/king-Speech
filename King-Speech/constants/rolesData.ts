@@ -37,6 +37,8 @@ export interface Role {
   scene: LocalizedText;
   /** Teleprompter text for scripted mode. */
   scriptedText: LocalizedText;
+  /** Optional «Твои задания» checklist (3 short tasks). Falls back to category defaults. */
+  tasks?: LocalizedText[];
 }
 
 export interface CategoryMeta {
@@ -496,6 +498,11 @@ export const ROLES: Role[] = [
     rarity: "rare",
     dropWeight: RARITY_WEIGHT.rare,
     title: { ru: "Стендап-комик", en: "Stand-up comedian" },
+    tasks: [
+      { ru: "Придумай три смешные шутки", en: "Come up with three funny jokes" },
+      { ru: "Пару раз улыбнись в камеру", en: "Smile at the camera a couple of times" },
+      { ru: "Расскажи короткий анекдот", en: "Tell a short joke" },
+    ],
     desc: { ru: "Выйди на сцену и рассмеши зал", en: "Take the stage and make the room laugh" },
     scene: {
       ru: "Ты на сцене комедийного клуба. Расскажи забавную наблюдательную историю из обычной жизни.",
@@ -550,6 +557,35 @@ export const ROLES: Role[] = [
 
 export function tx(text: LocalizedText, lang: Lang): string {
   return text[lang] ?? text.ru;
+}
+
+// Default «Твои задания» per category, used when a role has no own `tasks`.
+const CATEGORY_TASKS: Record<RoleCategory, LocalizedText[]> = {
+  sales: [
+    { ru: "Назови три главных плюса товара", en: "Name the product's three main benefits" },
+    { ru: "Ответь на одно возражение клиента", en: "Handle one customer objection" },
+    { ru: "Закончи чётким призывом купить", en: "Finish with a clear call to buy" },
+  ],
+  blogger: [
+    { ru: "Зацепи зрителя первой фразой", en: "Hook the viewer with your first line" },
+    { ru: "Поделись одним личным примером", en: "Share one personal example" },
+    { ru: "Попроси подписаться в конце", en: "Ask viewers to subscribe at the end" },
+  ],
+  communication: [
+    { ru: "Поприветствуй гостя тепло и с улыбкой", en: "Greet the guest warmly, with a smile" },
+    { ru: "Задай один уточняющий вопрос", en: "Ask one clarifying question" },
+    { ru: "Предложи понятное решение", en: "Offer a clear solution" },
+  ],
+  public: [
+    { ru: "Начни с яркого приветствия", en: "Open with a bright greeting" },
+    { ru: "Держи взгляд в камеру", en: "Keep your eyes on the camera" },
+    { ru: "Закончи сильной финальной фразой", en: "End with a strong closing line" },
+  ],
+};
+
+/** The 3 tasks shown on the «Твоя роль» screen. */
+export function getRoleTasks(role: Role): LocalizedText[] {
+  return role.tasks?.length ? role.tasks : CATEGORY_TASKS[role.category];
 }
 
 export function getRoleById(id: string): Role | undefined {

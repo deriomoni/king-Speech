@@ -88,6 +88,10 @@ function RootLayoutNav() {
         options={{ headerShown: false, presentation: "card" }}
       />
       <Stack.Screen
+        name="role-brief"
+        options={{ headerShown: false, presentation: "card" }}
+      />
+      <Stack.Screen
         name="role-stage"
         options={{ headerShown: false, presentation: "fullScreenModal" }}
       />
