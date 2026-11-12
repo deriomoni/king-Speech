@@ -15,7 +15,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import Animated, { FadeIn } from "react-native-reanimated";
+import Animated, { FadeIn, ZoomIn } from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from "expo-camera";
 import { useLang } from "@/context/LangContext";
@@ -26,6 +26,16 @@ import { RolesMaskIcon } from "@/components/showtime/ShowTimeIcons";
 import { setRolePerformance } from "@/lib/rolePerformance";
 import { getVisionFace, useFaceTracking, FACE_HINT_TEXT } from "@/lib/faceTracking";
 import { VisionFaceCamera } from "@/components/roles/VisionFaceCamera";
+import { getRoleScenario, lt } from "@/constants/roleScenarios";
+import { useRoleScenario, type ScenarioMsg } from "@/hooks/useRoleScenario";
+import {
+  SceneFeed,
+  LiveTopBadge,
+  LiveOverlay,
+  StageOverlay,
+  ScriptPrompter,
+  GoalTracker,
+} from "@/components/roles/scenes/RoleScene";
 
 /** Minimal recording surface shared by expo-camera's CameraView and VisionFaceCamera. */
 type RecordableCamera = {
@@ -46,12 +56,16 @@ const REC_RED = "#FF3B30";
 const ARC_YELLOW = "#FFD857";
 /** The yellow arc around the record button fills over this many seconds (visual only, no auto-stop). */
 const ARC_SECONDS = 60;
+/** Scenario takes are longer (a full dialogue, ~60–120 s). */
+const ARC_SECONDS_SCENARIO = 120;
+/** After the scenario's last line, the take stops itself after this many seconds. */
+const AUTO_STOP_SECONDS = 6;
 
 function haptic(style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle.Light) {
   if (Platform.OS !== "web") Haptics.impactAsync(style).catch(() => {});
 }
 
-type Phase = "permission" | "scan" | "ready" | "recording" | "processing";
+type Phase = "permission" | "scan" | "ready" | "countdown" | "recording" | "processing";
 
 /** Takes a player gets per scene: the first one plus a single restart. */
 const MAX_TAKES = 2;
@@ -72,6 +86,34 @@ export default function RoleStageScreen() {
   const [camReady, setCamReady] = useState(false);
   const [take, setTake] = useState(1);
   const [restarting, setRestarting] = useState(false);
+
+  // --- Scenario (two-sided dialogue, see constants/roleScenarios.ts) ---
+  const scenario = getRoleScenario(role?.id);
+  const scripted = mode === "scripted";
+  const [countdown, setCountdown] = useState(0);
+  const [flashKey, setFlashKey] = useState(0);
+  const [finishIn, setFinishIn] = useState<number | null>(null);
+  const sc = useRoleScenario({
+    scenario,
+    lang,
+    scripted,
+    running: phase === "recording" && !restarting,
+    onBeat: (m: ScenarioMsg) => {
+      haptic(Haptics.ImpactFeedbackStyle.Light);
+      if (m.flash) setFlashKey((k) => k + 1);
+    },
+  });
+  // Mic levels → scenario turn-taking. Native: expo-audio metering; web: an AnalyserNode.
+  const feedLevelRef = useRef(sc.feedLevel);
+  feedLevelRef.current = sc.feedLevel;
+  const webMeterRef = useRef<{ ctx: any; timer: ReturnType<typeof setInterval> } | null>(null);
+  const stopWebMeter = useCallback(() => {
+    const m = webMeterRef.current;
+    webMeterRef.current = null;
+    if (!m) return;
+    clearInterval(m.timer);
+    try { m.ctx?.close?.(); } catch {}
+  }, []);
 
   const cameraRef = useRef<RecordableCamera | null>(null);
   const videoUriRef = useRef<string | undefined>(undefined);
@@ -140,6 +182,10 @@ export default function RoleStageScreen() {
   useEffect(() => {
     return () => {
       if (tickRef.current) clearInterval(tickRef.current);
+      try {
+        const m = webMeterRef.current;
+        if (m) { clearInterval(m.timer); m.ctx?.close?.(); }
+      } catch {}
       // cleanup any hot mic / camera on unmount (e.g. navigating away mid-take)
       try { nativeRecRef.current?.stopAndUnloadAsync?.(); } catch {}
       try { webStreamRef.current?.getTracks().forEach((t) => t.stop()); } catch {}
@@ -156,6 +202,23 @@ export default function RoleStageScreen() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         webStreamRef.current = stream;
+        try {
+          const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext;
+          if (Ctx) {
+            const ctx = new Ctx();
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 1024;
+            ctx.createMediaStreamSource(stream).connect(analyser);
+            const buf = new Float32Array(analyser.fftSize);
+            const timer = setInterval(() => {
+              analyser.getFloatTimeDomainData(buf);
+              let sum = 0;
+              for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+              feedLevelRef.current(20 * Math.log10(Math.sqrt(sum / buf.length) + 1e-8));
+            }, 150);
+            webMeterRef.current = { ctx, timer };
+          }
+        } catch {}
         const mimes = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4"];
         let chosen: string | undefined;
         for (const m of mimes) {
@@ -173,7 +236,13 @@ export default function RoleStageScreen() {
       try {
         await Audio.requestPermissionsAsync();
         await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-        const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+        const { recording } = await Audio.Recording.createAsync(
+          { ...Audio.RecordingOptionsPresets.HIGH_QUALITY, isMeteringEnabled: true },
+          (st: any) => {
+            if (typeof st?.metering === "number") feedLevelRef.current(st.metering);
+          },
+          150,
+        );
         nativeRecRef.current = recording;
       } catch (e) {
         console.warn("role-stage: native mic unavailable", e);
@@ -183,6 +252,7 @@ export default function RoleStageScreen() {
 
   const stopAudio = useCallback(async (): Promise<string | undefined> => {
     if (Platform.OS === "web") {
+      stopWebMeter();
       const mr = webRecorderRef.current;
       try {
         if (mr && mr.state !== "inactive") {
@@ -228,7 +298,7 @@ export default function RoleStageScreen() {
         return undefined;
       }
     }
-  }, []);
+  }, [stopWebMeter]);
 
   const startRecording = useCallback(async () => {
     haptic(Haptics.ImpactFeedbackStyle.Heavy);
@@ -294,10 +364,32 @@ export default function RoleStageScreen() {
       audioUri: audioUriRef.current,
       videoUri: videoUriRef.current,
       faceStats: faceStats ?? undefined,
+      scenario: sc.snapshot(),
     });
 
     router.replace("/role-result");
-  }, [stopAudio, role, params.roleId, mode, tracking.endTake]);
+  }, [stopAudio, role, params.roleId, mode, tracking.endTake, sc.snapshot]);
+
+  // The scenario's last line has landed → stop the take by itself shortly after.
+  const finishRef = useRef(finishRecording);
+  finishRef.current = finishRecording;
+  useEffect(() => {
+    if (phase !== "recording" || !sc.finished || restarting) {
+      setFinishIn(null);
+      return;
+    }
+    let n = AUTO_STOP_SECONDS;
+    setFinishIn(n);
+    const id = setInterval(() => {
+      n -= 1;
+      if (n <= 0) {
+        clearInterval(id);
+        setFinishIn(null);
+        finishRef.current();
+      } else setFinishIn(n);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [phase, sc.finished, restarting]);
 
   // Throw the current take away without scoring it (the "start over" button).
   const discardTake = useCallback(async () => {
@@ -317,6 +409,7 @@ export default function RoleStageScreen() {
     tracking.endTake(); // the discarded take's face stats are dropped too
 
     if (Platform.OS === "web") {
+      stopWebMeter();
       const mr = webRecorderRef.current;
       try { if (mr && mr.state !== "inactive") mr.stop(); } catch {}
       try { webStreamRef.current?.getTracks().forEach((t) => t.stop()); } catch {}
@@ -329,7 +422,7 @@ export default function RoleStageScreen() {
       try { await Audio.setAudioModeAsync({ allowsRecordingIOS: false }); } catch {}
     }
     audioUriRef.current = undefined;
-  }, [tracking.endTake]);
+  }, [tracking.endTake, stopWebMeter]);
 
   const restartRecording = useCallback(async () => {
     if (restarting || take >= MAX_TAKES) return;
@@ -342,9 +435,22 @@ export default function RoleStageScreen() {
     // recordAsync() right after stopRecording() fails on some devices.
     await new Promise((r) => setTimeout(r, 250));
     setTake((t) => t + 1);
+    sc.reset();
     setRestarting(false);
-    await startRecording();
-  }, [restarting, take, discardTake, startRecording]);
+    // Short «3-2-1» so the player can take a breath before take 2 (cancelable).
+    setCountdown(3);
+    setPhase("countdown");
+  }, [restarting, take, discardTake, sc.reset]);
+
+  useEffect(() => {
+    if (phase !== "countdown") return;
+    haptic(Haptics.ImpactFeedbackStyle.Light);
+    const t = setTimeout(() => {
+      if (countdown <= 1) startRecording();
+      else setCountdown(countdown - 1);
+    }, 800);
+    return () => clearTimeout(t);
+  }, [phase, countdown, startRecording]);
 
   // --- Missing role guard ---
   if (!role) {
@@ -358,7 +464,10 @@ export default function RoleStageScreen() {
 
   const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
   const ss = String(elapsed % 60).padStart(2, "0");
-  const busy = phase === "processing" || restarting;
+  const busy = phase === "processing" || phase === "countdown" || restarting;
+  const showScene = !!scenario && phase !== "scan" && phase !== "processing";
+  const feedMax = Math.round(SH * (scripted ? 0.2 : 0.3));
+  const overlayBottom = (Platform.OS === "web" ? 20 : insets.bottom) + 150;
   const faceColor = FACE_TRACK_COLORS[faceState];
   const facePill =
     faceState === "ok"
@@ -415,12 +524,26 @@ export default function RoleStageScreen() {
       <LinearGradient pointerEvents="none" colors={["#000000A6", "#00000000"]} style={styles.shadeTop} />
       <LinearGradient pointerEvents="none" colors={["#00000000", "#000000B3"]} style={styles.shadeBottom} />
 
+      {/* Scene overlays: live hearts / stage flashes + side meter */}
+      {scenario?.kind === "live" && phase === "recording" && <LiveOverlay hearts={sc.hearts} bottom={overlayBottom} />}
+      {scenario?.kind === "stage" && phase === "recording" && (
+        <StageOverlay
+          variant={scenario.variant}
+          flashKey={flashKey}
+          mood={sc.mood}
+          label={lt(scenario.meterLabel, lang)}
+          bottom={overlayBottom}
+        />
+      )}
+
       {/* Top bar: close · REC timer */}
       <View style={[styles.topBar, { paddingTop: (Platform.OS === "web" ? 16 : insets.top) + 6 }]}>
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.closeBtn}>
           <Ionicons name="close" size={24} color="#fff" />
         </Pressable>
-        {phase === "recording" ? (
+        {phase === "recording" && scenario?.kind === "live" ? (
+          <LiveTopBadge viewers={sc.viewers} time={`${mm}:${ss}`} />
+        ) : phase === "recording" ? (
           <View style={styles.recPill}>
             <View style={styles.recDot} />
             <Text style={styles.recTime}>{mm}:{ss}</Text>
@@ -454,17 +577,56 @@ export default function RoleStageScreen() {
           </View>
         )}
 
-        {mode === "scripted" && (
+        {showScene && scenario && (
+          <SceneFeed
+            scenario={scenario}
+            lang={lang}
+            scripted={scripted}
+            messages={sc.messages}
+            typing={phase === "recording" && sc.typing}
+            mood={sc.mood}
+            viewers={sc.viewers}
+            hearts={sc.hearts}
+            speaking={sc.speaking}
+            finished={sc.finished}
+            awaitingOpening={phase === "recording" && sc.awaitingOpening}
+            maxHeight={feedMax}
+          />
+        )}
+
+        {scripted && scenario && showScene ? (
+          <ScriptPrompter
+            scenario={scenario}
+            lang={lang}
+            prompt={sc.prompt}
+            awaitingOpening={phase === "recording" ? sc.awaitingOpening : !!scenario.opening}
+            typing={phase === "recording" && sc.typing}
+            finished={sc.finished}
+            maxHeight={Math.round(SH * 0.2)}
+          />
+        ) : scripted && !scenario ? (
           <View style={styles.prompterCard}>
             <ScrollView style={{ maxHeight: 150 }} showsVerticalScrollIndicator={false}>
               <Text style={styles.prompterText}>{tx(role.scriptedText, lang)}</Text>
             </ScrollView>
           </View>
+        ) : null}
+
+        {finishIn != null && (
+          <Animated.View entering={FadeIn} style={styles.finishPill}>
+            <Ionicons name="flag" size={13} color="#2B2100" />
+            <Text style={styles.finishText}>
+              {lang === "en" ? `Scene complete · stopping in ${finishIn}` : `Сцена сыграна · стоп через ${finishIn}`}
+            </Text>
+          </Animated.View>
         )}
 
-        <View style={styles.roleChip}>
-          <RolesMaskIcon color="#FFFFFF" width={13} height={18} />
-          <Text style={styles.roleChipText} numberOfLines={1}>{tx(role.title, lang).toUpperCase()}</Text>
+        <View style={styles.chipRow}>
+          <View style={styles.roleChip}>
+            <RolesMaskIcon color="#FFFFFF" width={13} height={18} />
+            <Text style={styles.roleChipText} numberOfLines={1}>{tx(role.title, lang).toUpperCase()}</Text>
+          </View>
+          {scenario && phase === "recording" && <GoalTracker scenario={scenario} goals={sc.goals} lang={lang} />}
         </View>
 
         {phase === "processing" ? (
@@ -490,7 +652,7 @@ export default function RoleStageScreen() {
               hitSlop={8}
               style={({ pressed }) => [styles.recordBtn, { opacity: phase === "scan" ? 0.5 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] }]}
             >
-              <RecordRing progress={phase === "recording" ? Math.min(1, elapsed / ARC_SECONDS) : 0} />
+              <RecordRing progress={phase === "recording" ? Math.min(1, elapsed / (scenario ? ARC_SECONDS_SCENARIO : ARC_SECONDS)) : 0} />
               {phase === "recording" ? <View style={styles.recSquare} /> : <View style={styles.recCircle} />}
             </Pressable>
 
@@ -503,13 +665,32 @@ export default function RoleStageScreen() {
                   <View style={styles.sideBtn}>
                     <Ionicons name="refresh" size={22} color="#fff" />
                   </View>
-                  <Text style={styles.sideLabel}>{lang === "en" ? "Start over" : "Заново"}</Text>
+                  <Text style={styles.sideLabel}>{lang === "en" ? "Retake" : "Заново"}</Text>
+                  <Text style={styles.sideSub}>{lang === "en" ? `take ${take + 1}` : `дубль ${take + 1}`}</Text>
                 </Pressable>
               )}
             </View>
           </View>
         )}
       </View>
+
+      {/* «3-2-1» before the retake */}
+      {phase === "countdown" && (
+        <Animated.View entering={FadeIn.duration(160)} style={styles.countdownWrap}>
+          <Text style={styles.countdownKicker}>
+            {lang === "en" ? `Take ${take}/${MAX_TAKES}` : `Дубль ${take}/${MAX_TAKES}`}
+          </Text>
+          <Animated.Text key={countdown} entering={ZoomIn.duration(260)} style={styles.countdownNum}>{countdown}</Animated.Text>
+          <Text style={styles.countdownSub}>
+            {scenario
+              ? (lang === "en" ? "The scene starts from the top" : "Сцена начнётся с начала")
+              : (lang === "en" ? "Get ready" : "Приготовься")}
+          </Text>
+          <Pressable onPress={() => { haptic(); setPhase("ready"); }} hitSlop={10} style={styles.countdownCancel}>
+            <Text style={styles.countdownCancelText}>{lang === "en" ? "Not yet" : "Подожду"}</Text>
+          </Pressable>
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -570,7 +751,7 @@ const styles = StyleSheet.create({
   prompterText: { color: TEXT, fontFamily: "Literata_400Regular", fontSize: 20, lineHeight: 29 },
 
   roleChip: {
-    alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 8, maxWidth: "80%",
+    alignSelf: "flex-start", flexShrink: 1, flexDirection: "row", alignItems: "center", gap: 8, maxWidth: "80%",
     backgroundColor: "#000000B3", paddingHorizontal: 11, paddingVertical: 7, borderRadius: 12,
   },
   roleChipText: { color: "#fff", fontFamily: MONO, fontWeight: "700", fontSize: 12, letterSpacing: 0.5, flexShrink: 1 },
@@ -579,6 +760,22 @@ const styles = StyleSheet.create({
   sideSlot: { width: 72, alignItems: "center" },
   sideBtn: { width: 50, height: 50, borderRadius: 25, backgroundColor: "rgba(255,255,255,0.22)", alignItems: "center", justifyContent: "center" },
   sideLabel: { color: "#fff", fontFamily: "Geologica_500Medium", fontSize: 11, marginTop: 6 },
+  sideSub: { color: MUTED, fontFamily: "Geologica_500Medium", fontSize: 10 },
+  chipRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: 8 },
+  finishPill: {
+    alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: ARC_YELLOW,
+    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 14,
+  },
+  finishText: { color: "#2B2100", fontFamily: "Geologica_700Bold", fontSize: 12 },
+  countdownWrap: {
+    position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.55)", gap: 6,
+  },
+  countdownKicker: { color: ARC_YELLOW, fontFamily: "Geologica_700Bold", fontSize: 13, letterSpacing: 1.2, textTransform: "uppercase" },
+  countdownNum: { color: "#fff", fontFamily: "Geologica_800ExtraBold", fontSize: 120, lineHeight: 132 },
+  countdownSub: { color: MUTED, fontFamily: "Geologica_500Medium", fontSize: 14 },
+  countdownCancel: { marginTop: 22, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.16)" },
+  countdownCancelText: { color: "#fff", fontFamily: "Geologica_600SemiBold", fontSize: 14 },
   takeHint: { color: MUTED, fontFamily: "Geologica_700Bold", fontSize: 11, letterSpacing: 0.6, textTransform: "uppercase" },
   recordBtn: { width: REC, height: REC, alignItems: "center", justifyContent: "center" },
   recCircle: { width: REC - 18, height: REC - 18, borderRadius: (REC - 18) / 2, backgroundColor: REC_RED },

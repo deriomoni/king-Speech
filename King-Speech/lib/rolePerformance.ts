@@ -15,6 +15,8 @@ export interface RolePerformance {
   videoUri?: string;
   /** On-device face-tracking stats for this take (own EAS builds only; see lib/faceTracking.ts). NEVER uploaded. */
   faceStats?: import("./faceTrackingCore").FaceTakeStats;
+  /** How the two-sided scenario went (lines shown, live goal ticks, outcome). Sent to the judge. */
+  scenario?: import("../hooks/useRoleScenario").ScenarioRunSummary;
 }
 
 let _pending: RolePerformance | null = null;
