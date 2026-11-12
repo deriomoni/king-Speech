@@ -566,9 +566,7 @@ export default function ProfileScreen() {
               }}
               spot={{ x: 170, y: -70, size: 240 }}
               art={art(themedSvg(COINS, mode), 218, 10, 120, 73)}
-              onPress={() => {
-                // TODO(design): coin store doesn't exist yet.
-              }}
+              onPress={() => router.push("/coins")}
             />
           </Animated.View>
         </View>
