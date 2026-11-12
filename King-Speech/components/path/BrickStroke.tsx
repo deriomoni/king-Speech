@@ -1,6 +1,17 @@
-import React, { useEffect, useId, useState } from "react";
+import React, { useEffect, useId } from "react";
 import { View } from "react-native";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
+import Animated, {
+  cancelAnimation,
+  Easing,
+  useAnimatedProps,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
+import { useIsFocused } from "expo-router";
+
+const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
 // Brick outline from the Figma spec: 4pt, centred on the brick edge (half
 // outside, half over the face), round join.
@@ -25,6 +36,7 @@ export function lightenHex(hex: string, t: number): string {
 // Gradient line for a CSS-style angle (0° = up, 90° = left→right) across a
 // w×h box, in user-space coordinates.
 function gradientLine(deg: number, w: number, h: number, ox: number, oy: number) {
+  "worklet";
   const t = (deg * Math.PI) / 180;
   const dx = Math.sin(t);
   const dy = -Math.cos(t);
@@ -39,19 +51,27 @@ function gradientLine(deg: number, w: number, h: number, ox: number, oy: number)
   };
 }
 
+// The shine angle lives on the UI thread (Reanimated): the old version did a
+// React setState on every requestAnimationFrame — 60 re-renders a second,
+// forever, even with the Path hidden under a level or another tab. That was a
+// big part of the phone heating up. Now nothing re-renders, and the loop is
+// paused whenever the screen holding the brick is not focused.
 function useSpin(active: boolean) {
-  const [deg, setDeg] = useState(90);
+  const focused = useIsFocused();
+  const deg = useSharedValue(90);
   useEffect(() => {
-    if (!active) return;
-    let raf = 0;
-    const start = Date.now();
-    const tick = () => {
-      setDeg(90 + (((Date.now() - start) % REVOLUTION_MS) / REVOLUTION_MS) * 360);
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [active]);
+    if (!active || !focused) {
+      cancelAnimation(deg);
+      return;
+    }
+    deg.value = 90;
+    deg.value = withRepeat(
+      withTiming(450, { duration: REVOLUTION_MS, easing: Easing.linear }),
+      -1,
+      false,
+    );
+    return () => cancelAnimation(deg);
+  }, [active, focused, deg]);
   return deg;
 }
 
@@ -75,7 +95,10 @@ export default function BrickStroke({
   const W = width + STROKE;
   const H = height + STROKE;
   const o = STROKE / 2;
-  const line = gradientLine(deg, width, height, o, o);
+  const gradientProps = useAnimatedProps(() => {
+    const l = gradientLine(deg.value, width, height, o, o);
+    return { x1: l.x1, y1: l.y1, x2: l.x2, y2: l.y2 };
+  });
   return (
     <View
       pointerEvents="none"
@@ -84,10 +107,14 @@ export default function BrickStroke({
       <Svg width={W} height={H}>
         {variant === "active" && (
           <Defs>
-            <LinearGradient id={gid} gradientUnits="userSpaceOnUse" {...line}>
+            <AnimatedLinearGradient
+              id={gid}
+              gradientUnits="userSpaceOnUse"
+              animatedProps={gradientProps}
+            >
               <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.77} />
               <Stop offset="1" stopColor={lightenHex(brick, 0.3)} stopOpacity={0.88} />
-            </LinearGradient>
+            </AnimatedLinearGradient>
           </Defs>
         )}
         {variant === "completed" && (

@@ -16,7 +16,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import Animated, { FadeIn, FadeInDown, ZoomIn } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  ZoomIn,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
 import { useLang } from "@/context/LangContext";
 import { useRoles } from "@/context/RolesContext";
 import {
@@ -34,6 +41,7 @@ import {
   LockedRoleCard,
   RolePlayCard,
   CrownPattern,
+  CROWN_PATTERN_PERIOD,
   ROLES_BG,
 } from "@/components/roles/RoleTarotCard";
 import { RolesMaskIcon } from "@/components/showtime/ShowTimeIcons";
@@ -142,7 +150,20 @@ export default function RolesScreen() {
   const { isCollected } = useRoles();
   const [category, setCategory] = useState<RoleCategory | "all">("all");
   const [spinning, setSpinning] = useState(false);
-  const [contentH, setContentH] = useState(SH);
+  // The ornament is one screen-sized layer behind the list, shifted by the
+  // scroll offset modulo its period — it looks like it scrolls with the
+  // content (and keeps going into the iOS bounce) without drawing a
+  // content-tall SVG.
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      scrollY.value = e.contentOffset.y;
+    },
+  });
+  const ornamentStyle = useAnimatedStyle(() => {
+    const m = ((scrollY.value % CROWN_PATTERN_PERIOD) + CROWN_PATTERN_PERIOD) % CROWN_PATTERN_PERIOD;
+    return { transform: [{ translateY: -m }] };
+  });
 
   const topPad = Platform.OS === "web" ? 20 : insets.top + 4;
   const bottomPad = (Platform.OS === "web" ? 24 : insets.bottom) + 32;
@@ -158,13 +179,16 @@ export default function RolesScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView
+      {/* Ornament follows the scroll (see ornamentStyle) */}
+      <Animated.View pointerEvents="none" style={[styles.ornament, ornamentStyle]}>
+        <CrownPattern width={SW} height={SH + CROWN_PATTERN_PERIOD} />
+      </Animated.View>
+      <Animated.ScrollView
         contentContainerStyle={{ paddingTop: topPad, paddingBottom: bottomPad }}
         showsVerticalScrollIndicator={false}
-        onContentSizeChange={(_, h) => setContentH(Math.max(SH, h))}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
       >
-        {/* Ornament scrolls with the content */}
-        <CrownPattern width={SW} height={contentH} />
 
         {/* Header */}
         <View style={styles.header}>
@@ -239,7 +263,7 @@ export default function RolesScreen() {
             );
           })}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {spinning && <SpinOverlay onClose={() => setSpinning(false)} onLanded={onLanded} />}
     </View>
@@ -256,6 +280,7 @@ function CategoryChip({ active, label, onPress }: { active: boolean; label: stri
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: ROLES_BG },
+  ornament: { position: "absolute", top: 0, left: 0, width: SW, height: SH + CROWN_PATTERN_PERIOD },
   header: { paddingHorizontal: H_PAD - 4, paddingBottom: 4 },
   iconBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   titleWrap: { alignItems: "center", paddingHorizontal: H_PAD },

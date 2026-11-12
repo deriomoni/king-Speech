@@ -9,7 +9,7 @@ import {
   type NativeScrollEvent,
   type LayoutChangeEvent,
 } from "react-native";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useIsFocused } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   useSharedValue,
@@ -81,12 +81,16 @@ function GlowRing({ color, radius }: { color: string; radius: number }) {
   // sized view whose colored shadow bleeds out on all sides — no hard border,
   // just a gentle diffuse glow that pulses in and out.
   const opacity = useSharedValue(0.5);
+  // Pulse only while the Path is on screen — the tab stays mounted under
+  // levels and other tabs, and an endless loop there keeps the UI thread busy.
+  const focused = useIsFocused();
   useEffect(() => {
+    if (!focused) return;
     opacity.value = withRepeat(withTiming(0.95, { duration: 1500 }), -1, true);
     return () => {
       cancelAnimation(opacity);
     };
-  }, []);
+  }, [focused]);
   const s = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return (
     <Animated.View
@@ -203,7 +207,7 @@ function shapeRadius(
   }
 }
 
-function SnakeConnector({
+function SnakeConnectorBase({
   fromSide,
   toSide,
   color,
@@ -239,7 +243,7 @@ function SnakeConnector({
   );
 }
 
-function StepBlock({
+function StepBlockBase({
   item,
   index,
   totalDone,
@@ -447,7 +451,7 @@ function lightenColor(hex: string, percent: number): string {
   return `rgb(${r},${g},${b})`;
 }
 
-function ModuleDivider({
+function ModuleDividerBase({
   moduleNum,
   colors,
   lang,
@@ -492,6 +496,33 @@ function ModuleDivider({
     </View>
   );
 }
+
+// The Path re-renders every ~40pt of scroll (tint anchor / FAB direction) and
+// on every progress change; without memo that re-rendered every brick, its
+// SVG icon + stroke and every connector each time. Rows only need to render
+// when their own data changes. (StepBlock still subscribes to DevTools itself,
+// so Open Testing re-renders it.)
+const SnakeConnector = React.memo(SnakeConnectorBase);
+const ModuleDivider = React.memo(ModuleDividerBase);
+const StepBlock = React.memo(
+  StepBlockBase,
+  (a, b) =>
+    a.index === b.index &&
+    a.totalDone === b.totalDone &&
+    a.isNaturallyAvailable === b.isNaturallyAvailable &&
+    a.colors === b.colors &&
+    a.rankTheme === b.rankTheme &&
+    a.themeMode === b.themeMode &&
+    a.item.id === b.item.id &&
+    a.item.status === b.item.status &&
+    a.item.title === b.item.title &&
+    a.item.subtitle === b.item.subtitle &&
+    a.item.icon === b.item.icon &&
+    a.item.color === b.item.color &&
+    a.item.colorDark === b.item.colorDark &&
+    a.item.module === b.item.module &&
+    a.item.tasksDone === b.item.tasksDone,
+);
 
 export default function PathScreen() {
   const { colors, colorScheme, themeMode } = useAppColors();

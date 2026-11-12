@@ -15,6 +15,7 @@ import * as Haptics from "expo-haptics";
 import type { RankTheme } from "./rankTheme";
 import { pickLocalized } from "./rankTheme";
 import { useLang } from "@/context/LangContext";
+import { useIsFocused } from "expo-router";
 
 interface Props {
   theme: RankTheme;
@@ -27,14 +28,17 @@ function PortalShape({ theme, glowing }: { theme: RankTheme; glowing: boolean })
   const breathe = useSharedValue(1);
   const ring = useSharedValue(0);
 
+  // Loops run only while they are visible: glowing, and the Path focused.
+  const focused = useIsFocused();
   useEffect(() => {
+    if (!glowing || !focused) return;
     breathe.value = withRepeat(withTiming(1.06, { duration: 2200 }), -1, true);
     ring.value = withRepeat(withTiming(1, { duration: 2400 }), -1, false);
     return () => {
       cancelAnimation(breathe);
       cancelAnimation(ring);
     };
-  }, []);
+  }, [glowing, focused]);
 
   const breatheStyle = useAnimatedStyle(() => ({
     transform: [{ scale: glowing ? breathe.value : 1 }],

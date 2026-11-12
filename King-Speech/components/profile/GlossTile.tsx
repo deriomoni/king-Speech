@@ -75,6 +75,10 @@ export default function GlossTile({
     Platform.OS === "web"
       ? ({ boxShadow: `0px ${look.shadow.y}px ${look.shadow.blur}px ${look.shadow.color}` } as any)
       : {
+          // Opaque fill under the gradients: lets iOS build the shadow from the
+          // rounded bounds instead of re-rendering every tile offscreen to find
+          // its alpha mask (a real cost with 5 tiles in a scrolling screen).
+          backgroundColor: look.fill[2],
           shadowColor: "#000",
           shadowOpacity: look.shadow.opacity,
           shadowRadius: look.shadow.blur / 2,

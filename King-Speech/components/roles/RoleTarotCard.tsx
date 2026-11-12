@@ -5,7 +5,7 @@ import { View, Text, StyleSheet, Platform, type ViewStyle, type StyleProp } from
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import Svg, { Path, G, Defs, Use } from "react-native-svg";
+import Svg, { Path, Defs, Pattern, Rect } from "react-native-svg";
 import { ROLE_ART } from "@/constants/roleArt";
 import { ROLES, tx, type Role } from "@/constants/rolesData";
 import type { Lang } from "@/context/LangContext";
@@ -179,32 +179,54 @@ export function RolePlayCard({ width, style }: { width: number; style?: StylePro
 const CROWN_PATH =
   "M25.58 10.7C25.81 12.65 26.69 14.46 28.07 15.84C29.46 17.22 31.27 18.08 33.21 18.29C35.14 18.5 37.09 18.03 38.74 16.98C40.38 15.92 41.61 14.34 42.24 12.48C41.02 12.2 39.95 11.46 39.26 10.41C38.56 9.36 38.29 8.08 38.5 6.84C38.71 5.59 39.38 4.47 40.38 3.71C41.38 2.95 42.63 2.6 43.87 2.73C45.12 2.87 46.27 3.48 47.08 4.44C47.9 5.4 48.32 6.63 48.26 7.89C48.2 9.15 47.67 10.34 46.76 11.22C45.86 12.1 44.66 12.59 43.41 12.61L43.41 33.18C35.15 40.75 13.11 40.75 4.86 33.18L4.86 12.61C3.61 12.59 2.4 12.1 1.5 11.22C0.6 10.34 0.07 9.15 0.01 7.89C-0.05 6.63 0.37 5.4 1.18 4.44C2 3.48 3.15 2.87 4.39 2.73C5.64 2.6 6.89 2.95 7.89 3.71C8.89 4.47 9.56 5.59 9.77 6.84C9.98 8.08 9.7 9.36 9.01 10.41C8.31 11.46 7.24 12.2 6.02 12.48C6.65 14.34 7.89 15.92 9.53 16.98C11.17 18.03 13.12 18.5 15.06 18.29C17 18.08 18.81 17.22 20.19 15.84C21.58 14.46 22.46 12.65 22.69 10.7C21.42 10.35 20.33 9.55 19.61 8.45C18.89 7.35 18.59 6.02 18.77 4.71C18.95 3.41 19.59 2.21 20.57 1.34C21.56 0.48 22.82 0 24.13 0C25.44 0 26.71 0.48 27.69 1.34C28.68 2.21 29.32 3.41 29.5 4.71C29.67 6.02 29.37 7.35 28.65 8.45C27.93 9.55 26.84 10.35 25.58 10.7Z";
 
+const CROWN_STEP_X = 64;
+const CROWN_STEP_Y = 58;
+const CROWN_SCALE = 0.5; // ≈24pt crowns
+/** Vertical period of the ornament (two staggered rows) — scroll offsets wrap on it. */
+export const CROWN_PATTERN_PERIOD = CROWN_STEP_Y * 2;
+
 /**
  * Faint tiled crown ornament (white ~6%, each crown rotated −12°). Drawn as one
  * Svg sized to `width × height`; place it absolutely behind the content.
+ *
+ * Performance: it used to stamp one <G><Use/></G> per crown — hundreds of SVG
+ * nodes for a tall list, re-rendered on every parent state change (the role
+ * spin re-rendered it ~30×). Now it is a single <Pattern> tile (3 crowns: one
+ * row + the half-offset row, with the wrap-around copy) filling one <Rect>,
+ * and the component is memoized. Same layout as before: rows 58pt apart,
+ * odd rows shifted half a step, first row at y = 14.
  */
-export function CrownPattern({ width, height, opacity = 0.06 }: { width: number; height: number; opacity?: number }) {
-  const STEP_X = 64;
-  const STEP_Y = 58;
-  const SCALE = 0.5; // ≈24pt crowns
-  const cells: { x: number; y: number }[] = [];
-  for (let row = 0, y = 14; y < height + STEP_Y; row++, y += STEP_Y) {
-    const off = row % 2 ? STEP_X / 2 : 0;
-    for (let x = 10 - off; x < width + STEP_X; x += STEP_X) cells.push({ x, y });
-  }
+function CrownPatternBase({ width, height, opacity = 0.06 }: { width: number; height: number; opacity?: number }) {
+  const pid = "crownTile" + Math.round(opacity * 1000);
+  const t = (x: number, y: number) => `translate(${x} ${y}) rotate(-12) scale(${CROWN_SCALE})`;
+  const y1 = 14 + CROWN_STEP_Y;
   return (
     <Svg width={width} height={height} style={{ position: "absolute", top: 0, left: 0 }} pointerEvents="none">
       <Defs>
-        <Path id="crown" d={CROWN_PATH} fill="#FFFFFF" fillOpacity={opacity} />
+        <Pattern
+          id={pid}
+          patternUnits="userSpaceOnUse"
+          x={0}
+          y={0}
+          width={CROWN_STEP_X}
+          height={CROWN_PATTERN_PERIOD}
+        >
+          <Path d={CROWN_PATH} fill="#FFFFFF" fillOpacity={opacity} transform={t(10, 14)} />
+          <Path d={CROWN_PATH} fill="#FFFFFF" fillOpacity={opacity} transform={t(10 - CROWN_STEP_X / 2, y1)} />
+          <Path
+            d={CROWN_PATH}
+            fill="#FFFFFF"
+            fillOpacity={opacity}
+            transform={t(10 + CROWN_STEP_X / 2, y1)}
+          />
+        </Pattern>
       </Defs>
-      {cells.map((c, i) => (
-        <G key={i} transform={`translate(${c.x} ${c.y}) rotate(-12) scale(${SCALE})`}>
-          <Use href="#crown" />
-        </G>
-      ))}
+      <Rect x={0} y={0} width={width} height={height} fill={`url(#${pid})`} />
     </Svg>
   );
 }
+
+export const CrownPattern = React.memo(CrownPatternBase);
 
 const styles = StyleSheet.create({
   innerHair: { position: "absolute", top: 3, left: 3, right: 3, bottom: 3, borderWidth: 1 },
