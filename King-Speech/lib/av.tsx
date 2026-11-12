@@ -310,6 +310,10 @@ class Sound {
       this._sub?.remove?.();
     } catch {}
     this._sub = null;
+    // Pause first: on iOS `remove()` alone can leave the native player audible.
+    try {
+      this._player?.pause();
+    } catch {}
     try {
       this._player?.remove();
     } catch {}

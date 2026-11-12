@@ -41,20 +41,31 @@ function useDiaryPlayer() {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const webRef = useRef<HTMLAudioElement | null>(null);
   const soundRef = useRef<any>(null);
+  // Source of truth for taps (state lags behind async starts) and a generation
+  // counter so a start that is still loading gets cancelled by stop().
+  const activeIdRef = useRef<string | null>(null);
+  const genRef = useRef(0);
 
   const stop = useCallback(async () => {
+    genRef.current += 1;
+    activeIdRef.current = null;
+    setPlayingId(null);
     if (webRef.current) {
-      webRef.current.pause();
+      try {
+        webRef.current.pause();
+      } catch {}
       webRef.current = null;
     }
     if (soundRef.current) {
       const snd = soundRef.current;
       soundRef.current = null;
       try {
+        await snd.pauseAsync?.();
+      } catch {}
+      try {
         await snd.unloadAsync();
       } catch {}
     }
-    setPlayingId(null);
   }, []);
 
   useEffect(() => () => void stop(), [stop]);
@@ -62,37 +73,45 @@ function useDiaryPlayer() {
   const toggle = useCallback(
     async (e: DiaryEntry) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-      const wasThis = playingId === e.id;
+      const wasThis = activeIdRef.current === e.id;
       await stop();
       if (wasThis) return;
+      const gen = genRef.current;
+      activeIdRef.current = e.id;
+      setPlayingId(e.id);
       try {
         if (Platform.OS === "web") {
           const a = new window.Audio(e.uri);
           webRef.current = a;
           a.onended = () => {
-            if (webRef.current === a) {
-              webRef.current = null;
-              setPlayingId(null);
-            }
+            if (webRef.current === a) void stop();
           };
           await a.play();
+          if (gen !== genRef.current) a.pause();
         } else {
           try {
             await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true });
           } catch {}
           const { sound } = await Audio.Sound.createAsync({ uri: e.uri }, { shouldPlay: true });
+          if (gen !== genRef.current) {
+            // Stopped (second tap / left the screen) while it was loading.
+            try {
+              await sound.pauseAsync?.();
+              await sound.unloadAsync();
+            } catch {}
+            return;
+          }
           soundRef.current = sound;
           sound.setOnPlaybackStatusUpdate((st: any) => {
             if (st?.didJustFinish && soundRef.current === sound) void stop();
           });
         }
-        setPlayingId(e.id);
       } catch (err) {
         console.warn("[diary] playback failed:", err);
-        setPlayingId(null);
+        if (gen === genRef.current) void stop();
       }
     },
-    [playingId, stop],
+    [stop],
   );
 
   return { playingId, toggle, stop };
