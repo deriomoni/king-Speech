@@ -504,9 +504,7 @@ export default function ProfileScreen() {
               }}
               spot={{ x: -20, y: -50, size: 200 }}
               art={art(themedSvg(QUILL, mode), 43, 26, 83, 76)}
-              onPress={() => {
-                // TODO(design): author / topic-suggestion flow doesn't exist yet.
-              }}
+              onPress={() => router.push("/author")}
             />
             <GlossTile
               mode={mode}
