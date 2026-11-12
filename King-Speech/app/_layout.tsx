@@ -92,6 +92,10 @@ function RootLayoutNav() {
         options={{ headerShown: false, presentation: "card" }}
       />
       <Stack.Screen
+        name="diary-record"
+        options={{ headerShown: false, presentation: "fullScreenModal", gestureEnabled: false }}
+      />
+      <Stack.Screen
         name="role-stage"
         options={{ headerShown: false, presentation: "fullScreenModal" }}
       />
