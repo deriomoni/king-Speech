@@ -1,0 +1,7 @@
+{
+  "CFBundleDisplayName": "King Speech",
+  "NSCameraUsageDescription": "King Speech uses the camera to film you in the Roles exercises and to help you stay in frame. The video stays on your phone.",
+  "NSMicrophoneUsageDescription": "King Speech uses the microphone to record your speech in the exercises.",
+  "NSSpeechRecognitionUsageDescription": "King Speech uses speech recognition to check the words you say against the vocabulary.",
+  "NSPhotoLibraryUsageDescription": "King Speech uses photo access to set your avatar."
+}

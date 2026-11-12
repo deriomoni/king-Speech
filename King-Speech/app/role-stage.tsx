@@ -8,12 +8,13 @@ import {
   ScrollView,
   ActivityIndicator,
   Dimensions,
+  AppState,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import Animated, { FadeIn } from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from "expo-camera";
@@ -23,6 +24,14 @@ import { RoleTarotCard, CrownPattern, MONO, ROLES_BG } from "@/components/roles/
 import { FaceTrackerIcon, FACE_TRACK_COLORS, type FaceTrackState } from "@/components/roles/FaceTrackerIcon";
 import { RolesMaskIcon } from "@/components/showtime/ShowTimeIcons";
 import { setRolePerformance } from "@/lib/rolePerformance";
+import { getVisionFace, useFaceTracking, FACE_HINT_TEXT } from "@/lib/faceTracking";
+import { VisionFaceCamera } from "@/components/roles/VisionFaceCamera";
+
+/** Minimal recording surface shared by expo-camera's CameraView and VisionFaceCamera. */
+type RecordableCamera = {
+  recordAsync?: (...args: any[]) => Promise<any> | undefined;
+  stopRecording?: () => void;
+};
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -64,7 +73,7 @@ export default function RoleStageScreen() {
   const [take, setTake] = useState(1);
   const [restarting, setRestarting] = useState(false);
 
-  const cameraRef = useRef<CameraView | null>(null);
+  const cameraRef = useRef<RecordableCamera | null>(null);
   const videoUriRef = useRef<string | undefined>(undefined);
   const audioUriRef = useRef<string | undefined>(undefined);
   const recordPromiseRef = useRef<Promise<any> | null>(null);
@@ -98,10 +107,35 @@ export default function RoleStageScreen() {
     return () => clearTimeout(t);
   }, [phase]);
 
-  // TODO(face-tracking): the app has no face detection yet — the tracker glyph
-  // always shows the white «в кадре» state. Wire a detector here and switch to
-  // "turn" (yellow) / "lost" (red).
-  const faceState = "ok" as FaceTrackState;
+  // --- Face tracking (on-device ML Kit via VisionCamera; see lib/faceTracking.ts) ---
+  // Only in our own EAS builds. In Expo Go / web getVisionFace() is null and the
+  // screen keeps the expo-camera path with the neutral white glyph.
+  const vision = getVisionFace();
+  const [visionFailed, setVisionFailed] = useState(false);
+  const useVision = hasCam && !!vision && !visionFailed;
+
+  // Pause the camera + frame processor when the screen blurs or the app leaves the foreground.
+  const [focused, setFocused] = useState(true);
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true);
+      return () => setFocused(false);
+    }, []),
+  );
+  const [appActive, setAppActive] = useState(AppState.currentState === "active");
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (s) => setAppActive(s === "active"));
+    return () => sub.remove();
+  }, []);
+  const cameraActive = focused && appActive;
+
+  const tracking = useFaceTracking(useVision && cameraActive && phase !== "processing");
+  // adjust → the yellow "turn" glyph; idle (no samples yet / fallback) → white.
+  const faceState: FaceTrackState = !tracking.active
+    ? "ok"
+    : tracking.status === "adjust"
+      ? "turn"
+      : tracking.status;
 
   useEffect(() => {
     return () => {
@@ -205,6 +239,9 @@ export default function RoleStageScreen() {
       setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000));
     }, 250);
 
+    // Per-take face stats (no-op until samples arrive; stays empty in the fallback path).
+    tracking.startTake();
+
     // Kick off audio (used for scoring) first.
     await startAudio();
 
@@ -219,12 +256,13 @@ export default function RoleStageScreen() {
         console.warn("role-stage: video record failed, continuing audio-only", e);
       }
     }
-  }, [startAudio, hasCam]);
+  }, [startAudio, hasCam, tracking.startTake]);
 
   const finishRecording = useCallback(async () => {
     haptic(Haptics.ImpactFeedbackStyle.Medium);
     if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null; }
     const duration = Math.max(1, Math.floor((Date.now() - startTimeRef.current) / 1000));
+    const faceStats = tracking.endTake();
     setPhase("processing");
 
     // Cut both captures as close together as possible. The take is played back
@@ -255,10 +293,11 @@ export default function RoleStageScreen() {
       audioBase64,
       audioUri: audioUriRef.current,
       videoUri: videoUriRef.current,
+      faceStats: faceStats ?? undefined,
     });
 
     router.replace("/role-result");
-  }, [stopAudio, role, params.roleId, mode]);
+  }, [stopAudio, role, params.roleId, mode, tracking.endTake]);
 
   // Throw the current take away without scoring it (the "start over" button).
   const discardTake = useCallback(async () => {
@@ -275,6 +314,7 @@ export default function RoleStageScreen() {
     } catch {}
     recordPromiseRef.current = null;
     videoUriRef.current = undefined;
+    tracking.endTake(); // the discarded take's face stats are dropped too
 
     if (Platform.OS === "web") {
       const mr = webRecorderRef.current;
@@ -289,7 +329,7 @@ export default function RoleStageScreen() {
       try { await Audio.setAudioModeAsync({ allowsRecordingIOS: false }); } catch {}
     }
     audioUriRef.current = undefined;
-  }, []);
+  }, [tracking.endTake]);
 
   const restartRecording = useCallback(async () => {
     if (restarting || take >= MAX_TAKES) return;
@@ -324,7 +364,9 @@ export default function RoleStageScreen() {
     faceState === "ok"
       ? (lang === "en" ? "Face in frame" : "Лицо в кадре")
       : faceState === "turn"
-        ? (lang === "en" ? "Turn your face" : "Поверни лицо")
+        ? (tracking.hint
+            ? FACE_HINT_TEXT[tracking.hint][lang === "en" ? "en" : "ru"]
+            : (lang === "en" ? "Adjust the frame" : "Поправь кадр"))
         : (lang === "en" ? "Face lost" : "Лицо потеряно");
 
   const onRecordPress = () => {
@@ -335,14 +377,29 @@ export default function RoleStageScreen() {
   return (
     <View style={styles.root}>
       {/* Full-bleed selfie camera, or the role card for voice-only */}
-      {hasCam ? (
+      {useVision && vision ? (
+        <VisionFaceCamera
+          ref={cameraRef as any}
+          vision={vision}
+          style={StyleSheet.absoluteFill}
+          isActive={cameraActive}
+          trackFaces={phase !== "processing"}
+          onSample={tracking.onSample}
+          onReady={() => setCamReady(true)}
+          onUnavailable={(reason) => {
+            console.warn("role-stage: face camera unavailable, using expo-camera", reason);
+            setVisionFailed(true);
+          }}
+        />
+      ) : hasCam ? (
         <CameraView
-          ref={cameraRef}
+          ref={cameraRef as any}
           style={StyleSheet.absoluteFill}
           facing="front"
           mode="video"
           mute
           videoQuality="1080p"
+          active={cameraActive}
           onCameraReady={() => setCamReady(true)}
         />
       ) : (

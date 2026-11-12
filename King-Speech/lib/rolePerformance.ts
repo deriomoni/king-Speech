@@ -13,6 +13,8 @@ export interface RolePerformance {
   audioUri?: string;
   /** Local-only video URI for the on-device preview. NEVER uploaded. */
   videoUri?: string;
+  /** On-device face-tracking stats for this take (own EAS builds only; see lib/faceTracking.ts). NEVER uploaded. */
+  faceStats?: import("./faceTrackingCore").FaceTakeStats;
 }
 
 let _pending: RolePerformance | null = null;

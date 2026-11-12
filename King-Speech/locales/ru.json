@@ -1,0 +1,7 @@
+{
+  "CFBundleDisplayName": "King Speech",
+  "NSCameraUsageDescription": "King Speech использует камеру, чтобы снимать тебя в упражнениях «Роли» и подсказывать, как встать в кадр. Видео остаётся на телефоне.",
+  "NSMicrophoneUsageDescription": "King Speech использует микрофон, чтобы записывать твою речь в упражнениях.",
+  "NSSpeechRecognitionUsageDescription": "King Speech использует распознавание речи, чтобы сверять сказанные слова со словарём.",
+  "NSPhotoLibraryUsageDescription": "King Speech использует доступ к фото, чтобы установить твой аватар."
+}
