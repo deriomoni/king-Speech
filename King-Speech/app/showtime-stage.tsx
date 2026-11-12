@@ -39,6 +39,7 @@ import {
   getModuleFromShowtimeId,
 } from "@/constants/showtimeLoader";
 import { playSfx, preloadSfx, unloadSfx } from "@/lib/sfx";
+import { AUTHOR_READ_RESULT_KEY, splitAuthorText } from "@/lib/authorStage";
 import DevSkipButton from "@/components/DevSkipButton";
 import StageGlassDialog from "@/components/showtime/StageGlassDialog";
 import { SvgXml } from "react-native-svg";
@@ -4726,11 +4727,60 @@ const ds = StyleSheet.create({
 export default function ShowtimeStageScreen() {
   const insets = useSafeAreaInsets();
   const { t, lang } = useLang();
-  const { levelId: levelIdParam, mode: modeParam } = useLocalSearchParams<{ levelId?: string; mode?: string }>();
-  const levelId = levelIdParam ?? "showtime";
+  const {
+    levelId: levelIdParam,
+    mode: modeParam,
+    source: sourceParam,
+    title: authorTitleParam,
+    text: authorTextParam,
+    category: authorCategoryParam,
+    draftId: authorDraftIdParam,
+  } = useLocalSearchParams<{
+    levelId?: string;
+    mode?: string;
+    source?: string;
+    title?: string;
+    text?: string;
+    category?: string;
+    draftId?: string;
+  }>();
+  // «Стать автором» (app/author.tsx): the player reads their OWN text on this
+  // stage. No level theme, no playback/results screen (that is where coins,
+  // progression and rank live) — finishing returns straight to the editor.
+  const authorLines = useMemo(
+    () => (sourceParam === "author" ? splitAuthorText(authorTextParam ?? "") : []),
+    [sourceParam, authorTextParam],
+  );
+  const isAuthor = authorLines.length > 0;
+  const levelId = isAuthor ? "author" : levelIdParam ?? "showtime";
   const mode = modeParam ?? "game";
   const themes = getSpeechThemes(lang);
-  const theme = themes[levelId] ?? themes["showtime"];
+  const authorTheme = useMemo<SpeechTheme | null>(() => {
+    if (!isAuthor) return null;
+    const base = themes["showtime"];
+    const title = (authorTitleParam ?? "").trim() || (lang === "en" ? "My speech" : "Моя речь");
+    return { ...base, levelId: "author", title, timerSeconds: null, speeches: [{ title, lines: authorLines }] };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthor, authorLines, authorTitleParam, lang]);
+  const theme = authorTheme ?? themes[levelId] ?? themes["showtime"];
+  // Back to the author editor. `read` = the speech was performed to the end,
+  // so the editor opens its publish sheet; an early exit just returns to it.
+  const leaveToAuthor = useCallback(async (read: boolean, recordingUri?: string) => {
+    if (read) {
+      try {
+        await AsyncStorage.setItem(
+          AUTHOR_READ_RESULT_KEY,
+          JSON.stringify({ draftId: authorDraftIdParam ?? "", recordingUri: recordingUri ?? "", at: Date.now() }),
+        );
+      } catch {}
+    }
+    if (router.canGoBack()) router.back();
+    else
+      router.replace({
+        pathname: "/author",
+        params: { draftId: authorDraftIdParam ?? "", ...(read ? { read: "1", recordingUri: recordingUri ?? "" } : {}) },
+      });
+  }, [authorDraftIdParam]);
   const [speechIdx] = useState(() => Math.floor(Math.random() * theme.speeches.length));
   const speech = theme.speeches[speechIdx];
   const { theme: ui, themeMode } = useTheme();
@@ -4741,6 +4791,14 @@ export default function ShowtimeStageScreen() {
     const en = lang === "en";
     const words = speech.lines.join(" ").split(/\s+/).filter(Boolean).length;
     const minutes = Math.max(1, Math.round(words / 110));
+    if (isAuthor) {
+      const nA10 = words % 10, nA100 = words % 100;
+      const w = en ? "words" : nA10 === 1 && nA100 !== 11 ? "слово" : nA10 >= 2 && nA10 <= 4 && (nA100 < 12 || nA100 > 14) ? "слова" : "слов";
+      return {
+        category: authorCategoryParam ?? "",
+        meta: `${minutes} ${en ? "min" : "мин"}  ·  ${words} ${w}`,
+      };
+    }
     const rank = getShowtimeModule(getModuleFromShowtimeId(levelId))?.rank ?? 1;
     const difficulty = rank <= 1
       ? (en ? "Easy" : "Лёгкая")
@@ -4760,7 +4818,7 @@ export default function ShowtimeStageScreen() {
       category: cat ? (en ? cat.en : cat.ru) : "",
       meta: `${minutes} ${en ? "min" : "мин"}  ·  ${difficulty}  ·  ${words} ${wordsWord}`,
     };
-  }, [lang, levelId, speech]);
+  }, [lang, levelId, speech, isAuthor, authorCategoryParam]);
   // Variable audience backdrop — one of the halls, chosen per run.
   const [scene] = useState(() => SCENE_POOL[Math.floor(Math.random() * SCENE_POOL.length)]);
   // Height/width of that hall, so the backdrop keeps its own proportions.
@@ -5050,6 +5108,10 @@ export default function ShowtimeStageScreen() {
     playSfx("applause").catch(() => {});
     setTimeout(() => {
       const uri = recordingUriRef.current ?? "";
+      if (isAuthor) {
+        void leaveToAuthor(true, uri);
+        return;
+      }
       router.push({ pathname: "/showtime-playback", params: { recordingUri: uri, title: speech.title, levelId, mode, scriptText: speech.lines.join("\n"), waveform: waveformRef.current ? JSON.stringify(waveformRef.current) : "" } });
     }, 1200);
   };
@@ -5346,7 +5408,11 @@ export default function ShowtimeStageScreen() {
 
       {/* Top-right close X — a bare glyph, as in the design (no scrim). */}
       <Pressable
-        onPress={() => { (started && !finished) ? setShowExitConfirm(true) : router.replace("/(tabs)"); }}
+        onPress={() => {
+          if (started && !finished) setShowExitConfirm(true);
+          else if (isAuthor) void leaveToAuthor(false);
+          else router.replace("/(tabs)");
+        }}
         hitSlop={12}
         style={({ pressed }) => ({
           position: "absolute",
@@ -5433,7 +5499,18 @@ export default function ShowtimeStageScreen() {
         overlay={0.4}
         onRequestClose={() => setShowExitConfirm(false)}
         buttons={[
-          { label: t("leaveBtn"), variant: "secondary", onPress: () => { setShowExitConfirm(false); router.replace("/(tabs)"); } },
+          { label: t("leaveBtn"), variant: "secondary", onPress: () => {
+            setShowExitConfirm(false);
+            if (isAuthor) {
+              // Stop the mic and the timers before leaving (no results screen).
+              isFinishingRef.current = true;
+              if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+              if (autoTimerRef.current) { clearTimeout(autoTimerRef.current); autoTimerRef.current = null; }
+              noiseTimersRef.current.forEach(clearTimeout);
+              noiseTimersRef.current = [];
+              stopRecording().catch(() => {}).finally(() => { void leaveToAuthor(false); });
+            } else router.replace("/(tabs)");
+          } },
           { label: t("stayBtn"), variant: "primary", onPress: () => setShowExitConfirm(false) },
         ]}
       />
@@ -5527,15 +5604,17 @@ export default function ShowtimeStageScreen() {
         </Animated.View>
       )}
 
-      <DevSkipButton
-        levelId={levelId}
-        onPreviewResults={() =>
-          router.push({
-            pathname: "/showtime-playback",
-            params: { title: speech.title, levelId, mode, demo: "1", scriptText: speech.lines.join("\n") },
-          })
-        }
-      />
+      {!isAuthor && (
+        <DevSkipButton
+          levelId={levelId}
+          onPreviewResults={() =>
+            router.push({
+              pathname: "/showtime-playback",
+              params: { title: speech.title, levelId, mode, demo: "1", scriptText: speech.lines.join("\n") },
+            })
+          }
+        />
+      )}
     </View>
   );
 }

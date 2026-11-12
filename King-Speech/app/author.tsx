@@ -4,7 +4,7 @@
 // (words / 1.7 sec), yellow «Прочитать вслух». After reading, the publish sheet:
 // preview card, «Обложка» upload (expo-image-picker), «Опубликовать в каталог»
 // (TODO backend) and «Сохранить для себя» (local draft in AsyncStorage).
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -19,7 +19,7 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -29,6 +29,12 @@ import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { PlayTriangleIcon } from "@/components/showtime/ShowTimeIcons";
+import { AUTHOR_READ_RESULT_KEY, type AuthorReadResult } from "@/lib/authorStage";
+
+let Audio: any = null;
+if (Platform.OS !== "web") {
+  Audio = require("@/lib/av").Audio;
+}
 
 const DRAFTS_KEY = "@kingspeech_author_drafts_v1";
 const GOLD = "#FFD857";
@@ -82,13 +88,23 @@ export default function AuthorScreen() {
   const { theme: c } = useTheme();
   const isDark = c.mode === "dark";
   const { user } = useAuth();
+  // Set when we come back from the stage via `replace` (no screen to go back
+  // to): which draft to restore and whether the reading was finished.
+  const params = useLocalSearchParams<{ draftId?: string; read?: string; recordingUri?: string }>();
 
-  const [draftId, setDraftId] = useState(() => `d${Date.now()}`);
+  const [draftId, setDraftId] = useState(() => params.draftId || `d${Date.now()}`);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<CategoryId>("holidays");
   const [text, setText] = useState("");
   const [coverUri, setCoverUri] = useState<string | undefined>(undefined);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // The take recorded on the stage — can be played back from the sheet.
+  const [recordingUri, setRecordingUri] = useState<string | undefined>(undefined);
+  const [playing, setPlaying] = useState(false);
+  const soundRef = useRef<any>(null);
+  const webAudioRef = useRef<any>(null);
+  const draftIdRef = useRef(draftId);
+  draftIdRef.current = draftId;
 
   const stroke = isDark ? "rgba(240,238,233,0.06)" : "rgba(38,38,40,0.08)";
   const topPad = Platform.OS === "web" ? 54 : insets.top;
@@ -114,6 +130,123 @@ export default function AuthorScreen() {
     }
   };
 
+  const applyDraft = (d: AuthorDraft) => {
+    setDraftId(d.id);
+    setTitle(d.title);
+    setCategory(CATEGORIES.some((x) => x.id === d.category) ? d.category : "holidays");
+    setText(d.text);
+    setCoverUri(d.coverUri);
+  };
+
+  // Upsert the current editor state into the local drafts list.
+  const persistDraft = async () => {
+    const draft: AuthorDraft = {
+      id: draftId,
+      title: title.trim(),
+      category,
+      text,
+      coverUri,
+      updatedAt: Date.now(),
+    };
+    const drafts = (await readDrafts()).filter((d) => d.id !== draft.id);
+    await AsyncStorage.setItem(DRAFTS_KEY, JSON.stringify([draft, ...drafts].slice(0, 50)));
+  };
+
+  // Came back from the stage through `replace` (this screen was not in the
+  // stack any more): restore the draft that was read, open the sheet if done.
+  useEffect(() => {
+    if (!params.draftId) return;
+    let alive = true;
+    (async () => {
+      const d = (await readDrafts()).find((x) => x.id === params.draftId);
+      if (alive && d) applyDraft(d);
+    })();
+    if (params.read === "1") {
+      if (params.recordingUri) setRecordingUri(params.recordingUri);
+      setSheetOpen(true);
+    }
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Back from the stage via `router.back()`: the stage leaves its result in
+  // storage when the speech was read to the end — then show the sheet.
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      (async () => {
+        try {
+          const raw = await AsyncStorage.getItem(AUTHOR_READ_RESULT_KEY);
+          if (!raw) return;
+          await AsyncStorage.removeItem(AUTHOR_READ_RESULT_KEY);
+          const res = JSON.parse(raw) as AuthorReadResult;
+          if (!alive || (res.draftId && res.draftId !== draftIdRef.current)) return;
+          setRecordingUri(res.recordingUri || undefined);
+          setSheetOpen(true);
+        } catch {}
+      })();
+      return () => {
+        alive = false;
+      };
+    }, []),
+  );
+
+  const stopPlayback = useCallback(async () => {
+    setPlaying(false);
+    const w = webAudioRef.current;
+    webAudioRef.current = null;
+    if (w) {
+      try {
+        w.pause();
+      } catch {}
+    }
+    const snd = soundRef.current;
+    soundRef.current = null;
+    if (snd) {
+      try {
+        await snd.stopAsync();
+        await snd.unloadAsync();
+      } catch {}
+    }
+  }, []);
+  useEffect(() => () => void stopPlayback(), [stopPlayback]);
+  useEffect(() => {
+    if (!sheetOpen) void stopPlayback();
+  }, [sheetOpen, stopPlayback]);
+
+  const togglePlayback = async () => {
+    if (playing) {
+      await stopPlayback();
+      return;
+    }
+    if (!recordingUri) return;
+    try {
+      if (Platform.OS === "web") {
+        const a = new (window as any).Audio(recordingUri);
+        webAudioRef.current = a;
+        a.onended = () => {
+          if (webAudioRef.current === a) void stopPlayback();
+        };
+        await a.play();
+      } else {
+        try {
+          await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true });
+        } catch {}
+        const { sound } = await Audio.Sound.createAsync({ uri: recordingUri }, { shouldPlay: true });
+        soundRef.current = sound;
+        sound.setOnPlaybackStatusUpdate((st: any) => {
+          if (st?.didJustFinish && soundRef.current === sound) void stopPlayback();
+        });
+      }
+      setPlaying(true);
+    } catch (e) {
+      console.warn("[author] playback failed:", e);
+      void stopPlayback();
+    }
+  };
+
   // «Черновики»: load the most recently saved draft into the editor.
   // TODO(author): a proper drafts list screen.
   const openDrafts = async () => {
@@ -123,19 +256,28 @@ export default function AuthorScreen() {
       Alert.alert(en ? "Drafts" : "Черновики", en ? "No saved drafts yet." : "Сохранённых черновиков пока нет.");
       return;
     }
-    setDraftId(last.id);
-    setTitle(last.title);
-    setCategory(CATEGORIES.some((x) => x.id === last.category) ? last.category : "holidays");
-    setText(last.text);
-    setCoverUri(last.coverUri);
+    applyDraft(last);
+    setRecordingUri(undefined);
   };
 
-  const handleRead = () => {
+  // «Прочитать вслух»: the Show Time stage with the player's own text
+  // (showtime-stage `source=author`). Finished → back here with the sheet open;
+  // left early → back to the editor as it was.
+  const handleRead = async () => {
     if (!canRead) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    // TODO(author): there is no reading/teleprompter flow that accepts custom
-    // text yet — route the player through it here, then show the sheet on finish.
-    setSheetOpen(true);
+    await stopPlayback();
+    setRecordingUri(undefined);
+    try {
+      // Keep the draft safe in case this screen is unmounted meanwhile.
+      await persistDraft();
+    } catch (e) {
+      console.warn("[author] persist draft failed:", e);
+    }
+    router.push({
+      pathname: "/showtime-stage",
+      params: { source: "author", title: title.trim(), text, category: en ? cat.en : cat.ru, draftId },
+    });
   };
 
   const pickCover = async () => {
@@ -165,17 +307,8 @@ export default function AuthorScreen() {
   };
 
   const saveForMe = async () => {
-    const draft: AuthorDraft = {
-      id: draftId,
-      title: title.trim(),
-      category,
-      text,
-      coverUri,
-      updatedAt: Date.now(),
-    };
     try {
-      const drafts = (await readDrafts()).filter((d) => d.id !== draft.id);
-      await AsyncStorage.setItem(DRAFTS_KEY, JSON.stringify([draft, ...drafts].slice(0, 50)));
+      await persistDraft();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       setSheetOpen(false);
       Alert.alert(en ? "Saved" : "Сохранено", en ? "The draft is in «Drafts»." : "Черновик сохранён в «Черновиках».");
@@ -321,6 +454,19 @@ export default function AuthorScreen() {
               </View>
             </View>
 
+            {!!recordingUri && (
+              <Pressable
+                onPress={togglePlayback}
+                hitSlop={8}
+                style={({ pressed }) => [s.listenBtn, { borderColor: stroke, opacity: pressed ? 0.8 : 1 }]}
+              >
+                <Ionicons name={playing ? "stop" : "play"} size={16} color={c.text} />
+                <Text style={[s.listenText, { color: c.text }]}>
+                  {playing ? (en ? "Stop" : "Остановить") : en ? "Listen to your reading" : "Послушать своё чтение"}
+                </Text>
+              </Pressable>
+            )}
+
             <Text style={[s.coverLabel, { color: c.text }]}>{en ? "Cover" : "Обложка"}</Text>
             <Pressable
               onPress={pickCover}
@@ -430,6 +576,18 @@ const s = StyleSheet.create({
   previewTitle: { fontSize: 16, fontFamily: "Geologica_800ExtraBold" },
   previewMeta: { fontSize: 12, fontFamily: "Geologica_600SemiBold", marginTop: 5 },
   previewAuthor: { fontSize: 12, fontFamily: "Geologica_700Bold", marginTop: 7 },
+  listenBtn: {
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    paddingHorizontal: 16,
+    marginTop: 14,
+  },
+  listenText: { fontSize: 13, fontFamily: "Geologica_700Bold" },
   coverLabel: { fontSize: 14, fontFamily: "Geologica_700Bold", marginTop: 20 },
   upload: {
     flexDirection: "row",
