@@ -9,12 +9,24 @@
 // they sort into «Раньше» and the duration appears once the take is loaded).
 // Interview and Roles takes are not persisted anywhere yet → those filters show
 // the empty state. TODO(library): add them once those modes save recordings.
+//
+// Long-press a row: it lifts and wiggles (like the diary cassettes), playback
+// stops, and an AppDialog confirms deleting the take (store entry + audio file).
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from "react-native";
 import OverscrollFill from "@/components/OverscrollFill";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, {
+  cancelAnimation,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
@@ -22,6 +34,8 @@ import Svg, { Circle, Path, Rect } from "react-native-svg";
 import { useGame } from "@/context/GameContext";
 import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
+import AppDialog from "@/components/AppDialog";
+import { deleteRecordingFile } from "@/lib/recordingFiles";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -51,6 +65,8 @@ type Item = {
   uri: string;
   title: string;
   mode: Mode;
+  /** Show Time takes are stored per rank. */
+  rank?: number;
   date?: number;
   durationSec?: number;
 };
@@ -175,7 +191,73 @@ function useLibraryPlayer() {
     [playingUri, unload],
   );
 
-  return { playingUri, progress, durations, toggle };
+  const stop = useCallback(async () => {
+    await unload();
+    setPlayingUri(null);
+    setProgress(0);
+  }, [unload]);
+
+  return { playingUri, progress, durations, toggle, stop };
+}
+
+// ── Row: long-press lifts + wiggles it (same feel as the diary cassettes) ─────
+function LiftRow({
+  lifted,
+  onPress,
+  onLongPress,
+  style,
+  accessibilityLabel,
+  children,
+}: {
+  lifted: boolean;
+  onPress: () => void;
+  onLongPress: () => void;
+  style: object;
+  accessibilityLabel: string;
+  children: React.ReactNode;
+}) {
+  const lift = useSharedValue(0);
+  const wig = useSharedValue(0);
+  useEffect(() => {
+    if (lifted) {
+      lift.value = withSpring(1, { damping: 14, stiffness: 240 });
+      wig.value = withSequence(
+        withTiming(-1, { duration: 60 }),
+        withRepeat(withSequence(withTiming(1, { duration: 130 }), withTiming(-1, { duration: 130 })), -1, false),
+      );
+    } else {
+      cancelAnimation(wig);
+      wig.value = withTiming(0, { duration: 140 });
+      lift.value = withTiming(0, { duration: 220 });
+    }
+    return () => cancelAnimation(wig);
+  }, [lifted, lift, wig]);
+  const st = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: -4 * lift.value },
+      { scale: 1 + 0.03 * lift.value },
+      // A wide row reads as a big swing at the cassettes' 2°: keep it subtle.
+      { rotate: `${0.7 * wig.value}deg` },
+    ],
+    shadowColor: "#000",
+    shadowOpacity: 0.28 * lift.value,
+    shadowRadius: 4 + 10 * lift.value,
+    shadowOffset: { width: 0, height: 2 + 8 * lift.value },
+  }));
+  return (
+    <Animated.View style={st}>
+      <Pressable
+        onPress={onPress}
+        onLongPress={onLongPress}
+        delayLongPress={450}
+        style={({ pressed }) => [style, { opacity: pressed && !lifted ? 0.9 : 1 }]}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+      >
+        {children}
+      </Pressable>
+    </Animated.View>
+  );
 }
 
 // ── Vinyl disc with the play/pause label ──────────────────────────────────────
@@ -214,9 +296,43 @@ export default function LibraryScreen() {
   const { lang } = useLang();
   const en = lang === "en";
   const { theme: c } = useTheme();
-  const { readingRecordings, showTimeRecordings } = useGame();
+  const { readingRecordings, showTimeRecordings, removeReadingRecording, removeShowTimeRecording } = useGame();
   const [filter, setFilter] = useState<Filter>("all");
-  const { playingUri, progress, durations, toggle } = useLibraryPlayer();
+  const { playingUri, progress, durations, toggle, stop } = useLibraryPlayer();
+  const [liftedId, setLiftedId] = useState<string | null>(null);
+  const [toDelete, setToDelete] = useState<Item | null>(null);
+  const liftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (liftTimer.current) clearTimeout(liftTimer.current);
+    },
+    [],
+  );
+
+  // Long-press: stop playback, lift + wiggle the row, then ask.
+  const askDelete = (it: Item) => {
+    if (playingUri) void stop();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    setLiftedId(it.id);
+    if (liftTimer.current) clearTimeout(liftTimer.current);
+    liftTimer.current = setTimeout(() => setToDelete(it), 380);
+  };
+
+  const cancelDelete = () => {
+    setToDelete(null);
+    setLiftedId(null);
+  };
+
+  const confirmDelete = async () => {
+    const it = toDelete;
+    setToDelete(null);
+    setLiftedId(null);
+    if (!it) return;
+    if (playingUri === it.uri) await stop();
+    if (it.mode === "reading") removeReadingRecording(it.uri);
+    else if (it.mode === "showtime" && it.rank != null) removeShowTimeRecording(it.rank, it.uri);
+    await deleteRecordingFile(it.uri);
+  };
 
   const topPad = Platform.OS === "web" ? 54 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -239,6 +355,7 @@ export default function LibraryScreen() {
         out.push({
           id: `s:${rank}:${rec.uri}`,
           uri: rec.uri,
+          rank: Number(rank),
           title: rec.label?.trim() || (en ? `Rank ${rank} · take ${i + 1}` : `Ранг ${rank} · дубль ${i + 1}`),
           mode: "showtime",
         });
@@ -270,10 +387,11 @@ export default function LibraryScreen() {
       .join(" · ");
     return (
       <Animated.View key={it.id} entering={FadeInDown.delay(80 + Math.min(i, 8) * 40).duration(360)}>
-        <Pressable
+        <LiftRow
+          lifted={liftedId === it.id}
           onPress={() => toggle(it.uri)}
-          style={({ pressed }) => [s.row, { borderColor: c.tileStroke, opacity: pressed ? 0.9 : 1 }]}
-          accessibilityRole="button"
+          onLongPress={() => askDelete(it)}
+          style={[s.row, { borderColor: c.tileStroke }]}
           accessibilityLabel={`${playing ? (en ? "Pause" : "Пауза") : en ? "Play" : "Слушать"} ${it.title}`}
         >
           <LinearGradient colors={[c.tileTop, c.tileBottom]} style={s.fill} pointerEvents="none" />
@@ -292,7 +410,7 @@ export default function LibraryScreen() {
             )}
           </View>
           <Text style={[s.rowDur, { color: c.text, fontVariant: ["tabular-nums"] }]}>{dur}</Text>
-        </Pressable>
+        </LiftRow>
       </Animated.View>
     );
   };
@@ -381,6 +499,23 @@ export default function LibraryScreen() {
           )}
         </View>
       </ScrollView>
+
+      <AppDialog
+        visible={!!toDelete}
+        title={en ? "Delete this recording?" : "Удалить запись?"}
+        message={
+          toDelete
+            ? en
+              ? `${toDelete.title} will be deleted for good.`
+              : `${toDelete.title} удалится навсегда.`
+            : undefined
+        }
+        onRequestClose={cancelDelete}
+        buttons={[
+          { label: en ? "Cancel" : "Отмена", onPress: cancelDelete },
+          { label: en ? "Delete" : "Удалить", variant: "primary", onPress: () => void confirmDelete() },
+        ]}
+      />
     </View>
   );
 }
