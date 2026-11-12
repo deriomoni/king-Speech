@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLang } from "@/context/LangContext";
 import { useAuth } from "@/context/AuthContext";
 import { useDevTools } from "@/context/DevToolsContext";
+import { useSettings } from "@/context/SettingsContext";
 import { useRouter } from "expo-router";
 import { useTheme, type Theme, type ThemeMode } from "@/context/ThemeContext";
 import {
@@ -14,6 +15,7 @@ import {
   Chevron,
   GoldSwitch,
   ListRow,
+  PressScale,
   SectionLabel,
   ThemedSvg,
   tapHaptic,
@@ -88,11 +90,9 @@ export default function SettingsScreen() {
   const router = useRouter();
   const en = appLang === "en";
 
-  const [sound, setSound] = useState(true);
-  const [vibration, setVibration] = useState(true);
-  // TODO(design): no notification settings store exists yet — local state only.
-  const [notifications, setNotifications] = useState(true);
-  const [reminder, setReminder] = useState(true);
+  // Persisted toggles (SettingsContext): vibration gates lib/haptics, sound
+  // effects gate lib/sfx app-wide.
+  const { settings, setSetting } = useSettings();
   const [showLangs, setShowLangs] = useState(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
@@ -181,21 +181,15 @@ export default function SettingsScreen() {
                 label={en ? "Free plan" : "Бесплатный план"}
                 // Only the «Улучшить» pill opens the paywall — the row itself is inert.
                 right={
-                  <Pressable
+                  <PressScale
                     accessibilityRole="button"
-                    onPress={() => {
-                      tapHaptic();
-                      router.push("/subscription" as any);
-                    }}
-                    style={({ pressed }) => [
-                      styles.upgradePill,
-                      { backgroundColor: theme.cta, opacity: pressed ? 0.85 : 1 },
-                    ]}
+                    onPress={() => router.push("/subscription" as any)}
+                    style={[styles.upgradePill, { backgroundColor: theme.cta }]}
                   >
                     <Text style={[styles.upgradeLabel, { color: theme.ctaText }]}>
                       {en ? "Upgrade" : "Улучшить"}
                     </Text>
-                  </Pressable>
+                  </PressScale>
                 }
               />
             </Card>
@@ -212,27 +206,27 @@ export default function SettingsScreen() {
                 icon={icon("volume-high-outline")}
                 label={t("soundEffects")}
                 divider
-                right={sw(sound, setSound)}
+                right={sw(settings.soundEffects, (v) => setSetting("soundEffects", v))}
               />
               <ListRow
                 theme={theme}
                 icon={icon("phone-portrait-outline")}
                 label={t("vibration")}
                 divider
-                right={sw(vibration, setVibration)}
+                right={sw(settings.vibration, (v) => setSetting("vibration", v))}
               />
               <ListRow
                 theme={theme}
                 icon={icon("notifications-outline")}
                 label={t("pushNotifications")}
                 divider
-                right={sw(notifications, setNotifications)}
+                right={sw(settings.pushNotifications, (v) => setSetting("pushNotifications", v))}
               />
               <ListRow
                 theme={theme}
                 icon={icon("alarm-outline")}
                 label={en ? "Daily reminder · 09:00" : "Напоминание · 09:00"}
-                right={sw(reminder, setReminder)}
+                right={sw(settings.dailyReminder, (v) => setSetting("dailyReminder", v))}
               />
             </Card>
           </Animated.View>
@@ -298,15 +292,6 @@ export default function SettingsScreen() {
           <Animated.View entering={FadeInDown.delay(160).duration(400)}>
             <SectionLabel theme={theme}>{en ? "Support" : "Поддержка"}</SectionLabel>
             <Card theme={theme} themeMode={themeMode}>
-              <ListRow
-                theme={theme}
-                icon={icon("chatbubble-ellipses-outline")}
-                label={en ? "Feedback" : "Обратная связь"}
-                divider
-                onPress={() => {
-                  // TODO(design): feedback destination not defined yet.
-                }}
-              />
               <ListRow
                 theme={theme}
                 icon={icon("logo-instagram")}

@@ -1,9 +1,9 @@
 import React, { useEffect } from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View, Text, StyleSheet, Pressable, type StyleProp, type ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SvgXml } from "react-native-svg";
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
+import * as Haptics from "@/lib/haptics";
 import type { Theme } from "@/context/ThemeContext";
 
 /** Figma "stroke/shape" — the 2px hairline around cards. */
@@ -31,6 +31,47 @@ export function ThemedSvg({
 
 export function tapHaptic() {
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+}
+
+const PRESS_SPRING = { damping: 18, stiffness: 320 };
+
+/**
+ * The app's standard button press feedback: springs down on press-in (with a
+ * light haptic) and back on release, on the UI thread.
+ */
+export function PressScale({
+  onPress,
+  style,
+  children,
+  pressedScale = 0.92,
+  accessibilityRole,
+  hitSlop = 6,
+}: {
+  onPress: () => void;
+  style?: StyleProp<ViewStyle>;
+  children: React.ReactNode;
+  pressedScale?: number;
+  accessibilityRole?: "button";
+  hitSlop?: number;
+}) {
+  const scale = useSharedValue(1);
+  const aStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  return (
+    <Pressable
+      accessibilityRole={accessibilityRole}
+      hitSlop={hitSlop}
+      onPressIn={() => {
+        scale.value = withSpring(pressedScale, PRESS_SPRING);
+        tapHaptic();
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, PRESS_SPRING);
+      }}
+      onPress={onPress}
+    >
+      <Animated.View style={[style, aStyle]}>{children}</Animated.View>
+    </Pressable>
+  );
 }
 
 /**
