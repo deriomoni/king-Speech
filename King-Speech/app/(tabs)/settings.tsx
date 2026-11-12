@@ -179,7 +179,7 @@ export default function SettingsScreen() {
                 theme={theme}
                 icon={<ThemedSvg xml={CROWN_OUTLINE_XML} width={22} height={22} fg={theme.text} />}
                 label={en ? "Free plan" : "Бесплатный план"}
-                onPress={() => router.push("/subscription" as any)}
+                // Only the «Улучшить» pill opens the paywall — the row itself is inert.
                 right={
                   <Pressable
                     accessibilityRole="button"

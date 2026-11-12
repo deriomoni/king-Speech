@@ -192,7 +192,8 @@ export default function CoinsScreen() {
             })}
           </View>
 
-          {/* «Бесплатные монеты» */}
+          {/* «Бесплатные монеты» — same staggered entrance as the packs */}
+          <Animated.View entering={FadeInDown.delay(120 + PACKS.length * 50).duration(380)}>
           <Pressable
             onPress={watchAd}
             style={({ pressed }) => [s.free, { borderColor: c.tileStroke, opacity: pressed ? 0.9 : 1 }]}
@@ -211,7 +212,9 @@ export default function CoinsScreen() {
               <Text style={s.freePillText}>+10</Text>
             </View>
           </Pressable>
+          </Animated.View>
 
+          <Animated.View entering={FadeInDown.delay(120 + (PACKS.length + 1) * 50).duration(380)}>
           <Text style={[s.section, { color: c.text, marginTop: 28 }]}>{en ? "What to spend on" : "На что потратить"}</Text>
           <View style={[s.spend, { borderColor: c.tileStroke }]}>
             <LinearGradient colors={[c.tileTop, c.tileBottom]} style={s.fill} pointerEvents="none" />
@@ -228,6 +231,7 @@ export default function CoinsScreen() {
               </View>
             ))}
           </View>
+          </Animated.View>
         </View>
       </ScrollView>
     </View>

@@ -63,6 +63,12 @@ function fmtDuration(sec?: number) {
   return `${Math.floor(v / 60)}:${String(v % 60).padStart(2, "0")}`;
 }
 
+/** Remaining time while playing: «−1:23». */
+function fmtRemaining(sec: number) {
+  const v = Math.max(0, Math.ceil(sec));
+  return `−${Math.floor(v / 60)}:${String(v % 60).padStart(2, "0")}`;
+}
+
 function fmtDate(ms: number, en: boolean) {
   try {
     return new Date(ms)
@@ -139,7 +145,10 @@ function useLibraryPlayer() {
             await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true });
           } catch {}
           if (!soundRef.current) {
-            const { sound } = await Audio.Sound.createAsync({ uri }, { shouldPlay: false });
+            const { sound } = await Audio.Sound.createAsync(
+              { uri },
+              { shouldPlay: false, progressUpdateIntervalMillis: 250 },
+            );
             soundRef.current = sound;
             loadedUri.current = uri;
             sound.setOnPlaybackStatusUpdate((st: any) => {
@@ -187,10 +196,12 @@ function Vinyl({ playing }: { playing: boolean }) {
             <Rect x={28.2} y={22} width={3.2} height={10} rx={1.4} fill="#262628" />
           </>
         ) : (
+          // Triangle bbox is x 24.6–33.2 (w 8.6): centre it on the label (27)
+          // plus ~w/6 to the right so it reads optically centred.
           <Path
             d="M24.6 22.4c0-.9.97-1.45 1.75-1l6.3 3.65c.77.45.77 1.56 0 2l-6.3 3.65c-.78.45-1.75-.11-1.75-1z"
             fill="#262628"
-            transform="translate(0.4 0.95)"
+            transform="translate(-0.5 0.95)"
           />
         )}
       </Svg>
@@ -248,7 +259,12 @@ export default function LibraryScreen() {
 
   const renderRow = (it: Item, i: number) => {
     const playing = playingUri === it.uri;
-    const dur = fmtDuration(it.durationSec ?? durations[it.uri]);
+    const totalSec = durations[it.uri] ?? it.durationSec;
+    // While playing: count down the remaining time; stopped: the duration.
+    const dur =
+      playing && totalSec && totalSec > 0
+        ? fmtRemaining(totalSec * (1 - Math.min(1, Math.max(0, progress))))
+        : fmtDuration(it.durationSec ?? durations[it.uri]);
     const meta = [en ? MODE_LABEL[it.mode].en : MODE_LABEL[it.mode].ru, it.date ? fmtDate(it.date, en) : ""]
       .filter(Boolean)
       .join(" · ");
@@ -275,7 +291,7 @@ export default function LibraryScreen() {
               </View>
             )}
           </View>
-          <Text style={[s.rowDur, { color: c.text }]}>{dur}</Text>
+          <Text style={[s.rowDur, { color: c.text, fontVariant: ["tabular-nums"] }]}>{dur}</Text>
         </Pressable>
       </Animated.View>
     );
@@ -297,6 +313,7 @@ export default function LibraryScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            alwaysBounceHorizontal={false}
             style={s.chipsScroll}
             contentContainerStyle={s.chips}
           >
