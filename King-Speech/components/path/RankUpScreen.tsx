@@ -21,6 +21,7 @@ import Animated, {
   cancelAnimation,
 } from "react-native-reanimated";
 import { router } from "expo-router";
+import { leaveTo } from "@/lib/nav";
 import { Audio } from "@/lib/av";
 import { RankBackground } from "./RankBackground";
 import { useTheme } from "@/context/ThemeContext";
@@ -604,7 +605,8 @@ export default function RankUpScreen({ fromRank, memento = false }: Props) {
     if (!isFinal) {
       advanceRank();
     }
-    router.replace("/");
+    // Opened from the Path tab — pop back to it (no second tabs navigator).
+    leaveTo("/");
   };
 
   return (

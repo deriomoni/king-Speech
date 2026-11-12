@@ -32,6 +32,7 @@ import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
+import { leaveTo } from "@/lib/nav";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useLang, Lang } from "@/context/LangContext";
 import {
@@ -5411,7 +5412,7 @@ export default function ShowtimeStageScreen() {
         onPress={() => {
           if (started && !finished) setShowExitConfirm(true);
           else if (isAuthor) void leaveToAuthor(false);
-          else router.replace("/(tabs)");
+          else leaveTo(mode === "trainer" ? "/(tabs)/showtime" : "/(tabs)");
         }}
         hitSlop={12}
         style={({ pressed }) => ({
@@ -5509,7 +5510,7 @@ export default function ShowtimeStageScreen() {
               noiseTimersRef.current.forEach(clearTimeout);
               noiseTimersRef.current = [];
               stopRecording().catch(() => {}).finally(() => { void leaveToAuthor(false); });
-            } else router.replace("/(tabs)");
+            } else leaveTo(mode === "trainer" ? "/(tabs)/showtime" : "/(tabs)");
           } },
           { label: t("stayBtn"), variant: "primary", onPress: () => setShowExitConfirm(false) },
         ]}

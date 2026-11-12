@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo } from "react";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
+import { leaveTo } from "@/lib/nav";
 import RankUpScreen from "@/components/path/RankUpScreen";
 import { useGame } from "@/context/GameContext";
 
@@ -22,7 +23,7 @@ export default function RankUpRoute() {
   useEffect(() => {
     if (!isLoaded) return;
     if (!portalDone) {
-      router.replace("/");
+      leaveTo("/");
     }
   }, [isLoaded, portalDone]);
 

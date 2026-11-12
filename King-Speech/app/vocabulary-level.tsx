@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { leaveTo } from "@/lib/nav";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -222,7 +223,7 @@ export default function VocabularyLevelScreen() {
             }, 1800);
           }}
           onFinish={() => setPhase("result")}
-          onExit={() => router.replace("/(tabs)")}
+          onExit={() => leaveTo("/(tabs)")}
           onReplace={() => {
             // Discard the current word and re-spin. shownIds already excludes it,
             // so the roulette can't land on the same word again this session.
@@ -252,8 +253,7 @@ export default function VocabularyLevelScreen() {
               const color = MODULE_COLORS[nextModule]?.color ?? "#9468FB";
               triggerModuleTransition(moduleNum, nextModule, color);
             }
-            if (router.canGoBack()) router.back();
-            else router.replace("/(tabs)");
+            leaveTo("/(tabs)");
           }}
         />
       )}

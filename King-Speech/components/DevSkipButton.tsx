@@ -2,6 +2,7 @@ import React from "react";
 import { Platform, Pressable, StyleSheet, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { leaveTo } from "@/lib/nav";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { useDevTools } from "@/context/DevToolsContext";
@@ -59,7 +60,7 @@ export default function DevSkipButton({
     const current = idx >= 0 ? all[idx] : null;
     const next = idx >= 0 && idx < all.length - 1 ? all[idx + 1] : null;
     if (!next) {
-      router.replace("/(tabs)");
+      leaveTo("/(tabs)");
       return;
     }
     // Crossing into a new module → play the full-screen module transition (same

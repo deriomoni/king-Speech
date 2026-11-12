@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { router } from "expo-router";
+import { leaveTo } from "@/lib/nav";
 import JennyInterview from "@/components/path/JennyInterview";
 import { useGame, RANKS_MODULAR } from "@/context/GameContext";
 
@@ -23,7 +24,7 @@ export default function PortalInterviewScreen() {
       return;
     }
     if (!allRankLevelsDone) {
-      router.replace("/");
+      leaveTo("/");
     }
   }, [isLoaded, allRankLevelsDone, alreadyDone, pendingFinish]);
 

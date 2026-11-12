@@ -16,6 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
+import { leaveFlowToTabs } from "@/lib/nav";
 import { useVideoPlayer, VideoView } from "expo-video";
 import Animated, {
   useSharedValue,
@@ -637,7 +638,7 @@ export default function RoleResultScreen() {
               <Ionicons name="repeat" size={20} color={ON_VIOLET} />
               <Text style={styles.secondaryActionText}>{lang === "en" ? "Play another role" : "Ещё роль"}</Text>
             </Pressable>
-            <Pressable onPress={() => router.replace("/(tabs)")} style={styles.secondaryBtn}>
+            <Pressable onPress={() => leaveFlowToTabs("/(tabs)/showtime")} style={styles.secondaryBtn}>
               <Text style={styles.secondaryBtnText}>{lang === "en" ? "Done" : "Готово"}</Text>
             </Pressable>
           </Animated.View>

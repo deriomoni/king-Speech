@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
+import { leaveTo } from "@/lib/nav";
 import { ROLES, tx as roleTx } from "@/constants/rolesData";
 import Animated, {
   useSharedValue,
@@ -669,7 +670,7 @@ export default function LevelScreen() {
     // Don't hide the widget first — it covers the finished level until the tabs
     // screen replaces it.
     setScores([]);
-    router.replace("/(tabs)");
+    leaveTo("/(tabs)");
   }, []);
 
   // If this screen is reused for a different level (router.replace to
@@ -693,7 +694,7 @@ export default function LevelScreen() {
   }, []);
   const confirmReadingExit = React.useCallback(() => {
     setReadingExitConfirm(false);
-    router.replace("/(tabs)");
+    leaveTo("/(tabs)");
   }, []);
   const cancelReadingExit = React.useCallback(() => {
     setReadingExitConfirm(false);
@@ -704,7 +705,7 @@ export default function LevelScreen() {
 
   const handleExitPress = React.useCallback(() => {
     const inTask = activeTaskIndex !== null || showResults || analyzing;
-    const doExit = () => router.replace("/(tabs)");
+    const doExit = () => leaveTo("/(tabs)");
     if (inTask) {
       Alert.alert(
         t("exitTaskTitle"),
@@ -1157,8 +1158,8 @@ export default function LevelScreen() {
         <AppDialog
           visible={allDoneOpen}
           title={t("allLevelsDone")}
-          buttons={[{ label: t("okBtn"), variant: "primary", onPress: () => { setAllDoneOpen(false); router.replace("/(tabs)"); } }]}
-          onRequestClose={() => { setAllDoneOpen(false); router.replace("/(tabs)"); }}
+          buttons={[{ label: t("okBtn"), variant: "primary", onPress: () => { setAllDoneOpen(false); leaveTo("/(tabs)"); } }]}
+          onRequestClose={() => { setAllDoneOpen(false); leaveTo("/(tabs)"); }}
         />
         <DevSkipButton levelId={levelId} />
       </View>
@@ -1258,8 +1259,8 @@ export default function LevelScreen() {
         <AppDialog
           visible={allDoneOpen}
           title={t("allLevelsDone")}
-          buttons={[{ label: t("okBtn"), variant: "primary", onPress: () => { setAllDoneOpen(false); router.replace("/(tabs)"); } }]}
-          onRequestClose={() => { setAllDoneOpen(false); router.replace("/(tabs)"); }}
+          buttons={[{ label: t("okBtn"), variant: "primary", onPress: () => { setAllDoneOpen(false); leaveTo("/(tabs)"); } }]}
+          onRequestClose={() => { setAllDoneOpen(false); leaveTo("/(tabs)"); }}
         />
 
         {/* Close X (top-right, above ReadingLevelView header) — hidden while
@@ -1401,8 +1402,8 @@ export default function LevelScreen() {
       <AppDialog
         visible={allDoneOpen}
         title={t("allLevelsDone")}
-        buttons={[{ label: t("okBtn"), variant: "primary", onPress: () => { setAllDoneOpen(false); router.replace("/(tabs)"); } }]}
-        onRequestClose={() => { setAllDoneOpen(false); router.replace("/(tabs)"); }}
+        buttons={[{ label: t("okBtn"), variant: "primary", onPress: () => { setAllDoneOpen(false); leaveTo("/(tabs)"); } }]}
+        onRequestClose={() => { setAllDoneOpen(false); leaveTo("/(tabs)"); }}
       />
 
       <DevSkipButton levelId={levelId} onPreviewResults={handlePreviewResults} />
