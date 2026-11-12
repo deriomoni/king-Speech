@@ -7,26 +7,21 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  withSequence,
-  cancelAnimation,
-  FadeIn,
-  Easing,
-} from "react-native-reanimated";
+import Animated, { FadeIn } from "react-native-reanimated";
+import Svg, { Circle } from "react-native-svg";
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from "expo-camera";
 import { useLang } from "@/context/LangContext";
 import { getRoleById, tx, type RoleMode } from "@/constants/rolesData";
-import RoleArt from "@/components/roles/RoleArt";
+import { RoleTarotCard, CrownPattern, MONO, ROLES_BG } from "@/components/roles/RoleTarotCard";
+import { FaceTrackerIcon, FACE_TRACK_COLORS, type FaceTrackState } from "@/components/roles/FaceTrackerIcon";
+import { RolesMaskIcon } from "@/components/showtime/ShowTimeIcons";
 import { setRolePerformance } from "@/lib/rolePerformance";
 
 let Audio: any = null;
@@ -34,13 +29,14 @@ if (Platform.OS !== "web") {
   Audio = require("@/lib/av").Audio;
 }
 
-const BG = "#0E0E10"; // main interface dark (brandColors.bg)
-const TEXT = "#F5F0FF";
-const MUTED = "#A79CC4";
-// Brand accents (theme/tokens): gold is the one thing you tap.
-const GOLD = "#FFD857";
-const GOLD_SOFT = "#FFE68C";
-const ON_GOLD = "#3A2C00";
+// Recording screen — Figma "Screen / 09c · Роли · съёмка" (446:2331).
+const BG = ROLES_BG;
+const TEXT = "#FFFFFF";
+const MUTED = "rgba(255,255,255,0.6)";
+const REC_RED = "#FF3B30";
+const ARC_YELLOW = "#FFD857";
+/** The yellow arc around the record button fills over this many seconds (visual only, no auto-stop). */
+const ARC_SECONDS = 60;
 
 function haptic(style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle.Light) {
   if (Platform.OS !== "web") Haptics.impactAsync(style).catch(() => {});
@@ -54,9 +50,11 @@ const MAX_TAKES = 2;
 export default function RoleStageScreen() {
   const insets = useSafeAreaInsets();
   const { lang } = useLang();
-  const params = useLocalSearchParams<{ roleId: string; mode: RoleMode }>();
+  const params = useLocalSearchParams<{ roleId: string; mode: RoleMode; camera?: string }>();
   const role = getRoleById(String(params.roleId));
   const mode: RoleMode = params.mode === "scripted" ? "scripted" : "improv";
+  // «С камерой / Только голос» from /role-brief. Voice-only never opens the camera.
+  const wantCamera = params.camera !== "0";
 
   const [camPerm, requestCamPerm] = useCameraPermissions();
   const [micPerm, requestMicPerm] = useMicrophonePermissions();
@@ -79,34 +77,31 @@ export default function RoleStageScreen() {
   const webRecorderRef = useRef<MediaRecorder | null>(null);
   const webStreamRef = useRef<MediaStream | null>(null);
 
-  // Scan animation
-  const scanY = useSharedValue(0);
-  const scanStyle = useAnimatedStyle(() => ({ transform: [{ translateY: scanY.value }] }));
-  const pulse = useSharedValue(1);
-  const pulseStyle = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }], opacity: 2 - pulse.value }));
-
-  const hasCam = camPerm?.granted;
+  const hasCam = wantCamera && !!camPerm?.granted;
   const hasMic = micPerm?.granted;
 
   // Ask permissions on mount.
   useEffect(() => {
     (async () => {
       try {
-        if (!camPerm?.granted) await requestCamPerm();
+        if (wantCamera && !camPerm?.granted) await requestCamPerm();
         if (!micPerm?.granted) await requestMicPerm();
       } catch {}
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Face-scan intro animation, then arm.
+  // Short "get ready" beat before the record button arms.
   useEffect(() => {
     if (phase !== "scan") return;
-    scanY.value = withRepeat(withTiming(180, { duration: 1400, easing: Easing.inOut(Easing.ease) }), -1, true);
-    pulse.value = withRepeat(withTiming(1.5, { duration: 1200 }), -1, false);
-    const t = setTimeout(() => setPhase("ready"), 2400);
-    return () => { clearTimeout(t); cancelAnimation(scanY); cancelAnimation(pulse); };
+    const t = setTimeout(() => setPhase("ready"), 1600);
+    return () => clearTimeout(t);
   }, [phase]);
+
+  // TODO(face-tracking): the app has no face detection yet — the tracker glyph
+  // always shows the white «в кадре» state. Wire a detector here and switch to
+  // "turn" (yellow) / "lost" (red).
+  const faceState = "ok" as FaceTrackState;
 
   useEffect(() => {
     return () => {
@@ -321,39 +316,53 @@ export default function RoleStageScreen() {
     );
   }
 
-  const mm = String(Math.floor(elapsed / 60)).padStart(1, "0");
+  const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
   const ss = String(elapsed % 60).padStart(2, "0");
+  const busy = phase === "processing" || restarting;
+  const faceColor = FACE_TRACK_COLORS[faceState];
+  const facePill =
+    faceState === "ok"
+      ? (lang === "en" ? "Face in frame" : "Лицо в кадре")
+      : faceState === "turn"
+        ? (lang === "en" ? "Turn your face" : "Поверни лицо")
+        : (lang === "en" ? "Face lost" : "Лицо потеряно");
+
+  const onRecordPress = () => {
+    if (phase === "ready") startRecording();
+    else if (phase === "recording" && !restarting) finishRecording();
+  };
 
   return (
     <View style={styles.root}>
-      {/* Camera / preview backdrop */}
-      <View style={StyleSheet.absoluteFill}>
-        {hasCam ? (
-          <CameraView
-            ref={cameraRef}
-            style={StyleSheet.absoluteFill}
-            facing="front"
-            mode="video"
-            mute
-            videoQuality="1080p"
-            onCameraReady={() => setCamReady(true)}
-          />
-        ) : (
-          <LinearGradient colors={["#241a3d", BG]} style={StyleSheet.absoluteFill} />
-        )}
-        {/* darken for legibility */}
-        <LinearGradient colors={["#00000066", "#00000000", "#000000CC"]} style={StyleSheet.absoluteFill} />
-      </View>
+      {/* Full-bleed selfie camera, or the role card for voice-only */}
+      {hasCam ? (
+        <CameraView
+          ref={cameraRef}
+          style={StyleSheet.absoluteFill}
+          facing="front"
+          mode="video"
+          mute
+          videoQuality="1080p"
+          onCameraReady={() => setCamReady(true)}
+        />
+      ) : (
+        <View style={[StyleSheet.absoluteFill, styles.voiceBg]}>
+          <CrownPattern width={SW} height={SH} />
+          <View style={{ transform: [{ rotate: "-2deg" }] }}>
+            <RoleTarotCard role={role} width={Math.round(Math.min(SW * 0.5, 220))} lang={lang} />
+          </View>
+        </View>
+      )}
 
-      {/* Top bar */}
+      {/* Top / bottom shades */}
+      <LinearGradient pointerEvents="none" colors={["#000000A6", "#00000000"]} style={styles.shadeTop} />
+      <LinearGradient pointerEvents="none" colors={["#00000000", "#000000B3"]} style={styles.shadeBottom} />
+
+      {/* Top bar: close · REC timer */}
       <View style={[styles.topBar, { paddingTop: (Platform.OS === "web" ? 16 : insets.top) + 6 }]}>
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.closeBtn}>
           <Ionicons name="close" size={24} color="#fff" />
         </Pressable>
-        <View style={styles.roleTag}>
-          <RoleArt id={role.id} size={28} radius={14} face />
-          <Text style={styles.roleTagText} numberOfLines={1}>{tx(role.title, lang)}</Text>
-        </View>
         {phase === "recording" ? (
           <View style={styles.recPill}>
             <View style={styles.recDot} />
@@ -364,92 +373,83 @@ export default function RoleStageScreen() {
         )}
       </View>
 
-      {/* Face-scan overlay */}
-      {phase === "scan" && (
-        <Animated.View entering={FadeIn} style={styles.scanWrap} pointerEvents="none">
-          <View style={styles.scanFrame}>
-            <Animated.View style={[styles.pulseRing, pulseStyle]} />
-            <Animated.View style={[styles.scanLine, scanStyle]} />
-            <View style={[styles.corner, styles.cTL]} />
-            <View style={[styles.corner, styles.cTR]} />
-            <View style={[styles.corner, styles.cBL]} />
-            <View style={[styles.corner, styles.cBR]} />
+      {/* Face tracker (camera mode only) */}
+      {hasCam && (
+        <Animated.View entering={FadeIn} style={styles.trackerWrap} pointerEvents="none">
+          <FaceTrackerIcon size={44} color={faceColor} />
+          <View style={styles.facePill}>
+            <View style={[styles.faceDot, { backgroundColor: faceState === "ok" ? "#34C759" : faceColor }]} />
+            <Text style={styles.facePillText}>{facePill}</Text>
           </View>
-          <Text style={styles.scanText}>{lang === "en" ? "Getting into character..." : "Вживаемся в образ..."}</Text>
         </Animated.View>
       )}
 
-      {/* Flex spacer keeps the bottom card anchored: without it, when the
-          scan overlay (flex:1) unmounts the card snaps up under the top bar. */}
-      {phase !== "scan" && <View style={{ flex: 1 }} />}
+      <View style={{ flex: 1 }} />
 
-      {/* Bottom content */}
-      <View style={[styles.bottom, { paddingBottom: (Platform.OS === "web" ? 24 : insets.bottom) + 18 }]}>
-        {!hasCam && phase !== "scan" && (
+      {/* Bottom: (teleprompter) · role chip · controls */}
+      <View style={[styles.bottom, { paddingBottom: (Platform.OS === "web" ? 20 : insets.bottom) + 14 }]}>
+        {!hasCam && wantCamera && phase !== "scan" && (
           <View style={styles.noCamNote}>
-            <Ionicons name="videocam-off" size={16} color={MUTED} />
+            <Ionicons name="videocam-off" size={14} color={MUTED} />
             <Text style={styles.noCamText}>
               {lang === "en" ? "Camera off — you can still perform with voice." : "Камера выключена — можно играть только голосом."}
             </Text>
           </View>
         )}
 
-        {mode === "scripted" ? (
+        {mode === "scripted" && (
           <View style={styles.prompterCard}>
-            <Text style={styles.prompterLabel}>{lang === "en" ? "YOUR LINE" : "ТВОЯ РЕПЛИКА"}</Text>
-            <ScrollView style={{ maxHeight: 190 }} showsVerticalScrollIndicator={false}>
+            <ScrollView style={{ maxHeight: 150 }} showsVerticalScrollIndicator={false}>
               <Text style={styles.prompterText}>{tx(role.scriptedText, lang)}</Text>
             </ScrollView>
           </View>
-        ) : (
-          <View style={styles.sceneCard}>
-            <Text style={styles.prompterLabel}>{lang === "en" ? "THE SCENE" : "СЦЕНА"}</Text>
-            <Text style={styles.sceneText}>{tx(role.scene, lang)}</Text>
+        )}
+
+        <View style={styles.roleChip}>
+          <RolesMaskIcon color="#FFFFFF" width={13} height={18} />
+          <Text style={styles.roleChipText} numberOfLines={1}>{tx(role.title, lang).toUpperCase()}</Text>
+        </View>
+
+        {phase === "processing" ? (
+          <View style={styles.processing}>
+            <ActivityIndicator color={ARC_YELLOW} />
+            <Text style={styles.processingText}>{lang === "en" ? "Preparing your take..." : "Готовим твой дубль..."}</Text>
           </View>
-        )}
+        ) : (
+          <View style={styles.controls}>
+            <View style={styles.sideSlot}>
+              {phase === "recording" && (
+                <Text style={styles.takeHint}>
+                  {take < MAX_TAKES
+                    ? (lang === "en" ? `Take ${take}/${MAX_TAKES}` : `Дубль ${take}/${MAX_TAKES}`)
+                    : (lang === "en" ? "Last take" : "Последний")}
+                </Text>
+              )}
+            </View>
 
-        {phase === "ready" && (
-          <Pressable onPress={startRecording} style={({ pressed }) => [styles.recordBtn, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
-            <LinearGradient colors={[GOLD_SOFT, GOLD]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={StyleSheet.absoluteFill} />
-            <Ionicons name="mic" size={22} color={ON_GOLD} />
-            <Text style={styles.recordBtnText}>{lang === "en" ? "Start performing" : "Начать выступление"}</Text>
-          </Pressable>
-        )}
+            <Pressable
+              onPress={onRecordPress}
+              disabled={busy || phase === "scan"}
+              hitSlop={8}
+              style={({ pressed }) => [styles.recordBtn, { opacity: phase === "scan" ? 0.5 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] }]}
+            >
+              <RecordRing progress={phase === "recording" ? Math.min(1, elapsed / ARC_SECONDS) : 0} />
+              {phase === "recording" ? <View style={styles.recSquare} /> : <View style={styles.recCircle} />}
+            </Pressable>
 
-        {phase === "recording" && (
-          <>
-            <Text style={styles.takeHint}>
-              {take < MAX_TAKES
-                ? (lang === "en" ? `Take ${take} of ${MAX_TAKES}` : `Дубль ${take} из ${MAX_TAKES}`)
-                : (lang === "en" ? "Last take" : "Последний дубль")}
-            </Text>
-            <View style={styles.actionRow}>
-              {take < MAX_TAKES && (
-                <Pressable
-                  onPress={restartRecording}
-                  disabled={restarting}
-                  style={({ pressed }) => [styles.retakeBtn, { opacity: restarting ? 0.45 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
-                >
-                  <Ionicons name="refresh" size={19} color="#fff" />
-                  <Text style={styles.retakeBtnText}>{lang === "en" ? "Start over" : "Заново"}</Text>
+            {/* Figma shows «Пауза» here; recording can't be paused (expo-camera
+                recordAsync has no pause), so this slot keeps the existing
+                one-time «Заново» restart. */}
+            <View style={styles.sideSlot}>
+              {phase === "recording" && take < MAX_TAKES && (
+                <Pressable onPress={restartRecording} disabled={restarting} style={{ alignItems: "center", opacity: restarting ? 0.45 : 1 }}>
+                  <View style={styles.sideBtn}>
+                    <Ionicons name="refresh" size={22} color="#fff" />
+                  </View>
+                  <Text style={styles.sideLabel}>{lang === "en" ? "Start over" : "Заново"}</Text>
                 </Pressable>
               )}
-              <Pressable
-                onPress={finishRecording}
-                disabled={restarting}
-                style={({ pressed }) => [styles.stopBtn, { flex: 1, opacity: restarting ? 0.45 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
-              >
-                <View style={styles.stopSquare} />
-                <Text style={styles.stopBtnText}>{lang === "en" ? "Finish" : "Готово"}</Text>
-              </Pressable>
             </View>
-          </>
-        )}
-
-        {phase === "processing" && (
-          <View style={styles.processing}>
-            <ActivityIndicator color="#FFC01E" />
-            <Text style={styles.processingText}>{lang === "en" ? "Preparing your take..." : "Готовим твой дубль..."}</Text>
           </View>
         )}
       </View>
@@ -457,52 +457,76 @@ export default function RoleStageScreen() {
   );
 }
 
-const FRAME = 220;
+const REC = 78;
+const RING_R = (REC - 5) / 2;
+const RING_C = 2 * Math.PI * RING_R;
+
+function RecordRing({ progress }: { progress: number }) {
+  return (
+    <Svg width={REC} height={REC} style={{ position: "absolute", top: 0, left: 0 }}>
+      <Circle cx={REC / 2} cy={REC / 2} r={RING_R} stroke="#FFFFFF" strokeWidth={4} fill="none" />
+      {progress > 0 && (
+        <Circle
+          cx={REC / 2}
+          cy={REC / 2}
+          r={RING_R}
+          stroke={ARC_YELLOW}
+          strokeWidth={4}
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={`${RING_C} ${RING_C}`}
+          strokeDashoffset={RING_C * (1 - progress)}
+          transform={`rotate(-90 ${REC / 2} ${REC / 2})`}
+        />
+      )}
+    </Svg>
+  );
+}
+
+const { width: SW, height: SH } = Dimensions.get("window");
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: BG },
   errText: { color: TEXT, fontFamily: "Geologica_800ExtraBold", fontSize: 20, marginBottom: 16 },
   errBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 16, backgroundColor: "#FFFFFF1A" },
   errBtnText: { color: TEXT, fontFamily: "Geologica_600SemiBold", fontSize: 15 },
 
-  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 10 },
-  closeBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "#00000055" },
-  roleTag: { flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: "#00000055", paddingLeft: 4, paddingRight: 12, paddingVertical: 4, borderRadius: 18, maxWidth: 200 },
-  roleTagText: { color: "#fff", fontFamily: "Geologica_700Bold", fontSize: 13, flexShrink: 1 },
-  recPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#E8384FCC", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 18 },
-  recDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#fff" },
-  recTime: { color: "#fff", fontFamily: "Geologica_700Bold", fontSize: 13 },
+  voiceBg: { backgroundColor: BG, alignItems: "center", justifyContent: "center", paddingBottom: 120 },
+  shadeTop: { position: "absolute", top: 0, left: 0, right: 0, height: 190 },
+  shadeBottom: { position: "absolute", bottom: 0, left: 0, right: 0, height: 320 },
 
-  scanWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 20 },
-  scanFrame: { width: FRAME, height: FRAME, borderRadius: 28, overflow: "hidden", alignItems: "center", justifyContent: "center" },
-  pulseRing: { position: "absolute", width: FRAME * 0.7, height: FRAME * 0.7, borderRadius: FRAME, borderWidth: 2, borderColor: "#8E5BFF" },
-  scanLine: { position: "absolute", top: 0, width: FRAME, height: 3, backgroundColor: "#7AF0FF", shadowColor: "#7AF0FF", shadowOpacity: 1, shadowRadius: 8 },
-  corner: { position: "absolute", width: 30, height: 30, borderColor: "#7AF0FF" },
-  cTL: { top: 0, left: 0, borderTopWidth: 3, borderLeftWidth: 3, borderTopLeftRadius: 12 },
-  cTR: { top: 0, right: 0, borderTopWidth: 3, borderRightWidth: 3, borderTopRightRadius: 12 },
-  cBL: { bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3, borderBottomLeftRadius: 12 },
-  cBR: { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3, borderBottomRightRadius: 12 },
-  scanText: { color: "#fff", fontFamily: "Geologica_800ExtraBold", fontSize: 18 },
+  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 8 },
+  closeBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "#00000059" },
+  recPill: { flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: "#00000073", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 18 },
+  recDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: REC_RED },
+  recTime: { color: "#fff", fontFamily: MONO, fontWeight: "700", fontSize: 13 },
+
+  trackerWrap: { alignItems: "center", gap: 10, marginTop: 4 },
+  facePill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#00000073", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
+  faceDot: { width: 7, height: 7, borderRadius: 4 },
+  facePillText: { color: "#fff", fontFamily: "Geologica_600SemiBold", fontSize: 12 },
 
   bottom: { paddingHorizontal: 18, gap: 14 },
   noCamNote: { flexDirection: "row", alignItems: "center", gap: 8, alignSelf: "center", backgroundColor: "#00000066", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 14 },
   noCamText: { color: MUTED, fontFamily: "Geologica_400Regular", fontSize: 12 },
 
-  prompterCard: { backgroundColor: "#0B0718D9", borderRadius: 20, padding: 18, borderWidth: 1, borderColor: "#6C5CE740" },
-  sceneCard: { backgroundColor: "#0B0718D9", borderRadius: 20, padding: 18, borderWidth: 1, borderColor: "#E8439340" },
-  prompterLabel: { color: "#FFC01E", fontFamily: "Geologica_700Bold", fontSize: 11, letterSpacing: 1.5, marginBottom: 8 },
-  prompterText: { color: TEXT, fontFamily: "Literata_400Regular", fontSize: 22, lineHeight: 32 },
-  sceneText: { color: TEXT, fontFamily: "Geologica_700Bold", fontSize: 20, lineHeight: 28 },
+  prompterCard: { backgroundColor: "#000000A6", borderRadius: 18, padding: 16 },
+  prompterText: { color: TEXT, fontFamily: "Literata_400Regular", fontSize: 20, lineHeight: 29 },
 
-  recordBtn: { height: 58, borderRadius: 18, overflow: "hidden", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
-    ...Platform.select({ ios: { shadowColor: GOLD, shadowOpacity: 0.35, shadowRadius: 16, shadowOffset: { width: 0, height: 8 } }, android: { elevation: 8 }, default: {} }) },
-  recordBtnText: { color: ON_GOLD, fontFamily: "Geologica_800ExtraBold", fontSize: 17 },
-  stopBtn: { height: 58, borderRadius: 18, backgroundColor: GOLD, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
-  actionRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  retakeBtn: { height: 58, paddingHorizontal: 20, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.10)", borderWidth: 1, borderColor: "rgba(255,255,255,0.22)", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
-  retakeBtnText: { color: "#fff", fontFamily: "Geologica_700Bold", fontSize: 15 },
-  takeHint: { color: MUTED, fontFamily: "Geologica_700Bold", fontSize: 11, textAlign: "center", letterSpacing: 1.2, textTransform: "uppercase" },
-  stopSquare: { width: 16, height: 16, borderRadius: 4, backgroundColor: ON_GOLD },
-  stopBtnText: { color: ON_GOLD, fontFamily: "Geologica_800ExtraBold", fontSize: 17 },
-  processing: { height: 60, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12 },
+  roleChip: {
+    alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 8, maxWidth: "80%",
+    backgroundColor: "#000000B3", paddingHorizontal: 11, paddingVertical: 7, borderRadius: 12,
+  },
+  roleChipText: { color: "#fff", fontFamily: MONO, fontWeight: "700", fontSize: 12, letterSpacing: 0.5, flexShrink: 1 },
+
+  controls: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 8 },
+  sideSlot: { width: 72, alignItems: "center" },
+  sideBtn: { width: 50, height: 50, borderRadius: 25, backgroundColor: "rgba(255,255,255,0.22)", alignItems: "center", justifyContent: "center" },
+  sideLabel: { color: "#fff", fontFamily: "Geologica_500Medium", fontSize: 11, marginTop: 6 },
+  takeHint: { color: MUTED, fontFamily: "Geologica_700Bold", fontSize: 11, letterSpacing: 0.6, textTransform: "uppercase" },
+  recordBtn: { width: REC, height: REC, alignItems: "center", justifyContent: "center" },
+  recCircle: { width: REC - 18, height: REC - 18, borderRadius: (REC - 18) / 2, backgroundColor: REC_RED },
+  recSquare: { width: 30, height: 30, borderRadius: 8, backgroundColor: REC_RED },
+
+  processing: { height: REC, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12 },
   processingText: { color: TEXT, fontFamily: "Geologica_600SemiBold", fontSize: 15 },
 });
