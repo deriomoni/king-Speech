@@ -41,6 +41,24 @@ const EMOTION_ANIMATION: Record<OscarEmotion, string> = {
   shiny: "Shiny",
 };
 
+// Static poses (Figma exports) shown while the .riv loads and wherever Rive
+// can't run (Expo Go without network for the web runtime, missing native
+// module) — Oscar is never a blank square.
+const OSCAR_HAPPY_PNG = require("@/assets/figma/levels/oscar-happy.png");
+const OSCAR_SAD_PNG = require("@/assets/figma/levels/oscar-sad.png");
+const EMOTION_FALLBACK: Record<OscarEmotion, number> = {
+  idle: OSCAR_HAPPY_PNG,
+  hi: OSCAR_HAPPY_PNG,
+  thumbup: OSCAR_HAPPY_PNG,
+  happy: OSCAR_HAPPY_PNG,
+  cool: OSCAR_HAPPY_PNG,
+  shiny: OSCAR_HAPPY_PNG,
+  notsure: OSCAR_SAD_PNG,
+  sad: OSCAR_SAD_PNG,
+  upset: OSCAR_SAD_PNG,
+};
+const OSCAR_RIV = require("@/assets/rive/oscar.riv");
+
 // The mascot is rendered 30% bigger than the requested `size`, inside a FULL
 // SQUARE frame (no bottom crop) so NO limb — a raised arm/hand, legs/feet —
 // is clipped. The Rive artboard is `contain`-fit and centered, giving the
@@ -72,12 +90,13 @@ export default function OscarMascot({ emotion = "idle", size = 150, style }: Pro
       <RiveAnim
         // Remount on emotion change so the new timeline plays from frame 0.
         key={`oscar-${emotion}`}
-        source={require("@/assets/rive/oscar.riv")}
+        source={OSCAR_RIV}
         style={{ width: S, height: S, backgroundColor: "transparent" }}
         fit="contain"
         alignment="center"
         autoplay
         animation={EMOTION_ANIMATION[emotion]}
+        fallback={EMOTION_FALLBACK[emotion]}
       />
     </View>
   );

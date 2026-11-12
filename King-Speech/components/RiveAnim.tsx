@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Platform, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { Image, Platform, StyleSheet, Text, View, ViewStyle, type ImageSourcePropType } from "react-native";
 import Constants from "expo-constants";
 
 // WebView is only loaded on native+ExpoGo (it's not needed on web, where we
@@ -43,7 +43,18 @@ type RiveAnimProps = {
   autoplay?: boolean;
   fit?: RiveFit;
   alignment?: RiveAlignment;
+  /**
+   * Static image shown while the animation loads and whenever Rive can't run
+   * (native module missing, runtime/CDN unreachable, file failed to load) —
+   * so the screen never shows a blank hole or a debug placeholder.
+   */
+  fallback?: ImageSourcePropType;
 };
+
+// Expo Go: the .riv bytes are read once per asset and shared by every
+// instance (Oscar is ~0.9 MB — re-reading + base64-encoding it per mount was
+// a noticeable JS-thread stall and memory spike).
+const dataUrlCache = new Map<any, Promise<string>>();
 
 const isExpoGo =
   (Constants as any)?.appOwnership === "expo" ||
@@ -210,6 +221,7 @@ function WebRiveView(props: RiveAnimProps) {
       " src=",
       src,
     );
+    if (props.fallback) return <FallbackImage source={props.fallback} style={props.style} />;
     return <Placeholder style={props.style} message="Rive (web) недоступен" />;
   }
   return <WebRiveCanvas {...props} src={src} />;
@@ -241,7 +253,7 @@ html,body{margin:0;padding:0;background:transparent;overflow:hidden;height:100%;
 canvas{display:block;width:100vw;height:100vh;background:transparent;}
 </style></head><body>
 <canvas id="c"></canvas>
-<script src="https://unpkg.com/@rive-app/canvas@2.21.6"></script>
+<script src="https://unpkg.com/@rive-app/canvas@2.37.6"></script>
 <script>
 (function(){
   function log(m){ try{ window.ReactNativeWebView && window.ReactNativeWebView.postMessage(String(m)); }catch(e){} }
@@ -274,116 +286,122 @@ function ExpoGoRiveView({
   autoplay = true,
   fit = "contain",
   alignment = "center",
+  fallback,
 }: RiveAnimProps) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  // True once the Rive runtime inside the WebView reports a drawn file.
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        // Resolve the bundled asset to a local file, then read it as base64
-        // and embed it as a data: URL inside the WebView's HTML. We avoid
-        // having the WebView fetch the .riv from Metro because Metro's CORS
-        // middleware throws "Invalid URL" on requests without an origin
-        // (which is the case for WebViews loaded via `source={{ html }}`).
-        const { Asset } = require("expo-asset");
-        const FS = require("expo-file-system/legacy");
-        const asset = Asset.fromModule(source);
-        if (!asset.localUri) {
-          await asset.downloadAsync();
-        }
-        const localUri: string | undefined = asset.localUri || asset.uri;
-        if (!localUri) {
-          if (!cancelled) setErr("no asset uri");
-          return;
-        }
-        let base64: string | null = null;
-        if (localUri.startsWith("file://") || localUri.startsWith("/")) {
-          base64 = await FS.readAsStringAsync(localUri, {
-            encoding: "base64",
-          });
-        } else {
-          // http(s) URL (rare on Expo Go after downloadAsync, but handle it).
-          const res = await fetch(localUri);
-          const buf = await res.arrayBuffer();
-          // Manually encode without Buffer (RN doesn't ship Buffer).
-          let binary = "";
-          const bytes = new Uint8Array(buf);
-          for (let i = 0; i < bytes.byteLength; i++) {
-            binary += String.fromCharCode(bytes[i]);
-          }
-          // btoa is available in RN's JSC/Hermes via the global polyfill.
-          base64 = (global as any).btoa
-            ? (global as any).btoa(binary)
-            : null;
-        }
-        if (!cancelled) {
-          if (base64) {
-            setDataUrl(`data:application/octet-stream;base64,${base64}`);
-          } else {
-            setErr("could not read asset bytes");
-          }
-        }
-      } catch (e: any) {
+    let p = dataUrlCache.get(source);
+    if (!p) {
+      p = readRiveDataUrl(source);
+      dataUrlCache.set(source, p);
+      p.catch(() => dataUrlCache.delete(source));
+    }
+    p.then(
+      (url) => {
+        if (!cancelled) setDataUrl(url);
+      },
+      (e: any) => {
         if (!cancelled) setErr(e?.message || String(e));
         console.warn("[RiveAnim] expo-go asset resolve failed:", e);
-      }
-    })();
+      },
+    );
     return () => {
       cancelled = true;
     };
   }, [source]);
 
-  if (!WebViewComp) {
+  if (!WebViewComp || err) {
+    if (fallback) return <FallbackImage source={fallback} style={style} />;
     return (
       <Placeholder
         style={style}
-        message="WebView недоступен — установи react-native-webview"
+        message={!WebViewComp ? "WebView недоступен — установи react-native-webview" : `Rive: ${err}`}
       />
     );
   }
-  if (err) {
-    return <Placeholder style={style} message={`Rive: ${err}`} />;
-  }
-  if (!dataUrl) {
-    // Brief loading frame — avoids flashing the placeholder text.
-    return <View style={[styles.box, style]} />;
-  }
 
-  const html = buildExpoGoHtml(
-    dataUrl,
-    fit,
-    alignment,
-    autoplay,
-    artboard,
-    stateMachine,
-    animation,
-  );
+  const html = dataUrl
+    ? buildExpoGoHtml(dataUrl, fit, alignment, autoplay, artboard, stateMachine, animation)
+    : null;
   return (
     <View style={[styles.box, style]}>
-      <WebViewComp
-        originWhitelist={["*"]}
-        source={{ html }}
-        style={{ flex: 1, backgroundColor: "transparent" }}
-        javaScriptEnabled
-        domStorageEnabled
-        scrollEnabled={false}
-        bounces={false}
-        androidLayerType="hardware"
-        mixedContentMode="always"
-        allowFileAccess
-        allowUniversalAccessFromFileURLs
-        onMessage={(e: any) => {
-          const msg = e?.nativeEvent?.data;
-          if (msg && String(msg).startsWith("loadError")) {
-            console.warn("[RiveAnim] expo-go", msg);
-          }
-        }}
-        onError={(e: any) =>
-          console.warn("[RiveAnim] WebView error", e?.nativeEvent)
-        }
-      />
+      {html ? (
+        <WebViewComp
+          originWhitelist={["*"]}
+          source={{ html }}
+          style={{ flex: 1, backgroundColor: "transparent", opacity: ready || !fallback ? 1 : 0 }}
+          javaScriptEnabled
+          domStorageEnabled
+          scrollEnabled={false}
+          bounces={false}
+          androidLayerType="hardware"
+          mixedContentMode="always"
+          allowFileAccess
+          allowUniversalAccessFromFileURLs
+          onMessage={(e: any) => {
+            const msg = String(e?.nativeEvent?.data ?? "");
+            if (msg === "loaded") setReady(true);
+            else if (msg.startsWith("loadError") || msg.startsWith("ctor") || msg.startsWith("rive runtime")) {
+              console.warn("[RiveAnim] expo-go", msg);
+              setErr(msg);
+            }
+          }}
+          onError={(e: any) => {
+            console.warn("[RiveAnim] WebView error", e?.nativeEvent);
+            setErr("webview error");
+          }}
+        />
+      ) : null}
+      {/* Static pose until the animation has actually drawn. */}
+      {fallback && !ready ? (
+        <FallbackImage source={fallback} style={StyleSheet.absoluteFill as ViewStyle} />
+      ) : null}
+    </View>
+  );
+}
+
+async function readRiveDataUrl(source: RiveAnimProps["source"]): Promise<string> {
+  // Resolve the bundled asset to a local file, then read it as base64 and
+  // embed it as a data: URL inside the WebView's HTML. We avoid having the
+  // WebView fetch the .riv from Metro because Metro's CORS middleware throws
+  // "Invalid URL" on requests without an origin (which is the case for
+  // WebViews loaded via `source={{ html }}`).
+  const { Asset } = require("expo-asset");
+  const FS = require("expo-file-system/legacy");
+  const asset = Asset.fromModule(source);
+  if (!asset.localUri) {
+    await asset.downloadAsync();
+  }
+  const localUri: string | undefined = asset.localUri || asset.uri;
+  if (!localUri) throw new Error("no asset uri");
+  let base64: string | null = null;
+  if (localUri.startsWith("file://") || localUri.startsWith("/")) {
+    base64 = await FS.readAsStringAsync(localUri, { encoding: "base64" });
+  } else {
+    // http(s) URL (rare on Expo Go after downloadAsync, but handle it).
+    const res = await fetch(localUri);
+    const buf = await res.arrayBuffer();
+    // Manually encode without Buffer (RN doesn't ship Buffer).
+    let binary = "";
+    const bytes = new Uint8Array(buf);
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    base64 = (global as any).btoa ? (global as any).btoa(binary) : null;
+  }
+  if (!base64) throw new Error("could not read asset bytes");
+  return `data:application/octet-stream;base64,${base64}`;
+}
+
+function FallbackImage({ source, style }: { source: ImageSourcePropType; style?: ViewStyle }) {
+  return (
+    <View style={[styles.box, style]} pointerEvents="none">
+      <Image source={source} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
     </View>
   );
 }
@@ -397,8 +415,10 @@ function NativeRiveView({
   autoplay = true,
   fit = "contain",
   alignment = "center",
+  fallback,
 }: RiveAnimProps) {
   if (!NativeRive) {
+    if (fallback) return <FallbackImage source={fallback} style={style} />;
     return (
       <Placeholder
         style={style}
