@@ -1,8 +1,9 @@
 // Audio-diary record flow — two steps on one full-screen route:
 //   1. "Screen / 06b · запись" (410:1750): blank cassette whose eyes are
 //      spinning loaders, a reflective question card (↻ for another), a live
-//      waveform from the mic level + timer, yellow stop button. Recording starts
-//      automatically once the mic permission is granted.
+//      waveform from the mic level + timer, yellow stop button. The screen opens
+//      READY (idle cassette, question card, big yellow play button); recording
+//      starts only when the player taps play (mic permission is asked then).
 //   2. "Screen / 06c · подпиши" (410:1903): close X (discard with confirm), big
 //      cassette with an editable handwritten label and the chosen emotion as its
 //      mouth, mood picker (7 pastel faces), «Сохранить» → back to the list.
@@ -37,6 +38,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
+import { PlayTriangleIcon } from "@/components/showtime/ShowTimeIcons";
 import AppDialog from "@/components/AppDialog";
 import Cassette, { labelTextStyle, useDiaryFonts } from "@/components/diary/Cassette";
 import { EMOTIONS, MoodFace, type PickableEmotion } from "@/components/diary/emotions";
@@ -50,6 +52,7 @@ if (Platform.OS !== "web") {
 const MAX_SEC = 10 * 60; // auto-stop after 10 minutes
 const BIG_CASSETTE = 236;
 const TITLE_MAX = 18;
+const TOP_ROW = 44; // room for the corner back / close button
 
 const QUESTIONS: { ru: string; en: string }[] = [
   { ru: "Что сегодня заставило тебя улыбнуться?", en: "What made you smile today?" },
@@ -80,7 +83,7 @@ function pickQuestion(prev: number) {
   return i;
 }
 
-type Phase = "starting" | "recording" | "denied" | "sign";
+type Phase = "ready" | "starting" | "recording" | "denied" | "sign";
 
 type WebSession = { mr: MediaRecorder; stream: MediaStream; chunks: Blob[]; done: Promise<string | null> };
 
@@ -93,13 +96,15 @@ export default function DiaryRecordScreen() {
   const dark = c.mode === "dark";
   const cardBg = dark ? "#323234" : c.card;
 
-  const [phase, setPhase] = useState<Phase>("starting");
+  const [phase, setPhase] = useState<Phase>("ready");
   const [qIdx, setQIdx] = useState(() => pickQuestion(-1));
   const [elapsed, setElapsed] = useState(0);
   const [title, setTitle] = useState("");
   const [emotion, setEmotion] = useState<PickableEmotion | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Sign step: the cassette comes alive (blinks + sways) once a mood is picked.
+  const [blinkKey, setBlinkKey] = useState(0);
 
   const recRef = useRef<any>(null);
   const webRef = useRef<WebSession | null>(null);
@@ -108,6 +113,7 @@ export default function DiaryRecordScreen() {
   const startedAt = useRef(0);
   const durationRef = useRef(0);
   const stoppingRef = useRef(false);
+  const aliveRef = useRef(true);
 
   // Mic level 0..1 drives the live waveform; hasMeter=0 → gentle placeholder.
   const level = useSharedValue(0);
@@ -116,14 +122,17 @@ export default function DiaryRecordScreen() {
   const topPad = Platform.OS === "web" ? 54 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  // ── start recording on open ────────────────────────────────────────────────
-  useEffect(() => {
-    let cancelled = false;
+  // ── start recording when the player taps play ──────────────────────────────
+  const startRecording = useCallback(() => {
+    if (phase !== "ready") return;
+    setPhase("starting");
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     (async () => {
+      const cancelledNow = () => !aliveRef.current;
       try {
         if (Platform.OS === "web") {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          if (cancelled) {
+          if (cancelledNow()) {
             stream.getTracks().forEach((t) => t.stop());
             return;
           }
@@ -147,7 +156,7 @@ export default function DiaryRecordScreen() {
           webRef.current = { mr, stream, chunks, done };
         } else {
           const perm = await Audio.requestPermissionsAsync();
-          if (cancelled) return;
+          if (cancelledNow()) return;
           if (!perm?.granted) {
             setPhase("denied");
             return;
@@ -159,7 +168,7 @@ export default function DiaryRecordScreen() {
             isMeteringEnabled: true,
             ios: { ...(base.ios ?? {}), meteringEnabled: true },
           });
-          if (cancelled) {
+          if (cancelledNow()) {
             try {
               await recording.stopAndUnloadAsync();
               await discardDiaryAudio(recording.getURI());
@@ -182,13 +191,10 @@ export default function DiaryRecordScreen() {
         if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
       } catch (e) {
         console.warn("[diary] could not start recording:", e);
-        if (!cancelled) setPhase("denied");
+        if (!cancelledNow()) setPhase("denied");
       }
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, [hasMeter, level]);
+  }, [phase, hasMeter, level]);
 
   // Timer + auto-stop.
   useEffect(() => {
@@ -205,6 +211,7 @@ export default function DiaryRecordScreen() {
   // Leaving the screen without saving never leaves a stray take behind.
   useEffect(
     () => () => {
+      aliveRef.current = false;
       const rec = recRef.current;
       recRef.current = null;
       if (rec) {
@@ -314,28 +321,18 @@ export default function DiaryRecordScreen() {
     <View style={[s.container, { backgroundColor: c.bg }]}>
       {phase === "sign" ? (
         <ScrollView
-          contentContainerStyle={[s.signScroll, { paddingTop: topPad + 10, paddingBottom: bottomPad + 40 }]}
+          contentContainerStyle={[s.signScroll, { paddingTop: topPad + 10 + TOP_ROW, paddingBottom: bottomPad + 40 }]}
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets
           showsVerticalScrollIndicator={false}
+          alwaysBounceHorizontal={false}
         >
-          <View style={s.topRow}>
-            <View />
-            <Pressable
-              onPress={requestExit}
-              hitSlop={12}
-              style={s.iconBtn}
-              accessibilityRole="button"
-              accessibilityLabel={en ? "Discard" : "Удалить запись"}
-            >
-              <Ionicons name="close" size={26} color={c.text} />
-            </Pressable>
-          </View>
-
           <Animated.View entering={FadeIn.duration(260)} style={s.signCassette}>
             <Cassette
               width={BIG_CASSETTE}
               emotion={emotion ?? "neutral"}
+              lively={blinkKey > 0}
+              blinkKey={blinkKey}
               labelSlot={
                 <TextInput
                   value={title}
@@ -368,6 +365,7 @@ export default function DiaryRecordScreen() {
                     key={m.key}
                     onPress={() => {
                       setEmotion(on ? null : m.key);
+                      setBlinkKey((n) => n + 1);
                       if (Platform.OS !== "web") Haptics.selectionAsync().catch(() => {});
                     }}
                     hitSlop={4}
@@ -395,18 +393,7 @@ export default function DiaryRecordScreen() {
           </Pressable>
         </ScrollView>
       ) : (
-        <View style={[s.recWrap, { paddingTop: topPad + 10, paddingBottom: bottomPad + 60 }]}>
-          <View style={s.topRow}>
-            <Pressable
-              onPress={requestExit}
-              hitSlop={12}
-              style={s.iconBtn}
-              accessibilityRole="button"
-              accessibilityLabel={en ? "Back" : "Назад"}
-            >
-              <Ionicons name="chevron-back" size={26} color={c.text} />
-            </Pressable>
-          </View>
+        <View style={[s.recWrap, { paddingTop: topPad + 10 + TOP_ROW, paddingBottom: bottomPad + 60 }]}>
 
           <View style={s.recCassette}>
             <Cassette width={BIG_CASSETTE} state={phase === "recording" ? "recording" : "idle"} />
@@ -449,18 +436,51 @@ export default function DiaryRecordScreen() {
             )}
           </View>
 
-          {phase !== "denied" && (
+          {phase === "recording" ? (
             <Pressable
               onPress={stopRecording}
-              disabled={phase !== "recording"}
-              style={({ pressed }) => [s.stopBtn, { opacity: phase !== "recording" ? 0.5 : pressed ? 0.85 : 1 }]}
+              style={({ pressed }) => [s.stopBtn, { opacity: pressed ? 0.85 : 1 }]}
               accessibilityRole="button"
               accessibilityLabel={en ? "Stop recording" : "Остановить запись"}
             >
               <View style={s.stopSquare} />
             </Pressable>
-          )}
+          ) : phase !== "denied" ? (
+            <Pressable
+              onPress={startRecording}
+              disabled={phase !== "ready"}
+              style={({ pressed }) => [s.stopBtn, { opacity: phase !== "ready" ? 0.5 : pressed ? 0.85 : 1 }]}
+              accessibilityRole="button"
+              accessibilityLabel={en ? "Start recording" : "Начать запись"}
+            >
+              <PlayTriangleIcon color="#2A1C02" scale={1.3} />
+            </Pressable>
+          ) : null}
         </View>
+      )}
+
+      {/* Corner buttons sit at the safe-area top, outside the centred column:
+          back (top-left) while recording, discard X (top-right) on the sign step. */}
+      {phase === "sign" ? (
+        <Pressable
+          onPress={requestExit}
+          hitSlop={12}
+          style={[s.iconBtn, s.cornerRight, { top: topPad + 10 }]}
+          accessibilityRole="button"
+          accessibilityLabel={en ? "Discard" : "Удалить запись"}
+        >
+          <Ionicons name="close" size={26} color={c.text} />
+        </Pressable>
+      ) : (
+        <Pressable
+          onPress={requestExit}
+          hitSlop={12}
+          style={[s.iconBtn, s.cornerLeft, { top: topPad + 10 }]}
+          accessibilityRole="button"
+          accessibilityLabel={en ? "Back" : "Назад"}
+        >
+          <Ionicons name="chevron-back" size={26} color={c.text} />
+        </Pressable>
       )}
 
       <AppDialog
@@ -529,8 +549,9 @@ function LiveBar({
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  topRow: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16, height: 44 },
   iconBtn: { width: 44, height: 44, justifyContent: "center", alignItems: "center" },
+  cornerLeft: { position: "absolute", left: 16, zIndex: 5 },
+  cornerRight: { position: "absolute", right: 16, zIndex: 5 },
 
   recWrap: { flex: 1, alignItems: "center" },
   recCassette: { marginTop: 6 },

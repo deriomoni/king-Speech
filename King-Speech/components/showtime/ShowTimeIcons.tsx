@@ -89,9 +89,9 @@ export function TipBubbleIcon({ color }: IconProps) {
 
 // Start-button play mark — Figma 17:709: a plain rounded triangle (no ring),
 // 11.5 × 12.6 placed at (6, 5) in a 22 × 24 box so it reads optically centred.
-export function PlayTriangleIcon({ color }: IconProps) {
+export function PlayTriangleIcon({ color, scale = 1 }: IconProps & { scale?: number }) {
   return (
-    <Svg width={22} height={24} viewBox="0 0 22 24" fill="none">
+    <Svg width={22 * scale} height={24 * scale} viewBox="0 0 22 24" fill="none">
       <Path
         d="M6 6.48C6 5.01 6.64 4.64 7.92 5.35L16.58 10.2C17.86 10.92 17.86 11.64 16.58 12.35L7.92 17.2C6.64 17.92 6 17.54 6 16.08V6.48Z"
         fill={color}

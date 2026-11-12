@@ -22,7 +22,7 @@ export type DiaryEmotion =
   | "neutral"
   | "joy"
   | "calm"
-  | "surprise"
+  | "love"
   | "sad"
   | "anxious"
   | "angry"
@@ -45,7 +45,11 @@ export async function loadDiary(): Promise<DiaryEntry[]> {
     const raw = await AsyncStorage.getItem(DIARY_KEY);
     if (!raw) return [];
     const list = JSON.parse(raw);
-    return Array.isArray(list) ? (list as DiaryEntry[]) : [];
+    if (!Array.isArray(list)) return [];
+    // «Удивление» (surprise) was replaced by «Влюблённость» (love).
+    return (list as DiaryEntry[]).map((e) =>
+      (e as any)?.emotion === "surprise" ? { ...e, emotion: "love" as DiaryEmotion } : e,
+    );
   } catch {
     return [];
   }

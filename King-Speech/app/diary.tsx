@@ -4,7 +4,8 @@
 // запись» pill. Backing: «Мои записи» + a 2-column grid of slightly rotated mini
 // cassettes (date · duration under each). Tap a cassette to play it (key pressed
 // + yellow, mouth → white waveform); tap again to stop. One plays at a time.
-// Long-press a cassette to delete it.
+// Long-press a cassette: it lifts and jiggles (iOS home-screen style) and the
+// delete confirmation appears; cancelling settles it back.
 //
 // PRIVATE: entries come from lib/diaryStorage (device only). They are
 // intentionally NOT shown in «Моя библиотека» and never synced/uploaded.
@@ -13,7 +14,18 @@ import { View, Text, StyleSheet, ScrollView, Pressable, Platform, Modal, useWind
 import OverscrollFill from "@/components/OverscrollFill";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
-import Animated, { FadeIn, FadeInDown, SlideInDown } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  SlideInDown,
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -34,6 +46,73 @@ const MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep"
 function fmtDiaryDate(ms: number, en: boolean) {
   const d = new Date(ms);
   return en ? `${MONTHS_EN[d.getMonth()]} ${d.getDate()}` : `${d.getDate()} ${MONTHS_RU[d.getMonth()]}`;
+}
+
+// ── Grid tile: long-press lifts + jiggles the cassette ──────────────────────
+function CassetteTile({
+  entry,
+  width,
+  playing,
+  lifted,
+  metaColor,
+  en,
+  onPress,
+  onLongPress,
+}: {
+  entry: DiaryEntry;
+  width: number;
+  playing: boolean;
+  lifted: boolean;
+  metaColor: string;
+  en: boolean;
+  onPress: () => void;
+  onLongPress: () => void;
+}) {
+  const lift = useSharedValue(0);
+  const wig = useSharedValue(0);
+  useEffect(() => {
+    if (lifted) {
+      lift.value = withSpring(1, { damping: 14, stiffness: 240 });
+      wig.value = withSequence(
+        withTiming(-1, { duration: 60 }),
+        withRepeat(withSequence(withTiming(1, { duration: 130 }), withTiming(-1, { duration: 130 })), -1, false),
+      );
+    } else {
+      cancelAnimation(wig);
+      wig.value = withTiming(0, { duration: 140 });
+      lift.value = withTiming(0, { duration: 220 });
+    }
+    return () => cancelAnimation(wig);
+  }, [lifted, lift, wig]);
+  const tilt = entry.tilt ?? 0;
+  const st = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: -4 * lift.value },
+      { scale: 1 + 0.06 * lift.value },
+      { rotate: `${tilt + 2 * wig.value}deg` },
+    ],
+    // No shadow at rest (it would cost an offscreen pass per cassette).
+    shadowOpacity: 0.3 * lift.value,
+    shadowRadius: 4 + 10 * lift.value,
+    shadowOffset: { width: 0, height: 2 + 8 * lift.value },
+  }));
+  return (
+    <Pressable
+      onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={450}
+      accessibilityRole="button"
+      accessibilityLabel={`${playing ? (en ? "Stop" : "Стоп") : en ? "Play" : "Слушать"} ${entry.title}`}
+      style={({ pressed }) => ({ opacity: pressed && !lifted ? 0.92 : 1 })}
+    >
+      <Animated.View style={[s.tileShadow, st]}>
+        <Cassette width={width} title={entry.title} emotion={entry.emotion} state={playing ? "playing" : "idle"} showKey />
+      </Animated.View>
+      <Text style={[s.meta, { color: metaColor }]}>
+        {fmtDiaryDate(entry.date, en)} · {fmtClock(entry.durationSec)}
+      </Text>
+    </Pressable>
+  );
 }
 
 // ── One cassette at a time ────────────────────────────────────────────────────
@@ -127,6 +206,11 @@ export default function DiaryScreen() {
   const [entries, setEntries] = useState<DiaryEntry[] | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
   const [toDelete, setToDelete] = useState<DiaryEntry | null>(null);
+  const [liftedId, setLiftedId] = useState<string | null>(null);
+  const liftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (liftTimer.current) clearTimeout(liftTimer.current);
+  }, []);
   const { playingId, toggle, stop } = useDiaryPlayer();
 
   const topPad = Platform.OS === "web" ? 54 : insets.top;
@@ -156,9 +240,23 @@ export default function DiaryScreen() {
     router.push("/diary-record");
   };
 
+  // Long-press: lift + jiggle first, then ask.
+  const askDelete = (e: DiaryEntry) => {
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    setLiftedId(e.id);
+    if (liftTimer.current) clearTimeout(liftTimer.current);
+    liftTimer.current = setTimeout(() => setToDelete(e), 380);
+  };
+
+  const cancelDelete = () => {
+    setToDelete(null);
+    setLiftedId(null);
+  };
+
   const confirmDelete = async () => {
     const e = toDelete;
     setToDelete(null);
+    setLiftedId(null);
     if (!e) return;
     if (playingId === e.id) await stop();
     setEntries(await deleteDiaryEntry(e.id));
@@ -219,27 +317,16 @@ export default function DiaryScreen() {
                   entering={FadeInDown.delay(60 + Math.min(i, 8) * 40).duration(360)}
                   style={{ width: colW }}
                 >
-                  <Pressable
+                  <CassetteTile
+                    entry={e}
+                    width={colW}
+                    playing={playingId === e.id}
+                    lifted={liftedId === e.id}
+                    metaColor={c.text}
+                    en={en}
                     onPress={() => toggle(e)}
-                    onLongPress={() => setToDelete(e)}
-                    delayLongPress={450}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${playingId === e.id ? (en ? "Stop" : "Стоп") : en ? "Play" : "Слушать"} ${e.title}`}
-                    style={({ pressed }) => ({ opacity: pressed ? 0.92 : 1 })}
-                  >
-                    <View style={{ transform: [{ rotate: `${e.tilt ?? 0}deg` }] }}>
-                      <Cassette
-                        width={colW}
-                        title={e.title}
-                        emotion={e.emotion}
-                        state={playingId === e.id ? "playing" : "idle"}
-                        showKey
-                      />
-                    </View>
-                    <Text style={[s.meta, { color: c.text }]}>
-                      {fmtDiaryDate(e.date, en)} · {fmtClock(e.durationSec)}
-                    </Text>
-                  </Pressable>
+                    onLongPress={() => askDelete(e)}
+                  />
                 </Animated.View>
               ))}
             </View>
@@ -283,9 +370,9 @@ export default function DiaryScreen() {
         }
         buttons={[
           { label: en ? "Delete" : "Удалить", onPress: confirmDelete, variant: "primary" },
-          { label: en ? "Cancel" : "Отмена", onPress: () => setToDelete(null), variant: "secondary" },
+          { label: en ? "Cancel" : "Отмена", onPress: cancelDelete, variant: "secondary" },
         ]}
-        onRequestClose={() => setToDelete(null)}
+        onRequestClose={cancelDelete}
       />
     </View>
   );
@@ -337,6 +424,7 @@ const s = StyleSheet.create({
   backing: { position: "absolute", top: -40, left: 0, right: 0, bottom: 0 },
   section: { fontSize: 18, letterSpacing: -0.2, fontFamily: "Geologica_700Bold", marginBottom: 22 },
   grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 22 },
+  tileShadow: { shadowColor: "#000" },
   meta: { fontSize: 12, fontFamily: "Geologica_500Medium", marginTop: 8, marginLeft: 4, opacity: 0.5 },
 
   empty: { alignItems: "center", paddingTop: 30, paddingHorizontal: 16 },

@@ -5,25 +5,28 @@
 //   label: cream #F6F3EA with a handwritten (Caveat) title
 //   window: dark pill with two white "eye" reels + black pupils (60%)
 //   mouth: the saved emotion; while playing → small white animated waveform
+//   «love»: red hearts instead of the white eyes + a smile
+//   lively (playing / sign step): occasional blinks + gentle bob
 //   recording: no pupils/mouth, each eye shows a rotating 3/4 loading arc
 //   foot: trapezoid in cassette/detail; play key on the right (pressed + yellow
 //   while playing)
 import React, { useEffect, useId } from "react";
 import { View, Text, StyleSheet } from "react-native";
-import Svg, { Defs, LinearGradient, Stop, Rect, Circle, Ellipse, Path } from "react-native-svg";
+import Svg, { Defs, LinearGradient, Stop, Rect, Circle, G, Path } from "react-native-svg";
 import Animated, {
   Easing,
   cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
+  withSequence,
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
 import { useFonts, Caveat_400Regular } from "@expo-google-fonts/caveat";
 import { useTheme } from "@/context/ThemeContext";
 import type { DiaryEmotion } from "@/lib/diaryStorage";
-import { CASSETTE_LIDS, CASSETTE_MOUTH } from "./emotions";
+import { CASSETTE_LIDS, CASSETTE_MOUTH, HEART, HEART_COLOR } from "./emotions";
 
 export const HANDWRITING = "Caveat_400Regular";
 
@@ -49,7 +52,32 @@ type Props = {
   showKey?: boolean;
   /** Replaces the label text (e.g. a TextInput on the sign step). */
   labelSlot?: React.ReactNode;
+  /**
+   * Alive: occasional blinks (random 2.5–5 s) + a gentle bob/tilt. Always on
+   * while playing; the sign step turns it on once an emotion is picked. Idle
+   * cassettes stay static (no timers, no loops).
+   */
+  lively?: boolean;
+  /** Bump to make a lively cassette blink right now (e.g. emotion tapped). */
+  blinkKey?: number;
 };
+
+/** White eye + pupil, or a heart for «love»; recording shows no pupil. */
+function eyeShapes(x: number, emotion: DiaryEmotion, recording: boolean) {
+  if (emotion === "love" && !recording) {
+    return (
+      <G transform={`translate(${x} ${EYE_Y + 0.4})`}>
+        <Path d={HEART} fill={HEART_COLOR} />
+      </G>
+    );
+  }
+  return (
+    <>
+      <Circle cx={x} cy={EYE_Y} r={9} fill="#FFFFFF" />
+      {!recording && <Circle cx={x} cy={EYE_Y} r={5.4} fill="#111113" />}
+    </>
+  );
+}
 
 export default function Cassette({
   width,
@@ -58,6 +86,8 @@ export default function Cassette({
   state = "idle",
   showKey = false,
   labelSlot,
+  lively: livelyProp = false,
+  blinkKey = 0,
 }: Props) {
   const { theme: c } = useTheme();
   const rawId = useId();
@@ -73,9 +103,62 @@ export default function Cassette({
   const recording = state === "recording";
   const mouth = CASSETTE_MOUTH[emotion];
   const lids = recording ? undefined : CASSETTE_LIDS[emotion];
+  const lively = !recording && (livelyProp || playing);
+
+  // ── blink: eyes squeeze shut (scaleY) for ~140 ms ─────────────────────────
+  const blink = useSharedValue(0);
+  const doBlink = () => {
+    blink.value = withSequence(withTiming(1, { duration: 70 }), withTiming(0, { duration: 70 }));
+  };
+  useEffect(() => {
+    if (!lively) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const next = () => {
+      timer = setTimeout(() => {
+        doBlink();
+        next();
+      }, 2500 + Math.random() * 2500);
+    };
+    next();
+    return () => {
+      clearTimeout(timer);
+      cancelAnimation(blink);
+      blink.value = 0;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lively]);
+  useEffect(() => {
+    if (blinkKey && lively) doBlink();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blinkKey]);
+
+  // ── gentle bob + tilt (only while lively) ─────────────────────────────────
+  const t = useSharedValue(0);
+  const amp = useSharedValue(0);
+  useEffect(() => {
+    if (!lively) {
+      amp.value = withTiming(0, { duration: 260 });
+      const id = setTimeout(() => cancelAnimation(t), 280);
+      return () => clearTimeout(id);
+    }
+    amp.value = withTiming(1, { duration: 400 });
+    t.value = 0;
+    t.value = withRepeat(withTiming(1, { duration: 3200, easing: Easing.linear }), -1, false);
+    return () => cancelAnimation(t);
+  }, [lively, t, amp]);
+  const swaySt = useAnimatedStyle(() => {
+    const a = 2 * Math.PI * t.value;
+    return {
+      transform: [
+        { translateY: -2 * amp.value * Math.sin(a) },
+        { rotate: `${1.2 * amp.value * Math.sin(a + Math.PI / 3)}deg` },
+      ],
+    };
+  });
+  const eyeSt = useAnimatedStyle(() => ({ transform: [{ scaleY: 1 - 0.92 * blink.value }] }));
 
   return (
-    <View style={{ width, height }}>
+    <Animated.View style={[{ width, height }, swaySt]}>
       <Svg width={width} height={height} viewBox={`-1 -1 ${vbW} ${vbH}`}>
         <Defs>
           <LinearGradient id={`body${id}`} x1="0" y1="0" x2="0" y2="1">
@@ -146,19 +229,12 @@ export default function Cassette({
         />
         <Rect x={20} y={52} width={123} height={30} rx={15} fill={`url(#win${id})`} />
 
-        {EYES.map((x) => (
-          <React.Fragment key={x}>
-            <Circle cx={x} cy={EYE_Y} r={9} fill="#FFFFFF" />
-            {!recording && <Circle cx={x} cy={EYE_Y} r={5.4} fill="#111113" />}
-          </React.Fragment>
-        ))}
-        {lids?.map((d) => <Path key={d} d={d} fill={c.cassetteWindow} />)}
+        {/* Static eyes live in the body SVG; lively ones move to blinking overlays. */}
+        {!lively && EYES.map((x) => <React.Fragment key={x}>{eyeShapes(x, emotion, recording)}</React.Fragment>)}
+        {!lively && emotion !== "love" && lids?.map((d) => <Path key={d} d={d} fill={c.cassetteWindow} />)}
 
         {!recording && !playing && mouth && (
           <Path d={mouth} stroke={MOUTH} strokeWidth={2.6} strokeLinecap="round" fill="none" />
-        )}
-        {!recording && !playing && emotion === "surprise" && (
-          <Ellipse cx={81.5} cy={67} rx={4.5} ry={5} stroke={MOUTH} strokeWidth={2.4} fill="none" />
         )}
 
         <Path
@@ -188,9 +264,22 @@ export default function Cassette({
         )}
       </View>
 
+      {lively &&
+        EYES.map((x, i) => (
+          <Animated.View
+            key={x}
+            pointerEvents="none"
+            style={[{ position: "absolute", left: px(x - 10), top: px(EYE_Y - 10), width: 20 * k, height: 20 * k }, eyeSt]}
+          >
+            <Svg width={20 * k} height={20 * k} viewBox={`${x - 10} ${EYE_Y - 10} 20 20`}>
+              {eyeShapes(x, emotion, false)}
+              {emotion !== "love" && lids && <Path d={lids[i]} fill={c.cassetteWindow} />}
+            </Svg>
+          </Animated.View>
+        ))}
       {playing && <PlayingWave left={px(64.5)} top={px(59)} k={k} />}
       {recording && EYES.map((x) => <EyeSpinner key={x} cx={px(x)} cy={px(EYE_Y)} k={k} />)}
-    </View>
+    </Animated.View>
   );
 }
 

@@ -1,7 +1,7 @@
 // Emotions for the audio diary — Figma "Кассета · эмоции" (422:1556) for the
 // cassette mouths/lids and the "Mood picker" faces on "06c · подпиши" (410:1903).
 import React from "react";
-import Svg, { Circle, Path } from "react-native-svg";
+import Svg, { Circle, G, Path } from "react-native-svg";
 import type { DiaryEmotion } from "@/lib/diaryStorage";
 
 export type PickableEmotion = Exclude<DiaryEmotion, "neutral">;
@@ -14,7 +14,7 @@ export const EMOTIONS: {
 }[] = [
   { key: "joy", color: "#FFE7A3", ru: "Радость", en: "Joy" },
   { key: "calm", color: "#CBEBD5", ru: "Спокойствие", en: "Calm" },
-  { key: "surprise", color: "#E2D2F7", ru: "Удивление", en: "Surprise" },
+  { key: "love", color: "#FFD3DF", ru: "Влюблённость", en: "In love" },
   { key: "sad", color: "#BFD7F2", ru: "Грусть", en: "Sadness" },
   { key: "anxious", color: "#FFD6B8", ru: "Тревога", en: "Anxiety" },
   { key: "angry", color: "#F7C1BC", ru: "Злость", en: "Anger" },
@@ -22,6 +22,11 @@ export const EMOTIONS: {
 ];
 
 const INK = "#2B2A33";
+
+/** Heart centred on (0,0), ~18 wide — the «love» eyes (cassette + picker). */
+export const HEART =
+  "M0 7.2 C-1.6 5.8 -9 1.2 -9 -2.8 C-9 -5.8 -6.8 -7.3 -4.6 -7.3 C-2.6 -7.3 -0.9 -6.1 0 -4.5 C0.9 -6.1 2.6 -7.3 4.6 -7.3 C6.8 -7.3 9 -5.8 9 -2.8 C9 1.2 1.6 5.8 0 7.2 Z";
+export const HEART_COLOR = "#FF5A7A";
 
 /**
  * Cassette mouth paths in the 163×104 cassette body space (window centre is
@@ -31,7 +36,7 @@ export const CASSETTE_MOUTH: Record<DiaryEmotion, string | null> = {
   neutral: "M74.5 67 L88.5 67",
   joy: "M71.5 64.8 C78.2 70.8 84.8 70.8 91.5 64.8",
   calm: "M74.5 66 C79.2 68.7 83.8 68.7 88.5 66",
-  surprise: null, // drawn as an ellipse
+  love: "M71.5 64.8 C78.2 70.8 84.8 70.8 91.5 64.8", // smile; eyes are hearts
   sad: "M72.5 68.7 C78.5 64 84.5 64 90.5 68.7",
   anxious: "M72.5 67 C74.5 65 76.5 65 78.5 67 C80.5 69 82.5 69 84.5 67 C86.5 65 88.5 65 90.5 67",
   angry: "M74.5 67.6 C79.2 66 83.8 66 88.5 67.6",
@@ -73,11 +78,16 @@ export function MoodFace({ emotion, size = 40 }: { emotion: PickableEmotion; siz
         </>
       );
       break;
-    case "surprise":
+    case "love":
       face = (
         <>
-          {dots()}
-          <Circle cx={20} cy={26} r={3.33} strokeWidth={3} {...st} />
+          <G transform="translate(15.03 16.4) scale(0.4)">
+            <Path d={HEART} fill={HEART_COLOR} />
+          </G>
+          <G transform="translate(25.03 16.4) scale(0.4)">
+            <Path d={HEART} fill={HEART_COLOR} />
+          </G>
+          <Path d="M13.3 23.3 C17.7 27.7 22.2 27.7 26.6 23.3" strokeWidth={3.3} {...st} />
         </>
       );
       break;
