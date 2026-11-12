@@ -17,6 +17,7 @@ import { router } from "expo-router";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { SvgXml } from "react-native-svg";
+import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -31,23 +32,24 @@ import { LEVEL_PALETTE_ORDER } from "@/theme/tokens";
 import { useTheme, type Theme } from "@/context/ThemeContext";
 import ProfileCover, { COVER_HEIGHT } from "@/components/profile/ProfileCover";
 import StreakCard from "@/components/profile/StreakCard";
-import ProPromoCard from "@/components/profile/ProPromoCard";
+import GlossTile from "@/components/profile/GlossTile";
 import ProfileMenuPopover, { type MenuAnchor, type MenuOption } from "@/components/profile/ProfileMenuPopover";
 import {
-  CROWNICON_SVG,
-  LIBRARY_SVG,
-  ARROW_SVG,
-  PEN_SVG,
-  TROPHY_SVG,
-  tintSvg,
-} from "@/assets/figma/profile/svgs";
+  CASSETTE,
+  QUILL,
+  TROPHY,
+  LIBRARY,
+  COINS,
+  RANK_SHIELD,
+  themedSvg,
+} from "@/assets/figma/profile/tiles";
 
 // Persisted background color the player picks for their profile screen only.
 const PROFILE_BG_KEY = "@kingspeech_profile_bg_v1";
 
 // Figma "Screen / 04 · Profile" (12:357 dark / 12:358 light).
 const AVATAR_SIZE = 104;
-const AVATAR_TOP = 73; // relative to the cover top (overlaps its notch)
+const AVATAR_TOP = 72; // relative to the cover top (sits in its notch)
 const AVATAR_LEFT = 16; // relative to the 24pt gutter
 const PLUS_SIZE = 40;
 
@@ -113,59 +115,6 @@ function Stat({
   );
 }
 
-function LinkTile({
-  theme,
-  iconXml,
-  iconW,
-  iconH,
-  title,
-  sub,
-  height,
-  titleTop,
-  subTop,
-  inset,
-  onPress,
-  style,
-}: {
-  theme: Theme;
-  iconXml: string;
-  iconW: number;
-  iconH: number;
-  title: string;
-  sub: string;
-  height: number;
-  titleTop: number;
-  subTop: number;
-  inset: number;
-  onPress: () => void;
-  style?: any;
-}) {
-  const arrow = tintSvg(ARROW_SVG, "#F0EEE9", theme.mode === "dark" ? "#F0EEE9" : "#262628");
-  return (
-    <Pressable
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-        onPress();
-      }}
-      style={({ pressed }) => [
-        styles.tile,
-        { height, paddingLeft: inset, paddingTop: inset, backgroundColor: theme.card, borderColor: strokeShape(theme) },
-        pressed && { opacity: 0.85 },
-        style,
-      ]}
-    >
-      <SvgXml xml={iconXml} width={iconW} height={iconH} />
-      <SvgXml xml={arrow} width={14} height={14} style={styles.tileArrow} />
-      <Text style={[styles.tileTitle, { color: theme.text, top: titleTop, left: inset }]} numberOfLines={1}>
-        {title}
-      </Text>
-      <Text style={[styles.tileSub, { color: theme.textMuted, top: subTop, left: inset }]} numberOfLines={1}>
-        {sub}
-      </Text>
-    </Pressable>
-  );
-}
-
 export default function ProfileScreen() {
   const { theme } = useTheme();
   const { t, lang } = useLang();
@@ -192,8 +141,6 @@ export default function ProfileScreen() {
   }, []);
 
   const name = user?.name ?? "";
-  const isDark = theme.mode === "dark";
-  const ink = isDark ? "#F0EEE9" : "#262628";
 
   // Upload / cache a picked image (shared by camera + gallery).
   const uploadPickedAsset = async (asset: ImagePicker.ImagePickerAsset) => {
@@ -376,11 +323,6 @@ export default function ProfileScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const totalTasks = levels.reduce(
-    (acc, l) => acc + l.tasks.filter((tt) => tt.status === "completed").length,
-    0,
-  );
-
   // The module the player is currently in = the module of the first still-
   // available level; if everything is done, the highest module they reached.
   const activeLevel = [...levels]
@@ -391,7 +333,6 @@ export default function ProfileScreen() {
     0,
   );
   const currentModule = activeLevel?.module ?? (maxCompletedModule || 1);
-  const completedLevels = levels.filter((l) => l.completed).length;
 
   // Daily activity for the streak card. The app has no dedicated activity
   // log, so we use the only dated activity it stores: saved recordings.
@@ -402,96 +343,96 @@ export default function ProfileScreen() {
 
   const initials = (name || "?").split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 1);
 
-  const ruPlural = (n: number, one: string, few: string, many: string) => {
-    const m10 = n % 10;
-    const m100 = n % 100;
-    if (m10 === 1 && m100 !== 11) return one;
-    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
-    return many;
-  };
-  const subline = en
-    ? `Module ${currentModule} of 67 · ${completedLevels} levels · ${totalTasks} tasks`
-    : `Модуль ${currentModule} из 67 · ${completedLevels} ${ruPlural(completedLevels, "уровень", "уровня", "уровней")} · ${totalTasks} ${ruPlural(totalTasks, "задание", "задания", "заданий")}`;
-
-  const iconInk = theme.accentInk; // gold on dark, ink on light
+  const mode = theme.mode;
+  // Positions an exported Figma illustration inside a GlossTile (tile coords
+  // minus the 1pt hairline the fill sits inside).
+  const art = (xml: string, x: number, y: number, w: number, h: number) => (
+    <SvgXml
+      xml={xml}
+      width={w}
+      height={h}
+      pointerEvents="none"
+      style={{ position: "absolute", left: x - 1, top: y - 1 }}
+    />
+  );
 
   return (
-    <View style={[styles.container, { backgroundColor: bgColor ?? theme.bg }]}>
+    <View style={[styles.container, { backgroundColor: theme.backingTop }]}>
       <ScrollView
-        contentContainerStyle={[
-          styles.scroll,
-          { paddingTop: topPad, paddingBottom: bottomPad + 110 },
-        ]}
+        contentContainerStyle={styles.scrollOuter}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >
-        {/* Header — cover banner, avatar sitting in its notch, name + badge */}
-        <Animated.View entering={FadeInDown.delay(40).duration(400)} style={styles.header}>
-          <ProfileCover fill={theme.card} stroke={strokeShape(theme)} gold={theme.accent} />
+        {/* Top plate (Figma "Top panel" 394:1200): rounded bottom, hairline stroke. */}
+        <View
+          style={[
+            styles.topPanel,
+            {
+              backgroundColor: bgColor ?? theme.bg,
+              borderColor: theme.panelStroke,
+              paddingTop: topPad + 3,
+            },
+          ]}
+        >
+          {/* Header — cover banner, avatar sitting in its notch, name */}
+          <Animated.View entering={FadeInDown.delay(40).duration(400)} style={styles.header}>
+            <ProfileCover fill={theme.card} stroke={strokeShape(theme)} sheen="#F0EEE9" />
 
-          <Pressable
-            ref={plusRef}
-            onPress={openPhotoMenu}
-            disabled={uploadingAvatar}
-            hitSlop={8}
-            style={[
-              styles.plusBtn,
-              { backgroundColor: theme.bg, borderColor: strokeShape(theme) },
-            ]}
-          >
-            {uploadingAvatar ? (
-              <ActivityIndicator size="small" color={theme.text} />
-            ) : (
-              <>
-                <View style={[styles.plusH, { backgroundColor: theme.text }]} />
-                <View style={[styles.plusV, { backgroundColor: theme.text }]} />
-              </>
-            )}
-          </Pressable>
-
-          <Pressable
-            onPress={openPhotoMenu}
-            disabled={uploadingAvatar}
-            style={[styles.avatar, { backgroundColor: theme.accent }]}
-          >
-            <View style={styles.avatarClip}>
-              {user?.photoURL ? (
-                <Image
-                  source={{ uri: user.photoURL }}
-                  style={StyleSheet.absoluteFill}
-                  resizeMode="cover"
-                />
+            <Pressable
+              ref={plusRef}
+              onPress={openPhotoMenu}
+              disabled={uploadingAvatar}
+              hitSlop={8}
+              style={[
+                styles.plusBtn,
+                { backgroundColor: theme.bg, borderColor: strokeShape(theme) },
+              ]}
+            >
+              {uploadingAvatar ? (
+                <ActivityIndicator size="small" color={theme.text} />
               ) : (
-                <Text style={[styles.avatarText, { color: theme.accentText }]}>{initials}</Text>
+                <>
+                  <View style={[styles.plusH, { backgroundColor: theme.text }]} />
+                  <View style={[styles.plusV, { backgroundColor: theme.text }]} />
+                </>
               )}
-              {uploadingAvatar && (
-                <View style={styles.avatarUploading}>
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                </View>
-              )}
-            </View>
-          </Pressable>
+            </Pressable>
 
-          <View style={styles.nameRow}>
+            <Pressable
+              onPress={openPhotoMenu}
+              disabled={uploadingAvatar}
+              style={[styles.avatar, { backgroundColor: theme.card }]}
+            >
+              <View style={styles.avatarClip}>
+                {user?.photoURL ? (
+                  <Image
+                    source={{ uri: user.photoURL }}
+                    style={StyleSheet.absoluteFill}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text style={[styles.avatarText, { color: theme.text }]}>{initials}</Text>
+                )}
+                {uploadingAvatar && (
+                  <View style={styles.avatarUploading}>
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  </View>
+                )}
+              </View>
+            </Pressable>
+
             <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>
               {name || (t("profile") || "Profile")}
             </Text>
-            <View style={[styles.badge, { borderColor: theme.accent }]}>
-              <Text style={[styles.badgeTxt, { color: theme.accentInk }]}>Free</Text>
-            </View>
-          </View>
-        </Animated.View>
+          </Animated.View>
 
-        <View style={[styles.divider, { backgroundColor: theme.divider }]} />
-
-        {/* Stats — Ранг · Модуль · Монеты */}
-        <Animated.View entering={FadeInDown.delay(100).duration(400)}>
-          <View style={styles.statsRow}>
+          {/* Stats — Ранг · Модуль · Монеты */}
+          <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.statsRow}>
             <Stat
               theme={theme}
               value={`${currentRank}`}
               label={en ? "Rank" : "Ранг"}
-              left={<SvgXml xml={tintSvg(CROWNICON_SVG, "#F0EEE9", ink)} width={22} height={22} />}
+              left={<SvgXml xml={themedSvg(RANK_SHIELD, mode)} width={22} height={22} />}
             />
             <Stat
               theme={theme}
@@ -505,93 +446,132 @@ export default function ProfileScreen() {
               label={en ? "Coins" : "Монеты"}
               right={<CoinIcon size={22} color={theme.text} />}
             />
-          </View>
-          <Text style={[styles.subline, { color: theme.textMuted }]} numberOfLines={1}>
-            {subline}
-          </Text>
-        </Animated.View>
+          </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(160).duration(400)} style={styles.section}>
-          <StreakCard theme={theme} activityDates={activityDates} lang={lang} />
-        </Animated.View>
+          <Animated.View entering={FadeInDown.delay(160).duration(400)} style={styles.streak}>
+            <StreakCard theme={theme} activityDates={activityDates} lang={lang} />
+          </Animated.View>
+        </View>
 
-        <Animated.View entering={FadeInDown.delay(220).duration(400)} style={styles.section}>
-          <ProPromoCard
-            theme={theme}
-            lang={lang}
-            onUpgrade={() => router.push("/subscription" as any)}
+        {/* Backing (Figma 402:1301): vertical gradient behind the tile list. */}
+        <View style={[styles.tiles, { paddingBottom: bottomPad + 110 }]}>
+          <LinearGradient
+            colors={[theme.backingTop, theme.backingMid, theme.backingBottom]}
+            locations={[0, 0.65, 1]}
+            style={styles.backing}
+            pointerEvents="none"
           />
-        </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(280).duration(400)} style={styles.section}>
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-              // TODO(design): coin store doesn't exist yet.
-            }}
-            style={({ pressed }) => [
-              styles.buyBtn,
-              { backgroundColor: theme.accent, borderColor: theme.ctaStroke },
-              pressed && { opacity: 0.88 },
-            ]}
+          <Animated.View entering={FadeInDown.delay(220).duration(400)}>
+            <GlossTile
+              mode={mode}
+              idSuffix="diary"
+              height={112}
+              text={{
+                title: en ? "Audio diary" : "Аудио-дневник",
+                sub: en ? "Tell how your day went" : "Расскажи, как прошёл день",
+                x: 20,
+                y: 32,
+                titleSize: 18,
+                subSize: 12,
+                subOffset: 28,
+              }}
+              spot={{ x: 170, y: -70, size: 240 }}
+              art={art(themedSvg(CASSETTE, mode), 207, 15, 129, 82)}
+              onPress={() => {
+                // TODO(design): audio-diary screen doesn't exist yet.
+              }}
+            />
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInDown.delay(280).duration(400)}
+            style={[styles.tilesRow, { marginTop: 16 }]}
           >
-            <CoinIcon size={22} color={theme.accentText} />
-            <Text style={[styles.buyTxt, { color: theme.accentText }]}>
-              {en ? "Buy coins" : "Купить монеты"}
-            </Text>
-          </Pressable>
-        </Animated.View>
+            <GlossTile
+              mode={mode}
+              idSuffix="author"
+              height={156}
+              style={{ flex: 1 }}
+              text={{
+                title: en ? "Become an author" : "Стать автором",
+                sub: en ? "Suggest your topic" : "Предложи свою тему",
+                x: 16,
+                y: 104,
+                titleSize: 17,
+                subSize: 12,
+                subOffset: 24,
+              }}
+              spot={{ x: -20, y: -50, size: 200 }}
+              art={art(themedSvg(QUILL, mode), 43, 26, 83, 76)}
+              onPress={() => {
+                // TODO(design): author / topic-suggestion flow doesn't exist yet.
+              }}
+            />
+            <GlossTile
+              mode={mode}
+              idSuffix="awards"
+              height={156}
+              style={{ flex: 1 }}
+              text={{
+                title: en ? "Awards" : "Награды",
+                sub: en ? "Cups and achievements" : "Кубки и достижения",
+                x: 16,
+                y: 104,
+                titleSize: 17,
+                subSize: 12,
+                subOffset: 24,
+              }}
+              spot={{ x: -10, y: -50, size: 200 }}
+              art={art(themedSvg(TROPHY, mode), 35, 11, 112, 80)}
+              onPress={() => {
+                // TODO(design): awards / achievements screen doesn't exist yet.
+              }}
+            />
+          </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(340).duration(400)} style={[styles.section, styles.tilesRow]}>
-          <LinkTile
-            theme={theme}
-            iconXml={tintSvg(PEN_SVG, "#FFD857", iconInk)}
-            iconW={26}
-            iconH={26}
-            title={en ? "Become an author" : "Стать автором"}
-            sub={en ? "Suggest your topic" : "Предложи свою тему"}
-            height={112}
-            titleTop={57}
-            subTop={79}
-            inset={13}
-            onPress={() => {
-              // TODO(design): author / topic-suggestion flow doesn't exist yet.
-            }}
-            style={{ flex: 1 }}
-          />
-          <LinkTile
-            theme={theme}
-            iconXml={tintSvg(TROPHY_SVG, "#FFD857", iconInk)}
-            iconW={26}
-            iconH={26}
-            title={en ? "Awards" : "Награды"}
-            sub={en ? "Cups and achievements" : "Кубки и достижения"}
-            height={112}
-            titleTop={57}
-            subTop={79}
-            inset={13}
-            onPress={() => {
-              // TODO(design): awards / achievements screen doesn't exist yet.
-            }}
-            style={{ flex: 1 }}
-          />
-        </Animated.View>
+          <Animated.View entering={FadeInDown.delay(340).duration(400)} style={{ marginTop: 14 }}>
+            <GlossTile
+              mode={mode}
+              idSuffix="library"
+              height={112}
+              text={{
+                title: en ? "My library" : "Моя библиотека",
+                sub: en ? "Recordings of your performances" : "Записи твоих выступлений",
+                x: 20,
+                y: 32,
+                titleSize: 18,
+                subSize: 12,
+                subOffset: 28,
+              }}
+              spot={{ x: 170, y: -70, size: 240 }}
+              art={art(themedSvg(LIBRARY, mode), 187.5, 12, 155, 91)}
+              onPress={() => router.push("/reading-library")}
+            />
+          </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(400).duration(400)} style={{ marginTop: 12 }}>
-          <LinkTile
-            theme={theme}
-            iconXml={tintSvg(LIBRARY_SVG, "#F0EEE9", ink)}
-            iconW={22}
-            iconH={24}
-            title={en ? "My library" : "Моя библиотека"}
-            sub={en ? "Recordings of your performances" : "Записи твоих выступлений"}
-            height={92}
-            titleTop={47}
-            subTop={67}
-            inset={15}
-            onPress={() => router.push("/reading-library")}
-          />
-        </Animated.View>
+          <Animated.View entering={FadeInDown.delay(400).duration(400)} style={{ marginTop: 14 }}>
+            <GlossTile
+              mode={mode}
+              idSuffix="coins"
+              height={92}
+              text={{
+                title: en ? "Buy coins" : "Купить монеты",
+                sub: en ? "Hints, themes and bonuses" : "Подсказки, темы и бонусы",
+                x: 22,
+                y: 22,
+                titleSize: 21,
+                subSize: 13,
+                subOffset: 30,
+              }}
+              spot={{ x: 170, y: -70, size: 240 }}
+              art={art(themedSvg(COINS, mode), 218, 10, 120, 73)}
+              onPress={() => {
+                // TODO(design): coin store doesn't exist yet.
+              }}
+            />
+          </Animated.View>
+        </View>
       </ScrollView>
 
       {/* "+" menu — Figma 130:3 glass popover */}
@@ -713,15 +693,33 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { paddingHorizontal: 24 },
+  scrollOuter: { flexGrow: 1 },
+  topPanel: {
+    paddingHorizontal: 24,
+    paddingBottom: 20,
+    borderWidth: 1.5,
+    borderTopWidth: 0,
+    marginHorizontal: -1.5,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    zIndex: 1,
+  },
+  tiles: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 30 },
+  backing: {
+    position: "absolute",
+    top: -40,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
 
   // Header
   header: {
-    height: AVATAR_TOP + AVATAR_SIZE, // 177 — avatar bottom
+    height: AVATAR_TOP + AVATAR_SIZE, // 176 — avatar bottom
   },
   plusBtn: {
     position: "absolute",
-    top: 13,
+    top: 12,
     right: 12,
     width: PLUS_SIZE,
     height: PLUS_SIZE,
@@ -749,15 +747,6 @@ const styles = StyleSheet.create({
     width: AVATAR_SIZE,
     height: AVATAR_SIZE,
     borderRadius: AVATAR_SIZE / 2,
-    ...(Platform.OS === "web"
-      ? ({ boxShadow: "0px 6.5px 19.5px rgba(255,216,87,0.25)" } as any)
-      : {
-          shadowColor: "#FFD857",
-          shadowOpacity: 0.25,
-          shadowRadius: 10,
-          shadowOffset: { width: 0, height: 6.5 },
-          elevation: 6,
-        }),
   },
   avatarClip: {
     flex: 1,
@@ -781,45 +770,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "rgba(0,0,0,0.35)",
   },
-  nameRow: {
-    position: "absolute",
-    left: AVATAR_LEFT + AVATAR_SIZE + 14,
-    right: 0,
-    top: COVER_HEIGHT + 13,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
   name: {
+    position: "absolute",
+    left: AVATAR_LEFT + AVATAR_SIZE + 12,
+    right: 0,
+    top: COVER_HEIGHT + 14,
     fontSize: 22,
     letterSpacing: -0.11,
     fontFamily: "Geologica_700Bold",
-    flexShrink: 1,
   },
-  badge: {
-    borderWidth: 1.5,
-    borderRadius: 32,
-    paddingHorizontal: 9,
-    paddingVertical: 3,
-    marginTop: 2,
-    ...(Platform.OS === "web"
-      ? ({ boxShadow: "0px 0px 5px rgba(255,216,87,0.55)" } as any)
-      : {
-          shadowColor: "#FFD857",
-          shadowOpacity: 0.55,
-          shadowRadius: 5,
-          shadowOffset: { width: 0, height: 0 },
-        }),
-  },
-  badgeTxt: {
-    fontSize: 11,
-    fontFamily: "Geologica_700Bold",
-  },
-
-  divider: { height: 1, marginTop: 20 },
 
   // Stats
-  statsRow: { flexDirection: "row", marginTop: 15 },
+  statsRow: { flexDirection: "row", marginTop: 36 },
   stat: { flex: 1, alignItems: "center", gap: 4 },
   statValueRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   statVal: {
@@ -831,48 +793,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Geologica_600SemiBold",
   },
-  subline: {
-    marginTop: 15,
-    fontSize: 13,
-    fontFamily: "Geologica_600SemiBold",
-    textAlign: "center",
-  },
-
-  section: { marginTop: 16 },
-
-  buyBtn: {
-    height: 56,
-    borderRadius: 32,
-    borderWidth: 4,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-  },
-  buyTxt: {
-    fontSize: 17,
-    fontFamily: "Geologica_800ExtraBold",
-  },
+  streak: { marginTop: 14 },
 
   tilesRow: { flexDirection: "row", gap: 12 },
-  tile: {
-    borderRadius: 22,
-    borderWidth: 2,
-  },
-  tileArrow: { position: "absolute", top: 15, right: 15 },
-  tileTitle: {
-    position: "absolute",
-    left: 13,
-    fontSize: 15,
-    fontFamily: "Geologica_600SemiBold",
-  },
-  tileSub: {
-    position: "absolute",
-    left: 13,
-    fontSize: 12,
-    fontFamily: "Geologica_400Regular",
-  },
-
   // Modals
   nameBackdrop: {
     flex: 1,

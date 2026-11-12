@@ -66,6 +66,14 @@ function pluralDaysRu(n: number) {
   return "дней";
 }
 
+// Ring colour by how much of the day's goal was completed (Figma ring/progress):
+// ≥90% green, ≥50% amber, otherwise coral. A missed day shows only the grey track.
+export function ringColor(progress: number) {
+  if (progress >= 0.9) return "#22C55E";
+  if (progress >= 0.5) return "#FFB020";
+  return "#FF6B5B";
+}
+
 const RING = 40;
 const R = 18;
 const STROKE = 4;
@@ -119,7 +127,7 @@ export default function StreakCard({
   return (
     <View style={[styles.card, { backgroundColor: theme.card, borderColor: stroke }]}>
       <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
-        <Text style={[styles.titleNum, { color: theme.accentInk }]}>{streak}</Text>
+        <Text style={styles.titleNum}>{streak}</Text>
         {lang === "en"
           ? ` ${streak === 1 ? "day" : "days"} on a roll`
           : ` ${pluralDaysRu(streak)} подряд в ударе`}
@@ -133,14 +141,14 @@ export default function StreakCard({
                 style={[
                   styles.dayLabel,
                   d.isToday
-                    ? { color: theme.accentInk, fontFamily: "Geologica_900Black" }
+                    ? { color: theme.text, fontFamily: "Geologica_900Black" }
                     : { color: theme.textMuted },
                 ]}
               >
                 {labels[i]}
               </Text>
               <View style={styles.ringWrap}>
-                <DayRing progress={d.progress} trackColor={trackColor} color={theme.accent} />
+                <DayRing progress={d.progress} trackColor={trackColor} color={ringColor(d.progress)} />
                 <View style={styles.ringNumWrap}>
                   <Text
                     style={[
