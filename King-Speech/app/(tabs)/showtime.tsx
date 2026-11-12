@@ -21,14 +21,8 @@ import { useTheme } from "@/context/ThemeContext";
 import { useGame } from "@/context/GameContext";
 import { ThemeCoverGallery } from "@/components/showtime/ThemeCoverGallery";
 import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
-import {
-  ChevronForwardIcon,
-  OpenCatalogIcon,
-  PlayCircleIcon,
-  RolesMaskIcon,
-  SearchIcon,
-  TipBubbleIcon,
-} from "@/components/showtime/ShowTimeIcons";
+import { OpenCatalogIcon, PlayTriangleIcon, SearchIcon } from "@/components/showtime/ShowTimeIcons";
+import { ShowTimeModeTiles } from "@/components/showtime/ModeTiles";
 import {
   THEME_CATEGORIES,
   categoryOf,
@@ -61,7 +55,6 @@ export default function ShowTimeScreen() {
   // Figma tokens not in ThemeContext.
   const stroke = isLight ? "rgba(38,38,40,0.08)" : "rgba(240,238,233,0.06)"; // stroke/shape
   const inkFaint = isLight ? "rgba(38,38,40,0.35)" : "rgba(240,238,233,0.35)"; // showtime/ink-faint
-  const inkSub = isLight ? "rgba(38,38,40,0.7)" : "rgba(240,238,233,0.7)"; // showtime/ink-sub
   const bgMid = isLight ? c.bgSecondary : "#2E2E30"; // showtime/bg-mid
 
   const [payModal, setPayModal] = useState(false);
@@ -155,19 +148,24 @@ export default function ShowTimeScreen() {
         : "1-2 мин выступления";
 
   return (
-    <View style={[st.container, { backgroundColor: c.bg }]}>
-      <LinearGradient
-        colors={[c.bg, bgMid, c.bg]}
-        style={StyleSheet.absoluteFill}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      />
+    <View style={[st.container, { backgroundColor: c.backingTop }]}>
       <ScrollView
         ref={scrollRef}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[st.scroll, { paddingTop: topPad + 5, paddingBottom: bottomPad + 120 }]}
+        contentContainerStyle={st.scrollOuter}
         showsVerticalScrollIndicator={false}
       >
+        {/* Top plate (Figma "Top panel" 374:1125): everything down to the catalog,
+            rounded bottom corners 32, 1.5 pt panelStroke hairline. */}
+        <View style={[st.plate, { borderColor: c.panelStroke, backgroundColor: c.bg }]}>
+          <LinearGradient
+            colors={[c.bg, bgMid, c.bg]}
+            style={st.plateFill}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            pointerEvents="none"
+          />
+        <View style={[st.scroll, { paddingTop: topPad + 5, paddingBottom: 20 }]}>
         {/* Header: logo + search */}
         <Animated.View entering={FadeIn.duration(400)} style={st.headerRow}>
           <ShowTimeLogo width={83} color={isLight ? c.text : c.accent} />
@@ -192,7 +190,7 @@ export default function ShowTimeScreen() {
           {en ? "Trending topics for you" : "Актуальные темы для вас"}
         </Text>
 
-        <Animated.View entering={FadeInDown.delay(150).duration(400)}>
+        <Animated.View entering={FadeInDown.delay(150).duration(400)} style={st.galleryBleed}>
           <ThemeCoverGallery
             themes={carouselKeys.map((k) => speechThemes[k])}
             selectedIdx={selectedIdx}
@@ -222,10 +220,10 @@ export default function ShowTimeScreen() {
           onPress={handleStart}
           style={({ pressed }) => [
             st.startBtn,
-            { backgroundColor: c.accent, borderColor: c.ctaStroke, opacity: pressed ? 0.85 : 1 },
+            { opacity: pressed ? 0.85 : 1 },
           ]}
         >
-          <PlayCircleIcon color="#3A3A3B" />
+          <PlayTriangleIcon color="#262628" />
           <Text style={st.startBtnText}>{en ? "Start performance" : "Начать выступление"}</Text>
           {showTimeFreeAvailable ? null : (
             <View style={st.startBtnCost}>
@@ -343,53 +341,27 @@ export default function ShowTimeScreen() {
             </Pressable>
           )}
         </View>
+        </View>
+        </View>
 
-        {/* Роли */}
-        <Pressable
-          onPress={() => {
-            if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.push("/roles");
-          }}
-          style={({ pressed }) => [st.rolesEntry, { opacity: pressed ? 0.85 : 1 }]}
-        >
-          <RolesMaskIcon color={c.text} />
-          <View style={{ flex: 1 }}>
-            <Text style={[st.rolesTitle, { color: c.text }]}>{en ? "Roles" : "Роли"}</Text>
-            <Text style={[st.rolesSub, { color: inkSub }]}>
-              {en ? "Play a character & train adaptability" : "Играй персонажа и тренируй адаптивность"}
-            </Text>
+        {/* Backing (Figma 402:1303) under the plate: black in dark, #CFCECA→#FFFFFF in light. */}
+        <View style={[st.backingWrap, { paddingBottom: bottomPad + 120 }]}>
+          <LinearGradient
+            colors={[c.backingTop, c.backingMid, c.backingBottom]}
+            locations={[0, 0.65, 1]}
+            style={st.backing}
+            pointerEvents="none"
+          />
+          {/* Modes · bento (380:1122): «Роли» + «Подсказки» */}
+          <View style={st.backingInner}>
+            <ShowTimeModeTiles
+              mode={isLight ? "light" : "dark"}
+              en={en}
+              onRoles={() => router.push("/roles")}
+              onHints={() => router.push("/speaker-tips")}
+            />
           </View>
-          <ChevronForwardIcon color={inkFaint} />
-        </Pressable>
-
-        {/* Советы выступающему — card deck */}
-        <Pressable
-          onPress={() => {
-            if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push("/speaker-tips");
-          }}
-          style={({ pressed }) => [st.deck, { opacity: pressed ? 0.85 : 1 }]}
-          accessibilityRole="button"
-        >
-          <View style={[st.deckCard, st.deckBack2, { backgroundColor: c.card, borderColor: stroke }]} />
-          <View style={[st.deckCard, st.deckBack1, { backgroundColor: c.card, borderColor: stroke }]} />
-          <View style={[st.deckCard, st.deckFront, { backgroundColor: c.card, borderColor: stroke }]}>
-            <View style={[st.tipBadge, { backgroundColor: c.accent }]}>
-              <TipBubbleIcon color={c.accentText} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[st.tipsTitle, { color: c.text }]} numberOfLines={1}>
-                {en ? "Speaker tips" : "Советы выступающему"}
-              </Text>
-              <Text style={[st.tipsSub, { color: c.textMuted }]} numberOfLines={1}>
-                {en ? "Pauses, voice, gestures and the room" : "Паузы, голос, жесты и работа с залом"}
-              </Text>
-            </View>
-            <View style={{ marginLeft: -12 }}>
-              <ChevronForwardIcon color={inkFaint} />
-            </View>
-          </View>
-        </Pressable>
+        </View>
       </ScrollView>
 
       {/* Figma 37:4261 «Ещё один выход (50 монет)» / 37:3896 «Не хватает монет»:
@@ -454,7 +426,23 @@ const st = StyleSheet.create({
   payTrail: { flexDirection: "row", alignItems: "center", gap: 6 },
   payTrailText: { fontFamily: "Geologica_900Black", fontSize: 16 },
   container: { flex: 1 },
+  scrollOuter: { flexGrow: 1 },
+  plate: {
+    borderWidth: 1.5,
+    borderTopWidth: 0,
+    marginHorizontal: -1.5,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    overflow: "hidden",
+    zIndex: 1,
+  },
+  plateFill: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
   scroll: { paddingHorizontal: 20, width: "100%", maxWidth: 480, alignSelf: "center" },
+  // The cover flow spans the full content width (outer cards cut by the screen edges).
+  galleryBleed: { marginHorizontal: -20 },
+  backingWrap: { flexGrow: 1, paddingTop: 28 },
+  backing: { position: "absolute", top: -40, left: 0, right: 0, bottom: 0 },
+  backingInner: { paddingHorizontal: 20, width: "100%", maxWidth: 480, alignSelf: "center" },
 
   headerRow: { flexDirection: "row", alignItems: "center", gap: 15, paddingLeft: 4, marginBottom: 8 },
   search: {
@@ -484,13 +472,14 @@ const st = StyleSheet.create({
     alignItems: "center",
     height: 50,
     borderRadius: 32,
-    borderWidth: 4,
-    paddingLeft: 13.5,
+    backgroundColor: "#FFD857",
+    // Figma 17:707: icon box at x 20, label at x 50.
+    paddingLeft: 20,
     paddingRight: 20,
     gap: 8,
     marginTop: 33,
   },
-  startBtnText: { color: "#3A3A3B", fontSize: 16, fontFamily: "Geologica_700Bold" },
+  startBtnText: { color: "#262628", fontSize: 16, fontFamily: "Geologica_700Bold" },
   startBtnCost: {
     flexDirection: "row",
     alignItems: "center",
@@ -534,34 +523,4 @@ const st = StyleSheet.create({
   seeAll: { height: 44, paddingLeft: 22, paddingRight: 20, borderRadius: 32, justifyContent: "center" },
   seeAllInline: { alignSelf: "center", marginTop: 12, marginBottom: -16 },
   seeAllText: { fontSize: 15, fontFamily: "Geologica_800ExtraBold" },
-
-  rolesEntry: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-    height: 72,
-    paddingLeft: 16,
-    paddingRight: 14,
-    marginTop: 24,
-  },
-  rolesTitle: { fontSize: 18, letterSpacing: -0.09, fontFamily: "Geologica_800ExtraBold" },
-  rolesSub: { fontSize: 13, lineHeight: 18.2, fontFamily: "Geologica_400Regular", marginTop: 4, maxWidth: 249 },
-
-  deck: { height: 88, marginTop: 14 },
-  deckCard: { position: "absolute", height: 72, borderRadius: 22, borderWidth: 2 },
-  deckBack2: { left: 24, right: 24, top: 16, opacity: 0.35 },
-  deckBack1: { left: 12, right: 12, top: 8, opacity: 0.65 },
-  deckFront: {
-    left: 0,
-    right: 0,
-    top: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingLeft: 12,
-    paddingRight: 14,
-    gap: 14,
-  },
-  tipBadge: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
-  tipsTitle: { fontSize: 16, fontFamily: "Geologica_700Bold" },
-  tipsSub: { fontSize: 13, fontFamily: "Geologica_400Regular", marginTop: 4 },
 });
