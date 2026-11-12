@@ -478,9 +478,7 @@ export default function ProfileScreen() {
               }}
               spot={{ x: 170, y: -70, size: 240 }}
               art={art(themedSvg(CASSETTE, mode), 207, 15, 129, 82)}
-              onPress={() => {
-                // TODO(design): audio-diary screen doesn't exist yet.
-              }}
+              onPress={() => router.push("/diary")}
             />
           </Animated.View>
 

@@ -63,6 +63,13 @@ export const DARK = {
   tileTop: "#2A2A2D",
   tileBottom: "#0E0E10",
   tileStroke: "rgba(255,255,255,0.08)",
+  // Audio-diary cassette (Figma variables cassette/* in collection 11:107).
+  cassetteBody: "#A1A1A8",
+  cassetteBodyHi: "#BDBDC4",
+  cassetteBodyLo: "#8B8B92",
+  cassetteDetail: "#6B6B72",
+  cassetteLabelStroke: "#4A4A50",
+  cassetteWindow: "#18181A",
 };
 
 export const LIGHT = {
@@ -109,6 +116,12 @@ export const LIGHT = {
   tileTop: "#FFFFFF",
   tileBottom: "#F3F2EF",
   tileStroke: "rgba(38,38,40,0.07)",
+  cassetteBody: "#262628",
+  cassetteBodyHi: "#3C3C41",
+  cassetteBodyLo: "#18181A",
+  cassetteDetail: "#B9B9BF",
+  cassetteLabelStroke: "#4A4A50",
+  cassetteWindow: "#2C2C2E",
 };
 
 export type Theme = typeof DARK | typeof LIGHT;
