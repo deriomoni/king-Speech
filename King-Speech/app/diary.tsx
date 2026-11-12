@@ -242,6 +242,8 @@ export default function DiaryScreen() {
 
   // Long-press: lift + jiggle first, then ask.
   const askDelete = (e: DiaryEntry) => {
+    // Stop whatever is playing right away (the held cassette included).
+    if (playingId) void stop();
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     setLiftedId(e.id);
     if (liftTimer.current) clearTimeout(liftTimer.current);
