@@ -31,7 +31,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import LevelCompleteModal from "@/components/LevelCompleteModal";
 import AppDialog from "@/components/AppDialog";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import Colors from "@/constants/colors";
 import { useAppColors } from "@/hooks/useAppColors";
 import { useGame, LevelType, Task, getBaseType } from "@/context/GameContext";

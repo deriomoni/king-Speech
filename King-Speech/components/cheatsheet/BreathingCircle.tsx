@@ -9,7 +9,7 @@ import Animated, {
   FadeIn,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import { fonts } from "@/constants/colors";
 import { useAppColors } from "@/hooks/useAppColors";
 import { tx, type BreathingStep, type PhaseType } from "@/constants/cheatsheetData";

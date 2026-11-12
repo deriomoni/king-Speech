@@ -5,7 +5,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
 } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import { fonts } from "@/constants/colors";
 import { useAppColors } from "@/hooks/useAppColors";
 

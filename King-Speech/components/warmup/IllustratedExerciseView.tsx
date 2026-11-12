@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { SvgXml } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import { useTheme } from "@/context/ThemeContext";
 import { warmupFonts } from "@/components/warmup/warmupTheme";
 import {

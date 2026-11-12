@@ -19,7 +19,7 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { SvgXml } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import * as ImagePicker from "expo-image-picker";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useGame } from "@/context/GameContext";

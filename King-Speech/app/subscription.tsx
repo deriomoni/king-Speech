@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, RadialGradient, Rect, Stop, SvgXml } from "react-native-svg";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import { useTheme } from "@/context/ThemeContext";
 import AppDialog from "@/components/AppDialog";
 import CoinIcon from "@/components/CoinIcon";

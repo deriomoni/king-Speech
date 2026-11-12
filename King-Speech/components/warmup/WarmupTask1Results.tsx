@@ -8,7 +8,7 @@ import Animated, {
   useAnimatedStyle,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import OreoMascot from "@/components/OreoMascot";
 import { GlassCard, PrimaryButton } from "@/components/ds";

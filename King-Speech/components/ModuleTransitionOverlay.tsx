@@ -32,7 +32,7 @@ import Svg, {
 } from "react-native-svg";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useGame, getModuleQuote } from "@/context/GameContext";

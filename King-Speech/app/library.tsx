@@ -17,7 +17,7 @@ import { router } from "expo-router";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 import { useGame } from "@/context/GameContext";
 import { useLang } from "@/context/LangContext";

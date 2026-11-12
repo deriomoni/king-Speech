@@ -18,7 +18,7 @@ import Animated, {
   type SharedValue,
 } from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "@/constants/colors";
 import { tx, type CheatRoute } from "@/constants/cheatsheetData";

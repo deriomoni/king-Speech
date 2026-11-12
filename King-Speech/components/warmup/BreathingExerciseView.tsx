@@ -13,7 +13,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Path } from "react-native-svg";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import { warmupTheme, warmupFonts } from "@/components/warmup/warmupTheme";
 import { useAppColors } from "@/hooks/useAppColors";
 import { useTheme } from "@/context/ThemeContext";

@@ -40,6 +40,7 @@ import { GameProvider, useGame } from "@/context/GameContext";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { LangProvider, useLang } from "@/context/LangContext";
 import { DevToolsProvider, useDevTools } from "@/context/DevToolsContext";
+import { SettingsProvider } from "@/context/SettingsContext";
 import { ModuleTransitionProvider } from "@/context/ModuleTransitionContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { RolesProvider } from "@/context/RolesContext";
@@ -287,6 +288,7 @@ export default function RootLayout() {
                 <ReducedMotionConfig mode={ReduceMotion.Never} />
                 <KeyboardProvider>
                   <DevToolsProvider>
+                  <SettingsProvider>
                     <GameProvider>
                       <RolesProvider>
                         <ModuleTransitionProvider>
@@ -296,6 +298,7 @@ export default function RootLayout() {
                         </ModuleTransitionProvider>
                       </RolesProvider>
                     </GameProvider>
+                  </SettingsProvider>
                   </DevToolsProvider>
                 </KeyboardProvider>
               </ThemedRoot>

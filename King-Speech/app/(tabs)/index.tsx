@@ -24,7 +24,7 @@ import Animated, {
 } from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import { router } from "expo-router";
 import Colors from "@/constants/colors";
 import {
@@ -330,9 +330,7 @@ function StepBlockBase({
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
     } else {
-      try {
-        (navigator as any).vibrate?.(20);
-      } catch {}
+      Haptics.webVibrate(20);
     }
   };
 

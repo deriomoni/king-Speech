@@ -11,7 +11,7 @@ import Animated, {
   cancelAnimation,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import type { RankTheme } from "./rankTheme";
 import { pickLocalized } from "./rankTheme";
 import { useLang } from "@/context/LangContext";

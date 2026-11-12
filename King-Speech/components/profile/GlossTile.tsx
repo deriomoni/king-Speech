@@ -2,7 +2,7 @@ import React from "react";
 import { Text, StyleSheet, Pressable, Platform, type ViewStyle } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, RadialGradient, Stop, Circle } from "react-native-svg";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import type { ThemeMode } from "@/context/ThemeContext";
 
 // Figma "Row · …" / "Button · …" tiles on Screen / 04 · Profile (e.g. 391:1169).

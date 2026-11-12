@@ -4,7 +4,7 @@
 // Show Time tab and the theme preview opened from the catalog.
 import React, { useState } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import { router } from "expo-router";
 import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";

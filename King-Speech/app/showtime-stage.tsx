@@ -30,7 +30,7 @@ import Animated, {
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import { leaveTo } from "@/lib/nav";
 import { useVideoPlayer, VideoView } from "expo-video";
@@ -4499,7 +4499,7 @@ function StartButton({ accentColor, onPress, label }: { accentColor: string; onP
     setTimeout(() => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       if (Platform.OS === "web") {
-        try { (navigator as any).vibrate?.([15]); } catch {}
+        Haptics.webVibrate([15]);
       }
     }, 40);
   };

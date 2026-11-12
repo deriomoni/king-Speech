@@ -23,7 +23,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import { useLang } from "@/context/LangContext";
 import { reading as R } from "@/theme/tokens";
 import ReadingText, { tokenizeReading } from "@/components/ReadingText";

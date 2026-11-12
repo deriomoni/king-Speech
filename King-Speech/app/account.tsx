@@ -14,7 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import * as ImagePicker from "expo-image-picker";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useTheme } from "@/context/ThemeContext";

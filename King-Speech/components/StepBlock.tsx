@@ -8,7 +8,7 @@ import Animated, {
   withSequence,
   interpolateColor,
 } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { StepStatus } from "@/context/GameContext";
 import Colors from "@/constants/colors";

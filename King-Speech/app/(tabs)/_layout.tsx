@@ -3,7 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Platform, Pressable, StyleSheet, View, type ColorValue } from "react-native";
 import React from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,

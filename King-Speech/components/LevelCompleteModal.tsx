@@ -10,7 +10,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { SvgXml } from "react-native-svg";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import RiveAnim from "@/components/RiveAnim";
 import { useTheme } from "@/context/ThemeContext";

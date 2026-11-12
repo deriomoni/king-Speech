@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { leaveTo } from "@/lib/nav";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import { useDevTools } from "@/context/DevToolsContext";
 import { useGame, MODULE_COLORS } from "@/context/GameContext";
 import { useModuleTransition } from "@/context/ModuleTransitionContext";

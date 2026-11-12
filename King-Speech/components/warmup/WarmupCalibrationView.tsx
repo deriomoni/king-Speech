@@ -8,7 +8,7 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import OreoMascot from "@/components/OreoMascot";
 import { GlassCard, PrimaryButton } from "@/components/ds";
 import CelebrationBurst from "@/components/warmup/CelebrationBurst";

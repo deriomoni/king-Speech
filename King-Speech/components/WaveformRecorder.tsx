@@ -18,7 +18,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import { useTheme } from "@/context/ThemeContext";
 import {
   type WaveBar,

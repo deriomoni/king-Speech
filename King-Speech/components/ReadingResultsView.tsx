@@ -14,7 +14,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Path } from "react-native-svg";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import { useFonts, Literata_600SemiBold } from "@expo-google-fonts/literata";
 import { useTheme } from "@/context/ThemeContext";
 import { tokenizeReading } from "@/components/ReadingText";
