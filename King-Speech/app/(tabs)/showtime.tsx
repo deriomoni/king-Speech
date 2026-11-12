@@ -1,5 +1,5 @@
 // Show Time tab — Figma "Screen / 03b · Show Time — full" (17:660 dark, 17:759 light).
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -30,6 +30,7 @@ import {
 } from "@/components/showtime/themeCategories";
 import CoinIcon from "@/components/CoinIcon";
 import StageGlassDialog from "@/components/showtime/StageGlassDialog";
+import { subscribeShowTimeTheme, takePendingShowTimeTheme } from "@/components/showtime/themeSelection";
 
 const CAROUSEL_COUNT = 10;
 const COLLAPSED_TILES = 6;
@@ -72,6 +73,18 @@ export default function ShowTimeScreen() {
   const BASE_KEYS = useMemo(() => ALL_KEYS.slice(0, CAROUSEL_COUNT), [ALL_KEYS]);
   const [selectedKey, setSelectedKey] = useState<string>(() => BASE_KEYS[0]);
   const safeKey = speechThemes[selectedKey] ? selectedKey : BASE_KEYS[0];
+
+  // A theme picked on the full catalog screen (app/theme-catalog.tsx).
+  useEffect(() => {
+    const apply = (key: string) => {
+      takePendingShowTimeTheme();
+      setSelectedKey(key);
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+    };
+    const pending = takePendingShowTimeTheme();
+    if (pending) apply(pending);
+    return subscribeShowTimeTheme(apply);
+  }, []);
 
   // A theme picked from the catalog that is not among the "актуальные" ones is
   // put at the front of the carousel, so the carousel always holds the selection.
@@ -242,8 +255,8 @@ export default function ShowTimeScreen() {
             <Text style={[st.catalogTitle, { color: c.text }]}>
               {q ? (en ? `Found: ${catalogKeys.length}` : `Найдено: ${catalogKeys.length}`) : en ? "Topic catalog" : "Каталог тем"}
             </Text>
-            {/* TODO(design): ↗ should open the full catalog screen (Flows 175:1940); until it exists it expands the grid. */}
-            <Pressable hitSlop={10} onPress={() => setExpanded((v) => !v)} accessibilityRole="button">
+            {/* ↗ opens the full catalog screen (Figma 399:1177). */}
+            <Pressable hitSlop={10} onPress={() => router.push("/theme-catalog")} accessibilityRole="button">
               <OpenCatalogIcon color={c.text} />
             </Pressable>
           </View>
@@ -328,7 +341,7 @@ export default function ShowTimeScreen() {
                 locations={[0, 0.45, 1]}
                 style={StyleSheet.absoluteFill}
               />
-              <Pressable onPress={() => setExpanded(true)} style={st.seeAll} hitSlop={6}>
+              <Pressable onPress={() => router.push("/theme-catalog")} style={st.seeAll} hitSlop={6}>
                 <Text style={[st.seeAllText, { color: c.text }]}>
                   {en ? "See all topics" : "Смотреть все темы"}
                 </Text>
