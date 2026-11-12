@@ -1,8 +1,8 @@
 // «Каталог тем» — Figma "Screen / 03c · Каталог тем" (399:1177 dark, Light mode instance).
 // Full Show Time theme catalog: search, category chips, «Тема недели» featured
-// card and a 2-column grid of gradient covers. Tapping a theme opens its preview
-// (app/theme-preview.tsx) with the normal free-entry / coin start; closing the
-// preview comes back here.
+// card and a 2-column grid of gradient covers. Tapping a theme opens that
+// theme's stage directly (showtime-stage starts on its «Превью темы» card) via
+// the normal free-entry / coin flow; closing the preview comes back here.
 import React, { useMemo, useState } from "react";
 import {
   View,
@@ -25,6 +25,7 @@ import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
 import { PlayTriangleIcon, SearchIcon } from "@/components/showtime/ShowTimeIcons";
+import { useShowTimeEntry } from "@/components/showtime/useShowTimeEntry";
 import { THEME_CATEGORIES, categoryOf, type ThemeCategoryId } from "@/components/showtime/themeCategories";
 
 const POPULAR_COUNT = 10;
@@ -85,9 +86,10 @@ export default function ThemeCatalogScreen() {
     else router.replace("/(tabs)/showtime");
   };
 
+  const entry = useShowTimeEntry();
   const pick = (key: string) => {
-    if (Platform.OS !== "web") Haptics.selectionAsync();
-    router.push({ pathname: "/theme-preview", params: { key } });
+    const t = speechThemes[key];
+    if (t) entry.start(t.levelId);
   };
 
   return (
@@ -236,6 +238,7 @@ export default function ThemeCatalogScreen() {
           </View>
         )}
       </ScrollView>
+      {entry.dialog}
     </View>
   );
 }
