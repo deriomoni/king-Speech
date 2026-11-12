@@ -7,7 +7,7 @@ import StageGlassDialog, { type GlassBtn } from "@/components/showtime/StageGlas
  * Figma 145:181 "Dialog / Liquid Glass" + 133:167 "Alert (iOS) · все окна":
  * a frosted 32pt card with a pale 4pt rim and a soft gold glow behind the
  * title; buttons are pills — `primary` = gold CTA (4pt amber stroke),
- * `secondary` = the brown secondary button. A single button is always the
+ * `secondary` = a neutral grey glass pill. A single button is always the
  * gold full-width "OK". Renders through StageGlassDialog so Show Time,
  * Reading, Vocabulary and every AppDialog caller share one look.
  *

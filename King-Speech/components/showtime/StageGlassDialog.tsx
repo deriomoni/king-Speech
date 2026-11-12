@@ -57,6 +57,9 @@ export default function StageGlassDialog({
   const cardFill = isDark ? "rgba(52,52,53,0.82)" : "rgba(250,249,246,0.94)";
   const rim = isDark ? "rgba(240,238,233,0.26)" : "rgba(38,38,40,0.10)";
   const msgColor = isDark ? "rgba(240,238,233,0.6)" : "rgba(38,38,40,0.6)";
+  // Secondary / disabled buttons: neutral grey glass with normal ink text.
+  const secFill = isDark ? "rgba(240,238,233,0.10)" : "rgba(38,38,40,0.06)";
+  const secStroke = isDark ? "rgba(240,238,233,0.14)" : "rgba(38,38,40,0.10)";
   const [size, setSize] = React.useState({ w: 330, h: 200 });
   const inW = Math.max(1, size.w - 2 * RIM);
   const inH = Math.max(1, size.h - 2 * RIM);
@@ -138,14 +141,14 @@ export default function StageGlassDialog({
                       stacked ? styles.btnHug : styles.btn,
                       primary
                         ? { backgroundColor: theme.accent, borderColor: theme.ctaStroke, borderWidth: 4 }
-                        : { backgroundColor: "#716250", borderColor: "#312C24", borderWidth: 2 },
-                      { opacity: pressed ? 0.85 : 1 },
+                        : { backgroundColor: secFill, borderColor: secStroke, borderWidth: 1.5 },
+                      { opacity: b.disabled ? 0.6 : pressed ? 0.85 : 1 },
                     ]}
                   >
                     <Text
                       style={[
                         primary || b.disabled ? (stacked ? styles.btnTextHug : styles.btnTextPrimary) : styles.btnTextSecondary,
-                        { color: primary ? theme.accentText : "#FFFFFF" },
+                        { color: primary ? theme.accentText : theme.text },
                       ]}
                     >
                       {b.label}

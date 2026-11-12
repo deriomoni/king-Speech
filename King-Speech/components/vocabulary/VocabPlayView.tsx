@@ -527,8 +527,8 @@ export default function VocabPlayView({
                 onPress: onConfirmReplace,
                 trailing: (
                   <>
-                    <Text style={[styles.dlgCost, { color: "rgba(255,255,255,0.45)" }]}>{REPLACE_COST}</Text>
-                    <CoinIcon size={20} color="rgba(255,255,255,0.45)" />
+                    <Text style={[styles.dlgCost, { color: ink(0.6) }]}>{REPLACE_COST}</Text>
+                    <CoinIcon size={20} color={ink(0.6)} />
                   </>
                 ),
               },

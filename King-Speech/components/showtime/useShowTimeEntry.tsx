@@ -70,10 +70,10 @@ export function useShowTimeEntry() {
           onPress: confirmPaidEntry,
           trailing: (
             <View style={st.payTrail}>
-              <Text style={[st.payTrailText, { color: canPay ? c.accentText : "rgba(240,238,233,0.35)" }]}>
+              <Text style={[st.payTrailText, { color: canPay ? c.accentText : c.text }]}>
                 {SHOW_TIME_COST}
               </Text>
-              <CoinIcon size={20} color={canPay ? c.accentText : "rgba(240,238,233,0.35)"} />
+              <CoinIcon size={20} color={canPay ? c.accentText : c.text} />
             </View>
           ),
         },
