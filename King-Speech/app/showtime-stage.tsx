@@ -43,6 +43,8 @@ import { playSfx, preloadSfx, unloadSfx } from "@/lib/sfx";
 import { AUTHOR_READ_RESULT_KEY, splitAuthorText } from "@/lib/authorStage";
 import DevSkipButton from "@/components/DevSkipButton";
 import StageGlassDialog from "@/components/showtime/StageGlassDialog";
+import { SHOW_TIME_COST, useShowTimeEntry } from "@/components/showtime/useShowTimeEntry";
+import CoinIcon from "@/components/CoinIcon";
 import { SvgXml } from "react-native-svg";
 import { useTheme } from "@/context/ThemeContext";
 import { categoryOf, THEME_CATEGORIES } from "@/components/showtime/themeCategories";
@@ -4736,7 +4738,9 @@ export default function ShowtimeStageScreen() {
     text: authorTextParam,
     category: authorCategoryParam,
     draftId: authorDraftIdParam,
+    entry: entryParam,
   } = useLocalSearchParams<{
+    entry?: string;
     levelId?: string;
     mode?: string;
     source?: string;
@@ -4755,6 +4759,11 @@ export default function ShowtimeStageScreen() {
   const isAuthor = authorLines.length > 0;
   const levelId = isAuthor ? "author" : levelIdParam ?? "showtime";
   const mode = modeParam ?? "game";
+  // Opened from the Show Time tab / theme catalog: the preview's start button
+  // is the paid-or-free Show Time entry (free once a day, then SHOW_TIME_COST).
+  const paidEntry = entryParam === "showtime" && !isAuthor;
+  const showTimeEntry = useShowTimeEntry();
+  const entryCost = paidEntry && !showTimeEntry.freeAvailable;
   const themes = getSpeechThemes(lang);
   const authorTheme = useMemo<SpeechTheme | null>(() => {
     if (!isAuthor) return null;
@@ -5397,15 +5406,24 @@ export default function ShowtimeStageScreen() {
             </View>
 
             <Pressable
-              onPress={handleStart}
+              onPress={() => (paidEntry ? showTimeEntry.begin(() => void handleStart()) : void handleStart())}
               style={({ pressed }) => [s.pvCta, { backgroundColor: ui.accent, borderColor: ui.ctaStroke, opacity: pressed ? 0.88 : 1 }]}
             >
               <SvgXml xml={playCircleXml.replace(/__INK__/g, "#3A3A3B")} width={22} height={24} />
               <Text style={[s.pvCtaText, { color: ui.accentText }]}>{t("goOnStage")}</Text>
+              {entryCost ? (
+                <View style={s.pvCtaCost}>
+                  <Text style={[s.pvCtaText, { color: ui.accentText }]}>{SHOW_TIME_COST}</Text>
+                  <CoinIcon size={18} color={ui.accentText} />
+                </View>
+              ) : null}
             </Pressable>
           </ScrollView>
         </Animated.View>
       )}
+
+      {/* Show Time entry pay dialog (only when today's free entry is used). */}
+      {paidEntry ? showTimeEntry.dialog : null}
 
       {/* Top-right close X — a bare glyph, as in the design (no scrim). */}
       <Pressable
@@ -5661,6 +5679,14 @@ const s = StyleSheet.create({
   pvSegText: { fontFamily: "Geologica_600SemiBold", fontSize: 14 },
   pvCta: { height: 56, borderRadius: 28, borderWidth: 4, marginTop: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
   pvCtaText: { fontFamily: "Geologica_800ExtraBold", fontSize: 17 },
+  pvCtaCost: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingLeft: 10,
+    borderLeftWidth: 1.5,
+    borderLeftColor: "rgba(58,58,59,0.22)",
+  },
   // Curtain
   curtainContent: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 28 },
   // Scrollable variant so tall curtain content can't clip top/bottom on small

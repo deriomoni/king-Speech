@@ -1,8 +1,13 @@
 // Entering a Show Time stage: the first entry of the day is free, further ones
 // cost SHOW_TIME_COST coins behind the Liquid Glass pay dialog (Figma 37:4261
-// «Ещё один выход (50 монет)» / 37:3896 «Не хватает монет»). Shared by the
-// Show Time tab and the theme preview opened from the catalog.
-import React, { useState } from "react";
+// «Ещё один выход (50 монет)» / 37:3896 «Не хватает монет»).
+//
+// Flow: the Show Time tab and the theme catalog only OPEN the stage
+// (openShowTimeStage → its «Превью темы» card, nothing is charged). The
+// preview's start button calls useShowTimeEntry().begin(go): a free entry is
+// consumed and the show starts; otherwise the pay dialog appears and coins are
+// spent exactly once, on confirm, right before the show starts.
+import React, { useRef, useState } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import * as Haptics from "@/lib/haptics";
 import { router } from "expo-router";
@@ -15,40 +20,59 @@ import { PlayTriangleIcon } from "@/components/showtime/ShowTimeIcons";
 
 export const SHOW_TIME_COST = 50;
 
+/** Opens a theme's stage on its preview card as a paid-or-free Show Time entry. */
+export function openShowTimeStage(levelId: string) {
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+  router.push({ pathname: "/showtime-stage", params: { levelId, mode: "trainer", entry: "showtime" } });
+}
+
 export function useShowTimeEntry() {
   const { lang } = useLang();
   const en = lang === "en";
   const { theme: c, themeMode } = useTheme();
   const isLight = themeMode === "light";
   const { coins, showTimeFreeAvailable, consumeShowTimeFree, spendCoins } = useGame();
-  const [payFor, setPayFor] = useState<string | null>(null);
+  const [payOpen, setPayOpen] = useState(false);
+  const pendingRef = useRef<(() => void) | null>(null);
+  // One entry per stage visit: a double tap must not consume/charge twice.
+  const launchedRef = useRef(false);
 
-  const goToStage = (levelId: string) => {
-    router.push({ pathname: "/showtime-stage", params: { levelId, mode: "trainer" } });
+  const launch = (go: () => void) => {
+    launchedRef.current = true;
+    pendingRef.current = null;
+    go();
   };
 
-  const start = (levelId: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+  const begin = (go: () => void) => {
+    if (launchedRef.current) return;
     if (showTimeFreeAvailable) {
       consumeShowTimeFree();
-      goToStage(levelId);
+      launch(go);
     } else {
-      setPayFor(levelId);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      pendingRef.current = go;
+      setPayOpen(true);
     }
+  };
+
+  const cancel = () => {
+    pendingRef.current = null;
+    setPayOpen(false);
   };
 
   const canPay = coins >= SHOW_TIME_COST;
   const confirmPaidEntry = () => {
-    const levelId = payFor;
-    if (levelId && spendCoins(SHOW_TIME_COST)) {
-      setPayFor(null);
-      goToStage(levelId);
+    const go = pendingRef.current;
+    if (!go || launchedRef.current) return;
+    if (spendCoins(SHOW_TIME_COST)) {
+      setPayOpen(false);
+      launch(go);
     }
   };
 
   const dialog = (
     <StageGlassDialog
-      visible={!!payFor}
+      visible={payOpen}
       title={en ? "Enter Show Time again?" : "Ещё один выход в Show Time?"}
       message={
         canPay
@@ -60,9 +84,9 @@ export function useShowTimeEntry() {
             : "Не хватает монет - зарабатывайте их, проходя уровни."
       }
       overlay={0.6}
-      onRequestClose={() => setPayFor(null)}
+      onRequestClose={cancel}
       buttons={[
-        { label: en ? "Cancel" : "Отмена", variant: "secondary", onPress: () => setPayFor(null) },
+        { label: en ? "Cancel" : "Отмена", variant: "secondary", onPress: cancel },
         {
           label: en ? "Enter ·" : "Выйти ·",
           variant: "primary",
@@ -91,7 +115,7 @@ export function useShowTimeEntry() {
     </StageGlassDialog>
   );
 
-  return { start, dialog, freeAvailable: showTimeFreeAvailable };
+  return { begin, dialog, freeAvailable: showTimeFreeAvailable };
 }
 
 /** Yellow «Начать выступление» pill (Figma 17:707) with the cost when not free. */

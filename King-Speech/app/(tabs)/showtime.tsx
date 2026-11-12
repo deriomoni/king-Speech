@@ -28,7 +28,8 @@ import {
   categoryOf,
   type ThemeCategoryId,
 } from "@/components/showtime/themeCategories";
-import { ShowTimeStartButton, useShowTimeEntry } from "@/components/showtime/useShowTimeEntry";
+import { openShowTimeStage, ShowTimeStartButton } from "@/components/showtime/useShowTimeEntry";
+import { useGame } from "@/context/GameContext";
 import { subscribeShowTimeTheme, takePendingShowTimeTheme } from "@/components/showtime/themeSelection";
 
 const CAROUSEL_COUNT = 10;
@@ -49,8 +50,9 @@ export default function ShowTimeScreen() {
   const { theme: c, themeMode } = useTheme();
   const isLight = themeMode === "light";
   const { width: winW } = useWindowDimensions();
-  // First Show Time of the day is free; further entries cost coins.
-  const entry = useShowTimeEntry();
+  // First Show Time of the day is free; further entries cost coins — paid on
+  // the theme preview's start button, not here (this only opens the preview).
+  const { showTimeFreeAvailable } = useGame();
 
   // Figma tokens not in ThemeContext.
   const stroke = isLight ? "rgba(38,38,40,0.08)" : "rgba(240,238,233,0.06)"; // stroke/shape
@@ -202,7 +204,7 @@ export default function ShowTimeScreen() {
           ) : null}
         </View>
 
-        <ShowTimeStartButton onPress={() => entry.start(theme.levelId)} free={entry.freeAvailable} en={en} />
+        <ShowTimeStartButton onPress={() => openShowTimeStage(theme.levelId)} free={showTimeFreeAvailable} en={en} />
 
         {/* Каталог тем */}
         <View
@@ -336,7 +338,6 @@ export default function ShowTimeScreen() {
         </View>
       </ScrollView>
 
-      {entry.dialog}
     </View>
   );
 }
