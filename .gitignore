@@ -42,3 +42,4 @@ King-Speech/app/(tabs)/index.tsx:100-600
 server_dist/
 .vercel
 *.tsbuildinfo
+.claude/settings.local.json
