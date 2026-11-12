@@ -185,7 +185,7 @@ export function useRoleScenario({
     e.lastLevelAt = now;
     // Adaptive noise floor: drops fast, creeps up slowly.
     if (v < e.floor) e.floor = e.floor * 0.6 + v * 0.4;
-    else e.floor += (v - e.floor) * 0.004;
+    else e.floor += (v - e.floor) * (e.speaking ? 0.002 : 0.02);
     const on = Math.max(e.floor + 12, -52);
     const off = Math.max(e.floor + 8, -56);
     if (!e.speaking && v > on) e.speaking = true;
