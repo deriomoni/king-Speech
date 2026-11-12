@@ -19,23 +19,20 @@ import { router } from "expo-router";
 import { getSpeechThemes } from "@/app/showtime-stage";
 import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
-import { useGame } from "@/context/GameContext";
 import { ThemeCoverGallery } from "@/components/showtime/ThemeCoverGallery";
 import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
-import { OpenCatalogIcon, PlayTriangleIcon, SearchIcon } from "@/components/showtime/ShowTimeIcons";
+import { OpenCatalogIcon, SearchIcon } from "@/components/showtime/ShowTimeIcons";
 import { ShowTimeModeTiles } from "@/components/showtime/ModeTiles";
 import {
   THEME_CATEGORIES,
   categoryOf,
   type ThemeCategoryId,
 } from "@/components/showtime/themeCategories";
-import CoinIcon from "@/components/CoinIcon";
-import StageGlassDialog from "@/components/showtime/StageGlassDialog";
+import { ShowTimeStartButton, useShowTimeEntry } from "@/components/showtime/useShowTimeEntry";
 import { subscribeShowTimeTheme, takePendingShowTimeTheme } from "@/components/showtime/themeSelection";
 
 const CAROUSEL_COUNT = 10;
 const COLLAPSED_TILES = 6;
-const SHOW_TIME_COST = 50;
 
 // "#RRGGBB" + alpha → rgba() (used to fade the catalog veil into the card colour).
 function withAlpha(hex: string, a: number) {
@@ -52,14 +49,14 @@ export default function ShowTimeScreen() {
   const { theme: c, themeMode } = useTheme();
   const isLight = themeMode === "light";
   const { width: winW } = useWindowDimensions();
-  const { coins, showTimeFreeAvailable, consumeShowTimeFree, spendCoins } = useGame();
+  // First Show Time of the day is free; further entries cost coins.
+  const entry = useShowTimeEntry();
 
   // Figma tokens not in ThemeContext.
   const stroke = isLight ? "rgba(38,38,40,0.08)" : "rgba(240,238,233,0.06)"; // stroke/shape
   const inkFaint = isLight ? "rgba(38,38,40,0.35)" : "rgba(240,238,233,0.35)"; // showtime/ink-faint
   const bgMid = isLight ? c.bgSecondary : "#2E2E30"; // showtime/bg-mid
 
-  const [payModal, setPayModal] = useState(false);
   const [query, setQuery] = useState("");
   const [activeCat, setActiveCat] = useState<ThemeCategoryId>("popular");
   const [expanded, setExpanded] = useState(false);
@@ -124,32 +121,6 @@ export default function ShowTimeScreen() {
     setSelectedKey(key);
     haptic();
     scrollRef.current?.scrollTo({ y: 0, animated: true });
-  };
-
-  const goToStage = () => {
-    router.push({
-      pathname: "/showtime-stage",
-      params: { levelId: theme.levelId, mode: "trainer" },
-    });
-  };
-
-  const handleStart = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // First Show Time of the day is free; further entries cost coins.
-    if (showTimeFreeAvailable) {
-      consumeShowTimeFree();
-      goToStage();
-    } else {
-      setPayModal(true);
-    }
-  };
-
-  const canPay = coins >= SHOW_TIME_COST;
-  const confirmPaidEntry = () => {
-    if (spendCoins(SHOW_TIME_COST)) {
-      setPayModal(false);
-      goToStage();
-    }
   };
 
   const durationLine =
@@ -231,22 +202,7 @@ export default function ShowTimeScreen() {
           ) : null}
         </View>
 
-        <Pressable
-          onPress={handleStart}
-          style={({ pressed }) => [
-            st.startBtn,
-            { opacity: pressed ? 0.85 : 1 },
-          ]}
-        >
-          <PlayTriangleIcon color="#262628" />
-          <Text style={st.startBtnText}>{en ? "Start performance" : "Начать выступление"}</Text>
-          {showTimeFreeAvailable ? null : (
-            <View style={st.startBtnCost}>
-              <Text style={st.startBtnCostText}>{SHOW_TIME_COST}</Text>
-              <CoinIcon size={16} color="#3A3A3B" />
-            </View>
-          )}
-        </Pressable>
+        <ShowTimeStartButton onPress={() => entry.start(theme.levelId)} free={entry.freeAvailable} en={en} />
 
         {/* Каталог тем */}
         <View
@@ -380,67 +336,12 @@ export default function ShowTimeScreen() {
         </View>
       </ScrollView>
 
-      {/* Figma 37:4261 «Ещё один выход (50 монет)» / 37:3896 «Не хватает монет»:
-          Liquid Glass card, cost line with a coin, "Выйти · 50 🪙" — disabled
-          (secondary look) when the balance is short. */}
-      <StageGlassDialog
-        visible={payModal}
-        title={en ? "Enter Show Time again?" : "Ещё один выход в Show Time?"}
-        message={
-          canPay
-            ? en
-              ? "Today's free entry is used."
-              : "Бесплатный выход на сегодня использован."
-            : en
-              ? "Not enough coins — earn them by finishing levels."
-              : "Не хватает монет - зарабатывайте их, проходя уровни."
-        }
-        overlay={0.6}
-        onRequestClose={() => setPayModal(false)}
-        buttons={[
-          { label: en ? "Cancel" : "Отмена", variant: "secondary", onPress: () => setPayModal(false) },
-          {
-            label: en ? "Enter ·" : "Выйти ·",
-            variant: "primary",
-            disabled: !canPay,
-            onPress: confirmPaidEntry,
-            trailing: (
-              <View style={st.payTrail}>
-                <Text
-                  style={[
-                    st.payTrailText,
-                    { color: canPay ? c.accentText : "rgba(240,238,233,0.35)" },
-                  ]}
-                >
-                  {SHOW_TIME_COST}
-                </Text>
-                <CoinIcon size={20} color={canPay ? c.accentText : "rgba(240,238,233,0.35)"} />
-              </View>
-            ),
-          },
-        ]}
-      >
-        <View style={st.payCostRow}>
-          <Text style={[st.payCostLabel, { color: isLight ? "rgba(38,38,40,0.6)" : "rgba(240,238,233,0.6)" }]}>
-            {en ? "This entry costs" : "Этот выход стоит"}
-          </Text>
-          <Text style={[st.payCostValue, { color: isLight ? "rgba(38,38,40,0.9)" : "rgba(240,238,233,0.9)" }]}>
-            {SHOW_TIME_COST}
-          </Text>
-          <CoinIcon size={16} color={c.accent} />
-        </View>
-      </StageGlassDialog>
+      {entry.dialog}
     </View>
   );
 }
 
 const st = StyleSheet.create({
-  // Pay-for-entry dialog (cost line + coin trailing on the CTA).
-  payCostRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 },
-  payCostLabel: { fontFamily: "Geologica_600SemiBold", fontSize: 14 },
-  payCostValue: { fontFamily: "Geologica_900Black", fontSize: 14 },
-  payTrail: { flexDirection: "row", alignItems: "center", gap: 6 },
-  payTrailText: { fontFamily: "Geologica_900Black", fontSize: 16 },
   container: { flex: 1 },
   scrollOuter: { flexGrow: 1 },
   plate: {
@@ -481,31 +382,6 @@ const st = StyleSheet.create({
   themeTitle: { flex: 1, fontSize: 24, letterSpacing: -0.12, fontFamily: "Geologica_800ExtraBold" },
   counter: { fontSize: 11, fontFamily: "Geologica_400Regular", marginTop: 10 },
   desc: { fontSize: 13, lineHeight: 15.6, fontFamily: "Geologica_600SemiBold" },
-
-  startBtn: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    height: 50,
-    borderRadius: 32,
-    backgroundColor: "#FFD857",
-    // Figma 17:707: icon box at x 20, label at x 50.
-    paddingLeft: 20,
-    paddingRight: 20,
-    gap: 8,
-    marginTop: 33,
-  },
-  startBtnText: { color: "#262628", fontSize: 16, fontFamily: "Geologica_700Bold" },
-  startBtnCost: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginLeft: 2,
-    paddingLeft: 10,
-    borderLeftWidth: 1.5,
-    borderLeftColor: "rgba(58,58,59,0.22)",
-  },
-  startBtnCostText: { color: "#3A3A3B", fontSize: 16, fontFamily: "Geologica_800ExtraBold" },
 
   catalog: {
     marginTop: 32,

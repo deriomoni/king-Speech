@@ -1,8 +1,8 @@
 // «Каталог тем» — Figma "Screen / 03c · Каталог тем" (399:1177 dark, Light mode instance).
 // Full Show Time theme catalog: search, category chips, «Тема недели» featured
-// card and a 2-column grid of gradient covers. Picking a theme hands it to the
-// Show Time tab (components/showtime/themeSelection) and goes back there, where
-// the normal free-entry / coin flow starts the performance.
+// card and a 2-column grid of gradient covers. Tapping a theme opens its preview
+// (app/theme-preview.tsx) with the normal free-entry / coin start; closing the
+// preview comes back here.
 import React, { useMemo, useState } from "react";
 import {
   View,
@@ -26,7 +26,6 @@ import { useTheme } from "@/context/ThemeContext";
 import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
 import { PlayTriangleIcon, SearchIcon } from "@/components/showtime/ShowTimeIcons";
 import { THEME_CATEGORIES, categoryOf, type ThemeCategoryId } from "@/components/showtime/themeCategories";
-import { requestShowTimeTheme } from "@/components/showtime/themeSelection";
 
 const POPULAR_COUNT = 10;
 
@@ -88,8 +87,7 @@ export default function ThemeCatalogScreen() {
 
   const pick = (key: string) => {
     if (Platform.OS !== "web") Haptics.selectionAsync();
-    requestShowTimeTheme(key);
-    goBack();
+    router.push({ pathname: "/theme-preview", params: { key } });
   };
 
   return (
