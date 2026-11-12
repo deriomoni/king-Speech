@@ -125,6 +125,9 @@ export default function ProfileScreen() {
   const { user, setPhotoURL, saveProfile } = useAuth();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
+  // True from open until the menu's close animation ends: the «+» under the
+  // overlay hides meanwhile, the overlay draws the rotating glyph itself.
+  const [menuShown, setMenuShown] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<MenuAnchor | null>(null);
   const plusRef = useRef<View>(null);
   const [nameEditOpen, setNameEditOpen] = useState(false);
@@ -219,12 +222,28 @@ export default function ProfileScreen() {
     }
   };
 
-  const runPhotoAction = (action: () => Promise<void>) => {
+  // Close the «+» menu, then run `fn` once its close animation (× → +) has
+  // finished and the overlay modal is gone — so a picker / alert / next modal
+  // never opens over a dismissing one.
+  const afterMenuCloseRef = useRef<(() => void) | null>(null);
+  const closeMenuThen = (fn: () => void) => {
+    if (Platform.OS === "web") {
+      setPhotoMenuOpen(false);
+      setTimeout(fn, 0);
+      return;
+    }
+    afterMenuCloseRef.current = fn;
     setPhotoMenuOpen(false);
-    // Let the modal dismiss before launching the native picker/camera.
-    setTimeout(() => {
-      action();
-    }, Platform.OS === "web" ? 0 : 220);
+  };
+  const onMenuClosed = () => {
+    setMenuShown(false);
+    const fn = afterMenuCloseRef.current;
+    afterMenuCloseRef.current = null;
+    if (fn) setTimeout(fn, 60);
+  };
+
+  const runPhotoAction = (action: () => Promise<void>) => {
+    closeMenuThen(() => void action());
   };
 
   // "Загрузить фото профиля": camera or gallery on device; gallery on web.
@@ -233,14 +252,13 @@ export default function ProfileScreen() {
       runPhotoAction(handlePickFromGallery);
       return;
     }
-    setPhotoMenuOpen(false);
-    setTimeout(() => {
+    closeMenuThen(() => {
       Alert.alert(en ? "Profile photo" : "Фото профиля", undefined, [
         { text: t("takeSelfie"), onPress: () => handleTakeSelfie() },
         { text: t("chooseFromGallery"), onPress: () => handlePickFromGallery() },
         { text: t("cancel"), style: "cancel" },
       ]);
-    }, 220);
+    });
   };
 
   const openPhotoMenu = () => {
@@ -250,23 +268,23 @@ export default function ProfileScreen() {
     if (node && typeof node.measureInWindow === "function") {
       node.measureInWindow((x, y, width, height) => {
         setMenuAnchor({ x, y, width, height });
+        setMenuShown(true);
         setPhotoMenuOpen(true);
       });
     } else {
+      setMenuShown(true);
       setPhotoMenuOpen(true);
     }
   };
 
   // Open the name editor (from the edit menu).
   const openNameEdit = () => {
-    setPhotoMenuOpen(false);
     setDraftName(name);
-    setTimeout(() => setNameEditOpen(true), Platform.OS === "web" ? 0 : 220);
+    closeMenuThen(() => setNameEditOpen(true));
   };
 
   const openColorMenu = () => {
-    setPhotoMenuOpen(false);
-    setTimeout(() => setColorMenuOpen(true), Platform.OS === "web" ? 0 : 220);
+    closeMenuThen(() => setColorMenuOpen(true));
   };
 
   const pickBgColor = (color: string | null) => {
@@ -393,18 +411,15 @@ export default function ProfileScreen() {
               {uploadingAvatar ? (
                 <ActivityIndicator size="small" color={theme.text} />
               ) : (
-                <>
+                <View style={[styles.plusGlyph, { opacity: menuShown ? 0 : 1 }]}>
                   <View style={[styles.plusH, { backgroundColor: theme.text }]} />
                   <View style={[styles.plusV, { backgroundColor: theme.text }]} />
-                </>
+                </View>
               )}
             </Pressable>
 
-            <Pressable
-              onPress={openPhotoMenu}
-              disabled={uploadingAvatar}
-              style={[styles.avatar, { backgroundColor: theme.card }]}
-            >
+            {/* The avatar is not a button: only the «+» opens the menu. */}
+            <View style={[styles.avatar, { backgroundColor: theme.card }]}>
               <View style={styles.avatarClip}>
                 {user?.photoURL ? (
                   <Image
@@ -421,7 +436,7 @@ export default function ProfileScreen() {
                   </View>
                 )}
               </View>
-            </Pressable>
+            </View>
 
             <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>
               {name || (t("profile") || "Profile")}
@@ -577,6 +592,7 @@ export default function ProfileScreen() {
         theme={theme}
         options={menuOptions}
         onClose={() => setPhotoMenuOpen(false)}
+        onClosed={onMenuClosed}
       />
 
       {/* Name editor */}
@@ -724,6 +740,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  plusGlyph: { width: 18, height: 18, alignItems: "center", justifyContent: "center" },
   plusH: {
     position: "absolute",
     width: 16,
