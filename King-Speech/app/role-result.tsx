@@ -35,6 +35,7 @@ import Animated, {
 import { useLang } from "@/context/LangContext";
 import { useRoles } from "@/context/RolesContext";
 import { getRoleById, tx } from "@/constants/rolesData";
+import { getRoleScenario, lt } from "@/constants/roleScenarios";
 import RoleArt from "@/components/roles/RoleArt";
 import { takeRolePerformance, type RolePerformance } from "@/lib/rolePerformance";
 import { getApiUrl } from "@/lib/query-client";
@@ -87,6 +88,9 @@ interface RoleScore {
   categories: Record<string, { score: number; label: string }>;
   aiUnavailable?: boolean;
   silent?: boolean;
+  /** Per-goal verdicts for scenario roles (AI, or keyword / live-tick fallback). */
+  goals?: { id: string; text: string; hit: boolean; note?: string }[];
+  outcome?: "win" | "lose" | "open";
 }
 
 type Stage = "self" | "scanning" | "reveal";
@@ -110,6 +114,8 @@ export default function RoleResultScreen() {
   if (perfRef.current === null) perfRef.current = takeRolePerformance();
   const perf = perfRef.current;
   const role = perf ? getRoleById(perf.roleId) : undefined;
+  const scenario = perf ? getRoleScenario(perf.roleId) : undefined;
+  const run = perf?.scenario;
 
   const [stage, setStage] = useState<Stage>("self");
   const [selfStars, setSelfStars] = useState(0);
@@ -417,7 +423,28 @@ export default function RoleResultScreen() {
           audioBase64: perf.audioBase64,
           roleTitle: tx(role.title, lang),
           roleScene: tx(role.scene, lang),
-          scriptedText: perf.mode === "scripted" ? tx(role.scriptedText, lang) : undefined,
+          // Scripted scenario: the player's dialogue lines replace the old monologue.
+          scriptedText: perf.mode === "scripted"
+            ? (scenario
+                ? [scenario.opening, ...scenario.beats.map((b) => b.reply)].filter(Boolean).map((t) => lt(t!, lang)).join(" / ")
+                : tx(role.scriptedText, lang))
+            : undefined,
+          scenario: run && scenario
+            ? {
+                persona: `${lt(scenario.persona.name, lang)} — ${lt(scenario.persona.about, lang)}`,
+                outcome: run.outcome,
+                answered: run.answered,
+                silent: run.silent,
+                totalBeats: run.totalBeats,
+                dialogue: run.dialogue.map((d) => ({ who: d.who, text: d.text, answer: d.answer })),
+                goals: scenario.goals.map((g) => ({
+                  id: g.id,
+                  text: lt(g.text, lang),
+                  live: run.goals.find((x) => x.id === g.id)?.live ?? "pending",
+                  keywords: g.keywords[lang] ?? g.keywords.ru,
+                })),
+              }
+            : undefined,
           mode: perf.mode,
           durationSeconds: perf.durationSeconds,
           lang,
@@ -442,6 +469,8 @@ export default function RoleResultScreen() {
         metrics: { roleFit: 3, emotion: 3, clarity: 3, confidence: 3, grammar: 3 },
         categories: {},
         aiUnavailable: true,
+        goals: run?.goals.map((g) => ({ id: g.id, text: g.text, hit: g.live === "done" })),
+        outcome: run?.outcome,
       };
     }
 
@@ -454,7 +483,7 @@ export default function RoleResultScreen() {
     setScore(result);
     setStage("reveal");
     haptic(Haptics.ImpactFeedbackStyle.Heavy);
-  }, [perf, role, lang, recordRolePlay]);
+  }, [perf, role, lang, recordRolePlay, scenario, run]);
 
   useEffect(() => {
     return () => {
@@ -613,6 +642,37 @@ export default function RoleResultScreen() {
                 return <MetricBar key={key} label={lang === "en" ? meta.en : meta.ru} icon={meta.icon} value={val} delay={i * 90} />;
               })}
             </View>
+
+            {/* Scenario: how the scene ended + per-goal results */}
+            {scenario && run && (
+              <View style={styles.block}>
+                <Text style={styles.goalsTitle}>{lang === "en" ? "Scene goals" : "Цели сцены"}</Text>
+                {run.outcome !== "open" && run.dialogue.length > 0 && (
+                  <View style={[styles.endingRow, run.outcome === "win" ? styles.endingWin : styles.endingLose]}>
+                    <Text style={{ fontSize: 22 }}>{scenario.persona.avatar}</Text>
+                    <Text style={styles.endingText}>«{run.dialogue[run.dialogue.length - 1].text}»</Text>
+                  </View>
+                )}
+                {run.outcome === "open" && (
+                  <Text style={styles.goalNote}>
+                    {lang === "en"
+                      ? `You stopped after ${run.answered + run.silent} of ${run.totalBeats} lines.`
+                      : `Ты остановился на ${run.answered + run.silent} из ${run.totalBeats} реплик.`}
+                  </Text>
+                )}
+                {(score.goals ?? run.goals.map((g) => ({ id: g.id, text: g.text, hit: g.live === "done", note: undefined as string | undefined }))).map((g, i) => (
+                  <Animated.View key={g.id} entering={FadeInDown.delay(i * 90)} style={styles.goalRow}>
+                    <View style={[styles.goalIcon, { backgroundColor: g.hit ? "#34C75933" : "#FFFFFF14" }]}>
+                      <Ionicons name={g.hit ? "checkmark" : "close"} size={16} color={g.hit ? "#34C759" : MUTED} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.goalText, !g.hit && { color: MUTED }]}>{g.text}</Text>
+                      {!!g.note && <Text style={styles.goalNote}>{g.note}</Text>}
+                    </View>
+                  </Animated.View>
+                ))}
+              </View>
+            )}
 
             {/* Feedback */}
             <View style={styles.feedbackCard}>
@@ -830,6 +890,15 @@ const styles = StyleSheet.create({
   metricTrack: { height: 10, borderRadius: 5, backgroundColor: "#0E0A1F", overflow: "hidden" },
   metricFill: { height: "100%", borderRadius: 5 },
 
+  goalsTitle: { color: TEXT, fontFamily: "Geologica_800ExtraBold", fontSize: 17, marginBottom: 12 },
+  endingRow: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 14, padding: 12, marginBottom: 12 },
+  endingWin: { backgroundColor: "#34C7591F" },
+  endingLose: { backgroundColor: "#FF6B5E1F" },
+  endingText: { flex: 1, color: TEXT, fontFamily: "Geologica_500Medium", fontSize: 14, lineHeight: 19, fontStyle: "italic" },
+  goalRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, paddingVertical: 7 },
+  goalIcon: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" },
+  goalText: { color: TEXT, fontFamily: "Geologica_600SemiBold", fontSize: 14, lineHeight: 19 },
+  goalNote: { color: MUTED, fontFamily: "Geologica_400Regular", fontSize: 12, lineHeight: 17, marginTop: 2 },
   feedbackCard: { backgroundColor: CARD_BG, borderRadius: 22, padding: 20, marginBottom: 16 },
   feedbackText: { color: TEXT, fontFamily: "Geologica_400Regular", fontSize: 15, lineHeight: 22 },
   tipRow: { flexDirection: "row", gap: 8, marginTop: 14, backgroundColor: "#FFC01E12", borderRadius: 14, padding: 12 },

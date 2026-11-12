@@ -805,7 +805,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       scriptedText,
       mode,
       durationSeconds,
+      scenario: rawScenario,
     } = req.body || {};
+
+    // Optional two-sided scenario (constants/roleScenarios.ts on the client):
+    // the opponent lines the player actually got, the goals, and how the
+    // client's live heuristics saw it. Sanitised — it's user-supplied text.
+    const str = (v: any, max = 240) => (typeof v === "string" ? v.slice(0, max) : "");
+    const scenario = rawScenario && typeof rawScenario === "object"
+      ? {
+          persona: str(rawScenario.persona, 160),
+          outcome: ["win", "lose", "open"].includes(rawScenario.outcome) ? rawScenario.outcome : "open",
+          answered: Number(rawScenario.answered) || 0,
+          silent: Number(rawScenario.silent) || 0,
+          totalBeats: Number(rawScenario.totalBeats) || 0,
+          goals: (Array.isArray(rawScenario.goals) ? rawScenario.goals : []).slice(0, 4).map((g: any) => ({
+            id: str(g?.id, 40),
+            text: str(g?.text, 160),
+            live: g?.live === "done" ? "done" : "pending",
+            keywords: (Array.isArray(g?.keywords) ? g.keywords : []).slice(0, 12).map((k: any) => str(k, 30).toLowerCase()).filter(Boolean),
+          })).filter((g: any) => g.id && g.text),
+          dialogue: (Array.isArray(rawScenario.dialogue) ? rawScenario.dialogue : []).slice(0, 14).map((d: any) => ({
+            who: str(d?.who, 60),
+            text: str(d?.text, 240),
+            answer: ["full", "short", "silent"].includes(d?.answer) ? d.answer : undefined,
+          })),
+        }
+      : null;
+
+    // Goal verdicts without the AI: a keyword stem in the transcript, or the
+    // client's live tick (the player answered that line fully).
+    const heuristicGoals = (transcript: string) => {
+      if (!scenario) return undefined;
+      const t = (transcript || "").toLowerCase();
+      return scenario.goals.map((g: any) => {
+        const kw = g.keywords.find((k: string) => k && t.includes(k));
+        const hit = !!kw || (!t && g.live === "done");
+        return {
+          id: g.id,
+          text: g.text,
+          hit,
+          note: hit
+            ? (lang === "en" ? "Nicely done." : "Получилось.")
+            : (lang === "en" ? "Didn't quite land this time." : "В этот раз не прозвучало."),
+        };
+      });
+    };
 
     // Deterministic fallback used whenever the AI can't be reached. Grounded
     // in whatever we did manage to measure (loudness, tempo, word count).
@@ -850,6 +895,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           grammar:    { score: grammar,    label: roleLabels.grammar },
         },
         aiUnavailable: !!opts.aiUnavailable,
+        goals: heuristicGoals(transcript),
+        outcome: scenario?.outcome,
       };
     };
 
@@ -895,13 +942,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `You are a warm, playful acting coach helping someone train adaptability by performing life ROLES (a salesperson, a blogger, a barista, a showman...). The player is ${modeLabel}. Rate how well they INHABITED THE ROLE on 5 criteria, each 1-5:\n1. roleFit — did the delivery match the character & situation? Energy, vocabulary and attitude of the role.\n2. emotion — vividness and emotional colour of the voice; playing it flat scores low.\n3. clarity — articulation & intelligibility.\n4. confidence — steady, believable, no hesitation.\n5. grammar — correctness & fluency of speech (in improv judge phrasing; in scripted mode be lenient on wording).\nCalibration: 5 = a natural performer, 3 = decent, 1 = barely in character. Be honest but kind and fun.\nstars: 1 if average < 2.6; 2 if 2.6-3.9; 3 if >= 4.0.\nTONE: write "summary" and "tip" like an excited coach cheering a friend on — plain, warm language, no technical terms, no numbers/units. End the player feeling like a star who wants to play again.\nReturn ONLY JSON: {"roleFit":n,"emotion":n,"clarity":n,"confidence":n,"grammar":n,"stars":n,"summary":"...","tip":"..."}`
         : `Ты — тёплый, игривый тренер по актёрскому мастерству. Игрок тренирует адаптивность, играя жизненные РОЛИ (продажник, блогер, бариста, шоумен...). Игрок ${modeLabel}. Оцени, насколько он ВЖИЛСЯ В РОЛЬ, по 5 критериям, каждый 1-5:\n1. roleFit — Соответствие роли: попала ли подача в характер и ситуацию? Энергия, лексика и настрой роли.\n2. emotion — Эмоции: яркость и эмоциональная окраска голоса; плоская подача — низкий балл.\n3. clarity — Чёткость произношения: артикуляция и разборчивость.\n4. confidence — Уверенность: ровно, убедительно, без колебаний.\n5. grammar — Грамматика: правильность и плавность речи (в импровизации суди построение фраз; в режиме чтения будь снисходителен к формулировкам).\nКалибровка: 5 = прирождённый артист, 3 = неплохо, 1 = почти не в образе. Честно, но по-доброму и с азартом.\nstars: 1 если среднее < 2.6; 2 если 2.6-3.9; 3 если >= 4.0.\nТОН: пиши "summary" и "tip" как воодушевлённый тренер, который болеет за друга — простым тёплым языком, без технических терминов, без чисел и единиц. После фидбэка игрок должен чувствовать себя звездой и хотеть сыграть ещё.\nВерни ТОЛЬКО JSON: {"roleFit":n,"emotion":n,"clarity":n,"confidence":n,"grammar":n,"stars":n,"summary":"...","tip":"..."}`;
 
+      // Scenario add-on: judge the DIALOGUE, not a monologue, and give per-goal verdicts.
+      const scenarioRules = scenario && scenario.goals.length
+        ? (lang === "en"
+          ? `\n\nThis was a TWO-SIDED scene: the other side's lines appeared on screen and the player answered them out loud (only the player's voice is in the transcript). Judge roleFit mostly by how well they HANDLED the conversation — answered questions and objections, kept the other side engaged, steered toward the goals. Also return "goals": an array with one item per goal {"id":"...","hit":true|false,"note":"one short friendly sentence"}. Be fair: a goal is hit if the player clearly attempted it in spirit, even with other words.\nReturn ONLY JSON: {"roleFit":n,"emotion":n,"clarity":n,"confidence":n,"grammar":n,"stars":n,"summary":"...","tip":"...","goals":[...]}`
+          : `\n\nЭто была ДВУСТОРОННЯЯ сцена: реплики собеседника появлялись на экране, а игрок отвечал вслух (в расшифровке только голос игрока). Оценивай roleFit в первую очередь по тому, как он ВЁЛ РАЗГОВОР — отвечал на вопросы и возражения, удерживал собеседника, вёл к целям. Также верни "goals": массив, по одному элементу на цель {"id":"...","hit":true|false,"note":"одно короткое доброе предложение"}. Будь справедлив: цель достигнута, если игрок явно к ней стремился по смыслу, даже другими словами.\nВерни ТОЛЬКО JSON: {"roleFit":n,"emotion":n,"clarity":n,"confidence":n,"grammar":n,"stars":n,"summary":"...","tip":"...","goals":[...]}`)
+        : "";
+      const scenarioCtx = scenario && scenario.goals.length
+        ? (lang === "en"
+          ? `\n\nCounterpart: ${scenario.persona || "-"}\nGoals:\n${scenario.goals.map((g: any) => `- [${g.id}] ${g.text}`).join("\n")}\nLines the other side said, in order (player's answer length in brackets):\n${scenario.dialogue.map((d: any) => `${d.who}: "${d.text}"${d.answer ? ` [${d.answer}]` : ""}`).join("\n")}\nScene reached its ending: ${scenario.outcome === "open" ? "no (stopped early)" : "yes"}.`
+          : `\n\nСобеседник: ${scenario.persona || "-"}\nЦели:\n${scenario.goals.map((g: any) => `- [${g.id}] ${g.text}`).join("\n")}\nРеплики собеседника по порядку (в скобках — насколько развёрнуто ответил игрок: full/short/silent):\n${scenario.dialogue.map((d: any) => `${d.who}: "${d.text}"${d.answer ? ` [${d.answer}]` : ""}`).join("\n")}\nСцена дошла до финала: ${scenario.outcome === "open" ? "нет (остановлена раньше)" : "да"}.`)
+        : "";
+
       const roleCtx = lang === "en"
         ? `Role: "${roleTitle ?? "a life role"}"\nScene: ${roleScene ?? "-"}${mode === "scripted" && scriptedText ? `\nScript they read: "${scriptedText}"` : ""}\n\nWhat they actually said:\n${transcript}`
         : `Роль: "${roleTitle ?? "жизненная роль"}"\nСцена: ${roleScene ?? "-"}${mode === "scripted" && scriptedText ? `\nТекст, который читали: "${scriptedText}"` : ""}\n\nЧто игрок реально сказал:\n${transcript}`;
 
       let parsed: any = null;
       try {
-        const out = await chatComplete({ system: systemPrompt, user: roleCtx, maxTokens: 400, json: true });
+        const out = await chatComplete({ system: systemPrompt + scenarioRules, user: roleCtx + scenarioCtx, maxTokens: scenario ? 700 : 400, json: true });
         parsed = JSON.parse(out || "{}");
       } catch (e) {
         console.warn("analyze-role: AI scoring unavailable, using fallback:", e);
@@ -915,6 +974,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const confidence = clamp(parsed.confidence);
       const grammar    = clamp(parsed.grammar);
       const stars = Math.min(3, Math.max(1, Math.round(parsed.stars ?? 2)));
+
+      // Per-goal verdicts: trust the AI per id, fall back to the heuristic.
+      const fallbackGoals = heuristicGoals(transcript);
+      const aiGoals: any[] = Array.isArray(parsed.goals) ? parsed.goals : [];
+      const goals = fallbackGoals?.map((g: any) => {
+        const ai = aiGoals.find((x) => x && x.id === g.id);
+        return ai && typeof ai.hit === "boolean"
+          ? { ...g, hit: ai.hit, note: typeof ai.note === "string" && ai.note.trim() ? ai.note.slice(0, 200) : g.note }
+          : g;
+      });
 
       return res.json({
         stars,
@@ -932,6 +1001,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           grammar:    { score: grammar,    label: roleLabels.grammar },
         },
         aiUnavailable: false,
+        goals,
+        outcome: scenario?.outcome,
       });
     } catch (err) {
       console.error("analyze-role error:", err);

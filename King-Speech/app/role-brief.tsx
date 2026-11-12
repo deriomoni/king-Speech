@@ -19,6 +19,7 @@ import {
   roleInk,
 } from "@/components/roles/RoleTarotCard";
 import { PlayTriangleIcon } from "@/components/showtime/ShowTimeIcons";
+import { getRoleScenario, lt } from "@/constants/roleScenarios";
 
 const { width: SW, height: SH } = Dimensions.get("window");
 const CARD_W = Math.round(Math.min(SW * 0.55, 240));
@@ -54,6 +55,13 @@ export default function RoleBriefScreen() {
   }
 
   const tasks = getRoleTasks(role);
+  const scenario = getRoleScenario(role.id);
+  const sceneKind =
+    scenario?.kind === "live"
+      ? (lang === "en" ? "Live stream" : "Прямой эфир")
+      : scenario?.kind === "stage"
+        ? (lang === "en" ? "On stage" : "Сцена")
+        : (lang === "en" ? "Dialogue" : "Диалог");
   const dotBg = roleFrameColor(role.id);
   const dotInk = roleInk(role.id);
 
@@ -89,15 +97,54 @@ export default function RoleBriefScreen() {
 
           <View style={styles.divider} />
 
-          <Text style={styles.panelLabel}>{lang === "en" ? "YOUR TASKS" : "ТВОИ ЗАДАНИЯ"}</Text>
-          {tasks.slice(0, 3).map((t, i) => (
-            <View key={i} style={styles.taskRow}>
-              <View style={[styles.taskDot, { backgroundColor: dotBg }]}>
-                <Text style={[styles.taskNum, { color: dotInk }]}>{i + 1}</Text>
+          {scenario ? (
+            <>
+              <Text style={styles.panelLabel}>{lang === "en" ? "YOU'LL BE TALKING TO" : "С КЕМ ТЫ ГОВОРИШЬ"}</Text>
+              <View style={styles.personaRow}>
+                <View style={styles.personaAvatar}>
+                  <Text style={{ fontSize: 24 }}>{scenario.persona.avatar}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.personaName}>{lt(scenario.persona.name, lang)}</Text>
+                  <Text style={styles.personaMood}>{lt(scenario.persona.mood, lang)}</Text>
+                </View>
               </View>
-              <Text style={styles.taskText}>{tx(t, lang)}</Text>
-            </View>
-          ))}
+              <Text style={styles.personaAbout}>{lt(scenario.persona.about, lang)}</Text>
+              <Text style={styles.metaLine}>
+                {sceneKind} · {scenario.beats.length} {lang === "en" ? "lines" : "реплик"} · {lang === "en" ? "1–2 min" : "1–2 мин"}
+                {scenario.opening ? (lang === "en" ? " · you open" : " · ты начинаешь") : ""}
+              </Text>
+
+              <View style={styles.divider} />
+
+              <Text style={styles.panelLabel}>{lang === "en" ? "SCENE GOALS" : "ЦЕЛИ СЦЕНЫ"}</Text>
+              {scenario.goals.map((g, i) => (
+                <View key={g.id} style={styles.taskRow}>
+                  <View style={[styles.taskDot, { backgroundColor: dotBg }]}>
+                    <Text style={[styles.taskNum, { color: dotInk }]}>{i + 1}</Text>
+                  </View>
+                  <Text style={styles.taskText}>{lt(g.text, lang)}</Text>
+                </View>
+              ))}
+              <Text style={styles.metaLine}>
+                {lang === "en"
+                  ? "Lines appear when you pause. Steer the talk toward the goals — they tick live."
+                  : "Реплики появляются, когда ты делаешь паузу. Веди разговор к целям — они отмечаются по ходу."}
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.panelLabel}>{lang === "en" ? "YOUR TASKS" : "ТВОИ ЗАДАНИЯ"}</Text>
+              {tasks.slice(0, 3).map((t, i) => (
+                <View key={i} style={styles.taskRow}>
+                  <View style={[styles.taskDot, { backgroundColor: dotBg }]}>
+                    <Text style={[styles.taskNum, { color: dotInk }]}>{i + 1}</Text>
+                  </View>
+                  <Text style={styles.taskText}>{tx(t, lang)}</Text>
+                </View>
+              ))}
+            </>
+          )}
 
           {/* Play style (kept from the old mode picker): improv vs teleprompter */}
           <View style={styles.modeRow}>
@@ -110,7 +157,7 @@ export default function RoleBriefScreen() {
             <ModePill
               active={mode === "scripted"}
               icon="document-text"
-              label={lang === "en" ? "Read the script" : "По тексту"}
+              label={lang === "en" ? "Read the script" : "По сценарию"}
               onPress={() => { haptic(); setMode("scripted"); }}
             />
           </View>
@@ -210,6 +257,12 @@ const styles = StyleSheet.create({
   taskRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 7 },
   taskDot: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" },
   taskNum: { fontFamily: "Geologica_700Bold", fontSize: 13 },
+  personaRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  personaAvatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
+  personaName: { color: TEXT, fontFamily: "Geologica_700Bold", fontSize: 16 },
+  personaMood: { color: MUTED, fontFamily: "Geologica_500Medium", fontSize: 12, marginTop: 1 },
+  personaAbout: { color: "rgba(255,255,255,0.8)", fontFamily: "Geologica_400Regular", fontSize: 13, lineHeight: 19, marginTop: 10 },
+  metaLine: { color: MUTED, fontFamily: "Geologica_500Medium", fontSize: 11, lineHeight: 15, marginTop: 10 },
   taskText: { flex: 1, color: TEXT, fontFamily: "Geologica_500Medium", fontSize: 14, lineHeight: 19 },
 
   modeRow: { flexDirection: "row", gap: 8, marginTop: 14 },
