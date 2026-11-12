@@ -419,7 +419,7 @@ export default function AuthorScreen() {
         <Pressable style={s.dim} onPress={() => setSheetOpen(false)}>
           <Pressable
             onPress={(e) => e.stopPropagation()}
-            style={[s.sheet, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingBottom: bottomPad + 20 }]}
+            style={[s.sheet, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingBottom: bottomPad + 20 + SHEET_TUCK }]}
           >
             <View style={[s.grabber, { backgroundColor: c.textMuted }]} />
             <Text style={[s.sheetTitle, { color: c.text }]}>{en ? "Nicely read!" : "Отлично прочитано!"}</Text>
@@ -499,6 +499,8 @@ export default function AuthorScreen() {
   );
 }
 
+const SHEET_TUCK = 40;
+
 const s = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingHorizontal: 20, width: "100%", maxWidth: 480, alignSelf: "center" },
@@ -539,11 +541,13 @@ const s = StyleSheet.create({
   hint: { fontSize: 12, fontFamily: "Geologica_500Medium", textAlign: "center", marginTop: 12 },
 
   dim: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  // Uniform border + radius on the sheet itself, bottom edge tucked below the
+  // screen: a translucent stroke with one side at 0 is drawn on iOS as separate
+  // side polygons whose overlapping corner joins showed up as a seam.
   sheet: {
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    borderRadius: 32,
     borderWidth: 1.5,
-    borderBottomWidth: 0,
+    marginBottom: -SHEET_TUCK,
     paddingHorizontal: 20,
     paddingTop: 10,
     width: "100%",

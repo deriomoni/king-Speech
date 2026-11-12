@@ -58,6 +58,8 @@ export default function StageGlassDialog({
   const rim = isDark ? "rgba(240,238,233,0.26)" : "rgba(38,38,40,0.10)";
   const msgColor = isDark ? "rgba(240,238,233,0.6)" : "rgba(38,38,40,0.6)";
   const [size, setSize] = React.useState({ w: 330, h: 200 });
+  const inW = Math.max(1, size.w - 2 * RIM);
+  const inH = Math.max(1, size.h - 2 * RIM);
 
   const wrapStyle: ViewStyle =
     placement === "lower"
@@ -80,17 +82,21 @@ export default function StageGlassDialog({
             onLayout={(e) => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
             style={[styles.card, { borderColor: rim }]}
           >
+            {/* Glass layers sit INSIDE the 4pt rim with the matching inner radius
+                (32 − 4): square fills poking into the rounded corners used to
+                show through the translucent rim as a seam. */}
+            <View pointerEvents="none" style={styles.glass}>
             <BlurView intensity={40} tint={isDark ? "dark" : "light"} experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />
             <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: cardFill }]} />
             {/* Gold glow behind the title + a faint top sheen. */}
-            <Svg pointerEvents="none" width={size.w} height={size.h} style={styles.glow}>
+            <Svg pointerEvents="none" width={inW} height={inH} style={styles.glow}>
               <Defs>
                 <RadialGradient
                   id="stGlow"
-                  cx={size.w / 2}
-                  cy={size.h * 0.28}
-                  rx={size.w * 0.38}
-                  ry={size.h * 0.32}
+                  cx={inW / 2}
+                  cy={inH * 0.28}
+                  rx={inW * 0.38}
+                  ry={inH * 0.32}
                   gradientUnits="userSpaceOnUse"
                 >
                   <Stop offset="0" stopColor="#FFD857" stopOpacity={isDark ? 0.14 : 0.2} />
@@ -101,9 +107,10 @@ export default function StageGlassDialog({
                   <Stop offset="0.5" stopColor={isDark ? "#F0EEE9" : "#FFFFFF"} stopOpacity={0} />
                 </SvgLinear>
               </Defs>
-              <Rect x="0" y="0" width={size.w} height={size.h} fill="url(#stSheen)" />
-              <Rect x="0" y="0" width={size.w} height={size.h} fill="url(#stGlow)" />
+              <Rect x="0" y="0" width={inW} height={inH} fill="url(#stSheen)" />
+              <Rect x="0" y="0" width={inW} height={inH} fill="url(#stGlow)" />
             </Svg>
+            </View>
 
             {icon ? <View style={{ marginBottom: 2 }}>{icon}</View> : null}
             <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
@@ -155,6 +162,9 @@ export default function StageGlassDialog({
   );
 }
 
+const RIM = 4;
+const CARD_R = 32;
+
 const styles = StyleSheet.create({
   backdrop: { flex: 1, alignItems: "center", paddingHorizontal: 28 },
   shadowWrap: {
@@ -168,14 +178,23 @@ const styles = StyleSheet.create({
     elevation: 16,
   },
   card: {
-    borderRadius: 32,
-    borderWidth: 4,
+    borderRadius: CARD_R,
+    borderWidth: RIM,
     overflow: "hidden",
     paddingTop: 28,
     paddingBottom: 20,
     paddingHorizontal: 20,
     alignItems: "center",
     gap: 10,
+  },
+  glass: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: CARD_R - RIM,
+    overflow: "hidden",
   },
   glow: { position: "absolute", top: 0, left: 0 },
   title: { fontFamily: "Geologica_800ExtraBold", fontSize: 19, letterSpacing: -0.1, textAlign: "center" },

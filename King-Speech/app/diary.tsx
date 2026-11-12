@@ -253,7 +253,7 @@ export default function DiaryScreen() {
           <Pressable style={s.fill} onPress={() => setInfoOpen(false)} />
           <Animated.View
             entering={SlideInDown.duration(280)}
-            style={[s.sheet, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingBottom: bottomPad + 22 }]}
+            style={[s.sheet, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingBottom: bottomPad + 22 + SHEET_TUCK }]}
           >
             <View style={[s.handle, { backgroundColor: c.textMuted }]} />
             <Text style={[s.sheetTitle, { color: c.text }]}>{en ? "Your private diary" : "Твой личный дневник"}</Text>
@@ -290,6 +290,8 @@ export default function DiaryScreen() {
     </View>
   );
 }
+
+const SHEET_TUCK = 40;
 
 const s = StyleSheet.create({
   container: { flex: 1 },
@@ -342,12 +344,14 @@ const s = StyleSheet.create({
   emptySub: { fontSize: 13, lineHeight: 18, fontFamily: "Geologica_500Medium", textAlign: "center", marginTop: 6 },
 
   dim: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" },
+  // Uniform border + radius on the sheet itself, bottom edge tucked below the
+  // screen: a translucent stroke with one side at 0 is drawn on iOS as separate
+  // side polygons whose overlapping corner joins showed up as a seam.
   sheet: {
     borderWidth: 1.5,
-    borderBottomWidth: 0,
     marginHorizontal: -1.5,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    marginBottom: -SHEET_TUCK,
+    borderRadius: 32,
     paddingTop: 10,
     paddingHorizontal: 36,
     alignItems: "center",

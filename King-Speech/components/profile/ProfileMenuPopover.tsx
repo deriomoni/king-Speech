@@ -93,6 +93,9 @@ export default function ProfileMenuPopover({
           },
         ]}
       >
+        {/* Glass layers clipped to the inner radius (22 − 4) so their square
+            corners don't show through the translucent rim. */}
+        <View pointerEvents="none" style={styles.glass}>
         <BlurView
           intensity={40}
           tint={isDark ? "dark" : "light"}
@@ -113,6 +116,7 @@ export default function ProfileMenuPopover({
           locations={[0, 0.6]}
           style={StyleSheet.absoluteFill}
         />
+        </View>
         <View style={styles.list}>
           {options.map((o, i) => (
             <React.Fragment key={o.key}>
@@ -164,6 +168,15 @@ const styles = StyleSheet.create({
   popover: {
     borderRadius: 22,
     borderWidth: 4,
+    overflow: "hidden",
+  },
+  glass: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 18,
     overflow: "hidden",
   },
   popoverShadow: {

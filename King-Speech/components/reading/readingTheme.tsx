@@ -102,6 +102,8 @@ export function ReadingGlassCard({
   children: React.ReactNode;
 }) {
   const [size, setSize] = React.useState({ w: 346, h: 400 });
+  const inW = Math.max(1, size.w - 8);
+  const inH = Math.max(1, size.h - 8);
   const cardFill = isDark ? "rgba(52,52,53,0.82)" : "rgba(250,249,246,0.94)";
   const rim = isDark ? "rgba(240,238,233,0.26)" : "rgba(38,38,40,0.10)";
   return (
@@ -110,6 +112,9 @@ export function ReadingGlassCard({
         onLayout={(e) => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
         style={[styles.card, { borderColor: rim }, style]}
       >
+        {/* Glass layers clipped to the inner radius (32 − 4): square fills in
+            the rounded corners showed through the translucent rim as a seam. */}
+        <View pointerEvents="none" style={styles.glass}>
         <BlurView
           intensity={40}
           tint={isDark ? "dark" : "light"}
@@ -117,14 +122,14 @@ export function ReadingGlassCard({
           style={StyleSheet.absoluteFill}
         />
         <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: cardFill }]} />
-        <Svg pointerEvents="none" width={size.w} height={size.h} style={styles.glow}>
+        <Svg pointerEvents="none" width={inW} height={inH} style={styles.glow}>
           <Defs>
             <RadialGradient
               id="rgGlow"
-              cx={size.w / 2}
-              cy={size.h * 0.28}
-              rx={size.w * 0.38}
-              ry={size.h * 0.32}
+              cx={inW / 2}
+              cy={inH * 0.28}
+              rx={inW * 0.38}
+              ry={inH * 0.32}
               gradientUnits="userSpaceOnUse"
             >
               <Stop offset="0" stopColor="#FFD857" stopOpacity={isDark ? 0.14 : 0.2} />
@@ -135,9 +140,10 @@ export function ReadingGlassCard({
               <Stop offset="0.5" stopColor={isDark ? "#F0EEE9" : "#FFFFFF"} stopOpacity={0} />
             </SvgLinear>
           </Defs>
-          <Rect x="0" y="0" width={size.w} height={size.h} fill="url(#rgSheen)" />
-          <Rect x="0" y="0" width={size.w} height={size.h} fill="url(#rgGlow)" />
+          <Rect x="0" y="0" width={inW} height={inH} fill="url(#rgSheen)" />
+          <Rect x="0" y="0" width={inW} height={inH} fill="url(#rgGlow)" />
         </Svg>
+        </View>
         {children}
       </View>
     </View>
@@ -156,5 +162,6 @@ const styles = StyleSheet.create({
     elevation: 16,
   },
   card: { borderRadius: 32, borderWidth: 4, overflow: "hidden" },
+  glass: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, borderRadius: 28, overflow: "hidden" },
   glow: { position: "absolute", top: 0, left: 0 },
 });

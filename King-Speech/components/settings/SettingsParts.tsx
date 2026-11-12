@@ -102,7 +102,9 @@ export function Card({
         style,
       ]}
     >
-      {children}
+      {/* Rows (pressed fill) are clipped to the INNER radius (20 − 1), so
+          their square corners never run under the translucent hairline. */}
+      <View style={styles.cardInner}>{children}</View>
     </View>
   );
 }
@@ -190,7 +192,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     opacity: 0.5,
   },
-  card: { borderRadius: 20, borderWidth: 1, overflow: "hidden" },
+  card: { borderRadius: 20, borderWidth: 1 },
+  cardInner: { borderRadius: 19, overflow: "hidden" },
   row: {
     flexDirection: "row",
     alignItems: "center",
