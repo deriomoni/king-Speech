@@ -9,14 +9,13 @@ import {
   type NativeScrollEvent,
   type LayoutChangeEvent,
 } from "react-native";
-import { useFocusEffect, useIsFocused } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   useAnimatedScrollHandler,
   withTiming,
-  withRepeat,
   withDelay,
   cancelAnimation,
   runOnJS,
@@ -75,38 +74,6 @@ const PATH_CONNECTOR = {
   dark: "rgba(240,238,233,0.07)",
   light: "rgba(38,38,40,0.08)",
 } as const;
-
-function GlowRing({ color, radius }: { color: string; radius: number }) {
-  // Soft, breathing halo behind the active tile. Rendered as a filled tile-
-  // sized view whose colored shadow bleeds out on all sides — no hard border,
-  // just a gentle diffuse glow that pulses in and out.
-  const opacity = useSharedValue(0.5);
-  // Pulse only while the Path is on screen — the tab stays mounted under
-  // levels and other tabs, and an endless loop there keeps the UI thread busy.
-  const focused = useIsFocused();
-  useEffect(() => {
-    if (!focused) return;
-    opacity.value = withRepeat(withTiming(0.95, { duration: 1500 }), -1, true);
-    return () => {
-      cancelAnimation(opacity);
-    };
-  }, [focused]);
-  const s = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[
-        styles.glow,
-        s,
-        {
-          borderRadius: radius,
-          backgroundColor: color,
-          boxShadow: `0px 0px 26px 8px ${color}`,
-        },
-      ]}
-    />
-  );
-}
 
 // Scroll-driven perspective wrapper. Rows near the vertical center of the
 // viewport render at full size; rows toward the top/bottom edges shrink, fade,
@@ -295,7 +262,8 @@ function StepBlockBase({
     opacity: entryOpacity.value,
   }));
 
-  // Glow only on the single naturally-available step (never on overridden ones).
+  // The running shine stroke only on the single naturally-available step
+  // (never on overridden ones).
   const showGlow = isNaturallyAvailable && item.status === "available";
 
   const levelColor = item.color;
@@ -358,7 +326,6 @@ function StepBlockBase({
 
   return (
     <Animated.View style={[entryStyle, { position: "relative" }]}>
-      {showGlow && <GlowRing color={levelColor} radius={shapeR} />}
 
       <Pressable
         onPress={handlePress}
@@ -1216,13 +1183,6 @@ const styles = StyleSheet.create({
     position: "relative",
     width: STEP_W,
     paddingBottom: 0,
-  },
-  glow: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: STEP_W,
-    height: STEP_H,
   },
   stepFace: {
     width: STEP_W,
