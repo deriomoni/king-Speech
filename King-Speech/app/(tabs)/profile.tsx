@@ -12,6 +12,7 @@ import {
   Modal,
   TextInput,
 } from "react-native";
+import OverscrollFill from "@/components/OverscrollFill";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -363,6 +364,7 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >
+        <OverscrollFill top={bgColor ?? theme.bg} bottom={theme.backingBottom} />
         {/* Top plate (Figma "Top panel" 394:1200): rounded bottom, hairline stroke. */}
         <View
           style={[

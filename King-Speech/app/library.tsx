@@ -11,6 +11,7 @@
 // the empty state. TODO(library): add them once those modes save recordings.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from "react-native";
+import OverscrollFill from "@/components/OverscrollFill";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -283,6 +284,7 @@ export default function LibraryScreen() {
   return (
     <View style={[s.container, { backgroundColor: c.backingTop }]}>
       <ScrollView contentContainerStyle={s.scrollOuter} showsVerticalScrollIndicator={false}>
+        <OverscrollFill top={c.bg} bottom={c.backingBottom} />
         {/* Top plate (Figma "Top panel" 427:1780) */}
         <View style={[s.plate, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingTop: topPad + 10 }]}>
           <Pressable onPress={goBack} hitSlop={12} style={[s.back, { top: topPad + 10 }]} accessibilityRole="button">

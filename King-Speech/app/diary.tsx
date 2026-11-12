@@ -10,6 +10,7 @@
 // intentionally NOT shown in «Моя библиотека» and never synced/uploaded.
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable, Platform, Modal, useWindowDimensions } from "react-native";
+import OverscrollFill from "@/components/OverscrollFill";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import Animated, { FadeIn, FadeInDown, SlideInDown } from "react-native-reanimated";
@@ -147,6 +148,7 @@ export default function DiaryScreen() {
   return (
     <View style={[s.container, { backgroundColor: c.backingTop }]}>
       <ScrollView contentContainerStyle={s.scrollOuter} showsVerticalScrollIndicator={false}>
+        <OverscrollFill top={c.bg} bottom={c.backingBottom} />
         {/* Top plate */}
         <View style={[s.plate, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingTop: topPad + 16 }]}>
           <Pressable onPress={goBack} hitSlop={12} style={[s.back, { top: topPad + 10 }]} accessibilityRole="button">

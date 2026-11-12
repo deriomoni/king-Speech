@@ -5,6 +5,7 @@
 // and the prices are the Figma placeholders.
 import React from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable, Platform, Image, useWindowDimensions } from "react-native";
+import OverscrollFill from "@/components/OverscrollFill";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -122,6 +123,7 @@ export default function CoinsScreen() {
   return (
     <View style={[s.container, { backgroundColor: c.backingTop }]}>
       <ScrollView contentContainerStyle={s.scrollOuter} showsVerticalScrollIndicator={false}>
+        <OverscrollFill top={c.bg} bottom={c.backingBottom} />
         {/* Top plate (Figma "Top panel" 450:2334) */}
         <View style={[s.plate, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingTop: topPad + 10 }]}>
           <Pressable onPress={goBack} hitSlop={12} style={[s.back, { top: topPad + 10 }]} accessibilityRole="button">

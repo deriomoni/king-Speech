@@ -10,6 +10,7 @@ import {
   TextInput,
   useWindowDimensions,
 } from "react-native";
+import OverscrollFill from "@/components/OverscrollFill";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
@@ -168,6 +169,7 @@ export default function ShowTimeScreen() {
         contentContainerStyle={st.scrollOuter}
         showsVerticalScrollIndicator={false}
       >
+        <OverscrollFill top={c.bg} bottom={c.backingBottom} />
         {/* Top plate (Figma "Top panel" 374:1125): everything down to the catalog,
             rounded bottom corners 32, 1.5 pt panelStroke hairline. */}
         <View style={[st.plate, { borderColor: c.panelStroke, backgroundColor: c.bg }]}>

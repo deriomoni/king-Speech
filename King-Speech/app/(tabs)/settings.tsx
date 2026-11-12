@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from "react-native";
+import OverscrollFill from "@/components/OverscrollFill";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
@@ -115,6 +116,7 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >
+        <OverscrollFill top={theme.bg} bottom={theme.bg} />
         {/* Figma 05b: logo on its own top plate (rounded bottom), bezel band, then the sheet */}
         <View
           style={[
