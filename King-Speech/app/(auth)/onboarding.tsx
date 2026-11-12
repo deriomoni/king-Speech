@@ -149,6 +149,7 @@ export default function OnboardingScreen() {
         ref={scrollRef}
         horizontal
         pagingEnabled
+        bounces={false}
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={onScroll}
         scrollEventThrottle={16}

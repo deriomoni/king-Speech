@@ -128,6 +128,7 @@ export default function ThemeCatalogScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            alwaysBounceHorizontal={false}
             style={s.chipsScroll}
             contentContainerStyle={s.chips}
           >

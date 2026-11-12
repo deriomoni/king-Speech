@@ -267,6 +267,7 @@ export default function ShowTimeScreen() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
+              alwaysBounceHorizontal={false}
               style={st.tabsScroll}
               contentContainerStyle={st.tabs}
             >

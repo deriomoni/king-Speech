@@ -228,6 +228,7 @@ export default function ReadingLibraryScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          alwaysBounceHorizontal={false}
           contentContainerStyle={styles.chips}
           style={{ marginTop: 14, flexGrow: 0 }}
         >

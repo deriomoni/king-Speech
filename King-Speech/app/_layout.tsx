@@ -13,10 +13,18 @@ import {
 } from "@expo-google-fonts/geologica";
 import { Literata_400Regular } from "@expo-google-fonts/literata";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Stack, useRouter, useSegments } from "expo-router";
+import {
+  Stack,
+  useRouter,
+  useSegments,
+  ThemeProvider as NavThemeProvider,
+  DarkTheme as NavDarkTheme,
+  DefaultTheme as NavDefaultTheme,
+} from "expo-router";
+import * as SystemUI from "expo-system-ui";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -39,11 +47,22 @@ import { RolesProvider } from "@/context/RolesContext";
 SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
-  const { themeMode } = useTheme();
+  const { themeMode, theme } = useTheme();
+  // Everything behind the screens (navigation cards, the native root view /
+  // window) is the theme background — fast horizontal swipes, the iOS
+  // back-swipe and overscroll never reveal a white edge.
+  const bg = theme.bg;
+  useEffect(() => {
+    SystemUI.setBackgroundColorAsync(bg).catch(() => {});
+  }, [bg]);
+  const navTheme = useMemo(() => {
+    const base = themeMode === "dark" ? NavDarkTheme : NavDefaultTheme;
+    return { ...base, colors: { ...base.colors, background: bg, card: bg } };
+  }, [themeMode, bg]);
   return (
-    <>
+    <NavThemeProvider value={navTheme}>
       <StatusBar style={themeMode === "dark" ? "light" : "dark"} animated />
-      <Stack screenOptions={{ headerShown: false }}>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: bg } }}>
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="level/[id]" options={{ headerShown: false }} />
@@ -113,7 +132,7 @@ function RootLayoutNav() {
         }}
       />
       </Stack>
-    </>
+    </NavThemeProvider>
   );
 }
 
@@ -232,10 +251,16 @@ function ReadinessGate({
 
   if (!ready) return <LoadingScreen />;
   return (
-    <Animated.View entering={FadeIn.duration(220)} style={{ flex: 1 }}>
+    <Animated.View entering={FadeIn.duration(220)} style={{ flex: 1, backgroundColor: themeCtx.theme.bg }}>
       {children}
     </Animated.View>
   );
+}
+
+/** Gesture root painted with the theme background (no white behind screens). */
+function ThemedRoot({ children }: { children: React.ReactNode }) {
+  const { theme } = useTheme();
+  return <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.bg }}>{children}</GestureHandlerRootView>;
 }
 
 export default function RootLayout() {
@@ -258,7 +283,7 @@ export default function RootLayout() {
         <ThemeProvider>
           <LangProvider>
             <AuthProvider>
-              <GestureHandlerRootView style={{ flex: 1 }}>
+              <ThemedRoot>
                 <ReducedMotionConfig mode={ReduceMotion.Never} />
                 <KeyboardProvider>
                   <DevToolsProvider>
@@ -273,7 +298,7 @@ export default function RootLayout() {
                     </GameProvider>
                   </DevToolsProvider>
                 </KeyboardProvider>
-              </GestureHandlerRootView>
+              </ThemedRoot>
             </AuthProvider>
           </LangProvider>
         </ThemeProvider>

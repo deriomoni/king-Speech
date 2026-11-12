@@ -226,9 +226,10 @@ function TabSlot({
 
 export default function TabLayout() {
   const { t } = useLang();
+  const { theme } = useTheme();
   return (
     <Tabs
-      screenOptions={{ headerShown: false }}
+      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: theme.bg } }}
       tabBar={(props) => <SonicTabBar {...props} />}
     >
       <Tabs.Screen name="index" options={{ title: t("tabPath") }} />
