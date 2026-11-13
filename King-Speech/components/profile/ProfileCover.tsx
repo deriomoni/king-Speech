@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useId, useState } from "react";
 import { View, type LayoutChangeEvent } from "react-native";
-import Svg, { Defs, LinearGradient, Stop, Path } from "react-native-svg";
+import Svg, { ClipPath, Defs, G, LinearGradient, Stop, Path } from "react-native-svg";
+import { CoverPatternArt, coverPatternById } from "./coverPatterns";
 
 // Figma "Cover photo" (vector 377:1127) — neutral card banner with a circular
 // notch cut around the avatar (bottom-left). Where the notch meets the bottom
@@ -26,12 +27,17 @@ export default function ProfileCover({
   fill,
   stroke,
   sheen,
+  pattern,
 }: {
   fill: string;
   stroke: string;
   /** Colour of the soft top-left sheen (Figma: #F0EEE9 @55% → 0). */
   sheen: string;
+  /** Background from the catalogue (null = the plain neutral plate). */
+  pattern?: string | null;
 }) {
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const pat = coverPatternById(pattern);
   const [width, setWidth] = useState(354);
   const onLayout = (e: LayoutChangeEvent) => {
     const w = Math.round(e.nativeEvent.layout.width);
@@ -49,19 +55,27 @@ export default function ProfileCover({
       >
         <Defs>
           <LinearGradient
-            id="profileCoverGrad"
+            id={`profileCoverGrad${uid}`}
             x1={-61.93}
             y1={45.08}
             x2={67.55}
             y2={229.92}
             gradientUnits="userSpaceOnUse"
           >
-            <Stop offset={0} stopColor={sheen} stopOpacity={0.55} />
+            <Stop offset={0} stopColor={sheen} stopOpacity={pat ? 0.3 : 0.55} />
             <Stop offset={1} stopColor={sheen} stopOpacity={0} />
           </LinearGradient>
+          <ClipPath id={`profileCoverClip${uid}`}>
+            <Path d={d} />
+          </ClipPath>
         </Defs>
-        <Path d={d} fill={fill} />
-        <Path d={d} fill="url(#profileCoverGrad)" />
+        <Path d={d} fill={pat ? pat.bg : fill} />
+        {pat && (
+          <G clipPath={`url(#profileCoverClip${uid})`}>
+            <CoverPatternArt id={pat.id} w={svgW} h={COVER_HEIGHT + 2} uid={uid} />
+          </G>
+        )}
+        <Path d={d} fill={`url(#profileCoverGrad${uid})`} />
         <Path d={d} stroke={stroke} strokeWidth={2} fill="none" />
       </Svg>
     </View>

@@ -18,7 +18,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
-import { SvgXml } from "react-native-svg";
+import Svg, { SvgXml } from "react-native-svg";
+import { PressScale } from "@/components/settings/SettingsParts";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "@/lib/haptics";
 import * as ImagePicker from "expo-image-picker";
@@ -30,9 +31,9 @@ import { useLang } from "@/context/LangContext";
 import { storage as fbStorage, auth as fbAuth, firebaseConfigured } from "@/lib/firebase";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { LEVEL_PALETTE_ORDER } from "@/theme/tokens";
 import { useTheme, type Theme } from "@/context/ThemeContext";
 import ProfileCover, { COVER_HEIGHT } from "@/components/profile/ProfileCover";
+import { COVER_PATTERNS, CoverPatternArt } from "@/components/profile/coverPatterns";
 import StreakCard from "@/components/profile/StreakCard";
 import GlossTile from "@/components/profile/GlossTile";
 import ProfileMenuPopover, { type MenuAnchor, type MenuOption } from "@/components/profile/ProfileMenuPopover";
@@ -47,7 +48,7 @@ import {
 } from "@/assets/figma/profile/tiles";
 
 // Persisted background color the player picks for their profile screen only.
-const PROFILE_BG_KEY = "@kingspeech_profile_bg_v1";
+const PROFILE_COVER_KEY = "@kingspeech_profile_cover_v1";
 
 // Figma "Screen / 04 · Profile" (12:357 dark / 12:358 light).
 const AVATAR_SIZE = 104;
@@ -133,14 +134,14 @@ export default function ProfileScreen() {
   const plusRef = useRef<View>(null);
   const [nameEditOpen, setNameEditOpen] = useState(false);
   const [draftName, setDraftName] = useState("");
-  const [colorMenuOpen, setColorMenuOpen] = useState(false);
-  // Player-picked profile-screen background color (null = default theme bg).
-  const [bgColor, setBgColor] = useState<string | null>(null);
+  const [coverMenuOpen, setCoverMenuOpen] = useState(false);
+  // Plate background picked from the catalogue (null = plain neutral plate).
+  const [coverPattern, setCoverPattern] = useState<string | null>(null);
 
   useEffect(() => {
-    AsyncStorage.getItem(PROFILE_BG_KEY)
+    AsyncStorage.getItem(PROFILE_COVER_KEY)
       .then((v) => {
-        if (v) setBgColor(v);
+        if (v) setCoverPattern(v);
       })
       .catch(() => {});
   }, []);
@@ -284,16 +285,16 @@ export default function ProfileScreen() {
     closeMenuThen(() => setNameEditOpen(true));
   };
 
-  const openColorMenu = () => {
-    closeMenuThen(() => setColorMenuOpen(true));
+  const openCoverMenu = () => {
+    closeMenuThen(() => setCoverMenuOpen(true));
   };
 
-  const pickBgColor = (color: string | null) => {
+  const pickCover = (id: string | null) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    setBgColor(color);
-    setColorMenuOpen(false);
-    if (color) AsyncStorage.setItem(PROFILE_BG_KEY, color).catch(() => {});
-    else AsyncStorage.removeItem(PROFILE_BG_KEY).catch(() => {});
+    setCoverPattern(id);
+    setCoverMenuOpen(false);
+    if (id) AsyncStorage.setItem(PROFILE_COVER_KEY, id).catch(() => {});
+    else AsyncStorage.removeItem(PROFILE_COVER_KEY).catch(() => {});
   };
 
   const handleSaveName = async () => {
@@ -318,8 +319,8 @@ export default function ProfileScreen() {
     {
       key: "bg",
       icon: "image",
-      label: en ? "Choose background" : "Выбрать фон",
-      onPress: openColorMenu,
+      label: en ? "Plate background" : "Фон таблички",
+      onPress: openCoverMenu,
     },
     {
       key: "name",
@@ -387,13 +388,13 @@ export default function ProfileScreen() {
         onScroll={onEdgeScroll}
         scrollEventThrottle={16}
       >
-        <OverscrollFill top={bgColor ?? theme.bg} bottom={theme.backingBottom} />
+        <OverscrollFill top={theme.bg} bottom={theme.backingBottom} />
         {/* Top plate (Figma "Top panel" 394:1200): rounded bottom, hairline stroke. */}
         <View
           style={[
             styles.topPanel,
             {
-              backgroundColor: bgColor ?? theme.bg,
+              backgroundColor: theme.bg,
               borderColor: theme.panelStroke,
               paddingTop: topPad + 3,
             },
@@ -401,7 +402,12 @@ export default function ProfileScreen() {
         >
           {/* Header — cover banner, avatar sitting in its notch, name */}
           <EdgeScale entering={FadeInDown.delay(40).duration(400)} style={styles.header}>
-            <ProfileCover fill={theme.card} stroke={strokeShape(theme)} sheen="#F0EEE9" />
+            <ProfileCover
+              fill={theme.card}
+              stroke={strokeShape(theme)}
+              sheen="#F0EEE9"
+              pattern={coverPattern}
+            />
 
             <Pressable
               ref={plusRef}
@@ -651,14 +657,14 @@ export default function ProfileScreen() {
         </Pressable>
       </Modal>
 
-      {/* Profile background color picker — swatches + reset to default. */}
+      {/* Plate background catalogue — 7 ornaments + the plain plate. */}
       <Modal
-        visible={colorMenuOpen}
+        visible={coverMenuOpen}
         transparent
         animationType="fade"
-        onRequestClose={() => setColorMenuOpen(false)}
+        onRequestClose={() => setCoverMenuOpen(false)}
       >
-        <Pressable style={styles.nameBackdrop} onPress={() => setColorMenuOpen(false)}>
+        <Pressable style={styles.nameBackdrop} onPress={() => setCoverMenuOpen(false)}>
           <Pressable
             style={[
               styles.nameSheet,
@@ -667,40 +673,44 @@ export default function ProfileScreen() {
             onPress={(e) => e.stopPropagation()}
           >
             <Text style={[styles.sheetTitle, { color: theme.text }]}>
-              {en ? "Profile background" : "Фон профиля"}
+              {en ? "Plate background" : "Фон таблички"}
             </Text>
-            <View style={styles.swatchGrid}>
-              {LEVEL_PALETTE_ORDER.map((col) => {
-                const selected = bgColor === col;
+            <View style={styles.coverGrid}>
+              {[null, ...COVER_PATTERNS].map((p) => {
+                const id = p?.id ?? null;
+                const selected = coverPattern === id;
                 return (
-                  <Pressable
-                    key={col}
-                    onPress={() => pickBgColor(col)}
-                    style={[
-                      styles.swatch,
-                      {
-                        backgroundColor: col,
-                        borderColor: selected ? theme.text : "rgba(0,0,0,0.15)",
-                        borderWidth: selected ? 3 : 1,
-                      },
-                    ]}
-                  >
-                    {selected && (
-                      <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-                    )}
-                  </Pressable>
+                  <View key={id ?? "plain"} style={styles.coverCell}>
+                  <PressScale onPress={() => pickCover(id)} style={{ gap: 6 }}>
+                    <View
+                      style={[
+                        styles.coverThumb,
+                        {
+                          backgroundColor: p ? p.bg : theme.bg,
+                          borderColor: selected ? theme.text : strokeShape(theme),
+                          borderWidth: selected ? 3 : 1.5,
+                        },
+                      ]}
+                    >
+                      {p && (
+                        <Svg width="100%" height="100%" viewBox="0 0 180 76" preserveAspectRatio="xMidYMid slice">
+                          <CoverPatternArt id={p.id} w={180} h={76} uid={"thumb" + p.id} />
+                        </Svg>
+                      )}
+                      {selected && (
+                        <View style={[styles.coverCheck, { backgroundColor: theme.text }]}>
+                          <Ionicons name="checkmark" size={14} color={theme.bg} />
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.coverName, { color: selected ? theme.text : theme.textSecondary }]} numberOfLines={1}>
+                      {p ? (en ? p.en : p.ru) : en ? "Plain" : "Без узора"}
+                    </Text>
+                  </PressScale>
+                  </View>
                 );
               })}
             </View>
-            <Pressable
-              onPress={() => pickBgColor(null)}
-              style={[styles.resetColorBtn, { borderColor: strokeShape(theme) }]}
-            >
-              <Ionicons name="refresh-outline" size={16} color={theme.textSecondary} />
-              <Text style={[styles.resetColorTxt, { color: theme.textSecondary }]}>
-                {en ? "Default background" : "Стандартный фон"}
-              </Text>
-            </Pressable>
           </Pressable>
         </Pressable>
       </Modal>
@@ -854,6 +864,34 @@ const styles = StyleSheet.create({
   nameSaveTxt: {
     fontSize: 16,
     fontFamily: "Geologica_800ExtraBold",
+  },
+  coverGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    rowGap: 12,
+  },
+  coverCell: { width: "48%", gap: 6 },
+  coverThumb: {
+    width: "100%",
+    height: 64,
+    borderRadius: 14,
+    overflow: "hidden",
+  },
+  coverCheck: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  coverName: {
+    fontSize: 13,
+    fontFamily: "Geologica_600SemiBold",
+    paddingLeft: 2,
   },
   swatchGrid: {
     flexDirection: "row",
