@@ -11,7 +11,7 @@
 // interpolated between those rest keyframes, so the resting state is 1:1 with
 // Figma and the motion stays continuous. Same pan/snap logic as before.
 import React, { useEffect, useMemo } from "react";
-import { View, Text, StyleSheet, useWindowDimensions } from "react-native";
+import { View, StyleSheet, useWindowDimensions } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -24,7 +24,6 @@ import Animated, {
   type SharedValue,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Path } from "react-native-svg";
 import type { SpeechTheme } from "@/app/showtime-stage";
 
@@ -237,20 +236,6 @@ function Card({ idx, target, theme, stageW, cx }: CardProps) {
     };
   });
 
-  // The upright face (sheen, bottom shade, title) belongs to the centred card only.
-  const face = useAnimatedStyle(() => {
-    const off = idx - target.value;
-    const a = Math.abs(off);
-    const s = off > 0 ? -1 : 1;
-    const outer = interpolate(a, K, OUTER_X, Extrapolation.CLAMP);
-    const inner = interpolate(a, K, INNER_X, Extrapolation.CLAMP);
-    const mid = (outer + inner) / 2;
-    return {
-      opacity: interpolate(a, [0, 0.45], [1, 0], Extrapolation.CLAMP),
-      transform: [{ translateX: s * mid }],
-    };
-  });
-
   return (
     <Animated.View pointerEvents="none" style={[styles.layer, { width: stageW }, layer]}>
       <Svg width={stageW} height={STAGE_H}>
@@ -272,17 +257,6 @@ function Card({ idx, target, theme, stageW, cx }: CardProps) {
         <AnimatedPath animatedProps={shadeLeftProps} fill={`url(#${gid}l)`} />
         <AnimatedPath animatedProps={shadeRightProps} fill={`url(#${gid}r)`} />
       </Svg>
-
-      <Animated.View style={[styles.face, { left: cx - CARD / 2, top: CY - CARD / 2 }, face]}>
-        <View style={styles.sheen} />
-        <LinearGradient
-          colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.45)"]}
-          style={styles.faceShade}
-        />
-        <Text style={styles.title} numberOfLines={2}>
-          {theme.title}
-        </Text>
-      </Animated.View>
     </Animated.View>
   );
 }
@@ -290,33 +264,4 @@ function Card({ idx, target, theme, stageW, cx }: CardProps) {
 const styles = StyleSheet.create({
   stage: { alignSelf: "center", position: "relative", overflow: "hidden" },
   layer: { position: "absolute", top: 0, left: 0, height: STAGE_H },
-  face: {
-    position: "absolute",
-    width: CARD,
-    height: CARD,
-    borderRadius: 16,
-    overflow: "hidden",
-  },
-  // Figma 371:1135 — white 18 % ellipse 130 pt at (52, −36).
-  sheen: {
-    position: "absolute",
-    left: 52,
-    top: -36,
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    backgroundColor: "rgba(255,255,255,0.18)",
-  },
-  // Figma 371:1136 — bottom half fades to 45 % black.
-  faceShade: { position: "absolute", left: 0, right: 0, top: 70, bottom: 0 },
-  title: {
-    position: "absolute",
-    left: 12,
-    right: 12,
-    bottom: 11,
-    color: "#FFFFFF",
-    fontSize: 15,
-    lineHeight: 18,
-    fontFamily: "Geologica_700Bold",
-  },
 });
