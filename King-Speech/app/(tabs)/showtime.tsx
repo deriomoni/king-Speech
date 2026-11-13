@@ -288,14 +288,18 @@ export default function ShowTimeScreen() {
                       {
                         width: tileSize,
                         height: tileSize,
-                        backgroundColor: bgMid,
+                        backgroundColor: "transparent",
                         paddingLeft: 11,
                         paddingBottom: 12,
                         opacity: pressed ? 0.85 : 1,
                       },
                     ]}
                   >
-                    <Image source={showtimeCover(k)} style={st.tilePhoto} resizeMode="cover" />
+                    <Image
+                      source={showtimeCover(k)}
+                      style={[st.tilePhoto, { width: tileSize, height: tileSize }]}
+                      resizeMode="cover"
+                    />
                     <LinearGradient
                       colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.62)"]}
                       style={st.tileShade}
@@ -305,7 +309,7 @@ export default function ShowTimeScreen() {
                       {speechThemes[k].title}
                     </Text>
                     {/* The photo fills the whole square; the selection ring sits on top. */}
-                    {sel && <View pointerEvents="none" style={[st.tileRing, { borderColor: c.accent }]} />}
+                    {sel && <View pointerEvents="none" style={[st.tileRing, { borderColor: c.text }]} />}
                   </Pressable>
                 );
               })}
@@ -424,8 +428,8 @@ const st = StyleSheet.create({
   tabUnderline: { height: 3, borderRadius: 1.5, marginTop: 6 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 18 },
   tile: { borderRadius: 22, overflow: "hidden", justifyContent: "flex-end" },
-  tilePhoto: { position: "absolute", left: 0, top: 0, right: 0, bottom: 0, width: "100%", height: "100%" },
-  tileRing: { position: "absolute", left: 0, top: 0, right: 0, bottom: 0, borderRadius: 22, borderWidth: 4 },
+  tilePhoto: { position: "absolute", left: 0, top: 0, borderRadius: 22 },
+  tileRing: { position: "absolute", left: 0, top: 0, right: 0, bottom: 0, borderRadius: 22, borderWidth: 1.5 },
   tileShade: { position: "absolute", left: 0, right: 0, bottom: 0, height: "60%" },
   tileText: { fontSize: 12, lineHeight: 13, fontFamily: "Geologica_800ExtraBold" },
   empty: { fontSize: 13, fontFamily: "Geologica_600SemiBold", marginTop: 24, textAlign: "center" },

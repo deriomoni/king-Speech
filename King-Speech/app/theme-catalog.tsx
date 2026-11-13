@@ -314,7 +314,7 @@ const s = StyleSheet.create({
 
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   card: { height: 214, borderRadius: 22, borderWidth: 2, padding: 6, overflow: "hidden" },
-  photo: { position: "absolute", left: 0, top: 0, width: "100%", height: "100%" },
+  photo: { position: "absolute", left: 0, top: 0, right: 0, bottom: 0, width: "100%", height: "100%" },
   cover: { height: 128, borderRadius: 16, overflow: "hidden" },
   coverOrb: {
     position: "absolute",

@@ -5660,7 +5660,7 @@ const s = StyleSheet.create({
   // Theme preview (Figma 310:4346)
   pvScroll: { flexGrow: 1, paddingHorizontal: 28 },
   pvArt: { width: "100%", aspectRatio: 1.35, borderRadius: 22, overflow: "hidden", marginBottom: 20 },
-  pvPhoto: { position: "absolute", left: 0, top: 0, width: "100%", height: "100%" },
+  pvPhoto: { position: "absolute", left: 0, top: 0, right: 0, bottom: 0, width: "100%", height: "100%" },
   pvCategory: { fontFamily: "Geologica_500Medium", fontSize: 14 },
   pvTitle: { fontFamily: "Geologica_700Bold", fontSize: 34, lineHeight: 37.4, letterSpacing: -0.34, marginTop: 8 },
   pvDivider: { height: 1, marginTop: 12 },
