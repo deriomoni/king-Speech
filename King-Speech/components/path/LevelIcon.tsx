@@ -103,7 +103,8 @@ function Glyph({ kind, color, hole }: { kind: Kind; color: string; hole: string 
           <Path
             fill={hole}
             stroke={color}
-            strokeWidth={1.78}
+            strokeWidth={1.78 / 1.45}
+            transform="translate(11.9 26.9) scale(1.45) translate(-11.9 -26.9)"
             strokeLinecap="round"
             strokeLinejoin="round"
             d="M10.779 26.89C13.779 26.89 15.8901 24.7129 15.8901 21.5046C15.8901 19.2129 14.2235 17.6088 13.0012 15.89C12.2235 17.4942 10.8901 17.8379 9.66791 19.2129C8.66791 20.3588 7.89014 21.39 7.89014 23.1088C7.89014 24.9421 9.00125 26.89 10.779 26.89Z"
