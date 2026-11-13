@@ -32,6 +32,9 @@ const SIZE_K = 1.45;
 const STAGE_H = Math.round(180 * SIZE_K);
 const CARD = Math.round(140 * SIZE_K);
 const CY = Math.round(84 * SIZE_K); // card mid-height inside the 180 pt frame (Figma y 14 + 70)
+/** Centre cover size / mid-height inside the gallery frame (for the start-show flight). */
+export const COVER_CARD = CARD;
+export const COVER_CY = CY;
 
 // Keyframes per |offset| 0…4 (left side; mirrored for the right). Values are
 // relative to the stage centre: outer edge x, inner edge x, outer / inner

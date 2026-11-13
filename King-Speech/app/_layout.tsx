@@ -73,7 +73,7 @@ function RootLayoutNav() {
       />
       <Stack.Screen
         name="showtime-stage"
-        options={{ headerShown: false, presentation: "fullScreenModal" }}
+        options={{ headerShown: false, presentation: "fullScreenModal", animation: "fade" }}
       />
       <Stack.Screen
         name="showtime-playback"

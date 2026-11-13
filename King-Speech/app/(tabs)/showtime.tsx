@@ -17,11 +17,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "@/lib/haptics";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { getSpeechThemes } from "@/app/showtime-stage";
 import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
-import { ThemeCoverGallery } from "@/components/showtime/ThemeCoverGallery";
+import { ThemeCoverGallery, COVER_CARD, COVER_CY } from "@/components/showtime/ThemeCoverGallery";
+import { CoverFlight, type CoverRect } from "@/components/showtime/CoverFlight";
 import { showtimeCover } from "@/constants/showtimeCovers";
 import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
 import { OpenCatalogIcon, SearchIcon } from "@/components/showtime/ShowTimeIcons";
@@ -117,6 +118,34 @@ export default function ShowTimeScreen() {
     if (Platform.OS !== "web") Haptics.selectionAsync();
   };
 
+  // «Начать выступление»: the centre cover flies into the theme preview.
+  const galleryRef = useRef<View>(null);
+  const [flight, setFlight] = useState<{ levelId: string; from: CoverRect } | null>(null);
+  useFocusEffect(
+    React.useCallback(() => {
+      setFlight(null);
+    }, []),
+  );
+  const startShow = () => {
+    if (flight) return;
+    const levelId = theme.levelId;
+    const node = galleryRef.current;
+    if (!node) {
+      openShowTimeStage(levelId);
+      return;
+    }
+    haptic();
+    node.measureInWindow((x, y, w) => {
+      setFlight({
+        levelId,
+        from: { x: x + w / 2 - COVER_CARD / 2, y: y + COVER_CY - COVER_CARD / 2, w: COVER_CARD, h: COVER_CARD },
+      });
+    });
+  };
+  const onFlightArrive = () => {
+    if (flight) openShowTimeStage(flight.levelId);
+  };
+
   const handleCarouselSelect = (idx: number) => {
     const key = carouselKeys[idx];
     if (key) setSelectedKey(key);
@@ -188,11 +217,13 @@ export default function ShowTimeScreen() {
         </EdgeScale>
 
         <EdgeScale entering={FadeInDown.delay(150).duration(400)} style={st.galleryBleed}>
-          <ThemeCoverGallery
-            themes={carouselKeys.map((k) => speechThemes[k])}
-            selectedIdx={selectedIdx}
-            onSelect={handleCarouselSelect}
-          />
+          <View ref={galleryRef} collapsable={false}>
+            <ThemeCoverGallery
+              themes={carouselKeys.map((k) => speechThemes[k])}
+              selectedIdx={selectedIdx}
+              onSelect={handleCarouselSelect}
+            />
+          </View>
         </EdgeScale>
 
         {/* Selected theme */}
@@ -216,7 +247,7 @@ export default function ShowTimeScreen() {
         </EdgeScale>
 
         <EdgeScale>
-        <ShowTimeStartButton onPress={() => openShowTimeStage(theme.levelId)} free={showTimeFreeAvailable} en={en} />
+        <ShowTimeStartButton onPress={startShow} free={showTimeFreeAvailable} en={en} />
         </EdgeScale>
 
         {/* Каталог тем */}
@@ -363,6 +394,15 @@ export default function ShowTimeScreen() {
         </View>
       </Animated.ScrollView>
 
+      {flight && (
+        <CoverFlight
+          key={flight.levelId}
+          source={showtimeCover(flight.levelId)}
+          from={flight.from}
+          bg={c.bg}
+          onArrive={onFlightArrive}
+        />
+      )}
     </View>
     </EdgeScaleProvider>
   );
