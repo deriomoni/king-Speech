@@ -132,22 +132,22 @@ export default function SettingsScreen() {
   const logoStyle = useAnimatedStyle(() => {
     const pull = Math.max(0, -scrollY.value);
     const k = interpolate(pull, [0, PULL], [1, 0.82], Extrapolation.CLAMP);
-    return { transform: [{ translateY: pull * 0.35 }, { scale: k }], transformOrigin: "top left" } as any;
+    // Bounce drags the content down; lift the logo past that so it slides up
+    // and shrinks toward the top edge.
+    const o = interpolate(pull, [0, PULL], [1, 0.55], Extrapolation.CLAMP);
+    return { opacity: o, transform: [{ translateY: -pull * 1.15 }, { scale: k }], transformOrigin: "top left" } as any;
   });
-  const cardsStyle = useAnimatedStyle(() => {
+  // Pull down: only the cards squeeze toward the top (footer stays put).
+  const cardsTopStyle = useAnimatedStyle(() => {
     const top = Math.max(0, -scrollY.value);
-    const bottom = Math.max(0, scrollY.value - maxY.value);
-    if (bottom > 0) {
-      const k = interpolate(bottom, [0, PULL], [1, 0.95], Extrapolation.CLAMP);
-      return { transform: [{ scale: k }], transformOrigin: "bottom center" } as any;
-    }
     const k = interpolate(top, [0, PULL], [1, 0.96], Extrapolation.CLAMP);
     return { transform: [{ scale: k }], transformOrigin: "top center" } as any;
   });
-  const footerStyle = useAnimatedStyle(() => {
+  // Pull up past the end: cards and the BekWave footer squeeze down together.
+  const bottomGroupStyle = useAnimatedStyle(() => {
     const bottom = Math.max(0, scrollY.value - maxY.value);
-    const k = interpolate(bottom, [0, PULL], [1, 0.8], Extrapolation.CLAMP);
-    return { transform: [{ translateY: -bottom * 0.3 }, { scale: k }], transformOrigin: "bottom center" } as any;
+    const k = interpolate(bottom, [0, PULL], [1, 0.95], Extrapolation.CLAMP);
+    return { transform: [{ scale: k }], transformOrigin: "bottom center" } as any;
   });
 
   return (
@@ -182,7 +182,8 @@ export default function SettingsScreen() {
             },
           ]}
         >
-          <Animated.View style={cardsStyle}>
+          <Animated.View style={bottomGroupStyle}>
+          <Animated.View style={cardsTopStyle}>
           <Animated.View entering={FadeInDown.duration(400)}>
             <Text style={[styles.pageTitle, { color: theme.text }]}>{t("settings")}</Text>
           </Animated.View>
@@ -391,7 +392,7 @@ export default function SettingsScreen() {
           </Animated.View>
 
           {/* Credits — quiet footer, outside the cards */}
-          <Animated.View style={[styles.credits, footerStyle]}>
+          <View style={styles.credits}>
             <Text style={[styles.creditsLabel, { color: theme.textMuted }]}>
               {en ? "APP CREATED BY" : "ПРИЛОЖЕНИЕ СОЗДАНО"}
             </Text>
@@ -401,6 +402,7 @@ export default function SettingsScreen() {
             <Text style={[styles.version, { color: theme.textMuted }]}>
               {en ? "Version 1.0.0" : "Версия 1.0.0"}
             </Text>
+          </View>
           </Animated.View>
         </View>
       </Animated.ScrollView>
