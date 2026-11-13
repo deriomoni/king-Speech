@@ -134,6 +134,13 @@ function BrickSheen() {
   // smooth bell-shaped falloff across the band with no visible edges, and every
   // layer bends with the same curve. No SVG filter (too costly on device).
   const LAYERS = [2.8, 2.45, 2.1, 1.8, 1.5, 1.22, 0.96, 0.72, 0.5, 0.3];
+  // Defined before the hooks that use it (the worklet transform turns it into
+  // a const, so it isn't hoisted).
+  const layerProps = (i: number) => {
+    "worklet";
+    const cx = start + p.value * travel;
+    return { d: sheenPath(cx, SHEEN_W * LAYERS[i], STEP_H, STEP_W), opacity: 0.05 * bright(cx) };
+  };
   const a0 = useAnimatedProps(() => layerProps(0));
   const a1 = useAnimatedProps(() => layerProps(1));
   const a2 = useAnimatedProps(() => layerProps(2));
@@ -144,11 +151,6 @@ function BrickSheen() {
   const a7 = useAnimatedProps(() => layerProps(7));
   const a8 = useAnimatedProps(() => layerProps(8));
   const a9 = useAnimatedProps(() => layerProps(9));
-  function layerProps(i: number) {
-    "worklet";
-    const cx = start + p.value * travel;
-    return { d: sheenPath(cx, SHEEN_W * LAYERS[i], STEP_H, STEP_W), opacity: 0.05 * bright(cx) };
-  }
   return (
     <Svg
       pointerEvents="none"
