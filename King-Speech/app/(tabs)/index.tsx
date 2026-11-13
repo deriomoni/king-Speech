@@ -18,10 +18,13 @@ import Animated, {
   withTiming,
   withRepeat,
   withDelay,
+  withSequence,
+  Easing,
   cancelAnimation,
   runOnJS,
   type SharedValue,
 } from "react-native-reanimated";
+import { LinearGradient as ExpoLinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
@@ -75,6 +78,42 @@ const PATH_CONNECTOR = {
   dark: "rgba(240,238,233,0.07)",
   light: "rgba(38,38,40,0.08)",
 } as const;
+
+// A vertical (90°) band of light that sweeps across the active brick from left
+// to right, then rests before the next pass. Clipped by the brick face; runs
+// only while the Path is on screen.
+const SHEEN_W = 46;
+function BrickSheen() {
+  const x = useSharedValue(-SHEEN_W);
+  const focused = useIsFocused();
+  useEffect(() => {
+    if (!focused) return;
+    x.value = -SHEEN_W;
+    x.value = withRepeat(
+      withSequence(
+        withTiming(STEP_W + SHEEN_W, { duration: 1100, easing: Easing.inOut(Easing.quad) }),
+        withDelay(1900, withTiming(-SHEEN_W, { duration: 0 })),
+      ),
+      -1,
+      false,
+    );
+    return () => cancelAnimation(x);
+  }, [focused]);
+  const s = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[{ position: "absolute", top: 0, bottom: 0, left: 0, width: SHEEN_W }, s]}
+    >
+      <ExpoLinearGradient
+        colors={["rgba(255,255,255,0)", "rgba(255,255,255,0.38)", "rgba(255,255,255,0)"]}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={{ flex: 1 }}
+      />
+    </Animated.View>
+  );
+}
 
 function GlowRing({ color, radius }: { color: string; radius: number }) {
   // Soft, breathing halo behind the active tile. Rendered as a filled tile-
@@ -381,6 +420,7 @@ function StepBlockBase({
               { borderRadius: shapeR, backgroundColor: faceColor },
             ]}
           />
+          {showGlow && <BrickSheen />}
 
           <View style={styles.stepLeft}>
             {levelIconKind(item.id) ? (
