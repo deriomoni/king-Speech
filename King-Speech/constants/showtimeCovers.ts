@@ -76,8 +76,25 @@ const PICKS: Record<number, number> = {
 
 /** Cover photo for a Show Time theme id ("showtime", "showtime2", …). */
 export function showtimeCover(levelId: string): ImageSourcePropType {
+  return COVERS[pickFor(levelId) - 1];
+}
+
+// Photographer of each photo (1-based, same order as COVERS) — Pexels authors.
+const CREDITS: string[] = [
+  ...Array(13).fill("Junior Bastos"), // 1–13
+  "Muhammad Farhan Khan", // 14
+  ...Array(10).fill("Nikita Igonkin"), // 15–24
+  "Serkan Bayraktar", // 25
+  "Serkan Bayraktar", // 26
+];
+
+function pickFor(levelId: string): number {
   const m = /^showtime(\d*)$/.exec(levelId);
   const n = m ? (m[1] ? parseInt(m[1], 10) : 1) : 1;
-  const pick = PICKS[n] ?? ((n - 1) % COVERS.length) + 1;
-  return COVERS[pick - 1];
+  return PICKS[n] ?? ((n - 1) % COVERS.length) + 1;
+}
+
+/** Name of the photographer of the theme's cover photo. */
+export function showtimeCoverCredit(levelId: string): string {
+  return CREDITS[pickFor(levelId) - 1] ?? "";
 }

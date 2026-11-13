@@ -48,7 +48,8 @@ import CoinIcon from "@/components/CoinIcon";
 import { SvgXml } from "react-native-svg";
 import { useTheme } from "@/context/ThemeContext";
 import { categoryOf, THEME_CATEGORIES } from "@/components/showtime/themeCategories";
-import { stageLineArtXml, playCircleXml } from "@/assets/figma/showtime-stage/svgs";
+import { playCircleXml } from "@/assets/figma/showtime-stage/svgs";
+import { showtimeCover, showtimeCoverCredit } from "@/constants/showtimeCovers";
 
 // Audience halls (first-person, speaker POV). Used as the variable stage
 // backdrop — the speech text sits on a white sheet at the bottom that blurs up
@@ -4806,7 +4807,7 @@ export default function ShowtimeStageScreen() {
       const w = en ? "words" : nA10 === 1 && nA100 !== 11 ? "слово" : nA10 >= 2 && nA10 <= 4 && (nA100 < 12 || nA100 > 14) ? "слова" : "слов";
       return {
         category: authorCategoryParam ?? "",
-        meta: `${minutes} ${en ? "min" : "мин"}  ·  ${words} ${w}`,
+        meta: `${minutes} ${en ? "min" : "мин"}  ·  ${words} ${w}  ·  ${en ? "Photo" : "Фото"}: ${showtimeCoverCredit(levelId)}`,
       };
     }
     const rank = getShowtimeModule(getModuleFromShowtimeId(levelId))?.rank ?? 1;
@@ -4826,7 +4827,7 @@ export default function ShowtimeStageScreen() {
           : "слов";
     return {
       category: cat ? (en ? cat.en : cat.ru) : "",
-      meta: `${minutes} ${en ? "min" : "мин"}  ·  ${difficulty}  ·  ${words} ${wordsWord}`,
+      meta: `${minutes} ${en ? "min" : "мин"}  ·  ${difficulty}  ·  ${words} ${wordsWord}  ·  ${en ? "Photo" : "Фото"}: ${showtimeCoverCredit(levelId)}`,
     };
   }, [lang, levelId, speech, isAuthor, authorCategoryParam]);
   // Variable audience backdrop — one of the halls, chosen per run.
@@ -5335,14 +5336,9 @@ export default function ShowtimeStageScreen() {
             showsVerticalScrollIndicator={false}
             bounces={false}
           >
-            <View style={s.pvArt}>
-              <SvgXml
-                xml={stageLineArtXml
-                  .replace(/__INK__/g, isDarkUi ? "#F0EEE9" : "#262628")
-                  .replace(/__GOLD__/g, "#FFD857")}
-                width={321.6}
-                height={200}
-              />
+            {/* The theme's cover photo (same as on its Show Time cover). */}
+            <View style={[s.pvArt, { backgroundColor: isDarkUi ? "#2E2E30" : "#E8E6E1" }]}>
+              <Image source={showtimeCover(levelId)} style={s.pvPhoto} resizeMode="cover" />
             </View>
 
             {preview.category ? (
@@ -5663,7 +5659,8 @@ const s = StyleSheet.create({
   lineCounter: { fontSize: 13, color: "rgba(17,17,20,0.5)" },
   // Theme preview (Figma 310:4346)
   pvScroll: { flexGrow: 1, paddingHorizontal: 28 },
-  pvArt: { alignItems: "center", marginBottom: 20 },
+  pvArt: { width: "100%", aspectRatio: 1.35, borderRadius: 22, overflow: "hidden", marginBottom: 20 },
+  pvPhoto: { position: "absolute", left: 0, top: 0, width: "100%", height: "100%" },
   pvCategory: { fontFamily: "Geologica_500Medium", fontSize: 14 },
   pvTitle: { fontFamily: "Geologica_700Bold", fontSize: 34, lineHeight: 37.4, letterSpacing: -0.34, marginTop: 8 },
   pvDivider: { height: 1, marginTop: 12 },

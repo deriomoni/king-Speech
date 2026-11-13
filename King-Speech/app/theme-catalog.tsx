@@ -8,6 +8,7 @@ import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   ScrollView,
   Pressable,
@@ -27,6 +28,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
 import { PlayTriangleIcon, SearchIcon } from "@/components/showtime/ShowTimeIcons";
 import { openShowTimeStage } from "@/components/showtime/useShowTimeEntry";
+import { showtimeCover } from "@/constants/showtimeCovers";
 import { THEME_CATEGORIES, categoryOf, type ThemeCategoryId } from "@/components/showtime/themeCategories";
 
 const POPULAR_COUNT = 10;
@@ -161,15 +163,9 @@ export default function ThemeCatalogScreen() {
         {featured && featuredKey && !q && (
           <Animated.View entering={FadeInDown.delay(80).duration(400)}>
             <Pressable onPress={() => pick(featuredKey)} style={s.featured}>
+              <Image source={showtimeCover(featuredKey)} style={s.photo} resizeMode="cover" />
               <LinearGradient
-                colors={["#FFD857", "#FFA53A"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={s.fill}
-              />
-              <View style={s.featuredOrb} />
-              <LinearGradient
-                colors={["rgba(255,140,0,0)", "rgba(230,110,0,0.28)"]}
+                colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.6)"]}
                 style={s.featuredBand}
                 pointerEvents="none"
               />
@@ -219,13 +215,7 @@ export default function ThemeCatalogScreen() {
                     ]}
                   >
                     <View style={s.cover}>
-                      <LinearGradient
-                        colors={t.gradientColors}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 0.4, y: 1 }}
-                        style={s.fill}
-                      />
-                      <View style={s.coverOrb} />
+                      <Image source={showtimeCover(k)} style={s.photo} resizeMode="cover" />
                     </View>
                     <Text style={[s.cardTitle, { color: c.text }]} numberOfLines={2}>
                       {t.title}
@@ -279,7 +269,7 @@ const s = StyleSheet.create({
     borderRadius: 110,
     backgroundColor: "rgba(255,255,255,0.18)",
   },
-  featuredBand: { position: "absolute", left: 0, right: 0, top: 78, bottom: 0 },
+  featuredBand: { position: "absolute", left: 0, right: 0, top: 40, bottom: 0 },
   tag: {
     position: "absolute",
     left: 18,
@@ -324,6 +314,7 @@ const s = StyleSheet.create({
 
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   card: { height: 214, borderRadius: 22, borderWidth: 2, padding: 6, overflow: "hidden" },
+  photo: { position: "absolute", left: 0, top: 0, width: "100%", height: "100%" },
   cover: { height: 128, borderRadius: 16, overflow: "hidden" },
   coverOrb: {
     position: "absolute",

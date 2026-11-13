@@ -27,9 +27,11 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import type { SpeechTheme } from "@/app/showtime-stage";
 import { showtimeCover } from "@/constants/showtimeCovers";
 
-const STAGE_H = 180;
-const CARD = 140;
-const CY = 84; // card mid-height inside the 180 pt frame (Figma y 14 + 70)
+// Everything is 1.45× the Figma frame (covers were enlarged by 45 %).
+const SIZE_K = 1.45;
+const STAGE_H = Math.round(180 * SIZE_K);
+const CARD = Math.round(140 * SIZE_K);
+const CY = Math.round(84 * SIZE_K); // card mid-height inside the 180 pt frame (Figma y 14 + 70)
 
 // Keyframes per |offset| 0…4 (left side; mirrored for the right). Values are
 // relative to the stage centre: outer edge x, inner edge x, outer / inner
@@ -39,9 +41,9 @@ const OUTER_X = [-70, -127.1, -168.7, -209.8, -251];
 const INNER_X = [70, -53.7, -86.1, -118.2, -150.3];
 const OUTER_H = [140, 136.4, 135.8, 135.2, 134.6];
 const INNER_H = [140, 105.4, 105.0, 104.6, 104.2];
-const RADII = [16, 12, 12, 12, 12];
+const RADII = [16, 12, 12, 12, 12].map((v) => v * SIZE_K);
 // Tap zones (distance from centre) → slot index.
-const ZONES = [70, 127.1, 168.7, 209.8];
+const ZONES = [70, 127.1, 168.7, 209.8].map((v) => v * SIZE_K);
 
 type Props = {
   themes: SpeechTheme[];
@@ -59,7 +61,7 @@ export function ThemeCoverGallery({ themes, selectedIdx, onSelect }: Props) {
   const stageW = Math.min(winW, 480);
   const cx = stageW / 2;
   // One swipe step ≈ distance between neighbouring outer edges.
-  const stride = 60;
+  const stride = 60 * SIZE_K;
 
   const target = useSharedValue(selectedIdx);
   const startTarget = useSharedValue(selectedIdx);
@@ -157,10 +159,10 @@ type CardProps = {
 // perspective), which gives the same converging top/bottom edges as the Figma
 // trapezoids. Per |offset| 0…4: turn angle, scale and centre shift — tuned so
 // the projected edges land on the Figma rest positions (OUTER_X / INNER_X).
-const PERSPECTIVE = 441;
+const PERSPECTIVE = 441 * SIZE_K;
 const ROT = [0, 55, 55, 55, 55];
 const SCALE = [1, 0.85, 0.85, 0.85, 0.85];
-const SHIFT = [0, -86, -123, -159, -195];
+const SHIFT = [0, -86, -123, -159, -195].map((v) => v * SIZE_K);
 
 function Card({ idx, target, theme, cx }: CardProps) {
   const cover = useMemo(() => showtimeCover(theme.levelId), [theme.levelId]);

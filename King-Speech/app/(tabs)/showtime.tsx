@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   Pressable,
   Platform,
@@ -21,6 +22,7 @@ import { getSpeechThemes } from "@/app/showtime-stage";
 import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { ThemeCoverGallery } from "@/components/showtime/ThemeCoverGallery";
+import { showtimeCover } from "@/constants/showtimeCovers";
 import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
 import { OpenCatalogIcon, SearchIcon } from "@/components/showtime/ShowTimeIcons";
 import { ShowTimeModeTiles } from "@/components/showtime/ModeTiles";
@@ -277,7 +279,6 @@ export default function ShowTimeScreen() {
             <View style={st.grid}>
               {visibleTiles.map((k, i) => {
                 const sel = k === safeKey;
-                const tileBg = sel ? c.accent : i % 2 === 1 ? c.bg : c.cardBorder;
                 return (
                   <Pressable
                     key={k}
@@ -287,7 +288,7 @@ export default function ShowTimeScreen() {
                       {
                         width: tileSize,
                         height: tileSize,
-                        backgroundColor: tileBg,
+                        backgroundColor: bgMid,
                         borderColor: sel ? c.ctaStroke : stroke,
                         borderWidth: sel ? 4 : 2,
                         paddingLeft: sel ? 8 : 9,
@@ -296,7 +297,13 @@ export default function ShowTimeScreen() {
                       },
                     ]}
                   >
-                    <Text style={[st.tileText, { color: sel ? c.accentText : c.text }]} numberOfLines={3}>
+                    <Image source={showtimeCover(k)} style={st.tilePhoto} resizeMode="cover" />
+                    <LinearGradient
+                      colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.62)"]}
+                      style={st.tileShade}
+                      pointerEvents="none"
+                    />
+                    <Text style={[st.tileText, { color: "#FFFFFF" }]} numberOfLines={3}>
                       {speechThemes[k].title}
                     </Text>
                   </Pressable>
@@ -417,6 +424,8 @@ const st = StyleSheet.create({
   tabUnderline: { height: 3, borderRadius: 1.5, marginTop: 6 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 18 },
   tile: { borderRadius: 22, overflow: "hidden", justifyContent: "flex-end" },
+  tilePhoto: { position: "absolute", left: 0, top: 0, right: 0, bottom: 0, width: "100%", height: "100%" },
+  tileShade: { position: "absolute", left: 0, right: 0, bottom: 0, height: "60%" },
   tileText: { fontSize: 12, lineHeight: 13, fontFamily: "Geologica_800ExtraBold" },
   empty: { fontSize: 13, fontFamily: "Geologica_600SemiBold", marginTop: 24, textAlign: "center" },
   veilWrap: {
