@@ -11,11 +11,11 @@
 // interpolated between those rest keyframes, so the resting state is 1:1 with
 // Figma and the motion stays continuous. Same pan/snap logic as before.
 import React, { useEffect, useMemo } from "react";
-import { View, StyleSheet, useWindowDimensions } from "react-native";
+import { View, Image, StyleSheet, useWindowDimensions } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  useAnimatedProps,
   withSpring,
   cancelAnimation,
   runOnJS,
@@ -24,10 +24,8 @@ import Animated, {
   type SharedValue,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Path } from "react-native-svg";
 import type { SpeechTheme } from "@/app/showtime-stage";
-
-const AnimatedPath = Animated.createAnimatedComponent(Path);
+import { showtimeCover } from "@/constants/showtimeCovers";
 
 const STAGE_H = 180;
 const CARD = 140;
@@ -54,62 +52,6 @@ type Props = {
 function clamp(v: number, lo: number, hi: number) {
   "worklet";
   return Math.max(lo, Math.min(hi, v));
-}
-
-// "#RRGGBB" darkened toward black (Figma side gradients end at ~45 % of the top colour).
-function darken(hex: string, k: number) {
-  const m = /^#([0-9a-f]{6})$/i.exec(hex);
-  if (!m) return hex;
-  const v = parseInt(m[1], 16);
-  const ch = (s: number) => Math.round(((v >> s) & 255) * k).toString(16).padStart(2, "0");
-  return `#${ch(16)}${ch(8)}${ch(0)}`;
-}
-
-// Rounded quad: corners in order TL, TR, BR, BL; each corner is rounded with a
-// quadratic curve whose arms run `r` along the two adjacent edges.
-function roundedQuad(p: number[], r: number) {
-  "worklet";
-  const n = 4;
-  let d = "";
-  for (let i = 0; i < n; i++) {
-    const px = p[i * 2];
-    const py = p[i * 2 + 1];
-    const ax = p[((i + n - 1) % n) * 2];
-    const ay = p[((i + n - 1) % n) * 2 + 1];
-    const bx = p[((i + 1) % n) * 2];
-    const by = p[((i + 1) % n) * 2 + 1];
-    const la = Math.max(0.001, Math.hypot(ax - px, ay - py));
-    const lb = Math.max(0.001, Math.hypot(bx - px, by - py));
-    const ra = Math.min(r, la / 2);
-    const rb = Math.min(r, lb / 2);
-    const x1 = px + ((ax - px) / la) * ra;
-    const y1 = py + ((ay - py) / la) * ra;
-    const x2 = px + ((bx - px) / lb) * rb;
-    const y2 = py + ((by - py) / lb) * rb;
-    d += `${i === 0 ? "M" : "L"}${x1.toFixed(2)} ${y1.toFixed(2)}Q${px.toFixed(2)} ${py.toFixed(2)} ${x2.toFixed(2)} ${y2.toFixed(2)}`;
-  }
-  return d + "Z";
-}
-
-// Card outline at a (fractional) carousel position: edges interpolated between
-// the Figma rest keyframes; left side as drawn in Figma, right side mirrored.
-function cardPath(idx: number, t: number, cx: number) {
-  "worklet";
-  const off = idx - t;
-  const a = Math.min(Math.abs(off), 4);
-  const outer = interpolate(a, K, OUTER_X, Extrapolation.CLAMP);
-  const inner = interpolate(a, K, INNER_X, Extrapolation.CLAMP);
-  const ho = interpolate(a, K, OUTER_H, Extrapolation.CLAMP) / 2;
-  const hi = interpolate(a, K, INNER_H, Extrapolation.CLAMP) / 2;
-  const r = interpolate(a, K, RADII, Extrapolation.CLAMP);
-  const s = off > 0 ? -1 : 1;
-  const xo = cx + s * outer;
-  const xi = cx + s * inner;
-  const lx = s === 1 ? xo : xi;
-  const rx = s === 1 ? xi : xo;
-  const lh = s === 1 ? ho : hi;
-  const rh = s === 1 ? hi : ho;
-  return roundedQuad([lx, CY - lh, rx, CY - rh, rx, CY + rh, lx, CY + lh], r);
 }
 
 export function ThemeCoverGallery({ themes, selectedIdx, onSelect }: Props) {
@@ -211,57 +153,79 @@ type CardProps = {
   cx: number;
 };
 
-function Card({ idx, target, theme, stageW, cx }: CardProps) {
-  const top = theme.accentColor;
-  const bottom = darken(theme.accentColor, 0.42);
-  const gid = `cf${idx}`;
+// Side cards are real 3D: the photo card is turned away in depth (rotateY with
+// perspective), which gives the same converging top/bottom edges as the Figma
+// trapezoids. Per |offset| 0…4: turn angle, scale and centre shift — tuned so
+// the projected edges land on the Figma rest positions (OUTER_X / INNER_X).
+const PERSPECTIVE = 441;
+const ROT = [0, 55, 55, 55, 55];
+const SCALE = [1, 0.85, 0.85, 0.85, 0.85];
+const SHIFT = [0, -86, -123, -159, -195];
 
-  const shapeProps = useAnimatedProps(() => ({ d: cardPath(idx, target.value, cx) }));
+function Card({ idx, target, theme, cx }: CardProps) {
+  const cover = useMemo(() => showtimeCover(theme.levelId), [theme.levelId]);
 
-  // Far (inner) edge darkening: left cards are dark on the right, right cards on the left.
-  const shadeLeftProps = useAnimatedProps(() => {
+  const card = useAnimatedStyle(() => {
     const off = idx - target.value;
-    return { d: cardPath(idx, target.value, cx), opacity: off < 0 ? clamp(-off, 0, 1) : 0 };
-  });
-  const shadeRightProps = useAnimatedProps(() => {
-    const off = idx - target.value;
-    return { d: cardPath(idx, target.value, cx), opacity: off > 0 ? clamp(off, 0, 1) : 0 };
-  });
-
-  const layer = useAnimatedStyle(() => {
-    const a = Math.abs(idx - target.value);
+    const a = Math.min(Math.abs(off), 4);
+    const s = off > 0 ? -1 : 1; // 1 = left side, -1 = right side
     return {
       zIndex: 100 - Math.round(a * 10),
       opacity: interpolate(a, [0, 3, 3.6], [1, 1, 0], Extrapolation.CLAMP),
+      borderRadius: interpolate(a, K, RADII, Extrapolation.CLAMP),
+      transform: [
+        { perspective: PERSPECTIVE },
+        { translateX: s * interpolate(a, K, SHIFT, Extrapolation.CLAMP) },
+        { rotateY: `${s * interpolate(a, K, ROT, Extrapolation.CLAMP)}deg` },
+        { scale: interpolate(a, K, SCALE, Extrapolation.CLAMP) },
+      ],
     };
   });
 
+  // Far (inner) edge darkening: left cards are dark on the right, right cards on the left.
+  const shadeLeft = useAnimatedStyle(() => {
+    const off = idx - target.value;
+    return { opacity: off < 0 ? clamp(-off, 0, 1) : 0 };
+  });
+  const shadeRight = useAnimatedStyle(() => {
+    const off = idx - target.value;
+    return { opacity: off > 0 ? clamp(off, 0, 1) : 0 };
+  });
+
   return (
-    <Animated.View pointerEvents="none" style={[styles.layer, { width: stageW }, layer]}>
-      <Svg width={stageW} height={STAGE_H}>
-        <Defs>
-          <SvgLinearGradient id={`${gid}c`} x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={top} />
-            <Stop offset="1" stopColor={bottom} />
-          </SvgLinearGradient>
-          <SvgLinearGradient id={`${gid}l`} x1="0" y1="0" x2="1" y2="0">
-            <Stop offset="0" stopColor="#000000" stopOpacity={0} />
-            <Stop offset="1" stopColor="#000000" stopOpacity={0.45} />
-          </SvgLinearGradient>
-          <SvgLinearGradient id={`${gid}r`} x1="0" y1="0" x2="1" y2="0">
-            <Stop offset="0" stopColor="#000000" stopOpacity={0.45} />
-            <Stop offset="1" stopColor="#000000" stopOpacity={0} />
-          </SvgLinearGradient>
-        </Defs>
-        <AnimatedPath animatedProps={shapeProps} fill={`url(#${gid}c)`} />
-        <AnimatedPath animatedProps={shadeLeftProps} fill={`url(#${gid}l)`} />
-        <AnimatedPath animatedProps={shadeRightProps} fill={`url(#${gid}r)`} />
-      </Svg>
+    <Animated.View
+      pointerEvents="none"
+      style={[styles.card, { left: cx - CARD / 2, top: CY - CARD / 2 }, card]}
+    >
+      <Image source={cover} style={styles.photo} resizeMode="cover" />
+      <Animated.View style={[StyleSheet.absoluteFill, shadeLeft]}>
+        <LinearGradient
+          colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.5)"]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+      <Animated.View style={[StyleSheet.absoluteFill, shadeRight]}>
+        <LinearGradient
+          colors={["rgba(0,0,0,0.5)", "rgba(0,0,0,0)"]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   stage: { alignSelf: "center", position: "relative", overflow: "hidden" },
-  layer: { position: "absolute", top: 0, left: 0, height: STAGE_H },
+  card: {
+    position: "absolute",
+    width: CARD,
+    height: CARD,
+    overflow: "hidden",
+    backgroundColor: "#2E2E30",
+  },
+  photo: { position: "absolute", left: 0, top: 0, width: CARD, height: CARD },
 });
