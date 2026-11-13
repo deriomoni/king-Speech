@@ -32,7 +32,7 @@ import { storage as fbStorage, auth as fbAuth, firebaseConfigured } from "@/lib/
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme, type Theme } from "@/context/ThemeContext";
-import ProfileCover, { COVER_HEIGHT } from "@/components/profile/ProfileCover";
+import ProfileCover, { COVER_HEIGHT, PlainPlateThumb } from "@/components/profile/ProfileCover";
 import { COVER_PATTERNS, COVER_ART_RATIO } from "@/components/profile/coverPatterns";
 import StreakCard from "@/components/profile/StreakCard";
 import GlossTile from "@/components/profile/GlossTile";
@@ -407,6 +407,7 @@ export default function ProfileScreen() {
               stroke={strokeShape(theme)}
               sheen="#F0EEE9"
               pattern={coverPattern}
+              ink={theme.text}
             />
 
             <Pressable
@@ -687,13 +688,17 @@ export default function ProfileScreen() {
                       style={[
                         styles.coverThumb,
                         {
-                          backgroundColor: p ? "transparent" : theme.bg,
-                          borderColor: selected ? theme.text : p ? "transparent" : strokeShape(theme),
+                          backgroundColor: "transparent",
+                          borderColor: selected ? theme.text : "transparent",
                           borderWidth: selected ? 2.5 : 1.5,
                         },
                       ]}
                     >
-                      {p && <Image source={p.image} style={styles.coverThumbImg} resizeMode="contain" />}
+                      {p ? (
+                        <Image source={p.image} style={styles.coverThumbImg} resizeMode="contain" />
+                      ) : (
+                        <PlainPlateThumb fill={theme.bg} ink={theme.text} stroke={strokeShape(theme)} />
+                      )}
                       {selected && (
                         <View style={[styles.coverCheck, { backgroundColor: theme.text }]}>
                           <Ionicons name="checkmark" size={14} color={theme.bg} />

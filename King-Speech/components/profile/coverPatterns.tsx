@@ -16,7 +16,7 @@ export type CoverPattern = {
 };
 
 export const COVER_PATTERNS: CoverPattern[] = [
-  { id: "paper-cosmos", ru: "Бумажный космос", en: "Paper cosmos", bg: "#B97A57", image: require("@/assets/profile-covers/paper-cosmos.png") },
+  { id: "paper-cosmos", ru: "Волшебный сон", en: "Magic dream", bg: "#B97A57", image: require("@/assets/profile-covers/paper-cosmos.png") },
   { id: "constellations", ru: "Созвездия", en: "Constellations", bg: "#24263A", image: require("@/assets/profile-covers/constellations.png") },
   { id: "crowns-rainbow", ru: "Короны", en: "Crowns", bg: "#FF639C", image: require("@/assets/profile-covers/crowns-rainbow.png") },
   { id: "crowns-gold", ru: "Золотые короны", en: "Gold crowns", bg: "#5A34B8", image: require("@/assets/profile-covers/crowns-gold.png") },

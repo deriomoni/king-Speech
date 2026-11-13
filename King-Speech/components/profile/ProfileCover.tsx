@@ -2,6 +2,7 @@ import React, { useId, useState } from "react";
 import { View, type LayoutChangeEvent } from "react-native";
 import Svg, { ClipPath, Defs, G, Image as SvgImage, LinearGradient, Stop, Path } from "react-native-svg";
 import { coverPatternById } from "./coverPatterns";
+import { CROWN_PATH } from "@/components/roles/RoleTarotCard";
 
 // Figma "Cover photo" (vector 377:1127) — neutral card banner with a circular
 // notch cut around the avatar (bottom-left). Where the notch meets the bottom
@@ -23,14 +24,62 @@ function coverPath(w: number) {
   );
 }
 
+/**
+ * The default («Без узора») plate: the King Speech logo crown tiled faintly in
+ * the plate's own ink, every crown turned −12° on a half-drop grid — the same
+ * ornament as the Roles screen, so the plain plate still feels branded.
+ */
+export function NeutralCrowns({ w, h, ink, opacity = 0.07 }: { w: number; h: number; ink: string; opacity?: number }) {
+  const out: React.ReactNode[] = [];
+  const dx = 44;
+  const dy = 38;
+  for (let col = 0, x = 14; x < w + dx; col++, x += dx) {
+    for (let y = 16 + (col % 2 ? dy / 2 : 0) - dy; y < h + dy; y += dy) {
+      out.push(
+        <Path
+          key={`${col}_${y}`}
+          d={CROWN_PATH}
+          fill={ink}
+          fillOpacity={opacity}
+          transform={`translate(${x} ${y}) rotate(-12) scale(0.4) translate(-24.13 -19)`}
+        />,
+      );
+    }
+  }
+  return <G>{out}</G>;
+}
+
+/** Small preview of the plain plate (catalogue thumbnail), drawn at the design size. */
+export function PlainPlateThumb({ fill, ink, stroke }: { fill: string; ink: string; stroke: string }) {
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const d = coverPath(356);
+  return (
+    <Svg width="100%" height="100%" viewBox="0 0 356 126">
+      <Defs>
+        <ClipPath id={`plainThumb${uid}`}>
+          <Path d={d} />
+        </ClipPath>
+      </Defs>
+      <Path d={d} fill={fill} />
+      <G clipPath={`url(#plainThumb${uid})`}>
+        <NeutralCrowns w={356} h={126} ink={ink} />
+      </G>
+      <Path d={d} stroke={stroke} strokeWidth={2} fill="none" />
+    </Svg>
+  );
+}
+
 export default function ProfileCover({
   fill,
   stroke,
   sheen,
   pattern,
+  ink = "#FFFFFF",
 }: {
   fill: string;
   stroke: string;
+  /** Colour of the faint crown ornament on the plain plate (theme text colour). */
+  ink?: string;
   /** Colour of the soft top-left sheen (Figma: #F0EEE9 @55% → 0). */
   sheen: string;
   /** Background from the catalogue (null = the plain neutral plate). */
@@ -81,6 +130,11 @@ export default function ProfileCover({
               height={COVER_HEIGHT + 2}
               preserveAspectRatio="xMinYMin slice"
             />
+          </G>
+        )}
+        {!pat && (
+          <G clipPath={`url(#profileCoverClip${uid})`}>
+            <NeutralCrowns w={svgW} h={COVER_HEIGHT + 2} ink={ink} />
           </G>
         )}
         {!pat && <Path d={d} fill={`url(#profileCoverGrad${uid})`} />}
