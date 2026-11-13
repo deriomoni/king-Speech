@@ -289,10 +289,8 @@ export default function ShowTimeScreen() {
                         width: tileSize,
                         height: tileSize,
                         backgroundColor: bgMid,
-                        borderColor: sel ? c.ctaStroke : stroke,
-                        borderWidth: sel ? 4 : 2,
-                        paddingLeft: sel ? 8 : 9,
-                        paddingBottom: sel ? 10 : 12,
+                        paddingLeft: 11,
+                        paddingBottom: 12,
                         opacity: pressed ? 0.85 : 1,
                       },
                     ]}
@@ -306,6 +304,8 @@ export default function ShowTimeScreen() {
                     <Text style={[st.tileText, { color: "#FFFFFF" }]} numberOfLines={3}>
                       {speechThemes[k].title}
                     </Text>
+                    {/* The photo fills the whole square; the selection ring sits on top. */}
+                    {sel && <View pointerEvents="none" style={[st.tileRing, { borderColor: c.accent }]} />}
                   </Pressable>
                 );
               })}
@@ -425,6 +425,7 @@ const st = StyleSheet.create({
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 18 },
   tile: { borderRadius: 22, overflow: "hidden", justifyContent: "flex-end" },
   tilePhoto: { position: "absolute", left: 0, top: 0, right: 0, bottom: 0, width: "100%", height: "100%" },
+  tileRing: { position: "absolute", left: 0, top: 0, right: 0, bottom: 0, borderRadius: 22, borderWidth: 4 },
   tileShade: { position: "absolute", left: 0, right: 0, bottom: 0, height: "60%" },
   tileText: { fontSize: 12, lineHeight: 13, fontFamily: "Geologica_800ExtraBold" },
   empty: { fontSize: 13, fontFamily: "Geologica_600SemiBold", marginTop: 24, textAlign: "center" },
