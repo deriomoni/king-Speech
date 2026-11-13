@@ -49,8 +49,10 @@ export function EdgeScale({
   style,
   minOpacity = EDGE_MIN_OPACITY,
   minScale = EDGE_MIN_SCALE,
+  onLayout,
   children,
 }: {
+  onLayout?: (e: any) => void;
   entering?: any;
   style?: StyleProp<ViewStyle>;
   minOpacity?: number;
@@ -97,7 +99,7 @@ export function EdgeScale({
   });
 
   return (
-    <Animated.View ref={ref} style={[style, anim]}>
+    <Animated.View ref={ref} style={[style, anim]} onLayout={onLayout}>
       {entering ? <Animated.View entering={entering}>{children}</Animated.View> : children}
     </Animated.View>
   );

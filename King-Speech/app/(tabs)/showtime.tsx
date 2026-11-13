@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import OverscrollFill from "@/components/OverscrollFill";
+import { EdgeScale, EdgeScaleProvider, useEdgeScroll } from "@/components/EdgeScale";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
@@ -67,6 +68,7 @@ export default function ShowTimeScreen() {
 
   const topPad = Platform.OS === "web" ? 54 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
+  const { scrollY: edgeScrollY, onScroll: onEdgeScroll } = useEdgeScroll();
 
   const speechThemes = getSpeechThemes(lang);
   const ALL_KEYS = useMemo(() => Object.keys(speechThemes), [speechThemes]);
@@ -135,9 +137,12 @@ export default function ShowTimeScreen() {
         : "1-2 мин выступления";
 
   return (
+    <EdgeScaleProvider scrollY={edgeScrollY} topEdge={topPad + 8} bottomEdge={bottomPad + 84}>
     <View style={[st.container, { backgroundColor: c.backingTop }]}>
-      <ScrollView
-        ref={scrollRef}
+      <Animated.ScrollView
+        ref={scrollRef as any}
+        onScroll={onEdgeScroll}
+        scrollEventThrottle={16}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={st.scrollOuter}
         showsVerticalScrollIndicator={false}
@@ -155,7 +160,7 @@ export default function ShowTimeScreen() {
           />
         <View style={[st.scroll, { paddingTop: topPad + 5, paddingBottom: 20 }]}>
         {/* Header: logo + search */}
-        <Animated.View entering={FadeIn.duration(400)} style={st.headerRow}>
+        <EdgeScale entering={FadeIn.duration(400)} style={st.headerRow}>
           <ShowTimeLogo width={83} color={isLight ? c.text : c.accent} />
           <View style={[st.search, { backgroundColor: c.cardBorder, borderColor: stroke }]}>
             <TextInput
@@ -172,21 +177,24 @@ export default function ShowTimeScreen() {
             />
             <SearchIcon color={c.text} />
           </View>
-        </Animated.View>
+        </EdgeScale>
 
+        <EdgeScale>
         <Text style={[st.sectionHeading, { color: c.text }]}>
           {en ? "Trending topics for you" : "Актуальные темы для вас"}
         </Text>
+        </EdgeScale>
 
-        <Animated.View entering={FadeInDown.delay(150).duration(400)} style={st.galleryBleed}>
+        <EdgeScale entering={FadeInDown.delay(150).duration(400)} style={st.galleryBleed}>
           <ThemeCoverGallery
             themes={carouselKeys.map((k) => speechThemes[k])}
             selectedIdx={selectedIdx}
             onSelect={handleCarouselSelect}
           />
-        </Animated.View>
+        </EdgeScale>
 
         {/* Selected theme */}
+        <EdgeScale>
         <View style={st.themeInfo}>
           <View style={st.titleRow}>
             <Text style={[st.themeTitle, { color: c.accentInk }]} numberOfLines={2}>
@@ -203,12 +211,15 @@ export default function ShowTimeScreen() {
             </Text>
           ) : null}
         </View>
+        </EdgeScale>
 
+        <EdgeScale>
         <ShowTimeStartButton onPress={() => openShowTimeStage(theme.levelId)} free={showTimeFreeAvailable} en={en} />
+        </EdgeScale>
 
         {/* Каталог тем */}
+        <EdgeScale onLayout={(e) => (catalogY.current = e.nativeEvent.layout.y)}>
         <View
-          onLayout={(e) => (catalogY.current = e.nativeEvent.layout.y)}
           style={[st.catalog, { backgroundColor: c.card, borderColor: stroke }]}
         >
           <View style={st.catalogHead}>
@@ -315,6 +326,7 @@ export default function ShowTimeScreen() {
             </Pressable>
           )}
         </View>
+        </EdgeScale>
         </View>
         </View>
 
@@ -328,17 +340,20 @@ export default function ShowTimeScreen() {
           />
           {/* Modes · bento (380:1122): «Роли» + «Подсказки» */}
           <View style={st.backingInner}>
+            <EdgeScale>
             <ShowTimeModeTiles
               mode={isLight ? "light" : "dark"}
               en={en}
               onRoles={() => router.push("/roles")}
               onHints={() => router.push("/speaker-tips")}
             />
+            </EdgeScale>
           </View>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
     </View>
+    </EdgeScaleProvider>
   );
 }
 

@@ -13,6 +13,7 @@ import {
   TextInput,
 } from "react-native";
 import OverscrollFill from "@/components/OverscrollFill";
+import { EdgeScale, EdgeScaleProvider, useEdgeScroll } from "@/components/EdgeScale";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -341,6 +342,7 @@ export default function ProfileScreen() {
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
+  const { scrollY: edgeScrollY, onScroll: onEdgeScroll } = useEdgeScroll();
 
   // The module the player is currently in = the module of the first still-
   // available level; if everything is done, the highest module they reached.
@@ -376,11 +378,14 @@ export default function ProfileScreen() {
   );
 
   return (
+    <EdgeScaleProvider scrollY={edgeScrollY} topEdge={topPad + 8} bottomEdge={bottomPad + 84}>
     <View style={[styles.container, { backgroundColor: theme.backingTop }]}>
-      <ScrollView
+      <Animated.ScrollView
         contentContainerStyle={styles.scrollOuter}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
+        onScroll={onEdgeScroll}
+        scrollEventThrottle={16}
       >
         <OverscrollFill top={bgColor ?? theme.bg} bottom={theme.backingBottom} />
         {/* Top plate (Figma "Top panel" 394:1200): rounded bottom, hairline stroke. */}
@@ -395,7 +400,7 @@ export default function ProfileScreen() {
           ]}
         >
           {/* Header — cover banner, avatar sitting in its notch, name */}
-          <Animated.View entering={FadeInDown.delay(40).duration(400)} style={styles.header}>
+          <EdgeScale entering={FadeInDown.delay(40).duration(400)} style={styles.header}>
             <ProfileCover fill={theme.card} stroke={strokeShape(theme)} sheen="#F0EEE9" />
 
             <Pressable
@@ -441,10 +446,10 @@ export default function ProfileScreen() {
             <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>
               {name || (t("profile") || "Profile")}
             </Text>
-          </Animated.View>
+          </EdgeScale>
 
           {/* Stats — Ранг · Модуль · Монеты */}
-          <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.statsRow}>
+          <EdgeScale entering={FadeInDown.delay(100).duration(400)} style={styles.statsRow}>
             <Stat
               theme={theme}
               value={`${currentRank}`}
@@ -463,11 +468,11 @@ export default function ProfileScreen() {
               label={en ? "Coins" : "Монеты"}
               right={<CoinIcon size={22} color={theme.text} />}
             />
-          </Animated.View>
+          </EdgeScale>
 
-          <Animated.View entering={FadeInDown.delay(160).duration(400)} style={styles.streak}>
+          <EdgeScale entering={FadeInDown.delay(160).duration(400)} style={styles.streak}>
             <StreakCard theme={theme} activityDates={activityDates} lang={lang} />
-          </Animated.View>
+          </EdgeScale>
         </View>
 
         {/* Backing (Figma 402:1301): vertical gradient behind the tile list. */}
@@ -479,7 +484,7 @@ export default function ProfileScreen() {
             pointerEvents="none"
           />
 
-          <Animated.View entering={FadeInDown.delay(220).duration(400)}>
+          <EdgeScale entering={FadeInDown.delay(220).duration(400)}>
             <GlossTile
               mode={mode}
               idSuffix="diary"
@@ -497,9 +502,9 @@ export default function ProfileScreen() {
               art={art(themedSvg(CASSETTE, mode), 207, 15, 129, 82)}
               onPress={() => router.push("/diary")}
             />
-          </Animated.View>
+          </EdgeScale>
 
-          <Animated.View
+          <EdgeScale
             entering={FadeInDown.delay(280).duration(400)}
             style={[styles.tilesRow, { marginTop: 16 }]}
           >
@@ -541,9 +546,9 @@ export default function ProfileScreen() {
                 // TODO(design): awards / achievements screen doesn't exist yet.
               }}
             />
-          </Animated.View>
+          </EdgeScale>
 
-          <Animated.View entering={FadeInDown.delay(340).duration(400)} style={{ marginTop: 14 }}>
+          <EdgeScale entering={FadeInDown.delay(340).duration(400)} style={{ marginTop: 14 }}>
             <GlossTile
               mode={mode}
               idSuffix="library"
@@ -561,9 +566,9 @@ export default function ProfileScreen() {
               art={art(themedSvg(LIBRARY, mode), 187.5, 12, 155, 91)}
               onPress={() => router.push("/library")}
             />
-          </Animated.View>
+          </EdgeScale>
 
-          <Animated.View entering={FadeInDown.delay(400).duration(400)} style={{ marginTop: 14 }}>
+          <EdgeScale entering={FadeInDown.delay(400).duration(400)} style={{ marginTop: 14 }}>
             <GlossTile
               mode={mode}
               idSuffix="coins"
@@ -581,9 +586,9 @@ export default function ProfileScreen() {
               art={art(themedSvg(COINS, mode), 218, 10, 120, 73)}
               onPress={() => router.push("/coins")}
             />
-          </Animated.View>
+          </EdgeScale>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* "+" menu — Figma 130:3 glass popover */}
       <ProfileMenuPopover
@@ -700,6 +705,7 @@ export default function ProfileScreen() {
         </Pressable>
       </Modal>
     </View>
+    </EdgeScaleProvider>
   );
 }
 
