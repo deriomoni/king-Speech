@@ -99,8 +99,17 @@ export function EdgeScale({
   });
 
   return (
-    <Animated.View ref={ref} style={[style, anim]} onLayout={onLayout}>
-      {entering ? <Animated.View entering={entering}>{children}</Animated.View> : children}
+    // The layout style (row direction, gaps, margins, flex) belongs to the view
+    // that directly holds the children; the outer view only carries the
+    // scroll-driven transform, so wrapping never changes the layout.
+    <Animated.View ref={ref} style={anim} onLayout={onLayout}>
+      {entering ? (
+        <Animated.View entering={entering} style={style}>
+          {children}
+        </Animated.View>
+      ) : (
+        <Animated.View style={style}>{children}</Animated.View>
+      )}
     </Animated.View>
   );
 }
