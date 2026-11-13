@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
-import Svg, { SvgXml } from "react-native-svg";
+import { SvgXml } from "react-native-svg";
 import { PressScale } from "@/components/settings/SettingsParts";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "@/lib/haptics";
@@ -33,7 +33,7 @@ import { storage as fbStorage, auth as fbAuth, firebaseConfigured } from "@/lib/
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme, type Theme } from "@/context/ThemeContext";
 import ProfileCover, { COVER_HEIGHT } from "@/components/profile/ProfileCover";
-import { COVER_PATTERNS, CoverPatternArt } from "@/components/profile/coverPatterns";
+import { COVER_PATTERNS, COVER_ART_RATIO } from "@/components/profile/coverPatterns";
 import StreakCard from "@/components/profile/StreakCard";
 import GlossTile from "@/components/profile/GlossTile";
 import ProfileMenuPopover, { type MenuAnchor, type MenuOption } from "@/components/profile/ProfileMenuPopover";
@@ -675,6 +675,7 @@ export default function ProfileScreen() {
             <Text style={[styles.sheetTitle, { color: theme.text }]}>
               {en ? "Plate background" : "Фон таблички"}
             </Text>
+            <ScrollView style={{ maxHeight: 520 }} showsVerticalScrollIndicator={false}>
             <View style={styles.coverGrid}>
               {[null, ...COVER_PATTERNS].map((p) => {
                 const id = p?.id ?? null;
@@ -686,17 +687,13 @@ export default function ProfileScreen() {
                       style={[
                         styles.coverThumb,
                         {
-                          backgroundColor: p ? p.bg : theme.bg,
-                          borderColor: selected ? theme.text : strokeShape(theme),
-                          borderWidth: selected ? 3 : 1.5,
+                          backgroundColor: p ? "transparent" : theme.bg,
+                          borderColor: selected ? theme.text : p ? "transparent" : strokeShape(theme),
+                          borderWidth: selected ? 2.5 : 1.5,
                         },
                       ]}
                     >
-                      {p && (
-                        <Svg width="100%" height="100%" viewBox="0 0 180 76" preserveAspectRatio="xMidYMid slice">
-                          <CoverPatternArt id={p.id} w={180} h={76} uid={"thumb" + p.id} />
-                        </Svg>
-                      )}
+                      {p && <Image source={p.image} style={styles.coverThumbImg} resizeMode="contain" />}
                       {selected && (
                         <View style={[styles.coverCheck, { backgroundColor: theme.text }]}>
                           <Ionicons name="checkmark" size={14} color={theme.bg} />
@@ -711,6 +708,7 @@ export default function ProfileScreen() {
                 );
               })}
             </View>
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>
@@ -874,10 +872,12 @@ const styles = StyleSheet.create({
   coverCell: { width: "48%", gap: 6 },
   coverThumb: {
     width: "100%",
-    height: 64,
+    aspectRatio: COVER_ART_RATIO,
     borderRadius: 14,
     overflow: "hidden",
+    padding: 2,
   },
+  coverThumbImg: { width: "100%", height: "100%" },
   coverCheck: {
     position: "absolute",
     top: 6,

@@ -1,7 +1,7 @@
 import React, { useId, useState } from "react";
 import { View, type LayoutChangeEvent } from "react-native";
-import Svg, { ClipPath, Defs, G, LinearGradient, Stop, Path } from "react-native-svg";
-import { CoverPatternArt, coverPatternById } from "./coverPatterns";
+import Svg, { ClipPath, Defs, G, Image as SvgImage, LinearGradient, Stop, Path } from "react-native-svg";
+import { coverPatternById } from "./coverPatterns";
 
 // Figma "Cover photo" (vector 377:1127) — neutral card banner with a circular
 // notch cut around the avatar (bottom-left). Where the notch meets the bottom
@@ -72,10 +72,18 @@ export default function ProfileCover({
         <Path d={d} fill={pat ? pat.bg : fill} />
         {pat && (
           <G clipPath={`url(#profileCoverClip${uid})`}>
-            <CoverPatternArt id={pat.id} w={svgW} h={COVER_HEIGHT + 2} uid={uid} />
+            {/* artwork is the plate itself (356×126); anchor top-left so the notch lines up */}
+            <SvgImage
+              href={pat.image}
+              x={0}
+              y={0}
+              width={svgW}
+              height={COVER_HEIGHT + 2}
+              preserveAspectRatio="xMinYMin slice"
+            />
           </G>
         )}
-        <Path d={d} fill={`url(#profileCoverGrad${uid})`} />
+        {!pat && <Path d={d} fill={`url(#profileCoverGrad${uid})`} />}
         <Path d={d} stroke={stroke} strokeWidth={2} fill="none" />
       </Svg>
     </View>
