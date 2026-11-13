@@ -112,8 +112,8 @@ function BrickSheen() {
     p.value = 0;
     p.value = withRepeat(
       withSequence(
-        withTiming(1, { duration: 1300, easing: Easing.inOut(Easing.quad) }),
-        withDelay(1900, withTiming(0, { duration: 0 })),
+        withTiming(1, { duration: 2400, easing: Easing.inOut(Easing.sin) }),
+        withDelay(1800, withTiming(0, { duration: 0 })),
       ),
       -1,
       false,
@@ -129,14 +129,20 @@ function BrickSheen() {
     const d = (u - 0.36) / 0.42;
     return Math.max(0.15, Math.exp(-d * d));
   };
-  const coreProps = useAnimatedProps(() => {
-    const cx = start + p.value * travel;
-    return { d: sheenPath(cx, SHEEN_W * 0.45, STEP_H, STEP_W), opacity: 0.55 * bright(cx) };
-  });
-  const softProps = useAnimatedProps(() => {
-    const cx = start + p.value * travel;
-    return { d: sheenPath(cx, SHEEN_W + SHEEN_SOFT, STEP_H, STEP_W), opacity: 0.28 * bright(cx) };
-  });
+  // Blur without an SVG filter (filters are costly on device): five stacked
+  // bands, from a narrow bright core to a wide faint halo, add up to a soft
+  // gaussian-like falloff with no hard edges.
+  const layer = (wk: number, a: number) =>
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useAnimatedProps(() => {
+      const cx = start + p.value * travel;
+      return { d: sheenPath(cx, SHEEN_W * wk, STEP_H, STEP_W), opacity: a * bright(cx) };
+    });
+  const l1 = layer(2.4, 0.07);
+  const l2 = layer(1.8, 0.09);
+  const l3 = layer(1.25, 0.12);
+  const l4 = layer(0.8, 0.16);
+  const l5 = layer(0.4, 0.2);
   return (
     <Svg
       pointerEvents="none"
@@ -153,8 +159,9 @@ function BrickSheen() {
           <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0.4} />
         </SvgLinearGradient>
       </Defs>
-      <AnimatedSheenPath animatedProps={softProps} fill="url(#sheenV)" />
-      <AnimatedSheenPath animatedProps={coreProps} fill="url(#sheenV)" />
+      {[l1, l2, l3, l4, l5].map((ap, i) => (
+        <AnimatedSheenPath key={i} animatedProps={ap} fill="url(#sheenV)" />
+      ))}
     </Svg>
   );
 }
