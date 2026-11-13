@@ -4,7 +4,7 @@
 // theme's «Превью темы» right away (showtime-stage starts on it); the free
 // entry / coin payment happens only on the preview's start button. Closing the
 // preview comes back here.
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -29,6 +29,8 @@ import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
 import { PlayTriangleIcon, SearchIcon } from "@/components/showtime/ShowTimeIcons";
 import { openShowTimeStage } from "@/components/showtime/useShowTimeEntry";
 import { showtimeCover } from "@/constants/showtimeCovers";
+import { CoverFlight, previewRect, type CoverRect } from "@/components/showtime/CoverFlight";
+import { markFlightLaunch, subscribeFlightReturn } from "@/components/showtime/coverFlightStore";
 import { THEME_CATEGORIES, categoryOf, type ThemeCategoryId } from "@/components/showtime/themeCategories";
 
 const POPULAR_COUNT = 10;
@@ -89,9 +91,49 @@ export default function ThemeCatalogScreen() {
     else router.replace("/(tabs)/showtime");
   };
 
-  const pick = (key: string) => {
+  // A tapped cover flies into the theme preview; the preview's X flies it back.
+  const coverRefs = useRef<Record<string, View | null>>({});
+  const lastTap = useRef<{ ref: string; radius: number } | null>(null);
+  const [flight, setFlight] = useState<
+    { levelId: string; cover: CoverRect; radius: number; dir: "out" | "back" } | null
+  >(null);
+  const stagePad = Platform.OS === "web" ? 67 : insets.top; // the stage screen's top inset
+  useFocusEffect(
+    React.useCallback(() => {
+      setFlight((f) => (f?.dir === "back" ? f : null));
+    }, []),
+  );
+  const measure = (ref: string, cb: (r: CoverRect) => void) => {
+    const node = coverRefs.current[ref];
+    if (!node) return false;
+    node.measureInWindow((x, y, w, h) => cb({ x, y, w, h }));
+    return true;
+  };
+  useEffect(
+    () =>
+      subscribeFlightReturn((origin, levelId) => {
+        const tap = lastTap.current;
+        if (origin !== "catalog" || !tap) return;
+        measure(tap.ref, (cover) => setFlight({ levelId, cover, radius: tap.radius, dir: "back" }));
+      }),
+    [],
+  );
+  const pick = (key: string, ref: string = key, radius = 16) => {
     const t = speechThemes[key];
-    if (t) openShowTimeStage(t.levelId);
+    if (!t || flight) return;
+    lastTap.current = { ref, radius };
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    const ok = measure(ref, (cover) => setFlight({ levelId: t.levelId, cover, radius, dir: "out" }));
+    if (!ok) openShowTimeStage(t.levelId);
+  };
+  const onFlightDone = () => {
+    if (!flight) return;
+    if (flight.dir === "out") {
+      markFlightLaunch("catalog", flight.levelId);
+      openShowTimeStage(flight.levelId);
+    } else {
+      setFlight(null);
+    }
   };
 
   return (
@@ -162,7 +204,13 @@ export default function ThemeCatalogScreen() {
         {/* «Тема недели» */}
         {featured && featuredKey && !q && (
           <Animated.View entering={FadeInDown.delay(80).duration(400)}>
-            <Pressable onPress={() => pick(featuredKey)} style={s.featured}>
+            <Pressable
+              ref={(n) => {
+                coverRefs.current["featured"] = n as unknown as View | null;
+              }}
+              onPress={() => pick(featuredKey, "featured", 24)}
+              style={s.featured}
+            >
               <Image source={showtimeCover(featuredKey)} style={s.photo} resizeMode="cover" />
               <LinearGradient
                 colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.6)"]}
@@ -214,7 +262,13 @@ export default function ThemeCatalogScreen() {
                       { width: cardW, backgroundColor: c.card, borderColor: stroke, opacity: pressed ? 0.85 : 1 },
                     ]}
                   >
-                    <View style={s.cover}>
+                    <View
+                      ref={(n) => {
+                        coverRefs.current[k] = n;
+                      }}
+                      collapsable={false}
+                      style={s.cover}
+                    >
                       <Image source={showtimeCover(k)} style={s.photo} resizeMode="cover" />
                     </View>
                     <Text style={[s.cardTitle, { color: c.text }]} numberOfLines={2}>
@@ -228,6 +282,19 @@ export default function ThemeCatalogScreen() {
           </View>
         )}
       </ScrollView>
+      {flight && (
+        <CoverFlight
+          key={flight.levelId + flight.dir}
+          source={showtimeCover(flight.levelId)}
+          cover={flight.cover}
+          coverRadius={flight.radius}
+          preview={previewRect(winW, stagePad)}
+          direction={flight.dir}
+          delay={flight.dir === "back" ? 320 : 0}
+          bg={c.bg}
+          onDone={onFlightDone}
+        />
+      )}
     </View>
   );
 }

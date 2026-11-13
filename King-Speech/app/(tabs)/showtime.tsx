@@ -22,7 +22,8 @@ import { getSpeechThemes } from "@/app/showtime-stage";
 import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { ThemeCoverGallery, COVER_CARD, COVER_CY } from "@/components/showtime/ThemeCoverGallery";
-import { CoverFlight, type CoverRect } from "@/components/showtime/CoverFlight";
+import { CoverFlight, previewRect, type CoverRect } from "@/components/showtime/CoverFlight";
+import { markFlightLaunch, subscribeFlightReturn } from "@/components/showtime/coverFlightStore";
 import { showtimeCover } from "@/constants/showtimeCovers";
 import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
 import { OpenCatalogIcon, SearchIcon } from "@/components/showtime/ShowTimeIcons";
@@ -118,32 +119,50 @@ export default function ShowTimeScreen() {
     if (Platform.OS !== "web") Haptics.selectionAsync();
   };
 
-  // «Начать выступление»: the centre cover flies into the theme preview.
+  // «Начать выступление»: the centre cover flies into the theme preview; the
+  // preview's X flies it back.
   const galleryRef = useRef<View>(null);
-  const [flight, setFlight] = useState<{ levelId: string; from: CoverRect } | null>(null);
+  const [flight, setFlight] = useState<{ levelId: string; cover: CoverRect; dir: "out" | "back" } | null>(null);
+  const stagePad = Platform.OS === "web" ? 67 : insets.top; // the stage screen's top inset
   useFocusEffect(
     React.useCallback(() => {
-      setFlight(null);
+      setFlight((f) => (f?.dir === "back" ? f : null));
     }, []),
+  );
+  const measureCover = (cb: (r: CoverRect) => void) => {
+    const node = galleryRef.current;
+    if (!node) return;
+    node.measureInWindow((x, y, w) =>
+      cb({ x: x + w / 2 - COVER_CARD / 2, y: y + COVER_CY - COVER_CARD / 2, w: COVER_CARD, h: COVER_CARD }),
+    );
+  };
+  useEffect(
+    () =>
+      subscribeFlightReturn((origin, levelId) => {
+        if (origin !== "showtime") return;
+        measureCover((cover) => setFlight({ levelId, cover, dir: "back" }));
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
   );
   const startShow = () => {
     if (flight) return;
     const levelId = theme.levelId;
-    const node = galleryRef.current;
-    if (!node) {
+    if (!galleryRef.current) {
       openShowTimeStage(levelId);
       return;
     }
     haptic();
-    node.measureInWindow((x, y, w) => {
-      setFlight({
-        levelId,
-        from: { x: x + w / 2 - COVER_CARD / 2, y: y + COVER_CY - COVER_CARD / 2, w: COVER_CARD, h: COVER_CARD },
-      });
-    });
+    measureCover((cover) => setFlight({ levelId, cover, dir: "out" }));
   };
-  const onFlightArrive = () => {
-    if (flight) openShowTimeStage(flight.levelId);
+  const onFlightDone = () => {
+    if (!flight) return;
+    if (flight.dir === "out") {
+      markFlightLaunch("showtime", flight.levelId);
+      openShowTimeStage(flight.levelId);
+    } else {
+      setFlight(null);
+    }
   };
 
   const handleCarouselSelect = (idx: number) => {
@@ -396,11 +415,15 @@ export default function ShowTimeScreen() {
 
       {flight && (
         <CoverFlight
-          key={flight.levelId}
+          key={flight.levelId + flight.dir}
           source={showtimeCover(flight.levelId)}
-          from={flight.from}
+          cover={flight.cover}
+          coverRadius={16 * 1.45}
+          preview={previewRect(winW, stagePad)}
+          direction={flight.dir}
+          delay={flight.dir === "back" ? 320 : 0}
           bg={c.bg}
-          onArrive={onFlightArrive}
+          onDone={onFlightDone}
         />
       )}
     </View>

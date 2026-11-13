@@ -24,6 +24,7 @@ import Animated, {
   cancelAnimation,
   runOnJS,
   FadeIn,
+  FadeInDown,
   FadeOut,
   Easing,
 } from "react-native-reanimated";
@@ -50,6 +51,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { categoryOf, THEME_CATEGORIES } from "@/components/showtime/themeCategories";
 import { playCircleXml } from "@/assets/figma/showtime-stage/svgs";
 import { showtimeCover, showtimeCoverCredit } from "@/constants/showtimeCovers";
+import { clearFlightLaunch, isFlightLanding, requestFlightReturn } from "@/components/showtime/coverFlightStore";
 
 // Audience halls (first-person, speaker POV). Used as the variable stage
 // backdrop — the speech text sits on a white sheet at the bottom that blurs up
@@ -4797,6 +4799,11 @@ export default function ShowtimeStageScreen() {
   const { theme: ui, themeMode } = useTheme();
   const isDarkUi = themeMode === "dark";
 
+  // Opened by a cover flight: the photo is already on screen (no fade-in), and
+  // the other blocks come in once the preview has faded up.
+  const [flightLanding] = useState(() => isFlightLanding(levelId));
+  const pvIn = (i: number) => FadeInDown.delay((flightLanding ? 260 : 120) + i * 70).duration(420);
+
   // Theme preview (Figma 310:4346) facts: category, length, difficulty.
   const preview = useMemo(() => {
     const en = lang === "en";
@@ -5128,6 +5135,7 @@ export default function ShowtimeStageScreen() {
   };
 
   const handleStart = async () => {
+    clearFlightLaunch();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     curtainOpacity.value = withTiming(0, { duration: 1000 });
     audienceReveal.value = withTiming(1, { duration: 1000 });
@@ -5337,9 +5345,15 @@ export default function ShowtimeStageScreen() {
             bounces={false}
           >
             {/* The theme's cover photo (same as on its Show Time cover). */}
-            <View style={[s.pvArt, { backgroundColor: isDarkUi ? "#2E2E30" : "#E8E6E1" }]}>
+            <Animated.View
+              entering={flightLanding ? undefined : FadeIn.duration(450)}
+              style={[s.pvArt, { backgroundColor: isDarkUi ? "#2E2E30" : "#E8E6E1" }]}
+            >
               <Image source={showtimeCover(levelId)} style={s.pvPhoto} resizeMode="cover" />
-            </View>
+            </Animated.View>
+
+            {/* The rest comes in one block after another. */}
+            <Animated.View entering={pvIn(0)}>
 
             {preview.category ? (
               <Text style={[s.pvCategory, { color: isDarkUi ? "rgba(240,238,233,0.5)" : "rgba(38,38,40,0.5)" }]}>
@@ -5349,6 +5363,8 @@ export default function ShowtimeStageScreen() {
             <Text style={[s.pvTitle, { color: ui.text }]}>«{theme.title}»</Text>
             <View style={[s.pvDivider, { backgroundColor: isDarkUi ? "rgba(240,238,233,0.1)" : "rgba(38,38,40,0.1)" }]} />
             <Text style={[s.pvMeta, { color: isDarkUi ? "rgba(240,238,233,0.5)" : "rgba(38,38,40,0.5)" }]}>{preview.meta}</Text>
+            </Animated.View>
+            <Animated.View entering={pvIn(1)}>
             {/* TODO(design): themes carry no description yet — a shared brief
                 stands in until the content gets a per-theme one. */}
             <Text style={[s.pvDesc, { color: isDarkUi ? "rgba(240,238,233,0.85)" : "rgba(38,38,40,0.85)" }]}>
@@ -5361,7 +5377,9 @@ export default function ShowtimeStageScreen() {
                 {t("timerLabel")}: {theme.timerSeconds} {t("sec")}
               </Text>
             )}
+            </Animated.View>
 
+            <Animated.View entering={pvIn(2)}>
             <Text style={[s.pvKicker, { color: isDarkUi ? "rgba(240,238,233,0.5)" : "rgba(38,38,40,0.5)" }]}>
               {lang === "en" ? "SET YOURSELF UP" : "НАСТРОЙ НА ВЫХОД"}
             </Text>
@@ -5378,10 +5396,12 @@ export default function ShowtimeStageScreen() {
                 </View>
               ))}
             </View>
+            </Animated.View>
 
             <View style={{ flexGrow: 1, minHeight: 36 }} />
 
             {/* Scroll mode — segmented control */}
+            <Animated.View entering={pvIn(3)}>
             <View style={[s.pvSeg, { backgroundColor: ui.card, borderColor: isDarkUi ? "rgba(240,238,233,0.06)" : "rgba(38,38,40,0.08)" }]}>
               {(["manual", "auto"] as const).map((m) => {
                 const active = scrollMode === m;
@@ -5400,7 +5420,9 @@ export default function ShowtimeStageScreen() {
                 );
               })}
             </View>
+            </Animated.View>
 
+            <Animated.View entering={pvIn(4)}>
             <Pressable
               onPress={() => (paidEntry ? showTimeEntry.begin(() => void handleStart()) : void handleStart())}
               style={({ pressed }) => [s.pvCta, { backgroundColor: ui.accent, borderColor: ui.ctaStroke, opacity: pressed ? 0.88 : 1 }]}
@@ -5414,6 +5436,7 @@ export default function ShowtimeStageScreen() {
                 </View>
               ) : null}
             </Pressable>
+            </Animated.View>
           </ScrollView>
         </Animated.View>
       )}
@@ -5426,7 +5449,11 @@ export default function ShowtimeStageScreen() {
         onPress={() => {
           if (started && !finished) setShowExitConfirm(true);
           else if (isAuthor) void leaveToAuthor(false);
-          else leaveTo(mode === "trainer" ? "/(tabs)/showtime" : "/(tabs)");
+          else {
+            // From a cover flight: the origin screen flies the photo back.
+            if (!started) requestFlightReturn(levelId);
+            leaveTo(mode === "trainer" ? "/(tabs)/showtime" : "/(tabs)");
+          }
         }}
         hitSlop={12}
         style={({ pressed }) => ({
