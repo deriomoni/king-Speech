@@ -10,6 +10,7 @@ import Animated, {
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
+  type SharedValue,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { useLang } from "@/context/LangContext";
@@ -88,6 +89,62 @@ function ThemeSegment({
   );
 }
 
+// Shrinks a block as it scrolls past the top edge (toward its bottom) or sits
+// under the bottom edge (toward its top). Position-driven only: the bounce at
+// the very top doesn't change anything.
+function EdgeScale({
+  scrollY,
+  viewH,
+  baseY,
+  topEdge,
+  bottomEdge,
+  entering,
+  children,
+}: {
+  scrollY: SharedValue<number>;
+  viewH: SharedValue<number>;
+  baseY: SharedValue<number>;
+  topEdge: number;
+  bottomEdge: number;
+  entering?: any;
+  children: React.ReactNode;
+}) {
+  const y = useSharedValue(-1);
+  const h = useSharedValue(0);
+  const style = useAnimatedStyle(() => {
+    if (viewH.value <= 0 || h.value <= 0 || y.value < 0) return {};
+    const sy = Math.max(0, scrollY.value);
+    const top = baseY.value + y.value - sy; // block top relative to the viewport
+    const bottom = top + h.value;
+    const RANGE = 140;
+    const overTop = topEdge - top;
+    if (overTop > 0) {
+      const k = interpolate(overTop, [0, RANGE], [1, 0.88], Extrapolation.CLAMP);
+      const o = interpolate(overTop, [0, RANGE], [1, 0.35], Extrapolation.CLAMP);
+      return { opacity: o, transform: [{ scale: k }], transformOrigin: "bottom center" } as any;
+    }
+    const overBottom = bottom - (viewH.value - bottomEdge);
+    if (overBottom > 0) {
+      const k = interpolate(overBottom, [0, RANGE], [1, 0.88], Extrapolation.CLAMP);
+      const o = interpolate(overBottom, [0, RANGE], [1, 0.35], Extrapolation.CLAMP);
+      return { opacity: o, transform: [{ scale: k }], transformOrigin: "top center" } as any;
+    }
+    return { opacity: 1, transform: [{ scale: 1 }] } as any;
+  });
+  return (
+    <Animated.View
+      style={style}
+      onLayout={(e) => {
+        // y is relative to the sheet; baseY adds the sheet's offset.
+        y.value = e.nativeEvent.layout.y;
+        h.value = e.nativeEvent.layout.height;
+      }}
+    >
+      {entering ? <Animated.View entering={entering}>{children}</Animated.View> : children}
+    </Animated.View>
+  );
+}
+
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { theme, themeMode, setTheme } = useTheme();
@@ -117,38 +174,38 @@ export default function SettingsScreen() {
     <GoldSwitch value={value} onValueChange={onChange} theme={theme} themeMode={themeMode} />
   );
 
-  // Rubber-band feel on iOS bounce: pulling down squeezes the logo and the
-  // cards up toward the top; pulling up past the end squeezes the cards and
-  // the BekWave footer down toward the bottom.
+  // Scroll-driven: scrolling the page down shrinks the logo toward the top and
+  // fades it; each card / the BekWave footer shrinks as it reaches the top or
+  // bottom edge of the screen. Bounce at the very top (scrollY < 0) changes
+  // nothing, so pulling down leaves everything in place.
   const scrollY = useSharedValue(0);
-  const maxY = useSharedValue(0);
+  const viewH = useSharedValue(0);
+  const sheetY = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler({
     onScroll: (e) => {
       scrollY.value = e.contentOffset.y;
-      maxY.value = Math.max(0, e.contentSize.height - e.layoutMeasurement.height);
+      viewH.value = e.layoutMeasurement.height;
     },
   });
-  const PULL = 160;
   const logoStyle = useAnimatedStyle(() => {
-    const pull = Math.max(0, -scrollY.value);
-    const k = interpolate(pull, [0, PULL], [1, 0.82], Extrapolation.CLAMP);
-    // Bounce drags the content down; lift the logo past that so it slides up
-    // and shrinks toward the top edge.
-    const o = interpolate(pull, [0, PULL], [1, 0.55], Extrapolation.CLAMP);
-    return { opacity: o, transform: [{ translateY: -pull * 1.15 }, { scale: k }], transformOrigin: "top left" } as any;
+    const sy = Math.max(0, scrollY.value);
+    const k = interpolate(sy, [0, 110], [1, 0.7], Extrapolation.CLAMP);
+    const o = interpolate(sy, [0, 110], [1, 0.25], Extrapolation.CLAMP);
+    return { opacity: o, transform: [{ scale: k }], transformOrigin: "top left" } as any;
   });
-  // Pull down: only the cards squeeze toward the top (footer stays put).
-  const cardsTopStyle = useAnimatedStyle(() => {
-    const top = Math.max(0, -scrollY.value);
-    const k = interpolate(top, [0, PULL], [1, 0.96], Extrapolation.CLAMP);
-    return { transform: [{ scale: k }], transformOrigin: "top center" } as any;
-  });
-  // Pull up past the end: cards and the BekWave footer squeeze down together.
-  const bottomGroupStyle = useAnimatedStyle(() => {
-    const bottom = Math.max(0, scrollY.value - maxY.value);
-    const k = interpolate(bottom, [0, PULL], [1, 0.95], Extrapolation.CLAMP);
-    return { transform: [{ scale: k }], transformOrigin: "bottom center" } as any;
-  });
+  const TOP_EDGE = topPad + 8;
+  const BOTTOM_EDGE = bottomPad + 84; // floating tab bar
+  const edge = (node: React.ReactNode) => (
+    <EdgeScale
+      scrollY={scrollY}
+      viewH={viewH}
+      baseY={sheetY}
+      topEdge={TOP_EDGE}
+      bottomEdge={BOTTOM_EDGE}
+    >
+      {node}
+    </EdgeScale>
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bezel }]}>
@@ -167,11 +224,16 @@ export default function SettingsScreen() {
             { backgroundColor: theme.bg, borderColor: theme.panelStroke, paddingTop: topPad + 20 },
           ]}
         >
-          <Animated.View entering={FadeInUp.duration(400)} style={logoStyle}>
-            <ThemedSvg xml={kingSpeechLogoXml} width={159} height={53} fg={theme.text} />
+          <Animated.View entering={FadeInUp.duration(400)}>
+            <Animated.View style={logoStyle}>
+              <ThemedSvg xml={kingSpeechLogoXml} width={159} height={53} fg={theme.text} />
+            </Animated.View>
           </Animated.View>
         </View>
         <View
+          onLayout={(e) => {
+            sheetY.value = e.nativeEvent.layout.y;
+          }}
           style={[
             styles.sheet,
             styles.scroll,
@@ -182,14 +244,12 @@ export default function SettingsScreen() {
             },
           ]}
         >
-          <Animated.View style={bottomGroupStyle}>
-          <Animated.View style={cardsTopStyle}>
-          <Animated.View entering={FadeInDown.duration(400)}>
+          <EdgeScale scrollY={scrollY} viewH={viewH} baseY={sheetY} topEdge={TOP_EDGE} bottomEdge={BOTTOM_EDGE} entering={FadeInDown.duration(400)}>
             <Text style={[styles.pageTitle, { color: theme.text }]}>{t("settings")}</Text>
-          </Animated.View>
+          </EdgeScale>
 
           {/* Account */}
-          <Animated.View entering={FadeInDown.delay(40).duration(400)}>
+          <EdgeScale scrollY={scrollY} viewH={viewH} baseY={sheetY} topEdge={TOP_EDGE} bottomEdge={BOTTOM_EDGE} entering={FadeInDown.delay(40).duration(400)}>
             <SectionLabel theme={theme}>{en ? "Account" : "Аккаунт"}</SectionLabel>
             <Card theme={theme} themeMode={themeMode}>
               <Pressable
@@ -238,10 +298,10 @@ export default function SettingsScreen() {
                 }
               />
             </Card>
-          </Animated.View>
+          </EdgeScale>
 
           {/* Sound & notifications — one grouped card */}
-          <Animated.View entering={FadeInDown.delay(80).duration(400)}>
+          <EdgeScale scrollY={scrollY} viewH={viewH} baseY={sheetY} topEdge={TOP_EDGE} bottomEdge={BOTTOM_EDGE} entering={FadeInDown.delay(80).duration(400)}>
             <SectionLabel theme={theme}>
               {en ? "Sound & notifications" : "Звук и уведомления"}
             </SectionLabel>
@@ -274,10 +334,10 @@ export default function SettingsScreen() {
                 right={sw(settings.dailyReminder, (v) => setSetting("dailyReminder", v))}
               />
             </Card>
-          </Animated.View>
+          </EdgeScale>
 
           {/* Appearance: theme + language in one card */}
-          <Animated.View entering={FadeInDown.delay(120).duration(400)}>
+          <EdgeScale scrollY={scrollY} viewH={viewH} baseY={sheetY} topEdge={TOP_EDGE} bottomEdge={BOTTOM_EDGE} entering={FadeInDown.delay(120).duration(400)}>
             <SectionLabel theme={theme}>{en ? "Appearance" : "Оформление"}</SectionLabel>
             <Card theme={theme} themeMode={themeMode}>
               <ListRow
@@ -331,10 +391,10 @@ export default function SettingsScreen() {
                   />
                 ))}
             </Card>
-          </Animated.View>
+          </EdgeScale>
 
           {/* Support */}
-          <Animated.View entering={FadeInDown.delay(160).duration(400)}>
+          <EdgeScale scrollY={scrollY} viewH={viewH} baseY={sheetY} topEdge={TOP_EDGE} bottomEdge={BOTTOM_EDGE} entering={FadeInDown.delay(160).duration(400)}>
             <SectionLabel theme={theme}>{en ? "Support" : "Поддержка"}</SectionLabel>
             <Card theme={theme} themeMode={themeMode}>
               <ListRow
@@ -364,10 +424,10 @@ export default function SettingsScreen() {
                 }}
               />
             </Card>
-          </Animated.View>
+          </EdgeScale>
 
           {/* Developer */}
-          <Animated.View entering={FadeInDown.delay(200).duration(400)}>
+          <EdgeScale scrollY={scrollY} viewH={viewH} baseY={sheetY} topEdge={TOP_EDGE} bottomEdge={BOTTOM_EDGE} entering={FadeInDown.delay(200).duration(400)}>
             <SectionLabel theme={theme}>{t("devTools")}</SectionLabel>
             <Card theme={theme} themeMode={themeMode}>
               <ListRow
@@ -387,11 +447,11 @@ export default function SettingsScreen() {
                 />
               )}
             </Card>
-          </Animated.View>
+          </EdgeScale>
 
-          </Animated.View>
 
           {/* Credits — quiet footer, outside the cards */}
+          <EdgeScale scrollY={scrollY} viewH={viewH} baseY={sheetY} topEdge={TOP_EDGE} bottomEdge={BOTTOM_EDGE}>
           <View style={styles.credits}>
             <Text style={[styles.creditsLabel, { color: theme.textMuted }]}>
               {en ? "APP CREATED BY" : "ПРИЛОЖЕНИЕ СОЗДАНО"}
@@ -403,7 +463,7 @@ export default function SettingsScreen() {
               {en ? "Version 1.0.0" : "Версия 1.0.0"}
             </Text>
           </View>
-          </Animated.View>
+          </EdgeScale>
         </View>
       </Animated.ScrollView>
     </View>
