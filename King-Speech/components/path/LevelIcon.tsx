@@ -88,12 +88,12 @@ function Glyph({ kind, color, hole }: { kind: Kind; color: string; hole: string 
         </>
       );
     case "warmup":
-      // Outline flame: the outer body takes the brick colour, the stroke and
-      // the inner tongue take the ink colour.
+      // Flame: the toothed outer body is filled with the ink colour; the inner
+      // core is left empty (brick colour) with an ink outline.
       return (
         <>
           <Path
-            fill={hole}
+            fill={color}
             stroke={color}
             strokeWidth={1.78}
             strokeLinecap="round"
@@ -101,7 +101,7 @@ function Glyph({ kind, color, hole }: { kind: Kind; color: string; hole: string 
             d="M10.3901 26.89C15.9784 26.89 19.8901 23.0465 19.8901 17.2813C19.8901 13.2118 16.9843 9.59436 14.9725 7.33349C14.3019 9.59436 12.5137 10.7248 11.5078 8.69001C10.6137 5.63784 11.5078 2.47262 8.15484 0.890015C8.71367 4.95958 6.36661 7.10741 4.35484 9.36828C2.45484 11.4031 0.890137 13.777 0.890137 17.2813C0.890137 23.0465 4.8019 26.89 10.3901 26.89Z"
           />
           <Path
-            fill={color}
+            fill={hole}
             stroke={color}
             strokeWidth={1.78}
             strokeLinecap="round"
