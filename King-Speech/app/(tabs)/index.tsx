@@ -129,20 +129,26 @@ function BrickSheen() {
     const d = (u - 0.36) / 0.42;
     return Math.max(0.15, Math.exp(-d * d));
   };
-  // Blur without an SVG filter (filters are costly on device): five stacked
-  // bands, from a narrow bright core to a wide faint halo, add up to a soft
-  // gaussian-like falloff with no hard edges.
-  const layer = (wk: number, a: number) =>
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useAnimatedProps(() => {
-      const cx = start + p.value * travel;
-      return { d: sheenPath(cx, SHEEN_W * wk, STEP_H, STEP_W), opacity: a * bright(cx) };
-    });
-  const l1 = layer(2.4, 0.07);
-  const l2 = layer(1.8, 0.09);
-  const l3 = layer(1.25, 0.12);
-  const l4 = layer(0.8, 0.16);
-  const l5 = layer(0.4, 0.2);
+  // Soft blur that still follows the slant and the bow: ten nested curved bands
+  // (widest & faintest → narrowest), each a few % white. Their sum forms a
+  // smooth bell-shaped falloff across the band with no visible edges, and every
+  // layer bends with the same curve. No SVG filter (too costly on device).
+  const LAYERS = [2.8, 2.45, 2.1, 1.8, 1.5, 1.22, 0.96, 0.72, 0.5, 0.3];
+  const a0 = useAnimatedProps(() => layerProps(0));
+  const a1 = useAnimatedProps(() => layerProps(1));
+  const a2 = useAnimatedProps(() => layerProps(2));
+  const a3 = useAnimatedProps(() => layerProps(3));
+  const a4 = useAnimatedProps(() => layerProps(4));
+  const a5 = useAnimatedProps(() => layerProps(5));
+  const a6 = useAnimatedProps(() => layerProps(6));
+  const a7 = useAnimatedProps(() => layerProps(7));
+  const a8 = useAnimatedProps(() => layerProps(8));
+  const a9 = useAnimatedProps(() => layerProps(9));
+  function layerProps(i: number) {
+    "worklet";
+    const cx = start + p.value * travel;
+    return { d: sheenPath(cx, SHEEN_W * LAYERS[i], STEP_H, STEP_W), opacity: 0.05 * bright(cx) };
+  }
   return (
     <Svg
       pointerEvents="none"
@@ -150,17 +156,8 @@ function BrickSheen() {
       height={STEP_H}
       style={{ position: "absolute", top: 0, left: 0 }}
     >
-      <Defs>
-        {/* Vertical falloff: dim at the top, brightest just below the middle,
-            dim again at the bottom — a curved surface catching the light. */}
-        <SvgLinearGradient id="sheenV" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.35} />
-          <Stop offset="0.55" stopColor="#FFFFFF" stopOpacity={1} />
-          <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0.4} />
-        </SvgLinearGradient>
-      </Defs>
-      {[l1, l2, l3, l4, l5].map((ap, i) => (
-        <AnimatedSheenPath key={i} animatedProps={ap} fill="url(#sheenV)" />
+      {[a0, a1, a2, a3, a4, a5, a6, a7, a8, a9].map((ap, i) => (
+        <AnimatedSheenPath key={i} animatedProps={ap} fill="#FFFFFF" />
       ))}
     </Svg>
   );
