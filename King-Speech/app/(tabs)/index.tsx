@@ -80,13 +80,14 @@ function GlowRing({ color, radius }: { color: string; radius: number }) {
   // Soft, breathing halo behind the active tile. Rendered as a filled tile-
   // sized view whose colored shadow bleeds out on all sides — no hard border,
   // just a gentle diffuse glow that pulses in and out.
-  const opacity = useSharedValue(0.5);
+  // Softer than the original (0.5 → 0.95): a gentle light behind the brick.
+  const opacity = useSharedValue(0.28);
   // Pulse only while the Path is on screen — the tab stays mounted under
   // levels and other tabs, and an endless loop there keeps the UI thread busy.
   const focused = useIsFocused();
   useEffect(() => {
     if (!focused) return;
-    opacity.value = withRepeat(withTiming(0.95, { duration: 1500 }), -1, true);
+    opacity.value = withRepeat(withTiming(0.5, { duration: 1800 }), -1, true);
     return () => {
       cancelAnimation(opacity);
     };
@@ -101,7 +102,7 @@ function GlowRing({ color, radius }: { color: string; radius: number }) {
         {
           borderRadius: radius,
           backgroundColor: color,
-          boxShadow: `0px 0px 26px 8px ${color}`,
+          boxShadow: `0px 0px 22px 5px ${color}`,
         },
       ]}
     />
