@@ -15,6 +15,7 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   useAnimatedScrollHandler,
+  useAnimatedProps,
   withTiming,
   withRepeat,
   withDelay,
@@ -24,8 +25,7 @@ import Animated, {
   runOnJS,
   type SharedValue,
 } from "react-native-reanimated";
-import { LinearGradient as ExpoLinearGradient } from "expo-linear-gradient";
-import Svg, { Path } from "react-native-svg";
+import Svg, { Path, Defs, Stop, LinearGradient as SvgLinearGradient } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
 import { router } from "expo-router";
@@ -79,39 +79,83 @@ const PATH_CONNECTOR = {
   light: "rgba(38,38,40,0.08)",
 } as const;
 
-// A vertical (90°) band of light that sweeps across the active brick from left
-// to right, then rests before the next pass. Clipped by the brick face; runs
-// only while the Path is on screen.
-const SHEEN_W = 46;
+// A slanted band of light that sweeps across the active brick from left to
+// right, like a reflection on a rounded (barrel-shaped) surface: near the left
+// end the band bows to the left, near the right end it bows to the right, and
+// it is brightest a third of the way in and fades toward the ends — so the
+// brick reads as volumetric. Clipped by the brick face; runs only while the
+// Path is on screen.
+const SHEEN_W = 34; // band width
+const SHEEN_SOFT = 22; // extra width of the soft halo around the core
+const SHEEN_TILT = 20; // horizontal shift top vs bottom (slant)
+const SHEEN_BOW = 13; // max bow at the ends
+const AnimatedSheenPath = Animated.createAnimatedComponent(Path);
+
+function sheenPath(cx: number, w: number, h: number, W: number) {
+  "worklet";
+  const rel = Math.max(-1, Math.min(1, (cx - W / 2) / (W / 2))); // -1 left … 1 right
+  const bow = rel * SHEEN_BOW * 2; // quad control offset (curve reaches ~half)
+  const t = SHEEN_TILT / 2;
+  const l = cx - w / 2;
+  const r = cx + w / 2;
+  return (
+    `M ${l + t} 0 Q ${l + bow} ${h / 2} ${l - t} ${h} ` +
+    `L ${r - t} ${h} Q ${r + bow} ${h / 2} ${r + t} 0 Z`
+  );
+}
+
 function BrickSheen() {
-  const x = useSharedValue(-SHEEN_W);
+  const p = useSharedValue(0); // 0 → 1 across the brick
   const focused = useIsFocused();
   useEffect(() => {
     if (!focused) return;
-    x.value = -SHEEN_W;
-    x.value = withRepeat(
+    p.value = 0;
+    p.value = withRepeat(
       withSequence(
-        withTiming(STEP_W + SHEEN_W, { duration: 1100, easing: Easing.inOut(Easing.quad) }),
-        withDelay(1900, withTiming(-SHEEN_W, { duration: 0 })),
+        withTiming(1, { duration: 1300, easing: Easing.inOut(Easing.quad) }),
+        withDelay(1900, withTiming(0, { duration: 0 })),
       ),
       -1,
       false,
     );
-    return () => cancelAnimation(x);
+    return () => cancelAnimation(p);
   }, [focused]);
-  const s = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
+  const travel = STEP_W + SHEEN_W + SHEEN_SOFT * 2 + SHEEN_TILT;
+  const start = -(SHEEN_W / 2 + SHEEN_SOFT + SHEEN_TILT);
+  // Brightness: peaks a third of the way in, dims toward both ends.
+  const bright = (cx: number) => {
+    "worklet";
+    const u = cx / STEP_W;
+    const d = (u - 0.36) / 0.42;
+    return Math.max(0.15, Math.exp(-d * d));
+  };
+  const coreProps = useAnimatedProps(() => {
+    const cx = start + p.value * travel;
+    return { d: sheenPath(cx, SHEEN_W * 0.45, STEP_H, STEP_W), opacity: 0.55 * bright(cx) };
+  });
+  const softProps = useAnimatedProps(() => {
+    const cx = start + p.value * travel;
+    return { d: sheenPath(cx, SHEEN_W + SHEEN_SOFT, STEP_H, STEP_W), opacity: 0.28 * bright(cx) };
+  });
   return (
-    <Animated.View
+    <Svg
       pointerEvents="none"
-      style={[{ position: "absolute", top: 0, bottom: 0, left: 0, width: SHEEN_W }, s]}
+      width={STEP_W}
+      height={STEP_H}
+      style={{ position: "absolute", top: 0, left: 0 }}
     >
-      <ExpoLinearGradient
-        colors={["rgba(255,255,255,0)", "rgba(255,255,255,0.38)", "rgba(255,255,255,0)"]}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
-        style={{ flex: 1 }}
-      />
-    </Animated.View>
+      <Defs>
+        {/* Vertical falloff: dim at the top, brightest just below the middle,
+            dim again at the bottom — a curved surface catching the light. */}
+        <SvgLinearGradient id="sheenV" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.35} />
+          <Stop offset="0.55" stopColor="#FFFFFF" stopOpacity={1} />
+          <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0.4} />
+        </SvgLinearGradient>
+      </Defs>
+      <AnimatedSheenPath animatedProps={softProps} fill="url(#sheenV)" />
+      <AnimatedSheenPath animatedProps={coreProps} fill="url(#sheenV)" />
+    </Svg>
   );
 }
 
