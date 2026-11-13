@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from "react-native";
 import OverscrollFill from "@/components/OverscrollFill";
+import { EdgeScale, EdgeScaleProvider, useEdgeScroll } from "@/components/EdgeScale";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   FadeInDown,
@@ -89,62 +90,6 @@ function ThemeSegment({
   );
 }
 
-// Shrinks a block as it scrolls past the top edge (toward its bottom) or sits
-// under the bottom edge (toward its top). Position-driven only: the bounce at
-// the very top doesn't change anything.
-function EdgeScale({
-  scrollY,
-  viewH,
-  baseY,
-  topEdge,
-  bottomEdge,
-  entering,
-  children,
-}: {
-  scrollY: SharedValue<number>;
-  viewH: SharedValue<number>;
-  baseY: SharedValue<number>;
-  topEdge: number;
-  bottomEdge: number;
-  entering?: any;
-  children: React.ReactNode;
-}) {
-  const y = useSharedValue(-1);
-  const h = useSharedValue(0);
-  const style = useAnimatedStyle(() => {
-    if (viewH.value <= 0 || h.value <= 0 || y.value < 0) return {};
-    const sy = Math.max(0, scrollY.value);
-    const top = baseY.value + y.value - sy; // block top relative to the viewport
-    const bottom = top + h.value;
-    const RANGE = 140;
-    const overTop = topEdge - top;
-    if (overTop > 0) {
-      const k = interpolate(overTop, [0, RANGE], [1, 0.88], Extrapolation.CLAMP);
-      const o = interpolate(overTop, [0, RANGE], [1, 0.35], Extrapolation.CLAMP);
-      return { opacity: o, transform: [{ scale: k }], transformOrigin: "bottom center" } as any;
-    }
-    const overBottom = bottom - (viewH.value - bottomEdge);
-    if (overBottom > 0) {
-      const k = interpolate(overBottom, [0, RANGE], [1, 0.88], Extrapolation.CLAMP);
-      const o = interpolate(overBottom, [0, RANGE], [1, 0.35], Extrapolation.CLAMP);
-      return { opacity: o, transform: [{ scale: k }], transformOrigin: "top center" } as any;
-    }
-    return { opacity: 1, transform: [{ scale: 1 }] } as any;
-  });
-  return (
-    <Animated.View
-      style={style}
-      onLayout={(e) => {
-        // y is relative to the sheet; baseY adds the sheet's offset.
-        y.value = e.nativeEvent.layout.y;
-        h.value = e.nativeEvent.layout.height;
-      }}
-    >
-      {entering ? <Animated.View entering={entering}>{children}</Animated.View> : children}
-    </Animated.View>
-  );
-}
-
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { theme, themeMode, setTheme } = useTheme();
@@ -174,40 +119,12 @@ export default function SettingsScreen() {
     <GoldSwitch value={value} onValueChange={onChange} theme={theme} themeMode={themeMode} />
   );
 
-  // Scroll-driven: scrolling the page down shrinks the logo toward the top and
-  // fades it; each card / the BekWave footer shrinks as it reaches the top or
-  // bottom edge of the screen. Bounce at the very top (scrollY < 0) changes
-  // nothing, so pulling down leaves everything in place.
-  const scrollY = useSharedValue(0);
-  const viewH = useSharedValue(0);
-  const sheetY = useSharedValue(0);
-  const onScroll = useAnimatedScrollHandler({
-    onScroll: (e) => {
-      scrollY.value = e.contentOffset.y;
-      viewH.value = e.layoutMeasurement.height;
-    },
-  });
-  const logoStyle = useAnimatedStyle(() => {
-    const sy = Math.max(0, scrollY.value);
-    const k = interpolate(sy, [0, 110], [1, 0.7], Extrapolation.CLAMP);
-    const o = interpolate(sy, [0, 110], [1, 0.25], Extrapolation.CLAMP);
-    return { opacity: o, transform: [{ scale: k }], transformOrigin: "top left" } as any;
-  });
+  const { scrollY, onScroll } = useEdgeScroll();
   const TOP_EDGE = topPad + 8;
   const BOTTOM_EDGE = bottomPad + 84; // floating tab bar
-  const edge = (node: React.ReactNode) => (
-    <EdgeScale
-      scrollY={scrollY}
-      viewH={viewH}
-      baseY={sheetY}
-      topEdge={TOP_EDGE}
-      bottomEdge={BOTTOM_EDGE}
-    >
-      {node}
-    </EdgeScale>
-  );
 
   return (
+    <EdgeScaleProvider scrollY={scrollY} topEdge={TOP_EDGE} bottomEdge={BOTTOM_EDGE}>
     <View style={[styles.container, { backgroundColor: theme.bezel }]}>
       <Animated.ScrollView
         contentContainerStyle={styles.scrollOuter}
@@ -224,16 +141,11 @@ export default function SettingsScreen() {
             { backgroundColor: theme.bg, borderColor: theme.panelStroke, paddingTop: topPad + 20 },
           ]}
         >
-          <Animated.View entering={FadeInUp.duration(400)}>
-            <Animated.View style={logoStyle}>
-              <ThemedSvg xml={kingSpeechLogoXml} width={159} height={53} fg={theme.text} />
-            </Animated.View>
-          </Animated.View>
+          <EdgeScale entering={FadeInUp.duration(400)} minOpacity={0.8} minScale={0.86}>
+            <ThemedSvg xml={kingSpeechLogoXml} width={159} height={53} fg={theme.text} />
+          </EdgeScale>
         </View>
         <View
-          onLayout={(e) => {
-            sheetY.value = e.nativeEvent.layout.y;
-          }}
           style={[
             styles.sheet,
             styles.scroll,
@@ -244,12 +156,8 @@ export default function SettingsScreen() {
             },
           ]}
         >
-          <EdgeScale scrollY={scrollY} viewH={viewH} baseY={sheetY} topEdge={TOP_EDGE} bottomEdge={BOTTOM_EDGE} entering={FadeInDown.duration(400)}>
+          <EdgeScale entering={FadeInDown.duration(400)}>
             <Text style={[styles.pageTitle, { color: theme.text }]}>{t("settings")}</Text>
-          </EdgeScale>
-
-          {/* Account */}
-          <EdgeScale scrollY={scrollY} viewH={viewH} baseY={sheetY} topEdge={TOP_EDGE} bottomEdge={BOTTOM_EDGE} entering={FadeInDown.delay(40).duration(400)}>
             <SectionLabel theme={theme}>{en ? "Account" : "Аккаунт"}</SectionLabel>
             <Card theme={theme} themeMode={themeMode}>
               <Pressable
@@ -301,7 +209,7 @@ export default function SettingsScreen() {
           </EdgeScale>
 
           {/* Sound & notifications — one grouped card */}
-          <EdgeScale scrollY={scrollY} viewH={viewH} baseY={sheetY} topEdge={TOP_EDGE} bottomEdge={BOTTOM_EDGE} entering={FadeInDown.delay(80).duration(400)}>
+          <EdgeScale entering={FadeInDown.delay(80).duration(400)}>
             <SectionLabel theme={theme}>
               {en ? "Sound & notifications" : "Звук и уведомления"}
             </SectionLabel>
@@ -337,7 +245,7 @@ export default function SettingsScreen() {
           </EdgeScale>
 
           {/* Appearance: theme + language in one card */}
-          <EdgeScale scrollY={scrollY} viewH={viewH} baseY={sheetY} topEdge={TOP_EDGE} bottomEdge={BOTTOM_EDGE} entering={FadeInDown.delay(120).duration(400)}>
+          <EdgeScale entering={FadeInDown.delay(120).duration(400)}>
             <SectionLabel theme={theme}>{en ? "Appearance" : "Оформление"}</SectionLabel>
             <Card theme={theme} themeMode={themeMode}>
               <ListRow
@@ -394,7 +302,7 @@ export default function SettingsScreen() {
           </EdgeScale>
 
           {/* Support */}
-          <EdgeScale scrollY={scrollY} viewH={viewH} baseY={sheetY} topEdge={TOP_EDGE} bottomEdge={BOTTOM_EDGE} entering={FadeInDown.delay(160).duration(400)}>
+          <EdgeScale entering={FadeInDown.delay(160).duration(400)}>
             <SectionLabel theme={theme}>{en ? "Support" : "Поддержка"}</SectionLabel>
             <Card theme={theme} themeMode={themeMode}>
               <ListRow
@@ -427,7 +335,7 @@ export default function SettingsScreen() {
           </EdgeScale>
 
           {/* Developer */}
-          <EdgeScale scrollY={scrollY} viewH={viewH} baseY={sheetY} topEdge={TOP_EDGE} bottomEdge={BOTTOM_EDGE} entering={FadeInDown.delay(200).duration(400)}>
+          <EdgeScale entering={FadeInDown.delay(200).duration(400)}>
             <SectionLabel theme={theme}>{t("devTools")}</SectionLabel>
             <Card theme={theme} themeMode={themeMode}>
               <ListRow
@@ -451,7 +359,7 @@ export default function SettingsScreen() {
 
 
           {/* Credits — quiet footer, outside the cards */}
-          <EdgeScale scrollY={scrollY} viewH={viewH} baseY={sheetY} topEdge={TOP_EDGE} bottomEdge={BOTTOM_EDGE}>
+          <EdgeScale>
           <View style={styles.credits}>
             <Text style={[styles.creditsLabel, { color: theme.textMuted }]}>
               {en ? "APP CREATED BY" : "ПРИЛОЖЕНИЕ СОЗДАНО"}
@@ -467,6 +375,7 @@ export default function SettingsScreen() {
         </View>
       </Animated.ScrollView>
     </View>
+    </EdgeScaleProvider>
   );
 }
 
