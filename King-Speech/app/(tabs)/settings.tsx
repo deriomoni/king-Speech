@@ -2,7 +2,15 @@ import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from "react-native";
 import OverscrollFill from "@/components/OverscrollFill";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  Extrapolation,
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { useLang } from "@/context/LangContext";
 import { useAuth } from "@/context/AuthContext";
@@ -109,12 +117,47 @@ export default function SettingsScreen() {
     <GoldSwitch value={value} onValueChange={onChange} theme={theme} themeMode={themeMode} />
   );
 
+  // Rubber-band feel on iOS bounce: pulling down squeezes the logo and the
+  // cards up toward the top; pulling up past the end squeezes the cards and
+  // the BekWave footer down toward the bottom.
+  const scrollY = useSharedValue(0);
+  const maxY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      scrollY.value = e.contentOffset.y;
+      maxY.value = Math.max(0, e.contentSize.height - e.layoutMeasurement.height);
+    },
+  });
+  const PULL = 160;
+  const logoStyle = useAnimatedStyle(() => {
+    const pull = Math.max(0, -scrollY.value);
+    const k = interpolate(pull, [0, PULL], [1, 0.82], Extrapolation.CLAMP);
+    return { transform: [{ translateY: pull * 0.35 }, { scale: k }], transformOrigin: "top left" } as any;
+  });
+  const cardsStyle = useAnimatedStyle(() => {
+    const top = Math.max(0, -scrollY.value);
+    const bottom = Math.max(0, scrollY.value - maxY.value);
+    if (bottom > 0) {
+      const k = interpolate(bottom, [0, PULL], [1, 0.95], Extrapolation.CLAMP);
+      return { transform: [{ scale: k }], transformOrigin: "bottom center" } as any;
+    }
+    const k = interpolate(top, [0, PULL], [1, 0.96], Extrapolation.CLAMP);
+    return { transform: [{ scale: k }], transformOrigin: "top center" } as any;
+  });
+  const footerStyle = useAnimatedStyle(() => {
+    const bottom = Math.max(0, scrollY.value - maxY.value);
+    const k = interpolate(bottom, [0, PULL], [1, 0.8], Extrapolation.CLAMP);
+    return { transform: [{ translateY: -bottom * 0.3 }, { scale: k }], transformOrigin: "bottom center" } as any;
+  });
+
   return (
     <View style={[styles.container, { backgroundColor: theme.bezel }]}>
-      <ScrollView
+      <Animated.ScrollView
         contentContainerStyle={styles.scrollOuter}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
+        onScroll={onScroll}
+        scrollEventThrottle={16}
       >
         <OverscrollFill top={theme.bg} bottom={theme.bg} />
         {/* Figma 05b: logo on its own top plate (rounded bottom), bezel band, then the sheet */}
@@ -124,7 +167,7 @@ export default function SettingsScreen() {
             { backgroundColor: theme.bg, borderColor: theme.panelStroke, paddingTop: topPad + 20 },
           ]}
         >
-          <Animated.View entering={FadeInDown.duration(400)}>
+          <Animated.View entering={FadeInUp.duration(400)} style={logoStyle}>
             <ThemedSvg xml={kingSpeechLogoXml} width={159} height={53} fg={theme.text} />
           </Animated.View>
         </View>
@@ -139,6 +182,7 @@ export default function SettingsScreen() {
             },
           ]}
         >
+          <Animated.View style={cardsStyle}>
           <Animated.View entering={FadeInDown.duration(400)}>
             <Text style={[styles.pageTitle, { color: theme.text }]}>{t("settings")}</Text>
           </Animated.View>
@@ -344,8 +388,10 @@ export default function SettingsScreen() {
             </Card>
           </Animated.View>
 
+          </Animated.View>
+
           {/* Credits — quiet footer, outside the cards */}
-          <View style={styles.credits}>
+          <Animated.View style={[styles.credits, footerStyle]}>
             <Text style={[styles.creditsLabel, { color: theme.textMuted }]}>
               {en ? "APP CREATED BY" : "ПРИЛОЖЕНИЕ СОЗДАНО"}
             </Text>
@@ -355,9 +401,9 @@ export default function SettingsScreen() {
             <Text style={[styles.version, { color: theme.textMuted }]}>
               {en ? "Version 1.0.0" : "Версия 1.0.0"}
             </Text>
-          </View>
+          </Animated.View>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 }
