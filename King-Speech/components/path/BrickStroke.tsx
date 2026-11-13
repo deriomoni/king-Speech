@@ -112,12 +112,8 @@ export default function BrickStroke({
               gradientUnits="userSpaceOnUse"
               animatedProps={gradientProps}
             >
-              {/* Bright in both themes: a hot brand-yellow head that fades into
-                  the brick's own (saturated) colour — no white, which vanished
-                  on the light background. */}
-              <Stop offset="0" stopColor="#FFE14D" stopOpacity={1} />
-              <Stop offset="0.45" stopColor="#FFB020" stopOpacity={1} />
-              <Stop offset="1" stopColor={brick} stopOpacity={1} />
+              <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.77} />
+              <Stop offset="1" stopColor={lightenHex(brick, 0.3)} stopOpacity={0.88} />
             </AnimatedLinearGradient>
           </Defs>
         )}
