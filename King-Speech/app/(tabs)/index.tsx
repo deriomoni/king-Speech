@@ -19,6 +19,7 @@ import Animated, {
   withRepeat,
   withDelay,
   withSequence,
+  withSpring,
   Easing,
   cancelAnimation,
   runOnJS,
@@ -362,13 +363,41 @@ function StepBlockBase({
       ? lightenColor(levelColor, 22)
       : "#F2F2F6";
   const gradBot = faceColor;
+  const sideTop = isLocked ? "#C4C4CF" : levelColor;
+  const sideBottom = isLocked ? "#D9E1F0" : mixHex(levelColor, "#BCCDF4", 0.82);
 
-  // Press feedback is a plain opacity dim (see the Pressable style below).
-  // Transform-based press animations (translate/scale) rasterize the tile on
-  // web and leave it blurry/pixelated after the spring settles, so they were
-  // removed.
+  // Volumetric brick (reference: soft rounded 3D block). The face sits on a
+  // DEPTH-tall side wall; pressing pushes the face down into the wall, and on
+  // release the whole block tumbles in 3D and springs back before the level
+  // opens. Locked bricks only wobble ("not yet").
+  // The sink animates `top` (a layout prop) — never a transform — because
+  // transforms rasterize the tile on web and leave it blurry. The 3D tumble
+  // (rotateX / rotateY) is native-only for the same reason.
+  const press = useSharedValue(0);
+  const tiltX = useSharedValue(0);
+  const tiltY = useSharedValue(0);
+  const native = Platform.OS !== "web";
+
+  const faceSinkStyle = useAnimatedStyle(() => ({ top: press.value * DEPTH * 0.8 }));
+  const tumbleStyle = useAnimatedStyle(() =>
+    native
+      ? {
+          transform: [
+            { perspective: 700 },
+            { rotateX: `${tiltX.value}deg` },
+            { rotateY: `${tiltY.value}deg` },
+          ],
+        }
+      : {},
+  );
+
   const handlePressIn = () => {
-    if (isLocked) return;
+    if (isLocked) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      return;
+    }
+    press.value = withTiming(1, { duration: 90, easing: Easing.out(Easing.quad) });
+    if (native) tiltX.value = withTiming(10, { duration: 90 });
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
     } else {
@@ -376,8 +405,38 @@ function StepBlockBase({
     }
   };
 
-  const handlePress = () => {
+  const handlePressOut = () => {
     if (isLocked) return;
+    press.value = withSpring(0, { damping: 9, stiffness: 260 });
+    if (native) {
+      tiltX.value = withSpring(0, { damping: 7, stiffness: 180 });
+      tiltY.value = withSequence(
+        withTiming(item.module % 2 === 0 ? 16 : -16, { duration: 120 }),
+        withSpring(0, { damping: 6, stiffness: 170 }),
+      );
+    }
+  };
+
+  const wobble = () => {
+    if (!native) return;
+    tiltY.value = withSequence(
+      withTiming(-9, { duration: 60 }),
+      withTiming(9, { duration: 90 }),
+      withTiming(-5, { duration: 80 }),
+      withSpring(0, { damping: 8, stiffness: 220 }),
+    );
+  };
+
+  const handlePress = () => {
+    if (isLocked) {
+      wobble();
+      return;
+    }
+    // Let the tumble play before the level screen covers the Path.
+    setTimeout(openLevel, native ? 200 : 0);
+  };
+
+  const openLevel = () => {
     if (item.id.startsWith("showtime")) {
       router.push({
         pathname: "/showtime-stage",
@@ -405,14 +464,24 @@ function StepBlockBase({
       <Pressable
         onPress={handlePress}
         onPressIn={handlePressIn}
-        disabled={isLocked}
+        onPressOut={handlePressOut}
         accessibilityRole="button"
         accessibilityLabel={`${item.title}`}
-        style={({ pressed }) => [
-          styles.stepOuter,
-          pressed && !isLocked && { opacity: 0.82 },
-        ]}
+        accessibilityState={{ disabled: isLocked }}
+        style={styles.stepOuter}
       >
+       <Animated.View style={tumbleStyle}>
+        {/* Side wall: the brick's thickness, fading from the brick colour into a
+            cool light tint like the reference block. */}
+        <ExpoLinearGradient
+          pointerEvents="none"
+          colors={[sideTop, sideTop, sideBottom]}
+          // Only the bottom DEPTH pt peeks out under the face, so the fade has
+          // to start exactly there.
+          locations={[0, (STEP_H - DEPTH) / STEP_H, 1]}
+          style={[styles.stepSide, { borderRadius: shapeR }]}
+        />
+        <Animated.View style={[styles.stepFaceWrap, faceSinkStyle]}>
         <View style={[styles.stepFace, { borderRadius: shapeR }]}>
           {/* Solid color fill — flat, no glass, no gradient. */}
           <View
@@ -473,9 +542,21 @@ function StepBlockBase({
           brick={levelColor}
           variant={isLocked ? "locked" : isAvail && showGlow ? "active" : "completed"}
         />
+        </Animated.View>
+       </Animated.View>
       </Pressable>
     </Animated.View>
   );
+}
+
+function mixHex(a: string, b: string, t: number): string {
+  const pa = parseInt(a.replace("#", "").slice(0, 6), 16);
+  const pb = parseInt(b.replace("#", "").slice(0, 6), 16);
+  const ch = (x: number, y: number) => Math.round(x + (y - x) * t);
+  const r = ch((pa >> 16) & 0xff, (pb >> 16) & 0xff);
+  const g = ch((pa >> 8) & 0xff, (pb >> 8) & 0xff);
+  const bl = ch(pa & 0xff, pb & 0xff);
+  return `#${((1 << 24) | (r << 16) | (g << 8) | bl).toString(16).slice(1)}`;
 }
 
 function lightenColor(hex: string, percent: number): string {
@@ -1201,6 +1282,8 @@ export default function PathScreen() {
 
 const STEP_W = 212;
 const STEP_H = 64;
+// Thickness of the volumetric brick (side wall under the face).
+const DEPTH = 14;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -1258,7 +1341,21 @@ const styles = StyleSheet.create({
   stepOuter: {
     position: "relative",
     width: STEP_W,
-    paddingBottom: 0,
+    height: STEP_H + DEPTH,
+  },
+  stepFaceWrap: {
+    position: "absolute",
+    left: 0,
+    width: STEP_W,
+    height: STEP_H,
+    zIndex: 1,
+  },
+  stepSide: {
+    position: "absolute",
+    left: 0,
+    top: DEPTH,
+    width: STEP_W,
+    height: STEP_H,
   },
   glow: {
     position: "absolute",
