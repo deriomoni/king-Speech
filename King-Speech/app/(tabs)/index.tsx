@@ -261,18 +261,23 @@ function SnakeConnectorBase({
 }) {
   const [w, setW] = useState(0);
   const H = 30;
+  // The thread runs THREAD_OVER pt straight into the bricks above and below
+  // and is drawn under them (bricks sit at zIndex 1). So when a brick is
+  // pressed and its face sinks — or tilts in 3D — the thread is still seen
+  // passing behind it instead of ending in a gap.
+  const O = THREAD_OVER;
   const pos = (s: "left" | "right" | "center") =>
     s === "right" ? w - STEP_W / 2 : s === "left" ? STEP_W / 2 : w / 2;
   const sx = pos(fromSide);
   const ex = pos(toSide);
-  const d = `M ${sx} 0 C ${sx} ${H * 0.55}, ${ex} ${H * 0.45}, ${ex} ${H}`;
+  const d = `M ${sx} 0 L ${sx} ${O} C ${sx} ${O + H * 0.55}, ${ex} ${O + H * 0.45}, ${ex} ${O + H} L ${ex} ${H + 2 * O}`;
   return (
     <View
-      style={{ width: "100%", height: H }}
+      style={{ width: "100%", height: H, zIndex: 0 }}
       onLayout={(e) => setW(e.nativeEvent.layout.width)}
     >
       {w > 0 && (
-        <Svg width={w} height={H}>
+        <Svg width={w} height={H + 2 * O} style={{ position: "absolute", top: -O, left: 0 }}>
           <Path
             d={d}
             stroke={color}
@@ -549,12 +554,13 @@ function StepBlockBase({
   );
 }
 
-// Bottom colour of a brick's wall: a soft partner hue picked per colour family
-// so every module's brick gets its own two-tone fade (reference: orange into a
-// pale periwinkle).
-//   reds / oranges   → lavender-blue      yellows / olives → mint
-//   greens           → sky                blues            → lilac
-//   purples / pinks  → peach
+// Bottom colour of a brick's wall: a soft neighbour hue in the SAME temperature
+// family, so warm bricks fade warm and cool bricks fade cool.
+//   red / coral   → apricot        orange        → butter
+//   yellow / olive→ peach          yellow-green  → butter-lime
+//   green         → aqua           teal / cyan   → sky
+//   blue          → periwinkle     violet        → lavender
+//   magenta / pink→ rose
 function wallTint(hex: string): string {
   const n = parseInt(hex.replace("#", "").slice(0, 6), 16);
   const r = ((n >> 16) & 0xff) / 255, g = ((n >> 8) & 0xff) / 255, b = (n & 0xff) / 255;
@@ -562,8 +568,17 @@ function wallTint(hex: string): string {
   let h = 0;
   if (d) h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
   h = (h * 60 + 360) % 360;
-  const target = h < 45 ? 228 : h < 95 ? 160 : h < 170 ? 200 : h < 255 ? 282 : 22;
-  return hslHex(target, 0.72, 0.84);
+  const target =
+    h < 20 || h >= 345 ? 28 // red / coral → apricot
+    : h < 45 ? 46 // orange → butter
+    : h < 75 ? 30 // yellow / olive → peach
+    : h < 110 ? 58 // yellow-green → butter-lime
+    : h < 160 ? 172 // green → aqua
+    : h < 200 ? 206 // teal / cyan → sky
+    : h < 250 ? 238 // blue → periwinkle
+    : h < 295 ? 262 // violet → lavender
+    : 340; // magenta / pink → rose
+  return hslHex(target, 0.78, 0.84);
 }
 
 function hslHex(h: number, s: number, l: number): string {
@@ -1302,6 +1317,8 @@ const STEP_H = 64;
 const DEPTH = 14;
 // Half of BrickStroke's 4pt centred stroke — how far the outline sits outside the face.
 const STROKE_OUT = 2;
+// How far the snake thread continues behind the bricks it joins.
+const THREAD_OVER = 24;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -1355,6 +1372,7 @@ const styles = StyleSheet.create({
   stepRow: {
     flexDirection: "row",
     marginVertical: 0,
+    zIndex: 1, // above the snake thread, which runs on behind the brick
   },
   stepOuter: {
     position: "relative",
