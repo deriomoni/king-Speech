@@ -50,7 +50,7 @@ import { useTheme } from "@/context/ThemeContext";
 import FinalPortal from "@/components/path/FinalPortal";
 import { getRankTheme } from "@/components/path/rankTheme";
 import LevelIcon, { levelIconKind } from "@/components/path/LevelIcon";
-import BrickStroke from "@/components/path/BrickStroke";
+import BrickStroke, { mixHex, EDGE_DARKEN } from "@/components/path/BrickStroke";
 import DailyTipOverlay, { getDailyTip } from "@/components/DailyTipOverlay";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@/context/AuthContext";
@@ -478,13 +478,26 @@ function StepBlockBase({
        <Animated.View style={tumbleStyle}>
         {/* Side wall: the brick's thickness, fading from the brick colour into a
             cool light tint like the reference block. */}
+        {/* Wall edge: the same gradient darkened like the face outline, laid
+            under the wall so 4pt of it shows on the left and right — opaque,
+            so it never doubles up with the face outline into a seam. */}
+        <ExpoLinearGradient
+          pointerEvents="none"
+          colors={[
+            mixHex(sideTop, "#000000", EDGE_DARKEN),
+            mixHex(sideTop, "#000000", EDGE_DARKEN),
+            mixHex(sideBottom, "#000000", EDGE_DARKEN),
+          ]}
+          locations={[0, (STEP_H - DEPTH) / STEP_H, 1]}
+          style={[styles.stepSideEdge, { borderRadius: shapeR + STROKE_OUT }]}
+        />
         <ExpoLinearGradient
           pointerEvents="none"
           colors={[sideTop, sideTop, sideBottom]}
           // Only the bottom DEPTH pt peeks out under the face, so the fade has
           // to start exactly there.
           locations={[0, (STEP_H - DEPTH) / STEP_H, 1]}
-          style={[styles.stepSide, { borderRadius: shapeR + STROKE_OUT }]}
+          style={[styles.stepSide, { borderRadius: Math.max(0, shapeR - STROKE_OUT) }]}
         />
         <Animated.View style={[styles.stepFaceWrap, faceSinkStyle]}>
         <View style={[styles.stepFace, { borderRadius: shapeR }]}>
@@ -1386,20 +1399,23 @@ const styles = StyleSheet.create({
     height: STEP_H,
     zIndex: 1,
   },
-  // The wall is as wide as the face's outer outline (BrickStroke draws a 4pt
-  // stroke centred on the face edge, so it sticks out STROKE_OUT on each side)
-  // and repeats that 4pt edge on its left and right sides — not on the bottom.
-  // The edge is 9% black over the wall gradient, so at the top it matches the
-  // face outline (brick colour + 9% black) and darkens along with the fade.
-  stepSide: {
+  // The wall edge is as wide as the face's outer outline (BrickStroke draws a
+  // 4pt stroke centred on the face edge, so it sticks out STROKE_OUT on each
+  // side); the wall itself sits inset by the full 4pt on the left and right, so
+  // the edge shows only on the sides — not on the bottom.
+  stepSideEdge: {
     position: "absolute",
     left: -STROKE_OUT,
     top: DEPTH,
     width: STEP_W + STROKE_OUT * 2,
     height: STEP_H,
-    borderLeftWidth: STROKE_OUT * 2,
-    borderRightWidth: STROKE_OUT * 2,
-    borderColor: "rgba(0,0,0,0.09)",
+  },
+  stepSide: {
+    position: "absolute",
+    left: STROKE_OUT,
+    top: DEPTH,
+    width: STEP_W - STROKE_OUT * 2,
+    height: STEP_H,
   },
   glow: {
     position: "absolute",

@@ -33,6 +33,23 @@ export function lightenHex(hex: string, t: number): string {
   return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
 }
 
+// Mix two #rrggbb colours (t = 0 → a, 1 → b). Used to bake what used to be
+// semi-transparent strokes into solid colours: translucent edges darkened
+// twice where the face outline overlaps the brick's side wall, showing seams.
+export function mixHex(a: string, b: string, t: number): string {
+  const pa = parseInt(a.replace("#", "").slice(0, 6), 16);
+  const pb = parseInt(b.replace("#", "").slice(0, 6), 16);
+  const ch = (x: number, y: number) => Math.round(x + (y - x) * t);
+  const r = ch((pa >> 16) & 0xff, (pb >> 16) & 0xff);
+  const g = ch((pa >> 8) & 0xff, (pb >> 8) & 0xff);
+  const bl = ch(pa & 0xff, pb & 0xff);
+  return `#${((1 << 24) | (r << 16) | (g << 8) | bl).toString(16).slice(1)}`;
+}
+
+// Locked face colour (see StepBlock) and its edge: 9% black baked in.
+const LOCKED_FACE = "#E8E8EE";
+export const EDGE_DARKEN = 0.09;
+
 // Gradient line for a CSS-style angle (0° = up, 90° = left→right) across a
 // w×h box, in user-space coordinates.
 function gradientLine(deg: number, w: number, h: number, ox: number, oy: number) {
@@ -112,24 +129,12 @@ export default function BrickStroke({
               gradientUnits="userSpaceOnUse"
               animatedProps={gradientProps}
             >
-              <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.77} />
-              <Stop offset="1" stopColor={lightenHex(brick, 0.3)} stopOpacity={0.88} />
+              {/* Same look as white 77% → lightened brick 88% over the brick,
+                  baked opaque so nothing behind shows through the edge. */}
+              <Stop offset="0" stopColor={mixHex(brick, "#FFFFFF", 0.77)} />
+              <Stop offset="1" stopColor={mixHex(brick, lightenHex(brick, 0.3), 0.88)} />
             </AnimatedLinearGradient>
           </Defs>
-        )}
-        {variant === "completed" && (
-          <Rect
-            x={o}
-            y={o}
-            width={width}
-            height={height}
-            rx={radius}
-            ry={radius}
-            fill="none"
-            strokeWidth={STROKE}
-            strokeLinejoin="round"
-            stroke={brick}
-          />
         )}
         <Rect
           x={o}
@@ -141,8 +146,13 @@ export default function BrickStroke({
           fill="none"
           strokeWidth={STROKE}
           strokeLinejoin="round"
-          stroke={variant === "active" ? `url(#${gid})` : "#000000"}
-          strokeOpacity={variant === "active" ? 1 : 0.09}
+          stroke={
+            variant === "active"
+              ? `url(#${gid})`
+              : variant === "completed"
+                ? mixHex(brick, "#000000", EDGE_DARKEN)
+                : mixHex(LOCKED_FACE, "#000000", EDGE_DARKEN)
+          }
         />
       </Svg>
     </View>
