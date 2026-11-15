@@ -364,7 +364,7 @@ function StepBlockBase({
       : "#F2F2F6";
   const gradBot = faceColor;
   const sideTop = isLocked ? "#C4C4CF" : levelColor;
-  const sideBottom = isLocked ? "#D9E1F0" : mixHex(levelColor, "#BCCDF4", 0.82);
+  const sideBottom = isLocked ? "#D9E1F0" : wallTint(levelColor);
 
   // Volumetric brick (reference: soft rounded 3D block). The face sits on a
   // DEPTH-tall side wall; pressing pushes the face down into the wall, and on
@@ -479,7 +479,7 @@ function StepBlockBase({
           // Only the bottom DEPTH pt peeks out under the face, so the fade has
           // to start exactly there.
           locations={[0, (STEP_H - DEPTH) / STEP_H, 1]}
-          style={[styles.stepSide, { borderRadius: shapeR }]}
+          style={[styles.stepSide, { borderRadius: shapeR + STROKE_OUT }]}
         />
         <Animated.View style={[styles.stepFaceWrap, faceSinkStyle]}>
         <View style={[styles.stepFace, { borderRadius: shapeR }]}>
@@ -549,14 +549,30 @@ function StepBlockBase({
   );
 }
 
-function mixHex(a: string, b: string, t: number): string {
-  const pa = parseInt(a.replace("#", "").slice(0, 6), 16);
-  const pb = parseInt(b.replace("#", "").slice(0, 6), 16);
-  const ch = (x: number, y: number) => Math.round(x + (y - x) * t);
-  const r = ch((pa >> 16) & 0xff, (pb >> 16) & 0xff);
-  const g = ch((pa >> 8) & 0xff, (pb >> 8) & 0xff);
-  const bl = ch(pa & 0xff, pb & 0xff);
-  return `#${((1 << 24) | (r << 16) | (g << 8) | bl).toString(16).slice(1)}`;
+// Bottom colour of a brick's wall: a soft partner hue picked per colour family
+// so every module's brick gets its own two-tone fade (reference: orange into a
+// pale periwinkle).
+//   reds / oranges   → lavender-blue      yellows / olives → mint
+//   greens           → sky                blues            → lilac
+//   purples / pinks  → peach
+function wallTint(hex: string): string {
+  const n = parseInt(hex.replace("#", "").slice(0, 6), 16);
+  const r = ((n >> 16) & 0xff) / 255, g = ((n >> 8) & 0xff) / 255, b = (n & 0xff) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  let h = 0;
+  if (d) h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  h = (h * 60 + 360) % 360;
+  const target = h < 45 ? 228 : h < 95 ? 160 : h < 170 ? 200 : h < 255 ? 282 : 22;
+  return hslHex(target, 0.72, 0.84);
+}
+
+function hslHex(h: number, s: number, l: number): string {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  const [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+  const to = (v: number) => Math.round((v + m) * 255);
+  return `#${((1 << 24) | (to(r) << 16) | (to(g) << 8) | to(b)).toString(16).slice(1)}`;
 }
 
 function lightenColor(hex: string, percent: number): string {
@@ -1284,6 +1300,8 @@ const STEP_W = 212;
 const STEP_H = 64;
 // Thickness of the volumetric brick (side wall under the face).
 const DEPTH = 14;
+// Half of BrickStroke's 4pt centred stroke — how far the outline sits outside the face.
+const STROKE_OUT = 2;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -1350,12 +1368,20 @@ const styles = StyleSheet.create({
     height: STEP_H,
     zIndex: 1,
   },
+  // The wall is as wide as the face's outer outline (BrickStroke draws a 4pt
+  // stroke centred on the face edge, so it sticks out STROKE_OUT on each side)
+  // and repeats that 4pt edge on its left and right sides — not on the bottom.
+  // The edge is 9% black over the wall gradient, so at the top it matches the
+  // face outline (brick colour + 9% black) and darkens along with the fade.
   stepSide: {
     position: "absolute",
-    left: 0,
+    left: -STROKE_OUT,
     top: DEPTH,
-    width: STEP_W,
+    width: STEP_W + STROKE_OUT * 2,
     height: STEP_H,
+    borderLeftWidth: STROKE_OUT * 2,
+    borderRightWidth: STROKE_OUT * 2,
+    borderColor: "rgba(0,0,0,0.09)",
   },
   glow: {
     position: "absolute",
