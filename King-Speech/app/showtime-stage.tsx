@@ -52,6 +52,7 @@ import { categoryOf, THEME_CATEGORIES } from "@/components/showtime/themeCategor
 import { playCircleXml } from "@/assets/figma/showtime-stage/svgs";
 import { showtimeCover, showtimeCoverCredit } from "@/constants/showtimeCovers";
 import { clearFlightLaunch, isFlightLanding, requestFlightReturn } from "@/components/showtime/coverFlightStore";
+import { LiveAudience, HALL_RATIO } from "@/components/audience/LiveAudience";
 
 // Audience halls (first-person, speaker POV). Used as the variable stage
 // backdrop — the speech text sits on a white sheet at the bottom that blurs up
@@ -4841,6 +4842,8 @@ export default function ShowtimeStageScreen() {
   const [scene] = useState(() => SCENE_POOL[Math.floor(Math.random() * SCENE_POOL.length)]);
   // Height/width of that hall, so the backdrop keeps its own proportions.
   const bgPhotoRatio = useMemo(() => {
+    // The live hall is drawn at the same portrait proportions as the stills.
+    if (LiveAudience) return HALL_RATIO;
     try {
       const src = Image.resolveAssetSource(scene.still);
       if (src?.width && src?.height) return src.height / src.width;
@@ -4880,7 +4883,9 @@ export default function ShowtimeStageScreen() {
     setDim(v);
     // Short ramp instead of a jump, so dragging the slider reads as the room
     // fading rather than stepping.
-    dimValue.value = withTiming(v * 0.88, { duration: 140, easing: Easing.out(Easing.quad) });
+    // With the live hall the slider turns the room into silhouettes, so the
+    // black sheet only takes a little off the top instead of hiding it.
+    dimValue.value = withTiming(v * (LiveAudience ? 0.22 : 0.88), { duration: 140, easing: Easing.out(Easing.quad) });
   }, []);
 
   // A soft pump on the speech when the lights change — the text breathes once
@@ -5031,7 +5036,8 @@ export default function ShowtimeStageScreen() {
   }, [lang, bgPhotoRatio]);
 
   useEffect(() => {
-    if (started && !finished) {
+    // The live hall has its own murmurs (bubbles by the talkers' mouths).
+    if (started && !finished && !LiveAudience) {
       const t = setTimeout(spawnNoise, 1200);
       noiseTimersRef.current.push(t);
     }
@@ -5131,7 +5137,7 @@ export default function ShowtimeStageScreen() {
         return;
       }
       router.push({ pathname: "/showtime-playback", params: { recordingUri: uri, title: speech.title, levelId, mode, scriptText: speech.lines.join("\n"), waveform: waveformRef.current ? JSON.stringify(waveformRef.current) : "" } });
-    }, 1200);
+    }, LiveAudience ? 2800 : 1200); // live hall: time for the ovation to be seen
   };
 
   const handleStart = async () => {
@@ -5264,12 +5270,26 @@ export default function ShowtimeStageScreen() {
           cropped: no zoom, no side crop, the whole room sits above the text.
           The still is the clip's first frame and sits underneath it, so the
           backdrop is already there while the video opens. */}
+      {LiveAudience ? (
+        // Live hall (Show Time Audience, ported from the Python/Cairo renderer):
+        // applause when the speaker walks out and at the end, chatter and
+        // popcorn while they speak, phones after a long run, silhouettes when
+        // the house lights go down — and a new seating every run.
+        <LiveAudience
+          width={SW}
+          phase={finished ? "done" : started ? "live" : "idle"}
+          dim={dim}
+          lang={lang === "en" ? "en" : "ru"}
+          levelsRef={meterSamplesRef}
+        />
+      ) : (
       <Image
         source={scene.still}
         style={{ position: "absolute", top: 0, left: 0, width: SW, height: SW * bgPhotoRatio }}
         resizeMode="cover"
       />
-      {hasClip && (
+      )}
+      {!LiveAudience && hasClip && (
         <VideoView
           player={audiencePlayer}
           style={{ position: "absolute", top: 0, left: 0, width: SW, height: SW * bgPhotoRatio }}
@@ -5279,7 +5299,7 @@ export default function ShowtimeStageScreen() {
           pointerEvents="none"
         />
       )}
-      {hasIntro && (
+      {!LiveAudience && hasIntro && (
         // Sits on top of the loop and simply switches off when it is done: both
         // views are already showing the same frame at that moment.
         <VideoView
@@ -5321,7 +5341,7 @@ export default function ShowtimeStageScreen() {
           whisper, a cough, a chair creaking. Visual noise that keeps the room
           busy in the corner of the eye; faint and small on purpose, so it
           never competes with the speech. */}
-      {started && !finished && (
+      {started && !finished && !LiveAudience && (
         <View pointerEvents="none" style={StyleSheet.absoluteFill}>
           {phoneLights.map((p) => (
             <PhoneLight key={p.id} x={p.x} y={p.y} />
@@ -5559,7 +5579,7 @@ export default function ShowtimeStageScreen() {
 
       {/* Finishing overlay */}
       {finished && (
-        <View style={s.finishOverlay}>
+        <View style={[s.finishOverlay, LiveAudience ? { backgroundColor: "rgba(38,38,40,0.5)" } : null]}>
           <Animated.View entering={FadeIn.duration(600)} style={s.finishContent}>
             <Ionicons name="trophy" size={44} color={ui.accent} />
             <Text style={[s.finishTitle, { fontFamily: "Geologica_700Bold" }]}>{t("bravo")}</Text>
