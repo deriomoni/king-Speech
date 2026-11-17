@@ -78,7 +78,19 @@ export default function Trophy3D({ style, delayMs = 0, fallback }: { style?: Vie
         width: w, height: h, style: {}, clientWidth: w, clientHeight: h,
         addEventListener: () => {}, removeEventListener: () => {}, getContext: () => gl,
       };
-      const renderer = new THREE.WebGLRenderer({ canvas, context: gl as any, alpha: true, antialias: true, premultipliedAlpha: true });
+      // three ≥ r163 refuses anything that is `instanceof WebGLRenderingContext`
+      // (WebGL 1). expo-gl's native context is an OpenGL ES 3 context that
+      // implements WebGL 2, but it is registered under the WebGL 1 class name —
+      // hide that class while the renderer checks the context.
+      const g = globalThis as any;
+      const webgl1 = g.WebGLRenderingContext;
+      if (Platform.OS !== "web") g.WebGLRenderingContext = undefined;
+      let renderer: THREE.WebGLRenderer;
+      try {
+        renderer = new THREE.WebGLRenderer({ canvas, context: gl as any, alpha: true, antialias: true, premultipliedAlpha: true });
+      } finally {
+        if (Platform.OS !== "web") g.WebGLRenderingContext = webgl1;
+      }
       renderer.setPixelRatio(1);
       renderer.setSize(w, h, false);
       renderer.setClearColor(0x000000, 0);
@@ -126,8 +138,14 @@ export default function Trophy3D({ style, delayMs = 0, fallback }: { style?: Vie
           pivot.position.y = HIGH_Y + Math.sin(s * 1.6) * 0.006;
           pivot.rotation.set(0, Math.sin(s * 0.7) * 0.32, 0);
         }
-        renderer.render(scene, camera);
-        gl.endFrameEXP();
+        try {
+          renderer.render(scene, camera);
+          gl.endFrameEXP();
+        } catch (e) {
+          console.warn("[Trophy3D] render failed, falling back to the flat trophy:", e);
+          if (alive.current) setFailed(true);
+          return;
+        }
         raf.current = requestAnimationFrame(frame);
       };
       raf.current = requestAnimationFrame(frame);
