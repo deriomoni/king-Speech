@@ -103,8 +103,15 @@ export default function Trophy3D({ style, delayMs = 0, fallback }: { style?: Vie
 
       const geo = parseGlb(await loadBytes());
       if (!alive.current) return;
-      // flat brand gold: unlit, no reflections, highlights or shading — a clean silhouette
-      const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(BRAND_GOLD), side: THREE.DoubleSide });
+      // soft matte "clay" look (like a 3D icon): brand yellow, no metal or
+      // reflections; the light from below is orange, so the sides turning away
+      // from the key light fall into warm orange shade instead of grey
+      scene.add(new THREE.AmbientLight(0xffffff, 1.7));
+      scene.add(new THREE.HemisphereLight(0xffffff, 0xff8c1a, 1.0));
+      const key = new THREE.DirectionalLight(0xffffff, 1.1);
+      key.position.set(-0.5, 1.0, 0.9);
+      scene.add(key);
+      const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(BRAND_GOLD), roughness: 0.9, metalness: 0, side: THREE.DoubleSide });
       const mesh = new THREE.Mesh(geo, mat);
       // pivot = the bottom centre of the base (the model's origin)
       const pivot = new THREE.Group();
