@@ -472,33 +472,36 @@ const FOG: RGB = [0.06, 0.0, 0.01];
 const seatX = (r: number, c: number) => HALL.W / 2 + (c + (r % 2 ? 0.5 : 0)) * ROWS[r].p;
 
 // ---------------- entrance ----------------
-// When the level opens the hall is dark: the lighting pipe drops in from above,
-// the stage edge rises from below, then the lamps snap on — a flicker, a bright
-// burst, and they settle. Times are seconds from the hall's mount.
-const ENTER_FROM = 0.25, ENTER_DUR = 1.6, LIGHTS_AT = 1.9;
+// Until the speech starts the hall is dark, the lighting pipe is out of sight
+// above and the stage edge sits low. When the audience starts to clap (start()),
+// the pipe slowly comes down and the stage rises with its footlights; as they
+// land the lamps snap on — a flicker, a blinding burst — and settle.
+// Times are seconds from start().
+const ENTER_DUR = 2.8, LIGHTS_AT = ENTER_DUR + 0.1;
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
-const easeOutCubic = (x: number) => 1 - (1 - x) ** 3;
-/** settles with a small overshoot, like a pipe stopping on its cables */
-const easeOutBack = (x: number) => { const c = 1.25; return 1 + (c + 1) * (x - 1) ** 3 + c * (x - 1) ** 2; };
-const enterK = (t: number) => clamp01((t - ENTER_FROM) / ENTER_DUR);
-/** brightness of a lamp switched on at `at`: off, flicker, a burst up to ~2.3×, settling at 1 */
-export function lampPower(t: number, at: number) {
-  const d = t - at;
+const easeInOut = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2);
+/** how far the entrance has got (0 before start) */
+const enterK = (rel: number) => clamp01(rel / ENTER_DUR);
+/** the pipe's offset above its place: slow ease in and out, then a small
+ *  damped bob as it stops on its cables */
+function dropOffset(rel: number, travel: number) {
+  if (rel < 0) return travel;
+  if (rel < ENTER_DUR) return (1 - easeInOut(rel / ENTER_DUR)) * travel;
+  const d = rel - ENTER_DUR;
+  return d > 2 ? 0 : -14 * Math.exp(-d / 0.35) * Math.sin(d * 11);
+}
+/** brightness of a lamp switched on at `at`: off, flicker, a burst up to `peak`, settling at 1 */
+export function lampPower(rel: number, at: number, peak = 2.3) {
+  const d = rel - at;
   if (d < 0) return 0;
   if (d < 0.05) return 1.1;
   if (d < 0.11) return 0.12;
   if (d < 0.16) return 1.6;
-  return 1 + 1.3 * Math.exp(-(d - 0.16) / 0.42);
+  return 1 + (peak - 1) * Math.exp(-(d - 0.16) / 0.5);
 }
-/** a soft vertical darkening: black from alpha a0 at y0 to a1 at y1, in thin bands */
-function shade(cr: Cairo<any>, y0: number, y1: number, a0: number, a1: number) {
-  const n = 36, dy = (y1 - y0) / n;
-  for (let i = 0; i < n; i++) {
-    const f = (i + 0.5) / n, a = a0 + (a1 - a0) * f * f * (3 - 2 * f);
-    if (a < 0.004) continue;
-    cr.rectangle(-20, y0 + i * dy, HALL.W + 40, dy + 0.6); cr.setRGBA([0.02, 0, 0.01], a); cr.fill();
-  }
-}
+/** spotlights come on blinding */
+const SPOT_PEAK = 5;
+const DARK: RGB = [0.02, 0, 0.01];
 
 const BEST = ["C-07", "B-11", "C-01", "C-03", "B-01", "C-04", "C-10", "B-12", "C-09", "A-05", "B-05",
   "C-02", "C-06", "C-08", "A-01", "B-06", "A-13", "B-10", "A-04"];
@@ -666,7 +669,11 @@ export class Audience {
 
   // ---- stage events ----
   /** the speaker walks out: applause wave */
+  /** seconds since the stage entrance began (start()), -1 before it */
+  enterAt = -1;
+  rel(t: number) { return this.enterAt < 0 ? -1 : t - this.enterAt; }
   start(t: number) {
+    if (this.enterAt < 0) this.enterAt = t;
     this.mode = "live"; this.liveSince = t; this.nextChat = t + 6;
     for (const p of this.P) {
       if (p.pop || p.still) continue;
@@ -676,7 +683,7 @@ export class Audience {
   }
   /** the speaker finishes: ovation, everybody claps, hands higher, wide smiles */
   finish(t: number) {
-    this.finishedAt = t;
+    this.finishedAt = t; if (this.enterAt < 0) this.enterAt = t;
     this.mode = "done";
     for (const p of this.P) {
       if (p.still) continue;
@@ -828,8 +835,8 @@ export class Audience {
     if (!sil) {
       // the back rows fall into the dark under the ceiling, the front rows into
       // the shadow below the stage edge
-      shade(cr, 0, ROWS[5].y, 0.62, 0);
-      shade(cr, ROWS[8].y, FLOOR_Y, 0, 0.58);
+      cr.linear(0, 0, 0, ROWS[6].y, DARK, 0.62, 0);
+      cr.linear(0, ROWS[7].y, 0, FLOOR_Y, DARK, 0, 0.58);
       const fl = 0.5 + 0.3 * Math.sin((TAU * t) / 3.1) + 0.2 * Math.sin((TAU * t) / 0.77);
       cr.radial(W / 2, H * 0.48, 100, W * 0.8, [1, 0.88, 0.75, 0.05 + 0.03 * fl], [1, 0.88, 0.75, 0]);
       cr.radial(W / 2, H * 0.42, H * 0.3, W * 0.95, [0, 0, 0, 0], [0.04, 0, 0, 0.45]);
@@ -838,9 +845,9 @@ export class Audience {
     this.rig(t, sil);
     // before the lamps come on the whole house sits in the dark (stage and rig
     // too); the switch-on burst warms it for a moment
-    const pw = lampPower(t, LIGHTS_AT);
+    const pw = lampPower(this.rel(t), LIGHTS_AT, SPOT_PEAK);
     if (pw < 1) { cr.setRGBA([0, 0, 0], (sil ? 0.3 : 0.55) * (1 - pw)); cr.paint(); }
-    else if (!sil && pw > 1.02) { cr.setRGBA([1, 0.85, 0.6], 0.07 * (pw - 1)); cr.paint(); }
+    else if (!sil && pw > 1.02) { cr.setRGBA([1, 0.9, 0.72], Math.min(0.4, 0.075 * (pw - 1))); cr.paint(); }
   }
 
   /** stage spotlights hung from a pipe across the top of the house (design
@@ -854,10 +861,10 @@ export class Audience {
     const spots = [[0.165, 0.1], [0.35, 0.05], [0.65, -0.05], [0.835, -0.1]];
     cr.sil = null;
     // entrance: the pipe comes down from above the frame
-    const e = enterK(t), drop = e >= 1 ? 0 : (1 - easeOutBack(e)) * (pipeY + h + 60);
+    const drop = dropOffset(this.rel(t), pipeY + h + 60);
     cr.save(); cr.translate(0, -drop);
     // each lamp comes on a beat after the one before it
-    const pw = spots.map((_, i) => lampPower(t, LIGHTS_AT + i * 0.06));
+    const pw = spots.map((_, i) => lampPower(this.rel(t), LIGHTS_AT + i * 0.06, SPOT_PEAK));
     // beams first, so the lamps sit on top of them
     spots.forEach(([fx, rot], i) => {
       if (pw[i] <= 0.01) return;
@@ -876,8 +883,14 @@ export class Audience {
       if (pw[i] <= 0.01) return;
       // lens glow, bigger and brighter during the switch-on burst
       const gx = x - Math.sin(rot) * h * S.lens, gy = pipeY + Math.cos(rot) * h * S.lens;
-      const gr = (h / 100) * S.glass * (1 + 0.25 * Math.max(0, pw[i] - 1));
+      const burst = Math.max(0, pw[i] - 1) / (SPOT_PEAK - 1); // 1 at the flash, 0 once settled
+      const gr = (h / 100) * S.glass * (1 + 0.6 * burst);
       cr.glow(gx, gy, gr * 2.6, gr * 2.6, [1, 0.88, 0.58], Math.min(1, 0.28 * pw[i]));
+      if (burst > 0.01) {
+        // the switch-on flash: a wide white-hot bloom over the lamp that dies away
+        cr.glow(gx, gy, gr * 9, gr * 9, [1, 0.95, 0.82], 0.55 * burst);
+        cr.glow(gx, gy, gr * 3.2, gr * 3.2, [1, 1, 0.95], 0.9 * burst);
+      }
     });
     cr.restore();
   }
@@ -911,7 +924,7 @@ export class Audience {
     const lip = 0.18 * ROWS[NR - 1].pb, y0 = FLOOR_Y, yb = y0 + lip;
     const dark: RGB | null = sil ? [0.13, 0.11, 0.12] : null;
     // entrance: the stage edge rises from below
-    const e = enterK(t), rise = (1 - easeOutCubic(e)) * (H - FLOOR_Y) * 0.75;
+    const rise = (1 - easeInOut(enterK(this.rel(t)))) * (H - FLOOR_Y) * 0.75;
     cr.save(); cr.translate(0, rise);
     cr.sil = dark;
     // boards: alternating warm planks converging on a vanishing point behind the hall
@@ -949,7 +962,7 @@ export class Audience {
       cr.rectangle(x - sw / 2, railT - sh * 0.5, sw, sh); cr.setRGB([0.3, 0.29, 0.31]); cr.fillPreserve(); cr.setRGB(INK); cr.setLineWidth(lw * 0.8); cr.stroke();
       cr.sil = null;
       // switched on one after another, left to right, just after the spotlights
-      const pw = lampPower(t, LIGHTS_AT + 0.15 + i * 0.07);
+      const pw = lampPower(this.rel(t), LIGHTS_AT + 0.15 + i * 0.07);
       const flick = 0.88 + 0.12 * Math.sin(TAU * (t * 0.7 + i * 0.37));
       const off = pw < 0.3 || (k === 0 && (t * 0.9 + i * 1.7) % 13 < 0.14);
       // diffuse light around each bulb: a wide soft haze and a warmer core, no edges

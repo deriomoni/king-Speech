@@ -60,6 +60,11 @@ export class Canvas2DBackend implements Backend<Path2D> {
     g.addColorStop(0, css(c0 as RGB, c0[3])); g.addColorStop(1, css(c1 as RGB, c1[3]));
     this.ctx.fillStyle = g; this.ctx.fillRect(this.ox, this.oy, this.tw, this.th);
   }
+  paintLinear(x0: number, y0: number, x1: number, y1: number, c: RGB, a0: number, a1: number) {
+    this.id(); const g = this.ctx.createLinearGradient(x0, y0, x1, y1);
+    for (const f of [0, 0.2, 0.4, 0.6, 0.8, 1]) g.addColorStop(f, css(c, a0 + (a1 - a0) * f * f * (3 - 2 * f)));
+    this.ctx.fillStyle = g; this.ctx.fillRect(this.ox, this.oy, this.tw, this.th);
+  }
   image(name: string, m: Mat, w: number, h: number, tint: RGB | null) {
     const img = this.images[name]; if (!img) return;
     this.mat(m); const x = this.ctx;

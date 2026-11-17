@@ -79,6 +79,12 @@ export class SkiaBackend implements Backend<H> {
     p.setShader(Skia.Shader.MakeRadialGradient({ x: cx, y: cy }, r1, [col(c0 as RGB, c0[3]), col(c0 as RGB, c0[3]), col(c1 as RGB, c1[3])], [0, Math.min(0.99, r0 / r1), 1], TileMode.Clamp));
     this.c.drawRect(Skia.XYWHRect(0, 0, this.w, this.h), p);
   }
+  paintLinear(x0: number, y0: number, x1: number, y1: number, c: RGB, a0: number, a1: number) {
+    const pos = [0, 0.2, 0.4, 0.6, 0.8, 1], cols = pos.map((f) => col(c, a0 + (a1 - a0) * f * f * (3 - 2 * f)));
+    const p = Skia.Paint();
+    p.setShader(Skia.Shader.MakeLinearGradient({ x: x0, y: y0 }, { x: x1, y: y1 }, cols, pos, TileMode.Clamp));
+    this.c.drawRect(Skia.XYWHRect(0, 0, this.w, this.h), p);
+  }
   image(name: string, m: Mat, w: number, h: number, tint: RGB | null) {
     const img = this.images[name]; if (!img) return;
     this.c.save(); this.c.concat(m9(m));

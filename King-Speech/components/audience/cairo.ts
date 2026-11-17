@@ -26,6 +26,8 @@ export interface Backend<H> {
   restore(): void;
   paintRect(c: RGB, a: number): void;
   paintRadial(cx: number, cy: number, r0: number, r1: number, c0: [number, number, number, number], c1: [number, number, number, number]): void;
+  /** linear gradient over the whole target from (x0,y0) alpha a0 to (x1,y1) alpha a1, eased, clamped past the ends */
+  paintLinear(x0: number, y0: number, x1: number, y1: number, c: RGB, a0: number, a1: number): void;
   image(name: string, m: Mat, w: number, h: number, tint: RGB | null): void;
   /** features masked by skin: content(); then mask(); then composite. bounds = device rect [x, y, w, h] */
   beginGroup(bounds: [number, number, number, number]): void;
@@ -141,6 +143,11 @@ export class Cairo<H = unknown> {
   radial(cx: number, cy: number, r0: number, r1: number, c0: [number, number, number, number], c1: [number, number, number, number]) {
     const p = this.tp(cx, cy), k = Math.sqrt(Math.abs(this.st.m[0] * this.st.m[3] - this.st.m[1] * this.st.m[2]));
     this.b.paintRadial(p[0], p[1], r0 * k, r1 * k, c0, c1);
+  }
+  /** a soft, edgeless linear fade of colour c, alpha a0 at (x0,y0) to a1 at (x1,y1) */
+  linear(x0: number, y0: number, x1: number, y1: number, c: RGB, a0: number, a1: number) {
+    const p = this.tp(x0, y0), q = this.tp(x1, y1);
+    this.b.paintLinear(p[0], p[1], q[0], q[1], c, a0, a1);
   }
   /** a soft, edgeless light: ellipse (rx, ry) at (cx, cy), rotated by rot */
   glow(cx: number, cy: number, rx: number, ry: number, c: RGB, a: number, rot = 0) {
