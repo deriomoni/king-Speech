@@ -47,6 +47,16 @@ export const SPRITES: Record<string, number> = {
   "bg_6.png": require("@/assets/showtime/audience/live/bg_6.png"),
   "bg_7.png": require("@/assets/showtime/audience/live/bg_7.png"),
   "bg_8.png": require("@/assets/showtime/audience/live/bg_8.png"),
+  "bg_9.png": require("@/assets/showtime/audience/live/bg_9.png"),
+  "bg_10.png": require("@/assets/showtime/audience/live/bg_10.png"),
+  "bg_11.png": require("@/assets/showtime/audience/live/bg_11.png"),
+  "bg_12.png": require("@/assets/showtime/audience/live/bg_12.png"),
+  "bg_13.png": require("@/assets/showtime/audience/live/bg_13.png"),
+  "bg_14.png": require("@/assets/showtime/audience/live/bg_14.png"),
+  "bg_15.png": require("@/assets/showtime/audience/live/bg_15.png"),
+  "bg_16.png": require("@/assets/showtime/audience/live/bg_16.png"),
+  "bg_17.png": require("@/assets/showtime/audience/live/bg_17.png"),
+  "bg_18.png": require("@/assets/showtime/audience/live/bg_18.png"),
 };
 
 /** background extras («Фоновые», «Операторы»): picture size, eye line, shoulder share */
@@ -59,6 +69,16 @@ export const BG_SPRITES: BgSprite[] = [
   { file: "bg_6.png", w: 807, h: 1270, eye: 0.29, body: 0.9 },  // девушка в шляпе
   { file: "bg_7.png", w: 850, h: 1271, eye: 0.33, body: 0.85 }, // парень в капюшоне с телефоном
   { file: "bg_8.png", w: 874, h: 1297, eye: 0.26, body: 0.9 },  // бородач говорит по телефону
+  { file: "bg_9.png", w: 737, h: 1165, eye: 0.28, body: 0.88 },  // мужчина в наушниках скучает
+  { file: "bg_10.png", w: 697, h: 1119, eye: 0.29, body: 0.88 }, // уставшая девушка в худи
+  { file: "bg_11.png", w: 747, h: 1175, eye: 0.26, body: 0.88 }, // парень спит на плече
+  { file: "bg_12.png", w: 624, h: 1193, eye: 0.32, body: 0.9 },  // девушка в очках и маске
+  { file: "bg_13.png", w: 763, h: 1191, eye: 0.31, body: 0.85 }, // кудрявая говорит по телефону
+  { file: "bg_14.png", w: 642, h: 1171, eye: 0.33, body: 0.92 }, // женщина, руки скрещены
+  { file: "bg_15.png", w: 718, h: 1238, eye: 0.37, body: 0.88 }, // подросток с консолью
+  { file: "bg_16.png", w: 728, h: 1240, eye: 0.33, body: 0.9 },  // мужчина читает программку
+  { file: "bg_17.png", w: 743, h: 1134, eye: 0.33, body: 0.85 }, // девушка мечтает
+  { file: "bg_18.png", w: 781, h: 1278, eye: 0.34, body: 0.9 },  // бабушка вяжет
 ];
 
 let CAST: Person[] | null = null;
