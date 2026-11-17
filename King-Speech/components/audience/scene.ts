@@ -11,6 +11,7 @@
 //  - a silhouette pass for the «Затемнить зал» slider.
 
 import { Cairo, Cmd, RGB } from "./cairo";
+import { BULB, SPOT, drawBulb, drawSpot } from "./rig";
 
 const TAU = Math.PI * 2;
 const INK: RGB = [0.05, 0.04, 0.04];
@@ -453,8 +454,8 @@ const ROWS: { y: number; p: number; pb: number }[] = [];
 }
 /** people per row, back to front (some seats stay empty, as in the clips) */
 const COUNTS = [9, 9, 10, 11, 10, 8, 8, 7, 6, 5, 5];
-/** top of the stage floor: just over the front row's knees */
-const FLOOR_Y = ROWS[NR - 1].y + ROWS[NR - 1].pb * 1.72;
+/** top of the stage floor: the lip hides the front row's knees */
+const FLOOR_Y = ROWS[NR - 1].y + ROWS[NR - 1].pb * 1.4;
 /** back rows are tiny — their faces skip the skin mask (bangs over eyes don't read at that size) */
 const FAR_ROWS = 3;
 const SEAT: RGB = [0.76, 0.14, 0.12];
@@ -517,13 +518,17 @@ function withExtras(cast: Person[], extra: number, rng: Rng): Person[] {
   return out;
 }
 
+/** lighting kits (one per module, cycling): spotlight design k on the rig,
+ *  bulb design k on the stage edge — shapes in ./rig */
+const KITS = 4;
+
 export type Mode = "idle" | "live" | "done";
 /** how long the closing applause lasts (the stage waits for it before fading out) */
 export const OVATION_SEC = 4.6;
 
 export class Audience {
   cast: Person[]; places: Place[] = []; P: Plan[] = []; painter: Painter; rng: Rng;
-  LWK = 1 / 60; mode: Mode = "idle"; finishedAt = -1; t = 0; nextChat = 4; liveSince = 0; phones = 0;
+  LWK = 1 / 60; mode: Mode = "idle"; finishedAt = -1; variant = 0; t = 0; nextChat = 4; liveSince = 0; phones = 0;
   chatRate = 1; // 1 = normal, >1 = more chatter (long pauses), <1 = attentive
   onTalk?: (j: number, t: number, dur: number) => void;
 
@@ -785,6 +790,40 @@ export class Audience {
       cr.radial(W / 2, H * 0.42, H * 0.3, W * 0.95, [0, 0, 0, 0], [0.04, 0, 0, 0.45]);
     }
     this.stage(t, sil);
+    this.rig(t, sil);
+  }
+
+  /** stage spotlights hung from a pipe across the top of the house (design
+   *  from the «Софиты» set, per module): two pairs either side of the middle,
+   *  leaving the centre open, each tilted a touch towards the stage and
+   *  throwing a faint beam over the rows */
+  private rig(t: number, sil: RGB | null) {
+    const cr = this.painter.cr; const W = HALL.W;
+    const k = this.variant % KITS, S = SPOT[k]; const lw = 9 * ROWS[5].pb * 0.105 * this.LWK;
+    const pipeY = 190, h = k === 1 ? 290 : 330, w = h * S.aspect; // barn doors are wide
+    const spots = [[0.165, 0.1], [0.35, 0.05], [0.65, -0.05], [0.835, -0.1]];
+    cr.sil = null;
+    // beams first, so the lamps sit on top of them
+    for (const [fx, rot] of spots) {
+      const x = W * fx, ly = pipeY + h * S.lens, sway = 0.012 * Math.sin(TAU * (t * 0.05) + fx * 9);
+      const a = rot * 2.4 + sway, len = 1450, spread = 210;
+      const ex = x - Math.sin(a) * len, ey = ly + Math.cos(a) * len;
+      cr.moveTo(x - w * 0.22, ly); cr.lineTo(x + w * 0.22, ly); cr.lineTo(ex + spread, ey); cr.lineTo(ex - spread, ey); cr.closePath();
+      cr.setRGBA([1, 0.9, 0.7], sil ? 0.07 : 0.045); cr.fill();
+    }
+    // the pipe they hang from
+    cr.rectangle(-20, pipeY - 16, W + 40, 32); cr.setRGB([0.2, 0.19, 0.21]); cr.fillPreserve(); cr.setRGB(INK); cr.setLineWidth(lw); cr.stroke();
+    for (const [fx, rot] of spots) {
+      const x = W * fx;
+      drawSpot(cr, k, x, pipeY - 14, h, rot, h * 0.016); // outline as thick, relative to size, as in the set
+      // lens glow
+      const gx = x - Math.sin(rot) * h * S.lens, gy = pipeY + Math.cos(rot) * h * S.lens;
+      const gr = (h / 100) * S.glass;
+      for (const [kk, al] of [[1.35, 0.07], [1.12, 0.1]] as [number, number][]) {
+        cr.save(); cr.translate(gx, gy); cr.scale(gr * kk, gr * kk); cr.arc(0, 0, 1, 0, TAU); cr.restore();
+        cr.setRGBA([1, 0.9, 0.6], al); cr.fill();
+      }
+    }
   }
 
   /** the edge of the stage the speaker stands on: boards running towards us,
@@ -811,26 +850,22 @@ export class Audience {
     for (let i = 0; i < 6; i++) { const yy = yb + (H - yb) * (0.35 + i * 0.11); cr.setRGBA([0.149, 0.149, 0.157], 0.2 + i * 0.05); cr.rectangle(-20, yy, W + 40, H - yy + 20); cr.fill(); }
     // apron lip
     cr.rectangle(-20, y0, W + 40, lip); cr.setRGB([0.22, 0.12, 0.08]); cr.fillPreserve(); cr.setRGB(INK); cr.setLineWidth(lw); cr.stroke();
-    // footlights: dark housings on the lip, warm lenses, a soft glow up into the front rows
-    const nL = 6, gap = W / nL;
-    for (let i = 0; i < nL; i++) {
-      const x = gap * (i + 0.5), w = 0.62 * ROWS[NR - 1].pb, h = 0.26 * ROWS[NR - 1].pb, top = y0 - h * 0.55;
-      const flick = 0.9 + 0.1 * Math.sin(TAU * (t * 0.7 + i * 0.37));
-      cr.sil = null;
-      for (const [k, a] of [[3.2, 0.05], [2.2, 0.07], [1.4, 0.09]] as [number, number][]) {
-        cr.save(); cr.translate(x, top); cr.scale(w * k * 0.5, h * k * 0.9); cr.arc(0, 0, 1, Math.PI, TAU); cr.restore(); cr.closePath();
-        cr.setRGBA([1, 0.85, 0.55], a * flick * (sil ? 0.7 : 1)); cr.fill();
+    // bulbs along the stage edge: evenly spaced with air between them, each
+    // with a warm halo; the classic bulbs now and then blink off for a moment
+    const k = this.variant % KITS, B = BULB[k];
+    const pb = ROWS[NR - 1].pb; const baseY = y0 + lip * 0.55;
+    cr.sil = null;
+    const slots = B.strip ? [0.2, 0.5, 0.8] : [1, 2, 3, 4, 5, 6, 7].map((i) => i / 8);
+    slots.forEach((fx, i) => {
+      const x = W * fx; const h = B.strip ? 0.42 * pb : 0.52 * pb; const w = h * B.aspect;
+      const flick = 0.88 + 0.12 * Math.sin(TAU * (t * 0.7 + i * 0.37));
+      const off = k === 0 && (t * 0.9 + i * 1.7) % 13 < 0.14;
+      if (!off) for (const [kk, al] of [[2.6, 0.05], [1.8, 0.07], [1.15, 0.09]] as [number, number][]) {
+        cr.save(); cr.translate(x, baseY - h * B.glow); cr.scale(w * 0.5 * kk * (B.strip ? 1 : 1.35), h * 0.5 * kk); cr.arc(0, 0, 1, 0, TAU); cr.restore();
+        cr.setRGBA([1, 0.86, 0.55], al * flick * (sil ? 1.3 : 1)); cr.fill();
       }
-      cr.sil = dark;
-      const r = h * 0.35;
-      cr.newSubPath(); cr.arc(x - w / 2 + r, top + r, r, Math.PI, 1.5 * Math.PI); cr.arc(x + w / 2 - r, top + r, r, 1.5 * Math.PI, TAU);
-      cr.lineTo(x + w / 2, top + h); cr.lineTo(x - w / 2, top + h); cr.closePath();
-      cr.setRGB([0.16, 0.15, 0.17]); cr.fillPreserve(); cr.setRGB(INK); cr.setLineWidth(lw); cr.stroke();
-      cr.sil = null;
-      cr.save(); cr.translate(x, top + h * 0.12); cr.scale(w * 0.36, h * 0.2); cr.arc(0, 0, 1, 0, TAU); cr.restore();
-      cr.setRGB([1, 0.88 * flick, 0.6]); cr.fillPreserve(); cr.setRGB(INK); cr.setLineWidth(lw * 0.6); cr.stroke();
-      cr.sil = dark;
-    }
+      drawBulb(cr, k, x, baseY, h, !off, h * 0.03);
+    });
     cr.sil = null;
   }
 }

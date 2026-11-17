@@ -19,6 +19,8 @@ export type LiveAudienceProps = {
   lang: "ru" | "en";
   /** recent mic levels 0..1 (newest last): pauses → more chatter, a strong voice → quieter hall */
   levelsRef?: React.MutableRefObject<number[]>;
+  /** lighting kit (spotlights + bulbs), chosen by the module */
+  variant?: number;
 };
 export const HALL_RATIO = HALL.H / HALL.W;
 
@@ -68,8 +70,10 @@ export function useLiveAudience<H>(props: LiveAudienceProps, backend: Backend<H>
     if (!backend) return null;
     const cr = new Cairo<H>(backend);
     const A = new Audience(getCast(), cr as Cairo<any>, (Date.now() ^ (Math.random() * 1e9)) >>> 0);
+    A.variant = props.variant ?? 0;
     return { A, cr };
   }, [backend]);
+  useEffect(() => { if (engine) engine.A.variant = props.variant ?? 0; }, [engine, props.variant]);
   const t0 = useRef(Date.now());
   const now = () => (Date.now() - t0.current) / 1000;
   const ownDim = useRef(dim); ownDim.current = dim;
