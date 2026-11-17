@@ -20,6 +20,7 @@ import { SvgXml } from "react-native-svg";
 import * as Haptics from "@/lib/haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import RiveAnim from "@/components/RiveAnim";
+import Trophy3D from "@/components/Trophy3D";
 import {
   RAYS_SVG,
   TROPHY_GLOW_SVG,
@@ -340,12 +341,23 @@ function VictoryScreen({ bestScore, durationSec, onNext, onMap, t, lang }: Level
           </View>
         </Animated.View>
 
-        {/* Trophy on its podium */}
-        <Animated.View entering={FadeInDown.delay(150).duration(500)} style={at(101, 414)}>
-          <SvgXml xml={PODIUM_SVG} width={u(200)} height={u(92)} />
-        </Animated.View>
-        <Animated.View entering={ZoomIn.delay(250).springify().damping(10)} style={at(106, 216)}>
-          <SvgXml xml={TROPHY_SVG} width={u(190)} height={u(210)} />
+        {/* Trophy · 3D model spinning on its base, then rising into the centre
+            (the flat trophy + podium stay as the fallback) */}
+        <Animated.View entering={FadeIn.delay(150).duration(400)} style={{ ...at(31, 180), width: u(340), height: u(340) }}>
+          <Trophy3D
+            style={{ width: u(340), height: u(340) }}
+            delayMs={150}
+            fallback={
+              <>
+                <View style={{ position: "absolute", left: u(70), top: u(234) }}>
+                  <SvgXml xml={PODIUM_SVG} width={u(200)} height={u(92)} />
+                </View>
+                <View style={{ position: "absolute", left: u(75), top: u(36) }}>
+                  <SvgXml xml={TROPHY_SVG} width={u(190)} height={u(210)} />
+                </View>
+              </>
+            }
+          />
         </Animated.View>
 
         {/* Stars */}

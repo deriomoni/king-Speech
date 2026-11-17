@@ -18,6 +18,7 @@ config.resolver.blockList = [
 config.resolver.assetExts = [
   ...(config.resolver.assetExts || []),
   "riv",
+  "glb",
 ];
 
 module.exports = config;
