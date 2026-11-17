@@ -53,6 +53,7 @@ import { playCircleXml } from "@/assets/figma/showtime-stage/svgs";
 import { showtimeCover, showtimeCoverCredit } from "@/constants/showtimeCovers";
 import { clearFlightLaunch, isFlightLanding, requestFlightReturn } from "@/components/showtime/coverFlightStore";
 import { LiveAudience, HALL_RATIO } from "@/components/audience/LiveAudience";
+import { OVATION_SEC } from "@/components/audience/scene";
 
 // Audience halls (first-person, speaker POV). Used as the variable stage
 // backdrop — the speech text sits on a white sheet at the bottom that blurs up
@@ -4697,27 +4698,41 @@ const teb = StyleSheet.create({
 // room as shot, the bottom is near dark. It only takes the width it needs so it
 // never covers the speech.
 const DIM_TRACK_H = 132;
-function DimSlider({ value, onChange, color }: { value: number; onChange: (v: number) => void; color: string }) {
-  const live = useRef({ onChange });
-  live.current = { onChange };
-  const setFromY = (y: number) => {
-    live.current.onChange(Math.max(0, Math.min(1, y / DIM_TRACK_H)));
+function DimSlider({ value, onChange, onCommit, color }: { value: number; onChange: (v: number) => void; onCommit: (v: number) => void; color: string }) {
+  const live = useRef({ onChange, onCommit });
+  live.current = { onChange, onCommit };
+  // The knob and fill follow the finger on the UI thread; the stage only gets a
+  // cheap callback while dragging and one state update on release — no
+  // re-render of the whole stage per move (that was the lag).
+  const v = useSharedValue(value);
+  const last = useRef(value);
+  // The finger position is measured from the page, not locationY: locationY is
+  // relative to whichever child (knob / fill) is under the finger and jumps.
+  const top = useRef(0);
+  const setFromPageY = (pageY: number) => {
+    const x = Math.max(0, Math.min(1, (pageY - top.current) / DIM_TRACK_H));
+    last.current = x; v.value = x; live.current.onChange(x);
   };
   const pan = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (e) => setFromY(e.nativeEvent.locationY),
-      onPanResponderMove: (e) => setFromY(e.nativeEvent.locationY),
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderGrant: (e) => { top.current = e.nativeEvent.pageY - e.nativeEvent.locationY; setFromPageY(e.nativeEvent.pageY); },
+      onPanResponderMove: (e) => setFromPageY(e.nativeEvent.pageY),
+      onPanResponderRelease: () => live.current.onCommit(last.current),
+      onPanResponderTerminate: () => live.current.onCommit(last.current),
     }),
   ).current;
+  const fillStyle = useAnimatedStyle(() => ({ height: v.value * DIM_TRACK_H }));
+  const knobStyle = useAnimatedStyle(() => ({ top: Math.max(0, Math.min(DIM_TRACK_H - 14, v.value * DIM_TRACK_H - 7)) }));
 
   return (
     <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(180)} style={ds.wrap}>
       <View style={[ds.track, { height: DIM_TRACK_H }]} hitSlop={{ left: 16, right: 16 }} {...pan.panHandlers}>
-        <View style={ds.base} />
-        <View style={[ds.fill, { height: value * DIM_TRACK_H, backgroundColor: color }]} />
-        <View style={[ds.knob, { top: Math.max(0, Math.min(DIM_TRACK_H - 14, value * DIM_TRACK_H - 7)), borderColor: color }]} />
+        <View pointerEvents="none" style={ds.base} />
+        <Animated.View pointerEvents="none" style={[ds.fill, { backgroundColor: color }, fillStyle]} />
+        <Animated.View pointerEvents="none" style={[ds.knob, { borderColor: color }, knobStyle]} />
       </View>
     </Animated.View>
   );
@@ -4879,13 +4894,16 @@ export default function ShowtimeStageScreen() {
   const [dim, setDim] = useState(0);
   const dimValue = useSharedValue(0);
   const dimStyle = useAnimatedStyle(() => ({ opacity: dimValue.value }));
+  const dimRef = useRef(0);
+  const commitDim = useCallback((v: number) => { dimRef.current = v; setDim(v); }, []);
   const setDimSmooth = useCallback((v: number) => {
-    setDim(v);
+    dimRef.current = v;
+    if (!LiveAudience) setDim(v);
     // Short ramp instead of a jump, so dragging the slider reads as the room
     // fading rather than stepping.
     // With the live hall the slider turns the room into silhouettes, so the
     // black sheet only takes a little off the top instead of hiding it.
-    dimValue.value = withTiming(v * (LiveAudience ? 0.22 : 0.88), { duration: 140, easing: Easing.out(Easing.quad) });
+    dimValue.value = withTiming(v * (LiveAudience ? 0.4 : 0.88), { duration: 90, easing: Easing.out(Easing.quad) });
   }, []);
 
   // A soft pump on the speech when the lights change — the text breathes once
@@ -4921,6 +4939,8 @@ export default function ShowtimeStageScreen() {
   const [currentLine, setCurrentLine] = useState(0);
   const [started, setStarted] = useState(false);
   const [finished, setFinished] = useState(false);
+  // live hall: the closing applause plays out before the screen fades
+  const [ovationOver, setOvationOver] = useState(!LiveAudience);
 
   // Hand over from the intro to the loop on the intro's last frame.
   useEffect(() => {
@@ -5130,6 +5150,8 @@ export default function ShowtimeStageScreen() {
     noiseTimersRef.current = [];
     setFinished(true);
     playSfx("applause").catch(() => {});
+    const ovationMs = LiveAudience ? OVATION_SEC * 1000 : 0;
+    if (LiveAudience) setTimeout(() => setOvationOver(true), ovationMs);
     setTimeout(() => {
       const uri = recordingUriRef.current ?? "";
       if (isAuthor) {
@@ -5137,7 +5159,7 @@ export default function ShowtimeStageScreen() {
         return;
       }
       router.push({ pathname: "/showtime-playback", params: { recordingUri: uri, title: speech.title, levelId, mode, scriptText: speech.lines.join("\n"), waveform: waveformRef.current ? JSON.stringify(waveformRef.current) : "" } });
-    }, LiveAudience ? 2800 : 1200); // live hall: time for the ovation to be seen
+    }, ovationMs + 1200);
   };
 
   const handleStart = async () => {
@@ -5275,13 +5297,21 @@ export default function ShowtimeStageScreen() {
         // applause when the speaker walks out and at the end, chatter and
         // popcorn while they speak, phones after a long run, silhouettes when
         // the house lights go down — and a new seating every run.
-        <LiveAudience
-          width={SW}
-          phase={finished ? "done" : started ? "live" : "idle"}
-          dim={dim}
-          lang={lang === "en" ? "en" : "ru"}
-          levelsRef={meterSamplesRef}
-        />
+        // 16:9 like the original clips, just under the header row; soft
+        // edges into the stage colour. The hall claps once the title intro is
+        // over (the speaker is "on"), and again at the end.
+        <View pointerEvents="none" style={{ position: "absolute", top: topPad + 40, left: 0, width: SW, height: SW * HALL_RATIO }}>
+          <LiveAudience
+            width={SW}
+            phase={finished ? "done" : started && introDone ? "live" : "idle"}
+            dim={dim}
+            dimRef={dimRef}
+            lang={lang === "en" ? "en" : "ru"}
+            levelsRef={meterSamplesRef}
+          />
+          <LinearGradient pointerEvents="none" colors={["#18181A", "rgba(24,24,26,0)"]} style={{ position: "absolute", top: 0, left: 0, right: 0, height: 18 }} />
+          <LinearGradient pointerEvents="none" colors={["rgba(24,24,26,0)", "#18181A"]} style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 34 }} />
+        </View>
       ) : (
       <Image
         source={scene.still}
@@ -5511,7 +5541,7 @@ export default function ShowtimeStageScreen() {
               >
                 <Ionicons name="sunny-outline" size={22} color={lightOpen ? ui.accent : "#F0EEE9"} />
               </Pressable>
-              {lightOpen && <DimSlider value={dim} onChange={setDimSmooth} color={theme.accentColor} />}
+              {lightOpen && <DimSlider value={dim} onChange={setDimSmooth} onCommit={commitDim} color={theme.accentColor} />}
             </>
           )}
           {started && !finished && !lightOpen && scrollMode === "auto" && (
@@ -5578,8 +5608,8 @@ export default function ShowtimeStageScreen() {
       />
 
       {/* Finishing overlay */}
-      {finished && (
-        <View style={[s.finishOverlay, LiveAudience ? { backgroundColor: "rgba(38,38,40,0.5)" } : null]}>
+      {finished && ovationOver && (
+        <View style={s.finishOverlay}>
           <Animated.View entering={FadeIn.duration(600)} style={s.finishContent}>
             <Ionicons name="trophy" size={44} color={ui.accent} />
             <Text style={[s.finishTitle, { fontFamily: "Geologica_700Bold" }]}>{t("bravo")}</Text>

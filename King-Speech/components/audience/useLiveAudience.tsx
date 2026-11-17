@@ -14,6 +14,8 @@ export type LiveAudienceProps = {
   phase: AudiencePhase;
   /** house lights slider, 0..1 — the hall turns into silhouettes */
   dim: number;
+  /** live slider value while dragging (read every frame, no re-render needed) */
+  dimRef?: React.MutableRefObject<number>;
   lang: "ru" | "en";
   /** recent mic levels 0..1 (newest last): pauses → more chatter, a strong voice → quieter hall */
   levelsRef?: React.MutableRefObject<number[]>;
@@ -52,8 +54,12 @@ const CHAT: Record<"ru" | "en", string[]> = {
 type Bubble = { id: number; x: number; y: number; text: string; side: 1 | -1 };
 const FPS = 20;
 
-/** sil 0..1 from the slider: starts after a small dead zone, full at ~60% */
-const silOf = (dim: number) => Math.max(0, Math.min(1, (dim - 0.05) / 0.55));
+/** past this point of the slider the room goes to silhouettes; the switch is a
+ * short timed cross-fade (two render passes only while it runs), the rest of
+ * the slider's travel is the smooth black sheet the stage lays over the hall */
+const SIL_AT = 0.3;
+const SIL_FADE_SEC = 0.35;
+const silOf = (dim: number) => (dim > SIL_AT ? 1 : 0);
 
 export function useLiveAudience<H>(props: LiveAudienceProps, backend: Backend<H> | null, draw: (A: Audience, cr: Cairo<H>, t: number, sil: number) => void) {
   const { width, phase, dim, lang, levelsRef } = props;
@@ -66,7 +72,9 @@ export function useLiveAudience<H>(props: LiveAudienceProps, backend: Backend<H>
   }, [backend]);
   const t0 = useRef(Date.now());
   const now = () => (Date.now() - t0.current) / 1000;
-  const dimRef = useRef(dim); dimRef.current = dim;
+  const ownDim = useRef(dim); ownDim.current = dim;
+  const dimRef = props.dimRef ?? ownDim;
+  const silMix = useRef(0);
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const bubbleId = useRef(0);
@@ -116,7 +124,10 @@ export function useLiveAudience<H>(props: LiveAudienceProps, backend: Backend<H>
           engine.A.chatRate = avg < 0.18 ? 2.2 : avg > 0.45 ? 0.6 : 1;
         }
         engine.A.tick(t);
-        draw(engine.A, engine.cr, t, silOf(dimRef.current));
+        const target = silOf(dimRef.current); const step = 1 / (FPS * SIL_FADE_SEC);
+        silMix.current = target > silMix.current ? Math.min(target, silMix.current + step) : Math.max(target, silMix.current - step);
+        const m = silMix.current; const eased = m * m * (3 - 2 * m);
+        draw(engine.A, engine.cr, t, eased);
       }
       raf = requestAnimationFrame(loop);
     };

@@ -437,15 +437,15 @@ function drawProps(P: Painter, per: Person, st: State) {
   if (p.phoneFrom >= 0 && t >= p.phoneFrom) drawPhone(cr, G, st, p);
 }
 
-// ---------------- hall layout (portrait) ----------------
-export const HALL = { W: 1080, H: 1610 };
-const NR = 7;
+// ---------------- hall layout (as in scene.py: 16:9, six rows, 48 seats) ----------------
+export const HALL = { W: 1920, H: 1080 };
+const NR = 6;
 const ROWS: { y: number; p: number; pb: number }[] = [];
 {
-  let y = 30, pitch = 150;
+  let y = 45, pitch = 140;
   for (let r = 0; r < NR; r++) { ROWS.push({ y, p: pitch * 1.12, pb: pitch }); y += pitch * 0.95; pitch *= 1.105; }
 }
-const COUNTS = [6, 6, 5, 5, 4, 4, 3];
+const COUNTS = [11, 10, 8, 8, 7, 4];
 const SEAT: RGB = [0.76, 0.14, 0.12];
 // «Затемнить зал»: a hazy backlit room, the rows and people as flat dark shapes
 const SIL_BG: RGB = [0.34, 0.29, 0.32], SIL_SEAT: RGB = [0.19, 0.16, 0.18], SIL_PEOPLE: RGB = [0.045, 0.04, 0.05];
@@ -484,10 +484,12 @@ function activeToss(p: Plan, t: number) { const i = lastStart(p.toss, t); return
 const insertSorted = <T extends number[]>(list: T[], item: T) => { const i = lastStart(list, item[0]); list.splice(i + 1, 0, item); };
 
 export type Mode = "idle" | "live" | "done";
+/** how long the closing applause lasts (the stage waits for it before fading out) */
+export const OVATION_SEC = 4.6;
 
 export class Audience {
   cast: Person[]; places: Place[] = []; P: Plan[] = []; painter: Painter; rng: Rng;
-  LWK = 1 / 60; mode: Mode = "idle"; t = 0; nextChat = 4; liveSince = 0; phones = 0;
+  LWK = 1 / 60; mode: Mode = "idle"; finishedAt = -1; t = 0; nextChat = 4; liveSince = 0; phones = 0;
   chatRate = 1; // 1 = normal, >1 = more chatter (long pauses), <1 = attentive
   onTalk?: (j: number, t: number, dur: number) => void;
 
@@ -521,10 +523,12 @@ export class Audience {
   place() {
     const rng = this.rng; const W = HALL.W;
     const ids = this.cast.map((c) => c.id);
-    // front rows: a random handful of the best-reading faces; the rest shuffled
-    const best = rng.shuffle(BEST.filter((b) => ids.includes(b))).slice(0, 10);
+    // scene.place: the best-reading faces up front, clones furthest back; the
+    // seats each of them gets (and the rest of the order) change every run
+    const best = BEST.filter((b) => ids.includes(b));
     const rest = rng.shuffle([...ids.keys()].filter((i) => !best.includes(ids[i])));
-    const queue = [...best.map((b) => ids.indexOf(b)), ...rest];
+    const clones = rest.filter((i) => ids[i].endsWith("*")), plain = rest.filter((i) => !ids[i].endsWith("*"));
+    const queue = [...best.map((b) => ids.indexOf(b)), ...plain, ...clones];
     const out: Place[] = []; let k = 0;
     for (let r = NR - 1; r >= 0; r--) {
       const R = ROWS[r]; const n = Math.floor(W / 2 / R.p);
@@ -593,11 +597,13 @@ export class Audience {
   }
   /** the speaker finishes: ovation, everybody claps, hands higher, wide smiles */
   finish(t: number) {
+    this.finishedAt = t;
     this.mode = "done";
     for (const p of this.P) {
       p.pop = 0; p.phoneFrom = -1; p.handsUp = 1.5; p.talk = p.talk.filter((iv) => iv[1] < t);
-      const a = t + p.r.uniform(0, 0.8); insertSorted(p.clap, [a, t + 1e6, p.r.uniform(2.0, 5.2), p.r.uniform(0, TAU)]);
-      p.hpLocked = true; insertSorted(p.hp, [t, t + 1e6]);
+      // a proper round of applause that dies down by OVATION_SEC
+      const a = t + p.r.uniform(0, 0.6); insertSorted(p.clap, [a, t + OVATION_SEC - p.r.uniform(0.4, 1.4), p.r.uniform(2.0, 5.2), p.r.uniform(0, TAU)]);
+      p.hpLocked = true; insertSorted(p.hp, [t, t + OVATION_SEC + 1]);
     }
   }
 
@@ -738,8 +744,8 @@ export class Audience {
     }
     if (!sil) {
       const fl = 0.5 + 0.3 * Math.sin((TAU * t) / 3.1) + 0.2 * Math.sin((TAU * t) / 0.77);
-      cr.radial(W / 2, H * 0.4, 100, W * 0.9, [1, 0.88, 0.75, 0.05 + 0.03 * fl], [1, 0.88, 0.75, 0]);
-      cr.radial(W / 2, H * 0.4, H * 0.35, W * 1.1, [0, 0, 0, 0], [0.04, 0, 0, 0.45]);
+      cr.radial(W / 2, H * 0.55, 100, W * 0.75, [1, 0.88, 0.75, 0.05 + 0.03 * fl], [1, 0.88, 0.75, 0]);
+      cr.radial(W / 2, H / 2, H * 0.45, W * 0.75, [0, 0, 0, 0], [0.04, 0, 0, 0.45]);
     }
   }
 }
