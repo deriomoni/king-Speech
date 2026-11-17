@@ -4890,7 +4890,6 @@ export default function ShowtimeStageScreen() {
   // House lights: the sun button opens a slider that takes the hall down. The
   // dim is a black sheet over the backdrop only — the speech, the murmurs and
   // the controls stay exactly as bright as they were.
-  const [lightOpen, setLightOpen] = useState(false);
   const [dim, setDim] = useState(0);
   const dimValue = useSharedValue(0);
   const dimStyle = useAnimatedStyle(() => ({ opacity: dimValue.value }));
@@ -4924,11 +4923,14 @@ export default function ShowtimeStageScreen() {
   const pumpStyle = useAnimatedStyle(() => ({ transform: [{ scale: 1 + pump.value * 0.014 }] }));
   const pumpBlurStyle = useAnimatedStyle(() => ({ opacity: pump.value * 0.75 }));
 
+  // The eye button: one tap takes the house dark (silhouettes), another brings the lights back.
   const toggleLight = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    setLightOpen((v) => !v);
+    const next = dimRef.current > 0.5 ? 0 : 1;
+    dimValue.value = withTiming(next * (LiveAudience ? 0.4 : 0.88), { duration: 450, easing: Easing.inOut(Easing.quad) });
+    commitDim(next);
     pumpText();
-  }, [pumpText]);
+  }, [pumpText, commitDim]);
 
   const hasClip = !!scene.clip;
   const hasIntro = !!scene.intro;
@@ -5219,7 +5221,6 @@ export default function ShowtimeStageScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (showTutorial) dismissTutorial();
     if (currentLine < speech.lines.length - 1) {
-      playSfx("swipe").catch(() => {});
       setCurrentLine((l) => l + 1);
     } else {
       await finishPerformance();
@@ -5542,17 +5543,16 @@ export default function ShowtimeStageScreen() {
                 style={({ pressed }) => [
                   s.lightBtn,
                   {
-                    backgroundColor: lightOpen ? "rgba(240,238,233,0.16)" : "transparent",
+                    backgroundColor: dim > 0.5 ? "rgba(240,238,233,0.16)" : "transparent",
                     opacity: pressed ? 0.7 : 1,
                   },
                 ]}
               >
-                <Ionicons name="sunny-outline" size={22} color={lightOpen ? ui.accent : "#F0EEE9"} />
+                <Ionicons name={dim > 0.5 ? "eye-off-outline" : "eye-outline"} size={22} color={dim > 0.5 ? ui.accent : "#F0EEE9"} />
               </Pressable>
-              {lightOpen && <DimSlider value={dim} onChange={setDimSmooth} onCommit={commitDim} color={theme.accentColor} />}
             </>
           )}
-          {started && !finished && !lightOpen && scrollMode === "auto" && (
+          {started && !finished && scrollMode === "auto" && (
             <Pressable onPress={cycleSpeed} hitSlop={12} style={({ pressed }) => [s.speedTextBtn, { opacity: pressed ? 0.55 : 1 }]}>
               <Text style={[s.speedText, { fontFamily: "Geologica_800ExtraBold" }]}>{AUTO_SPEEDS[speedIdx]}×</Text>
             </Pressable>

@@ -835,7 +835,7 @@ export class Audience {
     if (!sil) {
       // the back rows fall into the dark under the ceiling, the front rows into
       // the shadow below the stage edge
-      cr.linear(0, 0, 0, ROWS[6].y, DARK, 0.62, 0);
+      cr.linear(0, 0, 0, ROWS[6].y, DARK, 0.85, 0);
       cr.linear(0, ROWS[7].y, 0, FLOOR_Y, DARK, 0, 0.58);
       const fl = 0.5 + 0.3 * Math.sin((TAU * t) / 3.1) + 0.2 * Math.sin((TAU * t) / 0.77);
       cr.radial(W / 2, H * 0.48, 100, W * 0.8, [1, 0.88, 0.75, 0.05 + 0.03 * fl], [1, 0.88, 0.75, 0]);
@@ -938,8 +938,8 @@ export class Audience {
     }
     // light pooling on the boards near the speaker
     if (!sil) cr.glow(W / 2, H, W * 0.6, (H - yb) * 0.9, [1, 0.86, 0.62], 0.16);
-    // the boards run on under the speech: fade them into the stage panel colour
-    for (let i = 0; i < 6; i++) { const yy = yb + (H - yb) * (0.35 + i * 0.11); cr.setRGBA([0.149, 0.149, 0.157], 0.2 + i * 0.05); cr.rectangle(-20, yy, W + 40, H - yy + 20); cr.fill(); }
+    // the boards run on under the speech: a soft, edgeless fade into the dark stage panel
+    cr.linear(0, yb + (H - yb) * 0.08, 0, yb + (H - yb) * 0.8, [0.07, 0.065, 0.075], 0, 0.94);
     // apron lip
     cr.rectangle(-20, y0, W + 40, lip); cr.setRGB([0.22, 0.12, 0.08]); cr.fillPreserve(); cr.setRGB(INK); cr.setLineWidth(lw); cr.stroke();
     // bulbs along the stage edge: evenly spaced with air between them, each
