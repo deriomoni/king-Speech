@@ -7,6 +7,8 @@ import Animated, {
   SlideInRight,
   SlideOutLeft,
   ZoomIn,
+  Keyframe,
+  Easing,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
@@ -50,6 +52,14 @@ const CORRIDOR_ART = {
 // ───────────────────────────────────────────────────────────────────────────
 
 const INTERVIEW_CORRIDOR_MS = 3500;
+// Interview / tongue-twister card motion. The first card, as the corridor lifts,
+// fades in and grows a little into place; later cards swap with a short pause
+// between the old one leaving and the new one arriving.
+const FIRST_CARD_IN = new Keyframe({
+  0: { opacity: 0, transform: [{ scale: 0.86 }] },
+  100: { opacity: 1, transform: [{ scale: 1 }], easing: Easing.out(Easing.cubic) },
+}).duration(650).delay(120);
+const CARD_OUT_MS = 220, CARD_GAP_MS = 180, CARD_IN_MS = 340;
 
 interface Props {
   tasks: Task[];
@@ -227,6 +237,13 @@ export default function TaskFlowView({
 
   // Interview-only state.
   const [corridor, setCorridor] = useState(deferred);
+  // true until the first task card has been shown (it gets the grow-in entrance)
+  const firstCardRef = useRef(true);
+  useEffect(() => {
+    if (corridor || !deferred) return;
+    const id = setTimeout(() => { firstCardRef.current = false; }, 0);
+    return () => clearTimeout(id);
+  }, [corridor, deferred]);
   const [devRows, setDevRows] = useState<DevRow[] | null>(null);
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   // Replay progress (0..1) of the answer currently playing — drives the
@@ -564,10 +581,17 @@ export default function TaskFlowView({
 
       {/* Task card — swaps on advance */}
       <View style={st.stage}>
+        {deferred && corridor ? null : (
         <Animated.View
           key={index}
-          entering={deferred ? FadeIn.duration(300) : SlideInRight.duration(360)}
-          exiting={deferred ? FadeOut.duration(160) : SlideOutLeft.duration(240)}
+          entering={
+            deferred
+              ? firstCardRef.current
+                ? FIRST_CARD_IN
+                : FadeIn.duration(CARD_IN_MS).delay(CARD_OUT_MS + CARD_GAP_MS)
+              : SlideInRight.duration(360)
+          }
+          exiting={deferred ? FadeOut.duration(CARD_OUT_MS) : SlideOutLeft.duration(240)}
           style={st.cardWrap}
         >
           <View
@@ -586,13 +610,14 @@ export default function TaskFlowView({
             {/* Clean flow: text fades in over 1.5s each new card. */}
             <Animated.Text
               key={`q-${index}-${replaceCounts[index] ?? 0}`}
-              entering={deferred ? FadeIn.duration(1500) : undefined}
+              entering={deferred ? FadeIn.duration(1500).delay(firstCardRef.current ? 250 : CARD_OUT_MS + CARD_GAP_MS) : undefined}
               style={[st.contentText, { color: theme.text, fontFamily: "Geologica_700Bold" }]}
             >
               {(questionOverrides[index] ?? task.content) || task.title}
             </Animated.Text>
           </View>
         </Animated.View>
+        )}
       </View>
 
       {/* Bottom control — record → (analyzing) → mini-score + gold Next pill */}
