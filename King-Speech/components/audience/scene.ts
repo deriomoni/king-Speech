@@ -56,7 +56,7 @@ export type Person = { id: string; items: Item[]; g: GG; G: Geo; closed: { neutr
 export type BgSprite = { file: string; w: number; h: number; eye: number; body: number };
 let BG: BgSprite[] = [];
 export function setBackgroundSprites(b: BgSprite[]) { BG = b; }
-const BG_SCALE = 0.6;
+const BG_SCALE = 0.66;
 type Cloth = { style: string; c: RGB; c2: RGB; btn: RGB; pants?: RGB };
 
 function parseCmds(d: string): Cmd[] {
@@ -840,7 +840,7 @@ export class Audience {
    *  swaying very gently; seated knees in front like everyone else */
   private drawStill(pl: Place, b: BgSprite, p: Plan, t: number) {
     const cr = this.painter.cr; const R = ROWS[pl.r];
-    // the pictures are drawn bigger than the cast: 60% brings them to the same size
+    // the pictures are drawn bigger than the cast: 66% brings them to the same size
     const x = seatX(pl.r, pl.c); const w = ((R.p * 0.9) / b.body) * BG_SCALE, k = w / b.w, h = b.h * k;
     const top = R.y + R.pb * 0.36 - b.eye * h, bottom = top + h;
     const lw = 9 * R.pb * 0.105 * this.LWK;
