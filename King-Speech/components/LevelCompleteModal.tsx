@@ -265,10 +265,15 @@ function VictoryScreen({ bestScore, durationSec, onNext, onMap, t, lang }: Level
   const atc = (x: number, y: number) => ({ position: "absolute" as const, left: uc(x), top: uc(y) });
   const ub = (n: number) => u(n * 0.85);
   const title = t("levelComplete");
-  const TP = 30; // room for the glow around the letters
+  // two explicit lines, each drawn twice (solid purple drop + white face with
+  // glow) from the same single-line layout, so the two copies can't wrap
+  // differently; padding leaves room for the glow (iOS clips it to the box)
+  const sp = title.indexOf(" ");
+  const titleLines = sp > 0 ? [title.slice(0, sp), title.slice(sp + 1)] : [title];
+  const GX = 30, GY = 22;
   const titleText = {
-    width: u(340 + TP * 2),
-    padding: u(TP),
+    paddingHorizontal: u(GX),
+    paddingVertical: u(GY),
     fontFamily: "Geologica_900Black",
     fontSize: u(54),
     lineHeight: u(52),
@@ -277,8 +282,8 @@ function VictoryScreen({ bestScore, durationSec, onNext, onMap, t, lang }: Level
   };
 
   return (
-    <View style={[StyleSheet.absoluteFill, { backgroundColor: "#3A0FA8" }]}>
-      <LinearGradient colors={["#B44BFF", "#7B2CF0", "#3A0FA8"]} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFill} />
+    <View style={[StyleSheet.absoluteFill, { backgroundColor: "#220862" }]}>
+      <LinearGradient colors={["#5E1C9E", "#3E1288", "#220862"]} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFill} />
       {/* below the artboard the dark swoosh runs on to the screen edge */}
       <View style={{ position: "absolute", left: 0, right: 0, top: offY + u(ART_H) - 2, bottom: 0, backgroundColor: "#1C0552" }} />
 
@@ -288,7 +293,7 @@ function VictoryScreen({ bestScore, durationSec, onNext, onMap, t, lang }: Level
           <Animated.View style={[{ ...at(-899, -770), width: u(2200), height: u(2200) }, raysSpin]}>
             <SvgXml xml={RAYS_SVG} width={u(2200)} height={u(2200)} />
           </Animated.View>
-          <View style={at(31, 160)}>
+          <View style={at(31, 190)}>
             <SvgXml xml={TROPHY_GLOW_SVG} width={u(340)} height={u(340)} />
           </View>
           <View style={{ position: "absolute", top: 0, left: -offX, width: W, height: u(ART_H) }}>
@@ -328,22 +333,27 @@ function VictoryScreen({ bestScore, durationSec, onNext, onMap, t, lang }: Level
           entering={ZoomIn.springify().damping(11)}
           style={{ ...at(201 - 173.9, 74.37), width: u(347.8), height: u(133.2), alignItems: "center", justifyContent: "center" }}
         >
-          <View style={{ transform: [{ rotate: "-5deg" }] }}>
-            <Text style={[titleText, { position: "absolute", left: 0, top: u(5), color: "#4A12B8" }]}>{title}</Text>
-            <Text
-              style={[
-                titleText,
-                { color: "#FFFFFF", textShadowColor: "rgba(255,217,255,0.7)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: u(22) },
-              ]}
-            >
-              {title}
-            </Text>
+          <View style={{ transform: [{ rotate: "-5deg" }], alignItems: "center" }}>
+            {titleLines.map((line, i) => (
+              <View key={i} style={{ marginTop: i ? -u(GY * 2) : 0 }}>
+                <Text numberOfLines={1} style={[titleText, { position: "absolute", left: 0, top: u(5), color: "#4A12B8" }]}>{line}</Text>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    titleText,
+                    { color: "#FFFFFF", textShadowColor: "rgba(255,217,255,0.7)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: u(22) },
+                  ]}
+                >
+                  {line}
+                </Text>
+              </View>
+            ))}
           </View>
         </Animated.View>
 
         {/* Trophy · 3D model spinning on its base, then rising into the centre
             (the flat trophy + podium stay as the fallback) */}
-        <Animated.View entering={FadeIn.delay(150).duration(400)} style={{ ...at(31, 180), width: u(340), height: u(340) }}>
+        <Animated.View entering={FadeIn.delay(150).duration(400)} style={{ ...at(31, 200), width: u(340), height: u(340) }}>
           <Trophy3D
             style={{ width: u(340), height: u(340) }}
             delayMs={150}

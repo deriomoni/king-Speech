@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Platform, View, type ViewStyle } from "react-native";
+import { PanResponder, Platform, View, type ViewStyle } from "react-native";
 import { GLView, type ExpoWebGLRenderingContext } from "expo-gl";
 import { Asset } from "expo-asset";
 import * as THREE from "three";
@@ -12,16 +12,55 @@ import * as THREE from "three";
 // Motion: it spins on its base — the camera sits a little above so the top of
 // the base shows — rocking a little to different sides as it turns; the spin
 // winds down facing front, then it lifts up into the centre and floats there.
+// Once it has settled the player can spin it left/right with a finger (with
+// a bit of momentum). Look: frosted yellow glass glowing from inside.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TROPHY_GLB = require("@/assets/models/trophy.glb");
 
-const BRAND_GOLD = "#FFCF34";
 const SPIN_SEC = 2.6; // spinning on the base
 const RISE_SEC = 0.75; // lift into the centre
 const TURNS = 3;
 const LOW_Y = -0.035; // where it spins (model units; the model is ~0.29 tall)
-const HIGH_Y = 0.02; // where it floats once it has risen
+const HIGH_Y = 0.0; // where it floats once it has risen (a short lift — it must stay clear of the title)
+
+// Frosted glass with an inner glow, in sRGB: a deep amber body, lighter where
+// it faces up, a pale glowing rim (fresnel) and a hot orange glow along the
+// bottom edges — like light trapped inside the glass.
+const GLASS_VERT = `
+varying vec3 vN;
+varying vec3 vV;
+varying vec3 vNw;
+void main() {
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  vN = normalize(normalMatrix * normal);
+  vV = normalize(-mv.xyz);
+  vNw = normalize(mat3(modelMatrix) * normal);
+  gl_Position = projectionMatrix * mv;
+}`;
+const GLASS_FRAG = `
+uniform vec3 uDeep;
+uniform vec3 uBody;
+uniform vec3 uRim;
+uniform vec3 uUnder;
+varying vec3 vN;
+varying vec3 vV;
+varying vec3 vNw;
+void main() {
+  vec3 n = normalize(vN);
+  vec3 nw = normalize(vNw);
+  if (!gl_FrontFacing) { n = -n; nw = -nw; }
+  float ndv = clamp(dot(n, normalize(vV)), 0.0, 1.0);
+  float fr = pow(1.0 - ndv, 1.7);
+  float up = nw.y * 0.5 + 0.5;
+  // body: deeper in the middle of each face, lighter towards the top
+  vec3 col = mix(uDeep, uBody, clamp(up * 0.75 + (1.0 - ndv) * 0.35, 0.0, 1.0));
+  // frosted rim light
+  col += uRim * fr * 1.0;
+  // inner glow pooling along the lower edges
+  col += uUnder * fr * smoothstep(0.65, 0.05, up) * 1.9;
+  gl_FragColor = vec4(min(col, vec3(1.0)), 1.0);
+}`;
 
 const easeOutCubic = (x: number) => 1 - (1 - x) ** 3;
 const easeOutBack = (x: number) => { const c = 1.6; return 1 + (c + 1) * (x - 1) ** 3 + c * (x - 1) ** 2; };
@@ -68,6 +107,28 @@ export default function Trophy3D({ style, delayMs = 0, fallback }: { style?: Vie
   const raf = useRef(0);
   const alive = useRef(true);
   useEffect(() => () => { alive.current = false; cancelAnimationFrame(raf.current); }, []);
+  // finger spin (only once the entrance is over)
+  const settled = useRef(false);
+  const drag = useRef({ active: false, angle: 0, vel: 0, sway: 1, startAngle: 0, lastX: 0, lastT: 0 });
+  const pan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => settled.current,
+      onMoveShouldSetPanResponder: (_, g) => settled.current && Math.abs(g.dx) > 4 && Math.abs(g.dx) > Math.abs(g.dy),
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderGrant: (_, g) => {
+        const d = drag.current; d.active = true; d.startAngle = d.angle; d.vel = 0; d.lastX = g.dx; d.lastT = Date.now();
+      },
+      onPanResponderMove: (_, g) => {
+        const d = drag.current; const now = Date.now();
+        d.angle = d.startAngle + g.dx * 0.012;
+        const dtm = Math.max(1, now - d.lastT);
+        d.vel = ((g.dx - d.lastX) * 0.012) / (dtm / 1000);
+        d.lastX = g.dx; d.lastT = now;
+      },
+      onPanResponderRelease: () => { const d = drag.current; d.active = false; d.vel = Math.max(-14, Math.min(14, d.vel)); },
+      onPanResponderTerminate: () => { drag.current.active = false; },
+    }),
+  ).current;
 
   if (failed) return <View style={style}>{fallback}</View>;
 
@@ -103,26 +164,31 @@ export default function Trophy3D({ style, delayMs = 0, fallback }: { style?: Vie
 
       const geo = parseGlb(await loadBytes());
       if (!alive.current) return;
-      // soft matte "clay" look (like a 3D icon): brand yellow, no metal or
-      // reflections; the light from below is orange, so the sides turning away
-      // from the key light fall into warm orange shade instead of grey
-      scene.add(new THREE.AmbientLight(0xffffff, 1.7));
-      scene.add(new THREE.HemisphereLight(0xffffff, 0xff8c1a, 1.0));
-      const key = new THREE.DirectionalLight(0xffffff, 1.1);
-      key.position.set(-0.5, 1.0, 0.9);
-      scene.add(key);
-      const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(BRAND_GOLD), roughness: 0.9, metalness: 0, side: THREE.DoubleSide });
+      const rgb = (hex: string) => { const c = parseInt(hex.slice(1), 16); return new THREE.Vector3(((c >> 16) & 255) / 255, ((c >> 8) & 255) / 255, (c & 255) / 255); };
+      const mat = new THREE.ShaderMaterial({
+        vertexShader: GLASS_VERT,
+        fragmentShader: GLASS_FRAG,
+        uniforms: {
+          uDeep: { value: rgb("#B5600A") },
+          uBody: { value: rgb("#FFCF34") },
+          uRim: { value: rgb("#FFF3B0") },
+          uUnder: { value: rgb("#FF8A1F") },
+        },
+        side: THREE.DoubleSide,
+      });
       const mesh = new THREE.Mesh(geo, mat);
       // pivot = the bottom centre of the base (the model's origin)
       const pivot = new THREE.Group();
       pivot.add(mesh);
       scene.add(pivot);
 
-      let t0 = -1;
+      let t0 = -1, last = -1;
       const frame = (now: number) => {
         if (!alive.current) return;
         if (t0 < 0) t0 = now + delayMs;
         const t = Math.max(0, (now - t0) / 1000);
+        const dt = last < 0 ? 0 : Math.min(0.05, (now - last) / 1000); last = now;
+        settled.current = t >= SPIN_SEC + RISE_SEC;
         if (t < SPIN_SEC) {
           // spin on the base, winding down to face front, rocking to the sides
           const p = t / SPIN_SEC;
@@ -143,7 +209,12 @@ export default function Trophy3D({ style, delayMs = 0, fallback }: { style?: Vie
           // float: a slow bob and a gentle turn to show off the sides
           const s = t - SPIN_SEC - RISE_SEC;
           pivot.position.y = HIGH_Y + Math.sin(s * 1.6) * 0.006;
-          pivot.rotation.set(0, Math.sin(s * 0.7) * 0.32, 0);
+          // the player's spin: follows the finger, then coasts and slows down
+          const d = drag.current;
+          if (!d.active) { d.angle += d.vel * dt; d.vel *= Math.pow(0.04, dt); }
+          // the idle sway fades out while it's being spun and comes back after
+          d.sway += ((d.active || Math.abs(d.vel) > 0.3 ? 0 : 1) - d.sway) * Math.min(1, dt * 2);
+          pivot.rotation.set(0, d.angle + Math.sin(s * 0.7) * 0.32 * d.sway, 0);
         }
         try {
           renderer.render(scene, camera);
@@ -162,5 +233,9 @@ export default function Trophy3D({ style, delayMs = 0, fallback }: { style?: Vie
     }
   };
 
-  return <GLView style={[{ backgroundColor: "transparent" }, style]} onContextCreate={onContextCreate} msaaSamples={4} />;
+  return (
+    <View style={style} {...pan.panHandlers}>
+      <GLView style={{ flex: 1, backgroundColor: "transparent" }} onContextCreate={onContextCreate} msaaSamples={4} />
+    </View>
+  );
 }
