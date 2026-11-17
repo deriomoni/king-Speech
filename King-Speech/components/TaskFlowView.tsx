@@ -49,7 +49,7 @@ const CORRIDOR_ART = {
 // + score breakdown) is shown before the level's aggregate flower.
 // ───────────────────────────────────────────────────────────────────────────
 
-const INTERVIEW_CORRIDOR_MS = 7000;
+const INTERVIEW_CORRIDOR_MS = 3500;
 
 interface Props {
   tasks: Task[];
@@ -328,7 +328,7 @@ export default function TaskFlowView({
   const task = tasks[index];
   const isLast = index >= total - 1;
 
-  // 7s mascot corridor before the interview begins (mirrors the reading level).
+  // 3.5s mascot corridor before the interview begins (mirrors the reading level).
   // The timer lives in <LevelCorridor> so press-and-hold can pause it.
 
   // ── Standard (tongue-twister) flow: analyze each take inline ────────────────
@@ -701,7 +701,7 @@ export default function TaskFlowView({
         </View>
       ) : null}
 
-      {/* Corridor — 7s story-style curtain on entry (Figma 37:5228 / 37:6974) */}
+      {/* Corridor — 3.5s story-style curtain on entry (Figma 37:5228 / 37:6974) */}
       {corridor ? (
         <LevelCorridor
           isTongue={isTongue}

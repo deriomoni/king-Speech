@@ -86,7 +86,7 @@ type Phase = "idle" | "countdown" | "recording" | "saving";
 
 const BEZ = Easing.bezier(0.22, 1, 0.36, 1);
 const READING_HEADER_H = 46; // collapsed caption header height
-const LOADING_MS = 5000;
+const LOADING_MS = 2500;
 
 // Figma cover hero: Geologica Bold 40 (37:5850). Very long titles step down.
 function heroSizeFor(title: string): number {
@@ -185,7 +185,7 @@ export default function ReadingLevelView({
 
   const { begin, finish, cancel } = useReadingCapture();
 
-  // 5s loading curtain shown once on entry (not on retry): the level mounts +
+  // 2.5s loading curtain shown once on entry (not on retry): the level mounts +
   // renders the full poem behind it so a long piece is ready when it lifts.
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), LOADING_MS);
