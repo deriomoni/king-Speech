@@ -56,6 +56,7 @@ export type Person = { id: string; items: Item[]; g: GG; G: Geo; closed: { neutr
 export type BgSprite = { file: string; w: number; h: number; eye: number; body: number };
 let BG: BgSprite[] = [];
 export function setBackgroundSprites(b: BgSprite[]) { BG = b; }
+const BG_SCALE = 0.6;
 type Cloth = { style: string; c: RGB; c2: RGB; btn: RGB; pants?: RGB };
 
 function parseCmds(d: string): Cmd[] {
@@ -839,12 +840,13 @@ export class Audience {
    *  swaying very gently; seated knees in front like everyone else */
   private drawStill(pl: Place, b: BgSprite, p: Plan, t: number) {
     const cr = this.painter.cr; const R = ROWS[pl.r];
-    const x = seatX(pl.r, pl.c); const w = (R.p * 0.9) / b.body, k = w / b.w, h = b.h * k;
+    // the pictures are drawn bigger than the cast: 60% brings them to the same size
+    const x = seatX(pl.r, pl.c); const w = ((R.p * 0.9) / b.body) * BG_SCALE, k = w / b.w, h = b.h * k;
     const top = R.y + R.pb * 0.36 - b.eye * h, bottom = top + h;
     const lw = 9 * R.pb * 0.105 * this.LWK;
     const rot = 0.022 * Math.sin(TAU * 0.11 * t + p.b) + 0.01 * Math.sin(TAU * 0.23 * t + p.b * 2);
     cr.save(); cr.translate(x, bottom); cr.rotate(rot); cr.translate(-w / 2, -h); cr.image(b.file, w, h); cr.restore();
-    const kw = R.p * 0.9 * 0.27, LEG: RGB = [0.1, 0.11, 0.15];
+    const kw = w * b.body * 0.27, LEG: RGB = [0.1, 0.11, 0.15];
     for (const sg of [-1, 1]) {
       cr.rectangle(x + sg * kw - kw * 0.72, bottom + 0.05 * R.pb, kw * 1.44, 0.7 * R.pb); cr.setRGB(LEG); cr.fillPreserve(); strokeInk(cr, lw);
     }
