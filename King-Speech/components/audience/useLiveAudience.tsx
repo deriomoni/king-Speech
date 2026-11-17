@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { Cairo, type Backend } from "./cairo";
-import { Audience, HALL, loadCast, setSpriteMeta, type Person } from "./scene";
+import { Audience, HALL, loadCast, setBackgroundSprites, setSpriteMeta, type BgSprite, type Person } from "./scene";
 
 export type AudiencePhase = "idle" | "live" | "done";
 export type LiveAudienceProps = {
@@ -39,11 +39,31 @@ export const SPRITES: Record<string, number> = {
   "kernel_3.png": require("@/assets/showtime/audience/live/kernel_3.png"),
   "kernel_4.png": require("@/assets/showtime/audience/live/kernel_4.png"),
   "kernel_5.png": require("@/assets/showtime/audience/live/kernel_5.png"),
+  "bg_1.png": require("@/assets/showtime/audience/live/bg_1.png"),
+  "bg_2.png": require("@/assets/showtime/audience/live/bg_2.png"),
+  "bg_3.png": require("@/assets/showtime/audience/live/bg_3.png"),
+  "bg_4.png": require("@/assets/showtime/audience/live/bg_4.png"),
+  "bg_5.png": require("@/assets/showtime/audience/live/bg_5.png"),
+  "bg_6.png": require("@/assets/showtime/audience/live/bg_6.png"),
+  "bg_7.png": require("@/assets/showtime/audience/live/bg_7.png"),
+  "bg_8.png": require("@/assets/showtime/audience/live/bg_8.png"),
 };
+
+/** background extras («Фоновые», «Операторы»): picture size, eye line, shoulder share */
+export const BG_SPRITES: BgSprite[] = [
+  { file: "bg_1.png", w: 708, h: 1240, eye: 0.33, body: 0.9 },  // девушка с каре, в телефоне
+  { file: "bg_2.png", w: 823, h: 1208, eye: 0.29, body: 0.85 }, // дедушка спит
+  { file: "bg_3.png", w: 814, h: 1322, eye: 0.39, body: 0.9 },  // девушка с блокнотом
+  { file: "bg_4.png", w: 843, h: 1278, eye: 0.33, body: 0.85 }, // парень в маске, в телефоне
+  { file: "bg_5.png", w: 957, h: 1266, eye: 0.26, body: 0.72 }, // оператор с камерой
+  { file: "bg_6.png", w: 807, h: 1270, eye: 0.29, body: 0.9 },  // девушка в шляпе
+  { file: "bg_7.png", w: 850, h: 1271, eye: 0.33, body: 0.85 }, // парень в капюшоне с телефоном
+  { file: "bg_8.png", w: 874, h: 1297, eye: 0.26, body: 0.9 },  // бородач говорит по телефону
+];
 
 let CAST: Person[] | null = null;
 const getCast = () => {
-  if (!CAST) { setSpriteMeta(SPRITE_META); CAST = loadCast(RAW); }
+  if (!CAST) { setSpriteMeta(SPRITE_META); setBackgroundSprites(BG_SPRITES); CAST = loadCast(RAW); }
   // each mount dresses its own copy (outfits / per-frame scratch live on the person)
   return CAST.map((p) => ({ ...p, G: { ...p.G } }));
 };

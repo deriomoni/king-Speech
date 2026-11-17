@@ -91,6 +91,11 @@ export class Canvas2DBackend implements Backend<Path2D> {
     this.ctx.setTransform(1, 0, 0, 1, 0, 0); this.ctx.drawImage(content.canvas, cx - this.ox, cy - this.oy);
     this.pool.push(mask.canvas, content.canvas);
   }
+  glow(m: Mat, c: RGB, a: number) {
+    this.mat(m); const g = this.ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+    g.addColorStop(0, css(c, a)); g.addColorStop(0.35, css(c, a * 0.62)); g.addColorStop(0.7, css(c, a * 0.18)); g.addColorStop(1, css(c, 0));
+    this.ctx.fillStyle = g; this.ctx.beginPath(); this.ctx.arc(0, 0, 1, 0, Math.PI * 2); this.ctx.fill(); this.id();
+  }
   beginLayer(alpha: number) { this.push("layer", [0, 0, this.w, this.h], alpha); }
   endLayer() {
     const { child, m } = this.pop(); this.ctx.setTransform(1, 0, 0, 1, 0, 0);

@@ -49,7 +49,13 @@ type Geo = {
   // per-frame scratch (python mutates G while drawing)
   col?: [number, number]; col_y?: number; cloth?: RGB; S?: number; knee_top?: number; shl?: number; shr?: number;
 };
-export type Person = { id: string; items: Item[]; g: GG; G: Geo; closed: { neutral: Mouth; happy: Mouth }; cl?: Cloth };
+export type Person = { id: string; items: Item[]; g: GG; G: Geo; closed: { neutral: Mouth; happy: Mouth }; cl?: Cloth; bg?: BgSprite };
+/** background extras (flat pictures, no hands): they only sit and sway a little.
+ *  eye = eye line as a fraction of the picture height, body = how much of the
+ *  picture's width is shoulders (the camera sticks out on one of them) */
+export type BgSprite = { file: string; w: number; h: number; eye: number; body: number };
+let BG: BgSprite[] = [];
+export function setBackgroundSprites(b: BgSprite[]) { BG = b; }
 type Cloth = { style: string; c: RGB; c2: RGB; btn: RGB; pants?: RGB };
 
 function parseCmds(d: string): Cmd[] {
@@ -477,7 +483,7 @@ export type Plan = {
   bl: number[]; c: [number, number, number][]; lk: [number, number][]; b: number; mf: [number, number];
   brow: Iv[]; hp: Iv[]; talk: Iv[]; partner: [number, number, number, number][];
   gl: [number, number, number][]; shrug: Iv[]; pop: number; toss: Toss[]; clap: Clap[];
-  raise: number; amp: number; handsUp: number; hpLocked?: boolean; phoneFrom: number; phoneSide: number; horizon: number; r: Rng;
+  raise: number; amp: number; handsUp: number; hpLocked?: boolean; still?: boolean; phoneFrom: number; phoneSide: number; horizon: number; r: Rng;
 };
 
 /** last index i with list[i][0] <= t (lists are sorted by start) */
@@ -534,9 +540,11 @@ export class Audience {
 
   constructor(cast: Person[], cr: Cairo<any>, seed: number) {
     this.painter = new Painter(cr); this.rng = new Rng(seed);
-    this.cast = withExtras(cast, COUNTS.reduce((a, v) => a + v, 0) - cast.length, this.rng);
+    const bg: Person[] = BG.map((b, k) => ({ id: "bg:" + k, items: [], g: cast[0].g, G: { ...cast[0].G }, closed: cast[0].closed, bg: b }));
+    this.cast = [...withExtras(cast, COUNTS.reduce((a, v) => a + v, 0) - cast.length - bg.length, this.rng), ...bg];
     this.dress(); this.place(); this.makePlan();
-    this.LWK = this.cast.reduce((s, c) => s + 1 / c.G.ew, 0) / this.cast.length;
+    const drawn = this.cast.filter((c) => !c.bg);
+    this.LWK = drawn.reduce((s, c) => s + 1 / c.G.ew, 0) / drawn.length;
   }
 
   // build_cast: outfits (the order and colours change every run)
@@ -589,7 +597,8 @@ export class Audience {
   // final4.plan + scene.make_plan, generated ahead in chunks
   makePlan() {
     const n = this.places.length; const rp = this.rng;
-    const pop = new Set(rp.sample(n, Math.min(n, Math.round(n * 9 / 48))));
+    const still = (j: number) => !!this.cast[this.places[j].i].bg;
+    const pop = new Set(rp.sample(n, Math.min(n, Math.round(n * 9 / 48))).filter((j) => !still(j)));
     this.P = this.places.map((_, j) => {
       const r = new Rng(rp.randint(1, 1e9));
       const p: Plan = {
@@ -597,7 +606,7 @@ export class Audience {
         lk: [0, 1].map(() => [r.uniform(0.1, 0.35), r.uniform(0, TAU)] as [number, number]), b: r.uniform(0, TAU),
         mf: [r.uniform(3.5, 5), r.uniform(6, 8)], brow: [], hp: [], talk: [], partner: [], gl: [], shrug: [],
         pop: pop.has(j) ? r.choice([-1, 1]) : 0, toss: [], clap: [], raise: r.choice([0, 0, r.uniform(0.6, 1.4), r.uniform(1.6, 3.0)]),
-        amp: r.uniform(0.6, 1.15), handsUp: 1, phoneFrom: -1, phoneSide: r.choice([-1, 1]), horizon: 0, r,
+        amp: r.uniform(0.6, 1.15), handsUp: 1, phoneFrom: -1, phoneSide: r.choice([-1, 1]), horizon: 0, r, still: still(j),
       };
       return p;
     });
@@ -630,7 +639,7 @@ export class Audience {
   start(t: number) {
     this.mode = "live"; this.liveSince = t; this.nextChat = t + 6;
     for (const p of this.P) {
-      if (p.pop) continue;
+      if (p.pop || p.still) continue;
       if (p.r.random() < 0.92) { const a = t + p.r.uniform(0, 0.8); insertSorted(p.clap, [a, a + p.r.uniform(2.3, 3.2), p.r.uniform(2.0, 5.2), p.r.uniform(0, TAU)]); }
       insertSorted(p.hp, [t + p.r.uniform(0, 0.5), t + p.r.uniform(2.5, 3.5)]);
     }
@@ -640,6 +649,7 @@ export class Audience {
     this.finishedAt = t;
     this.mode = "done";
     for (const p of this.P) {
+      if (p.still) continue;
       p.pop = 0; p.phoneFrom = -1; p.handsUp = 1.5; p.talk = p.talk.filter((iv) => iv[1] < t);
       // a proper round of applause that dies down by OVATION_SEC
       const a = t + p.r.uniform(0, 0.6); insertSorted(p.clap, [a, t + OVATION_SEC - p.r.uniform(0.4, 1.4), p.r.uniform(2.0, 5.2), p.r.uniform(0, TAU)]);
@@ -649,7 +659,7 @@ export class Audience {
 
   private chatter(t: number) {
     if (this.mode !== "live" || t < this.nextChat) return;
-    const busy = (j: number) => this.P[j].talk.some((iv) => iv[1] > t - 1) || this.P[j].pop !== 0;
+    const busy = (j: number) => this.P[j].still || this.P[j].talk.some((iv) => iv[1] > t - 1) || this.P[j].pop !== 0;
     const pairs: [number, number][] = [];
     for (let a = 0; a < this.places.length - 1; a++) {
       const A = this.places[a], B = this.places[a + 1];
@@ -678,7 +688,7 @@ export class Audience {
     const el = t - this.liveSince; // after ~2.5 min some phones come out, one more every ~25 s
     const want = el < 150 ? 0 : Math.min(5, 1 + Math.floor((el - 150) / 25));
     while (this.phones < want) {
-      const free = this.P.map((p, j) => j).filter((j) => !this.P[j].pop && this.P[j].phoneFrom < 0);
+      const free = this.P.map((p, j) => j).filter((j) => !this.P[j].still && !this.P[j].pop && this.P[j].phoneFrom < 0);
       if (!free.length) break;
       this.P[this.rng.choice(free)].phoneFrom = t; this.phones++;
     }
@@ -775,6 +785,7 @@ export class Audience {
       this.places.forEach((pl, j) => {
         if (pl.r !== r) return;
         const per = this.cast[pl.i];
+        if (per.bg) { this.drawStill(pl, per.bg, this.P[j], t); return; }
         cr.save(); const m = this.personTf(pl); cr.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
         const st = this.state(j, t); st.p = this.P[j]; st.t = t; st.ftop = this.frontTop(pl);
         drawPerson(this.painter, per, st, r < FAR_ROWS); cr.restore();
@@ -806,10 +817,11 @@ export class Audience {
     // beams first, so the lamps sit on top of them
     for (const [fx, rot] of spots) {
       const x = W * fx, ly = pipeY + h * S.lens, sway = 0.012 * Math.sin(TAU * (t * 0.05) + fx * 9);
-      const a = rot * 2.4 + sway, len = 1450, spread = 210;
-      const ex = x - Math.sin(a) * len, ey = ly + Math.cos(a) * len;
-      cr.moveTo(x - w * 0.22, ly); cr.lineTo(x + w * 0.22, ly); cr.lineTo(ex + spread, ey); cr.lineTo(ex - spread, ey); cr.closePath();
-      cr.setRGBA([1, 0.9, 0.7], sil ? 0.07 : 0.045); cr.fill();
+      // a beam is a long soft ellipse of light — no hard sides, it just fades out
+      const a = rot * 2.4 + sway, len = 1500;
+      const mx = x - Math.sin(a) * len * 0.5, my = ly + Math.cos(a) * len * 0.5;
+      cr.glow(mx, my, 260, len * 0.55, [1, 0.9, 0.7], sil ? 0.1 : 0.07, a);
+      cr.glow(x - Math.sin(a) * 160, ly + Math.cos(a) * 160, 150, 300, [1, 0.9, 0.68], sil ? 0.12 : 0.08, a);
     }
     // the pipe they hang from
     cr.rectangle(-20, pipeY - 16, W + 40, 32); cr.setRGB([0.2, 0.19, 0.21]); cr.fillPreserve(); cr.setRGB(INK); cr.setLineWidth(lw); cr.stroke();
@@ -819,10 +831,26 @@ export class Audience {
       // lens glow
       const gx = x - Math.sin(rot) * h * S.lens, gy = pipeY + Math.cos(rot) * h * S.lens;
       const gr = (h / 100) * S.glass;
-      for (const [kk, al] of [[1.35, 0.07], [1.12, 0.1]] as [number, number][]) {
-        cr.save(); cr.translate(gx, gy); cr.scale(gr * kk, gr * kk); cr.arc(0, 0, 1, 0, TAU); cr.restore();
-        cr.setRGBA([1, 0.9, 0.6], al); cr.fill();
-      }
+      cr.glow(gx, gy, gr * 2.6, gr * 2.6, [1, 0.88, 0.58], 0.28);
+    }
+  }
+
+  /** a background extra: the picture in the seat, eyes on the row's eye line,
+   *  swaying very gently; seated knees in front like everyone else */
+  private drawStill(pl: Place, b: BgSprite, p: Plan, t: number) {
+    const cr = this.painter.cr; const R = ROWS[pl.r];
+    const x = seatX(pl.r, pl.c); const w = (R.p * 0.9) / b.body, k = w / b.w, h = b.h * k;
+    const top = R.y + R.pb * 0.36 - b.eye * h, bottom = top + h;
+    const lw = 9 * R.pb * 0.105 * this.LWK;
+    const rot = 0.022 * Math.sin(TAU * 0.11 * t + p.b) + 0.01 * Math.sin(TAU * 0.23 * t + p.b * 2);
+    cr.save(); cr.translate(x, bottom); cr.rotate(rot); cr.translate(-w / 2, -h); cr.image(b.file, w, h); cr.restore();
+    const kw = R.p * 0.9 * 0.27, LEG: RGB = [0.1, 0.11, 0.15];
+    for (const sg of [-1, 1]) {
+      cr.rectangle(x + sg * kw - kw * 0.72, bottom + 0.05 * R.pb, kw * 1.44, 0.7 * R.pb); cr.setRGB(LEG); cr.fillPreserve(); strokeInk(cr, lw);
+    }
+    for (const sg of [-1, 1]) {
+      cr.save(); cr.translate(x + sg * kw, bottom + 0.02 * R.pb); cr.scale(kw, 0.16 * R.pb); cr.arc(0, 0, 1, 0, TAU); cr.restore();
+      cr.setRGB(LEG); cr.fillPreserve(); strokeInk(cr, lw);
     }
   }
 
@@ -845,7 +873,7 @@ export class Audience {
       cr.setRGB(INK); cr.setLineWidth(lw * 0.55); cr.stroke();
     }
     // light pooling on the boards near the speaker
-    if (!sil) { cr.setRGBA([1, 0.86, 0.62], 0.08); cr.rectangle(0, yb + (H - yb) * 0.45, W, H); cr.fill(); }
+    if (!sil) cr.glow(W / 2, H, W * 0.6, (H - yb) * 0.9, [1, 0.86, 0.62], 0.16);
     // the boards run on under the speech: fade them into the stage panel colour
     for (let i = 0; i < 6; i++) { const yy = yb + (H - yb) * (0.35 + i * 0.11); cr.setRGBA([0.149, 0.149, 0.157], 0.2 + i * 0.05); cr.rectangle(-20, yy, W + 40, H - yy + 20); cr.fill(); }
     // apron lip
@@ -860,9 +888,11 @@ export class Audience {
       const x = W * fx; const h = B.strip ? 0.42 * pb : 0.52 * pb; const w = h * B.aspect;
       const flick = 0.88 + 0.12 * Math.sin(TAU * (t * 0.7 + i * 0.37));
       const off = k === 0 && (t * 0.9 + i * 1.7) % 13 < 0.14;
-      if (!off) for (const [kk, al] of [[2.6, 0.05], [1.8, 0.07], [1.15, 0.09]] as [number, number][]) {
-        cr.save(); cr.translate(x, baseY - h * B.glow); cr.scale(w * 0.5 * kk * (B.strip ? 1 : 1.35), h * 0.5 * kk); cr.arc(0, 0, 1, 0, TAU); cr.restore();
-        cr.setRGBA([1, 0.86, 0.55], al * flick * (sil ? 1.3 : 1)); cr.fill();
+      // diffuse light around each bulb: a wide soft haze and a warmer core, no edges
+      if (!off) {
+        const gy = baseY - h * B.glow, rx = B.strip ? w * 0.75 : h * 1.25;
+        cr.glow(x, gy, rx, h * 1.5, [1, 0.84, 0.5], 0.16 * flick * (sil ? 1.4 : 1));
+        cr.glow(x, gy, rx * 0.45, h * 0.62, [1, 0.9, 0.62], 0.3 * flick);
       }
       drawBulb(cr, k, x, baseY, h, !off, h * 0.03);
     });

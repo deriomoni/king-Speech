@@ -32,6 +32,8 @@ export interface Backend<H> {
   beginMask(): void;
   endMasked(): void;
   beginLayer(alpha: number): void;
+  /** soft light: unit disc under m, colour at alpha in the centre fading to 0 at the rim (no edge) */
+  glow(m: Mat, c: RGB, a: number): void;
   endLayer(): void;
 }
 
@@ -139,6 +141,11 @@ export class Cairo<H = unknown> {
   radial(cx: number, cy: number, r0: number, r1: number, c0: [number, number, number, number], c1: [number, number, number, number]) {
     const p = this.tp(cx, cy), k = Math.sqrt(Math.abs(this.st.m[0] * this.st.m[3] - this.st.m[1] * this.st.m[2]));
     this.b.paintRadial(p[0], p[1], r0 * k, r1 * k, c0, c1);
+  }
+  /** a soft, edgeless light: ellipse (rx, ry) at (cx, cy), rotated by rot */
+  glow(cx: number, cy: number, rx: number, ry: number, c: RGB, a: number, rot = 0) {
+    this.save(); this.translate(cx, cy); this.rotate(rot); this.scale(rx, ry);
+    this.b.glow(this.st.m, c, a); this.restore();
   }
   image(name: string, w: number, h: number) { this.b.image(name, this.st.m, w, h, this.sil); }
 }

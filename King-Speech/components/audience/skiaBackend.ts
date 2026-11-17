@@ -88,6 +88,11 @@ export class SkiaBackend implements Backend<H> {
   beginGroup(b: [number, number, number, number]) { this.c.saveLayer(undefined, Skia.XYWHRect(b[0], b[1], b[2], b[3])); }
   beginMask() { const p = Skia.Paint(); p.setBlendMode(BlendMode.DstIn); this.c.saveLayer(p); }
   endMasked() { this.c.restore(); this.c.restore(); }
+  glow(m: Mat, c: RGB, a: number) {
+    const p = Skia.Paint(); p.setAntiAlias(true);
+    p.setShader(Skia.Shader.MakeRadialGradient({ x: 0, y: 0 }, 1, [col(c, a), col(c, a * 0.62), col(c, a * 0.18), col(c, 0)], [0, 0.35, 0.7, 1], TileMode.Clamp));
+    this.c.save(); this.c.concat(m9(m)); this.c.drawCircle(0, 0, 1, p); this.c.restore();
+  }
   beginLayer(alpha: number) { const p = Skia.Paint(); p.setAlphaf(alpha); this.c.saveLayer(p); }
   endLayer() { this.c.restore(); }
 }
