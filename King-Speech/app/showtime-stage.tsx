@@ -5565,7 +5565,6 @@ export default function ShowtimeStageScreen() {
               <Text style={[s.liveText, { fontFamily: "Geologica_700Bold" }]}>LIVE</Text>
             </View>
           )}
-          <Text style={[s.speechTitle, { fontFamily: "Geologica_500Medium" }]} numberOfLines={1} ellipsizeMode="tail">{speech.title}</Text>
         </View>
         <View style={[s.headerRight, s.headerSide]} />
       </View>

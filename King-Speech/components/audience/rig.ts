@@ -12,7 +12,7 @@ const BODY_D: RGB = [0.17, 0.17, 0.18];    // inner rings, doors' shadow side
 const METAL: RGB = [0.4, 0.4, 0.41];       // bulb sockets
 const LENS: RGB = [0.98, 0.84, 0.47];
 const LENS_HI: RGB = [0.99, 0.93, 0.69];
-const GLASS_OFF: RGB = [0.97, 0.92, 0.84];
+const GLASS_OFF: RGB = [0.66, 0.63, 0.59];
 
 type Cr = Cairo<any>;
 
@@ -43,10 +43,13 @@ function yoke(cr: Cr, half: number, yt: number, yb: number, w: number, lw: numbe
   band(cr, pts, w, BODY, lw);
 }
 /** the lens: dark ring, warm glass, a paler centre */
+/** set by drawSpot: a switched-off lamp shows dark glass */
+let LIT = true;
+const LENS_OFF: RGB = [0.36, 0.34, 0.33], LENS_OFF_HI: RGB = [0.44, 0.42, 0.41];
 function lens(cr: Cr, x: number, y: number, ring: number, glass: number, hi: number, lw: number) {
   circle(cr, x, y, ring); paint(cr, BODY_D, lw);
-  circle(cr, x, y, glass); paint(cr, LENS, lw);
-  circle(cr, x - glass * 0.08, y - glass * 0.08, hi); fill(cr, LENS_HI);
+  circle(cr, x, y, glass); paint(cr, LIT ? LENS : LENS_OFF, lw);
+  circle(cr, x - glass * 0.08, y - glass * 0.08, hi); fill(cr, LIT ? LENS_HI : LENS_OFF_HI);
 }
 
 export type SpotKind = 0 | 1 | 2 | 3;
@@ -59,8 +62,8 @@ export const SPOT = [
 ];
 
 /** draw spotlight `k` with its clamp at (x, y), `h` tall, rotated by `rot` */
-export function drawSpot(cr: Cr, k: number, x: number, y: number, h: number, rot: number, lwHall: number) {
-  const s = h / 100, lw = lwHall / s;
+export function drawSpot(cr: Cr, k: number, x: number, y: number, h: number, rot: number, lwHall: number, lit = true) {
+  const s = h / 100, lw = lwHall / s; LIT = lit;
   cr.save(); cr.translate(x, y); cr.rotate(rot); cr.scale(s, s);
   if (k === 0) {            // 1 · круглый: tall yoke, hood, deep round housing, foot
     yoke(cr, 34, 4, 56, 5, lw);
