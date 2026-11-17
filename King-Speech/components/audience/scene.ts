@@ -328,7 +328,7 @@ function drawEarrings(cr: Cairo, G: Geo) {
   }
 }
 
-function drawPerson(P: Painter, per: Person, st: State) {
+function drawPerson(P: Painter, per: Person, st: State, far = false) {
   const cr = P.cr; const g = per.g, G = per.G; const by = g.base; const { lean, breath } = st;
   cr.save(); cr.transform(1, 0, -lean, 1 + breath, lean * by, -breath * by);
   const items = per.items;
@@ -338,7 +338,10 @@ function drawPerson(P: Painter, per: Person, st: State) {
   const front = items.filter((it, k) => k > G.sk_last && it.kind === "hair" && it.bb[3] > G.ysh - G.ew);
   P.paintItems(front);
   if (G.earrings) drawEarrings(cr, G);
-  if (!cr.sil) {
+  if (!cr.sil && far) {
+    drawFeatures(P, per, st);
+    if (g.beard) { cr.save(); cr.translate(g.tx, g.ty); cr.scale(g.s, g.s); drawMouth(P, per, st, g.beard); cr.restore(); }
+  } else if (!cr.sil) {
     // features only where the skin is visible (python: push_group mask / feat)
     let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
     for (const it of items) if (it.kind === "skin") { x0 = Math.min(x0, it.bb[0]); x1 = Math.max(x1, it.bb[1]); y0 = Math.min(y0, it.bb[2]); y1 = Math.max(y1, it.bb[3]); }
@@ -437,15 +440,23 @@ function drawProps(P: Painter, per: Person, st: State) {
   if (p.phoneFrom >= 0 && t >= p.phoneFrom) drawPhone(cr, G, st, p);
 }
 
-// ---------------- hall layout (as in scene.py: 16:9, six rows, 48 seats) ----------------
-export const HALL = { W: 1920, H: 1080 };
-const NR = 6;
+// ---------------- hall layout ----------------
+// scene.py's six rows (same scale, same 1.105 growth per row), plus three
+// rows further back, two rows closer, and the edge of the stage the speaker
+// stands on at the bottom.
+export const HALL = { W: 1920, H: 2400 };
+const NR = 11;
 const ROWS: { y: number; p: number; pb: number }[] = [];
 {
-  let y = 45, pitch = 140;
+  let y = 40, pitch = 140 / 1.105 ** 3;
   for (let r = 0; r < NR; r++) { ROWS.push({ y, p: pitch * 1.12, pb: pitch }); y += pitch * 0.95; pitch *= 1.105; }
 }
-const COUNTS = [11, 10, 8, 8, 7, 4];
+/** people per row, back to front (some seats stay empty, as in the clips) */
+const COUNTS = [9, 9, 10, 11, 10, 8, 8, 7, 6, 5, 5];
+/** top of the stage floor: just over the front row's knees */
+const FLOOR_Y = ROWS[NR - 1].y + ROWS[NR - 1].pb * 1.72;
+/** back rows are tiny — their faces skip the skin mask (bangs over eyes don't read at that size) */
+const FAR_ROWS = 3;
 const SEAT: RGB = [0.76, 0.14, 0.12];
 // «Затемнить зал»: a hazy backlit room, the rows and people as flat dark shapes
 const SIL_BG: RGB = [0.34, 0.29, 0.32], SIL_SEAT: RGB = [0.19, 0.16, 0.18], SIL_PEOPLE: RGB = [0.045, 0.04, 0.05];
@@ -483,6 +494,29 @@ function nearClaps(p: Plan, t: number) { const i = lastStart(p.clap, t + 0.3); r
 function activeToss(p: Plan, t: number) { const i = lastStart(p.toss, t); return i < 0 ? [] : p.toss.slice(Math.max(0, i - 1), i + 1); }
 const insertSorted = <T extends number[]>(list: T[], item: T) => { const i = lastStart(list, item[0]); list.splice(i + 1, 0, item); };
 
+/** more viewers than the 48 drawn characters: recoloured repeats of the cast
+ *  (another skin from the cast's own tones, hair from scene.py's HAIR_TONES),
+ *  seated after the originals and clones, i.e. in the back rows */
+function withExtras(cast: Person[], extra: number, rng: Rng): Person[] {
+  if (extra <= 0) return cast;
+  const skins: RGB[] = []; for (const p of cast) if (!skins.some((s) => s.join() === p.G.skin.join())) skins.push(p.G.skin);
+  const HAIR: RGB[] = [[0.24, 0.15, 0.1], [0.36, 0.22, 0.13], [0.5, 0.28, 0.14], [0.3, 0.2, 0.16], [0.12, 0.09, 0.08]];
+  const src = rng.shuffle(cast.filter((p) => !p.id.endsWith("*"))); const out = [...cast];
+  for (let k = 0; k < extra; k++) {
+    const o = src[k % src.length];
+    const skin = rng.choice(skins.filter((s) => s.join() !== o.G.skin.join()));
+    const hair = rng.choice(HAIR);
+    const items = o.items.map((it) => {
+      const n = { ...it };
+      if (it.kind === "skin" && it.fill) n.fill = skin;
+      if (it.kind === "hair" && it.fill) { if (it.stroke && it.stroke.join() === it.fill.join()) n.stroke = hair; n.fill = hair; }
+      return n;
+    });
+    out.push({ ...o, id: o.id + "+" + k, items, g: { ...o.g, beard: o.g.beard ? skin : null }, G: { ...o.G, skin } });
+  }
+  return out;
+}
+
 export type Mode = "idle" | "live" | "done";
 /** how long the closing applause lasts (the stage waits for it before fading out) */
 export const OVATION_SEC = 4.6;
@@ -494,7 +528,8 @@ export class Audience {
   onTalk?: (j: number, t: number, dur: number) => void;
 
   constructor(cast: Person[], cr: Cairo<any>, seed: number) {
-    this.cast = cast; this.painter = new Painter(cr); this.rng = new Rng(seed);
+    this.painter = new Painter(cr); this.rng = new Rng(seed);
+    this.cast = withExtras(cast, COUNTS.reduce((a, v) => a + v, 0) - cast.length, this.rng);
     this.dress(); this.place(); this.makePlan();
     this.LWK = this.cast.reduce((s, c) => s + 1 / c.G.ew, 0) / this.cast.length;
   }
@@ -525,9 +560,9 @@ export class Audience {
     const ids = this.cast.map((c) => c.id);
     // scene.place: the best-reading faces up front, clones furthest back; the
     // seats each of them gets (and the rest of the order) change every run
-    const best = BEST.filter((b) => ids.includes(b));
+    const best = rng.shuffle(BEST.filter((b) => ids.includes(b)));
     const rest = rng.shuffle([...ids.keys()].filter((i) => !best.includes(ids[i])));
-    const clones = rest.filter((i) => ids[i].endsWith("*")), plain = rest.filter((i) => !ids[i].endsWith("*"));
+    const clones = rest.filter((i) => /[*+]/.test(ids[i])), plain = rest.filter((i) => !/[*+]/.test(ids[i]));
     const queue = [...best.map((b) => ids.indexOf(b)), ...plain, ...clones];
     const out: Place[] = []; let k = 0;
     for (let r = NR - 1; r >= 0; r--) {
@@ -686,7 +721,7 @@ export class Audience {
     return [s, 0, 0, s, x - s * G.cx, ty - s * eyeY];
   }
   frontTop(pl: Place) {
-    const r = pl.r; const Y = r + 1 < NR ? ROWS[r + 1].y + ROWS[r + 1].pb * 0.16 : HALL.H + 0.05 * ROWS[r].pb;
+    const r = pl.r; const Y = r + 1 < NR ? ROWS[r + 1].y + ROWS[r + 1].pb * 0.16 : FLOOR_Y;
     const m = this.personTf(pl); return (Y - m[5]) / m[3];
   }
   /** mouth position of viewer j in hall units (for chat bubbles) */
@@ -737,16 +772,66 @@ export class Audience {
         const per = this.cast[pl.i];
         cr.save(); const m = this.personTf(pl); cr.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
         const st = this.state(j, t); st.p = this.P[j]; st.t = t; st.ftop = this.frontTop(pl);
-        drawPerson(this.painter, per, st); cr.restore();
+        drawPerson(this.painter, per, st, r < FAR_ROWS); cr.restore();
       });
       cr.sil = null;
-      if (r < NR - 1) { cr.setRGBA(sil ? SIL_BG : FOG, sil ? 0.1 : 0.13); cr.paint(); }
+      // haze between rows: twice the rows of the clip, half the fog per row,
+      // so the far end reads about as deep as it did there
+      if (r < NR - 1) { cr.setRGBA(sil ? SIL_BG : FOG, sil ? 0.05 : 0.07); cr.paint(); }
     }
     if (!sil) {
       const fl = 0.5 + 0.3 * Math.sin((TAU * t) / 3.1) + 0.2 * Math.sin((TAU * t) / 0.77);
-      cr.radial(W / 2, H * 0.55, 100, W * 0.75, [1, 0.88, 0.75, 0.05 + 0.03 * fl], [1, 0.88, 0.75, 0]);
-      cr.radial(W / 2, H / 2, H * 0.45, W * 0.75, [0, 0, 0, 0], [0.04, 0, 0, 0.45]);
+      cr.radial(W / 2, H * 0.48, 100, W * 0.8, [1, 0.88, 0.75, 0.05 + 0.03 * fl], [1, 0.88, 0.75, 0]);
+      cr.radial(W / 2, H * 0.42, H * 0.3, W * 0.95, [0, 0, 0, 0], [0.04, 0, 0, 0.45]);
     }
+    this.stage(t, sil);
+  }
+
+  /** the edge of the stage the speaker stands on: boards running towards us,
+   *  a dark apron lip and a row of footlights, drawn like the rest of the
+   *  hall — flat fills, one ink outline weight (the front row's) */
+  private stage(t: number, sil: RGB | null) {
+    const cr = this.painter.cr; const W = HALL.W, H = HALL.H;
+    const lw = 9 * ROWS[NR - 1].pb * 0.105 * this.LWK;
+    const lip = 0.18 * ROWS[NR - 1].pb, y0 = FLOOR_Y, yb = y0 + lip;
+    const dark: RGB | null = sil ? [0.13, 0.11, 0.12] : null;
+    cr.sil = dark;
+    // boards: alternating warm planks converging on a vanishing point behind the hall
+    const vx = W / 2, vy = y0 - 1500, step = 230;
+    const xAt = (xb: number, y: number) => vx + (xb - vx) * (y - vy) / (H - vy);
+    for (let k = -8, i = 0; k <= 16; k++, i++) {
+      const a = W / 2 + (k - 4) * step, b = a + step;
+      cr.moveTo(xAt(a, yb), yb); cr.lineTo(xAt(b, yb), yb); cr.lineTo(b, H + 20); cr.lineTo(a, H + 20); cr.closePath();
+      cr.setRGB(i % 2 ? [0.5, 0.31, 0.19] : [0.45, 0.27, 0.16]); cr.fillPreserve();
+      cr.setRGB(INK); cr.setLineWidth(lw * 0.55); cr.stroke();
+    }
+    // light pooling on the boards near the speaker
+    if (!sil) { cr.setRGBA([1, 0.86, 0.62], 0.08); cr.rectangle(0, yb + (H - yb) * 0.45, W, H); cr.fill(); }
+    // the boards run on under the speech: fade them into the stage panel colour
+    for (let i = 0; i < 6; i++) { const yy = yb + (H - yb) * (0.35 + i * 0.11); cr.setRGBA([0.149, 0.149, 0.157], 0.2 + i * 0.05); cr.rectangle(-20, yy, W + 40, H - yy + 20); cr.fill(); }
+    // apron lip
+    cr.rectangle(-20, y0, W + 40, lip); cr.setRGB([0.22, 0.12, 0.08]); cr.fillPreserve(); cr.setRGB(INK); cr.setLineWidth(lw); cr.stroke();
+    // footlights: dark housings on the lip, warm lenses, a soft glow up into the front rows
+    const nL = 6, gap = W / nL;
+    for (let i = 0; i < nL; i++) {
+      const x = gap * (i + 0.5), w = 0.62 * ROWS[NR - 1].pb, h = 0.26 * ROWS[NR - 1].pb, top = y0 - h * 0.55;
+      const flick = 0.9 + 0.1 * Math.sin(TAU * (t * 0.7 + i * 0.37));
+      cr.sil = null;
+      for (const [k, a] of [[3.2, 0.05], [2.2, 0.07], [1.4, 0.09]] as [number, number][]) {
+        cr.save(); cr.translate(x, top); cr.scale(w * k * 0.5, h * k * 0.9); cr.arc(0, 0, 1, Math.PI, TAU); cr.restore(); cr.closePath();
+        cr.setRGBA([1, 0.85, 0.55], a * flick * (sil ? 0.7 : 1)); cr.fill();
+      }
+      cr.sil = dark;
+      const r = h * 0.35;
+      cr.newSubPath(); cr.arc(x - w / 2 + r, top + r, r, Math.PI, 1.5 * Math.PI); cr.arc(x + w / 2 - r, top + r, r, 1.5 * Math.PI, TAU);
+      cr.lineTo(x + w / 2, top + h); cr.lineTo(x - w / 2, top + h); cr.closePath();
+      cr.setRGB([0.16, 0.15, 0.17]); cr.fillPreserve(); cr.setRGB(INK); cr.setLineWidth(lw); cr.stroke();
+      cr.sil = null;
+      cr.save(); cr.translate(x, top + h * 0.12); cr.scale(w * 0.36, h * 0.2); cr.arc(0, 0, 1, 0, TAU); cr.restore();
+      cr.setRGB([1, 0.88 * flick, 0.6]); cr.fillPreserve(); cr.setRGB(INK); cr.setLineWidth(lw * 0.6); cr.stroke();
+      cr.sil = dark;
+    }
+    cr.sil = null;
   }
 }
 

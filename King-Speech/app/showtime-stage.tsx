@@ -5297,10 +5297,10 @@ export default function ShowtimeStageScreen() {
         // applause when the speaker walks out and at the end, chatter and
         // popcorn while they speak, phones after a long run, silhouettes when
         // the house lights go down — and a new seating every run.
-        // 16:9 like the original clips, just under the header row; soft
-        // edges into the stage colour. The hall claps once the title intro is
+        // The whole house from the top of the screen down to the edge of the
+        // stage the speaker stands on. The hall claps once the title intro is
         // over (the speaker is "on"), and again at the end.
-        <View pointerEvents="none" style={{ position: "absolute", top: topPad + 40, left: 0, width: SW, height: SW * HALL_RATIO }}>
+        <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, width: SW, height: SW * HALL_RATIO }}>
           <LiveAudience
             width={SW}
             phase={finished ? "done" : started && introDone ? "live" : "idle"}
@@ -5309,8 +5309,6 @@ export default function ShowtimeStageScreen() {
             lang={lang === "en" ? "en" : "ru"}
             levelsRef={meterSamplesRef}
           />
-          <LinearGradient pointerEvents="none" colors={["#18181A", "rgba(24,24,26,0)"]} style={{ position: "absolute", top: 0, left: 0, right: 0, height: 18 }} />
-          <LinearGradient pointerEvents="none" colors={["rgba(24,24,26,0)", "#18181A"]} style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 34 }} />
         </View>
       ) : (
       <Image
@@ -5349,7 +5347,16 @@ export default function ShowtimeStageScreen() {
           black reading block, so the photo→black boundary is a gentle fade. */}
       <LinearGradient
         pointerEvents="none"
-        colors={[
+        colors={LiveAudience ? [
+          // live hall: keep the rows and the stage edge clear, darken only
+          // where the speech starts
+          "rgba(0,0,0,0)",
+          "rgba(0,0,0,0.04)",
+          "rgba(38,38,40,0.3)",
+          "rgba(38,38,40,0.85)",
+          "#262628",
+          "#262628",
+        ] : [
           "rgba(0,0,0,0.14)",
           "rgba(0,0,0,0.18)",
           "rgba(38,38,40,0.45)",
@@ -5357,7 +5364,7 @@ export default function ShowtimeStageScreen() {
           "#262628",
           "#262628",
         ]}
-        locations={[0, 0.3, 0.44, 0.54, 0.62, 1]}
+        locations={LiveAudience ? [0, 0.36, 0.5, 0.6, 0.66, 1] : [0, 0.3, 0.44, 0.54, 0.62, 1]}
         style={StyleSheet.absoluteFill}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
