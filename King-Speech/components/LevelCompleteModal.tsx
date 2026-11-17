@@ -109,17 +109,22 @@ function FallingBit({ x, y, w, h, r, color, rot, i, u }: { x: number; y: number;
   );
 }
 
-/** a streamer swinging gently from its top */
+/** a streamer drifting down, swinging and turning as it falls */
 function Streamer({ s, i, u }: { s: (typeof STREAMERS)[number]; i: number; u: (n: number) => number }) {
   const [x, y, w, h, d, c] = s;
   const k = u(1);
-  const p = useLoop(2600 + i * 420, (i * 0.29) % 1, Easing.inOut(Easing.sin));
-  const st = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: Math.sin(p.value * Math.PI * 2) * 5 * k },
-      { rotate: `${Math.sin(p.value * Math.PI * 2 + 1) * 9}deg` },
-    ],
-  }));
+  const p = useLoop(5200 + i * 800, (i * 0.29 + 0.1) % 1);
+  const st = useAnimatedStyle(() => {
+    const v = p.value;
+    return {
+      opacity: interpolate(v, [0, 0.15, 0.8, 1], [0, 1, 1, 0]),
+      transform: [
+        { translateY: (-90 + v * 180) * k },
+        { translateX: Math.sin(v * Math.PI * 2 + i) * 12 * k },
+        { rotate: `${Math.sin(v * Math.PI * 3 + i) * 24}deg` },
+      ],
+    };
+  });
   return (
     <Animated.View style={[{ position: "absolute", left: u(x), top: u(y), width: u(w), height: u(h) }, st]}>
       <SvgXml xml={streamerSvg(w, h, d, c)} width={u(w)} height={u(h)} />
@@ -251,10 +256,18 @@ function VictoryScreen({ bestScore, durationSec, onNext, onMap, t, lang }: Level
           ? en ? "GOOD!" : "ХОРОШО!"
           : en ? "PASSED!" : "ПРОЙДЕНО!";
 
+  // the swoosh stretches sideways to the screen edges (no gaps on wide phones)
+  const SWOOSH_WIDE = SWOOSH_SVG.replace("<svg ", '<svg preserveAspectRatio="none" ');
   const at = (x: number, y: number) => ({ position: "absolute" as const, left: u(x), top: u(y) });
+  // the result card and its sticker sit a little smaller than in the artboard
+  const uc = (n: number) => u(n * 0.86);
+  const atc = (x: number, y: number) => ({ position: "absolute" as const, left: uc(x), top: uc(y) });
+  const ub = (n: number) => u(n * 0.85);
   const title = t("levelComplete");
+  const TP = 30; // room for the glow around the letters
   const titleText = {
-    width: u(340),
+    width: u(340 + TP * 2),
+    padding: u(TP),
     fontFamily: "Geologica_900Black",
     fontSize: u(54),
     lineHeight: u(52),
@@ -277,8 +290,8 @@ function VictoryScreen({ bestScore, durationSec, onNext, onMap, t, lang }: Level
           <View style={at(31, 160)}>
             <SvgXml xml={TROPHY_GLOW_SVG} width={u(340)} height={u(340)} />
           </View>
-          <View style={StyleSheet.absoluteFill}>
-            <SvgXml xml={SWOOSH_SVG} width={u(ART_W)} height={u(ART_H)} />
+          <View style={{ position: "absolute", top: 0, left: -offX, width: W, height: u(ART_H) }}>
+            <SvgXml xml={SWOOSH_WIDE} width={W} height={u(ART_H)} />
           </View>
         </View>
 
@@ -351,66 +364,66 @@ function VictoryScreen({ bestScore, durationSec, onNext, onMap, t, lang }: Level
           entering={FadeInDown.delay(750).duration(450)}
           style={{ ...at(29.3, 602.31), width: u(343.4), height: u(129.5), alignItems: "center", justifyContent: "center" }}
         >
-          <View style={{ width: u(338), height: u(120), transform: [{ rotate: "-3deg" }] }}>
+          <View style={{ width: uc(338), height: uc(120), transform: [{ rotate: "-3deg" }] }}>
             <View
               style={{
-                position: "absolute", left: 0, right: 0, top: u(8), height: u(112), borderRadius: u(30), backgroundColor: "#1A0548",
-                shadowColor: "#1A004D", shadowOffset: { width: 0, height: u(14) }, shadowOpacity: 0.35, shadowRadius: u(15), elevation: 10,
+                position: "absolute", left: 0, right: 0, top: uc(8), height: uc(112), borderRadius: uc(30), backgroundColor: "#1A0548",
+                shadowColor: "#1A004D", shadowOffset: { width: 0, height: uc(14) }, shadowOpacity: 0.35, shadowRadius: uc(15), elevation: 10,
               }}
             />
-            <View style={{ position: "absolute", left: 0, top: 0, width: u(338), height: u(112), borderRadius: u(30), backgroundColor: "#FFFFFF", elevation: 11 }}>
-              <Text style={[s.label, { ...at(28, 28), fontSize: u(11), letterSpacing: u(1.1) }]}>{en ? "SCORE" : "ОЦЕНКА"}</Text>
-              <View style={{ ...at(26, 42), flexDirection: "row", alignItems: "baseline" }}>
-                <Text style={[s.value, { fontSize: u(46), letterSpacing: u(-0.92) }]}>{scoreStr}</Text>
-                <Text style={[s.outOf, { fontSize: u(18), marginLeft: u(4) }]}>/10</Text>
+            <View style={{ position: "absolute", left: 0, top: 0, width: uc(338), height: uc(112), borderRadius: uc(30), backgroundColor: "#FFFFFF", elevation: 11 }}>
+              <Text style={[s.label, { ...atc(28, 28), fontSize: uc(11), letterSpacing: uc(1.1) }]}>{en ? "SCORE" : "ОЦЕНКА"}</Text>
+              <View style={{ ...atc(26, 42), flexDirection: "row", alignItems: "baseline" }}>
+                <Text style={[s.value, { fontSize: uc(46), letterSpacing: uc(-0.92) }]}>{scoreStr}</Text>
+                <Text style={[s.outOf, { fontSize: uc(18), marginLeft: uc(4) }]}>/10</Text>
               </View>
-              <View style={{ ...at(168, 26), width: u(2), height: u(62), borderRadius: 1, backgroundColor: "rgba(42,10,94,0.1)" }} />
-              <Text style={[s.label, { ...at(194, 28), fontSize: u(11), letterSpacing: u(1.1) }]}>{en ? "TIME" : "ВРЕМЯ"}</Text>
-              <Text style={[s.value, { ...at(192, 42), fontSize: u(46), letterSpacing: u(-0.92) }]}>{timeStr}</Text>
+              <View style={{ ...atc(168, 26), width: uc(2), height: uc(62), borderRadius: 1, backgroundColor: "rgba(42,10,94,0.1)" }} />
+              <Text style={[s.label, { ...atc(194, 28), fontSize: uc(11), letterSpacing: uc(1.1) }]}>{en ? "TIME" : "ВРЕМЯ"}</Text>
+              <Text style={[s.value, { ...atc(192, 42), fontSize: uc(46), letterSpacing: uc(-0.92) }]}>{timeStr}</Text>
             </View>
           </View>
         </Animated.View>
 
         {/* «ПРОЙДЕНО!» sticker — stamped onto the card's top edge, wiggles now and then */}
         <View
-          style={{ ...at(101, 595.2), width: u(200), height: u(42.75), alignItems: "center", justifyContent: "center" }}
+          style={{ ...at(101, 597), width: u(200), height: u(42.75), alignItems: "center", justifyContent: "center" }}
           pointerEvents="none"
         >
           <Animated.View entering={STAMP_IN}>
             <Animated.View style={badgeWiggle}>
-              <View style={{ position: "absolute", left: 0, right: 0, top: u(3), bottom: u(-3), borderRadius: u(16), backgroundColor: GOLD_EDGE }} />
+              <View style={{ position: "absolute", left: 0, right: 0, top: ub(3), bottom: ub(-3), borderRadius: ub(16), backgroundColor: GOLD_EDGE }} />
               <View
                 style={{
-                  backgroundColor: GOLD, borderWidth: u(3), borderColor: "#FFFFFF", borderRadius: u(16),
-                  paddingHorizontal: u(16), paddingVertical: u(7),
+                  backgroundColor: GOLD, borderWidth: ub(3), borderColor: "#FFFFFF", borderRadius: ub(16),
+                  paddingHorizontal: ub(16), paddingVertical: ub(7),
                 }}
               >
-                <Text style={[s.badgeText, { fontSize: u(13), letterSpacing: u(0.78) }]}>{verdict}</Text>
+                <Text style={[s.badgeText, { fontSize: ub(13), letterSpacing: ub(0.78) }]}>{verdict}</Text>
               </View>
             </Animated.View>
           </Animated.View>
         </View>
 
         {/* CTA · gold 3D button: the face presses down onto its edge */}
-        <Animated.View entering={FadeInDown.delay(1150).duration(450)} style={{ ...at(24, 752), width: u(354), height: u(66) }}>
+        <Animated.View entering={FadeInDown.delay(1150).duration(450)} style={{ ...at(56, 758), width: u(290), height: u(58) }}>
           <Pressable onPress={onNext} style={{ flex: 1 }}>
             {({ pressed }) => (
               <>
                 <View
                   style={{
-                    position: "absolute", left: 0, right: 0, top: u(6), height: u(60), borderRadius: u(30), backgroundColor: GOLD_EDGE,
+                    position: "absolute", left: 0, right: 0, top: u(5), height: u(52), borderRadius: u(26), backgroundColor: GOLD_EDGE,
                     shadowColor: "#140040", shadowOffset: { width: 0, height: u(14) }, shadowOpacity: 0.5, shadowRadius: u(12), elevation: 10,
                   }}
                 />
                 <View
                   style={{
-                    height: u(60), borderRadius: u(30), overflow: "hidden", alignItems: "center", justifyContent: "center", elevation: 11,
+                    height: u(52), borderRadius: u(26), overflow: "hidden", alignItems: "center", justifyContent: "center", elevation: 11,
                     transform: [{ translateY: pressed ? u(4) : 0 }],
                   }}
                 >
                   <LinearGradient colors={["#FFE27A", "#FFC92E"]} style={StyleSheet.absoluteFill} />
                   <View style={{ position: "absolute", left: u(14), right: u(14), top: 0, height: u(2), borderRadius: 1, backgroundColor: "rgba(255,255,255,0.6)" }} />
-                  <Text style={[s.ctaText, { fontSize: u(19) }]}>{en ? "Next →" : "Далее →"}</Text>
+                  <Text style={[s.ctaText, { fontSize: u(17) }]}>{en ? "Next →" : "Далее →"}</Text>
                 </View>
               </>
             )}
