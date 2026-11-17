@@ -16,6 +16,7 @@ import * as THREE from "three";
 
 const TROPHY_GLB = require("@/assets/models/trophy.glb");
 
+const BRAND_GOLD = "#FFCF34";
 const SPIN_SEC = 2.6; // spinning on the base
 const RISE_SEC = 0.75; // lift into the centre
 const TURNS = 3;
@@ -88,15 +89,10 @@ export default function Trophy3D({ style, delayMs = 0, fallback }: { style?: Vie
       camera.position.set(0, 0.25, 0.92);
       camera.lookAt(0, 0.085, 0);
 
-      // warm key from the front-right, violet bounce from below (the screen's colour), cool rim
-      scene.add(new THREE.HemisphereLight(0xfff1d6, 0x6a2cf0, 1.3));
-      const key = new THREE.DirectionalLight(0xfff4e0, 2.6); key.position.set(0.6, 0.9, 1.0); scene.add(key);
-      const fill = new THREE.DirectionalLight(0xffd9a8, 0.9); fill.position.set(-0.9, 0.4, 0.6); scene.add(fill);
-      const rim = new THREE.DirectionalLight(0xd9c2ff, 1.8); rim.position.set(-0.3, 0.6, -1.0); scene.add(rim);
-
       const geo = parseGlb(await loadBytes());
       if (!alive.current) return;
-      const mat = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0.35, roughness: 0.32, side: THREE.DoubleSide });
+      // flat brand gold: unlit, no reflections, highlights or shading — a clean silhouette
+      const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(BRAND_GOLD), side: THREE.DoubleSide });
       const mesh = new THREE.Mesh(geo, mat);
       // pivot = the bottom centre of the base (the model's origin)
       const pivot = new THREE.Group();
