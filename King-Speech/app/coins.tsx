@@ -1,6 +1,6 @@
 // «Монеты» — Figma "Screen / 10 · Купить монеты" (450:2332 dark, Light mode instance).
 // Plate with tappable Oscar (5 taps → one-time +10 bonus) and the framed balance,
-// then the daily +20 bonus, «Пополнить» packs and «Бесплатные монеты» on the backing.
+// then the weekly daily-bonus calendar, «Пополнить» packs and «Бесплатные монеты» on the backing.
 // Payments are NOT implemented: every purchase button is a TODO(payments) no-op
 // and the prices are the Figma placeholders.
 import React, { useEffect, useRef, useState } from "react";
@@ -9,11 +9,12 @@ import { View, Text, StyleSheet, ScrollView, Pressable, Platform, Image, useWind
 import OverscrollFill from "@/components/OverscrollFill";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import Animated, { FadeInDown, FadeOutUp, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from "react-native-reanimated";
+import Animated, { Easing, FadeInDown, FadeOutUp, useAnimatedStyle, useSharedValue, withSequence, withTiming } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
-import Svg, { Circle, Path } from "react-native-svg";
+import GoldCoin from "@/components/GoldCoin";
+import DailyRewards from "@/components/DailyRewards";
 import { useGame } from "@/context/GameContext";
 import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -24,31 +25,9 @@ const GOLD = "#FFD857";
 const OSCAR_BONUS_KEY = "@kingspeech_oscar_tap_bonus_v1";
 const OSCAR_TAPS = 5;
 const OSCAR_BONUS = 10;
-// Daily bonus: stores the local YYYY-MM-DD of the last claim.
-const DAILY_KEY = "@kingspeech_daily_coins_v1";
-const DAILY_BONUS = 20;
 
-function localDay() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
 
-// One gold coin with the crown mark (no bar under the crown).
-function Coin({ size = 28 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 28 28">
-      <Circle cx={14} cy={14} r={13.1} fill={GOLD} stroke="#E3A92B" strokeWidth={1.8} />
-      <Circle cx={14} cy={14} r={10.4} fill="none" stroke="rgba(207,144,14,0.35)" strokeWidth={1} />
-      <Path
-        d="M7.6 10.4l3.1 3.1 3.3-5.1 3.3 5.1 3.1-3.1-1.1 7.2H8.7z"
-        fill="#CF900E"
-        stroke="#CF900E"
-        strokeWidth={1.1}
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
+const Coin = GoldCoin;
 
 // 1–3 overlapping coins, offsets from the Figma pack icons (40×40 frame).
 function CoinPile({ count }: { count: 1 | 2 | 3 }) {
@@ -109,22 +88,17 @@ export default function CoinsScreen() {
   const taps = useRef(0);
   const [bonusTaken, setBonusTaken] = useState(true);
   const [plus, setPlus] = useState(0); // key of the floating «+10», 0 = hidden
-  // Daily bonus
-  const [dailyDay, setDailyDay] = useState<string | null>(null);
-  const [loaded, setLoaded] = useState(false);
   useEffect(() => {
-    Promise.all([AsyncStorage.getItem(OSCAR_BONUS_KEY), AsyncStorage.getItem(DAILY_KEY)])
-      .then(([b, d]) => {
-        setBonusTaken(b === "1");
-        setDailyDay(d);
-      })
-      .catch(() => {})
-      .finally(() => setLoaded(true));
+    AsyncStorage.getItem(OSCAR_BONUS_KEY)
+      .then((b) => setBonusTaken(b === "1"))
+      .catch(() => {});
   }, []);
-  const dailyReady = loaded && dailyDay !== localDay();
 
   const tapOscar = () => {
-    pump.value = withSequence(withTiming(1.1, { duration: 90 }), withSpring(1, { damping: 7, stiffness: 260 }));
+    pump.value = withSequence(
+      withTiming(1.07, { duration: 70, easing: Easing.out(Easing.quad) }),
+      withTiming(1, { duration: 130, easing: Easing.inOut(Easing.quad) }),
+    );
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     if (bonusTaken) return;
     taps.current += 1;
@@ -138,14 +112,6 @@ export default function CoinsScreen() {
     }
   };
 
-  const claimDaily = () => {
-    if (!dailyReady) return;
-    const day = localDay();
-    setDailyDay(day);
-    AsyncStorage.setItem(DAILY_KEY, day).catch(() => {});
-    addCoins(DAILY_BONUS);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-  };
   const { width: winW } = useWindowDimensions();
 
   const topPad = Platform.OS === "web" ? 54 : insets.top;
@@ -201,15 +167,11 @@ export default function CoinsScreen() {
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(110).duration(420)} style={[s.wallet, { borderColor: c.tileStroke }]}>
-            <LinearGradient colors={[c.tileTop, c.tileBottom]} style={s.fill} pointerEvents="none" />
-            <View>
-              <Coin size={40} />
-            </View>
-            <View>
-              <Text style={[s.balanceLbl, { color: c.textMuted }]}>{en ? "Your balance" : "Твой баланс"}</Text>
-              <View style={s.balanceRow}>
-                <Text style={[s.balance, { color: c.text }]}>{coins}</Text>
-                <Text style={[s.balanceUnit, { color: c.textMuted }]}>{coinsWord(coins, en)}</Text>
+            <Text style={[s.balanceLbl, { color: c.textMuted }]}>{en ? "Balance" : "Баланс"}</Text>
+            <View style={s.balanceRow}>
+              <Text style={[s.balance, { color: c.text }]}>{coins}</Text>
+              <View>
+                <Coin size={30} />
               </View>
             </View>
           </Animated.View>
@@ -224,38 +186,9 @@ export default function CoinsScreen() {
             pointerEvents="none"
           />
 
-          {/* Daily bonus */}
+          {/* Daily bonus — weekly streak calendar */}
           <Animated.View entering={FadeInDown.delay(100).duration(380)}>
-            <Pressable
-              onPress={claimDaily}
-              disabled={!dailyReady}
-              style={({ pressed }) => [
-                s.daily,
-                { borderColor: dailyReady ? GOLD : c.tileStroke, borderWidth: dailyReady ? 2 : 1, opacity: pressed ? 0.9 : 1 },
-              ]}
-            >
-              <LinearGradient colors={[c.tileTop, c.tileBottom]} style={s.fill} pointerEvents="none" />
-              <CoinPile count={2} />
-              <View style={{ flex: 1 }}>
-                <Text style={[s.freeTitle, { color: c.text }]} numberOfLines={1}>
-                  {en ? "Daily bonus" : "Ежедневный бонус"}
-                </Text>
-                <Text style={[s.freeSub, { color: c.textMuted }]}>
-                  {dailyReady
-                    ? en
-                      ? `+${DAILY_BONUS} coins every day`
-                      : `+${DAILY_BONUS} монет каждый день`
-                    : en
-                      ? "Come back tomorrow"
-                      : "Следующий — завтра"}
-                </Text>
-              </View>
-              <View style={[s.freePill, !dailyReady && { backgroundColor: darkPill }]}>
-                <Text style={[s.freePillText, !dailyReady && { color: c.textMuted }]}>
-                  {dailyReady ? (en ? "Claim" : "Забрать") : en ? "Claimed" : "Получено"}
-                </Text>
-              </View>
-            </Pressable>
+            <DailyRewards width={contentW} en={en} onClaim={addCoins} />
           </Animated.View>
 
           <Text style={[s.section, { color: c.text, marginTop: 28 }]}>{en ? "Top up" : "Пополнить"}</Text>
@@ -348,16 +281,12 @@ const s = StyleSheet.create({
   wallet: {
     marginTop: 18,
     borderRadius: 24,
-    borderWidth: 1,
-    overflow: "hidden",
-    flexDirection: "row",
+    borderWidth: 2.5,
     alignItems: "center",
-    gap: 14,
-    paddingVertical: 12,
-    paddingLeft: 16,
-    paddingRight: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 28,
   },
-  balanceRow: { flexDirection: "row", alignItems: "baseline", gap: 6 },
+  balanceRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   balance: { fontSize: 34, lineHeight: 40, letterSpacing: -0.6, fontFamily: "Geologica_900Black" },
   balanceUnit: { fontSize: 15, fontFamily: "Geologica_700Bold" },
   balanceLbl: { fontSize: 12, fontFamily: "Geologica_600SemiBold" },
@@ -394,15 +323,6 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 12,
     marginTop: 18,
-  },
-  daily: {
-    height: 76,
-    borderRadius: 22,
-    overflow: "hidden",
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    gap: 12,
   },
   freePlay: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
   freeTitle: { fontSize: 15, fontFamily: "Geologica_800ExtraBold" },
