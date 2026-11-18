@@ -3,6 +3,7 @@ import { PanResponder, Platform, View, type ViewStyle } from "react-native";
 import { GLView, type ExpoWebGLRenderingContext } from "expo-gl";
 import { Asset } from "expo-asset";
 import * as THREE from "three";
+import { coinGeometry, coinMaterial } from "./coin3d";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The victory trophy as a real 3D model (assets/models/trophy.glb, exported from
@@ -17,6 +18,11 @@ import * as THREE from "three";
 // The three rating stars are 3D too (puffy extruded stars, drawn in the same
 // GL view with an orthographic camera below the trophy): they pop in one by
 // one, then float, rock and turn a little. Lit stars are gold, unlit violet.
+// Then a handful of small 3D coins (coin3d.ts) bursts out of the trophy and
+// flies into the balance counter — one InstancedMesh, one draw call.
+// The GL view covers the whole artboard (it ignores touches); the trophy is
+// drawn into its own viewport, stars and coins with an orthographic camera in
+// artboard units. Only the trophy's area takes the finger.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TROPHY_GLB = require("@/assets/models/trophy.glb");
@@ -72,10 +78,10 @@ void main() {
 }`;
 
 export type Star3D = {
-  /** centre, as a fraction of the view's width / height */
-  fx: number; fy: number;
-  /** outer radius as a fraction of the view's width */
-  fr: number;
+  /** centre, artboard units */
+  x: number; y: number;
+  /** outer radius, artboard units */
+  r: number;
   /** resting tilt, degrees */
   rot: number;
   on: boolean;
@@ -106,6 +112,21 @@ function starShape() {
   g.center();
   return g;
 }
+
+export type CoinFlight = {
+  /** where they burst from and where they land (artboard units) */
+  from: [number, number];
+  to: [number, number];
+  count: number;
+  /** seconds after mount when the first one leaves */
+  at: number;
+  /** coin radius, artboard units */
+  r: number;
+  onArrive?: (i: number) => void;
+};
+
+const COIN_FLY_SEC = 1.25;
+const COIN_GAP_SEC = 0.08;
 
 const easeOutCubic = (x: number) => 1 - (1 - x) ** 3;
 const easeOutBack = (x: number) => { const c = 1.6; return 1 + (c + 1) * (x - 1) ** 3 + c * (x - 1) ** 2; };
@@ -148,14 +169,19 @@ function parseGlb(buf: ArrayBuffer): THREE.BufferGeometry {
 }
 
 export default function Trophy3D({
-  style, delayMs = 0, fallback, trophyFrac = 1, stars = [], onFail,
+  style, k, art, trophyRect, delayMs = 0, fallback, stars = [], coins, onFail,
 }: {
   style?: ViewStyle;
+  /** points per artboard unit */
+  k: number;
+  /** artboard size [w, h] — the view covers all of it */
+  art: [number, number];
+  /** where the trophy is drawn: [x, y, w, h] in artboard units */
+  trophyRect: [number, number, number, number];
   delayMs?: number;
   fallback?: React.ReactNode;
-  /** the trophy is drawn in the top part of the view (this fraction of its height) */
-  trophyFrac?: number;
   stars?: Star3D[];
+  coins?: CoinFlight;
   /** called if 3D can't run here (the caller can show its flat stars) */
   onFail?: () => void;
 }) {
@@ -186,7 +212,9 @@ export default function Trophy3D({
     }),
   ).current;
 
-  if (failed) return <View style={style}>{fallback}</View>;
+  const [rx, ry, rw, rh] = trophyRect;
+  const box = { position: "absolute" as const, left: rx * k, top: ry * k, width: rw * k, height: rh * k };
+  if (failed) return <View style={style} pointerEvents="none"><View style={box}>{fallback}</View></View>;
 
   const onContextCreate = async (gl: ExpoWebGLRenderingContext) => {
     try {
@@ -214,8 +242,8 @@ export default function Trophy3D({
 
       const scene = new THREE.Scene();
       // a little above the trophy, looking down at it — the top of the base shows
-      const th = Math.round(h * trophyFrac);
-      const camera = new THREE.PerspectiveCamera(33, w / th, 0.01, 10);
+      const px = w / art[0]; // buffer pixels per artboard unit
+      const camera = new THREE.PerspectiveCamera(33, rw / rh, 0.01, 10);
       camera.position.set(0, 0.25, 0.92);
       camera.lookAt(0, 0.085, 0);
 
@@ -235,9 +263,9 @@ export default function Trophy3D({
       });
       const mesh = new THREE.Mesh(geo, mat);
 
-      // stars: same glass, flat-on orthographic view in drawing-buffer pixels
+      // stars and coins: flat-on orthographic view in artboard units (y down = -y)
       const starScene = new THREE.Scene();
-      const ortho = new THREE.OrthographicCamera(0, w, 0, -h, -2000, 2000);
+      const ortho = new THREE.OrthographicCamera(0, art[0], 0, -art[1], -2000, 2000);
       ortho.position.z = 1000;
       const glass = (deep: string, body: string, rim: string, under: string) => new THREE.ShaderMaterial({
         vertexShader: GLASS_VERT, fragmentShader: GLASS_FRAG, defines: { ORTHO: 1 }, side: THREE.DoubleSide,
@@ -252,6 +280,16 @@ export default function Trophy3D({
         starScene.add(m);
         return m;
       });
+      // coins: one instanced mesh, parked at scale 0 until they fly
+      const flight = coins && coins.count > 0 ? coins : null;
+      const coinMesh = flight ? new THREE.InstancedMesh(coinGeometry(), coinMaterial(rgb), flight.count) : null;
+      const arrived = new Array(flight?.count ?? 0).fill(false);
+      const cm = new THREE.Matrix4(), cq = new THREE.Quaternion(), ce = new THREE.Euler(), cs = new THREE.Vector3(), cp = new THREE.Vector3();
+      if (coinMesh) {
+        coinMesh.frustumCulled = false;
+        for (let i = 0; i < flight!.count; i++) coinMesh.setMatrixAt(i, cm.makeScale(0, 0, 0));
+        starScene.add(coinMesh);
+      }
       renderer.autoClear = false;
       let tm0 = -1;
       // pivot = the bottom centre of the base (the model's origin)
@@ -300,21 +338,53 @@ export default function Trophy3D({
           const p = (tm - st.at) / 0.6;
           if (p <= 0) { m.visible = false; return; }
           m.visible = true;
-          const r = st.fr * w;
+          const r = st.r;
           const pop = p >= 1 ? 1 : 1 + 3.2 * (p - 1) ** 3 + 2.2 * (p - 1) ** 2; // springy overshoot
           m.scale.set(r * pop, r * pop, r * pop);
           const ph = tm * ((Math.PI * 2) / (2.4 + i * 0.3)) + i * 1.3;
-          m.position.set(st.fx * w, -(st.fy * h) + Math.sin(ph) * r * 0.1, 0);
+          m.position.set(st.x, -st.y + Math.sin(ph) * r * 0.1, 0);
           // spins in on the way, then rocks and turns a little to show its depth
           const spinIn = p < 1 ? (1 - easeOutCubic(p)) * Math.PI * 2 : 0;
           m.rotation.set(Math.sin(ph * 0.7) * 0.18, spinIn + Math.sin(ph + 0.6) * 0.42, (-st.rot * Math.PI) / 180 + Math.sin(ph + 0.8) * (st.on ? 0.12 : 0.07));
         });
+        if (coinMesh && flight) {
+          const [fx, fy] = flight.from, [tx, ty] = flight.to;
+          for (let i = 0; i < flight.count; i++) {
+            const p = (tm - flight.at - i * COIN_GAP_SEC) / COIN_FLY_SEC;
+            if (p <= 0 || p >= 1) {
+              coinMesh.setMatrixAt(i, cm.makeScale(0, 0, 0));
+              if (p >= 1 && !arrived[i]) { arrived[i] = true; flight.onArrive?.(i); }
+              continue;
+            }
+            // a fan: each coin pops out of the trophy to its own spot around it,
+            // hangs there a moment, then swoops into the counter
+            const spread = (i - (flight.count - 1) / 2) / Math.max(1, (flight.count - 1) / 2); // -1..1
+            const ang = -Math.PI / 2 + spread * 1.15 + Math.sin(i * 2.3) * 0.12;
+            const dist = 95 + ((i * 37) % 5) * 9;
+            const bx = fx + Math.cos(ang) * dist, by = fy + Math.sin(ang) * dist * 0.8;
+            let x: number, y: number;
+            if (p < 0.38) {
+              const e = easeOutCubic(p / 0.38);
+              x = fx + (bx - fx) * e; y = fy + (by - fy) * e;
+            } else {
+              const q = (p - 0.38) / 0.62, e = q * q * (3 - 2 * q) ** 1;
+              const cx = bx + (tx - bx) * 0.15, cy = Math.min(by, ty) - 40; // arc over
+              x = (1 - e) ** 2 * bx + 2 * (1 - e) * e * cx + e * e * tx;
+              y = (1 - e) ** 2 * by + 2 * (1 - e) * e * cy + e * e * ty;
+            }
+            const sc = flight.r * (p < 0.15 ? easeOutBack(p / 0.15) : 1 - 0.45 * Math.max(0, (p - 0.7) / 0.3));
+            ce.set(0.35 + 0.25 * Math.sin(p * 6 + i), p * Math.PI * 5 + i, 0.2 * spread);
+            cq.setFromEuler(ce);
+            coinMesh.setMatrixAt(i, cm.compose(cp.set(x, -y, 50), cq, cs.set(sc, sc, sc)));
+          }
+          coinMesh.instanceMatrix.needsUpdate = true;
+        }
         try {
           renderer.setViewport(0, 0, w, h);
           renderer.clear();
-          renderer.setViewport(0, h - th, w, th);
+          renderer.setViewport(rx * px, h - (ry + rh) * px, rw * px, rh * px);
           renderer.render(scene, camera);
-          if (stars.length) {
+          if (stars.length || coinMesh) {
             renderer.setViewport(0, 0, w, h);
             renderer.clearDepth();
             renderer.render(starScene, ortho);
@@ -335,8 +405,9 @@ export default function Trophy3D({
   };
 
   return (
-    <View style={style} {...pan.panHandlers}>
-      <GLView style={{ flex: 1, backgroundColor: "transparent" }} onContextCreate={onContextCreate} msaaSamples={4} />
+    <View style={style} pointerEvents="box-none">
+      <GLView style={{ flex: 1, backgroundColor: "transparent" }} onContextCreate={onContextCreate} msaaSamples={4} pointerEvents="none" />
+      <View style={box} {...pan.panHandlers} />
     </View>
   );
 }

@@ -21,6 +21,8 @@ import * as Haptics from "@/lib/haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import RiveAnim from "@/components/RiveAnim";
 import Trophy3D from "@/components/Trophy3D";
+import CoinIcon from "@/components/CoinIcon";
+import { useGame } from "@/context/GameContext";
 import {
   RAYS_SVG,
   TROPHY_GLOW_SVG,
@@ -209,7 +211,13 @@ export default function LevelCompleteModal(props: LevelCompleteModalProps) {
   return <VictoryScreen {...props} />;
 }
 
-function VictoryScreen({ bestScore, durationSec, onNext, onMap, t, lang }: LevelCompleteModalProps) {
+// coins earned fly from the trophy into the balance pill (top right)
+const COIN_N = 8;
+const PILL = { x: 286, y: 58, w: 96, h: 34 };
+const PILL_COIN: [number, number] = [PILL.x + 19, PILL.y + PILL.h / 2];
+
+function VictoryScreen({ bestScore, durationSec, xpEarned, onNext, onMap, t, lang }: LevelCompleteModalProps) {
+  const { coins: balance } = useGame();
   const insets = useSafeAreaInsets();
   const { width: W, height: H } = useWindowDimensions();
   const en = lang === "en";
@@ -243,6 +251,19 @@ function VictoryScreen({ bestScore, durationSec, onNext, onMap, t, lang }: Level
     return () => { cancelAnimation(spin); cancelAnimation(wiggle); };
   }, []);
   const [flatStars, setFlatStars] = useState(false);
+  // balance counter: starts at what the player had before this level and
+  // ticks up as each coin lands (the reward is already in the wallet)
+  const earned = Math.max(0, Math.round(xpEarned || 0));
+  const [landed, setLanded] = useState(0);
+  const shownBalance = Math.max(0, balance - earned) + Math.round((earned * landed) / COIN_N);
+  const bump = useSharedValue(0);
+  const onCoin = () => {
+    setLanded((n) => Math.min(COIN_N, n + 1));
+    bump.value = withSequence(withTiming(1, { duration: 70 }), withTiming(0, { duration: 220 }));
+    Haptics.selectionAsync().catch(() => {});
+  };
+  const pillBump = useAnimatedStyle(() => ({ transform: [{ translateY: -bump.value * 3 * k }] }));
+  const pillGlow = useAnimatedStyle(() => ({ opacity: bump.value }));
   const raysSpin = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value}deg` }] }));
   const badgeWiggle = useAnimatedStyle(() => ({ transform: [{ rotate: `${-3 + wiggle.value}deg` }] }));
 
@@ -369,17 +390,20 @@ function VictoryScreen({ bestScore, durationSec, onNext, onMap, t, lang }: Level
 
         {/* Trophy · 3D model spinning on its base, then rising into the centre,
             and the three 3D stars under it (the flat trophy + podium stay as the fallback) */}
-        <Animated.View entering={FadeIn.delay(150).duration(400)} style={{ ...at(31, 200), width: u(340), height: u(400) }}>
+        <Animated.View entering={FadeIn.delay(150).duration(400)} style={{ position: "absolute", left: 0, top: 0, width: u(ART_W), height: u(ART_H) }} pointerEvents="box-none">
           <Trophy3D
-            style={{ width: u(340), height: u(400) }}
+            style={{ width: u(ART_W), height: u(ART_H) }}
+            k={k}
+            art={[ART_W, ART_H]}
+            trophyRect={[31, 200, 340, 340]}
             delayMs={150}
-            trophyFrac={340 / 400}
-            onFail={() => setFlatStars(true)}
+            onFail={() => { setFlatStars(true); setLanded(COIN_N); }}
             stars={[
-              { fx: 92 / 340, fy: 361 / 400, fr: 25 / 340, rot: -10, on: stars >= 1, at: 0.5 },
-              { fx: 170 / 340, fy: 343 / 400, fr: 33 / 340, rot: 0, on: stars >= 2, at: 0.64 },
-              { fx: 248 / 340, fy: 361 / 400, fr: 25 / 340, rot: 10, on: stars >= 3, at: 0.78 },
+              { x: 123, y: 561, r: 25, rot: -10, on: stars >= 1, at: 0.5 },
+              { x: 201, y: 543, r: 33, rot: 0, on: stars >= 2, at: 0.64 },
+              { x: 279, y: 561, r: 25, rot: 10, on: stars >= 3, at: 0.78 },
             ]}
+            coins={earned > 0 ? { from: [201, 330], to: PILL_COIN, count: COIN_N, at: 1.7, r: 13, onArrive: onCoin } : undefined}
             fallback={
               <>
                 <View style={{ position: "absolute", left: u(70), top: u(234) }}>
@@ -469,6 +493,24 @@ function VictoryScreen({ bestScore, durationSec, onNext, onMap, t, lang }: Level
             <Text style={[s.exit, { fontSize: u(15) }]}>{en ? "Exit" : "Выход"}</Text>
           </Pressable>
         </Animated.View>
+
+        {/* Balance pill — the coins fly in here and the number ticks up */}
+        <Animated.View entering={FadeIn.delay(900).duration(400)} style={{ ...at(PILL.x, PILL.y), width: u(PILL.w), height: u(PILL.h) }} pointerEvents="none">
+          <Animated.View style={[{ flex: 1 }, pillBump]}>
+            <Animated.View
+              style={[{ position: "absolute", left: -u(6), right: -u(6), top: -u(6), bottom: -u(6), borderRadius: u(24), backgroundColor: "rgba(255,207,52,0.28)" }, pillGlow]}
+            />
+            <View
+              style={{
+                flex: 1, flexDirection: "row", alignItems: "center", borderRadius: u(17), paddingLeft: u(8), paddingRight: u(12),
+                backgroundColor: "rgba(20,4,56,0.55)", borderWidth: 1.5, borderColor: "rgba(255,207,52,0.35)",
+              }}
+            >
+              <CoinIcon size={u(22)} color="#FFCF34" />
+              <Text style={[s.balance, { fontSize: u(16), marginLeft: u(7) }]} numberOfLines={1}>{shownBalance}</Text>
+            </View>
+          </Animated.View>
+        </Animated.View>
       </View>
     </View>
   );
@@ -480,5 +522,6 @@ const s = StyleSheet.create({
   outOf: { fontFamily: "Geologica_700Bold", color: "rgba(42,10,94,0.4)" },
   badgeText: { fontFamily: "Geologica_900Black", color: INK },
   ctaText: { fontFamily: "Geologica_800ExtraBold", color: INK },
+  balance: { fontFamily: "Geologica_900Black", color: "#FFFFFF", fontVariant: ["tabular-nums"] },
   exit: { fontFamily: "Geologica_700Bold", color: "rgba(255,255,255,0.6)" },
 });
