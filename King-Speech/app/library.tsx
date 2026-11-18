@@ -32,7 +32,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 import { useGame } from "@/context/GameContext";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang, LANG_LOCALE, type Lang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import AppDialog from "@/components/AppDialog";
 import { deleteRecordingFile } from "@/lib/recordingFiles";
@@ -45,19 +45,19 @@ if (Platform.OS !== "web") {
 type Mode = "showtime" | "reading" | "interview" | "roles";
 type Filter = "all" | Mode;
 
-const FILTERS: { key: Filter; ru: string; en: string }[] = [
-  { key: "all", ru: "Все", en: "All" },
-  { key: "showtime", ru: "Show Time", en: "Show Time" },
-  { key: "reading", ru: "Чтение", en: "Reading" },
-  { key: "interview", ru: "Интервью", en: "Interview" },
-  { key: "roles", ru: "Роли", en: "Roles" },
+const FILTERS: { key: Filter; ru: string; en: string; kk: string }[] = [
+  { key: "all", ru: "Все", en: "All", kk: "Барлығы" },
+  { key: "showtime", ru: "Show Time", en: "Show Time", kk: "Show Time" },
+  { key: "reading", ru: "Чтение", en: "Reading", kk: "Оқу" },
+  { key: "interview", ru: "Интервью", en: "Interview", kk: "Сұхбат" },
+  { key: "roles", ru: "Роли", en: "Roles", kk: "Рөлдер" },
 ];
 
-const MODE_LABEL: Record<Mode, { ru: string; en: string }> = {
-  showtime: { ru: "Show Time", en: "Show Time" },
-  reading: { ru: "Чтение", en: "Reading" },
-  interview: { ru: "Интервью", en: "Interview" },
-  roles: { ru: "Роли", en: "Roles" },
+const MODE_LABEL: Record<Mode, { ru: string; en: string; kk: string }> = {
+  showtime: { ru: "Show Time", en: "Show Time", kk: "Show Time" },
+  reading: { ru: "Чтение", en: "Reading", kk: "Оқу" },
+  interview: { ru: "Интервью", en: "Interview", kk: "Сұхбат" },
+  roles: { ru: "Роли", en: "Roles", kk: "Рөлдер" },
 };
 
 type Item = {
@@ -85,10 +85,10 @@ function fmtRemaining(sec: number) {
   return `−${Math.floor(v / 60)}:${String(v % 60).padStart(2, "0")}`;
 }
 
-function fmtDate(ms: number, en: boolean) {
+function fmtDate(ms: number, lang: Lang) {
   try {
     return new Date(ms)
-      .toLocaleDateString(en ? "en-US" : "ru-RU", { day: "numeric", month: "short" })
+      .toLocaleDateString(LANG_LOCALE[lang], { day: "numeric", month: "short" })
       .replace(".", "");
   } catch {
     return "";
@@ -294,7 +294,7 @@ function Vinyl({ playing }: { playing: boolean }) {
 export default function LibraryScreen() {
   const insets = useSafeAreaInsets();
   const { lang } = useLang();
-  const en = lang === "en";
+  const tr = (ru: string, en: string, kk: string) => pickLang(lang, { ru, en, kk });
   const { theme: c } = useTheme();
   const { readingRecordings, showTimeRecordings, removeReadingRecording, removeShowTimeRecording } = useGame();
   const [filter, setFilter] = useState<Filter>("all");
@@ -356,13 +356,13 @@ export default function LibraryScreen() {
           id: `s:${rank}:${rec.uri}`,
           uri: rec.uri,
           rank: Number(rank),
-          title: rec.label?.trim() || (en ? `Rank ${rank} · take ${i + 1}` : `Ранг ${rank} · дубль ${i + 1}`),
+          title: rec.label?.trim() || tr(`Ранг ${rank} · дубль ${i + 1}`, `Rank ${rank} · take ${i + 1}`, `${rank}-дәреже · ${i + 1}-дубль`),
           mode: "showtime",
         });
       });
     }
     return out.sort((a, b) => (b.date ?? 0) - (a.date ?? 0));
-  }, [readingRecordings, showTimeRecordings, en]);
+  }, [readingRecordings, showTimeRecordings, lang]);
 
   const visible = filter === "all" ? items : items.filter((it) => it.mode === filter);
   const now = Date.now();
@@ -382,7 +382,7 @@ export default function LibraryScreen() {
       playing && totalSec && totalSec > 0
         ? fmtRemaining(totalSec * (1 - Math.min(1, Math.max(0, progress))))
         : fmtDuration(it.durationSec ?? durations[it.uri]);
-    const meta = [en ? MODE_LABEL[it.mode].en : MODE_LABEL[it.mode].ru, it.date ? fmtDate(it.date, en) : ""]
+    const meta = [pickLang(lang, MODE_LABEL[it.mode]), it.date ? fmtDate(it.date, lang) : ""]
       .filter(Boolean)
       .join(" · ");
     return (
@@ -392,7 +392,7 @@ export default function LibraryScreen() {
           onPress={() => toggle(it.uri)}
           onLongPress={() => askDelete(it)}
           style={[s.row, { borderColor: c.tileStroke }]}
-          accessibilityLabel={`${playing ? (en ? "Pause" : "Пауза") : en ? "Play" : "Слушать"} ${it.title}`}
+          accessibilityLabel={`${playing ? tr("Пауза", "Pause", "Кідірту") : tr("Слушать", "Play", "Тыңдау")} ${it.title}`}
         >
           <LinearGradient colors={[c.tileTop, c.tileBottom]} style={s.fill} pointerEvents="none" />
           <Vinyl playing={playing} />
@@ -424,9 +424,9 @@ export default function LibraryScreen() {
           <Pressable onPress={goBack} hitSlop={12} style={[s.back, { top: topPad + 10 }]} accessibilityRole="button">
             <Ionicons name="chevron-back" size={26} color={c.text} />
           </Pressable>
-          <Text style={[s.title, { color: c.text }]}>{en ? "My library" : "Моя библиотека"}</Text>
+          <Text style={[s.title, { color: c.text }]}>{tr("Моя библиотека", "My library", "Менің кітапханам")}</Text>
           <Text style={[s.subtitle, { color: c.textMuted }]}>
-            {en ? "Performances you saved" : "Выступления, которые ты сохранил"}
+            {tr("Выступления, которые ты сохранил", "Performances you saved", "Сен сақтаған сөйлеулер")}
           </Text>
           <ScrollView
             horizontal
@@ -451,7 +451,7 @@ export default function LibraryScreen() {
                       : { backgroundColor: c.card, borderColor: c.cardBorder },
                   ]}
                 >
-                  <Text style={[s.chipText, { color: active ? c.bg : c.textSecondary }]}>{en ? f.en : f.ru}</Text>
+                  <Text style={[s.chipText, { color: active ? c.bg : c.textSecondary }]}>{pickLang(lang, f)}</Text>
                 </Pressable>
               );
             })}
@@ -468,29 +468,33 @@ export default function LibraryScreen() {
           />
           {visible.length === 0 ? (
             <View style={s.empty}>
-              <Text style={[s.emptyTitle, { color: c.text }]}>{en ? "Nothing here yet" : "Пока пусто"}</Text>
+              <Text style={[s.emptyTitle, { color: c.text }]}>{tr("Пока пусто", "Nothing here yet", "Әзірге бос")}</Text>
               <Text style={[s.emptySub, { color: c.textMuted }]}>
                 {filter === "interview" || filter === "roles"
-                  ? en
-                    ? "Recordings from this mode will appear here soon."
-                    : "Записи из этого режима скоро появятся здесь."
-                  : en
-                    ? "Record a performance and it will appear here."
-                    : "Запиши выступление — и оно появится здесь."}
+                  ? tr(
+                      "Записи из этого режима скоро появятся здесь.",
+                      "Recordings from this mode will appear here soon.",
+                      "Бұл режимнің жазбалары жақында осында пайда болады.",
+                    )
+                  : tr(
+                      "Запиши выступление — и оно появится здесь.",
+                      "Record a performance and it will appear here.",
+                      "Сөйлеуіңді жазып ал — ол осында пайда болады.",
+                    )}
               </Text>
             </View>
           ) : (
             <>
               {thisWeek.length > 0 && (
                 <>
-                  <Text style={[s.section, { color: c.text }]}>{en ? "This week" : "На этой неделе"}</Text>
+                  <Text style={[s.section, { color: c.text }]}>{tr("На этой неделе", "This week", "Осы аптада")}</Text>
                   <View style={s.list}>{thisWeek.map(renderRow)}</View>
                 </>
               )}
               {earlier.length > 0 && (
                 <>
                   <Text style={[s.section, { color: c.text, marginTop: thisWeek.length ? 26 : 0 }]}>
-                    {thisWeek.length ? (en ? "Earlier" : "Раньше") : en ? "Recordings" : "Записи"}
+                    {thisWeek.length ? tr("Раньше", "Earlier", "Бұрынырақ") : tr("Записи", "Recordings", "Жазбалар")}
                   </Text>
                   <View style={s.list}>{earlier.map((it, i) => renderRow(it, i + thisWeek.length))}</View>
                 </>
@@ -502,18 +506,20 @@ export default function LibraryScreen() {
 
       <AppDialog
         visible={!!toDelete}
-        title={en ? "Delete this recording?" : "Удалить запись?"}
+        title={tr("Удалить запись?", "Delete this recording?", "Жазбаны жою керек пе?")}
         message={
           toDelete
-            ? en
-              ? `${toDelete.title} will be deleted for good.`
-              : `${toDelete.title} удалится навсегда.`
+            ? tr(
+                `${toDelete.title} удалится навсегда.`,
+                `${toDelete.title} will be deleted for good.`,
+                `${toDelete.title} біржола жойылады.`,
+              )
             : undefined
         }
         onRequestClose={cancelDelete}
         buttons={[
-          { label: en ? "Cancel" : "Отмена", onPress: cancelDelete },
-          { label: en ? "Delete" : "Удалить", variant: "primary", onPress: () => void confirmDelete() },
+          { label: tr("Отмена", "Cancel", "Болдырмау"), onPress: cancelDelete },
+          { label: tr("Удалить", "Delete", "Жою"), variant: "primary", onPress: () => void confirmDelete() },
         ]}
       />
     </View>

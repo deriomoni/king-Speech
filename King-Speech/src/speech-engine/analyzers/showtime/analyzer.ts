@@ -85,7 +85,7 @@ export function analyzeShowTime(input: ShowTimeInput): ShowTimeOutput {
   const loud = computeLoudness(vad.speechDbfs, vad.noiseFloor, speechDurationMs);
   const wpm = computeWpm(spokenWords, speechDurationMs);
   const tempoScore = tempoScoreFor(wpm, SHOWTIME_TEMPO_TARGET);
-  const fillers = computeFillers(normHyp, speechDurationMs);
+  const fillers = computeFillers(normHyp, speechDurationMs, locale);
   const taut = computeTautology({ tokens, speechDurationMs, locale, confidences });
   const div = computeDiversity(tokens);
 

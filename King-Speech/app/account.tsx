@@ -20,7 +20,7 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { useGame } from "@/context/GameContext";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang } from "@/context/LangContext";
 import AppDialog, { type AppDialogButton } from "@/components/AppDialog";
 import NameEditDialog from "@/components/account/NameEditDialog";
 import { storage as fbStorage, auth as fbAuth, firebaseConfigured } from "@/lib/firebase";
@@ -37,7 +37,6 @@ export default function AccountScreen() {
   const { theme, themeMode } = useTheme();
   const isDark = themeMode === "dark";
   const { lang } = useLang();
-  const en = lang === "en";
   const insets = useSafeAreaInsets();
   const { user, signOut, saveProfile, setPhotoURL } = useAuth();
   const { resetProgress } = useGame();
@@ -51,11 +50,11 @@ export default function AccountScreen() {
   const ink = (a: number) => (isDark ? `rgba(240,238,233,${a})` : `rgba(38,38,40,${a})`);
   const stroke = isDark ? "rgba(240,238,233,0.06)" : "rgba(38,38,40,0.08)";
 
-  const name = user?.name || (en ? "Player" : "Игрок");
+  const name = user?.name || (pickLang(lang, { ru: "Игрок", en: "Player", kk: "Ойыншы" }));
   const initial = name.trim().charAt(0).toUpperCase() || "К";
   const email = user?.email || "—";
   const method = user?.isOffline
-    ? en ? "Offline" : "Офлайн"
+    ? pickLang(lang, { ru: "Офлайн", en: "Offline", kk: "Офлайн" })
     : AUTH_LABEL[user?.authMethod ?? ""] ?? "—";
 
   const back = () => {
@@ -71,7 +70,7 @@ export default function AccountScreen() {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert("Доступ к фото", "Разреши доступ к галерее, чтобы установить аватар.");
+        Alert.alert(pickLang(lang, { ru: "Доступ к фото", en: "Photo access", kk: "Фотоға рұқсат" }), pickLang(lang, { ru: "Разреши доступ к галерее, чтобы установить аватар.", en: "Allow gallery access to set your avatar.", kk: "Аватар орнату үшін галереяға рұқсат бер." }));
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -107,12 +106,12 @@ export default function AccountScreen() {
 
   const confirmSignOut = () =>
     setDialog({
-      title: en ? "Sign out?" : "Выйти из аккаунта?",
-      message: en ? "You can sign back in at any time." : "Вы сможете войти снова в любой момент.",
+      title: pickLang(lang, { ru: "Выйти из аккаунта?", en: "Sign out?", kk: "Аккаунттан шығу керек пе?" }),
+      message: pickLang(lang, { ru: "Вы сможете войти снова в любой момент.", en: "You can sign back in at any time.", kk: "Кез келген уақытта қайта кіре аласың." }),
       buttons: [
-        { label: en ? "Cancel" : "Отмена", onPress: closeDialog },
+        { label: pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" }), onPress: closeDialog },
         {
-          label: en ? "Sign out" : "Выйти",
+          label: pickLang(lang, { ru: "Выйти", en: "Sign out", kk: "Шығу" }),
           variant: "primary",
           onPress: async () => {
             closeDialog();
@@ -125,14 +124,12 @@ export default function AccountScreen() {
 
   const confirmReset = () =>
     setDialog({
-      title: en ? "Reset progress?" : "Сбросить прогресс?",
-      message: en
-        ? "All levels, XP and coins will start over."
-        : "Все уровни, опыт и монеты начнутся заново.",
+      title: pickLang(lang, { ru: "Сбросить прогресс?", en: "Reset progress?", kk: "Прогресті тастау керек пе?" }),
+      message: pickLang(lang, { ru: "Все уровни, опыт и монеты начнутся заново.", en: "All levels, XP and coins will start over.", kk: "Барлық деңгей, XP және монеталар басынан басталады." }),
       buttons: [
-        { label: en ? "Cancel" : "Отмена", onPress: closeDialog },
+        { label: pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" }), onPress: closeDialog },
         {
-          label: en ? "Reset" : "Сбросить",
+          label: pickLang(lang, { ru: "Сбросить", en: "Reset", kk: "Тастау" }),
           variant: "primary",
           onPress: () => {
             closeDialog();
@@ -145,14 +142,12 @@ export default function AccountScreen() {
 
   const confirmDelete = () =>
     setDialog({
-      title: en ? "Delete account?" : "Удалить аккаунт?",
-      message: en
-        ? "Your profile, recordings, progress and coins will be deleted. This can't be undone."
-        : "Удалятся профиль, записи, прогресс и монеты. Восстановить их будет нельзя.",
+      title: pickLang(lang, { ru: "Удалить аккаунт?", en: "Delete account?", kk: "Аккаунтты жою керек пе?" }),
+      message: pickLang(lang, { ru: "Удалятся профиль, записи, прогресс и монеты. Восстановить их будет нельзя.", en: "Your profile, recordings, progress and coins will be deleted. This can't be undone.", kk: "Профиль, жазбалар, прогресс пен монеталар жойылады. Оларды қалпына келтіру мүмкін болмайды." }),
       buttons: [
-        { label: en ? "Cancel" : "Отмена", onPress: closeDialog },
+        { label: pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" }), onPress: closeDialog },
         {
-          label: en ? "Delete" : "Удалить",
+          label: pickLang(lang, { ru: "Удалить", en: "Delete", kk: "Жою" }),
           variant: "primary",
           onPress: async () => {
             closeDialog();
@@ -176,14 +171,14 @@ export default function AccountScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Pressable onPress={back} hitSlop={12} style={styles.backBtn} accessibilityLabel="Назад">
+          <Pressable onPress={back} hitSlop={12} style={styles.backBtn} accessibilityLabel={pickLang(lang, { ru: "Назад", en: "Back", kk: "Артқа" })}>
             <Ionicons name="chevron-back" size={24} color={theme.text} />
           </Pressable>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>{en ? "Account" : "Аккаунт"}</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>{pickLang(lang, { ru: "Аккаунт", en: "Account", kk: "Аккаунт" })}</Text>
         </View>
 
         {/* Avatar */}
-        <Pressable onPress={changePhoto} style={styles.avatar} accessibilityLabel="Изменить фото">
+        <Pressable onPress={changePhoto} style={styles.avatar} accessibilityLabel={pickLang(lang, { ru: "Изменить фото", en: "Change photo", kk: "Фотоны өзгерту" })}>
           {user?.photoURL ? (
             <Image source={{ uri: user.photoURL }} style={styles.avatarImg} />
           ) : (
@@ -200,18 +195,18 @@ export default function AccountScreen() {
         </Text>
         <Pressable onPress={changePhoto} hitSlop={8} style={{ alignSelf: "center" }}>
           <Text style={[styles.changePhoto, { color: theme.accentInk }]}>
-            {en ? "Change photo" : "Изменить фото"}
+            {pickLang(lang, { ru: "Изменить фото", en: "Change photo", kk: "Фотоны өзгерту" })}
           </Text>
         </Pressable>
 
         {/* ДАННЫЕ */}
-        <Text style={[styles.sectionLabel, { color: ink(0.5) }]}>{en ? "DETAILS" : "ДАННЫЕ"}</Text>
+        <Text style={[styles.sectionLabel, { color: ink(0.5) }]}>{pickLang(lang, { ru: "ДАННЫЕ", en: "DETAILS", kk: "ДЕРЕКТЕР" })}</Text>
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: stroke }]}>
           <Pressable
             onPress={() => setNameOpen(true)}
             style={({ pressed }) => [styles.row, pressed && { backgroundColor: theme.rowPressed }]}
           >
-            <Text style={[styles.rowLabel, { color: theme.text }]}>{en ? "Name" : "Имя"}</Text>
+            <Text style={[styles.rowLabel, { color: theme.text }]}>{pickLang(lang, { ru: "Имя", en: "Name", kk: "Аты" })}</Text>
             <View style={styles.rowRight}>
               <Text style={[styles.rowValue, { color: ink(0.5) }]} numberOfLines={1}>
                 {name}
@@ -236,7 +231,7 @@ export default function AccountScreen() {
           </Pressable>
           <View style={[styles.divider, { backgroundColor: theme.divider }]} />
           <View style={styles.row}>
-            <Text style={[styles.rowLabel, { color: theme.text }]}>{en ? "Sign-in method" : "Способ входа"}</Text>
+            <Text style={[styles.rowLabel, { color: theme.text }]}>{pickLang(lang, { ru: "Способ входа", en: "Sign-in method", kk: "Кіру тәсілі" })}</Text>
             <Text style={[styles.rowValue, { color: ink(0.5) }]}>{method}</Text>
           </View>
         </View>
@@ -249,7 +244,7 @@ export default function AccountScreen() {
           >
             <Ionicons name="log-out-outline" size={22} color={theme.accentInk} />
             <Text style={[styles.rowLabel, { color: theme.accentInk, flex: 1, marginLeft: 12 }]}>
-              {en ? "Sign out" : "Выйти из аккаунта"}
+              {pickLang(lang, { ru: "Выйти из аккаунта", en: "Sign out", kk: "Аккаунттан шығу" })}
             </Text>
           </Pressable>
           <View style={[styles.divider, { backgroundColor: theme.divider }]} />
@@ -259,7 +254,7 @@ export default function AccountScreen() {
           >
             <Ionicons name="refresh" size={21} color={theme.text} style={{ transform: [{ scaleX: -1 }] }} />
             <Text style={[styles.rowLabel, { color: theme.text, flex: 1, marginLeft: 12 }]}>
-              {en ? "Reset progress" : "Сбросить прогресс"}
+              {pickLang(lang, { ru: "Сбросить прогресс", en: "Reset progress", kk: "Прогресті тастау" })}
             </Text>
             <Chevron />
           </Pressable>
@@ -270,12 +265,10 @@ export default function AccountScreen() {
           onPress={confirmDelete}
           style={({ pressed }) => [styles.deleteBtn, { opacity: pressed ? 0.8 : 1 }]}
         >
-          <Text style={styles.deleteText}>{en ? "Delete account" : "Удалить аккаунт"}</Text>
+          <Text style={styles.deleteText}>{pickLang(lang, { ru: "Удалить аккаунт", en: "Delete account", kk: "Аккаунтты жою" })}</Text>
         </Pressable>
         <Text style={[styles.deleteNote, { color: ink(0.5) }]}>
-          {en
-            ? "Your profile, recordings, progress and coins will be deleted. This can't be undone."
-            : "Удалятся профиль, записи, прогресс и монеты. Восстановить их будет нельзя."}
+          {pickLang(lang, { ru: "Удалятся профиль, записи, прогресс и монеты. Восстановить их будет нельзя.", en: "Your profile, recordings, progress and coins will be deleted. This can't be undone.", kk: "Профиль, жазбалар, прогресс пен монеталар жойылады. Оларды қалпына келтіру мүмкін болмайды." })}
         </Text>
       </ScrollView>
 

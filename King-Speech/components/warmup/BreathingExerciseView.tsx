@@ -17,6 +17,7 @@ import * as Haptics from "@/lib/haptics";
 import { warmupTheme, warmupFonts } from "@/components/warmup/warmupTheme";
 import { useAppColors } from "@/hooks/useAppColors";
 import { useTheme } from "@/context/ThemeContext";
+import { useLang, pickLang } from "@/context/LangContext";
 import { BreathingHelpDialog } from "@/components/warmup/WarmupHelpDialog";
 
 /**
@@ -31,9 +32,9 @@ const CYCLES = 3;
 type PhaseType = "inhale" | "hold" | "exhale";
 interface Phase {
   type: PhaseType;
-  label: string;
+  label: { ru: string; en: string; kk: string };
   sec: number;
-  via: string;
+  via: { ru: string; en: string; kk: string };
   color: string;
 }
 
@@ -43,9 +44,27 @@ const C_HOLD = warmupTheme.gold;
 const C_EXHALE = warmupTheme.gold;
 
 const PATTERN: Phase[] = [
-  { type: "inhale", label: "Вдох", sec: 3, via: "носом", color: C_INHALE },
-  { type: "hold", label: "Задержка", sec: 2, via: "держи", color: C_HOLD },
-  { type: "exhale", label: "Выдох", sec: 4, via: "ртом", color: C_EXHALE },
+  {
+    type: "inhale",
+    label: { ru: "Вдох", en: "Inhale", kk: "Дем ал" },
+    sec: 3,
+    via: { ru: "носом", en: "through the nose", kk: "мұрынмен" },
+    color: C_INHALE,
+  },
+  {
+    type: "hold",
+    label: { ru: "Задержка", en: "Hold", kk: "Ұста" },
+    sec: 2,
+    via: { ru: "держи", en: "hold it", kk: "ұстап тұр" },
+    color: C_HOLD,
+  },
+  {
+    type: "exhale",
+    label: { ru: "Выдох", en: "Exhale", kk: "Дем шығар" },
+    sec: 4,
+    via: { ru: "ртом", en: "through the mouth", kk: "ауызбен" },
+    color: C_EXHALE,
+  },
 ];
 const PHASES = Array.from({ length: CYCLES }).flatMap(() => PATTERN);
 
@@ -121,6 +140,7 @@ export default function BreathingExerciseView({
 }) {
   const { colors } = useAppColors();
   const { theme } = useTheme();
+  const { lang } = useLang();
   const [running, setRunning] = useState(false);
   const [idx, setIdx] = useState(0);
   const [count, setCount] = useState(PATTERN[0].sec);
@@ -207,7 +227,7 @@ export default function BreathingExerciseView({
         <Pressable onPress={onBack} hitSlop={12} style={styles.iconBtn}>
           <Ionicons name="chevron-back" size={24} color={colors.textSecondary} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Дыхательная разминка</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{pickLang(lang, { ru: "Дыхательная разминка", en: "Breathing warm-up", kk: "Тыныс жаттығуы" })}</Text>
         <Pressable onPress={() => setShowHelp(true)} hitSlop={12} style={styles.iconBtn}>
           <Ionicons name="help-circle-outline" size={24} color={colors.textSecondary} />
         </Pressable>
@@ -215,7 +235,7 @@ export default function BreathingExerciseView({
 
       {/* Cycle indicator only while running — nothing under the title at start */}
       {running ? (
-        <Text style={[styles.cycle, { color: colors.textMuted }]}>Цикл {cycle} из {CYCLES}</Text>
+        <Text style={[styles.cycle, { color: colors.textMuted }]}>{pickLang(lang, { ru: `Цикл ${cycle} из ${CYCLES}`, en: `Cycle ${cycle} of ${CYCLES}`, kk: `${cycle}/${CYCLES} цикл` })}</Text>
       ) : (
         <View style={styles.cyclePlaceholder} />
       )}
@@ -256,9 +276,9 @@ export default function BreathingExerciseView({
         >
           {running && phase ? (
             <>
-              <Text style={[styles.phaseLabel, { color: theme.accentInk }]}>{phase.label}</Text>
+              <Text style={[styles.phaseLabel, { color: theme.accentInk }]}>{pickLang(lang, phase.label)}</Text>
               <Text style={[styles.phaseCount, { color: theme.text }]}>{count}</Text>
-              <Text style={[styles.phaseVia, { color: theme.accentInk }]}>{phase.via}</Text>
+              <Text style={[styles.phaseVia, { color: theme.accentInk }]}>{pickLang(lang, phase.via)}</Text>
             </>
           ) : (
             <Butterfly color={theme.accentInk} size={113} />
@@ -275,11 +295,11 @@ export default function BreathingExerciseView({
               { backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.9 : 1 },
             ]}
           >
-            <Text style={[styles.ctaText, { color: theme.accentText }]}>Начать</Text>
+            <Text style={[styles.ctaText, { color: theme.accentText }]}>{pickLang(lang, { ru: "Начать", en: "Start", kk: "Бастау" })}</Text>
           </Pressable>
         ) : (
           <Pressable onPress={onComplete} hitSlop={8} style={styles.skip}>
-            <Text style={[styles.skipText, { color: colors.textMuted }]}>Пропустить →</Text>
+            <Text style={[styles.skipText, { color: colors.textMuted }]}>{pickLang(lang, { ru: "Пропустить →", en: "Skip →", kk: "Өткізіп жіберу →" })}</Text>
           </Pressable>
         )}
       </View>

@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react";
 import type { Ionicons } from "@expo/vector-icons";
-import type { Lang } from "@/context/LangContext";
+import { pickLang, type Lang } from "@/context/LangContext";
 
 export type RankPattern = "sketch" | "pop-art" | "tech-grid" | "art-deco" | "cosmos";
 export type StepShape = "circle" | "hexagon" | "rect-glass" | "octagon" | "crystal";
@@ -9,6 +9,7 @@ export type IoniconName = ComponentProps<typeof Ionicons>["name"];
 export interface RankTopic {
   ru: string;
   en: string;
+  kk?: string;
 }
 
 export interface RankTheme {
@@ -35,13 +36,13 @@ export interface RankTheme {
   portalIcon: IoniconName;
   portalGradient: readonly [string, string];
   portalGlow: string;
-  portalLabel: { ru: string; en: string };
-  portalCaption: { ru: string; en: string };
+  portalLabel: { ru: string; en: string; kk?: string };
+  portalCaption: { ru: string; en: string; kk?: string };
   portalShape: "door" | "neon-arch" | "hologram" | "gold-gate" | "star-crown";
   // Content
   jennyTopics: RankTopic[];
-  motivationalQuote: { ru: string; en: string };
-  motivationalAuthor: { ru: string; en: string };
+  motivationalQuote: { ru: string; en: string; kk?: string };
+  motivationalAuthor: { ru: string; en: string; kk?: string };
 }
 
 export const RANK_THEMES: RankTheme[] = [
@@ -68,28 +69,32 @@ export const RANK_THEMES: RankTheme[] = [
     portalIcon: "leaf-outline",
     portalGradient: ["#FFE082", "#E0A234"] as const,
     portalGlow: "#E0A234",
-    portalLabel: { ru: "Дверь к Любителю", en: "Door to Amateur" },
-    portalCaption: { ru: "Следующий ранг", en: "Next rank" },
+    portalLabel: { ru: "Дверь к Любителю", en: "Door to Amateur", kk: "Әуесқойға апаратын есік" },
+    portalCaption: { ru: "Следующий ранг", en: "Next rank", kk: "Келесі дәреже" },
     portalShape: "door",
     jennyTopics: [
       {
         ru: "Что для тебя «голос» — звук, инструмент или нечто большее?",
         en: "What does «voice» mean to you — a sound, a tool, or something bigger?",
+        kk: "Сен үшін «дауыс» деген не — дыбыс па, құрал ма, әлде одан да үлкен нәрсе ме?",
       },
       {
         ru: "Когда тебе впервые захотелось говорить вслух перед людьми?",
         en: "When did you first want to speak out loud in front of people?",
+        kk: "Адамдар алдында дауыстап сөйлегің алғаш қашан келді?",
       },
       {
         ru: "Чему тебя научил этот первый ранг?",
         en: "What did this first rank teach you?",
+        kk: "Осы алғашқы дәреже саған не үйретті?",
       },
     ],
     motivationalQuote: {
       ru: "«Голос — это самый сильный инструмент, который есть у каждого человека.»",
       en: "«The voice is the most powerful instrument every person owns.»",
+      kk: "«Дауыс — әр адамда бар ең құдіретті құрал.»",
     },
-    motivationalAuthor: { ru: "Майя Энджелоу", en: "Maya Angelou" },
+    motivationalAuthor: { ru: "Майя Энджелоу", en: "Maya Angelou", kk: "Майя Энджелоу" },
   },
   // 2 — Любитель: retro notebook, pop-art 80s, hexagons, Fredoka
   {
@@ -114,28 +119,32 @@ export const RANK_THEMES: RankTheme[] = [
     portalIcon: "radio-outline",
     portalGradient: ["#FF6FB5", "#7C3AED"] as const,
     portalGlow: "#FF6FB5",
-    portalLabel: { ru: "Сцена Уверенного", en: "Confident's Stage" },
-    portalCaption: { ru: "Следующий ранг", en: "Next rank" },
+    portalLabel: { ru: "Сцена Уверенного", en: "Confident's Stage", kk: "Сенімділер сахнасы" },
+    portalCaption: { ru: "Следующий ранг", en: "Next rank", kk: "Келесі дәреже" },
     portalShape: "neon-arch",
     jennyTopics: [
       {
         ru: "Что в твоём голосе уже зазвучало по-новому за этот ранг?",
         en: "What has already sounded new in your voice during this rank?",
+        kk: "Осы дәрежеде дауысыңда қандай жаңа нәрсе естіле бастады?",
       },
       {
         ru: "Какой момент здесь был самым ярким и почему?",
         en: "Which moment here felt the most vivid and why?",
+        kk: "Мұндағы ең жарқын сәт қайсы болды және неге?",
       },
       {
         ru: "Кому ты хотел бы рассказать о своём прогрессе?",
         en: "Who would you want to tell about your progress?",
+        kk: "Өз жетістігің туралы кімге айтып бергің келер еді?",
       },
     ],
     motivationalQuote: {
       ru: "«Не бойся ошибиться. Бойся не сказать.»",
       en: "«Don't fear making a mistake. Fear staying silent.»",
+      kk: "«Қателесуден қорықпа. Айтпай қалудан қорық.»",
     },
-    motivationalAuthor: { ru: "Анджела Дакворт", en: "Angela Duckworth" },
+    motivationalAuthor: { ru: "Анджела Дакворт", en: "Angela Duckworth", kk: "Анджела Дакворт" },
   },
   // 3 — Уверенный: dark tech-minimalism, glassmorphism, neon, Space Mono
   {
@@ -160,28 +169,32 @@ export const RANK_THEMES: RankTheme[] = [
     portalIcon: "scan-outline",
     portalGradient: ["#22D3EE", "#7C3AED"] as const,
     portalGlow: "#22D3EE",
-    portalLabel: { ru: "Голограмма Мастера", en: "Master Hologram" },
-    portalCaption: { ru: "Следующий ранг", en: "Next rank" },
+    portalLabel: { ru: "Голограмма Мастера", en: "Master Hologram", kk: "Шебер голограммасы" },
+    portalCaption: { ru: "Следующий ранг", en: "Next rank", kk: "Келесі дәреже" },
     portalShape: "hologram",
     jennyTopics: [
       {
         ru: "Когда ты говоришь — что для тебя важнее: точность или эмоция?",
         en: "When you speak, what matters more — precision or emotion?",
+        kk: "Сөйлегенде сен үшін не маңыздырақ: дәлдік пе, әлде эмоция ма?",
       },
       {
         ru: "Какие три слова описывают твой стиль речи сейчас?",
         en: "Which three words describe your speech style now?",
+        kk: "Қазіргі сөйлеу мәнеріңді қандай үш сөз сипаттайды?",
       },
       {
         ru: "Что хочешь добавить в свой голос в следующем ранге?",
         en: "What do you want to add to your voice in the next rank?",
+        kk: "Келесі дәрежеде дауысыңа не қосқың келеді?",
       },
     ],
     motivationalQuote: {
       ru: "«Слова — это, конечно, наркотик. Но самый сильный.»",
       en: "«Words are, of course, a drug — but the most powerful one.»",
+      kk: "«Сөз — әрине, есірткі. Бірақ ең күштісі.»",
     },
-    motivationalAuthor: { ru: "Редьярд Киплинг", en: "Rudyard Kipling" },
+    motivationalAuthor: { ru: "Редьярд Киплинг", en: "Rudyard Kipling", kk: "Редьярд Киплинг" },
   },
   // 4 — Мастер: dark emerald + gold, art deco, octagons, Playfair
   {
@@ -206,28 +219,32 @@ export const RANK_THEMES: RankTheme[] = [
     portalIcon: "trophy-outline",
     portalGradient: ["#F1C672", "#9C7A2C"] as const,
     portalGlow: "#D4A24C",
-    portalLabel: { ru: "Золотые врата Профи", en: "Pro's Golden Gate" },
-    portalCaption: { ru: "Следующий ранг", en: "Next rank" },
+    portalLabel: { ru: "Золотые врата Профи", en: "Pro's Golden Gate", kk: "Кәсіпқойдың алтын қақпасы" },
+    portalCaption: { ru: "Следующий ранг", en: "Next rank", kk: "Келесі дәреже" },
     portalShape: "gold-gate",
     jennyTopics: [
       {
         ru: "Что значит «мастер слова» для тебя?",
         en: "What does «master of words» mean to you?",
+        kk: "Сен үшін «сөз шебері» нені білдіреді?",
       },
       {
         ru: "Какую речь, которую ты однажды услышал, ты не забудешь никогда?",
         en: "Which speech you once heard will you never forget?",
+        kk: "Бір кездері естіген қай сөзді ешқашан ұмытпайсың?",
       },
       {
         ru: "Если бы у тебя было ровно одно предложение для всего мира, что бы ты сказал?",
         en: "If you had exactly one sentence for the whole world, what would you say?",
+        kk: "Бүкіл әлемге айтатын бір ғана сөйлемің болса, не айтар едің?",
       },
     ],
     motivationalQuote: {
       ru: "«Гений говорит — и эпоха слушает.»",
       en: "«Genius speaks — and the era listens.»",
+      kk: "«Данышпан сөйлейді — дәуір тыңдайды.»",
     },
-    motivationalAuthor: { ru: "Уинстон Черчилль", en: "Winston Churchill" },
+    motivationalAuthor: { ru: "Уинстон Черчилль", en: "Winston Churchill", kk: "Уинстон Черчилль" },
   },
   // 5 — Профи: cosmos, stars, crystal buttons, Cormorant Garamond
   {
@@ -252,28 +269,32 @@ export const RANK_THEMES: RankTheme[] = [
     portalIcon: "star-outline",
     portalGradient: ["#C4B5FD", "#6D28D9"] as const,
     portalGlow: "#A78BFA",
-    portalLabel: { ru: "Звезда Легенды", en: "Star of Legend" },
-    portalCaption: { ru: "Финал пути", en: "End of the path" },
+    portalLabel: { ru: "Звезда Легенды", en: "Star of Legend", kk: "Аңыз жұлдызы" },
+    portalCaption: { ru: "Финал пути", en: "End of the path", kk: "Жолдың соңы" },
     portalShape: "star-crown",
     jennyTopics: [
       {
         ru: "Какой след ты хочешь оставить своим голосом?",
         en: "What trace do you want to leave with your voice?",
+        kk: "Дауысыңмен артыңа қандай із қалдырғың келеді?",
       },
       {
         ru: "Кому ты больше всего благодарен за свой путь к этому моменту?",
         en: "Who are you most grateful to for your path to this moment?",
+        kk: "Осы сәтке дейінгі жолың үшін кімге көбірек алғыс айтасың?",
       },
       {
         ru: "Что ты теперь знаешь о себе, чего не знал в начале?",
         en: "What do you now know about yourself that you didn't know at the start?",
+        kk: "Басында білмеген, ал қазір өзің туралы білетін не нәрсе бар?",
       },
     ],
     motivationalQuote: {
       ru: "«Тот, у кого есть голос, не имеет права молчать.»",
       en: "«Those who have a voice have no right to stay silent.»",
+      kk: "«Дауысы бар адамның үнсіз қалуға қақысы жоқ.»",
     },
-    motivationalAuthor: { ru: "Эли Визель", en: "Elie Wiesel" },
+    motivationalAuthor: { ru: "Эли Визель", en: "Elie Wiesel", kk: "Эли Визель" },
   },
 ];
 
@@ -290,26 +311,32 @@ export const METRIC_JENNY_QUESTIONS: Record<string, RankTopic> = {
   clarity: {
     ru: "Расскажи историю, в которой важно каждое слово — постарайся не проглатывать окончания.",
     en: "Tell a story where every word matters — try not to swallow the endings.",
+    kk: "Әр сөзі маңызды бір оқиғаны айтып бер — сөз соңын жұтып қоймауға тырыс.",
   },
   tempo: {
     ru: "Опиши момент, который хочется рассказать неспешно — как будто рядом с другом у костра.",
     en: "Describe a moment you'd want to tell unhurriedly — as if sitting by a campfire with a friend.",
+    kk: "Асықпай айтқың келетін бір сәтті сипатта — досыңмен от басында отырғандай.",
   },
   expressiveness: {
     ru: "Расскажи историю, в которой эмоция должна прозвучать в голосе, а не только в словах.",
     en: "Tell a story where the emotion has to come through your voice, not just the words.",
+    kk: "Эмоциясы сөзден ғана емес, дауыстан да білінетін бір оқиғаны айтып бер.",
   },
   confidence: {
     ru: "Расскажи о решении, в котором ты был полностью уверен — пусть это услышится в голосе.",
     en: "Tell about a decision you were completely sure of — let that certainty be heard.",
+    kk: "Толық сенімді болған бір шешімің туралы айт — сол сенім дауысыңнан естілсін.",
   },
   volume: {
     ru: "Представь, что говоришь со сцены перед сотней людей — что ты скажешь первым?",
     en: "Imagine you're on stage in front of a hundred people — what's the first thing you'd say?",
+    kk: "Жүз адамның алдында сахнада тұрғаныңды елестет — ең алдымен не айтар едің?",
   },
   pauses: {
     ru: "Расскажи короткую историю, оставляя место для пауз — где они нужнее всего?",
     en: "Tell a short story, leaving room for pauses — where do they belong most?",
+    kk: "Үзілістерге орын қалдырып, қысқа бір оқиға айт — олар қай жерде ең керек?",
   },
 };
 
@@ -344,6 +371,6 @@ export function getRankForModule(moduleNum: number): RankTheme {
   return RANK_THEMES[0];
 }
 
-export function pickLocalized<T extends { ru: string; en: string }>(o: T, lang: Lang): string {
-  return lang === "en" ? o.en : o.ru;
+export function pickLocalized<T extends { ru: string; en: string; kk?: string }>(o: T, lang: Lang): string {
+  return pickLang(lang, o);
 }

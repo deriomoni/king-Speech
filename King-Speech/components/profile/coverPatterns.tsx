@@ -11,25 +11,26 @@ export type CoverPattern = {
   id: string;
   ru: string;
   en: string;
+  kk?: string;
   bg: string;
   image: ImageSourcePropType;
 };
 
 export const COVER_PATTERNS: CoverPattern[] = [
-  { id: "paper-cosmos", ru: "Волшебный сон", en: "Magic dream", bg: "#B97A57", image: require("@/assets/profile-covers/paper-cosmos.png") },
-  { id: "constellations", ru: "Созвездия", en: "Constellations", bg: "#24263A", image: require("@/assets/profile-covers/constellations.png") },
-  { id: "crowns-rainbow", ru: "Короны", en: "Crowns", bg: "#FF639C", image: require("@/assets/profile-covers/crowns-rainbow.png") },
-  { id: "crowns-gold", ru: "Золотые короны", en: "Gold crowns", bg: "#5A34B8", image: require("@/assets/profile-covers/crowns-gold.png") },
-  { id: "sparks", ru: "Искры", en: "Sparks", bg: "#8FD6C8", image: require("@/assets/profile-covers/sparks.png") },
-  { id: "premiere", ru: "Премьера", en: "Premiere", bg: "#7D4B27", image: require("@/assets/profile-covers/premiere.png") },
-  { id: "deep", ru: "Глубина", en: "Deep sea", bg: "#0C0C10", image: require("@/assets/profile-covers/deep.png") },
-  { id: "horses", ru: "Лошадки", en: "Horses", bg: "#0F2148", image: require("@/assets/profile-covers/horses.png") },
-  { id: "tulips", ru: "Тюльпаны", en: "Tulips", bg: "#F4EADB", image: require("@/assets/profile-covers/tulips.png") },
-  { id: "meadow", ru: "Цветочный луг", en: "Meadow", bg: "#4FA04A", image: require("@/assets/profile-covers/meadow.png") },
-  { id: "lucky", ru: "На удачу", en: "Lucky", bg: "#55A661", image: require("@/assets/profile-covers/lucky.png") },
-  { id: "clouds", ru: "Облака", en: "Clouds", bg: "#8EC5EE", image: require("@/assets/profile-covers/clouds.png") },
-  { id: "apples", ru: "Яблоки", en: "Apples", bg: "#4A3513", image: require("@/assets/profile-covers/apples.png") },
-  { id: "terrazzo", ru: "Терраццо", en: "Terrazzo", bg: "#F4EEE3", image: require("@/assets/profile-covers/terrazzo.png") },
+  { id: "paper-cosmos", ru: "Волшебный сон", en: "Magic dream", kk: "Ғажайып түс", bg: "#B97A57", image: require("@/assets/profile-covers/paper-cosmos.png") },
+  { id: "constellations", ru: "Созвездия", en: "Constellations", kk: "Шоқжұлдыздар", bg: "#24263A", image: require("@/assets/profile-covers/constellations.png") },
+  { id: "crowns-rainbow", ru: "Короны", en: "Crowns", kk: "Тәждер", bg: "#FF639C", image: require("@/assets/profile-covers/crowns-rainbow.png") },
+  { id: "crowns-gold", ru: "Золотые короны", en: "Gold crowns", kk: "Алтын тәждер", bg: "#5A34B8", image: require("@/assets/profile-covers/crowns-gold.png") },
+  { id: "sparks", ru: "Искры", en: "Sparks", kk: "Ұшқындар", bg: "#8FD6C8", image: require("@/assets/profile-covers/sparks.png") },
+  { id: "premiere", ru: "Премьера", en: "Premiere", kk: "Премьера", bg: "#7D4B27", image: require("@/assets/profile-covers/premiere.png") },
+  { id: "deep", ru: "Глубина", en: "Deep sea", kk: "Тереңдік", bg: "#0C0C10", image: require("@/assets/profile-covers/deep.png") },
+  { id: "horses", ru: "Лошадки", en: "Horses", kk: "Тайлар", bg: "#0F2148", image: require("@/assets/profile-covers/horses.png") },
+  { id: "tulips", ru: "Тюльпаны", en: "Tulips", kk: "Қызғалдақтар", bg: "#F4EADB", image: require("@/assets/profile-covers/tulips.png") },
+  { id: "meadow", ru: "Цветочный луг", en: "Meadow", kk: "Гүлді шалғын", bg: "#4FA04A", image: require("@/assets/profile-covers/meadow.png") },
+  { id: "lucky", ru: "На удачу", en: "Lucky", kk: "Сәттілік", bg: "#55A661", image: require("@/assets/profile-covers/lucky.png") },
+  { id: "clouds", ru: "Облака", en: "Clouds", kk: "Бұлттар", bg: "#8EC5EE", image: require("@/assets/profile-covers/clouds.png") },
+  { id: "apples", ru: "Яблоки", en: "Apples", kk: "Алмалар", bg: "#4A3513", image: require("@/assets/profile-covers/apples.png") },
+  { id: "terrazzo", ru: "Терраццо", en: "Terrazzo", kk: "Терраццо", bg: "#F4EEE3", image: require("@/assets/profile-covers/terrazzo.png") },
 ];
 
 /** Aspect ratio of the exported artwork (= the plate at the design width). */

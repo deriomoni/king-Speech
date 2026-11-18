@@ -14,7 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
 import type { RankTheme } from "./rankTheme";
 import { pickLocalized } from "./rankTheme";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang } from "@/context/LangContext";
 import { useIsFocused } from "expo-router";
 
 interface Props {
@@ -322,7 +322,7 @@ export default function FinalPortal({ theme, status, onPress, testID }: Props) {
         <View style={[portalStyles.lockedRow, { borderColor: theme.borderColor }]}>
           <Ionicons name="lock-closed" size={12} color={theme.textMuted} />
           <Text style={[portalStyles.lockedText, { color: theme.textMuted, fontFamily: theme.fontFamily }]}>
-            {lang === "en" ? "Complete all steps of this rank" : "Пройди все ступени этого ранга"}
+            {pickLang(lang, { ru: "Пройди все ступени этого ранга", en: "Complete all steps of this rank", kk: "Осы дәреженің барлық сатысынан өт" })}
           </Text>
         </View>
       )}
@@ -331,7 +331,7 @@ export default function FinalPortal({ theme, status, onPress, testID }: Props) {
         <View style={[portalStyles.doneRow, { backgroundColor: theme.accentSoft }]}>
           <Ionicons name="checkmark-circle" size={14} color={theme.accent} />
           <Text style={[portalStyles.doneText, { color: theme.accent, fontFamily: theme.fontFamilyTitle }]}>
-            {lang === "en" ? "Portal opened" : "Портал открыт"}
+            {pickLang(lang, { ru: "Портал открыт", en: "Portal opened", kk: "Портал ашылды" })}
           </Text>
         </View>
       )}

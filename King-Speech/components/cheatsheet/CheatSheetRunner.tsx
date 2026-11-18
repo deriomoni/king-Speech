@@ -22,6 +22,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { fonts } from "@/constants/colors";
 import { useAppColors } from "@/hooks/useAppColors";
+import { pickLang, type Lang } from "@/context/LangContext";
 import {
   tx,
   DIFFICULTY_LABEL,
@@ -56,7 +57,7 @@ const mmss = (s: number) =>
   `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
 // ── Articulation (auto-cycling mouth warm-up) ────────────────────────────────
-function ArticulationView({ step, lang, c, isDark }: { step: ArticulationStep; lang: string; c: AppColors; isDark: boolean }) {
+function ArticulationView({ step, lang, c, isDark }: { step: ArticulationStep; lang: Lang; c: AppColors; isDark: boolean }) {
   const [i, setI] = useState(0);
   const prog = useSharedValue(0);
   const move = step.moves[i];
@@ -97,7 +98,7 @@ function ArticulationView({ step, lang, c, isDark }: { step: ArticulationStep; l
 }
 
 // ── Action (grounding / shaking / resonators) with optional timer ────────────
-function ActionView({ step, lang, c, isDark }: { step: ActionStep; lang: string; c: AppColors; isDark: boolean }) {
+function ActionView({ step, lang, c, isDark }: { step: ActionStep; lang: Lang; c: AppColors; isDark: boolean }) {
   const [remaining, setRemaining] = useState<number | null>(step.seconds ?? null);
   const [running, setRunning] = useState(false);
 
@@ -149,8 +150,8 @@ function ActionView({ step, lang, c, isDark }: { step: ActionStep; lang: string;
               <Ionicons name="play" size={18} color="#41310A" />
               <Text style={styles.timerBtnTxt}>
                 {remaining === 0
-                  ? lang === "en" ? "Repeat" : "Ещё раз"
-                  : lang === "en" ? `Guide me ${step.seconds}s` : `Веди меня ${step.seconds}с`}
+                  ? pickLang(lang, { ru: "Ещё раз", en: "Repeat", kk: "Тағы бір рет" })
+                  : pickLang(lang, { ru: `Веди меня ${step.seconds}с`, en: `Guide me ${step.seconds}s`, kk: `Мені бағытта ${step.seconds}с` })}
               </Text>
             </Pressable>
           )}
@@ -164,10 +165,10 @@ function ActionView({ step, lang, c, isDark }: { step: ActionStep; lang: string;
 // Words light up one-by-one (like the chant). Each full pass is faster than the
 // last: slow → in-tempo → fast, looping. A "Замена" button swaps the twister.
 const TW_PASS_MS = [520, 340, 210]; // ms per word for slow / tempo / fast
-const TW_SPEED_LABEL: { ru: string; en: string; color: string }[] = [
-  { ru: "Медленно", en: "Slow", color: "#5FD3C4" },
-  { ru: "В темпе", en: "In tempo", color: "#FFD857" },
-  { ru: "Быстро", en: "Fast", color: "#FF7A6B" },
+const TW_SPEED_LABEL: { ru: string; en: string; kk: string; color: string }[] = [
+  { ru: "Медленно", en: "Slow", kk: "Баяу", color: "#5FD3C4" },
+  { ru: "В темпе", en: "In tempo", kk: "Қарқынмен", color: "#FFD857" },
+  { ru: "Быстро", en: "Fast", kk: "Жылдам", color: "#FF7A6B" },
 ];
 
 function TwisterWord({ text, active, muted }: { text: string; active: boolean; muted: string }) {
@@ -186,7 +187,7 @@ function TwisterWord({ text, active, muted }: { text: string; active: boolean; m
   );
 }
 
-function TwisterView({ step, lang, c, isDark }: { step: TwisterStep; lang: string; c: AppColors; isDark: boolean }) {
+function TwisterView({ step, lang, c, isDark }: { step: TwisterStep; lang: Lang; c: AppColors; isDark: boolean }) {
   // The twister currently shown — starts from the step, cycles via "Замена".
   const [tw, setTw] = useState<TwisterStep>(step);
   useEffect(() => setTw(step), [step]);
@@ -252,7 +253,7 @@ function TwisterView({ step, lang, c, isDark }: { step: TwisterStep; lang: strin
       {/* Speed pill — updates each pass: slow → tempo → fast. */}
       <View style={[styles.speedPill, { backgroundColor: speed.color + "1F", borderColor: speed.color + "55" }]}>
         <Ionicons name="speedometer-outline" size={14} color={speed.color} />
-        <Text style={[styles.speedTxt, { color: speed.color }]}>{lang === "en" ? speed.en : speed.ru}</Text>
+        <Text style={[styles.speedTxt, { color: speed.color }]}>{pickLang(lang, speed)}</Text>
       </View>
 
       {/* Karaoke line */}
@@ -263,9 +264,11 @@ function TwisterView({ step, lang, c, isDark }: { step: TwisterStep; lang: strin
       </View>
 
       <Text style={[styles.twHint, { color: c.textMuted }]}>
-        {lang === "en"
-          ? "Follow the highlight — it speeds up each pass."
-          : "Веди голос за подсветкой — каждый круг быстрее."}
+        {pickLang(lang, {
+          ru: "Веди голос за подсветкой — каждый круг быстрее.",
+          en: "Follow the highlight — it speeds up each pass.",
+          kk: "Белгіленген сөзбен бірге айт — әр айналым жылдамырақ.",
+        })}
       </Text>
 
       {/* Replace the twister (free) */}
@@ -276,17 +279,17 @@ function TwisterView({ step, lang, c, isDark }: { step: TwisterStep; lang: strin
           { backgroundColor: ink(isDark, 0.06), borderColor: ink(isDark, 0.12), opacity: pressed ? 0.7 : 1 },
         ]}
         accessibilityRole="button"
-        accessibilityLabel={lang === "en" ? "Replace" : "Замена"}
+        accessibilityLabel={pickLang(lang, { ru: "Замена", en: "Replace", kk: "Ауыстыру" })}
       >
         <Ionicons name="shuffle" size={16} color={c.text} />
-        <Text style={[styles.twReplaceTxt, { color: c.text }]}>{lang === "en" ? "Replace" : "Замена"}</Text>
+        <Text style={[styles.twReplaceTxt, { color: c.text }]}>{pickLang(lang, { ru: "Замена", en: "Replace", kk: "Ауыстыру" })}</Text>
       </Pressable>
     </View>
   );
 }
 
 // ── Tip / Fix card ────────────────────────────────────────────────────────────
-function TipView({ step, lang, c }: { step: TipStep; lang: string; c: AppColors }) {
+function TipView({ step, lang, c }: { step: TipStep; lang: Lang; c: AppColors }) {
   const isFix = step.variant === "fix";
   const accent = isFix ? GOLD : PURPLE;
   return (
@@ -296,8 +299,8 @@ function TipView({ step, lang, c }: { step: TipStep; lang: string; c: AppColors 
       </View>
       <Text style={[styles.tipKicker, { color: accent }]}>
         {isFix
-          ? lang === "en" ? "QUICK FIX" : "БЫСТРЫЙ ФИКС"
-          : lang === "en" ? "TIP" : "СОВЕТ"}
+          ? pickLang(lang, { ru: "БЫСТРЫЙ ФИКС", en: "QUICK FIX", kk: "ЖЕДЕЛ КӨМЕК" })
+          : pickLang(lang, { ru: "СОВЕТ", en: "TIP", kk: "КЕҢЕС" })}
       </Text>
       <Text style={[styles.tipTitle, { color: c.text }]}>{tx(step.title, lang)}</Text>
       <Text style={[styles.tipText, { color: c.textSecondary }]}>{tx(step.text, lang)}</Text>
@@ -306,7 +309,7 @@ function TipView({ step, lang, c }: { step: TipStep; lang: string; c: AppColors 
 }
 
 // ── Final anchor ──────────────────────────────────────────────────────────────
-function FinalView({ step, lang, onDone, c }: { step: FinalStep; lang: string; onDone: () => void; c: AppColors }) {
+function FinalView({ step, lang, onDone, c }: { step: FinalStep; lang: Lang; onDone: () => void; c: AppColors }) {
   return (
     <View style={styles.finalWrap}>
       <View style={styles.finalBadge}>
@@ -326,7 +329,7 @@ function FinalView({ step, lang, onDone, c }: { step: FinalStep; lang: string; o
       </View>
       <Pressable onPress={onDone} style={({ pressed }) => [styles.readyBtn, pressed && { opacity: 0.9 }]}>
         <LinearGradient colors={[GOLD, "#E6B82E"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-        <Text style={styles.readyTxt}>{lang === "en" ? "I'm ready" : "Я готов"}</Text>
+        <Text style={styles.readyTxt}>{pickLang(lang, { ru: "Я готов", en: "I'm ready", kk: "Мен дайынмын" })}</Text>
       </Pressable>
     </View>
   );
@@ -339,7 +342,7 @@ export default function CheatSheetRunner({
   onExit,
 }: {
   route: CheatRoute;
-  lang: string;
+  lang: Lang;
   onExit: () => void;
 }) {
   const insets = useSafeAreaInsets();
@@ -404,7 +407,7 @@ export default function CheatSheetRunner({
           </View>
           <View style={styles.progressMeta}>
             <Text style={[styles.progressTxt, { color: c.textMuted }]}>
-              {lang === "en" ? `Step ${idx + 1} of ${total}` : `Шаг ${idx + 1} из ${total}`}
+              {pickLang(lang, { ru: `Шаг ${idx + 1} из ${total}`, en: `Step ${idx + 1} of ${total}`, kk: `${total} қадамның ${idx + 1}-і` })}
             </Text>
             <View style={styles.timerChip}>
               <Ionicons name="time-outline" size={13} color={route.accent} />
@@ -490,14 +493,14 @@ export default function CheatSheetRunner({
               { backgroundColor: ink(isDark, 0.07), borderColor: ink(isDark, 0.12), opacity: idx <= 0 ? 0.4 : pressed ? 0.8 : 1 },
             ]}
             accessibilityRole="button"
-            accessibilityLabel={lang === "en" ? "Back" : "Назад"}
+            accessibilityLabel={pickLang(lang, { ru: "Назад", en: "Back", kk: "Артқа" })}
           >
             <Ionicons name="arrow-back" size={18} color={c.text} />
-            <Text style={[styles.backTxt, { color: c.text }]}>{lang === "en" ? "Back" : "Назад"}</Text>
+            <Text style={[styles.backTxt, { color: c.text }]}>{pickLang(lang, { ru: "Назад", en: "Back", kk: "Артқа" })}</Text>
           </Pressable>
           <Pressable onPress={next} hitSlop={10} style={({ pressed }) => [styles.nextBtn, styles.nextBtnFlex, pressed && { opacity: 0.9 }]}>
             <LinearGradient colors={[GOLD, "#E6B82E"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-            <Text style={styles.nextTxt}>{lang === "en" ? "Forward" : "Вперёд"}</Text>
+            <Text style={styles.nextTxt}>{pickLang(lang, { ru: "Вперёд", en: "Forward", kk: "Алға" })}</Text>
             <Ionicons name="arrow-forward" size={18} color="#41310A" />
           </Pressable>
         </View>

@@ -1,5 +1,9 @@
 import type { Lang } from "@/context/LangContext";
 import { getLiterature, getModuleFromReadingId } from "@/constants/literatureLoader";
+import { LEVELS_KK } from "@/constants/content-kk/levelsKk";
+import { TASKS_KK_1 } from "@/constants/content-kk/tasksKk1";
+import { TASKS_KK_2 } from "@/constants/content-kk/tasksKk2";
+import { MODULE_QUOTES_KK } from "@/constants/content-kk/moduleQuotesKk";
 
 export interface LevelData {
   id: string;
@@ -247,6 +251,7 @@ export const MODULE_QUOTES: Record<string, Record<number, string>> = {
     66: "Legacy",
     67: "Your voice",
   },
+  kk: MODULE_QUOTES_KK,
 };
 
 const LEVELS_RU: Omit<LevelData, "color" | "colorDark" | "module" | "icon">[] = [
@@ -5257,7 +5262,7 @@ function abbrevAuthor(full: string): string {
 }
 
 export function getLevelsData(lang: Lang): LevelData[] {
-  const content = lang === "en" ? LEVELS_EN : LEVELS_RU;
+  const content = lang === "en" ? LEVELS_EN : lang === "kk" ? LEVELS_KK : LEVELS_RU;
   return content.map((c, i) => {
     const level: LevelData = {
       ...c,
@@ -5266,12 +5271,14 @@ export function getLevelsData(lang: Lang): LevelData[] {
     // Reading titles for RU are derived from the actual literature JSON
     // (the single source of truth) so the map card, the level header, and
     // the displayed text always agree. EN keeps its legacy hardcoded meta.
-    if (lang === "ru" && level.id.startsWith("reading")) {
-      const lit = getLiterature(getModuleFromReadingId(level.id));
+    // KK: Kazakh work when present (assets/content/kk/literature_kk.json),
+    // otherwise the Russian collection.
+    if ((lang === "ru" || lang === "kk") && level.id.startsWith("reading")) {
+      const lit = getLiterature(getModuleFromReadingId(level.id), lang);
       if (lit) {
         // Title stays a plain "Чтение"; the work + abbreviated author go on
         // the step-card subtitle (which auto-shrinks so it never truncates).
-        level.title = "Чтение";
+        level.title = lang === "kk" ? "Оқу" : "Чтение";
         level.subtitle = `${lit.work} · ${abbrevAuthor(lit.author)}`;
       }
     }
@@ -5279,6 +5286,8 @@ export function getLevelsData(lang: Lang): LevelData[] {
   });
 }
 
+const TASKS_KK: Record<string, TaskData[]> = { ...TASKS_RU, ...TASKS_KK_1, ...TASKS_KK_2 };
+
 export function getTasksData(lang: Lang): Record<string, TaskData[]> {
-  return lang === "en" ? TASKS_EN : TASKS_RU;
+  return lang === "en" ? TASKS_EN : lang === "kk" ? TASKS_KK : TASKS_RU;
 }

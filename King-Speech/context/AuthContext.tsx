@@ -23,6 +23,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { runGameReset } from "@/lib/gameResetRegistry";
+import { useLang, pickLang } from "@/context/LangContext";
 import {
   auth as fbAuth,
   db as fbDb,
@@ -107,6 +108,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  // Auth errors are shown to the player (login screen Alert), so localise them.
+  // A ref keeps the current language visible inside memoised callbacks.
+  const { lang } = useLang();
+  const langRef = useRef(lang);
+  langRef.current = lang;
+  const tx = (v: { ru: string; en: string; kk: string }) => pickLang(langRef.current, v);
   // Bumped whenever a provider sheet is cancelled/dismissed; the login
   // screen subscribes and instantly clears its busy spinner.
   const [authCancelToken, setAuthCancelToken] = useState(0);
@@ -281,7 +288,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!googleResponse) return;
     if (googleResponse.type !== "success") {
       if (googleResponse.type === "error") {
-        setAuthError("Не удалось войти через Google. Попробуй ещё раз.");
+        setAuthError(tx({ ru: "Не удалось войти через Google. Попробуй ещё раз.", en: "Couldn't sign in with Google. Please try again.", kk: "Google арқылы кіру мүмкін болмады. Тағы байқап көр." }));
       } else if (googleResponse.type === "cancel" || googleResponse.type === "dismiss") {
         // Reset UI without showing a noisy alert. Bumping the cancel
         // token lets the login screen clear its busy spinner immediately
@@ -298,7 +305,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // explicit error instead of silently leaving the button spinning
       // until the 30s safety timeout fires.
       console.warn("[auth] google success response missing id_token");
-      setAuthError("Google не вернул id_token. Проверь Client ID.");
+      setAuthError(tx({ ru: "Google не вернул id_token. Проверь Client ID.", en: "Google didn't return an id_token. Check the Client ID.", kk: "Google id_token қайтармады. Client ID-ді тексер." }));
       setAuthCancelToken((n) => n + 1);
       return;
     }
@@ -337,7 +344,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = useCallback(async () => {
     setAuthError(null);
     if (!firebaseConfigured) {
-      setAuthError("Авторизация не настроена. Добавь Firebase-ключи в Secrets.");
+      setAuthError(tx({ ru: "Авторизация не настроена. Добавь Firebase-ключи в Secrets.", en: "Sign-in isn't configured. Add the Firebase keys to Secrets.", kk: "Авторизация бапталмаған. Firebase кілттерін Secrets-ке қос." }));
       return;
     }
     const anyGoogleId =
@@ -345,31 +352,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       googleClientIds.webClientId ||
       googleClientIds.androidClientId;
     if (!anyGoogleId) {
-      setAuthError("Google Sign-In не настроен. Добавь EXPO_PUBLIC_GOOGLE_*_CLIENT_ID.");
+      setAuthError(tx({ ru: "Google Sign-In не настроен. Добавь EXPO_PUBLIC_GOOGLE_*_CLIENT_ID.", en: "Google Sign-In isn't configured. Add EXPO_PUBLIC_GOOGLE_*_CLIENT_ID.", kk: "Google Sign-In бапталмаған. EXPO_PUBLIC_GOOGLE_*_CLIENT_ID қос." }));
       return;
     }
     try {
       await promptGoogle();
     } catch (e: any) {
       console.warn("[auth] promptGoogle failed:", e);
-      setAuthError(e?.message ?? "Не удалось открыть Google вход");
+      setAuthError(e?.message ?? tx({ ru: "Не удалось открыть Google вход", en: "Couldn't open Google sign-in", kk: "Google арқылы кіруді ашу мүмкін болмады" }));
     }
   }, [promptGoogle]);
 
   const signInWithApple = useCallback(async () => {
     setAuthError(null);
     if (!firebaseConfigured || !fbAuth) {
-      setAuthError("Авторизация не настроена. Добавь Firebase-ключи в Secrets.");
+      setAuthError(tx({ ru: "Авторизация не настроена. Добавь Firebase-ключи в Secrets.", en: "Sign-in isn't configured. Add the Firebase keys to Secrets.", kk: "Авторизация бапталмаған. Firebase кілттерін Secrets-ке қос." }));
       return;
     }
     if (Platform.OS !== "ios") {
-      setAuthError("Apple Sign-In доступен только на iOS.");
+      setAuthError(tx({ ru: "Apple Sign-In доступен только на iOS.", en: "Apple Sign-In is only available on iOS.", kk: "Apple Sign-In тек iOS-та қолжетімді." }));
       return;
     }
     try {
       const available = await AppleAuthentication.isAvailableAsync();
       if (!available) {
-        setAuthError("Apple Sign-In недоступен на этом устройстве.");
+        setAuthError(tx({ ru: "Apple Sign-In недоступен на этом устройстве.", en: "Apple Sign-In isn't available on this device.", kk: "Бұл құрылғыда Apple Sign-In қолжетімсіз." }));
         return;
       }
       // Cryptographically-secure nonce (Apple requires unguessable values)
@@ -389,7 +396,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nonce: hashedNonce,
       });
       if (!result.identityToken) {
-        setAuthError("Apple не вернул identity token.");
+        setAuthError(tx({ ru: "Apple не вернул identity token.", en: "Apple didn't return an identity token.", kk: "Apple identity token қайтармады." }));
         return;
       }
       const provider = new OAuthProvider("apple.com");
@@ -476,7 +483,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (method: AuthMethod) => {
       if (method === "google") return signInWithGoogle();
       if (method === "apple") return signInWithApple();
-      setAuthError("Этот способ входа пока не поддерживается.");
+      setAuthError(tx({ ru: "Этот способ входа пока не поддерживается.", en: "This sign-in method isn't supported yet.", kk: "Бұл кіру тәсіліне әзірге қолдау көрсетілмейді." }));
     },
     [signInWithGoogle, signInWithApple],
   );

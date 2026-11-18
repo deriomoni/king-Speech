@@ -5,9 +5,12 @@
  * the result under `se:capability:v1`. The cache is keyed by locale so a
  * locale switch re-detects (spec §10).
  *
- * Extensibility note (§9): the Kazakh locale is NOT implemented here. A future
- * whisper.cpp adapter would satisfy the `SttAdapter` interface and be selected
- * in `adapter.ts` — no code today, TODO only.
+ * Kazakh: the app passes 'kk-KZ' (see `toBcp47` in types.ts) through the same
+ * native detection. Where the OS recognizer has no kk-KZ support the start/
+ * result path yields nothing and the engine falls back to LITE scoring (§9),
+ * exactly as for any unsupported locale. A dedicated whisper.cpp adapter
+ * would satisfy the `SttAdapter` interface and be selected in `adapter.ts`
+ * — TODO only.
  */
 
 import { getJson, setJson, STORAGE_KEYS } from '../storage';

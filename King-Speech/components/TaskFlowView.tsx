@@ -25,6 +25,7 @@ import CoinIcon from "@/components/CoinIcon";
 import { brand } from "@/constants/colors";
 import { readableText } from "@/constants/pathPalette";
 import { useTheme } from "@/context/ThemeContext";
+import { pickLang, type Lang } from "@/context/LangContext";
 import { aggregateAnalyses } from "@/services/analyzeGenericTask";
 import { Image } from "expo-image";
 import RoundStar from "@/components/RoundStar";
@@ -81,7 +82,7 @@ interface Props {
   isTongue?: boolean;
   colors: import("@/constants/colors").AppColors;
   isDark: boolean;
-  lang: "ru" | "en";
+  lang: Lang;
   topPad: number;
   bottomPad: number;
   onTaskScored: (taskNumber: number, score: number) => void;
@@ -183,11 +184,11 @@ function fmtScore(n: number): string {
   return Number.isInteger(r) ? String(r) : r.toFixed(1);
 }
 
-function verdictLabel(v: AnswerJudge["verdict"], ru: boolean): string {
-  if (v === "yes") return ru ? "Ответ по теме" : "On topic";
-  if (v === "partial") return ru ? "Частично по теме" : "Partly on topic";
-  if (v === "off") return ru ? "Не по теме" : "Off topic";
-  return ru ? "Оценка ИИ" : "AI review";
+function verdictLabel(v: AnswerJudge["verdict"], lang: Lang): string {
+  if (v === "yes") return pickLang(lang, { ru: "Ответ по теме", en: "On topic", kk: "Тақырып бойынша жауап" });
+  if (v === "partial") return pickLang(lang, { ru: "Частично по теме", en: "Partly on topic", kk: "Ішінара тақырып бойынша" });
+  if (v === "off") return pickLang(lang, { ru: "Не по теме", en: "Off topic", kk: "Тақырыптан тыс" });
+  return pickLang(lang, { ru: "Оценка ИИ", en: "AI review", kk: "ЖИ бағасы" });
 }
 
 export default function TaskFlowView({
@@ -210,7 +211,6 @@ export default function TaskFlowView({
   onAllComplete,
   onExit,
 }: Props) {
-  const ru = lang === "ru";
   // Interview and tongue-twister levels share the same clean/deferred UI.
   const deferred = isInterview || isTongue;
   // Ink that reads on the palette background (which may be light OR dark,
@@ -433,7 +433,7 @@ export default function TaskFlowView({
 
   // ── Interview flow: record → next immediately; analyze in the background ────
   const emptyAnalysis = (): SpeechAnalysis => ({
-    summary: ru ? "Ответ не распознан." : "Answer not recognized.",
+    summary: pickLang(lang, { ru: "Ответ не распознан.", en: "Answer not recognized.", kk: "Жауап танылмады." }),
     score: { overall: 0, clarity: 0, confidence: 0, volume: 0, tempo: 0, expressiveness: 0, pauses: 0 },
     strengths: [],
     recommendations: [],
@@ -541,8 +541,8 @@ export default function TaskFlowView({
   };
 
   const kindLabel = levelId.startsWith("tonguetwister")
-    ? ru ? "Скороговорка" : "Tongue twister"
-    : ru ? "Задание" : "Task";
+    ? pickLang(lang, { ru: "Скороговорка", en: "Tongue twister", kk: "Жаңылтпаш" })
+    : pickLang(lang, { ru: "Задание", en: "Task", kk: "Тапсырма" });
 
   const isDarkTheme = themeMode === "dark";
   // Figma stroke/shape — the 2pt hairline around cards.
@@ -570,9 +570,9 @@ export default function TaskFlowView({
       <View style={st.titleWrap}>
         <Text style={[st.kicker, { color: screenBg ? accent : theme.accentInk, fontFamily: "Geologica_600SemiBold" }]}>
           {isInterview
-            ? `${ru ? "Вопрос" : "Question"} ${index + 1}/${total}`
+            ? `${pickLang(lang, { ru: "Вопрос", en: "Question", kk: "Сұрақ" })} ${index + 1}/${total}`
             : isTongue
-            ? `${ru ? "Скороговорка" : "Tongue twister"} ${index + 1}/${total}`
+            ? `${pickLang(lang, { ru: "Скороговорка", en: "Tongue twister", kk: "Жаңылтпаш" })} ${index + 1}/${total}`
             : `${kindLabel} ${index + 1}/${total}`}
         </Text>
         <Text numberOfLines={1} style={[st.levelTitle, { color: ink, fontFamily: "Geologica_700Bold" }]}>
@@ -637,17 +637,13 @@ export default function TaskFlowView({
                 },
               ]}
               accessibilityRole="button"
-              accessibilityLabel={ru ? "Другой вопрос" : "Another question"}
+              accessibilityLabel={pickLang(lang, { ru: "Другой вопрос", en: "Another question", kk: "Басқа сұрақ" })}
             >
               <Ionicons name="shuffle" size={15} color={theme.text} />
               <Text style={[st.replaceQText, { color: theme.text, fontFamily: "Geologica_700Bold" }]}>
                 {usedHere >= replaceLimit
-                  ? ru
-                    ? "Замен больше нет"
-                    : "No swaps left"
-                  : ru
-                    ? "Другой вопрос"
-                    : "Another question"}
+                  ? pickLang(lang, { ru: "Замен больше нет", en: "No swaps left", kk: "Ауыстыру қалмады" })
+                  : pickLang(lang, { ru: "Другой вопрос", en: "Another question", kk: "Басқа сұрақ" })}
               </Text>
               {usedHere < replaceLimit ? (
                 <View style={[st.replaceQCost, { backgroundColor: isDarkTheme ? "rgba(240,238,233,0.08)" : "rgba(38,38,40,0.06)" }]}>
@@ -664,9 +660,7 @@ export default function TaskFlowView({
             entering={FadeIn}
             style={[st.emptyHint, { color: inkSoft, fontFamily: "Geologica_600SemiBold" }]}
           >
-            {ru
-              ? "Кажется, мы тебя не услышали — попробуй ещё раз, чуть увереннее."
-              : "We didn't hear you — try again, a little louder."}
+            {pickLang(lang, { ru: "Кажется, мы тебя не услышали — попробуй ещё раз, чуть увереннее.", en: "We didn't hear you — try again, a little louder.", kk: "Сені естімей қалған сияқтымыз — тағы байқап көр, сәл батылырақ." })}
           </Animated.Text>
         ) : null}
 
@@ -675,7 +669,7 @@ export default function TaskFlowView({
             <WaveformVoiceRecorder
               onRecordingComplete={deferred ? handleInterviewRecorded : handleRecordingComplete}
               colors={colors}
-              startLabel={isInterview ? (ru ? "Ответить" : "Answer") : isTongue ? (ru ? "Начать" : "Start") : undefined}
+              startLabel={isInterview ? (pickLang(lang, { ru: "Ответить", en: "Answer", kk: "Жауап беру" })) : isTongue ? (pickLang(lang, { ru: "Начать", en: "Start", kk: "Бастау" })) : undefined}
             />
           </Animated.View>
         ) : phase === "analyzing" ? (
@@ -686,12 +680,12 @@ export default function TaskFlowView({
           >
             <ActivityIndicator size="small" color={theme.accentText} />
             <Text style={[st.pillText, { color: theme.accentText, fontFamily: "Geologica_800ExtraBold" }]}>
-              {ru ? "Анализирую…" : "Analyzing…"}
+              {pickLang(lang, { ru: "Анализирую…", en: "Analyzing…", kk: "Талдап жатырмын…" })}
             </Text>
           </Animated.View>
         ) : (
           <Animated.View key="scored" entering={FadeInDown.duration(300)} style={st.scoredWrap}>
-            {current ? <MiniScore analysis={current} ru={ru} /> : null}
+            {current ? <MiniScore analysis={current} lang={lang} /> : null}
             <Animated.View entering={ZoomIn.duration(420)}>
               <Pressable
                 onPress={advance}
@@ -701,7 +695,7 @@ export default function TaskFlowView({
                 ]}
               >
                 <Text style={[st.pillText, { color: theme.accentText, fontFamily: "Geologica_800ExtraBold" }]}>
-                  {isLast ? (ru ? "Смотреть оценку" : "See score") : (ru ? "Далее" : "Next")}
+                  {isLast ? (pickLang(lang, { ru: "Смотреть оценку", en: "See score", kk: "Бағаны көру" })) : (pickLang(lang, { ru: "Далее", en: "Next", kk: "Келесі" }))}
                 </Text>
                 <Ionicons name="arrow-forward" size={20} color={theme.accentText} />
               </Pressable>
@@ -709,7 +703,7 @@ export default function TaskFlowView({
             <Pressable onPress={retryTake} hitSlop={8} style={({ pressed }) => [st.retryLink, { opacity: pressed ? 0.5 : 1 }]}>
               <Ionicons name="refresh" size={14} color={inkSoft} />
               <Text style={[st.retryText, { color: inkSoft, fontFamily: "Geologica_600SemiBold" }]}>
-                {ru ? "Переписать" : "Re-record"}
+                {pickLang(lang, { ru: "Переписать", en: "Re-record", kk: "Қайта жазу" })}
               </Text>
             </Pressable>
           </Animated.View>
@@ -731,7 +725,7 @@ export default function TaskFlowView({
       {corridor ? (
         <LevelCorridor
           isTongue={isTongue}
-          ru={ru}
+          lang={lang}
           topPad={topPad}
           bottomPad={bottomPad}
           onDone={() => setCorridor(false)}
@@ -744,7 +738,7 @@ export default function TaskFlowView({
         <DevReport
           rows={devRows}
           waves={waveRef.current}
-          ru={ru}
+          lang={lang}
           isTongue={isTongue}
           topPad={topPad}
           bottomPad={bottomPad}
@@ -809,20 +803,28 @@ function StepProgress({
 // 7s, a cream quote card with Oscar, and "hold to pause". Holding anywhere on
 // the screen pauses the countdown.
 const CORRIDOR_QUOTES = {
-  interview: { ru: ["Заговори, чтобы я тебя увидел.", "Сократ"], en: ["Speak, so that I may see you.", "Socrates"] },
-  tongue: { ru: ["Кто ясно мыслит, тот ясно излагает.", "Никола Буало"], en: ["What is well conceived is clearly said.", "Nicolas Boileau"] },
-};
+  interview: {
+    ru: ["Заговори, чтобы я тебя увидел.", "Сократ"],
+    en: ["Speak, so that I may see you.", "Socrates"],
+    kk: ["Сөйле, сені көрейін.", "Сократ"],
+  },
+  tongue: {
+    ru: ["Кто ясно мыслит, тот ясно излагает.", "Никола Буало"],
+    en: ["What is well conceived is clearly said.", "Nicolas Boileau"],
+    kk: ["Анық ойлаған адам анық жеткізеді.", "Никола Буало"],
+  },
+} satisfies Record<"interview" | "tongue", Record<Lang, [string, string]>>;
 
 function LevelCorridor({
   isTongue,
-  ru,
+  lang,
   topPad,
   bottomPad,
   onDone,
   onExit,
 }: {
   isTongue: boolean;
-  ru: boolean;
+  lang: Lang;
   topPad: number;
   bottomPad: number;
   onDone: () => void;
@@ -852,7 +854,7 @@ function LevelCorridor({
     return () => clearInterval(id);
   }, []);
 
-  const [quote, author] = CORRIDOR_QUOTES[isTongue ? "tongue" : "interview"][ru ? "ru" : "en"];
+  const [quote, author] = CORRIDOR_QUOTES[isTongue ? "tongue" : "interview"][lang];
   const progress = elapsed / INTERVIEW_CORRIDOR_MS;
 
   return (
@@ -861,7 +863,7 @@ function LevelCorridor({
         style={st.corridorPress}
         onPressIn={() => { pausedRef.current = true; }}
         onPressOut={() => { pausedRef.current = false; }}
-        accessibilityLabel={ru ? "Удерживай, чтобы поставить на паузу" : "Hold to pause"}
+        accessibilityLabel={pickLang(lang, { ru: "Удерживай, чтобы поставить на паузу", en: "Hold to pause", kk: "Кідірту үшін басып тұр" })}
       >
         <View style={[st.storyTrack, { top: topPad - 9, backgroundColor: isDark ? "rgba(240,238,233,0.25)" : "rgba(38,38,40,0.15)" }]}>
           <View style={[st.storyFill, { width: `${progress * 100}%`, backgroundColor: theme.text }]} />
@@ -880,7 +882,7 @@ function LevelCorridor({
         </Animated.View>
 
         <Text style={[st.corridorHint, { bottom: bottomPad + 33, color: isDark ? "rgba(240,238,233,0.35)" : theme.textMuted }]}>
-          {ru ? "Удерживай экран, чтобы поставить на паузу" : "Hold the screen to pause"}
+          {pickLang(lang, { ru: "Удерживай экран, чтобы поставить на паузу", en: "Hold the screen to pause", kk: "Кідірту үшін экранды басып тұр" })}
         </Text>
       </Pressable>
 
@@ -889,7 +891,7 @@ function LevelCorridor({
         hitSlop={14}
         style={({ pressed }) => [st.corridorClose, { top: topPad + 10, opacity: pressed ? 0.6 : 1 }]}
         accessibilityRole="button"
-        accessibilityLabel={ru ? "Выйти" : "Exit"}
+        accessibilityLabel={pickLang(lang, { ru: "Выйти", en: "Exit", kk: "Шығу" })}
       >
         <Ionicons name="close" size={22} color={theme.text} />
       </Pressable>
@@ -899,11 +901,11 @@ function LevelCorridor({
 
 // Very short between-tasks summary: score number in its tone + a 1-2 word
 // verdict + stars. Deliberately compact — the full flower waits for level end.
-function MiniScore({ analysis, ru }: { analysis: SpeechAnalysis; ru: boolean }) {
+function MiniScore({ analysis, lang }: { analysis: SpeechAnalysis; lang: Lang }) {
   const s = analysis.score.overall;
   const tone = toneFor(s);
   const stars = s < 5 ? 1 : s < 8 ? 2 : 3;
-  const verdict = s >= 8 ? (ru ? "Отлично!" : "Excellent!") : s >= 6 ? (ru ? "Хорошо" : "Good") : s >= 4 ? (ru ? "Неплохо" : "Not bad") : (ru ? "Ещё разок" : "Keep trying");
+  const verdict = s >= 8 ? (pickLang(lang, { ru: "Отлично!", en: "Excellent!", kk: "Керемет!" })) : s >= 6 ? (pickLang(lang, { ru: "Хорошо", en: "Good", kk: "Жақсы" })) : s >= 4 ? (pickLang(lang, { ru: "Неплохо", en: "Not bad", kk: "Жаман емес" })) : (pickLang(lang, { ru: "Ещё разок", en: "Keep trying", kk: "Тағы бір рет" }));
   return (
     <Animated.View entering={ZoomIn.duration(320)} style={[st.mini, { borderColor: tone + "55", backgroundColor: tone + "14" }]}>
       <Text style={[st.miniScore, { color: tone, fontFamily: "Geologica_700Bold" }]}>{s.toFixed(1)}</Text>
@@ -955,7 +957,7 @@ function PlaybackBar({
   progress,
   disabled,
   onPress,
-  ru,
+  lang,
 }: {
   wave: number[];
   durationSec: number;
@@ -963,7 +965,7 @@ function PlaybackBar({
   progress: number;
   disabled: boolean;
   onPress: () => void;
-  ru: boolean;
+  lang: Lang;
 }) {
   const { theme, themeMode } = useTheme();
   const isDark = themeMode === "dark";
@@ -989,7 +991,7 @@ function PlaybackBar({
         disabled={disabled}
         hitSlop={8}
         accessibilityRole="button"
-        accessibilityLabel={playing ? (ru ? "Остановить" : "Stop") : ru ? "Прослушать запись" : "Play recording"}
+        accessibilityLabel={playing ? (pickLang(lang, { ru: "Остановить", en: "Stop", kk: "Тоқтату" })) : pickLang(lang, { ru: "Прослушать запись", en: "Play recording", kk: "Жазбаны тыңдау" })}
         style={({ pressed }) => [
           st.pbPlay,
           { backgroundColor: theme.accent, opacity: disabled ? 0.45 : pressed ? 0.8 : 1 },
@@ -1054,7 +1056,7 @@ function MetricRow({ label, value, isDark }: { label: string; value: number | nu
 function DevReport({
   rows,
   waves,
-  ru,
+  lang,
   isTongue,
   topPad,
   bottomPad,
@@ -1065,7 +1067,7 @@ function DevReport({
 }: {
   rows: DevRow[];
   waves: Array<Waveform | null>;
-  ru: boolean;
+  lang: Lang;
   isTongue: boolean;
   topPad: number;
   bottomPad: number;
@@ -1083,7 +1085,7 @@ function DevReport({
   const [open, setOpen] = useState<Record<number, boolean>>({ 0: true });
 
   // Summary: coaching tip + up to 3 notes merged across all takes.
-  const agg = aggregateAnalyses(rows.map((r) => r.analysis), ru ? "ru" : "en");
+  const agg = aggregateAnalyses(rows.map((r) => r.analysis), lang);
   const tip = (agg.tip || "").trim();
   const notes = (agg.recommendations || [])
     .map((n) => n.trim())
@@ -1105,11 +1107,11 @@ function DevReport({
         showsVerticalScrollIndicator={false}
       >
         <Text style={[st.devTitle, { color: theme.text }]}>
-          {isTongue ? (ru ? "Разбор\nскороговорок" : "Tongue-twister\nreview") : ru ? "Разбор ответов" : "Answer breakdown"}
+          {isTongue ? (pickLang(lang, { ru: "Разбор\nскороговорок", en: "Tongue-twister\nreview", kk: "Жаңылтпаштар\nталдауы" })) : pickLang(lang, { ru: "Разбор ответов", en: "Answer breakdown", kk: "Жауаптар талдауы" })}
         </Text>
 
         <View style={{ marginTop: 28, gap: 4 }}>
-          <Text style={[st.devLabel, { color: labelColor }]}>{ru ? "ОЦЕНКА" : "SCORE"}</Text>
+          <Text style={[st.devLabel, { color: labelColor }]}>{pickLang(lang, { ru: "ОЦЕНКА", en: "SCORE", kk: "БАҒА" })}</Text>
           <View style={st.devScoreRow}>
             <Text style={[st.devScore, { color: theme.accentInk }]}>{fmtScore(avg)}</Text>
             <Text style={[st.devScoreMax, { color: dimColor }]}>/10</Text>
@@ -1121,14 +1123,14 @@ function DevReport({
           <View style={[st.devCard, cardStyle, { marginTop: 28, gap: 16 }]}>
             {tip ? (
               <>
-                <Text style={[st.devLabel, { color: theme.accentInk }]}>{ru ? "СОВЕТ" : "TIP"}</Text>
+                <Text style={[st.devLabel, { color: theme.accentInk }]}>{pickLang(lang, { ru: "СОВЕТ", en: "TIP", kk: "КЕҢЕС" })}</Text>
                 <Text style={[st.devTip, { color: theme.text }]}>{tip}</Text>
               </>
             ) : null}
             {tip && notes.length ? <View style={[st.devDivider, { backgroundColor: dividerColor }]} /> : null}
             {notes.length ? (
               <>
-                <Text style={[st.devLabel, { color: labelColor }]}>{ru ? "ЗАМЕЧАНИЯ" : "NOTES"}</Text>
+                <Text style={[st.devLabel, { color: labelColor }]}>{pickLang(lang, { ru: "ЗАМЕЧАНИЯ", en: "NOTES", kk: "ЕСКЕРТПЕЛЕР" })}</Text>
                 <View style={{ gap: 10 }}>
                   {notes.map((n, k) => (
                     <View key={k} style={st.devNoteRow}>
@@ -1141,16 +1143,14 @@ function DevReport({
             ) : null}
             {!isTongue && aiUsed === 0 ? (
               <Text style={[st.devAiNote, { color: isDark ? "rgba(240,238,233,0.4)" : theme.textMuted }]}>
-                {ru
-                  ? "ИИ-разбор сейчас недоступен - оценка по нашему механизму."
-                  : "AI review is currently unavailable - scored by our mechanism."}
+                {pickLang(lang, { ru: "ИИ-разбор сейчас недоступен - оценка по нашему механизму.", en: "AI review is currently unavailable - scored by our mechanism.", kk: "ЖИ-талдау қазір қолжетімсіз - баға біздің механизм бойынша." })}
               </Text>
             ) : null}
           </View>
         ) : null}
 
         <Text style={[st.devLabel, { color: labelColor, marginTop: 36, marginBottom: 12 }]}>
-          {isTongue ? (ru ? "СКОРОГОВОРКИ" : "TONGUE TWISTERS") : ru ? "ОТВЕТЫ" : "ANSWERS"}
+          {isTongue ? (pickLang(lang, { ru: "СКОРОГОВОРКИ", en: "TONGUE TWISTERS", kk: "ЖАҢЫЛТПАШТАР" })) : pickLang(lang, { ru: "ОТВЕТЫ", en: "ANSWERS", kk: "ЖАУАПТАР" })}
         </Text>
 
         <View style={{ gap: 12 }}>
@@ -1160,20 +1160,20 @@ function DevReport({
             const hasAudio = r.durationSec > 0;
             const expanded = !!open[i];
             const core = isTongue
-              ? { label: ru ? "Точность текста" : "Text accuracy", value: r.accuracy?.available ? r.accuracy.score10 : null }
-              : { label: ru ? "Грамотность" : "Literacy", value: r.literacy?.available ? r.literacy.overall10 : null };
+              ? { label: pickLang(lang, { ru: "Точность текста", en: "Text accuracy", kk: "Мәтін дәлдігі" }), value: r.accuracy?.available ? r.accuracy.score10 : null }
+              : { label: pickLang(lang, { ru: "Грамотность", en: "Literacy", kk: "Сауаттылық" }), value: r.literacy?.available ? r.literacy.overall10 : null };
             const metrics: Array<{ label: string; value: number | null }> = [
               core,
-              { label: ru ? "Уверенность" : "Confidence", value: Number(a.score.confidence ?? 0) },
-              { label: ru ? "Выразительность" : "Expressiveness", value: Number(a.score.expressiveness ?? 0) },
-              { label: ru ? "Чёткость" : "Clarity", value: Number(a.score.clarity ?? 0) },
-              { label: ru ? "Громкость" : "Volume", value: Number(a.score.volume ?? 0) },
+              { label: pickLang(lang, { ru: "Уверенность", en: "Confidence", kk: "Сенімділік" }), value: Number(a.score.confidence ?? 0) },
+              { label: pickLang(lang, { ru: "Выразительность", en: "Expressiveness", kk: "Мәнерлілік" }), value: Number(a.score.expressiveness ?? 0) },
+              { label: pickLang(lang, { ru: "Чёткость", en: "Clarity", kk: "Анықтық" }), value: Number(a.score.clarity ?? 0) },
+              { label: pickLang(lang, { ru: "Громкость", en: "Volume", kk: "Дауыс қаттылығы" }), value: Number(a.score.volume ?? 0) },
             ];
             return (
               <View key={i} style={[st.devCard, cardStyle, { gap: 14 }]}>
                 <View style={st.devRowHead}>
                   <Text style={[st.devLabel, { color: labelColor }]}>
-                    {(isTongue ? (ru ? "СКОРОГОВОРКА " : "TWISTER ") : ru ? "ВОПРОС " : "QUESTION ") +
+                    {(isTongue ? (pickLang(lang, { ru: "СКОРОГОВОРКА ", en: "TWISTER ", kk: "ЖАҢЫЛТПАШ " })) : pickLang(lang, { ru: "ВОПРОС ", en: "QUESTION ", kk: "СҰРАҚ " })) +
                       (i + 1) +
                       (hasAudio ? " · " + fmtDuration(r.durationSec) : "")}
                   </Text>
@@ -1191,7 +1191,7 @@ function DevReport({
                   progress={playingIndex === i ? playProgress : 0}
                   disabled={!hasAudio}
                   onPress={() => onPlay(i)}
-                  ru={ru}
+                  lang={lang}
                 />
 
                 <View style={[st.devDivider, { backgroundColor: dividerColor }]} />
@@ -1202,7 +1202,7 @@ function DevReport({
                   accessibilityState={{ expanded }}
                 >
                   <Text style={[st.devToggleText, { color: isDark ? "rgba(240,238,233,0.7)" : theme.textSecondary }]}>
-                    {ru ? "Характеристики" : "Breakdown"}
+                    {pickLang(lang, { ru: "Характеристики", en: "Breakdown", kk: "Сипаттамалар" })}
                   </Text>
                   <View style={[st.devChevron, { backgroundColor: isDark ? "rgba(240,238,233,0.08)" : "rgba(38,38,40,0.06)" }]}>
                     <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={16} color={theme.text} />
@@ -1213,14 +1213,14 @@ function DevReport({
                   <View style={{ gap: 16 }}>
                     <View style={{ gap: 6 }}>
                       <Text style={[st.devSubLabel, { color: isDark ? "rgba(240,238,233,0.4)" : theme.textMuted }]}>
-                        {ru ? `ТРАНСКРИБАЦИЯ · ${wordCount} сл.` : `TRANSCRIPTION · ${wordCount} w.`}
+                        {pickLang(lang, { ru: `ТРАНСКРИБАЦИЯ · ${wordCount} сл.`, en: `TRANSCRIPTION · ${wordCount} w.`, kk: `ТРАНСКРИПЦИЯ · ${wordCount} сөз` })}
                       </Text>
                       <Text style={[st.devTranscript, { color: r.transcript ? theme.textSecondary : isDark ? "rgba(240,238,233,0.45)" : theme.textMuted }]}>
                         {r.transcript
                           ? `«${r.transcript}»`
                           : isTongue
-                            ? ru ? "Речь не распознана - проверь микрофон и связь" : "Speech not recognized - check mic and connection"
-                            : ru ? "Речь не распознана - нет связи с сервером" : "Speech not recognized - no connection to the server"}
+                            ? pickLang(lang, { ru: "Речь не распознана - проверь микрофон и связь", en: "Speech not recognized - check mic and connection", kk: "Сөз танылмады - микрофон мен байланысты тексер" })
+                            : pickLang(lang, { ru: "Речь не распознана - нет связи с сервером", en: "Speech not recognized - no connection to the server", kk: "Сөз танылмады - сервермен байланыс жоқ" })}
                       </Text>
                     </View>
                     <View style={{ gap: 12 }}>
@@ -1242,7 +1242,7 @@ function DevReport({
             { backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.9 : 1 },
           ]}
         >
-          <Text style={[st.devContinueText, { color: theme.accentText }]}>{ru ? "Продолжить" : "Continue"}</Text>
+          <Text style={[st.devContinueText, { color: theme.accentText }]}>{pickLang(lang, { ru: "Продолжить", en: "Continue", kk: "Жалғастыру" })}</Text>
         </Pressable>
       </ScrollView>
     </View>

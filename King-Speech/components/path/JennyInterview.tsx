@@ -22,7 +22,7 @@ import JennyAvatar from "@/components/JennyAvatar";
 import { RankBackground } from "./RankBackground";
 import { useTheme } from "@/context/ThemeContext";
 import { buildJennyTopics, getRankTheme, pickLocalized, type RankTopic } from "./rankTheme";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang } from "@/context/LangContext";
 import { useGame } from "@/context/GameContext";
 import Colors from "@/constants/colors";
 
@@ -100,7 +100,7 @@ export default function JennyInterview({ rankIndex, onFinished }: Props) {
             onPress={() => router.back()}
             style={[styles.iconBtn, { borderColor: theme.borderColor, backgroundColor: theme.cardBg }]}
             accessibilityRole="button"
-            accessibilityLabel={lang === "en" ? "Back" : "Назад"}
+            accessibilityLabel={pickLang(lang, { ru: "Назад", en: "Back", kk: "Артқа" })}
           >
             <Ionicons name="chevron-back" size={20} color={theme.textPrimary} />
           </Pressable>
@@ -123,10 +123,10 @@ export default function JennyInterview({ rankIndex, onFinished }: Props) {
             <JennyAvatar state="speaking" />
           </View>
           <Text style={[styles.heroName, { color: theme.textPrimary, fontFamily: theme.fontFamilyTitle }]}>
-            {lang === "en" ? "Jenny" : "Дженни"}
+            {pickLang(lang, { ru: "Дженни", en: "Jenny", kk: "Jenny" })}
           </Text>
           <Text style={[styles.heroSub, { color: theme.textSecondary, fontFamily: theme.fontFamily }]}>
-            {lang === "en" ? "A short interview before the next rank" : "Короткое интервью перед новым рангом"}
+            {pickLang(lang, { ru: "Короткое интервью перед новым рангом", en: "A short interview before the next rank", kk: "Жаңа дәреже алдындағы қысқа сұхбат" })}
           </Text>
         </Animated.View>
 
@@ -153,7 +153,7 @@ export default function JennyInterview({ rankIndex, onFinished }: Props) {
           style={[styles.questionCard, { borderColor: theme.borderColor, backgroundColor: theme.cardBg }]}
         >
           <Text style={[styles.qLabel, { color: accentTextColor, fontFamily: theme.fontFamily }]}>
-            {(lang === "en" ? "Question " : "Вопрос ") + (step + 1) + "/" + topics.length}
+            {(pickLang(lang, { ru: "Вопрос ", en: "Question ", kk: "Сұрақ " })) + (step + 1) + "/" + topics.length}
           </Text>
           <Text style={[styles.qText, { color: theme.textPrimary, fontFamily: theme.fontFamilyTitle }]}>
             {pickLocalized(currentQuestion, lang)}
@@ -168,7 +168,7 @@ export default function JennyInterview({ rankIndex, onFinished }: Props) {
             />
             <Pressable onPress={handleSkip} style={styles.skipBtn}>
               <Text style={[styles.skipText, { color: theme.textMuted, fontFamily: theme.fontFamily }]}>
-                {lang === "en" ? "Skip this question" : "Пропустить вопрос"}
+                {pickLang(lang, { ru: "Пропустить вопрос", en: "Skip this question", kk: "Сұрақты өткізіп жіберу" })}
               </Text>
             </Pressable>
           </View>
@@ -177,7 +177,7 @@ export default function JennyInterview({ rankIndex, onFinished }: Props) {
             <View style={[styles.recordedPill, { backgroundColor: theme.accentSoft, borderColor: theme.accent }]}>
               <Ionicons name="checkmark-circle" size={16} color={accentTextColor} />
               <Text style={[styles.recordedText, { color: accentTextColor, fontFamily: theme.fontFamilyTitle }]}>
-                {lang === "en" ? "Answer saved" : "Ответ сохранён"}
+                {pickLang(lang, { ru: "Ответ сохранён", en: "Answer saved", kk: "Жауап сақталды" })}
               </Text>
             </View>
             <Pressable
@@ -187,7 +187,7 @@ export default function JennyInterview({ rankIndex, onFinished }: Props) {
                 { opacity: pressed ? 0.85 : 1 },
               ]}
               accessibilityRole="button"
-              accessibilityLabel={lang === "en" ? "Next" : "Дальше"}
+              accessibilityLabel={pickLang(lang, { ru: "Дальше", en: "Next", kk: "Келесі" })}
               testID="jenny-interview-next"
             >
               <LinearGradient
@@ -198,12 +198,8 @@ export default function JennyInterview({ rankIndex, onFinished }: Props) {
               />
               <Text style={[styles.nextText, { fontFamily: theme.fontFamilyTitle }]}>
                 {step < topics.length - 1
-                  ? lang === "en"
-                    ? "Next question"
-                    : "Следующий вопрос"
-                  : lang === "en"
-                  ? "Open the portal"
-                  : "Открыть портал"}
+                  ? pickLang(lang, { ru: "Следующий вопрос", en: "Next question", kk: "Келесі сұрақ" })
+                  : pickLang(lang, { ru: "Открыть портал", en: "Open the portal", kk: "Порталды ашу" })}
               </Text>
               <Ionicons name="arrow-forward" size={18} color="#fff" />
             </Pressable>

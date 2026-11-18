@@ -11,7 +11,7 @@ import React, { useRef, useState } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import * as Haptics from "@/lib/haptics";
 import { router } from "expo-router";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useGame } from "@/context/GameContext";
 import CoinIcon from "@/components/CoinIcon";
@@ -28,7 +28,6 @@ export function openShowTimeStage(levelId: string) {
 
 export function useShowTimeEntry() {
   const { lang } = useLang();
-  const en = lang === "en";
   const { theme: c, themeMode } = useTheme();
   const isLight = themeMode === "light";
   const { coins, showTimeFreeAvailable, consumeShowTimeFree, spendCoins } = useGame();
@@ -73,22 +72,26 @@ export function useShowTimeEntry() {
   const dialog = (
     <StageGlassDialog
       visible={payOpen}
-      title={en ? "Enter Show Time again?" : "Ещё один выход в Show Time?"}
+      title={pickLang(lang, { ru: "Ещё один выход в Show Time?", en: "Enter Show Time again?", kk: "Show Time-ға тағы шығасың ба?" })}
       message={
         canPay
-          ? en
-            ? "Today's free entry is used."
-            : "Бесплатный выход на сегодня использован."
-          : en
-            ? "Not enough coins — earn them by finishing levels."
-            : "Не хватает монет - зарабатывайте их, проходя уровни."
+          ? pickLang(lang, {
+              ru: "Бесплатный выход на сегодня использован.",
+              en: "Today's free entry is used.",
+              kk: "Бүгінгі тегін шығу пайдаланылды.",
+            })
+          : pickLang(lang, {
+              ru: "Не хватает монет - зарабатывайте их, проходя уровни.",
+              en: "Not enough coins — earn them by finishing levels.",
+              kk: "Монета жетпейді - оларды деңгейлерден өтіп жина.",
+            })
       }
       overlay={0.6}
       onRequestClose={cancel}
       buttons={[
-        { label: en ? "Cancel" : "Отмена", variant: "secondary", onPress: cancel },
+        { label: pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" }), variant: "secondary", onPress: cancel },
         {
-          label: en ? "Enter ·" : "Выйти ·",
+          label: pickLang(lang, { ru: "Выйти ·", en: "Enter ·", kk: "Төлеу ·" }),
           variant: "primary",
           disabled: !canPay,
           onPress: confirmPaidEntry,
@@ -105,7 +108,7 @@ export function useShowTimeEntry() {
     >
       <View style={st.payCostRow}>
         <Text style={[st.payCostLabel, { color: isLight ? "rgba(38,38,40,0.6)" : "rgba(240,238,233,0.6)" }]}>
-          {en ? "This entry costs" : "Этот выход стоит"}
+          {pickLang(lang, { ru: "Этот выход стоит", en: "This entry costs", kk: "Бұл шығудың бағасы" })}
         </Text>
         <Text style={[st.payCostValue, { color: isLight ? "rgba(38,38,40,0.9)" : "rgba(240,238,233,0.9)" }]}>
           {SHOW_TIME_COST}
@@ -122,18 +125,18 @@ export function useShowTimeEntry() {
 export function ShowTimeStartButton({
   onPress,
   free,
-  en,
+  lang,
   style,
 }: {
   onPress: () => void;
   free: boolean;
-  en: boolean;
+  lang: Lang;
   style?: object;
 }) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [st.startBtn, style, { opacity: pressed ? 0.85 : 1 }]}>
       <PlayTriangleIcon color="#262628" />
-      <Text style={st.startBtnText}>{en ? "Start performance" : "Начать выступление"}</Text>
+      <Text style={st.startBtnText}>{pickLang(lang, { ru: "Начать выступление", en: "Start performance", kk: "Сахнаға шығу" })}</Text>
       {free ? null : (
         <View style={st.startBtnCost}>
           <Text style={st.startBtnCostText}>{SHOW_TIME_COST}</Text>

@@ -347,12 +347,18 @@ export async function textToSpeechStream(
  */
 export async function speechToText(
   audioBuffer: Buffer,
-  format: "wav" | "mp3" | "webm" = "wav"
+  format: "wav" | "mp3" | "webm" = "wav",
+  /**
+   * Optional ISO-639-1 hint ("ru" | "en" | "kk"). Omitted → auto-detect (old
+   * behaviour). Passing it notably improves accuracy, especially for Kazakh.
+   */
+  language?: string,
 ): Promise<string> {
   const file = await toFile(audioBuffer, `audio.${format}`);
   const response = await openai.audio.transcriptions.create({
     file,
     model: "gpt-4o-transcribe",
+    ...(language ? { language } : {}),
   });
   return response.text;
 }
@@ -363,13 +369,15 @@ export async function speechToText(
  */
 export async function speechToTextStream(
   audioBuffer: Buffer,
-  format: "wav" | "mp3" | "webm" = "wav"
+  format: "wav" | "mp3" | "webm" = "wav",
+  language?: string,
 ): Promise<AsyncIterable<string>> {
   const file = await toFile(audioBuffer, `audio.${format}`);
   const stream = await openai.audio.transcriptions.create({
     file,
     model: "gpt-4o-transcribe",
     stream: true,
+    ...(language ? { language } : {}),
   });
 
   return (async function* () {

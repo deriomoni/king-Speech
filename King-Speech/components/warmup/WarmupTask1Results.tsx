@@ -16,6 +16,7 @@ import CelebrationBurst from "@/components/warmup/CelebrationBurst";
 import { warmupFonts, warmupSpring, warmupTheme } from "@/components/warmup/warmupTheme";
 import type { WarmupScoreResult } from "@/services/warmupScoring";
 import RoundStar from "@/components/RoundStar";
+import { useLang, pickLang } from "@/context/LangContext";
 
 interface Props {
   result: WarmupScoreResult;
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export default function WarmupTask1Results({ result, onNext }: Props) {
+  const { lang } = useLang();
   const [displayPct, setDisplayPct] = useState(0);
   const star0 = useSharedValue(0);
   const star1 = useSharedValue(0);
@@ -64,10 +66,10 @@ export default function WarmupTask1Results({ result, onNext }: Props) {
         <OreoMascot size={120} shouldPlay />
         <Text style={styles.cheer}>
           {result.stars >= 3
-            ? "Блестяще! Голос разогрет."
+            ? pickLang(lang, { ru: "Блестяще! Голос разогрет.", en: "Brilliant! Your voice is warmed up.", kk: "Тамаша! Дауысың қызды." })
             : result.stars >= 2
-              ? "Хорошо! Голос разогревается."
-              : "Отличное начало — продолжай!"}
+              ? pickLang(lang, { ru: "Хорошо! Голос разогревается.", en: "Good! Your voice is warming up.", kk: "Жақсы! Дауысың қызып келеді." })
+              : pickLang(lang, { ru: "Отличное начало — продолжай!", en: "Great start — keep going!", kk: "Керемет бастама — жалғастыр!" })}
         </Text>
 
         <View style={styles.starsRow}>
@@ -79,15 +81,15 @@ export default function WarmupTask1Results({ result, onNext }: Props) {
         </View>
 
         <GlassCard glow style={styles.card}>
-          <Text style={styles.pctLabel}>Точность</Text>
+          <Text style={styles.pctLabel}>{pickLang(lang, { ru: "Точность", en: "Accuracy", kk: "Дәлдік" })}</Text>
           <Text style={styles.pct}>{displayPct}%</Text>
           {result.comboMax > 2 && (
-            <Text style={styles.combo}>Комбо ×{result.comboMax}</Text>
+            <Text style={styles.combo}>{pickLang(lang, { ru: "Комбо", en: "Combo", kk: "Комбо" })} ×{result.comboMax}</Text>
           )}
         </GlassCard>
 
         <Animated.View entering={FadeInDown.delay(400).duration(300)}>
-          <PrimaryButton label="Дальше" onPress={onNext} />
+          <PrimaryButton label={pickLang(lang, { ru: "Дальше", en: "Next", kk: "Келесі" })} onPress={onNext} />
         </Animated.View>
       </Animated.View>
     </View>

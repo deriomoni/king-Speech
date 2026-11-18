@@ -24,7 +24,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
 } from "react-native-reanimated";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang } from "@/context/LangContext";
 import { useRoles } from "@/context/RolesContext";
 import {
   ROLES,
@@ -124,7 +124,7 @@ function SpinOverlay({ onClose, onLanded }: { onClose: () => void; onLanded: (ro
       <View style={styles.spinBackdrop}>
         <CrownPattern width={SW} height={SH} />
         <Text style={styles.spinLabel}>
-          {done ? (lang === "en" ? "YOUR ROLE" : "ТВОЯ РОЛЬ") : (lang === "en" ? "DRAWING..." : "ТЯНЕМ КАРТУ...")}
+          {done ? (pickLang(lang, { ru: "ТВОЯ РОЛЬ", en: "YOUR ROLE", kk: "СЕНІҢ РӨЛІҢ" })) : (pickLang(lang, { ru: "ТЯНЕМ КАРТУ...", en: "DRAWING...", kk: "КАРТА ТАРТЫЛУДА..." }))}
         </Text>
         <Animated.View
           key={current.id + (done ? "-done" : "")}
@@ -134,7 +134,7 @@ function SpinOverlay({ onClose, onLanded }: { onClose: () => void; onLanded: (ro
           <RoleTarotCard role={current} width={SPIN_W} lang={lang} />
         </Animated.View>
         <Pressable onPress={onClose} hitSlop={10} style={styles.spinSkip}>
-          <Text style={styles.spinSkipText}>{lang === "en" ? "Close" : "Закрыть"}</Text>
+          <Text style={styles.spinSkipText}>{pickLang(lang, { ru: "Закрыть", en: "Close", kk: "Жабу" })}</Text>
         </Pressable>
       </View>
     </Modal>
@@ -199,12 +199,10 @@ export default function RolesScreen() {
         <Animated.View entering={FadeInDown.duration(400)} style={styles.titleWrap}>
           <View style={styles.titleRow}>
             <RolesMaskIcon color={TEXT} width={22} height={30} />
-            <Text style={styles.title}>{lang === "en" ? "Roles" : "Роли"}</Text>
+            <Text style={styles.title}>{pickLang(lang, { ru: "Роли", en: "Roles", kk: "Рөлдер" })}</Text>
           </View>
           <Text style={styles.subtitle}>
-            {lang === "en"
-              ? "Try on someone else's persona and level up your improv"
-              : "Примерь чужой образ и прокачай импровизацию"}
+            {pickLang(lang, { ru: "Примерь чужой образ и прокачай импровизацию", en: "Try on someone else's persona and level up your improv", kk: "Басқа біреудің бейнесіне еніп, импровизацияңды шыңда" })}
           </Text>
         </Animated.View>
 
@@ -222,18 +220,18 @@ export default function RolesScreen() {
             </View>
           </Pressable>
           <Pressable onPress={startSpin} style={({ pressed }) => [styles.spinCta, { opacity: pressed ? 0.85 : 1 }]}>
-            <Text style={styles.spinCtaText}>{lang === "en" ? "Draw a role" : "Вытянуть роль"}</Text>
+            <Text style={styles.spinCtaText}>{pickLang(lang, { ru: "Вытянуть роль", en: "Draw a role", kk: "Рөл тарту" })}</Text>
           </Pressable>
         </Animated.View>
 
         {/* All roles */}
         <View style={styles.sectionRow}>
-          <Text style={styles.sectionTitle}>{lang === "en" ? "All roles" : "Все роли"}</Text>
+          <Text style={styles.sectionTitle}>{pickLang(lang, { ru: "Все роли", en: "All roles", kk: "Барлық рөлдер" })}</Text>
           <Text style={styles.sectionCount}>{ART_ROLES.length}</Text>
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
-          <CategoryChip active={category === "all"} label={lang === "en" ? "All" : "Все"} onPress={() => { haptic(); setCategory("all"); }} />
+          <CategoryChip active={category === "all"} label={pickLang(lang, { ru: "Все", en: "All", kk: "Барлығы" })} onPress={() => { haptic(); setCategory("all"); }} />
           {ROLE_CATEGORIES.filter((c) => ART_ROLES.some((r) => r.category === c.id)).map((c) => (
             <CategoryChip
               key={c.id}

@@ -1,5 +1,7 @@
 import { z } from "zod";
 import tongueTwisterRaw from "@/assets/content/king_speech_tonguetwisters_content.json";
+import tongueTwisterKkRaw from "@/assets/content/kk/tonguetwisters_kk.json";
+import type { Lang } from "@/context/LangContext";
 
 /**
  * Loader for tongue-twister levels (variant B).
@@ -36,20 +38,17 @@ const TongueTwisterSchema = z.object({
 
 export type TongueTwisterContent = z.infer<typeof TongueTwisterSchema>;
 
-const parsed = TongueTwisterSchema.safeParse(tongueTwisterRaw);
-if (!parsed.success) {
-  console.warn(
-    "[tongueTwisterLoader] invalid tongue-twister content JSON:",
-    parsed.error.issues.slice(0, 3),
-  );
-}
-
-const CONTENT: TongueTwisterContent = parsed.success
-  ? parsed.data
-  : { daily: [], groups: [] };
-
-// Flattened, de-duplicated pool in a stable order: daily, then each group.
-const POOL: string[] = (() => {
+function buildPool(raw: unknown, tag: string): string[] {
+  const parsed = TongueTwisterSchema.safeParse(raw);
+  if (!parsed.success) {
+    console.warn(
+      `[tongueTwisterLoader] invalid ${tag} tongue-twister content JSON:`,
+      parsed.error.issues.slice(0, 3),
+    );
+    return [];
+  }
+  const content = parsed.data;
+  // Flattened, de-duplicated pool in a stable order: daily, then each group.
   const seen = new Set<string>();
   const pool: string[] = [];
   const push = (s: string) => {
@@ -59,10 +58,14 @@ const POOL: string[] = (() => {
       pool.push(t);
     }
   };
-  CONTENT.daily.forEach((d) => push(d.text));
-  CONTENT.groups.forEach((g) => g.items.forEach(push));
+  content.daily.forEach((d) => push(d.text));
+  content.groups.forEach((g) => g.items.forEach(push));
   return pool;
-})();
+}
+
+const POOL: string[] = buildPool(tongueTwisterRaw, "RU");
+/** Kazakh жаңылтпаштар — a separate pool (twisters can't be translated). */
+const POOL_KK: string[] = buildPool(tongueTwisterKkRaw, "KK");
 
 /**
  * Short twisters are over too fast to drill — say them twice. We return the
@@ -90,12 +93,14 @@ export function getModuleFromTongueTwisterId(levelId: string): number {
 export function getTongueTwistersForModule(
   moduleId: number,
   count: number,
+  lang: Lang = "ru",
 ): string[] {
-  if (POOL.length === 0 || count <= 0) return [];
-  const start = ((moduleId - 1) * count) % POOL.length;
+  const pool = lang === "kk" && POOL_KK.length > 0 ? POOL_KK : POOL;
+  if (pool.length === 0 || count <= 0) return [];
+  const start = ((moduleId - 1) * count) % pool.length;
   const out: string[] = [];
   for (let i = 0; i < count; i++) {
-    out.push(repeatIfShort(POOL[(start + i) % POOL.length]));
+    out.push(repeatIfShort(pool[(start + i) % pool.length]));
   }
   return out;
 }

@@ -26,7 +26,7 @@ import {
   type Level,
   type ShowTimeRecording,
 } from "@/context/GameContext";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useDevTools } from "@/context/DevToolsContext";
 import {
   getRankTheme,
@@ -38,10 +38,11 @@ import { useAudioWaveform } from "@/hooks/useAudioWaveform";
 import { colors as brandColors } from "@/theme/tokens";
 import { useTheme } from "@/context/ThemeContext";
 
-function rankNameFor(rankIndex: number, lang: "ru" | "en"): string {
+function rankNameFor(rankIndex: number, lang: Lang): string {
   const ru = ["Новичок", "Любитель", "Уверенный", "Мастер", "Профи"];
   const en = ["Novice", "Amateur", "Confident", "Master", "Pro"];
-  return (lang === "en" ? en : ru)[Math.max(0, Math.min(4, rankIndex - 1))];
+  const kk = ["Бастаушы", "Әуесқой", "Сенімді", "Шебер", "Кәсіпқой"];
+  return pickLang(lang, { ru, en, kk })[Math.max(0, Math.min(4, rankIndex - 1))];
 }
 
 export default function WorldDetailRoute() {
@@ -126,7 +127,7 @@ export default function WorldDetailRoute() {
         <Pressable
           onPress={handleClose}
           accessibilityRole="button"
-          accessibilityLabel={lang === "en" ? "Back to worlds" : "К мирам"}
+          accessibilityLabel={pickLang(lang, { ru: "К мирам", en: "Back to worlds", kk: "Әлемдерге" })}
           style={({ pressed }) => [
             detailStyles.backBtn,
             {
@@ -156,8 +157,8 @@ export default function WorldDetailRoute() {
               { color: theme.textSecondary, fontFamily: theme.fontFamily },
             ]}
           >
-            {lang === "en" ? "RANK" : "РАНГ"} {rankIndex} ·{" "}
-            {lang === "en" ? "Completed" : "Пройден"}
+            {pickLang(lang, { ru: "РАНГ", en: "RANK", kk: "ДӘРЕЖЕ" })} {rankIndex} ·{" "}
+            {pickLang(lang, { ru: "Пройден", en: "Completed", kk: "Өтілді" })}
           </Text>
           <Text
             style={[
@@ -213,15 +214,15 @@ export default function WorldDetailRoute() {
 
 // --- Recordings block ----------------------------------------------------
 
-function autoLabel(index: number, lang: "ru" | "en"): string {
-  if (index === 0) return lang === "en" ? "First take" : "Первая запись";
-  return `${lang === "en" ? "Take" : "Дубль"} ${index + 1}`;
+function autoLabel(index: number, lang: Lang): string {
+  if (index === 0) return pickLang(lang, { ru: "Первая запись", en: "First take", kk: "Алғашқы жазба" });
+  return `${pickLang(lang, { ru: "Дубль", en: "Take", kk: "Дубль" })} ${index + 1}`;
 }
 
 async function shareRecording(
   uri: string,
   label: string,
-  lang: "ru" | "en"
+  lang: Lang
 ): Promise<void> {
   if (Platform.OS === "web") {
     const filename = `${label.replace(/[^\w\-. ]+/g, "_") || "recording"}.m4a`;
@@ -260,9 +261,7 @@ async function shareRecording(
       console.warn("Web share failed", e);
       if (typeof window !== "undefined") {
         window.alert(
-          lang === "en"
-            ? "Sharing isn't available on this browser."
-            : "Поделиться нельзя в этом браузере."
+          pickLang(lang, { ru: "Поделиться нельзя в этом браузере.", en: "Sharing isn't available on this browser.", kk: "Бұл браузерде бөлісу мүмкін емес." })
         );
       }
     }
@@ -272,10 +271,8 @@ async function shareRecording(
     const available = await Sharing.isAvailableAsync();
     if (!available) {
       Alert.alert(
-        lang === "en" ? "Sharing unavailable" : "Поделиться нельзя",
-        lang === "en"
-          ? "Sharing isn't supported on this device."
-          : "На этом устройстве недоступно."
+        pickLang(lang, { ru: "Поделиться нельзя", en: "Sharing unavailable", kk: "Бөлісу мүмкін емес" }),
+        pickLang(lang, { ru: "На этом устройстве недоступно.", en: "Sharing isn't supported on this device.", kk: "Бұл құрылғыда қолжетімсіз." })
       );
       return;
     }
@@ -307,7 +304,7 @@ function RecordingsBlock({
   recordings,
 }: {
   theme: RankTheme;
-  lang: "ru" | "en";
+  lang: Lang;
   rankIndex: number;
   recordings: ShowTimeRecording[];
 }) {
@@ -353,11 +350,9 @@ function RecordingsBlock({
     if (!actionFor) return;
     const uri = actionFor.uri;
     setActionFor(null);
-    const title = lang === "en" ? "Delete recording?" : "Удалить запись?";
+    const title = pickLang(lang, { ru: "Удалить запись?", en: "Delete recording?", kk: "Жазбаны жою керек пе?" });
     const msg =
-      lang === "en"
-        ? "This will remove it from your keepsake library. This can't be undone."
-        : "Запись исчезнет из коллекции воспоминаний. Это нельзя отменить.";
+      pickLang(lang, { ru: "Запись исчезнет из коллекции воспоминаний. Это нельзя отменить.", en: "This will remove it from your keepsake library. This can't be undone.", kk: "Жазба естеліктер жинағынан жойылады. Мұны қайтару мүмкін емес." });
     if (Platform.OS === "web") {
       const ok =
         typeof window !== "undefined" ? window.confirm(`${title}\n\n${msg}`) : true;
@@ -365,9 +360,9 @@ function RecordingsBlock({
       return;
     }
     Alert.alert(title, msg, [
-      { text: lang === "en" ? "Cancel" : "Отмена", style: "cancel" },
+      { text: pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" }), style: "cancel" },
       {
-        text: lang === "en" ? "Delete" : "Удалить",
+        text: pickLang(lang, { ru: "Удалить", en: "Delete", kk: "Жою" }),
         style: "destructive",
         onPress: () => {
           performDelete(uri);
@@ -400,7 +395,7 @@ function RecordingsBlock({
             { color: theme.textPrimary, fontFamily: theme.fontFamilyTitle },
           ]}
         >
-          {lang === "en" ? "Show Time recordings" : "Записи Show Time"}
+          {pickLang(lang, { ru: "Записи Show Time", en: "Show Time recordings", kk: "Show Time жазбалары" })}
         </Text>
       </View>
       <Text
@@ -410,12 +405,8 @@ function RecordingsBlock({
         ]}
       >
         {recordings.length === 0
-          ? lang === "en"
-            ? "No recordings were saved during this rank."
-            : "В этом ранге записи не сохранились."
-          : lang === "en"
-          ? `${recordings.length} ${recordings.length === 1 ? "recording" : "recordings"} from your journey. Long-press to rename, share, or delete.`
-          : `${recordings.length} записей из твоего пути. Удерживай, чтобы переименовать, поделиться или удалить.`}
+          ? pickLang(lang, { ru: "В этом ранге записи не сохранились.", en: "No recordings were saved during this rank.", kk: "Бұл дәрежеде жазбалар сақталмаған." })
+          : pickLang(lang, { ru: `${recordings.length} записей из твоего пути. Удерживай, чтобы переименовать, поделиться или удалить.`, en: `${recordings.length} ${recordings.length === 1 ? "recording" : "recordings"} from your journey. Long-press to rename, share, or delete.`, kk: `Жолыңнан ${recordings.length} жазба. Атын өзгерту, бөлісу не жою үшін басып тұр.` })}
       </Text>
       {recordings.length > 0 && (
         <View style={{ gap: 8, marginTop: 8 }}>
@@ -474,7 +465,7 @@ function ActionSheetModal({
 }: {
   visible: boolean;
   theme: RankTheme;
-  lang: "ru" | "en";
+  lang: Lang;
   title: string;
   onClose: () => void;
   onRename: () => void;
@@ -515,7 +506,7 @@ function ActionSheetModal({
           </Text>
           <SheetAction
             icon="create-outline"
-            label={lang === "en" ? "Rename" : "Переименовать"}
+            label={pickLang(lang, { ru: "Переименовать", en: "Rename", kk: "Атын өзгерту" })}
             color={theme.textPrimary}
             accent={theme.accent}
             onPress={onRename}
@@ -523,7 +514,7 @@ function ActionSheetModal({
           />
           <SheetAction
             icon="share-outline"
-            label={lang === "en" ? "Share" : "Поделиться"}
+            label={pickLang(lang, { ru: "Поделиться", en: "Share", kk: "Бөлісу" })}
             color={theme.textPrimary}
             accent={theme.accent}
             onPress={onShare}
@@ -531,7 +522,7 @@ function ActionSheetModal({
           />
           <SheetAction
             icon="trash-outline"
-            label={lang === "en" ? "Delete" : "Удалить"}
+            label={pickLang(lang, { ru: "Удалить", en: "Delete", kk: "Жою" })}
             color="#E11D48"
             accent="#E11D48"
             onPress={onDelete}
@@ -544,7 +535,7 @@ function ActionSheetModal({
               { borderColor: theme.borderColor, opacity: pressed ? 0.8 : 1 },
             ]}
             accessibilityRole="button"
-            accessibilityLabel={lang === "en" ? "Cancel" : "Отмена"}
+            accessibilityLabel={pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" })}
             testID="recording-action-cancel"
           >
             <Text
@@ -553,7 +544,7 @@ function ActionSheetModal({
                 { color: theme.textSecondary, fontFamily: theme.fontFamily },
               ]}
             >
-              {lang === "en" ? "Cancel" : "Отмена"}
+              {pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" })}
             </Text>
           </Pressable>
         </Pressable>
@@ -611,7 +602,7 @@ function RenameModal({
 }: {
   visible: boolean;
   theme: RankTheme;
-  lang: "ru" | "en";
+  lang: Lang;
   initial: string;
   onCancel: () => void;
   onSubmit: (label: string) => void;
@@ -648,7 +639,7 @@ function RenameModal({
               { color: theme.textPrimary, fontFamily: theme.fontFamilyTitle, marginTop: 0 },
             ]}
           >
-            {lang === "en" ? "Rename recording" : "Переименовать запись"}
+            {pickLang(lang, { ru: "Переименовать запись", en: "Rename recording", kk: "Жазбаның атын өзгерту" })}
           </Text>
           <TextInput
             value={text}
@@ -676,9 +667,7 @@ function RenameModal({
               { color: theme.textMuted, fontFamily: theme.fontFamily },
             ]}
           >
-            {lang === "en"
-              ? "Leave empty to restore the auto label."
-              : "Оставь пустым, чтобы вернуть автоназвание."}
+            {pickLang(lang, { ru: "Оставь пустым, чтобы вернуть автоназвание.", en: "Leave empty to restore the auto label.", kk: "Автоатауды қайтару үшін бос қалдыр." })}
           </Text>
           <View style={detailStyles.renameButtons}>
             <Pressable
@@ -695,7 +684,7 @@ function RenameModal({
                   { color: theme.textSecondary, fontFamily: theme.fontFamily },
                 ]}
               >
-                {lang === "en" ? "Cancel" : "Отмена"}
+                {pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" })}
               </Text>
             </Pressable>
             <Pressable
@@ -716,7 +705,7 @@ function RenameModal({
                   { color: "#fff", fontFamily: "Geologica_600SemiBold" },
                 ]}
               >
-                {lang === "en" ? "Save" : "Сохранить"}
+                {pickLang(lang, { ru: "Сохранить", en: "Save", kk: "Сақтау" })}
               </Text>
             </Pressable>
           </View>
@@ -746,7 +735,7 @@ function RecordingItem({
   index: number;
   label: string;
   theme: RankTheme;
-  lang: "ru" | "en";
+  lang: Lang;
   isFirst: boolean;
   onMore: () => void;
 }) {
@@ -964,7 +953,7 @@ function RecordingItem({
       <Pressable
         onPress={play}
         accessibilityRole="button"
-        accessibilityLabel={`${label} — ${playing ? (lang === "en" ? "pause" : "пауза") : (lang === "en" ? "play" : "воспроизвести")}`}
+        accessibilityLabel={`${label} — ${playing ? pickLang(lang, { ru: "пауза", en: "pause", kk: "үзіліс" }) : pickLang(lang, { ru: "воспроизвести", en: "play", kk: "ойнату" })}`}
         style={({ pressed }) => [
           detailStyles.recPlay,
           { backgroundColor: brandColors.gold, opacity: pressed ? 0.8 : 1 },
@@ -1003,7 +992,7 @@ function RecordingItem({
             barWidthRef.current = e.nativeEvent.layout.width;
           }}
           accessibilityRole="adjustable"
-          accessibilityLabel={lang === "en" ? "Seek recording" : "Перемотка"}
+          accessibilityLabel={pickLang(lang, { ru: "Перемотка", en: "Seek recording", kk: "Айналдыру" })}
           accessibilityValue={{ min: 0, max: 100, now: Math.round(progress * 100) }}
           disabled={duration <= 0}
           style={detailStyles.recWaveTrack}
@@ -1058,8 +1047,8 @@ function RecordingItem({
         accessibilityRole="button"
         accessibilityLabel={
           muted
-            ? lang === "en" ? "Unmute" : "Включить звук"
-            : lang === "en" ? "Mute" : "Выключить звук"
+            ? pickLang(lang, { ru: "Включить звук", en: "Unmute", kk: "Дыбысты қосу" })
+            : pickLang(lang, { ru: "Выключить звук", en: "Mute", kk: "Дыбысты өшіру" })
         }
         style={({ pressed }) => [
           detailStyles.recMute,
@@ -1087,7 +1076,7 @@ function RecordingItem({
               { color: theme.accentDark, fontFamily: theme.fontFamily },
             ]}
           >
-            {lang === "en" ? "MEMORY" : "ПАМЯТЬ"}
+            {pickLang(lang, { ru: "ПАМЯТЬ", en: "MEMORY", kk: "ЕСТЕЛІК" })}
           </Text>
         </View>
       )}
@@ -1095,7 +1084,7 @@ function RecordingItem({
       <Pressable
         onPress={onMore}
         accessibilityRole="button"
-        accessibilityLabel={lang === "en" ? "More actions" : "Действия"}
+        accessibilityLabel={pickLang(lang, { ru: "Действия", en: "More actions", kk: "Әрекеттер" })}
         style={({ pressed }) => [
           detailStyles.recMore,
           {
@@ -1121,7 +1110,7 @@ function MementoBlock({
   onPress,
 }: {
   theme: RankTheme;
-  lang: "ru" | "en";
+  lang: Lang;
   available: boolean;
   onPress: () => void;
 }) {
@@ -1130,7 +1119,7 @@ function MementoBlock({
       onPress={onPress}
       disabled={!available}
       accessibilityRole="button"
-      accessibilityLabel={lang === "en" ? "Re-open rank-up memento" : "Открыть воспоминание о повышении"}
+      accessibilityLabel={pickLang(lang, { ru: "Открыть воспоминание о повышении", en: "Re-open rank-up memento", kk: "Дәреже көтерілген сәтті қайта ашу" })}
       testID="world-memento-cta"
       style={({ pressed }) => [
         detailStyles.mementoCard,
@@ -1157,7 +1146,7 @@ function MementoBlock({
             { color: theme.textPrimary, fontFamily: theme.fontFamilyTitle, marginBottom: 0 },
           ]}
         >
-          {lang === "en" ? "The rank-up moment" : "Момент повышения"}
+          {pickLang(lang, { ru: "Момент повышения", en: "The rank-up moment", kk: "Дәреже көтерілген сәт" })}
         </Text>
         <Text
           style={[
@@ -1166,12 +1155,8 @@ function MementoBlock({
           ]}
         >
           {available
-            ? lang === "en"
-              ? "Re-watch your portal ceremony as a keepsake."
-              : "Пересмотри церемонию портала как воспоминание."
-            : lang === "en"
-            ? "Portal not finished — no ceremony to revisit."
-            : "Портал не пройден — церемонии нет."}
+            ? pickLang(lang, { ru: "Пересмотри церемонию портала как воспоминание.", en: "Re-watch your portal ceremony as a keepsake.", kk: "Портал салтанатын естелік ретінде қайта көр." })
+            : pickLang(lang, { ru: "Портал не пройден — церемонии нет.", en: "Portal not finished — no ceremony to revisit.", kk: "Портал өтілмеген — салтанат жоқ." })}
         </Text>
       </View>
       {available && (
@@ -1190,7 +1175,7 @@ function ModulesBlock({
   onOpen,
 }: {
   theme: RankTheme;
-  lang: "ru" | "en";
+  lang: Lang;
   levels: Level[];
   onOpen: (id: string) => void;
 }) {
@@ -1210,7 +1195,7 @@ function ModulesBlock({
             { color: theme.textPrimary, fontFamily: theme.fontFamilyTitle },
           ]}
         >
-          {lang === "en" ? "Modules in this rank" : "Модули этого ранга"}
+          {pickLang(lang, { ru: "Модули этого ранга", en: "Modules in this rank", kk: "Осы дәреженің модульдері" })}
         </Text>
       </View>
       <Text
@@ -1219,9 +1204,7 @@ function ModulesBlock({
           { color: theme.textSecondary, fontFamily: theme.fontFamily },
         ]}
       >
-        {lang === "en"
-          ? "Tap any module to revisit it. Your progress here is preserved."
-          : "Нажми на модуль, чтобы вернуться к нему. Прогресс сохраняется."}
+        {pickLang(lang, { ru: "Нажми на модуль, чтобы вернуться к нему. Прогресс сохраняется.", en: "Tap any module to revisit it. Your progress here is preserved.", kk: "Модульге оралу үшін оны бас. Прогресс сақталады." })}
       </Text>
       <View style={{ marginTop: 4 }}>
         {sorted.map((l) => {

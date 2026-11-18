@@ -16,7 +16,7 @@ import * as Haptics from "@/lib/haptics";
 import GoldCoin from "@/components/GoldCoin";
 import DailyRewards from "@/components/DailyRewards";
 import { useGame } from "@/context/GameContext";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 
 const OSCAR_BAGS = require("@/assets/figma/levels/oscar-bags.png");
@@ -55,18 +55,19 @@ function CoinPile({ count }: { count: 1 | 2 | 3 }) {
   );
 }
 
-type Pack = { coins: number; price: string; pile: 1 | 2 | 3; badge?: { ru: string; en: string; kind: "popular" | "plain" } };
+type Pack = { coins: number; price: string; pile: 1 | 2 | 3; badge?: { ru: string; en: string; kk: string; kind: "popular" | "plain" } };
 
 // TODO(payments): placeholder prices exactly as in Figma; replace with store products.
 const PACKS: Pack[] = [
   { coins: 100, price: "0,99 $", pile: 1 },
-  { coins: 300, price: "2,49 $", pile: 2, badge: { ru: "Популярно", en: "Popular", kind: "popular" } },
-  { coins: 700, price: "4,99 $", pile: 3, badge: { ru: "+15%", en: "+15%", kind: "plain" } },
-  { coins: 1500, price: "8,99 $", pile: 3, badge: { ru: "Выгодно", en: "Best value", kind: "plain" } },
+  { coins: 300, price: "2,49 $", pile: 2, badge: { ru: "Популярно", en: "Popular", kk: "Танымал", kind: "popular" } },
+  { coins: 700, price: "4,99 $", pile: 3, badge: { ru: "+15%", en: "+15%", kk: "+15%", kind: "plain" } },
+  { coins: 1500, price: "8,99 $", pile: 3, badge: { ru: "Выгодно", en: "Best value", kk: "Тиімді", kind: "plain" } },
 ];
 
-function coinsWord(n: number, en: boolean) {
-  if (en) return n === 1 ? "coin" : "coins";
+function coinsWord(n: number, lang: Lang) {
+  if (lang === "en") return n === 1 ? "coin" : "coins";
+  if (lang === "kk") return "монета";
   const m10 = n % 10;
   const m100 = n % 100;
   if (m10 === 1 && m100 !== 11) return "монета";
@@ -77,7 +78,6 @@ function coinsWord(n: number, en: boolean) {
 export default function CoinsScreen() {
   const insets = useSafeAreaInsets();
   const { lang } = useLang();
-  const en = lang === "en";
   const { theme: c } = useTheme();
   const mode = c.mode;
   const { coins, addCoins } = useGame();
@@ -167,7 +167,7 @@ export default function CoinsScreen() {
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(110).duration(420)} style={[s.wallet, { borderColor: c.tileStroke }]}>
-            <Text style={[s.balanceLbl, { color: c.textMuted }]}>{en ? "Balance" : "Баланс"}</Text>
+            <Text style={[s.balanceLbl, { color: c.textMuted }]}>{pickLang(lang, { ru: "Баланс", en: "Balance", kk: "Баланс" })}</Text>
             <View style={s.balanceRow}>
               <Text style={[s.balance, { color: c.text }]}>{coins}</Text>
               <View>
@@ -188,10 +188,10 @@ export default function CoinsScreen() {
 
           {/* Daily bonus — weekly streak calendar */}
           <Animated.View entering={FadeInDown.delay(100).duration(380)}>
-            <DailyRewards width={contentW} en={en} onClaim={addCoins} />
+            <DailyRewards width={contentW} onClaim={addCoins} />
           </Animated.View>
 
-          <Text style={[s.section, { color: c.text, marginTop: 28 }]}>{en ? "Top up" : "Пополнить"}</Text>
+          <Text style={[s.section, { color: c.text, marginTop: 28 }]}>{pickLang(lang, { ru: "Пополнить", en: "Top up", kk: "Толтыру" })}</Text>
           <View style={s.packs}>
             {PACKS.map((p, i) => {
               const popular = p.badge?.kind === "popular";
@@ -215,13 +215,13 @@ export default function CoinsScreen() {
                       {p.badge && (
                         <View style={[s.badge, { backgroundColor: popular ? GOLD : darkPill }]}>
                           <Text style={[s.badgeText, { color: popular ? "#262628" : c.textSecondary }]}>
-                            {en ? p.badge.en : p.badge.ru}
+                            {pickLang(lang, p.badge)}
                           </Text>
                         </View>
                       )}
                     </View>
                     <Text style={[s.packCoins, { color: c.text }]}>{p.coins}</Text>
-                    <Text style={[s.packUnit, { color: c.textMuted }]}>{coinsWord(p.coins, en)}</Text>
+                    <Text style={[s.packUnit, { color: c.textMuted }]}>{coinsWord(p.coins, lang)}</Text>
                     <View style={[s.price, { backgroundColor: mode === "dark" ? "#F0EEE9" : "#FFFFFF" }]}>
                       <Text style={s.priceText}>{p.price}</Text>
                     </View>
@@ -242,9 +242,9 @@ export default function CoinsScreen() {
               <Ionicons name="play" size={16} color="#F0EEE9" style={{ marginLeft: 2 }} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[s.freeTitle, { color: c.text }]}>{en ? "Free coins" : "Бесплатные монеты"}</Text>
+              <Text style={[s.freeTitle, { color: c.text }]}>{pickLang(lang, { ru: "Бесплатные монеты", en: "Free coins", kk: "Тегін монеталар" })}</Text>
               <Text style={[s.freeSub, { color: c.textMuted }]}>
-                {en ? "Watch a short video" : "Посмотри короткое видео"}
+                {pickLang(lang, { ru: "Посмотри короткое видео", en: "Watch a short video", kk: "Қысқа бейне көр" })}
               </Text>
             </View>
             <View style={s.freePill}>

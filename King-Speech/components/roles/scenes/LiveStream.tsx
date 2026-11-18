@@ -4,6 +4,7 @@
 //   LiveFeed     — pinned question + scrolling comment stream + fake input row
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { pickLang } from "@/context/LangContext";
 import Animated, {
   FadeInDown,
   FadeOut,
@@ -108,7 +109,7 @@ export function LiveFeed(p: SceneProps) {
         <Animated.View key={pinned.key} entering={FadeInDown.duration(260)} style={styles.pinned}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 3 }}>
             <Ionicons name="pin" size={12} color={SCENE.yellow} />
-            <Text style={styles.pinnedLabel}>{lang === "en" ? "Pinned question" : "Закреплённый вопрос"}</Text>
+            <Text style={styles.pinnedLabel}>{pickLang(lang, { ru: "Закреплённый вопрос", en: "Pinned question", kk: "Бекітілген сұрақ" })}</Text>
           </View>
           <Text style={styles.pinnedText} numberOfLines={2}>
             <Text style={{ fontFamily: "Geologica_700Bold" }}>{pinned.name} </Text>
@@ -120,7 +121,7 @@ export function LiveFeed(p: SceneProps) {
       {p.awaitingOpening && !scripted && (
         <Animated.View entering={FadeInDown} style={styles.hint}>
           <Ionicons name="radio" size={13} color={SCENE.onYellow} />
-          <Text style={styles.hintText}>{lang === "en" ? "You're live! " : "Ты в эфире! "}{lt(s.openingHint, lang)}</Text>
+          <Text style={styles.hintText}>{pickLang(lang, { ru: "Ты в эфире! ", en: "You're live! ", kk: "Сен эфирдесің! " })}{lt(s.openingHint, lang)}</Text>
         </Animated.View>
       )}
 
@@ -160,7 +161,7 @@ export function LiveFeed(p: SceneProps) {
       {/* Fake comment input — pure decoration, never focusable. */}
       <View style={styles.inputRow} pointerEvents="none">
         <View style={styles.input}>
-          <Text style={styles.inputText}>{lang === "en" ? "Add a comment…" : "Комментарий…"}</Text>
+          <Text style={styles.inputText}>{pickLang(lang, { ru: "Комментарий…", en: "Add a comment…", kk: "Пікір жазу…" })}</Text>
         </View>
         <Ionicons name="heart-outline" size={22} color="#fff" />
         <Ionicons name="paper-plane-outline" size={21} color="#fff" />

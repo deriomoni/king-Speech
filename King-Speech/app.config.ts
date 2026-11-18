@@ -117,6 +117,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   locales: {
     ru: "./locales/ru.json",
     en: "./locales/en.json",
+    kk: "./locales/kk.json",
   },
   android: {
     package: "com.oratopath",

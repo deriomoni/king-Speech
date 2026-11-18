@@ -17,6 +17,7 @@ import {
   SHEET_DARK_SVG,
   TIP_CLOSE_SVG,
 } from "@/assets/figma/new/svgs";
+import { useLang, pickLang, type Lang } from "@/context/LangContext";
 
 export interface DailyTip {
   /** Full headline, e.g. "Пауза звучит громче слов". */
@@ -33,6 +34,8 @@ export interface DailyTip {
   action?: string;
   /** Day counter shown bottom-right («день 27»). */
   day: number;
+  /** Index into DAILY_TIPS_BY_LANG — lets the overlay re-localize the tip. */
+  tipIndex?: number;
 }
 
 const INK = "#262628";
@@ -80,19 +83,117 @@ export const DAILY_TIPS: Omit<DailyTip, "day">[] = [
   },
 ];
 
+// Same tips, same order — index i is the same tip in every language.
+export const DAILY_TIPS_EN: Omit<DailyTip, "day">[] = [
+  {
+    title: "A pause speaks louder than words",
+    titleItalicWord: "A pause",
+    titleBold: "than words",
+    bodyItalicLead: "Two seconds",
+    body: "Two seconds of silence before your key idea, and the room leans in.",
+    action: "Today, try one pause in an everyday conversation.",
+  },
+  {
+    title: "Slow means confident",
+    titleItalicWord: "Slow",
+    titleBold: "confident",
+    bodyItalicLead: "A calm pace",
+    body: "A calm pace sounds like expertise. Rushed speech sounds like an excuse.",
+    action: "Today, say one sentence twice as slowly as you want to.",
+  },
+  {
+    title: "Louder than feels necessary",
+    titleItalicWord: "Louder",
+    titleBold: "necessary",
+    bodyItalicLead: "The back row",
+    body: "The back row should hear you effortlessly. If it feels like shouting, it's probably just right.",
+    action: "Today, read a paragraph aloud a notch louder.",
+  },
+  {
+    title: "Start with a story",
+    titleItalicWord: "Start",
+    titleBold: "a story",
+    bodyItalicLead: "One story",
+    body: "One story at the start holds attention better than any numbers or bullet points.",
+    action: "Today, open the story of your day with one vivid detail.",
+  },
+  {
+    title: "Look them in the eye",
+    titleItalicWord: "Look",
+    titleBold: "in the eye",
+    bodyItalicLead: "One thought",
+    body: "One thought — one listener. Finish the sentence looking at a person, and only then move your gaze.",
+    action: "Today, finish at least three sentences without looking away.",
+  },
+];
+
+export const DAILY_TIPS_KK: Omit<DailyTip, "day">[] = [
+  {
+    title: "Үзіліс сөзден күшті",
+    titleItalicWord: "Үзіліс",
+    titleBold: "сөзден күшті",
+    bodyItalicLead: "Екі секунд",
+    body: "Екі секунд үнсіздік басты ойдың алдында — және зал еріксіз саған қарай еңкейеді.",
+    action: "Бүгін қарапайым әңгімеде бір рет үзіліс жасап көр.",
+  },
+  {
+    title: "Баяу деген — сенімді",
+    titleItalicWord: "Баяу",
+    titleBold: "сенімді",
+    bodyItalicLead: "Сабырлы қарқын",
+    body: "Сабырлы қарқын өз ісін білетін адамның сөзіндей естіледі. Асығыс сөз — ақталу сияқты.",
+    action: "Бүгін бір сөйлемді әдеттегіден екі есе баяу айтып көр.",
+  },
+  {
+    title: "Ойлағаныңнан қаттырақ",
+    titleItalicWord: "Ойлағаныңнан",
+    titleBold: "қаттырақ",
+    bodyItalicLead: "Соңғы қатар",
+    body: "Соңғы қатар сені еш қиындықсыз естуі керек. Айқайлап тұрғандай көрінсе — бәлкім, дәл осы жеткілікті.",
+    action: "Бүгін бір абзацты дауыстап, сәл қаттырақ оқып көр.",
+  },
+  {
+    title: "Әңгімеден баста",
+    titleItalicWord: "Әңгімеден",
+    titleBold: "баста",
+    bodyItalicLead: "Бір әңгіме",
+    body: "Бір әңгіме басында кез келген сан мен тезистен гөрі назарды жақсы ұстайды.",
+    action: "Бүгін өз күнің туралы әңгімені бір жанды детальдан баста.",
+  },
+  {
+    title: "Көзге қарап сөйле",
+    titleItalicWord: "Көзге",
+    titleBold: "қарап сөйле",
+    bodyItalicLead: "Бір ой",
+    body: "Бір ой — бір тыңдаушы. Сөйлемді адамға қарап аяқта, содан кейін ғана көзіңді басқаға бұр.",
+    action: "Бүгін кемінде үш сөйлемді көзіңді тайдырмай аяқтап көр.",
+  },
+];
+
+export const DAILY_TIPS_BY_LANG: Record<Lang, Omit<DailyTip, "day">[]> = {
+  ru: DAILY_TIPS,
+  en: DAILY_TIPS_EN,
+  kk: DAILY_TIPS_KK,
+};
+
 /** Deterministic tip of the day + a day counter (days since `since`, 1-based). */
-export function getDailyTip(date = new Date(), since?: Date | string | number): DailyTip {
+export function getDailyTip(
+  date = new Date(),
+  since?: Date | string | number,
+  lang: Lang = "ru",
+): DailyTip {
   const dayIndex = Math.floor(
     (Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())) / 86400000,
   );
-  const base = DAILY_TIPS[((dayIndex % DAILY_TIPS.length) + DAILY_TIPS.length) % DAILY_TIPS.length];
+  const tipIndex = ((dayIndex % DAILY_TIPS.length) + DAILY_TIPS.length) % DAILY_TIPS.length;
+  const base = (DAILY_TIPS_BY_LANG[lang] ?? DAILY_TIPS)[tipIndex];
   let day = 1;
   if (since != null) {
     const s = new Date(since);
     const sIdx = Math.floor(Date.UTC(s.getFullYear(), s.getMonth(), s.getDate()) / 86400000);
     day = Math.max(1, dayIndex - sIdx + 1);
   }
-  return { ...base, day };
+  return { ...base, day, tipIndex };
 }
 
 function Title({ tip }: { tip: DailyTip }) {
@@ -134,6 +235,12 @@ export default function DailyTipOverlay({
   tip: DailyTip;
 }) {
   const insets = useSafeAreaInsets();
+  const { lang } = useLang();
+  // Re-localize a tip produced by getDailyTip() to the current UI language.
+  const localized =
+    tip.tipIndex != null ? (DAILY_TIPS_BY_LANG[lang] ?? DAILY_TIPS)[tip.tipIndex] : undefined;
+  if (localized) tip = { ...localized, day: tip.day, tipIndex: tip.tipIndex };
+  const closeLabel = pickLang(lang, { ru: "Закрыть", en: "Close", kk: "Жабу" });
   const topPad = Platform.OS === "web" ? 54 : insets.top;
   // Long tips get slightly smaller body type so everything fits the fixed sheet.
   const long = tip.body.length + (tip.action?.length ?? 0) > 130;
@@ -143,12 +250,12 @@ export default function DailyTipOverlay({
       <Animated.View entering={FadeIn.duration(180)} style={styles.root}>
         <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
         <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(38,38,40,0.72)" }]} />
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Закрыть" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={closeLabel} />
 
         <Pressable
           onPress={onClose}
           hitSlop={14}
-          accessibilityLabel="Закрыть"
+          accessibilityLabel={closeLabel}
           style={[styles.close, { top: topPad + 16 }]}
         >
           <SvgXml xml={TIP_CLOSE_SVG} width={15.2} height={15.2} />
@@ -169,7 +276,7 @@ export default function DailyTipOverlay({
                 <SvgXml xml={PAPER_PUNCHED_SVG} width={300} height={350} />
               </View>
               <View style={styles.content}>
-                <Text style={styles.label}>СОВЕТ ДНЯ</Text>
+                <Text style={styles.label}>{pickLang(lang, { ru: "СОВЕТ ДНЯ", en: "TIP OF THE DAY", kk: "КҮН КЕҢЕСІ" })}</Text>
                 <Title tip={tip} />
                 <View style={{ marginTop: 16 }}>
                   <Body tip={tip} long={long} />
@@ -177,7 +284,7 @@ export default function DailyTipOverlay({
                 {tip.action ? <Text style={[styles.action, long && styles.textLong]}>{tip.action}</Text> : null}
                 {/* In flow under the text so a long tip can never run into it. */}
                 <View style={styles.dayRow}>
-                  <Text style={styles.dayWord}>день</Text>
+                  <Text style={styles.dayWord}>{pickLang(lang, { ru: "день", en: "day", kk: "күн" })}</Text>
                   <Text style={styles.dayNum}>{tip.day}</Text>
                 </View>
               </View>
@@ -189,7 +296,7 @@ export default function DailyTipOverlay({
             style={({ pressed }) => [styles.cta, { opacity: pressed ? 0.88 : 1 }]}
             accessibilityRole="button"
           >
-            <Text style={styles.ctaText}>Понятно</Text>
+            <Text style={styles.ctaText}>{pickLang(lang, { ru: "Понятно", en: "Got it", kk: "Түсінікті" })}</Text>
           </Pressable>
         </View>
       </Animated.View>

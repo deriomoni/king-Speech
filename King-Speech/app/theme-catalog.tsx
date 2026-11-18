@@ -23,7 +23,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
 import { getSpeechThemes, type SpeechTheme } from "@/app/showtime-stage";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
 import { PlayTriangleIcon, SearchIcon } from "@/components/showtime/ShowTimeIcons";
@@ -35,13 +35,15 @@ import { THEME_CATEGORIES, categoryOf, type ThemeCategoryId } from "@/components
 
 const POPULAR_COUNT = 10;
 
-function durationOf(t: SpeechTheme, en: boolean) {
+function durationOf(t: SpeechTheme, lang: Lang) {
+  const en = lang === "en";
   if (t.timerSeconds !== null) return en ? `${t.timerSeconds} sec` : `${t.timerSeconds} сек`;
   return en ? "1–2 min" : "1–2 мин";
 }
 
-function themesWord(n: number, en: boolean) {
-  if (en) return n === 1 ? "topic" : "topics";
+function themesWord(n: number, lang: Lang) {
+  if (lang === "en") return n === 1 ? "topic" : "topics";
+  if (lang === "kk") return "тақырып";
   const m10 = n % 10;
   const m100 = n % 100;
   if (m10 === 1 && m100 !== 11) return "тема";
@@ -59,7 +61,7 @@ function weekIndex() {
 export default function ThemeCatalogScreen() {
   const insets = useSafeAreaInsets();
   const { lang } = useLang();
-  const en = lang === "en";
+  const tr = (ru: string, en: string, kk: string) => pickLang(lang, { ru, en, kk });
   const { theme: c, themeMode } = useTheme();
   const isLight = themeMode === "light";
   const { width: winW } = useWindowDimensions();
@@ -151,16 +153,16 @@ export default function ThemeCatalogScreen() {
           <ShowTimeLogo width={83} color={isLight ? c.text : c.accent} />
         </View>
 
-        <Text style={[s.title, { color: c.text }]}>{en ? "Topic catalog" : "Каталог тем"}</Text>
+        <Text style={[s.title, { color: c.text }]}>{tr("Каталог тем", "Topic catalog", "Тақырыптар каталогы")}</Text>
         <Text style={[s.subtitle, { color: c.textMuted }]}>
-          {en ? "Pick a topic and take the stage" : "Выбери тему и выходи на сцену"}
+          {tr("Выбери тему и выходи на сцену", "Pick a topic and take the stage", "Тақырып таңда да, сахнаға шық")}
         </Text>
 
         <View style={[s.search, { backgroundColor: c.card, borderColor: stroke }]}>
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder={en ? "Find a topic" : "Найти тему"}
+            placeholder={tr("Найти тему", "Find a topic", "Тақырып іздеу")}
             placeholderTextColor={c.textMuted}
             returnKeyType="search"
             style={[s.searchInput, { color: c.text }, Platform.OS === "web" && ({ outlineStyle: "none" } as any)]}
@@ -193,7 +195,7 @@ export default function ThemeCatalogScreen() {
                   ]}
                 >
                   <Text style={[s.chipText, { color: active ? c.bg : c.textSecondary }]}>
-                    {en ? cat.en : cat.ru}
+                    {pickLang(lang, cat)}
                   </Text>
                 </Pressable>
               );
@@ -218,16 +220,16 @@ export default function ThemeCatalogScreen() {
                 pointerEvents="none"
               />
               <View style={s.tag}>
-                <Text style={s.tagText}>{en ? "TOPIC OF THE WEEK" : "ТЕМА НЕДЕЛИ"}</Text>
+                <Text style={s.tagText}>{tr("ТЕМА НЕДЕЛИ", "TOPIC OF THE WEEK", "АПТА ТАҚЫРЫБЫ")}</Text>
               </View>
               <View style={s.featuredBottom}>
                 <View style={{ flex: 1 }}>
                   <Text style={s.featuredTitle} numberOfLines={1}>
-                    {en ? `“${featured.title}”` : `«${featured.title}»`}
+                    {lang === "en" ? `“${featured.title}”` : `«${featured.title}»`}
                   </Text>
                   <Text style={s.featuredSub} numberOfLines={1}>
-                    {durationOf(featured, en)}
-                    {en ? " · perfect to start" : " · идеально для старта"}
+                    {durationOf(featured, lang)}
+                    {tr(" · идеально для старта", " · perfect to start", " · бастау үшін тамаша")}
                   </Text>
                 </View>
                 <View style={s.featuredPlay}>
@@ -240,15 +242,15 @@ export default function ThemeCatalogScreen() {
 
         <View style={s.sectionHead}>
           <Text style={[s.sectionTitle, { color: c.text }]}>
-            {q ? (en ? "Found" : "Найдено") : en ? "All topics" : "Все темы"}
+            {q ? tr("Найдено", "Found", "Табылды") : tr("Все темы", "All topics", "Барлық тақырыптар")}
           </Text>
           <Text style={[s.sectionCount, { color: c.textMuted }]}>
-            {keys.length} {themesWord(keys.length, en)}
+            {keys.length} {themesWord(keys.length, lang)}
           </Text>
         </View>
 
         {keys.length === 0 ? (
-          <Text style={[s.empty, { color: c.textMuted }]}>{en ? "Nothing found" : "Ничего не найдено"}</Text>
+          <Text style={[s.empty, { color: c.textMuted }]}>{tr("Ничего не найдено", "Nothing found", "Ештеңе табылмады")}</Text>
         ) : (
           <View style={s.grid}>
             {keys.map((k, i) => {
@@ -274,7 +276,7 @@ export default function ThemeCatalogScreen() {
                     <Text style={[s.cardTitle, { color: c.text }]} numberOfLines={2}>
                       {t.title}
                     </Text>
-                    <Text style={[s.cardMeta, { color: c.textMuted }]}>{durationOf(t, en)}</Text>
+                    <Text style={[s.cardMeta, { color: c.textMuted }]}>{durationOf(t, lang)}</Text>
                   </Pressable>
                 </Animated.View>
               );

@@ -9,7 +9,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
 import { useTheme } from "@/context/ThemeContext";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang } from "@/context/LangContext";
 import WaveformRecorder from "@/components/WaveformRecorder";
 import { useWaveformBars, WAVEFORM_BAR_MIN, WAVEFORM_BAR_MAX } from "@/hooks/useWaveformBars";
 import { RecDot } from "@/components/RecButton";
@@ -429,7 +429,7 @@ export default function WaveformVoiceRecorder({
   }, [awaitSessionStop, bars, elapsedSeconds, onRecordingComplete, reset]);
 
   if (phase === "idle" || phase === "done" || phase === "analyzing") {
-    const label = startLabel ?? (lang === "en" ? "Start recording" : "Начать запись");
+    const label = startLabel ?? (pickLang(lang, { ru: "Начать запись", en: "Start recording", kk: "Жазуды бастау" }));
     const disabled = phase === "analyzing";
     return (
       <View style={styles.container}>

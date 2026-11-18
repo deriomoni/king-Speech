@@ -9,6 +9,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "@/lib/haptics";
+import { useLang, pickLang } from "@/context/LangContext";
 import OreoMascot from "@/components/OreoMascot";
 import { GlassCard, PrimaryButton } from "@/components/ds";
 import CelebrationBurst from "@/components/warmup/CelebrationBurst";
@@ -28,6 +29,7 @@ const STEP_SEC = 3;
 
 export default function WarmupCalibrationView({ topPad, onComplete, onBack }: Props) {
   const pitch = usePitchDetection();
+  const { lang } = useLang();
   const [step, setStep] = useState<Step>("intro");
   const [countdown, setCountdown] = useState(STEP_SEC);
   const [range, setRange] = useState<VoiceRange | null>(null);
@@ -117,23 +119,29 @@ export default function WarmupCalibrationView({ topPad, onComplete, onBack }: Pr
       </Pressable>
 
       <Animated.View entering={FadeIn.duration(400)} style={styles.body}>
-        <Text style={styles.title}>Настроим под твой голос</Text>
+        <Text style={styles.title}>{pickLang(lang, { ru: "Настроим под твой голос", en: "Let's tune to your voice", kk: "Дауысыңа баптайық" })}</Text>
         <Text style={styles.sub}>
-          Оскар слушает и подстроит ноты под твой диапазон
+          {pickLang(lang, {
+            ru: "Оскар слушает и подстроит ноты под твой диапазон",
+            en: "Oscar listens and fits the notes to your range",
+            kk: "Оскар тыңдап, ноталарды сенің диапазоныңа бейімдейді",
+          })}
         </Text>
 
         <OreoMascot size={140} shouldPlay={step !== "intro"} />
 
         {step === "intro" && (
           <Animated.View entering={FadeInDown.duration(300)}>
-            <PrimaryButton label="Начать калибровку" onPress={startLow} />
+            <PrimaryButton label={pickLang(lang, { ru: "Начать калибровку", en: "Start calibration", kk: "Калибрлеуді бастау" })} onPress={startLow} />
           </Animated.View>
         )}
 
         {(step === "low" || step === "high") && (
           <GlassCard glow style={styles.card}>
             <Text style={styles.prompt}>
-              {step === "low" ? "Скажи низко: Мууу" : "Скажи высоко: Миии"}
+              {step === "low"
+                ? pickLang(lang, { ru: "Скажи низко: Мууу", en: "Say it low: Mooo", kk: "Төмен айт: Мууу" })
+                : pickLang(lang, { ru: "Скажи высоко: Миии", en: "Say it high: Meee", kk: "Жоғары айт: Миии" })}
             </Text>
             <Animated.View style={[styles.orb, orbStyle]}>
               <LinearGradient
@@ -148,17 +156,17 @@ export default function WarmupCalibrationView({ topPad, onComplete, onBack }: Pr
         {step === "done" && range && (
           <Animated.View entering={FadeInDown.duration(350)} style={styles.ladderWrap}>
             <GlassCard glow>
-              <Text style={styles.ladderTitle}>Твоя лестница голоса</Text>
+              <Text style={styles.ladderTitle}>{pickLang(lang, { ru: "Твоя лестница голоса", en: "Your voice ladder", kk: "Дауыс сатың" })}</Text>
               <View style={styles.ladder}>
                 <LinearGradient
                   colors={["#4FD9A0", warmupTheme.gold]}
                   style={styles.ladderBar}
                 />
-                <Text style={styles.ladderLabel}>Низ · {Math.round(range.fLow)} Гц</Text>
-                <Text style={styles.ladderLabel}>Верх · {Math.round(range.fHigh)} Гц</Text>
+                <Text style={styles.ladderLabel}>{pickLang(lang, { ru: "Низ", en: "Low", kk: "Төмен" })} · {Math.round(range.fLow)} {pickLang(lang, { ru: "Гц", en: "Hz", kk: "Гц" })}</Text>
+                <Text style={styles.ladderLabel}>{pickLang(lang, { ru: "Верх", en: "High", kk: "Жоғары" })} · {Math.round(range.fHigh)} {pickLang(lang, { ru: "Гц", en: "Hz", kk: "Гц" })}</Text>
               </View>
               <PrimaryButton
-                label="Готово, поехали"
+                label={pickLang(lang, { ru: "Готово, поехали", en: "Done, let's go", kk: "Дайын, кеттік" })}
                 onPress={() => onComplete(range)}
               />
             </GlassCard>

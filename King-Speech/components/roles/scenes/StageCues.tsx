@@ -7,6 +7,7 @@
 //   voice     — character script cards from the director behind the glass
 import React, { useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { pickLang } from "@/context/LangContext";
 import Animated, {
   FadeInDown,
   FadeOut,
@@ -110,10 +111,10 @@ function CueBubble({ m, s, lang, variant }: { m: ScenarioMsg; s: SceneProps["sce
 function BigCard({ card, variant, lang }: { card: SceneCard; variant?: StageVariant; lang: SceneProps["lang"] }) {
   const kicker =
     variant === "host"
-      ? (lang === "en" ? "NOW ON THE PROGRAMME" : "СЕЙЧАС В ПРОГРАММЕ")
+      ? (pickLang(lang, { ru: "СЕЙЧАС В ПРОГРАММЕ", en: "NOW ON THE PROGRAMME", kk: "ҚАЗІР БАҒДАРЛАМАДА" }))
       : variant === "voice"
-        ? (lang === "en" ? "CHARACTER" : "ПЕРСОНАЖ")
-        : (lang === "en" ? "FORECAST" : "ПРОГНОЗ");
+        ? (pickLang(lang, { ru: "ПЕРСОНАЖ", en: "CHARACTER", kk: "КЕЙІПКЕР" }))
+        : (pickLang(lang, { ru: "ПРОГНОЗ", en: "FORECAST", kk: "БОЛЖАМ" }));
   const dark = variant === "voice";
   return (
     <Animated.View entering={ZoomIn.duration(280)} style={[styles.card, variant === "voice" && styles.cardVoice]}>
@@ -167,7 +168,7 @@ export function StageFeed(p: SceneProps) {
       {p.awaitingOpening && !scripted && (
         <Animated.View entering={FadeInDown} style={styles.hint}>
           <Ionicons name="sparkles" size={13} color={SCENE.onYellow} />
-          <Text style={styles.hintText}>{lang === "en" ? "Your entrance: " : "Твой выход: "}{lt(s.openingHint, lang)}</Text>
+          <Text style={styles.hintText}>{pickLang(lang, { ru: "Твой выход: ", en: "Your entrance: ", kk: "Сенің шығуың: " })}{lt(s.openingHint, lang)}</Text>
         </Animated.View>
       )}
 

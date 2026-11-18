@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useTheme } from "@/context/ThemeContext";
+import { useLang, pickLang } from "@/context/LangContext";
 import type { VocabWord } from "@/constants/vocabularyData";
 
 /**
@@ -25,6 +26,7 @@ export default function VocabResultView({
   bottomPad: number;
 }) {
   const { theme, themeMode } = useTheme();
+  const { lang } = useLang();
   const isDark = themeMode === "dark";
   const ink = (a: number) => (isDark ? `rgba(240,238,233,${a})` : `rgba(38,38,40,${a})`);
   const [animFound, setAnimFound] = useState(0);
@@ -61,13 +63,13 @@ export default function VocabResultView({
       contentContainerStyle={[styles.content, { paddingTop: topPad + 24, paddingBottom: bottomPad + 40 }]}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={[styles.title, { color: theme.text }]}>Время вышло!</Text>
-      <Text style={[styles.wordLine, { color: secondary }]}>Слово: {word.word.toUpperCase()}</Text>
+      <Text style={[styles.title, { color: theme.text }]}>{pickLang(lang, { ru: "Время вышло!", en: "Time's up!", kk: "Уақыт бітті!" })}</Text>
+      <Text style={[styles.wordLine, { color: secondary }]}>{pickLang(lang, { ru: "Слово", en: "Word", kk: "Сөз" })}: {word.word.toUpperCase()}</Text>
 
       <Text style={[styles.big, { color: theme.text }]}>
         {animFound} / {total}
       </Text>
-      <Text style={[styles.score, { color: secondary }]}>+{animScore} очков</Text>
+      <Text style={[styles.score, { color: secondary }]}>+{animScore} {pickLang(lang, { ru: "очков", en: "points", kk: "ұпай" })}</Text>
 
       <View style={[styles.track, { backgroundColor: ink(0.1) }]}>
         <Animated.View
@@ -76,7 +78,7 @@ export default function VocabResultView({
         />
       </View>
 
-      <Text style={[styles.sectionLabel, { color: secondary }]}>Синонимы к слову «{display}»</Text>
+      <Text style={[styles.sectionLabel, { color: secondary }]}>{pickLang(lang, { ru: `Синонимы к слову «${display}»`, en: `Synonyms for «${display}»`, kk: `«${display}» сөзінің синонимдері` })}</Text>
       <View style={styles.chips}>
         {word.synonyms.map((syn, idx) => {
           const found = isFound(syn);
@@ -104,22 +106,26 @@ export default function VocabResultView({
       </View>
 
       <Text style={[styles.stats, { color: muted }]}>
-        Назвал {foundCount} · Пропустил {missedCount}
+        {pickLang(lang, {
+          ru: `Назвал ${foundCount} · Пропустил ${missedCount}`,
+          en: `Named ${foundCount} · Missed ${missedCount}`,
+          kk: `Аталды ${foundCount} · Өткізілді ${missedCount}`,
+        })}
       </Text>
       {foundCount === 0 ? (
-        <Text style={[styles.encourage, { color: secondary }]}>В следующий раз получится!</Text>
+        <Text style={[styles.encourage, { color: secondary }]}>{pickLang(lang, { ru: "В следующий раз получится!", en: "You'll get it next time!", kk: "Келесі жолы міндетті түрде шығады!" })}</Text>
       ) : null}
 
       <Pressable
         onPress={onNext}
         accessibilityRole="button"
-        accessibilityLabel="Далее"
+        accessibilityLabel={pickLang(lang, { ru: "Далее", en: "Next", kk: "Келесі" })}
         style={({ pressed }) => [
           styles.cta,
           { backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.85 : 1 },
         ]}
       >
-        <Text style={[styles.ctaText, { color: theme.accentText }]}>Далее</Text>
+        <Text style={[styles.ctaText, { color: theme.accentText }]}>{pickLang(lang, { ru: "Далее", en: "Next", kk: "Келесі" })}</Text>
       </Pressable>
     </ScrollView>
   );

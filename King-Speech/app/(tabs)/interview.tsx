@@ -4,7 +4,7 @@ import * as Haptics from "@/lib/haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "expo-router";
 import Animated, { FadeIn } from "react-native-reanimated";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang } from "@/context/LangContext";
 import { useAppColors } from "@/hooks/useAppColors";
 import { useTheme } from "@/context/ThemeContext";
 import { fonts } from "@/constants/colors";
@@ -64,7 +64,11 @@ export default function CheatSheetScreen() {
   // Figma 12:202 pins this line as the subtitle; the daily rotation list
   // above is kept for later. TODO(design): restore rotation if desired.
   void useDailyText;
-  const dailyText = "Сначала разогрейся - слова придут сами.";
+  const dailyText = pickLang(lang, {
+    ru: "Сначала разогрейся - слова придут сами.",
+    en: "Your quick prep before you speak.",
+    kk: "Алдымен дауысыңды қыздыр — сөз өзі келеді.",
+  });
   const [activeRoute, setActiveRoute] = useState<CheatRoute | null>(null);
   // The warm-up chosen on the wheel, held during the 5-second countdown.
   const [pending, setPending] = useState<CheatRoute | null>(null);
@@ -125,7 +129,7 @@ export default function CheatSheetScreen() {
         <Animated.View entering={FadeIn.duration(400)} style={{ gap: 10 }}>
           <GetReadyLogo width={210} color={colors.text} />
           <Text style={[styles.heroSub, { color: colors.textSecondary }]}>
-            {lang === "en" ? "Your quick prep before you speak." : dailyText}
+            {dailyText}
           </Text>
         </Animated.View>
 
@@ -154,13 +158,13 @@ export default function CheatSheetScreen() {
           onPress={() => setPending(null)}
         >
           <Text style={[styles.countKicker, { color: colors.textSecondary }]}>
-            {lang === "en" ? "Get ready" : "Приготовьтесь"}
+            {pickLang(lang, { ru: "Приготовьтесь", en: "Get ready", kk: "Дайындал" })}
           </Text>
           <Text style={[styles.countNum, { color: pending.accent }]}>
             {count}
           </Text>
           <Text style={[styles.countHint, { color: colors.textMuted }]}>
-            {lang === "en" ? "Tap to cancel" : "Нажмите, чтобы отменить"}
+            {pickLang(lang, { ru: "Нажмите, чтобы отменить", en: "Tap to cancel", kk: "Болдырмау үшін бас" })}
           </Text>
         </Pressable>
       )}

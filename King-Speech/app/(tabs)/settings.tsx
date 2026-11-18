@@ -14,7 +14,7 @@ import Animated, {
   type SharedValue,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
-import { useLang } from "@/context/LangContext";
+import { useLang, LANGS, LANG_NAMES, pickLang } from "@/context/LangContext";
 import { useAuth } from "@/context/AuthContext";
 import { useDevTools } from "@/context/DevToolsContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -99,7 +99,6 @@ export default function SettingsScreen() {
   const { isOpenTestingEnabled, setOpenTestingEnabled, isDevSkipEnabled, setDevSkipEnabled } =
     useDevTools();
   const router = useRouter();
-  const en = appLang === "en";
 
   // Persisted toggles (SettingsContext): vibration gates lib/haptics, sound
   // effects gate lib/sfx app-wide.
@@ -159,7 +158,7 @@ export default function SettingsScreen() {
         >
           <EdgeScale entering={FadeInDown.duration(400)}>
             <Text style={[styles.pageTitle, { color: theme.text }]}>{t("settings")}</Text>
-            <SectionLabel theme={theme}>{en ? "Account" : "Аккаунт"}</SectionLabel>
+            <SectionLabel theme={theme}>{pickLang(appLang, { ru: "Аккаунт", en: "Account", kk: "Аккаунт" })}</SectionLabel>
             <Card theme={theme} themeMode={themeMode}>
               <Pressable
                 onPress={() => {
@@ -180,7 +179,7 @@ export default function SettingsScreen() {
                     {userName}
                   </Text>
                   <Text style={[styles.accountSub, { color: theme.textMuted }]} numberOfLines={1}>
-                    {en ? `Signed in with ${authLabel}` : `Вход через ${authLabel}`}
+                    {pickLang(appLang, { ru: `Вход через ${authLabel}`, en: `Signed in with ${authLabel}`, kk: `${authLabel} арқылы кірдің` })}
                   </Text>
                 </View>
                 <Chevron theme={theme} />
@@ -192,7 +191,7 @@ export default function SettingsScreen() {
               <ListRow
                 theme={theme}
                 icon={<ThemedSvg xml={CROWN_OUTLINE_XML} width={22} height={22} fg={theme.text} />}
-                label={en ? "Free plan" : "Бесплатный план"}
+                label={pickLang(appLang, { ru: "Бесплатный план", en: "Free plan", kk: "Тегін жоспар" })}
                 // Only the «Улучшить» pill opens the paywall — the row itself is inert.
                 right={
                   <PressScale
@@ -201,7 +200,7 @@ export default function SettingsScreen() {
                     style={[styles.upgradePill, { backgroundColor: theme.cta }]}
                   >
                     <Text style={[styles.upgradeLabel, { color: theme.ctaText }]}>
-                      {en ? "Upgrade" : "Улучшить"}
+                      {pickLang(appLang, { ru: "Улучшить", en: "Upgrade", kk: "Жаңарту" })}
                     </Text>
                   </PressScale>
                 }
@@ -212,7 +211,7 @@ export default function SettingsScreen() {
           {/* Sound & notifications — one grouped card */}
           <EdgeScale entering={FadeInDown.delay(80).duration(400)}>
             <SectionLabel theme={theme}>
-              {en ? "Sound & notifications" : "Звук и уведомления"}
+              {pickLang(appLang, { ru: "Звук и уведомления", en: "Sound & notifications", kk: "Дыбыс және хабарландырулар" })}
             </SectionLabel>
             <Card theme={theme} themeMode={themeMode}>
               <ListRow
@@ -239,7 +238,7 @@ export default function SettingsScreen() {
               <ListRow
                 theme={theme}
                 icon={icon("alarm-outline")}
-                label={en ? "Daily reminder · 09:00" : "Напоминание · 09:00"}
+                label={pickLang(appLang, { ru: "Напоминание · 09:00", en: "Daily reminder · 09:00", kk: "Еске салу · 09:00" })}
                 right={sw(settings.dailyReminder, (v) => setSetting("dailyReminder", v))}
               />
             </Card>
@@ -247,12 +246,12 @@ export default function SettingsScreen() {
 
           {/* Appearance: theme + language in one card */}
           <EdgeScale entering={FadeInDown.delay(120).duration(400)}>
-            <SectionLabel theme={theme}>{en ? "Appearance" : "Оформление"}</SectionLabel>
+            <SectionLabel theme={theme}>{pickLang(appLang, { ru: "Оформление", en: "Appearance", kk: "Сыртқы түрі" })}</SectionLabel>
             <Card theme={theme} themeMode={themeMode}>
               <ListRow
                 theme={theme}
                 icon={icon("contrast-outline")}
-                label={en ? "Theme" : "Тема"}
+                label={pickLang(appLang, { ru: "Тема", en: "Theme", kk: "Көрініс" })}
                 divider
                 right={
                   <ThemeSegment
@@ -267,7 +266,7 @@ export default function SettingsScreen() {
                 theme={theme}
                 icon={icon("globe-outline")}
                 label={t("language")}
-                value={appLang === "ru" ? "Русский" : "English"}
+                value={LANG_NAMES[appLang]}
                 divider={showLangs}
                 onPress={() => setShowLangs(!showLangs)}
                 right={
@@ -279,13 +278,13 @@ export default function SettingsScreen() {
                 }
               />
               {showLangs &&
-                (["ru", "en"] as const).map((code, i) => (
+                LANGS.map((code, i) => (
                   <ListRow
                     key={code}
                     theme={theme}
                     icon={null}
-                    label={code === "ru" ? "Русский" : "English"}
-                    divider={i === 0}
+                    label={LANG_NAMES[code]}
+                    divider={i < LANGS.length - 1}
                     onPress={() => {
                       setAppLang(code);
                       setShowLangs(false);
@@ -304,7 +303,7 @@ export default function SettingsScreen() {
 
           {/* Support */}
           <EdgeScale entering={FadeInDown.delay(160).duration(400)}>
-            <SectionLabel theme={theme}>{en ? "Support" : "Поддержка"}</SectionLabel>
+            <SectionLabel theme={theme}>{pickLang(appLang, { ru: "Поддержка", en: "Support", kk: "Қолдау" })}</SectionLabel>
             <Card theme={theme} themeMode={themeMode}>
               <ListRow
                 theme={theme}
@@ -318,7 +317,7 @@ export default function SettingsScreen() {
               <ListRow
                 theme={theme}
                 icon={<RoundStar size={21} color={theme.text} />}
-                label={en ? "Rate the app" : "Оценить приложение"}
+                label={pickLang(appLang, { ru: "Оценить приложение", en: "Rate the app", kk: "Қолданбаны бағалау" })}
                 divider
                 onPress={() => {
                   // TODO(design): store review prompt not wired yet.
@@ -327,7 +326,7 @@ export default function SettingsScreen() {
               <ListRow
                 theme={theme}
                 icon={icon("lock-closed-outline")}
-                label={en ? "Privacy policy" : "Политика конфиденциальности"}
+                label={pickLang(appLang, { ru: "Политика конфиденциальности", en: "Privacy policy", kk: "Құпиялылық саясаты" })}
                 onPress={() => {
                   // TODO(design): privacy policy URL/screen not defined yet.
                 }}
@@ -363,13 +362,13 @@ export default function SettingsScreen() {
           <EdgeScale>
           <View style={styles.credits}>
             <Text style={[styles.creditsLabel, { color: theme.textMuted }]}>
-              {en ? "APP CREATED BY" : "ПРИЛОЖЕНИЕ СОЗДАНО"}
+              {pickLang(appLang, { ru: "ПРИЛОЖЕНИЕ СОЗДАНО", en: "APP CREATED BY", kk: "ҚОЛДАНБАНЫ ЖАСАҒАН" })}
             </Text>
             <View style={{ opacity: 0.7 }}>
               <ThemedSvg xml={bekWaveLogoXml} width={150} height={20} fg={theme.text} />
             </View>
             <Text style={[styles.version, { color: theme.textMuted }]}>
-              {en ? "Version 1.0.0" : "Версия 1.0.0"}
+              {pickLang(appLang, { ru: "Версия 1.0.0", en: "Version 1.0.0", kk: "Нұсқа 1.0.0" })}
             </Text>
           </View>
           </EdgeScale>

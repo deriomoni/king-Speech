@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { KingSpeechLogo, PillButton } from "@/components/auth/AuthUI";
@@ -55,7 +55,7 @@ export default function LoginScreen() {
   useEffect(() => {
     if (authError) {
       setBusy(null);
-      Alert.alert("Вход", authError);
+      Alert.alert(pickLang(lang, { ru: "Вход", en: "Sign in", kk: "Кіру" }), authError);
     }
   }, [authError]);
 
@@ -75,7 +75,7 @@ export default function LoginScreen() {
 
   const handleGoogle = async () => {
     if (!configured) {
-      Alert.alert("Вход", "Авторизация не настроена. Добавь Firebase-ключи в Replit Secrets.");
+      Alert.alert(pickLang(lang, { ru: "Вход", en: "Sign in", kk: "Кіру" }), pickLang(lang, { ru: "Авторизация не настроена. Добавь Firebase-ключи в Replit Secrets.", en: "Sign-in isn't configured. Add the Firebase keys to Replit Secrets.", kk: "Авторизация бапталмаған. Firebase кілттерін Replit Secrets-ке қос." }));
       return;
     }
     setBusy("google");
@@ -84,7 +84,7 @@ export default function LoginScreen() {
 
   const handleApple = async () => {
     if (!configured) {
-      Alert.alert("Вход", "Авторизация не настроена. Добавь Firebase-ключи в Replit Secrets.");
+      Alert.alert(pickLang(lang, { ru: "Вход", en: "Sign in", kk: "Кіру" }), pickLang(lang, { ru: "Авторизация не настроена. Добавь Firebase-ключи в Replit Secrets.", en: "Sign-in isn't configured. Add the Firebase keys to Replit Secrets.", kk: "Авторизация бапталмаған. Firebase кілттерін Replit Secrets-ке қос." }));
       return;
     }
     setBusy("apple");
@@ -92,14 +92,13 @@ export default function LoginScreen() {
   };
 
   const handleEmail = () => {
-    Alert.alert("Скоро", "Вход по Email будет добавлен позже. Сейчас доступны Google и Apple.");
+    Alert.alert(pickLang(lang, { ru: "Скоро", en: "Coming soon", kk: "Жақында" }), pickLang(lang, { ru: "Вход по Email будет добавлен позже. Сейчас доступны Google и Apple.", en: "Email sign-in is coming later. Google and Apple are available now.", kk: "Email арқылы кіру кейінірек қосылады. Қазір Google мен Apple қолжетімді." }));
   };
 
   const handleOffline = async () => {
     await continueOffline();
   };
 
-  const en = lang === "en";
   // Figma "Вход · выбор способа" (65:3): a full-gold brand screen in both themes.
   const INK = theme.accentText;
 
@@ -114,21 +113,21 @@ export default function LoginScreen() {
       <View style={{ flex: 1 }} />
 
       <Animated.View entering={FadeInUp.delay(100).duration(500)}>
-        <Text style={[s.headline, { color: INK }]}>{en ? "YOUR\nSTAGE." : "ТВОЙ\nВЫХОД."}</Text>
+        <Text style={[s.headline, { color: INK }]}>{pickLang(lang, { ru: "ТВОЙ\nВЫХОД.", en: "YOUR\nSTAGE.", kk: "СЕНІҢ\nСАХНАҢ." })}</Text>
         <Text style={[s.panelNote, { color: "rgba(38,38,40,0.75)" }]}>
-          {en ? "The stage awaits. Progress and crowns stay with you." : "Сцена ждёт. Прогресс и короны - с тобой."}
+          {pickLang(lang, { ru: "Сцена ждёт. Прогресс и короны - с тобой.", en: "The stage awaits. Progress and crowns stay with you.", kk: "Сахна күтіп тұр. Прогресс пен тәждер — сенімен бірге." })}
         </Text>
       </Animated.View>
 
       <Text style={[s.subtitle, { color: INK }]}>
-        {en ? "Sign in to save your progress and achievements" : "Войди, чтобы сохранять прогресс и достижения"}
+        {pickLang(lang, { ru: "Войди, чтобы сохранять прогресс и достижения", en: "Sign in to save your progress and achievements", kk: "Прогресс пен жетістіктерді сақтау үшін кір" })}
       </Text>
 
       {!configured && (
         <View style={s.notConfiguredBanner}>
           <Ionicons name="warning-outline" size={16} color={INK} />
           <Text style={[s.notConfiguredTxt, { color: "rgba(38,38,40,0.75)" }]}>
-            Облачная авторизация не настроена. Доступен только режим без входа.
+            {pickLang(lang, { ru: "Облачная авторизация не настроена. Доступен только режим без входа.", en: "Cloud sign-in isn't configured. Only offline mode is available.", kk: "Бұлттық авторизация бапталмаған. Тек кірусіз режим қолжетімді." })}
           </Text>
         </View>
       )}
@@ -136,7 +135,7 @@ export default function LoginScreen() {
       <Animated.View entering={FadeInDown.delay(200).duration(500)} style={s.btns}>
         {/* Google */}
         <PillButton
-          label={en ? "Continue with Google" : "Войти через Google"}
+          label={pickLang(lang, { ru: "Войти через Google", en: "Continue with Google", kk: "Google арқылы кіру" })}
           onPress={handleGoogle}
           disabled={busy !== null}
           busy={busy === "google"}
@@ -166,7 +165,7 @@ export default function LoginScreen() {
 
         {/* Email */}
         <PillButton
-          label={en ? "Continue with email" : "Войти по email"}
+          label={pickLang(lang, { ru: "Войти по email", en: "Continue with email", kk: "Email арқылы кіру" })}
           variant="secondaryOnGold"
           onPress={handleEmail}
           disabled={busy !== null}
@@ -183,7 +182,7 @@ export default function LoginScreen() {
         hitSlop={10}
       >
         <Text style={[s.skipBtnTxt, { color: "#333234" }]}>
-          {en ? "Continue without signing in  →" : "Продолжить без входа  →"}
+          {pickLang(lang, { ru: "Продолжить без входа  →", en: "Continue without signing in  →", kk: "Кірмей жалғастыру  →" })}
         </Text>
       </Pressable>
     </View>

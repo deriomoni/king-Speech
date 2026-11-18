@@ -28,6 +28,7 @@ import {
 import type { AppColors } from "@/constants/colors";
 import type { SpeechAnalysis } from "@/services/speechAnalysis";
 import RoundStar from "@/components/RoundStar";
+import { pickLang, type Lang } from "@/context/LangContext";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -56,7 +57,7 @@ interface Props {
   colors: AppColors;
   isDark: boolean;
   t: (key: any) => string;
-  lang: "ru" | "en";
+  lang: Lang;
   onRetry: () => void;
   onSave: (selfRating: number, saveToLibrary: boolean) => void;
   saving?: boolean;
@@ -471,7 +472,7 @@ export default function ReadingResultsView({
             style={[st.card, st.savePrompt, { backgroundColor: cardBg, borderColor: cardBorder }]}
           >
             <Text style={[st.savePromptText, { color: fg }]}>
-              {lang === "ru" ? "Сохранить в библиотеку?" : "Save to library?"}
+              {pickLang(lang, { ru: "Сохранить в библиотеку?", en: "Save to library?", kk: "Кітапханаға сақтайсың ба?" })}
             </Text>
             <View style={st.savePromptBtns}>
               <Pressable
@@ -479,13 +480,13 @@ export default function ReadingResultsView({
                 disabled={!canSave}
                 style={({ pressed }) => [st.secondaryBtn, st.yesNoBtn, { opacity: !canSave ? 0.5 : pressed ? 0.85 : 1 }]}
               >
-                <Text style={st.yesNoText}>{lang === "ru" ? "Да" : "Yes"}</Text>
+                <Text style={st.yesNoText}>{pickLang(lang, { ru: "Да", en: "Yes", kk: "Иә" })}</Text>
               </Pressable>
               <Pressable
                 onPress={() => setShowSavePrompt(false)}
                 style={({ pressed }) => [st.secondaryBtn, st.yesNoBtn, { opacity: pressed ? 0.85 : 1 }]}
               >
-                <Text style={st.yesNoText}>{lang === "ru" ? "Нет" : "No"}</Text>
+                <Text style={st.yesNoText}>{pickLang(lang, { ru: "Нет", en: "No", kk: "Жоқ" })}</Text>
               </Pressable>
             </View>
           </Animated.View>
@@ -513,7 +514,7 @@ export default function ReadingResultsView({
               },
             ]}
           >
-            <Text style={[st.saveText, { color: theme.accentText }]}>{lang === "ru" ? "Дальше" : "Next"}</Text>
+            <Text style={[st.saveText, { color: theme.accentText }]}>{pickLang(lang, { ru: "Дальше", en: "Next", kk: "Келесі" })}</Text>
             <Ionicons name="arrow-forward" size={17} color={theme.accentText} />
           </Pressable>
         </Animated.View>
@@ -540,7 +541,7 @@ function RecorderBar({
   disabled: boolean;
   onPress: () => void;
   dark: boolean;
-  lang: "ru" | "en";
+  lang: Lang;
 }) {
   const { theme } = useTheme();
   const [w, setW] = useState(0);
@@ -564,7 +565,7 @@ function RecorderBar({
         disabled={disabled}
         hitSlop={8}
         accessibilityRole="button"
-        accessibilityLabel={playing ? (lang === "ru" ? "Пауза" : "Pause") : lang === "ru" ? "Прослушать запись" : "Play recording"}
+        accessibilityLabel={playing ? (pickLang(lang, { ru: "Пауза", en: "Pause", kk: "Кідірту" })) : pickLang(lang, { ru: "Прослушать запись", en: "Play recording", kk: "Жазбаны тыңдау" })}
         style={({ pressed }) => [
           st.rbPlay,
           { backgroundColor: theme.accent, opacity: disabled ? 0.45 : pressed ? 0.8 : 1 },
@@ -626,7 +627,7 @@ function ListenStage({
   tint: string;
   topPad: number;
   bottomPad: number;
-  lang: "ru" | "en";
+  lang: Lang;
   hasAudio: boolean;
   onClose?: () => void;
   onRate: () => void;
@@ -688,14 +689,14 @@ function ListenStage({
     <Animated.View entering={FadeIn.duration(260)} style={[st.container, { backgroundColor: bg }]}>
       <View style={[st.lsHeader, { paddingTop: topPad + 14 }]}>
         <Text style={[st.lsKicker, { color: tint }]}>
-          {(lang === "ru" ? "Твоя запись" : "Your recording").toUpperCase()}
+          {(pickLang(lang, { ru: "Твоя запись", en: "Your recording", kk: "Сенің жазбаң" })).toUpperCase()}
         </Text>
         {onClose ? (
           <Pressable
             onPress={onClose}
             hitSlop={12}
             accessibilityRole="button"
-            accessibilityLabel={lang === "ru" ? "Выйти из чтения" : "Leave the reading"}
+            accessibilityLabel={pickLang(lang, { ru: "Выйти из чтения", en: "Leave the reading", kk: "Оқудан шығу" })}
             style={({ pressed }) => [st.lsClose, { opacity: pressed ? 0.6 : 1 }]}
           >
             <Ionicons name="close" size={24} color={ink} />
@@ -769,7 +770,7 @@ function ListenStage({
             disabled={!hasAudio}
             hitSlop={10}
             accessibilityRole="button"
-            accessibilityLabel={lang === "ru" ? "Назад на 5 секунд" : "Back 5 seconds"}
+            accessibilityLabel={pickLang(lang, { ru: "Назад на 5 секунд", en: "Back 5 seconds", kk: "5 секунд артқа" })}
             style={({ pressed }) => ({ opacity: !hasAudio ? 0.4 : pressed ? 0.6 : 1 })}
           >
             <SkipIcon dir="back" color={ink} />
@@ -778,7 +779,7 @@ function ListenStage({
             onPress={player.toggle}
             disabled={!hasAudio}
             accessibilityRole="button"
-            accessibilityLabel={player.playing ? (lang === "ru" ? "Пауза" : "Pause") : lang === "ru" ? "Слушать" : "Play"}
+            accessibilityLabel={player.playing ? (pickLang(lang, { ru: "Пауза", en: "Pause", kk: "Кідірту" })) : pickLang(lang, { ru: "Слушать", en: "Play", kk: "Тыңдау" })}
             style={({ pressed }) => [
               st.lsPlay,
               { backgroundColor: ink, opacity: !hasAudio ? 0.4 : pressed ? 0.85 : 1 },
@@ -798,7 +799,7 @@ function ListenStage({
             disabled={!hasAudio}
             hitSlop={10}
             accessibilityRole="button"
-            accessibilityLabel={lang === "ru" ? "Вперёд на 5 секунд" : "Forward 5 seconds"}
+            accessibilityLabel={pickLang(lang, { ru: "Вперёд на 5 секунд", en: "Forward 5 seconds", kk: "5 секунд алға" })}
             style={({ pressed }) => ({ opacity: !hasAudio ? 0.4 : pressed ? 0.6 : 1 })}
           >
             <SkipIcon dir="fwd" color={ink} />
@@ -816,7 +817,7 @@ function ListenStage({
           ]}
         >
           <Text style={[st.lsRateText, { color: theme.accentText }]}>
-            {lang === "ru" ? "Оценить себя" : "Rate yourself"}
+            {pickLang(lang, { ru: "Оценить себя", en: "Rate yourself", kk: "Өзіңді бағала" })}
           </Text>
         </Pressable>
       </View>

@@ -1,8 +1,9 @@
-import type { Lang } from "@/context/LangContext";
+import { pickLang, type Lang } from "@/context/LangContext";
 import type { TaskData } from "@/constants/gameContent";
 
 import warmupData from "@/assets/content/king_speech_warmup_content.json";
 import interviewData from "@/assets/content/king_speech_interview_content.json";
+import warmupKkData from "@/assets/content/kk/warmup_kk.json";
 
 export interface WarmupChant {
   sound: string;
@@ -127,8 +128,45 @@ export function normalizeWarmupModule(mod: WarmupModule): NormalizedWarmup {
   };
 }
 
-export function getNormalizedWarmup(moduleId: number): NormalizedWarmup | null {
+interface WarmupKk {
+  module: number;
+  title: string;
+  tempo: string;
+  mouth: { name: string; instruction: string; gesture: string; steps?: string[] };
+}
+const WARMUP_KK = new Map<number, WarmupKk>(
+  (warmupKkData as WarmupKk[]).map((m) => [m.module, m]),
+);
+
+/**
+ * Warm-up module with its texts localized. Chant syllables/notes are shared;
+ * Kazakh replaces the title, tempo and mouth-exercise texts (falls back to RU
+ * per field when a translation is missing).
+ */
+export function getLocalizedWarmup(moduleId: number, lang: Lang = "ru"): WarmupModule | null {
   const mod = getWarmup(moduleId);
+  if (!mod || lang !== "kk") return mod;
+  const kk = WARMUP_KK.get(moduleId);
+  if (!kk) return mod;
+  return {
+    ...mod,
+    title: kk.title || mod.title,
+    task1_chant: { ...mod.task1_chant, tempo: kk.tempo || mod.task1_chant.tempo },
+    task2_mouth: {
+      ...mod.task2_mouth,
+      name: kk.mouth?.name || mod.task2_mouth.name,
+      instruction: kk.mouth?.instruction || mod.task2_mouth.instruction,
+      gesture: kk.mouth?.gesture || mod.task2_mouth.gesture,
+      steps:
+        kk.mouth?.steps && mod.task2_mouth.steps && kk.mouth.steps.length === mod.task2_mouth.steps.length
+          ? kk.mouth.steps
+          : mod.task2_mouth.steps,
+    },
+  };
+}
+
+export function getNormalizedWarmup(moduleId: number, lang: Lang = "ru"): NormalizedWarmup | null {
+  const mod = getLocalizedWarmup(moduleId, lang);
   return mod ? normalizeWarmupModule(mod) : null;
 }
 
@@ -146,6 +184,15 @@ export interface InterviewModuleContent {
   q: string[][];
   /** 3 task slots, each with 3 variant questions (EN). */
   q_en: string[][];
+  theme_kk?: string;
+  /** 3 task slots, each with 3 variant questions (KK). */
+  q_kk?: string[][];
+}
+
+function interviewSlots(mod: InterviewModuleContent, lang: Lang): string[][] {
+  if (lang === "en") return mod.q_en;
+  if (lang === "kk" && mod.q_kk && mod.q_kk.length) return mod.q_kk;
+  return mod.q;
 }
 
 const INTERVIEW = interviewData as InterviewModuleContent[];
@@ -163,6 +210,11 @@ const INTERVIEW_TASK_META: Record<Lang, { title: string; instruction: string; ti
     { title: "Easy question", instruction: "Answer with your voice — calmly, like to a friend. 30–60 seconds.", tips: ["Take your time", "Use your own words", "There are no wrong answers here"] },
     { title: "Tell a story", instruction: "Share a small story from your life. An example is welcome.", tips: ["Add a detail or emotion", "Speak sincerely", "Don't fear pauses"] },
     { title: "Your opinion", instruction: "Say what you think — in your own words, no right answers.", tips: ["Be yourself", "Explain why", "Finish calmly"] },
+  ],
+  kk: [
+    { title: "Жеңіл сұрақ", instruction: "Дауыспен жауап бер — досыңмен сөйлескендей, сабырлы. 30–60 секунд.", tips: ["Асықпа", "Өз сөзіңмен айт", "Мұнда қате жауап жоқ"] },
+    { title: "Оқиға айтып бер", instruction: "Өміріңнен шағын бір оқиғамен бөліс. Мысал келтірсең болады.", tips: ["Бір деталь не сезім қос", "Шын жүректен сөйле", "Үзілістен қорықпа"] },
+    { title: "Сенің пікірің", instruction: "Не ойлайтыныңды өз сөзіңмен айт — дұрыс жауап деген жоқ.", tips: ["Өзің бол", "Неге екенін түсіндір", "Сабырмен аяқта"] },
   ],
 };
 
@@ -188,11 +240,11 @@ export function getInterviewTasksForLevel(levelId: string, lang: Lang): TaskData
   if (moduleId <= 0) return null;
   const mod = getInterviewModuleContent(moduleId);
   if (!mod) return null;
-  const slots = lang === "en" ? mod.q_en : mod.q;
+  const slots = interviewSlots(mod, lang);
   const meta = INTERVIEW_TASK_META[lang];
   return slots.slice(0, 3).map((variants, i) => ({
     taskNumber: i + 1,
-    title: meta[i]?.title ?? (lang === "en" ? "Question" : "Вопрос"),
+    title: meta[i]?.title ?? pickLang(lang, { ru: "Вопрос", en: "Question", kk: "Сұрақ" }),
     instruction: meta[i]?.instruction ?? "",
     content: variants[0] ?? "",
     tips: meta[i]?.tips ?? [],
@@ -208,24 +260,24 @@ export function getInterviewVariantsForLevel(levelId: string, lang: Lang): strin
   if (moduleId <= 0) return null;
   const mod = getInterviewModuleContent(moduleId);
   if (!mod) return null;
-  return (lang === "en" ? mod.q_en : mod.q).map((variants) => variants.slice());
+  return interviewSlots(mod, lang).map((variants) => variants.slice());
 }
 
 /** Two synthetic tasks for GameContext progress tracking. */
 export function getWarmupTasksForLevel(moduleId: number, lang: Lang): TaskData[] {
-  const mod = getWarmup(moduleId);
+  const mod = getLocalizedWarmup(moduleId, lang);
   if (!mod) {
     return [
       {
         taskNumber: 1,
-        title: lang === "ru" ? "Распевка" : "Vocal warm-up",
+        title: pickLang(lang, { ru: "Распевка", en: "Vocal warm-up", kk: "Дауыс жаттығуы" }),
         instruction: "",
         content: "",
         tips: [],
       },
       {
         taskNumber: 2,
-        title: lang === "ru" ? "Разминка рта" : "Mouth exercise",
+        title: pickLang(lang, { ru: "Разминка рта", en: "Mouth exercise", kk: "Ауыз жаттығуы" }),
         instruction: "",
         content: "",
         tips: [],
@@ -237,23 +289,25 @@ export function getWarmupTasksForLevel(moduleId: number, lang: Lang): TaskData[]
   return [
     {
       taskNumber: 1,
-      title: lang === "ru" ? `Распевка: ${norm.sound}` : `Chant: ${norm.sound}`,
-      instruction:
-        lang === "ru"
-          ? `Спой слоги по нотам. Темп: ${norm.tempo}.`
-          : `Sing syllables along the notes. Tempo: ${norm.tempo}.`,
+      title: pickLang(lang, { ru: `Распевка: ${norm.sound}`, en: `Chant: ${norm.sound}`, kk: `Дауыс жаттығуы: ${norm.sound}` }),
+      instruction: pickLang(lang, {
+        ru: `Спой слоги по нотам. Темп: ${norm.tempo}.`,
+        en: `Sing syllables along the notes. Tempo: ${norm.tempo}.`,
+        kk: `Буындарды ноталар бойынша айтып шық. Қарқын: ${norm.tempo}.`,
+      }),
       content: norm.syllables.join(" · "),
-      tips:
-        lang === "ru"
-          ? ["Дыши спокойно", "Следи за высотой тона", norm.tempo]
-          : ["Breathe calmly", "Follow the pitch", norm.tempo],
+      tips: pickLang(lang, {
+        ru: ["Дыши спокойно", "Следи за высотой тона", norm.tempo],
+        en: ["Breathe calmly", "Follow the pitch", norm.tempo],
+        kk: ["Сабырлы дем ал", "Дауыс биіктігін қадағала", norm.tempo],
+      }),
     },
     {
       taskNumber: 2,
       title: mouth.name,
       instruction: mouth.instruction,
       content: mouth.gesture,
-      tips: lang === "ru" ? [mouth.gesture] : [mouth.gesture],
+      tips: [mouth.gesture],
     },
   ];
 }

@@ -1,4 +1,4 @@
-import type { Lang } from "@/context/LangContext";
+import { pickLang, type Lang } from "@/context/LangContext";
 import { fetch } from "expo/fetch";
 import { getApiUrl } from "@/lib/query-client";
 
@@ -50,6 +50,14 @@ export const FILLERS: Record<Lang, string[]> = {
     "um", "uh", "uhm", "er", "erm", "like", "you know", "i mean",
     "sort of", "kind of", "basically", "actually",
   ],
+  // Kazakh speakers' typical parasites + Russian ones commonly mixed in,
+  // plus vocal hesitations. Multi-word entries are matched as phrases.
+  kk: [
+    "яғни", "енді", "әлгі", "сосын", "негізі", "мынау", "бәсе",
+    "ал енді", "қысқасы", "әлгіндей", "былай",
+    "короче", "типа", "вот", "как бы", "ну",
+    "ммм", "эээ", "ээ", "эм", "э",
+  ],
 };
 
 function getBaseType(levelType: string): string {
@@ -77,7 +85,7 @@ export function countFillers(transcript: string, lang: Lang): number {
   if (!transcript) return 0;
   const padded = " " + transcript.toLowerCase().replace(/[.,;:!?…\-—()"]/g, " ").replace(/\s+/g, " ") + " ";
   let count = 0;
-  for (const filler of FILLERS[lang]) {
+  for (const filler of FILLERS[lang] ?? FILLERS.ru) {
     const needle = ` ${filler} `;
     let idx = 0;
     while ((idx = padded.indexOf(needle, idx)) !== -1) {
@@ -197,26 +205,32 @@ const TIP_BY_CRITERION: Record<string, Record<Lang, string>> = {
   clarity: {
     ru: "Чётче проговаривай каждое слово — не глотай окончания и звуки.",
     en: "Pronounce every word clearly — don't swallow endings or sounds.",
+    kk: "Әр сөзді анық айт — соңғы буындар мен дыбыстарды жұтып қойма.",
   },
   textMatch: {
     ru: "Старайся произносить текст ближе к оригиналу — перечитай задание перед записью.",
     en: "Stick closer to the original text — re-read the prompt before recording.",
+    kk: "Мәтінді түпнұсқаға жақынырақ айтуға тырыс — жазар алдында тапсырманы қайта оқып шық.",
   },
   volume: {
     ru: "Говори громче и развёрнутее — короткая, тихая запись звучит неуверенно.",
     en: "Speak louder and longer — a short, quiet take sounds hesitant.",
+    kk: "Қаттырақ әрі толығырақ сөйле — қысқа, баяу жазба сенімсіз естіледі.",
   },
   confidence: {
     ru: "Убери слова-паразиты («ну», «типа», «как бы») — речь сразу прозвучит уверенно.",
     en: "Drop filler words (\"um\", \"uh\", \"like\") — your speech will sound confident.",
+    kk: "Паразит сөздерді («енді», «яғни», «әлгі») алып таста — сөзің бірден сенімді естіледі.",
   },
   logic: {
     ru: "Стройте ответ по схеме: тезис → аргумент → вывод.",
     en: "Build your answer as: thesis → argument → conclusion.",
+    kk: "Жауабыңды осылай құр: тезис → дәлел → қорытынды.",
   },
   eloquence: {
     ru: "Используй разнообразную лексику и точные формулировки — избегай шаблонов.",
     en: "Use varied vocabulary and precise wording — avoid generic phrases.",
+    kk: "Сөздік қорыңды кеңірек қолдан, ойыңды дәл жеткіз — жаттанды тіркестерден аулақ бол.",
   },
 };
 
@@ -229,7 +243,11 @@ function pickWeakest(scores: Record<string, number>): string {
 function tipFor(criterion: string, lang: Lang): string {
   return (
     TIP_BY_CRITERION[criterion]?.[lang] ??
-    (lang === "ru" ? "Продолжай тренироваться — каждая запись делает голос точнее." : "Keep practicing — every take sharpens your voice.")
+    pickLang(lang, {
+      ru: "Продолжай тренироваться — каждая запись делает голос точнее.",
+      en: "Keep practicing — every take sharpens your voice.",
+      kk: "Жаттығуды жалғастыр — әр жазба дауысыңды шыңдай түседі.",
+    })
   );
 }
 
@@ -363,35 +381,35 @@ export async function analyzeSpeech(params: AnalyzeSpeechParams): Promise<Speech
   // Strengths/recommendations are now generated FROM the criteria scores
   // — no random pools. Anything ≥7 is a strength; anything <6 is a growth
   // point. The list is capped to 3 of each.
-  const labelMap: Record<string, { ru: string; en: string }> = {
-    clarity: { ru: "Чёткая дикция", en: "Clear diction" },
-    confidence: { ru: "Уверенный голос", en: "Confident voice" },
-    volume: { ru: "Хорошая громкость и длительность", en: "Good volume and length" },
-    textMatch: { ru: "Точное соответствие тексту", en: "Faithful to the original text" },
-    logic: { ru: "Логичная структура ответа", en: "Logical answer structure" },
-    eloquence: { ru: "Богатая, выразительная речь", en: "Rich, expressive speech" },
+  const labelMap: Record<string, Record<Lang, string>> = {
+    clarity: { ru: "Чёткая дикция", en: "Clear diction", kk: "Анық дикция" },
+    confidence: { ru: "Уверенный голос", en: "Confident voice", kk: "Сенімді дауыс" },
+    volume: { ru: "Хорошая громкость и длительность", en: "Good volume and length", kk: "Дауыс қаттылығы мен ұзақтығы жақсы" },
+    textMatch: { ru: "Точное соответствие тексту", en: "Faithful to the original text", kk: "Мәтінге дәл сәйкестік" },
+    logic: { ru: "Логичная структура ответа", en: "Logical answer structure", kk: "Жауаптың логикалық құрылымы" },
+    eloquence: { ru: "Богатая, выразительная речь", en: "Rich, expressive speech", kk: "Бай, мәнерлі сөз" },
   };
-  const recMap: Record<string, { ru: string; en: string }> = {
-    clarity: { ru: "Поработай над чёткостью артикуляции", en: "Work on articulation clarity" },
-    confidence: { ru: "Убери слова-паразиты, чтобы звучать увереннее", en: "Cut filler words to sound more confident" },
-    volume: { ru: "Говори громче и развёрнутее", en: "Speak louder and at greater length" },
-    textMatch: { ru: "Постарайся точнее повторять текст задания", en: "Stick closer to the prompt text" },
-    logic: { ru: "Чётче выстраивай логику ответа", en: "Structure the logic of your answer" },
-    eloquence: { ru: "Расширь словарный запас и точнее формулируй", en: "Broaden vocabulary and sharpen your wording" },
+  const recMap: Record<string, Record<Lang, string>> = {
+    clarity: { ru: "Поработай над чёткостью артикуляции", en: "Work on articulation clarity", kk: "Артикуляцияның анықтығына жұмыс істе" },
+    confidence: { ru: "Убери слова-паразиты, чтобы звучать увереннее", en: "Cut filler words to sound more confident", kk: "Сенімдірек естілу үшін паразит сөздерді алып таста" },
+    volume: { ru: "Говори громче и развёрнутее", en: "Speak louder and at greater length", kk: "Қаттырақ әрі толығырақ сөйле" },
+    textMatch: { ru: "Постарайся точнее повторять текст задания", en: "Stick closer to the prompt text", kk: "Тапсырма мәтінін дәлірек қайталауға тырыс" },
+    logic: { ru: "Чётче выстраивай логику ответа", en: "Structure the logic of your answer", kk: "Жауабыңның логикасын нақтырақ құр" },
+    eloquence: { ru: "Расширь словарный запас и точнее формулируй", en: "Broaden vocabulary and sharpen your wording", kk: "Сөздік қорыңды кеңейтіп, ойыңды дәлірек жеткіз" },
   };
 
   const strengths: string[] = [];
   const recommendations: string[] = [];
   for (const [k, v] of Object.entries(tipScores)) {
     if (v >= 7 && labelMap[k]) {
-      strengths.push(lang === "en" ? labelMap[k].en : labelMap[k].ru);
+      strengths.push(labelMap[k][lang] ?? labelMap[k].ru);
     }
     if (v < 6 && recMap[k]) {
-      recommendations.push(lang === "en" ? recMap[k].en : recMap[k].ru);
+      recommendations.push(recMap[k][lang] ?? recMap[k].ru);
     }
   }
   if (strengths.length === 0) {
-    strengths.push(lang === "en" ? "You finished the take" : "Запись завершена");
+    strengths.push(pickLang(lang, { ru: "Запись завершена", en: "You finished the take", kk: "Жазба аяқталды" }));
   }
   if (recommendations.length === 0) {
     recommendations.push(tip);
@@ -411,6 +429,13 @@ export async function analyzeSpeech(params: AnalyzeSpeechParams): Promise<Speech
       tonguetwister: "Diction is working. Regular practice will show results.",
       showtime: "Performance delivered! The audience would remember you.",
       reading: "Text read with intent. Your voice is growing.",
+    },
+    kk: {
+      warmup: "Керемет жаттығу! Дауысың қызып, жұмысқа дайын.",
+      interview: "Жауабың жазылды. Баға нақты көрсеткіштерге негізделген.",
+      tonguetwister: "Дикция жұмыс істеп тұр. Тұрақты жаттығу нәтиже береді.",
+      showtime: "Сөз сөйлеу сәтті өтті! Көрермендер сені есте сақтар еді.",
+      reading: "Мәтін оқылды. Дауысың дамып келеді.",
     },
   };
 
@@ -555,6 +580,33 @@ export function generateTips(levelType: string, lang: Lang = "ru"): string[] {
         "Read in phrases, not words",
         "Emphasize key words with intonation",
         "Pause after periods and commas",
+      ],
+    },
+    kk: {
+      warmup: [
+        "Бастамас бұрын иығыңды босат",
+        "Диафрагмамен терең дем ал",
+        "Асықпай, сабырмен сөйле",
+      ],
+      interview: [
+        "Сұрақты соңына дейін тыңда",
+        "Жауап берер алдында 1–2 секунд кідір",
+        "Жауабын білмесең де, сенімді сөйле",
+      ],
+      tonguetwister: [
+        "Баяу баста — жылдамдық кейін келеді",
+        "Әр дыбысты анық айт",
+        "3 рет қайтала: баяу, орташа, жылдам",
+      ],
+      showtime: [
+        "Тік тұр, сахнаны сезін",
+        "Әдеттегіден қаттырақ сөйле",
+        "Еденге емес, алға — залға қара",
+      ],
+      reading: [
+        "Сөзбе-сөз емес, тіркеспен оқы",
+        "Негізгі сөздерді интонациямен ерекшеле",
+        "Нүкте мен үтірден кейін кідіріс жаса",
       ],
     },
   };

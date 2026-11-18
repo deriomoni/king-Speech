@@ -11,6 +11,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { ASPECT_META, type FlowerAspect } from "@/components/ScoreFlower";
+import { pickLang, type Lang } from "@/context/LangContext";
 
 // ───────────────────────────────────────────────────────────────────────────
 // ScoreLadder — the readable replacement for the flower. Overall + every
@@ -30,7 +31,7 @@ type Tier = {
   grad: readonly [string, string];
   solid: string;
   glow: string;
-  label: (ru: boolean) => string;
+  label: (lang: Lang) => string;
 };
 
 function tierFor(score: number): Tier {
@@ -39,20 +40,20 @@ function tierFor(score: number): Tier {
       grad: ["#C2FF6B", "#63DA1C"],
       solid: "#9BF23A",
       glow: "rgba(150,242,58,0.55)",
-      label: (ru) => (ru ? "Отлично" : "Great"),
+      label: (lang) => pickLang(lang, { ru: "Отлично", en: "Great", kk: "Керемет" }),
     };
   if (score >= 5)
     return {
       grad: ["#FFEB7A", "#F5C518"],
       solid: "#FFDA3A",
       glow: "rgba(255,216,58,0.5)",
-      label: (ru) => (ru ? "Можно лучше" : "Can improve"),
+      label: (lang) => pickLang(lang, { ru: "Можно лучше", en: "Can improve", kk: "Жақсартуға болады" }),
     };
   return {
     grad: ["#FFA24D", "#FF3D54"],
     solid: "#FF6A4D",
     glow: "rgba(255,86,66,0.5)",
-    label: (ru) => (ru ? "Поработать" : "Work on it"),
+    label: (lang) => pickLang(lang, { ru: "Поработать", en: "Work on it", kk: "Жұмыс істеу керек" }),
   };
 }
 
@@ -72,22 +73,21 @@ interface Props {
   overall: number;
   aspects: FlowerAspect[];
   width?: number;
-  lang?: "ru" | "en";
+  lang?: Lang;
 }
 
 export default function ScoreLadder({ overall, aspects, width = 380, lang = "ru" }: Props) {
-  const ru = lang === "ru";
   // Strengths on top, weaknesses at the bottom → the bars form a staircase.
   const sorted = [...aspects].sort((a, b) => b.score - a.score);
   return (
     <View style={{ width }}>
       <LadderNode
         overall
-        label={ru ? "Общая оценка" : "Overall"}
+        label={pickLang(lang, { ru: "Общая оценка", en: "Overall", kk: "Жалпы баға" })}
         score={overall}
         icon="ribbon-outline"
         index={0}
-        ru={ru}
+        lang={lang}
       />
       {sorted.map((a, i) => (
         <LadderNode
@@ -96,7 +96,7 @@ export default function ScoreLadder({ overall, aspects, width = 380, lang = "ru"
           score={a.score}
           icon={ASPECT_META[a.key].icon}
           index={i + 1}
-          ru={ru}
+          lang={lang}
           last={i === sorted.length - 1}
         />
       ))}
@@ -110,7 +110,7 @@ function LadderNode({
   score,
   icon,
   index,
-  ru,
+  lang,
   last = false,
 }: {
   overall?: boolean;
@@ -118,7 +118,7 @@ function LadderNode({
   score: number;
   icon: keyof typeof import("@expo/vector-icons").Ionicons.glyphMap;
   index: number;
-  ru: boolean;
+  lang: Lang;
   last?: boolean;
 }) {
   const tier = tierFor(score);
@@ -202,7 +202,7 @@ function LadderNode({
           </View>
 
           {overall ? (
-            <Text style={[st.tierWord, { color: tier.solid }]}>{tier.label(ru)}</Text>
+            <Text style={[st.tierWord, { color: tier.solid }]}>{tier.label(lang)}</Text>
           ) : null}
         </View>
       </Animated.View>

@@ -9,7 +9,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import Animated, { FadeInDown, ZoomIn } from "react-native-reanimated";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang } from "@/context/LangContext";
 import { getRoleById, getRoleTasks, tx, type RoleMode } from "@/constants/rolesData";
 import {
   RoleTarotCard,
@@ -46,9 +46,9 @@ export default function RoleBriefScreen() {
   if (!role) {
     return (
       <View style={[styles.root, { alignItems: "center", justifyContent: "center" }]}>
-        <Text style={styles.errText}>{lang === "en" ? "Role not found" : "Роль не найдена"}</Text>
+        <Text style={styles.errText}>{pickLang(lang, { ru: "Роль не найдена", en: "Role not found", kk: "Рөл табылмады" })}</Text>
         <Pressable onPress={() => router.back()} style={styles.errBtn}>
-          <Text style={styles.errBtnText}>{lang === "en" ? "Back" : "Назад"}</Text>
+          <Text style={styles.errBtnText}>{pickLang(lang, { ru: "Назад", en: "Back", kk: "Артқа" })}</Text>
         </Pressable>
       </View>
     );
@@ -58,10 +58,10 @@ export default function RoleBriefScreen() {
   const scenario = getRoleScenario(role.id);
   const sceneKind =
     scenario?.kind === "live"
-      ? (lang === "en" ? "Live stream" : "Прямой эфир")
+      ? (pickLang(lang, { ru: "Прямой эфир", en: "Live stream", kk: "Тікелей эфир" }))
       : scenario?.kind === "stage"
-        ? (lang === "en" ? "On stage" : "Сцена")
-        : (lang === "en" ? "Dialogue" : "Диалог");
+        ? (pickLang(lang, { ru: "Сцена", en: "On stage", kk: "Сахна" }))
+        : (pickLang(lang, { ru: "Диалог", en: "Dialogue", kk: "Диалог" }));
   const dotBg = roleFrameColor(role.id);
   const dotInk = roleInk(role.id);
 
@@ -80,7 +80,7 @@ export default function RoleBriefScreen() {
       {/* Top bar */}
       <View style={[styles.topBar, { paddingTop: topPad }]}>
         <View style={{ width: 40 }} />
-        <Text style={styles.kicker}>{lang === "en" ? "YOUR ROLE" : "ТВОЯ РОЛЬ"}</Text>
+        <Text style={styles.kicker}>{pickLang(lang, { ru: "ТВОЯ РОЛЬ", en: "YOUR ROLE", kk: "СЕНІҢ РӨЛІҢ" })}</Text>
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.closeBtn}>
           <Ionicons name="close" size={26} color={TEXT} />
         </Pressable>
@@ -92,14 +92,14 @@ export default function RoleBriefScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(120)} style={styles.panel}>
-          <Text style={styles.panelLabel}>{lang === "en" ? "SCENE" : "СЦЕНА"}</Text>
+          <Text style={styles.panelLabel}>{pickLang(lang, { ru: "СЦЕНА", en: "SCENE", kk: "КӨРІНІС" })}</Text>
           <Text style={styles.sceneText}>{tx(role.scene, lang)}</Text>
 
           <View style={styles.divider} />
 
           {scenario ? (
             <>
-              <Text style={styles.panelLabel}>{lang === "en" ? "YOU'LL BE TALKING TO" : "С КЕМ ТЫ ГОВОРИШЬ"}</Text>
+              <Text style={styles.panelLabel}>{pickLang(lang, { ru: "С КЕМ ТЫ ГОВОРИШЬ", en: "YOU'LL BE TALKING TO", kk: "КІММЕН СӨЙЛЕСЕСІҢ" })}</Text>
               <View style={styles.personaRow}>
                 <View style={styles.personaAvatar}>
                   <Text style={{ fontSize: 24 }}>{scenario.persona.avatar}</Text>
@@ -111,13 +111,13 @@ export default function RoleBriefScreen() {
               </View>
               <Text style={styles.personaAbout}>{lt(scenario.persona.about, lang)}</Text>
               <Text style={styles.metaLine}>
-                {sceneKind} · {scenario.beats.length} {lang === "en" ? "lines" : "реплик"} · {lang === "en" ? "1–2 min" : "1–2 мин"}
-                {scenario.opening ? (lang === "en" ? " · you open" : " · ты начинаешь") : ""}
+                {sceneKind} · {scenario.beats.length} {pickLang(lang, { ru: "реплик", en: "lines", kk: "реплика" })} · {pickLang(lang, { ru: "1–2 мин", en: "1–2 min", kk: "1–2 мин" })}
+                {scenario.opening ? (pickLang(lang, { ru: " · ты начинаешь", en: " · you open", kk: " · сен бастайсың" })) : ""}
               </Text>
 
               <View style={styles.divider} />
 
-              <Text style={styles.panelLabel}>{lang === "en" ? "SCENE GOALS" : "ЦЕЛИ СЦЕНЫ"}</Text>
+              <Text style={styles.panelLabel}>{pickLang(lang, { ru: "ЦЕЛИ СЦЕНЫ", en: "SCENE GOALS", kk: "КӨРІНІС МАҚСАТТАРЫ" })}</Text>
               {scenario.goals.map((g, i) => (
                 <View key={g.id} style={styles.taskRow}>
                   <View style={[styles.taskDot, { backgroundColor: dotBg }]}>
@@ -127,14 +127,12 @@ export default function RoleBriefScreen() {
                 </View>
               ))}
               <Text style={styles.metaLine}>
-                {lang === "en"
-                  ? "Lines appear when you pause. Steer the talk toward the goals — they tick live."
-                  : "Реплики появляются, когда ты делаешь паузу. Веди разговор к целям — они отмечаются по ходу."}
+                {pickLang(lang, { ru: "Реплики появляются, когда ты делаешь паузу. Веди разговор к целям — они отмечаются по ходу.", en: "Lines appear when you pause. Steer the talk toward the goals — they tick live.", kk: "Үзіліс жасағанда репликалар пайда болады. Әңгімені мақсаттарға қарай бұр — олар бірден белгіленеді." })}
               </Text>
             </>
           ) : (
             <>
-              <Text style={styles.panelLabel}>{lang === "en" ? "YOUR TASKS" : "ТВОИ ЗАДАНИЯ"}</Text>
+              <Text style={styles.panelLabel}>{pickLang(lang, { ru: "ТВОИ ЗАДАНИЯ", en: "YOUR TASKS", kk: "СЕНІҢ ТАПСЫРМАЛАРЫҢ" })}</Text>
               {tasks.slice(0, 3).map((t, i) => (
                 <View key={i} style={styles.taskRow}>
                   <View style={[styles.taskDot, { backgroundColor: dotBg }]}>
@@ -151,13 +149,13 @@ export default function RoleBriefScreen() {
             <ModePill
               active={mode === "improv"}
               icon="flash"
-              label={lang === "en" ? "Improvise" : "Импровизация"}
+              label={pickLang(lang, { ru: "Импровизация", en: "Improvise", kk: "Импровизация" })}
               onPress={() => { haptic(); setMode("improv"); }}
             />
             <ModePill
               active={mode === "scripted"}
               icon="document-text"
-              label={lang === "en" ? "Read the script" : "По сценарию"}
+              label={pickLang(lang, { ru: "По сценарию", en: "Read the script", kk: "Сценарий бойынша" })}
               onPress={() => { haptic(); setMode("scripted"); }}
             />
           </View>
@@ -171,19 +169,19 @@ export default function RoleBriefScreen() {
             <SegmentOption
               active={withCamera}
               icon="videocam-outline"
-              label={lang === "en" ? "With camera" : "С камерой"}
+              label={pickLang(lang, { ru: "С камерой", en: "With camera", kk: "Камерамен" })}
               onPress={() => { haptic(); setWithCamera(true); }}
             />
             <SegmentOption
               active={!withCamera}
               icon="mic-outline"
-              label={lang === "en" ? "Voice only" : "Только голос"}
+              label={pickLang(lang, { ru: "Только голос", en: "Voice only", kk: "Тек дауыс" })}
               onPress={() => { haptic(); setWithCamera(false); }}
             />
           </View>
           <Pressable onPress={goOnStage} style={({ pressed }) => [styles.goBtn, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
             <PlayTriangleIcon color={ROLES_BG} />
-            <Text style={styles.goText}>{lang === "en" ? "Go on stage" : "Выйти на сцену"}</Text>
+            <Text style={styles.goText}>{pickLang(lang, { ru: "Выйти на сцену", en: "Go on stage", kk: "Сахнаға шығу" })}</Text>
           </Pressable>
         </View>
       </View>

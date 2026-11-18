@@ -22,6 +22,14 @@ export const STOP_LEMMAS = new Set([
   // pronouns
   'я', 'ты', 'он', 'она', 'оно', 'мы', 'вы', 'они', 'это', 'этот', 'тот',
   'мой', 'твой', 'свой', 'весь', 'себя', 'кто', 'все', 'его', 'её', 'их',
+  // Kazakh: conjunctions / postpositions / particles
+  'және', 'мен', 'бен', 'пен', 'бірақ', 'немесе', 'әлде', 'егер', 'үшін',
+  'туралы', 'сияқты', 'дейін', 'кейін', 'бойынша', 'арқылы', 'ғой', 'ма', 'ме',
+  'ба', 'бе', 'па', 'пе', 'ше', 'ғана', 'тек', 'де', 'та', 'те', 'да', 'деп',
+  'емес', 'жоқ', 'бар', 'еді', 'болды', 'өте',
+  // Kazakh pronouns (surface forms; most are ≤3 letters so stems equal tokens)
+  'мен', 'сен', 'сіз', 'ол', 'біз', 'сендер', 'сіздер', 'олар', 'бұл', 'осы',
+  'сол', 'анау', 'мына', 'не', 'кім', 'қай', 'өз', 'өзі', 'барлық', 'бәрі',
 ]);
 
 export interface LemmaStat {
@@ -44,7 +52,7 @@ export interface TautologyInput {
   /** Normalized surface tokens of the transcript. */
   tokens: readonly string[];
   speechDurationMs: number;
-  locale: 'ru' | 'en';
+  locale: 'ru' | 'en' | 'kk';
   /** Per-token STT confidence, parallel to `tokens` (optional). */
   confidences?: readonly (number | null)[];
 }

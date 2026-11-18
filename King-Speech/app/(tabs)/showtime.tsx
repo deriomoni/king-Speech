@@ -19,7 +19,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "@/lib/haptics";
 import { router, useFocusEffect } from "expo-router";
 import { getSpeechThemes } from "@/app/showtime-stage";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { ThemeCoverGallery, COVER_CARD, COVER_CY } from "@/components/showtime/ThemeCoverGallery";
 import { CoverFlight, previewRect, type CoverRect } from "@/components/showtime/CoverFlight";
@@ -51,7 +51,6 @@ function withAlpha(hex: string, a: number) {
 export default function ShowTimeScreen() {
   const insets = useSafeAreaInsets();
   const { lang } = useLang();
-  const en = lang === "en";
   const { theme: c, themeMode } = useTheme();
   const isLight = themeMode === "light";
   const { width: winW } = useWindowDimensions();
@@ -179,12 +178,12 @@ export default function ShowTimeScreen() {
 
   const durationLine =
     theme.timerSeconds !== null
-      ? en
-        ? `${theme.timerSeconds} sec speech`
-        : `${theme.timerSeconds} сек выступления`
-      : en
-        ? "1-2 min speech"
-        : "1-2 мин выступления";
+      ? pickLang(lang, {
+          ru: `${theme.timerSeconds} сек выступления`,
+          en: `${theme.timerSeconds} sec speech`,
+          kk: `${theme.timerSeconds} сек сөз сөйлеу`,
+        })
+      : pickLang(lang, { ru: "1-2 мин выступления", en: "1-2 min speech", kk: "1-2 мин сөз сөйлеу" });
 
   return (
     <EdgeScaleProvider scrollY={edgeScrollY} topEdge={topPad + 8} bottomEdge={bottomPad + 84}>
@@ -220,7 +219,7 @@ export default function ShowTimeScreen() {
                 setExpanded(false);
               }}
               onSubmitEditing={() => scrollRef.current?.scrollTo({ y: catalogY.current - 12, animated: true })}
-              placeholder={en ? "Find a topic" : "Найти тему"}
+              placeholder={pickLang(lang, { ru: "Найти тему", en: "Find a topic", kk: "Тақырып іздеу" })}
               placeholderTextColor={c.textMuted}
               returnKeyType="search"
               style={[st.searchInput, { color: c.text }, Platform.OS === "web" && ({ outlineStyle: "none" } as any)]}
@@ -231,7 +230,7 @@ export default function ShowTimeScreen() {
 
         <EdgeScale>
         <Text style={[st.sectionHeading, { color: c.text }]}>
-          {en ? "Trending topics for you" : "Актуальные темы для вас"}
+          {pickLang(lang, { ru: "Актуальные темы для вас", en: "Trending topics for you", kk: "Сен үшін өзекті тақырыптар" })}
         </Text>
         </EdgeScale>
 
@@ -250,7 +249,7 @@ export default function ShowTimeScreen() {
         <View style={st.themeInfo}>
           <View style={st.titleRow}>
             <Text style={[st.themeTitle, { color: c.accentInk }]} numberOfLines={2}>
-              {en ? `“${theme.title}”` : `«${theme.title}»`}
+              {lang === "en" ? `“${theme.title}”` : `«${theme.title}»`}
             </Text>
             <Text style={[st.counter, { color: inkFaint }]}>
               {selectedIdx + 1} / {carouselKeys.length}
@@ -266,7 +265,7 @@ export default function ShowTimeScreen() {
         </EdgeScale>
 
         <EdgeScale>
-        <ShowTimeStartButton onPress={startShow} free={showTimeFreeAvailable} en={en} />
+        <ShowTimeStartButton onPress={startShow} free={showTimeFreeAvailable} lang={lang} />
         </EdgeScale>
 
         {/* Каталог тем */}
@@ -276,7 +275,9 @@ export default function ShowTimeScreen() {
         >
           <View style={st.catalogHead}>
             <Text style={[st.catalogTitle, { color: c.text }]}>
-              {q ? (en ? `Found: ${catalogKeys.length}` : `Найдено: ${catalogKeys.length}`) : en ? "Topic catalog" : "Каталог тем"}
+              {q
+                ? pickLang(lang, { ru: `Найдено: ${catalogKeys.length}`, en: `Found: ${catalogKeys.length}`, kk: `Табылды: ${catalogKeys.length}` })
+                : pickLang(lang, { ru: "Каталог тем", en: "Topic catalog", kk: "Тақырыптар каталогы" })}
             </Text>
             {/* ↗ opens the full catalog screen (Figma 399:1177). */}
             <Pressable hitSlop={10} onPress={() => router.push("/theme-catalog")} accessibilityRole="button">
@@ -312,7 +313,7 @@ export default function ShowTimeScreen() {
                           : { color: c.textMuted, fontFamily: "Geologica_700Bold" },
                       ]}
                     >
-                      {en ? cat.en : cat.ru}
+                      {pickLang(lang, cat)}
                     </Text>
                     <View style={[st.tabUnderline, { backgroundColor: active ? c.accent : "transparent" }]} />
                   </Pressable>
@@ -323,7 +324,7 @@ export default function ShowTimeScreen() {
 
           {catalogKeys.length === 0 ? (
             <Text style={[st.empty, { color: c.textMuted }]}>
-              {en ? "Nothing found" : "Ничего не найдено"}
+              {pickLang(lang, { ru: "Ничего не найдено", en: "Nothing found", kk: "Ештеңе табылмады" })}
             </Text>
           ) : (
             <View style={st.grid}>
@@ -376,14 +377,14 @@ export default function ShowTimeScreen() {
               />
               <Pressable onPress={() => router.push("/theme-catalog")} style={st.seeAll} hitSlop={6}>
                 <Text style={[st.seeAllText, { color: c.text }]}>
-                  {en ? "See all topics" : "Смотреть все темы"}
+                  {pickLang(lang, { ru: "Смотреть все темы", en: "See all topics", kk: "Барлық тақырыптар" })}
                 </Text>
               </Pressable>
             </View>
           )}
           {canCollapse && showAll && (
             <Pressable onPress={() => setExpanded(false)} style={[st.seeAll, st.seeAllInline]}>
-              <Text style={[st.seeAllText, { color: c.text }]}>{en ? "Show less" : "Свернуть"}</Text>
+              <Text style={[st.seeAllText, { color: c.text }]}>{pickLang(lang, { ru: "Свернуть", en: "Show less", kk: "Жию" })}</Text>
             </Pressable>
           )}
         </View>
@@ -404,7 +405,7 @@ export default function ShowTimeScreen() {
             <EdgeScale>
             <ShowTimeModeTiles
               mode={isLight ? "light" : "dark"}
-              en={en}
+              lang={lang}
               onRoles={() => router.push("/roles")}
               onHints={() => router.push("/speaker-tips")}
             />

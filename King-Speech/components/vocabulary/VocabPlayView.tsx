@@ -4,6 +4,7 @@ import Animated, { FadeIn, FadeInDown, FadeOut } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Circle, Rect } from "react-native-svg";
 import { useTheme } from "@/context/ThemeContext";
+import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import CoinIcon from "@/components/CoinIcon";
 import StageGlassDialog from "@/components/showtime/StageGlassDialog";
 import { POS_LABELS_RU, DIFFICULTY_LABEL_RU, type VocabWord } from "@/constants/vocabularyData";
@@ -11,6 +12,18 @@ import type { WaveBar } from "@/hooks/useWaveformBars";
 import Timer, { type TimerState } from "./Timer";
 import RecorderBar from "./RecorderBar";
 import WordSticker, { type StickerSize } from "./WordSticker";
+
+// Word-chip labels (part of speech · difficulty) per UI language.
+const POS_LABELS: Record<Lang, Record<VocabWord["partOfSpeech"], string>> = {
+  ru: POS_LABELS_RU,
+  en: { noun: "noun", verb: "verb", adjective: "adjective" },
+  kk: { noun: "зат есім", verb: "етістік", adjective: "сын есім" },
+};
+const DIFFICULTY_LABELS: Record<Lang, Record<VocabWord["difficulty"], string>> = {
+  ru: DIFFICULTY_LABEL_RU,
+  en: { 1: "easy", 2: "medium", 3: "hard" },
+  kk: { 1: "жеңіл", 2: "орташа", 3: "қиын" },
+};
 
 /**
  * «Словарный запас · Отсчёт / Игра» (Figma 149:415, 149:441, 149:510, 196:2013)
@@ -231,6 +244,7 @@ export default function VocabPlayView({
   onAdComplete: () => void;
 }) {
   const { theme, themeMode } = useTheme();
+  const { lang } = useLang();
   const isDark = themeMode === "dark";
   const ink = (a: number) => (isDark ? `rgba(240,238,233,${a})` : `rgba(38,38,40,${a})`);
   const [board, setBoard] = useState({ w: 354, h: 330 });
@@ -260,7 +274,7 @@ export default function VocabPlayView({
           onPress={onClosePress}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Закрыть"
+          accessibilityLabel={pickLang(lang, { ru: "Закрыть", en: "Close", kk: "Жабу" })}
           style={({ pressed }) => [styles.close, { opacity: pressed ? 0.6 : 1 }]}
         >
           <Ionicons name="close" size={26} color={theme.text} />
@@ -273,7 +287,7 @@ export default function VocabPlayView({
             onPress={onExtraTimePress}
             disabled={extraTimeUsed}
             accessibilityRole="button"
-            accessibilityLabel="Добавить время ×2"
+            accessibilityLabel={pickLang(lang, { ru: "Добавить время ×2", en: "Add time ×2", kk: "Уақыт қосу ×2" })}
             style={({ pressed }) => [
               styles.boost,
               { borderColor: theme.accent, opacity: extraTimeUsed ? 0.4 : pressed ? 0.75 : 1 },
@@ -302,7 +316,7 @@ export default function VocabPlayView({
         {showMeta ? (
           <View style={[styles.meta, { backgroundColor: ink(0.06), borderColor: ink(0.1) }]}>
             <Text style={[styles.metaText, { color: ink(0.6) }]}>
-              {`${POS_LABELS_RU[word.partOfSpeech]} · ${DIFFICULTY_LABEL_RU[word.difficulty]}`}
+              {`${(POS_LABELS[lang] ?? POS_LABELS.ru)[word.partOfSpeech]} · ${(DIFFICULTY_LABELS[lang] ?? DIFFICULTY_LABELS.ru)[word.difficulty]}`}
             </Text>
           </View>
         ) : null}
@@ -320,18 +334,18 @@ export default function VocabPlayView({
               countdown === 0 && { fontSize: 64, lineHeight: 120, letterSpacing: -1.3 },
             ]}
           >
-            {countdown === 0 ? "СТАРТ" : countdown}
+            {countdown === 0 ? pickLang(lang, { ru: "СТАРТ", en: "START", kk: "СТАРТ" }) : countdown}
           </Animated.Text>
-          <Text style={[styles.countdownHint, { color: ink(0.6) }]}>Готовься называть синонимы</Text>
+          <Text style={[styles.countdownHint, { color: ink(0.6) }]}>{pickLang(lang, { ru: "Готовься называть синонимы", en: "Get ready to name synonyms", kk: "Синонимдерді атауға дайындал" })}</Text>
         </View>
       ) : (
         <>
           {/* ── Progress: N из 8 синонимов + segments ─────────────────────── */}
           <View style={styles.counterRow}>
             <Text style={[styles.counterNum, { color: theme.text }]}>
-              {foundCount} из {total}
+              {pickLang(lang, { ru: `${foundCount} из ${total}`, en: `${foundCount} of ${total}`, kk: `${foundCount}/${total}` })}
             </Text>
-            <Text style={[styles.counterLabel, { color: ink(0.5) }]}>синонимов</Text>
+            <Text style={[styles.counterLabel, { color: ink(0.5) }]}>{pickLang(lang, { ru: "синонимов", en: "synonyms", kk: "синоним" })}</Text>
           </View>
           <View style={styles.segs}>
             {word.synonyms.map((_, i) => (
@@ -353,7 +367,7 @@ export default function VocabPlayView({
                 <TextInput
                   value={fallbackInput}
                   onChangeText={onFallbackChange}
-                  placeholder="Введите синоним"
+                  placeholder={pickLang(lang, { ru: "Введите синоним", en: "Type a synonym", kk: "Синоним енгіз" })}
                   placeholderTextColor={ink(0.4)}
                   style={[
                     styles.fallbackInput,
@@ -366,7 +380,7 @@ export default function VocabPlayView({
                 />
                 <Pressable
                   onPress={onFallbackSubmit}
-                  accessibilityLabel="Отправить"
+                  accessibilityLabel={pickLang(lang, { ru: "Отправить", en: "Send", kk: "Жіберу" })}
                   style={({ pressed }) => [
                     styles.fallbackSend,
                     { backgroundColor: theme.accent, opacity: pressed ? 0.8 : 1 },
@@ -394,9 +408,9 @@ export default function VocabPlayView({
               >
                 <View style={styles.hintHead}>
                   <Bulb color={theme.accent} />
-                  <Text style={[styles.hintTitle, { color: theme.accentInk }]}>ПОДСКАЗКА</Text>
+                  <Text style={[styles.hintTitle, { color: theme.accentInk }]}>{pickLang(lang, { ru: "ПОДСКАЗКА", en: "HINT", kk: "КӨМЕК" })}</Text>
                 </View>
-                <Text style={[styles.hintSub, { color: ink(0.5) }]}>Первые буквы синонимов</Text>
+                <Text style={[styles.hintSub, { color: ink(0.5) }]}>{pickLang(lang, { ru: "Первые буквы синонимов", en: "First letters of the synonyms", kk: "Синонимдердің бірінші әріптері" })}</Text>
                 {word.synonyms.slice(0, SLOTS_HINT.length).map((syn, i) => {
                   const [x, y, r] = SLOTS_HINT[i];
                   const order = orderOf(syn);
@@ -415,12 +429,12 @@ export default function VocabPlayView({
                   );
                 })}
               </Animated.View>
-              <Text style={[styles.hintUsed, { color: ink(0.45) }]}>Подсказка использована</Text>
+              <Text style={[styles.hintUsed, { color: ink(0.45) }]}>{pickLang(lang, { ru: "Подсказка использована", en: "Hint used", kk: "Көмек пайдаланылды" })}</Text>
             </>
           ) : (
             // ── Found synonyms board ───────────────────────────────────────
             <>
-              <Text style={[styles.sectionLabel, { color: ink(0.45) }]}>НАЙДЕННЫЕ СИНОНИМЫ</Text>
+              <Text style={[styles.sectionLabel, { color: ink(0.45) }]}>{pickLang(lang, { ru: "НАЙДЕННЫЕ СИНОНИМЫ", en: "SYNONYMS FOUND", kk: "ТАБЫЛҒАН СИНОНИМДЕР" })}</Text>
               <View
                 onLayout={(e) => setBoard({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
                 style={[styles.board, { backgroundColor: ink(0.03), borderColor: ink(0.14) }]}
@@ -428,7 +442,11 @@ export default function VocabPlayView({
                 {foundCount === 0 ? (
                   <View style={styles.boardEmpty}>
                     <Text style={[styles.boardEmptyText, { color: ink(0.4) }]}>
-                      {"Скажи первое слово -\nоно появится здесь"}
+                      {pickLang(lang, {
+                        ru: "Скажи первое слово -\nоно появится здесь",
+                        en: "Say the first word -\nit will appear here",
+                        kk: "Бірінші сөзді айт -\nол осы жерде шығады",
+                      })}
                     </Text>
                   </View>
                 ) : (
@@ -455,7 +473,7 @@ export default function VocabPlayView({
                     style={[styles.banner, { backgroundColor: theme.accent, borderColor: theme.ctaStroke }]}
                   >
                     <Text style={[styles.bannerText, { color: theme.accentText }]}>
-                      Отлично! Все синонимы найдены!
+                      {pickLang(lang, { ru: "Отлично! Все синонимы найдены!", en: "Excellent! All synonyms found!", kk: "Керемет! Барлық синоним табылды!" })}
                     </Text>
                   </Animated.View>
                 ) : null}
@@ -480,22 +498,22 @@ export default function VocabPlayView({
           {/* ── Bottom actions ─────────────────────────────────────────── */}
           <View style={[styles.actions, { marginTop: hintRevealed ? 37 : 44 }]}>
             <ActionButton
-              label="Заменить"
+              label={pickLang(lang, { ru: "Заменить", en: "Replace", kk: "Ауыстыру" })}
               cost={REPLACE_COST}
               affordable={canReplace}
               variant="grey"
               onPress={onReplacePress}
-              a11y="Заменить слово"
+              a11y={pickLang(lang, { ru: "Заменить слово", en: "Replace word", kk: "Сөзді ауыстыру" })}
             />
             <ActionButton
-              label="Подсказка"
+              label={pickLang(lang, { ru: "Подсказка", en: "Hint", kk: "Көмек" })}
               cost={HINT_COST}
               affordable={canHint || hintRevealed}
               variant={hintRevealed ? "grey" : "gold"}
               dimCoin={hintRevealed}
               disabled={hintRevealed}
               onPress={onHintPress}
-              a11y="Подсказка"
+              a11y={pickLang(lang, { ru: "Подсказка", en: "Hint", kk: "Көмек" })}
             />
           </View>
         </>
@@ -504,14 +522,14 @@ export default function VocabPlayView({
       {/* ── Pop-ups ─────────────────────────────────────────────────────── */}
       <StageGlassDialog
         visible={modal === "replace"}
-        title="Вы точно хотите заменить слово?"
-        message={canReplace ? undefined : "Не хватает монет. Можно посмотреть рекламу."}
+        title={pickLang(lang, { ru: "Вы точно хотите заменить слово?", en: "Are you sure you want to replace the word?", kk: "Сөзді шынымен ауыстырасың ба?" })}
+        message={canReplace ? undefined : pickLang(lang, { ru: "Не хватает монет. Можно посмотреть рекламу.", en: "Not enough coins. You can watch an ad.", kk: "Монета жетпейді. Жарнама көруге болады." })}
         onRequestClose={onDismissModal}
         buttons={[
-          { label: "Нет", variant: "secondary", onPress: onDismissModal },
+          { label: pickLang(lang, { ru: "Нет", en: "No", kk: "Жоқ" }), variant: "secondary", onPress: onDismissModal },
           canReplace
             ? {
-                label: "Да ·",
+                label: pickLang(lang, { ru: "Да ·", en: "Yes ·", kk: "Иә ·" }),
                 variant: "primary",
                 onPress: onConfirmReplace,
                 trailing: (
@@ -522,7 +540,7 @@ export default function VocabPlayView({
                 ),
               }
             : {
-                label: "Да ·",
+                label: pickLang(lang, { ru: "Да ·", en: "Yes ·", kk: "Иә ·" }),
                 variant: "secondary",
                 onPress: onConfirmReplace,
                 trailing: (
@@ -535,7 +553,7 @@ export default function VocabPlayView({
         ]}
       >
         <View style={styles.costRow}>
-          <Text style={[styles.costLabel, { color: ink(0.6) }]}>Замена стоит</Text>
+          <Text style={[styles.costLabel, { color: ink(0.6) }]}>{pickLang(lang, { ru: "Замена стоит", en: "Replacing costs", kk: "Ауыстыру бағасы" })}</Text>
           <Text style={[styles.costNum, { color: ink(0.9) }]}>{REPLACE_COST}</Text>
           <CoinIcon size={16} color={isDark ? theme.accent : theme.accentDeep} />
         </View>
@@ -545,27 +563,27 @@ export default function VocabPlayView({
         visible={!!adFor}
         title={
           adFor === "replace"
-            ? "Реклама за замену слова"
+            ? pickLang(lang, { ru: "Реклама за замену слова", en: "Ad for a word swap", kk: "Сөзді ауыстыру үшін жарнама" })
             : adFor === "time"
-              ? "Реклама за доп. время"
-              : "Реклама за подсказку"
+              ? pickLang(lang, { ru: "Реклама за доп. время", en: "Ad for extra time", kk: "Қосымша уақыт үшін жарнама" })
+              : pickLang(lang, { ru: "Реклама за подсказку", en: "Ad for a hint", kk: "Көмек үшін жарнама" })
         }
-        message="Досмотрите короткий ролик, чтобы получить награду."
+        message={pickLang(lang, { ru: "Досмотрите короткий ролик, чтобы получить награду.", en: "Watch a short video to get the reward.", kk: "Сыйлық алу үшін қысқа роликті соңына дейін көр." })}
         onRequestClose={onAdCancel}
         buttons={[
-          { label: "Отмена", variant: "secondary", onPress: onAdCancel },
-          { label: "Смотреть", variant: "primary", onPress: onAdComplete },
+          { label: pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" }), variant: "secondary", onPress: onAdCancel },
+          { label: pickLang(lang, { ru: "Смотреть", en: "Watch", kk: "Көру" }), variant: "primary", onPress: onAdComplete },
         ]}
       />
 
       <StageGlassDialog
         visible={modal === "exit"}
-        title="Выйти?"
-        message="Прогресс этого задания не сохранится"
+        title={pickLang(lang, { ru: "Выйти?", en: "Leave?", kk: "Шығасың ба?" })}
+        message={pickLang(lang, { ru: "Прогресс этого задания не сохранится", en: "Progress on this task won't be saved", kk: "Бұл тапсырманың прогресі сақталмайды" })}
         onRequestClose={onDismissModal}
         buttons={[
-          { label: "Остаться", variant: "secondary", onPress: onDismissModal },
-          { label: "Выйти", variant: "primary", onPress: onConfirmExit },
+          { label: pickLang(lang, { ru: "Остаться", en: "Stay", kk: "Қалу" }), variant: "secondary", onPress: onDismissModal },
+          { label: pickLang(lang, { ru: "Выйти", en: "Leave", kk: "Шығу" }), variant: "primary", onPress: onConfirmExit },
         ]}
       />
     </View>

@@ -5,6 +5,7 @@ import { SvgXml } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
 import { useTheme } from "@/context/ThemeContext";
+import { useLang, pickLang } from "@/context/LangContext";
 import { warmupFonts } from "@/components/warmup/warmupTheme";
 import {
   type WarmupArt,
@@ -28,6 +29,9 @@ import {
  * tongue circling). They run after the module's own mouth exercise.
  */
 
+/** Per-language copy; `ru` is required, others fall back to it. */
+type LText = { ru: string; en?: string; kk?: string };
+
 interface ExerciseFrame {
   art: WarmupArt;
   /** Gold arrow drawn on top of the figure (chest sound). */
@@ -35,13 +39,13 @@ interface ExerciseFrame {
   /** Gold direction arrow under the figure. */
   arrow?: WarmupArt;
   /** Frame-specific description (overrides the exercise one). */
-  desc?: string;
+  desc?: LText;
 }
 
 export interface IllustratedExercise {
   key: string;
-  title: string;
-  desc?: string;
+  title: LText;
+  desc?: LText;
   frames: ExerciseFrame[];
   /** Seconds each frame stays on screen before switching to the next one. */
   frameSec?: number;
@@ -52,31 +56,51 @@ export interface IllustratedExercise {
 export const ILLUSTRATED_EXERCISES: IllustratedExercise[] = [
   {
     key: "chest",
-    title: "Звук должен выходить из груди",
+    title: {
+      ru: "Звук должен выходить из груди",
+      en: "The sound should come from your chest",
+      kk: "Дыбыс кеудеден шығуы керек",
+    },
     frames: [{ art: chestArt, overlay: chestArrowArt }],
     totalSec: 15,
   },
   {
     key: "tubeSide",
-    title: "Трубочка в сторону",
+    title: { ru: "Трубочка в сторону", en: "Lip tube to the side", kk: "Түтікше жанға" },
     frames: [
-      { art: tubeLeftArt, arrow: arrowLeftArt, desc: "Вытяни губы вперёд и уведи их влево" },
-      { art: tubeRightArt, arrow: arrowRightArt, desc: "Вытяни губы вперёд и уведи их вправо" },
+      { art: tubeLeftArt, arrow: arrowLeftArt, desc: {
+          ru: "Вытяни губы вперёд и уведи их влево",
+          en: "Push your lips forward and move them to the left",
+          kk: "Ерніңді алға созып, солға бұр",
+        } },
+      { art: tubeRightArt, arrow: arrowRightArt, desc: {
+          ru: "Вытяни губы вперёд и уведи их вправо",
+          en: "Push your lips forward and move them to the right",
+          kk: "Ерніңді алға созып, оңға бұр",
+        } },
     ],
     frameSec: 3,
     totalSec: 24,
   },
   {
     key: "cork",
-    title: "Речь с пробкой",
-    desc: "Зажми пробку губами и говори чётко",
+    title: { ru: "Речь с пробкой", en: "Speaking with a cork", kk: "Тығынмен сөйлеу" },
+    desc: {
+      ru: "Зажми пробку губами и говори чётко",
+      en: "Hold a cork between your lips and speak clearly",
+      kk: "Тығынды ерініңмен қысып, анық сөйле",
+    },
     frames: [{ art: corkArt }],
     totalSec: 20,
   },
   {
     key: "tongueCircle",
-    title: "Язык по кругу",
-    desc: "Губы сомкнуты. Води языком по кругу\nпо часовой стрелке",
+    title: { ru: "Язык по кругу", en: "Tongue circles", kk: "Тілді айналдыру" },
+    desc: {
+      ru: "Губы сомкнуты. Води языком по кругу\nпо часовой стрелке",
+      en: "Lips closed. Circle your tongue\nclockwise",
+      kk: "Ерін жабық. Тіліңді сағат тілі\nбағытымен айналдыр",
+    },
     frames: [{ art: circle1Art }, { art: circle2Art }, { art: circle3Art }, { art: circle4Art }],
     frameSec: 1,
     totalSec: 20,
@@ -96,6 +120,7 @@ interface Props {
 
 export default function IllustratedExerciseView({ exercise, topPad, onDone, onSkip, onBack }: Props) {
   const { theme } = useTheme();
+  const { lang } = useLang();
   const [frameIdx, setFrameIdx] = useState(0);
   const onDoneRef = useRef(onDone);
   useEffect(() => {
@@ -120,7 +145,8 @@ export default function IllustratedExerciseView({ exercise, topPad, onDone, onSk
   }, [exercise]);
 
   const frame = exercise.frames[frameIdx] ?? exercise.frames[0];
-  const desc = frame.desc ?? exercise.desc;
+  const descL = frame.desc ?? exercise.desc;
+  const desc = descL ? pickLang(lang, descL) : undefined;
   // Reserve the arrow slot for every frame of an exercise that has one, so the
   // figure never jumps when frames switch.
   const hasArrow = exercise.frames.some((f) => !!f.arrow);
@@ -135,7 +161,7 @@ export default function IllustratedExerciseView({ exercise, topPad, onDone, onSk
       </View>
 
       <Animated.View key={exercise.key} entering={FadeIn.duration(300)} style={styles.texts}>
-        <Text style={[styles.title, { color: theme.text }]}>{exercise.title}</Text>
+        <Text style={[styles.title, { color: theme.text }]}>{pickLang(lang, exercise.title)}</Text>
         {!!desc && <Text style={[styles.desc, { color: theme.textSecondary }]}>{desc}</Text>}
       </Animated.View>
 
@@ -167,7 +193,7 @@ export default function IllustratedExerciseView({ exercise, topPad, onDone, onSk
 
       <View style={styles.footer}>
         <Pressable onPress={onSkip} hitSlop={8} style={styles.skip}>
-          <Text style={[styles.skipText, { color: theme.textMuted }]}>Пропустить →</Text>
+          <Text style={[styles.skipText, { color: theme.textMuted }]}>{pickLang(lang, { ru: "Пропустить →", en: "Skip →", kk: "Өткізіп жіберу →" })}</Text>
         </Pressable>
       </View>
     </View>

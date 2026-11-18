@@ -26,6 +26,20 @@ export const FILLER_BIGRAMS: [string, string][] = [
   ['так', 'сказать'],
 ];
 
+/**
+ * Kazakh fillers (паразит сөздер). Kazakh speech commonly mixes in Russian
+ * parasites, so the common Russian ones are included too.
+ */
+export const FILLER_WORDS_KK = new Set([
+  'яғни', 'енді', 'әлгі', 'әлгіндей', 'сосын', 'негізі', 'мынау', 'бәсе',
+  'қысқасы', 'былай', 'ну', 'вот', 'типа', 'короче', 'э', 'м',
+]);
+
+export const FILLER_BIGRAMS_KK: [string, string][] = [
+  ['ал', 'енді'],
+  ['как', 'бы'],
+];
+
 export interface FillerOccurrence {
   count: number;
   /** Confidence of each occurrence (null when unavailable). */
@@ -60,7 +74,10 @@ function avgConf(a: number | null, b: number | null): number | null {
 export function computeFillers(
   hypWords: readonly WordToken[],
   speechDurationMs: number,
+  locale: 'ru' | 'en' | 'kk' = 'ru',
 ): FillersResult {
+  const words = locale === 'kk' ? FILLER_WORDS_KK : FILLER_WORDS;
+  const bigrams = locale === 'kk' ? FILLER_BIGRAMS_KK : FILLER_BIGRAMS;
   const byLemma = new Map<string, FillerOccurrence>();
   let fillers = 0;
   const tokens = hypWords.map((w) => ({ text: norm(w.text), conf: w.confidence }));
@@ -69,7 +86,7 @@ export function computeFillers(
     // Bigrams first so their words aren't double-counted as single fillers.
     let matchedBigram = false;
     if (i + 1 < tokens.length) {
-      for (const [a, b] of FILLER_BIGRAMS) {
+      for (const [a, b] of bigrams) {
         if (tokens[i].text === a && tokens[i + 1].text === b) {
           bump(byLemma, `${a} ${b}`, avgConf(tokens[i].conf, tokens[i + 1].conf));
           fillers++;
@@ -80,7 +97,7 @@ export function computeFillers(
       }
     }
     if (matchedBigram) continue;
-    if (FILLER_WORDS.has(tokens[i].text)) {
+    if (words.has(tokens[i].text)) {
       bump(byLemma, tokens[i].text, tokens[i].conf);
       fillers++;
     }

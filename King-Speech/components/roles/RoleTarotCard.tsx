@@ -9,6 +9,7 @@ import Svg, { Path, Defs, Pattern, Rect } from "react-native-svg";
 import { ROLE_ART } from "@/constants/roleArt";
 import { ROLES, tx, type Role } from "@/constants/rolesData";
 import type { Lang } from "@/context/LangContext";
+import { pickLang } from "@/context/LangContext";
 import { RolesMaskIcon } from "@/components/showtime/ShowTimeIcons";
 
 // Card labels are IBM Plex Mono Bold in Figma. The font isn't bundled
@@ -145,7 +146,7 @@ export function LockedRoleCard({ width, lang, style }: { width: number; lang: La
       </View>
       <View style={{ height: m.labelH, alignItems: "center", justifyContent: "center" }}>
         <Text style={[styles.label, { color: INK_LIGHT, fontSize: m.label }]}>
-          {lang === "en" ? "LOCKED" : "ЗАКРЫТО"}
+          {pickLang(lang, { ru: "ЗАКРЫТО", en: "LOCKED", kk: "ЖАБЫҚ" })}
         </Text>
       </View>
     </View>

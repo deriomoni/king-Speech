@@ -25,7 +25,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { PlayTriangleIcon } from "@/components/showtime/ShowTimeIcons";
@@ -40,11 +40,11 @@ const DRAFTS_KEY = "@kingspeech_author_drafts_v1";
 const GOLD = "#FFD857";
 
 type CategoryId = "holidays" | "business" | "study" | "kids";
-const CATEGORIES: { id: CategoryId; ru: string; en: string; cover: [string, string] }[] = [
-  { id: "holidays", ru: "Праздники", en: "Holidays", cover: ["#F39A4A", "#C94C17"] },
-  { id: "business", ru: "Бизнес", en: "Business", cover: ["#5B8DEF", "#2C4FB0"] },
-  { id: "study", ru: "Учёба", en: "Study", cover: ["#A777E8", "#5B33B5"] },
-  { id: "kids", ru: "Для детей", en: "For kids", cover: ["#4FC48A", "#1F7D52"] },
+const CATEGORIES: { id: CategoryId; ru: string; en: string; kk: string; cover: [string, string] }[] = [
+  { id: "holidays", ru: "Праздники", en: "Holidays", kk: "Мерекелер", cover: ["#F39A4A", "#C94C17"] },
+  { id: "business", ru: "Бизнес", en: "Business", kk: "Бизнес", cover: ["#5B8DEF", "#2C4FB0"] },
+  { id: "study", ru: "Учёба", en: "Study", kk: "Оқу", cover: ["#A777E8", "#5B33B5"] },
+  { id: "kids", ru: "Для детей", en: "For kids", kk: "Балаларға", cover: ["#4FC48A", "#1F7D52"] },
 ];
 
 export type AuthorDraft = {
@@ -62,10 +62,11 @@ function countWords(text: string) {
   return text
     .trim()
     .split(/\s+/)
-    .filter((w) => /[0-9A-Za-zА-Яа-яЁё]/.test(w)).length;
+    .filter((w) => /[0-9A-Za-zА-Яа-яЁёӘәҒғҚқҢңӨөҰұҮүҺһІі]/.test(w)).length;
 }
 
-function fmtApprox(sec: number, en: boolean) {
+function fmtApprox(sec: number, lang: Lang) {
+  const en = lang === "en";
   if (sec < 60) return en ? `≈ ${sec} sec` : `≈ ${sec} сек`;
   const m = Math.floor(sec / 60);
   const s = sec % 60;
@@ -73,8 +74,9 @@ function fmtApprox(sec: number, en: boolean) {
   return en ? `≈ ${m} min ${s} sec` : `≈ ${m} мин ${s} сек`;
 }
 
-function wordsLabel(n: number, en: boolean) {
-  if (en) return `${n} ${n === 1 ? "word" : "words"}`;
+function wordsLabel(n: number, lang: Lang) {
+  if (lang === "en") return `${n} ${n === 1 ? "word" : "words"}`;
+  if (lang === "kk") return `${n} сөз`;
   const m10 = n % 10;
   const m100 = n % 100;
   const w = m10 === 1 && m100 !== 11 ? "слово" : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? "слова" : "слов";
@@ -84,7 +86,7 @@ function wordsLabel(n: number, en: boolean) {
 export default function AuthorScreen() {
   const insets = useSafeAreaInsets();
   const { lang } = useLang();
-  const en = lang === "en";
+  const tr = (ru: string, en: string, kk: string) => pickLang(lang, { ru, en, kk });
   const { theme: c } = useTheme();
   const isDark = c.mode === "dark";
   const { user } = useAuth();
@@ -253,7 +255,7 @@ export default function AuthorScreen() {
     const drafts = await readDrafts();
     const last = drafts.sort((a, b) => b.updatedAt - a.updatedAt)[0];
     if (!last) {
-      Alert.alert(en ? "Drafts" : "Черновики", en ? "No saved drafts yet." : "Сохранённых черновиков пока нет.");
+      Alert.alert(tr("Черновики", "Drafts", "Жобалар"), tr("Сохранённых черновиков пока нет.", "No saved drafts yet.", "Сақталған жобалар әзірге жоқ."));
       return;
     }
     applyDraft(last);
@@ -276,7 +278,7 @@ export default function AuthorScreen() {
     }
     router.push({
       pathname: "/showtime-stage",
-      params: { source: "author", title: title.trim(), text, category: en ? cat.en : cat.ru, draftId },
+      params: { source: "author", title: title.trim(), text, category: pickLang(lang, cat), draftId },
     });
   };
 
@@ -284,7 +286,7 @@ export default function AuthorScreen() {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert(en ? "Photos" : "Доступ к фото", en ? "Allow photo access to pick a cover." : "Разреши доступ к галерее, чтобы выбрать обложку.");
+        Alert.alert(tr("Доступ к фото", "Photos", "Фотоға рұқсат"), tr("Разреши доступ к галерее, чтобы выбрать обложку.", "Allow photo access to pick a cover.", "Мұқаба таңдау үшін галереяға рұқсат бер."));
         return;
       }
       const res = await ImagePicker.launchImageLibraryAsync({
@@ -303,7 +305,7 @@ export default function AuthorScreen() {
   const publish = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     // TODO(backend): upload the topic (title, category, text, cover) to the shared catalog.
-    Alert.alert(en ? "Coming soon" : "Скоро", en ? "Publishing to the catalog is coming soon." : "Публикация в каталог скоро появится.");
+    Alert.alert(tr("Скоро", "Coming soon", "Жақында"), tr("Публикация в каталог скоро появится.", "Publishing to the catalog is coming soon.", "Каталогқа жариялау жақында қосылады."));
   };
 
   const saveForMe = async () => {
@@ -311,7 +313,7 @@ export default function AuthorScreen() {
       await persistDraft();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       setSheetOpen(false);
-      Alert.alert(en ? "Saved" : "Сохранено", en ? "The draft is in «Drafts»." : "Черновик сохранён в «Черновиках».");
+      Alert.alert(tr("Сохранено", "Saved", "Сақталды"), tr("Черновик сохранён в «Черновиках».", "The draft is in «Drafts».", "Жоба «Жобалар» бөліміне сақталды."));
     } catch (e) {
       console.warn("[author] save draft failed:", e);
     }
@@ -330,22 +332,22 @@ export default function AuthorScreen() {
               <Ionicons name="chevron-back" size={26} color={c.text} />
             </Pressable>
             <Pressable onPress={openDrafts} hitSlop={10}>
-              <Text style={[s.drafts, { color: c.textMuted }]}>{en ? "Drafts" : "Черновики"}</Text>
+              <Text style={[s.drafts, { color: c.textMuted }]}>{tr("Черновики", "Drafts", "Жобалар")}</Text>
             </Pressable>
           </View>
 
-          <Text style={[s.title, { color: c.text }]}>{en ? "Become an author" : "Стать автором"}</Text>
+          <Text style={[s.title, { color: c.text }]}>{tr("Стать автором", "Become an author", "Автор болу")}</Text>
           <Text style={[s.subtitle, { color: c.textMuted }]}>
-            {en ? "Write your speech and read it aloud" : "Напиши своё выступление и прочитай его"}
+            {tr("Напиши своё выступление и прочитай его", "Write your speech and read it aloud", "Сөзіңді жазып, оны дауыстап оқы")}
           </Text>
 
           {/* Field · Название */}
           <View style={[s.field, { backgroundColor: c.card, borderColor: stroke }]}>
-            <Text style={[s.fieldLabel, { color: c.textMuted }]}>{en ? "TITLE" : "НАЗВАНИЕ"}</Text>
+            <Text style={[s.fieldLabel, { color: c.textMuted }]}>{tr("НАЗВАНИЕ", "TITLE", "АТАУЫ")}</Text>
             <TextInput
               value={title}
               onChangeText={setTitle}
-              placeholder={en ? "Toast for my best friend" : "Тост для лучшего друга"}
+              placeholder={tr("Тост для лучшего друга", "Toast for my best friend", "Ең жақын досыма тост")}
               placeholderTextColor={c.textMuted}
               maxLength={60}
               style={[s.titleInput, { color: c.text }, Platform.OS === "web" && ({ outlineStyle: "none" } as any)]}
@@ -367,7 +369,7 @@ export default function AuthorScreen() {
                     active ? { backgroundColor: c.text, borderColor: c.text } : { backgroundColor: c.card, borderColor: stroke },
                   ]}
                 >
-                  <Text style={[s.chipText, { color: active ? c.bg : c.textSecondary }]}>{en ? x.en : x.ru}</Text>
+                  <Text style={[s.chipText, { color: active ? c.bg : c.textSecondary }]}>{pickLang(lang, x)}</Text>
                 </Pressable>
               );
             })}
@@ -375,7 +377,7 @@ export default function AuthorScreen() {
 
           {/* Field · Текст выступления */}
           <View style={[s.textCard, { backgroundColor: c.card, borderColor: stroke }]}>
-            <Text style={[s.fieldLabel, { color: c.textMuted }]}>{en ? "SPEECH TEXT" : "ТЕКСТ ВЫСТУПЛЕНИЯ"}</Text>
+            <Text style={[s.fieldLabel, { color: c.textMuted }]}>{tr("ТЕКСТ ВЫСТУПЛЕНИЯ", "SPEECH TEXT", "СӨЗ МӘТІНІ")}</Text>
             <TextInput
               value={text}
               onChangeText={setText}
@@ -384,18 +386,16 @@ export default function AuthorScreen() {
               selectionColor={GOLD}
               cursorColor={GOLD}
               placeholder={
-                en
-                  ? "Friends, let's raise our glasses…"
-                  : "Друзья, давайте поднимем бокалы…"
+                tr("Друзья, давайте поднимем бокалы…", "Friends, let's raise our glasses…", "Достар, тостымызды көтерейік…")
               }
               placeholderTextColor={c.textMuted}
               style={[s.textInput, { color: c.text }, Platform.OS === "web" && ({ outlineStyle: "none" } as any)]}
             />
             <View style={s.statsRow}>
-              <Text style={[s.stat, { color: c.textMuted }]}>{wordsLabel(words, en)}</Text>
-              <Text style={[s.stat, { color: c.textMuted, marginLeft: 12 }]}>{fmtApprox(seconds, en)}</Text>
+              <Text style={[s.stat, { color: c.textMuted }]}>{wordsLabel(words, lang)}</Text>
+              <Text style={[s.stat, { color: c.textMuted, marginLeft: 12 }]}>{fmtApprox(seconds, lang)}</Text>
               <Text style={[s.stat, s.tip, { color: c.textMuted }]} numberOfLines={1}>
-                {en ? "Tip: 1–2 minutes is ideal" : "Совет: 1–2 минуты — идеально"}
+                {tr("Совет: 1–2 минуты — идеально", "Tip: 1–2 minutes is ideal", "Кеңес: 1–2 минут — тамаша")}
               </Text>
             </View>
           </View>
@@ -406,10 +406,10 @@ export default function AuthorScreen() {
             style={({ pressed }) => [s.readBtn, { opacity: !canRead ? 0.45 : pressed ? 0.85 : 1 }]}
           >
             <PlayTriangleIcon color="#262628" />
-            <Text style={s.readText}>{en ? "Read aloud" : "Прочитать вслух"}</Text>
+            <Text style={s.readText}>{tr("Прочитать вслух", "Read aloud", "Дауыстап оқу")}</Text>
           </Pressable>
           <Text style={[s.hint, { color: c.textMuted }]}>
-            {en ? "Read it first — then you can publish" : "Сначала прочитай — потом сможешь опубликовать"}
+            {tr("Сначала прочитай — потом сможешь опубликовать", "Read it first — then you can publish", "Алдымен оқы — содан кейін жариялай аласың")}
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -422,9 +422,9 @@ export default function AuthorScreen() {
             style={[s.sheet, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingBottom: bottomPad + 20 + SHEET_TUCK }]}
           >
             <View style={[s.grabber, { backgroundColor: c.textMuted }]} />
-            <Text style={[s.sheetTitle, { color: c.text }]}>{en ? "Nicely read!" : "Отлично прочитано!"}</Text>
+            <Text style={[s.sheetTitle, { color: c.text }]}>{tr("Отлично прочитано!", "Nicely read!", "Керемет оқыдың!")}</Text>
             <Text style={[s.sheetSub, { color: c.textSecondary }]}>
-              {en ? "Share the topic — other players can read it too" : "Поделись темой — её смогут прочитать другие игроки"}
+              {tr("Поделись темой — её смогут прочитать другие игроки", "Share the topic — other players can read it too", "Тақырыбыңмен бөліс — оны басқа ойыншылар да оқи алады")}
             </Text>
 
             <View style={[s.preview, { backgroundColor: c.card, borderColor: stroke }]}>
@@ -443,11 +443,11 @@ export default function AuthorScreen() {
                   {title.trim()}
                 </Text>
                 <Text style={[s.previewMeta, { color: c.textMuted }]}>
-                  {en ? cat.en : cat.ru} · {fmtApprox(seconds, en)}
+                  {pickLang(lang, cat)} · {fmtApprox(seconds, lang)}
                 </Text>
                 {!!user?.name && (
                   <Text style={[s.previewAuthor, { color: c.textSecondary }]} numberOfLines={1}>
-                    {en ? "Author: " : "Автор: "}
+                    {tr("Автор: ", "Author: ", "Авторы: ")}
                     {user.name}
                   </Text>
                 )}
@@ -462,12 +462,12 @@ export default function AuthorScreen() {
               >
                 <Ionicons name={playing ? "stop" : "play"} size={16} color={c.text} />
                 <Text style={[s.listenText, { color: c.text }]}>
-                  {playing ? (en ? "Stop" : "Остановить") : en ? "Listen to your reading" : "Послушать своё чтение"}
+                  {playing ? tr("Остановить", "Stop", "Тоқтату") : tr("Послушать своё чтение", "Listen to your reading", "Өз оқуыңды тыңдау")}
                 </Text>
               </Pressable>
             )}
 
-            <Text style={[s.coverLabel, { color: c.text }]}>{en ? "Cover" : "Обложка"}</Text>
+            <Text style={[s.coverLabel, { color: c.text }]}>{tr("Обложка", "Cover", "Мұқаба")}</Text>
             <Pressable
               onPress={pickCover}
               style={({ pressed }) => [
@@ -478,19 +478,19 @@ export default function AuthorScreen() {
               <Ionicons name="image-outline" size={22} color={c.text} />
               <View style={{ flex: 1 }}>
                 <Text style={[s.uploadTitle, { color: c.text }]}>
-                  {coverUri ? (en ? "Change photo" : "Сменить фото") : en ? "Upload photo" : "Загрузить фото"}
+                  {coverUri ? tr("Сменить фото", "Change photo", "Фотоны ауыстыру") : tr("Загрузить фото", "Upload photo", "Фото жүктеу")}
                 </Text>
                 <Text style={[s.uploadSub, { color: c.textMuted }]}>
-                  {en ? "Your favourite photo for the cover" : "Твоя любимая фотография для обложки"}
+                  {tr("Твоя любимая фотография для обложки", "Your favourite photo for the cover", "Мұқабаға арналған сүйікті фотоң")}
                 </Text>
               </View>
             </Pressable>
 
             <Pressable onPress={publish} style={({ pressed }) => [s.publishBtn, { opacity: pressed ? 0.85 : 1 }]}>
-              <Text style={s.publishText}>{en ? "Publish to catalog" : "Опубликовать в каталог"}</Text>
+              <Text style={s.publishText}>{tr("Опубликовать в каталог", "Publish to catalog", "Каталогқа жариялау")}</Text>
             </Pressable>
             <Pressable onPress={saveForMe} hitSlop={8} style={s.saveBtn}>
-              <Text style={[s.saveText, { color: c.textSecondary }]}>{en ? "Save for myself" : "Сохранить для себя"}</Text>
+              <Text style={[s.saveText, { color: c.textSecondary }]}>{tr("Сохранить для себя", "Save for myself", "Өзіме сақтау")}</Text>
             </Pressable>
           </Pressable>
         </Pressable>

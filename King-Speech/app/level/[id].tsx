@@ -35,7 +35,7 @@ import * as Haptics from "@/lib/haptics";
 import Colors from "@/constants/colors";
 import { useAppColors } from "@/hooks/useAppColors";
 import { useGame, LevelType, Task, getBaseType } from "@/context/GameContext";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useDevTools } from "@/context/DevToolsContext";
 import VoiceRecorder from "@/components/WaveformVoiceRecorder";
 import ReadingLevelView from "@/components/ReadingLevelView";
@@ -60,6 +60,7 @@ import SpeechAnalyzingLoader from "@/components/SpeechAnalyzingLoader";
 import { getReadingMeta, getLevelsData } from "@/constants/gameContent";
 import {
   getLiterature,
+  hasKazakhLiterature,
   getModuleFromReadingId,
   getLiteratureFullText,
   literatureCategory,
@@ -106,7 +107,7 @@ const DEMO_ANALYSIS: SpeechAnalysis = {
 // boundaries are checked so "umpire" doesn't get tagged as "um".
 function highlightFillers(
   text: string,
-  lang: "ru" | "en",
+  lang: Lang,
 ): Array<{ text: string; isFiller: boolean }> {
   if (!text) return [];
   const lower = text.toLowerCase();
@@ -153,7 +154,7 @@ const TranscriptBlock = React.memo(function TranscriptBlock({
   fillerBg,
 }: {
   transcript: string;
-  lang: "ru" | "en";
+  lang: Lang;
   fgText: string;
   fgMuted: string;
   cardBg: string;
@@ -178,16 +179,18 @@ const TranscriptBlock = React.memo(function TranscriptBlock({
   };
 
   const expandLabel = expanded
-    ? lang === "ru" ? "Свернуть" : "Show less"
-    : lang === "ru" ? "Показать всё" : "Show all";
+    ? pickLang(lang, { ru: "Свернуть", en: "Show less", kk: "Жасыру" })
+    : pickLang(lang, { ru: "Показать всё", en: "Show all", kk: "Барлығын көрсету" });
 
-  const cardA11yLabel = lang === "ru"
-    ? "Что мы услышали из вашей записи"
-    : "What we heard from your recording";
+  const cardA11yLabel = pickLang(lang, {
+    ru: "Что мы услышали из вашей записи",
+    en: "What we heard from your recording",
+    kk: "Жазбаңнан не естідік",
+  });
   const cardA11yHint = isLong
     ? (expanded
-        ? (lang === "ru" ? "Нажмите, чтобы свернуть полный текст" : "Tap to collapse the full transcript")
-        : (lang === "ru" ? "Нажмите, чтобы показать полный текст" : "Tap to show the full transcript"))
+        ? pickLang(lang, { ru: "Нажмите, чтобы свернуть полный текст", en: "Tap to collapse the full transcript", kk: "Толық мәтінді жасыру үшін бас" })
+        : pickLang(lang, { ru: "Нажмите, чтобы показать полный текст", en: "Tap to show the full transcript", kk: "Толық мәтінді көру үшін бас" }))
     : undefined;
 
   return (
@@ -199,7 +202,7 @@ const TranscriptBlock = React.memo(function TranscriptBlock({
       <View style={rs.transcriptHeader}>
         <Ionicons name="ear-outline" size={16} color={fgMuted} />
         <Text style={[rs.feedbackTitle, { color: fgText, fontFamily: "Geologica_600SemiBold" }]}>
-          {lang === "ru" ? "Что мы услышали" : "What we heard"}
+          {pickLang(lang, { ru: "Что мы услышали", en: "What we heard", kk: "Не естідік" })}
         </Text>
       </View>
       <Pressable
@@ -275,7 +278,7 @@ function ResultsSheet({
   colors: import("@/constants/colors").AppColors;
   isDark: boolean;
   t: (key: any) => string;
-  lang: "ru" | "en";
+  lang: Lang;
 }) {
   if (!task) return null;
 
@@ -338,7 +341,7 @@ export function FlowerResultWindow({
   isDark: boolean;
   colors: import("@/constants/colors").AppColors;
   t: (key: any) => string;
-  lang: "ru" | "en";
+  lang: Lang;
   primaryLabel: string;
   onPrimary: () => void;
   onRetry?: () => void;
@@ -359,12 +362,12 @@ export function FlowerResultWindow({
     overall >= 8 ? "thumbup" : overall >= 6 ? "happy" : "sad";
   const tierLabel =
     overall >= 8
-      ? lang === "ru" ? "Отлично!" : "Excellent!"
+      ? pickLang(lang, { ru: "Отлично!", en: "Excellent!", kk: "Керемет!" })
       : overall >= 6
-        ? lang === "ru" ? "Хорошо" : "Good"
+        ? pickLang(lang, { ru: "Хорошо", en: "Good", kk: "Жақсы" })
         : overall >= 4
-          ? lang === "ru" ? "Неплохо" : "Not bad"
-          : lang === "ru" ? "Есть над чем поработать" : "Room to grow";
+          ? pickLang(lang, { ru: "Неплохо", en: "Not bad", kk: "Жаман емес" })
+          : pickLang(lang, { ru: "Есть над чем поработать", en: "Room to grow", kk: "Әлі де жұмыс істеу керек" });
 
   const fgText = theme.text;
   const fgMuted = isDark ? "rgba(240,238,233,0.62)" : theme.textSecondary;
@@ -444,7 +447,7 @@ export function FlowerResultWindow({
           >
             <View style={rs.adviceHead}>
               <Text style={[rs.adviceTitle, { color: scoreColor, fontFamily: "Geologica_600SemiBold" }]}>
-                {lang === "ru" ? "Над чем поработать" : "What to work on"}
+                {pickLang(lang, { ru: "Над чем поработать", en: "What to work on", kk: "Неге көңіл бөлу керек" })}
               </Text>
             </View>
             {tipText ? (
@@ -501,7 +504,7 @@ function EmptyRecordingSheet({
   onRetry: () => void;
   colors: import("@/constants/colors").AppColors;
   isDark: boolean;
-  lang: "ru" | "en";
+  lang: Lang;
 }) {
   const cardBg = isDark ? "#15151F" : "#FFFFFF";
   const fg = isDark ? "#F8F8FB" : colors.text;
@@ -519,12 +522,14 @@ function EmptyRecordingSheet({
             <Ionicons name="mic-off-outline" size={18} color={accent} />
           </View>
           <Text style={[ers.title, { color: fg, fontFamily: "Geologica_700Bold" }]}>
-            {lang === "ru" ? "Кажется, мы тебя не услышали" : "We didn't quite hear you"}
+            {pickLang(lang, { ru: "Кажется, мы тебя не услышали", en: "We didn't quite hear you", kk: "Сені естімей қалған сияқтымыз" })}
           </Text>
           <Text style={[ers.body, { color: muted, fontFamily: "Geologica_400Regular" }]}>
-            {lang === "ru"
-              ? "Чтобы пройти уровень, нужно говорить вслух. Ничего страшного — попробуй ещё раз, чуть увереннее и ближе к микрофону."
-              : "To pass this level you need to speak out loud. No worries — give it another go, a little louder and closer to the mic."}
+            {pickLang(lang, {
+              ru: "Чтобы пройти уровень, нужно говорить вслух. Ничего страшного — попробуй ещё раз, чуть увереннее и ближе к микрофону.",
+              en: "To pass this level you need to speak out loud. No worries — give it another go, a little louder and closer to the mic.",
+              kk: "Деңгейден өту үшін дауыстап сөйлеу керек. Ештеңе етпейді — тағы байқап көр, сәл батылырақ және микрофонға жақынырақ.",
+            })}
           </Text>
           <Pressable
             onPress={onRetry}
@@ -532,7 +537,7 @@ function EmptyRecordingSheet({
           >
             <Ionicons name="refresh" size={18} color={btnFg} />
             <Text style={[ers.btnText, { color: btnFg, fontFamily: "Geologica_700Bold" }]}>
-              {lang === "ru" ? "Записать снова" : "Record again"}
+              {pickLang(lang, { ru: "Записать снова", en: "Record again", kk: "Қайта жазу" })}
             </Text>
           </Pressable>
         </View>
@@ -568,14 +573,16 @@ export default function LevelScreen() {
   // tongueTwisterLoader). We keep the SAME number of tasks — only the text is
   // swapped — so completion/indexing logic is unaffected. EN keeps legacy text.
   const baseLevel = getLevelById(levelId);
+  // KK uses its own жаңылтпаш pool (same task count, text swapped).
   const level =
-    baseLevel && lang === "ru" && levelId.startsWith("tonguetwister")
+    baseLevel && (lang === "ru" || lang === "kk") && levelId.startsWith("tonguetwister")
       ? {
           ...baseLevel,
           tasks: (() => {
             const tts = getTongueTwistersForModule(
               getModuleFromTongueTwisterId(levelId),
               baseLevel.tasks.length,
+              lang,
             );
             return baseLevel.tasks.map((tk, i) =>
               tts[i] ? { ...tk, content: tts[i] } : tk,
@@ -791,7 +798,8 @@ export default function LevelScreen() {
   // Plain computation (not a hook) — this runs after the `if (!level)` guard.
   const readingMeta = (() => {
     if (!isReadingLevel || !level) return null;
-    const lit = lang === "ru" ? getLiterature(getModuleFromReadingId(levelId)) : null;
+    // KK: Kazakh work when present, otherwise the Russian collection.
+    const lit = lang !== "en" ? getLiterature(getModuleFromReadingId(levelId), lang) : null;
     const legacyText = level.tasks
       .map((tk) => tk.content)
       .filter((c) => !!c)
@@ -801,12 +809,12 @@ export default function LevelScreen() {
     const author = lit
       ? lit.author
       : m
-        ? lang === "ru" ? m.authorRu : m.authorEn
+        ? lang === "en" ? m.authorEn : m.authorRu
         : undefined;
     const workTitle = lit
       ? lit.work
       : m
-        ? lang === "ru" ? m.titleRu : m.titleEn
+        ? lang === "en" ? m.titleEn : m.titleRu
         : undefined;
     const category = lit ? literatureCategory(lit.kind) : m?.category;
     const year = lit?.meta || undefined;
@@ -880,7 +888,16 @@ export default function LevelScreen() {
           const res = await expoFetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ audioBase64, audioDurationSeconds: durationSeconds }),
+            // A kk reading level without a Kazakh work shows Russian text →
+            // transcribe it as Russian.
+            body: JSON.stringify({
+              audioBase64,
+              audioDurationSeconds: durationSeconds,
+              lang:
+                isReadingLevel && lang === "kk" && !hasKazakhLiterature(getModuleFromReadingId(levelId))
+                  ? "ru"
+                  : lang,
+            }),
           });
           if (res.ok) {
             transcribedOk = true;
@@ -933,9 +950,11 @@ export default function LevelScreen() {
         // Never leave the user staring at a spinner. Build a minimal
         // fallback analysis so the sheet can render with a retry button.
         console.warn("analyzeSpeech failed:", e);
-        const errMsg = lang === "ru"
-          ? "Не удалось проанализировать запись. Попробуй ещё раз."
-          : "Couldn't analyze the recording. Please try again.";
+        const errMsg = pickLang(lang, {
+          ru: "Не удалось проанализировать запись. Попробуй ещё раз.",
+          en: "Couldn't analyze the recording. Please try again.",
+          kk: "Жазбаны талдау мүмкін болмады. Тағы байқап көр.",
+        });
         setCurrentAnalysis({
           summary: errMsg,
           score: { overall: 0, clarity: 0, confidence: 0, volume: 0, tempo: 0, expressiveness: 0, pauses: 0 },
@@ -1283,7 +1302,7 @@ export default function LevelScreen() {
           onPress={openReadingExit}
           hitSlop={12}
           accessibilityRole="button"
-          accessibilityLabel={lang === "ru" ? "Выйти из чтения" : "Leave the reading"}
+          accessibilityLabel={pickLang(lang, { ru: "Выйти из чтения", en: "Leave the reading", kk: "Оқудан шығу" })}
           style={({ pressed }) => [
             styles.closeBtnAbs,
             { top: topPad + 8, opacity: pressed ? 0.6 : 1, backgroundColor: "transparent" },
@@ -1297,23 +1316,25 @@ export default function LevelScreen() {
             restarts the reading from the top, «Выйти» → map. */}
         <StageGlassDialog
           visible={readingExitConfirm}
-          title={lang === "ru" ? "Выйти из чтения?" : "Leave the reading?"}
+          title={pickLang(lang, { ru: "Выйти из чтения?", en: "Leave the reading?", kk: "Оқудан шығасың ба?" })}
           message={
-            lang === "ru"
-              ? "Прогресс этого чтения не сохранится — придётся читать заново."
-              : "This reading won't be saved — you'll have to read it again."
+            pickLang(lang, {
+              ru: "Прогресс этого чтения не сохранится — придётся читать заново.",
+              en: "This reading won't be saved — you'll have to read it again.",
+              kk: "Бұл оқудың прогресі сақталмайды — қайта оқуға тура келеді.",
+            })
           }
           onRequestClose={cancelReadingExit}
           dismissOnBackdrop={false}
           overlay={0.55}
           buttons={[
             {
-              label: lang === "ru" ? "Читать заново" : "Read again",
+              label: pickLang(lang, { ru: "Читать заново", en: "Read again", kk: "Қайта оқу" }),
               variant: "secondary",
               onPress: cancelReadingExit,
             },
             {
-              label: lang === "ru" ? "Выйти" : "Leave",
+              label: pickLang(lang, { ru: "Выйти", en: "Leave", kk: "Шығу" }),
               variant: "primary",
               onPress: confirmReadingExit,
             },

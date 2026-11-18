@@ -6,6 +6,7 @@ import { View, Text, StyleSheet, ScrollView } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import type { Lang } from "@/context/LangContext";
+import { pickLang } from "@/context/LangContext";
 import { lt, speakerName, type RoleScenario } from "@/constants/roleScenarios";
 import { Avatar, SCENE, TypingDots } from "./common";
 
@@ -37,12 +38,12 @@ export function ScriptPrompter({
       <View style={styles.head}>
         <Ionicons name="document-text" size={12} color={SCENE.muted} />
         <Text style={styles.headText}>
-          {lang === "en" ? "SCRIPT" : "СЦЕНАРИЙ"} · {Math.min(shownStep, total)}/{total}
+          {pickLang(lang, { ru: "СЦЕНАРИЙ", en: "SCRIPT", kk: "СЦЕНАРИЙ" })} · {Math.min(shownStep, total)}/{total}
         </Text>
       </View>
 
       {finished ? (
-        <Text style={styles.done}>{lang === "en" ? "Scene complete — tap stop ■" : "Сцена сыграна — жми стоп ■"}</Text>
+        <Text style={styles.done}>{pickLang(lang, { ru: "Сцена сыграна — жми стоп ■", en: "Scene complete — tap stop ■", kk: "Көрініс ойналды — тоқтатуды бас ■" })}</Text>
       ) : typing ? (
         <View style={styles.oppRow}>
           <Avatar emoji={s.persona.avatar} size={22} />
@@ -62,7 +63,7 @@ export function ScriptPrompter({
             )}
             {yourLine && (
               <>
-                <Text style={styles.youLabel}>{lang === "en" ? "YOU" : "ТЫ"}</Text>
+                <Text style={styles.youLabel}>{pickLang(lang, { ru: "ТЫ", en: "YOU", kk: "СЕН" })}</Text>
                 <Text style={styles.yourText}>{lt(yourLine, lang)}</Text>
               </>
             )}

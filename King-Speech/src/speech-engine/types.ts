@@ -10,7 +10,19 @@
 import { SttMode } from './core/stt/types';
 
 export type Level = 'tongue_twister' | 'reading' | 'literature' | 'vocabulary' | 'show_time';
-export type Locale = 'ru' | 'en';
+export type Locale = 'ru' | 'en' | 'kk';
+
+/** BCP-47 tag for the native recognizer, per engine locale. */
+export const LOCALE_BCP47: Record<Locale, string> = {
+  ru: 'ru-RU',
+  en: 'en-US',
+  kk: 'kk-KZ',
+};
+
+/** Map an engine/app locale to the BCP-47 tag STT expects (ru-RU fallback). */
+export function toBcp47(locale: Locale | string): string {
+  return (LOCALE_BCP47 as Record<string, string>)[locale] ?? LOCALE_BCP47.ru;
+}
 
 export type PlayerRank = 'novice' | 'apprentice' | 'orator' | 'master' | 'pro';
 export const RANK_ORDER: readonly PlayerRank[] = ['novice', 'apprentice', 'orator', 'master', 'pro'];

@@ -10,7 +10,9 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
-import { useLang, Lang } from "@/context/LangContext";
+import { useLang, Lang, LANGS, LANG_NAMES } from "@/context/LangContext";
+
+const LANG_SHORT: Record<Lang, string> = { ru: "RU", kk: "ҚАЗ", en: "EN" };
 import { useTheme } from "@/context/ThemeContext";
 import OscarMascot from "@/components/OscarMascot";
 import { PillButton } from "@/components/auth/AuthUI";
@@ -30,22 +32,18 @@ export default function WelcomeScreen() {
 
       {/* Lang toggle — top right */}
       <Animated.View entering={FadeIn.delay(200)} style={s.langRow}>
-        <Pressable
-          onPress={() => setLang("ru")}
-          style={[s.langBtn, lang === "ru" && { backgroundColor: theme.accent, borderColor: theme.ctaStroke }]}
-        >
-          <Text style={[s.langTxt, { color: lang === "ru" ? theme.accentText : theme.textSecondary }]}>
-            RU
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => setLang("en")}
-          style={[s.langBtn, lang === "en" && { backgroundColor: theme.accent, borderColor: theme.ctaStroke }]}
-        >
-          <Text style={[s.langTxt, { color: lang === "en" ? theme.accentText : theme.textSecondary }]}>
-            EN
-          </Text>
-        </Pressable>
+        {LANGS.map((code) => (
+          <Pressable
+            key={code}
+            onPress={() => setLang(code)}
+            accessibilityLabel={LANG_NAMES[code]}
+            style={[s.langBtn, lang === code && { backgroundColor: theme.accent, borderColor: theme.ctaStroke }]}
+          >
+            <Text style={[s.langTxt, { color: lang === code ? theme.accentText : theme.textSecondary }]}>
+              {LANG_SHORT[code]}
+            </Text>
+          </Pressable>
+        ))}
       </Animated.View>
 
       {/* Oscar waves hello to the player */}

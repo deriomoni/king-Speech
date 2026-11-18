@@ -26,7 +26,7 @@ import { Audio } from "@/lib/av";
 import { RankBackground } from "./RankBackground";
 import { useTheme } from "@/context/ThemeContext";
 import { getRankTheme, pickLocalized, type RankTheme } from "./rankTheme";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useGame, type MetricTrend } from "@/context/GameContext";
 import OscarMascot from "@/components/OscarMascot";
 
@@ -41,43 +41,59 @@ interface Props {
   memento?: boolean;
 }
 
-const METRIC_LABELS: Record<string, { ru: string; en: string }> = {
-  pauses: { ru: "паузы", en: "pauses" },
-  tempo: { ru: "темп речи", en: "speech tempo" },
-  expressiveness: { ru: "выразительность", en: "expressiveness" },
-  confidence: { ru: "уверенность", en: "confidence" },
-  clarity: { ru: "чёткость", en: "clarity" },
-  volume: { ru: "громкость", en: "volume" },
+// Rank titles (RU / EN / KK) — used by the hero and the big title block.
+function rankTitle(index: number, lang: Lang): string {
+  const i = Math.max(0, Math.min(4, index - 1));
+  return pickLang(lang, {
+    ru: ["Новичок", "Любитель", "Уверенный", "Мастер", "Профи"],
+    en: ["Novice", "Amateur", "Confident", "Master", "Pro"],
+    kk: ["Бастаушы", "Әуесқой", "Сенімді", "Шебер", "Кәсіпқой"],
+  })[i];
+}
+
+const METRIC_LABELS: Record<string, { ru: string; en: string; kk?: string }> = {
+  pauses: { ru: "паузы", en: "pauses", kk: "үзілістер" },
+  tempo: { ru: "темп речи", en: "speech tempo", kk: "сөйлеу қарқыны" },
+  expressiveness: { ru: "выразительность", en: "expressiveness", kk: "мәнерлілік" },
+  confidence: { ru: "уверенность", en: "confidence", kk: "сенімділік" },
+  clarity: { ru: "чёткость", en: "clarity", kk: "анықтық" },
+  volume: { ru: "громкость", en: "volume", kk: "дауыс қаттылығы" },
 };
 
-const METRIC_TIPS: Record<string, { ru: string; en: string }> = {
+const METRIC_TIPS: Record<string, { ru: string; en: string; kk?: string }> = {
   pauses: {
     ru: "Не бойся пауз — они подчёркивают самое важное.",
     en: "Don't fear pauses — they highlight what matters most.",
+    kk: "Үзілістерден қорықпа — олар ең маңыздысын ерекшелейді.",
   },
   tempo: {
     ru: "Найди свой темп: не торопись, но и не растягивай.",
     en: "Find your tempo: don't rush, don't drag.",
+    kk: "Өз қарқыныңды тап: асықпа, бірақ созба да.",
   },
   expressiveness: {
     ru: "Меняй интонацию — голос должен звучать живо.",
     en: "Vary your intonation — let your voice sound alive.",
+    kk: "Интонацияңды өзгертіп отыр — дауысың жанды естілсін.",
   },
   confidence: {
     ru: "Говори громче, чем тебе кажется нужным — это придаёт уверенности.",
     en: "Speak a little louder than you think — it brings confidence.",
+    kk: "Өзіңе керек сияқты көрінгеннен сәл қаттырақ сөйле — бұл сенімділік береді.",
   },
   clarity: {
     ru: "Заверши каждое слово — звуки в конце не должны проглатываться.",
     en: "Finish every word — don't swallow the endings.",
+    kk: "Әр сөзді соңына дейін айт — сөз соңын жұтып қойма.",
   },
   volume: {
     ru: "Дыши глубже — звук опирается на дыхание.",
     en: "Breathe deeper — sound rests on breath.",
+    kk: "Тереңірек дем ал — дыбыс тынысқа сүйенеді.",
   },
 };
 
-function HeroBlock({ theme, lang, memento = false }: { theme: RankTheme; lang: "ru" | "en"; memento?: boolean }) {
+function HeroBlock({ theme, lang, memento = false }: { theme: RankTheme; lang: Lang; memento?: boolean }) {
   const next = useMemo(() => getRankTheme(theme.index + 1), [theme.index]);
   const targetIsFinal = theme.index >= 5;
   // In memento mode the user is revisiting a finished world, so the hero
@@ -160,16 +176,10 @@ function HeroBlock({ theme, lang, memento = false }: { theme: RankTheme; lang: "
         ]}
       >
         {memento
-          ? lang === "en"
-            ? "A world you've completed."
-            : "Мир, который ты прошёл."
+          ? pickLang(lang, { ru: "Мир, который ты прошёл.", en: "A world you've completed.", kk: "Сен өткен әлем." })
           : targetIsFinal
-          ? lang === "en"
-            ? "You finished the path."
-            : "Ты завершил путь."
-          : lang === "en"
-          ? "You unlocked a new rank."
-          : "Ты открыл новый ранг."}
+          ? pickLang(lang, { ru: "Ты завершил путь.", en: "You finished the path.", kk: "Сен жолды аяқтадың." })
+          : pickLang(lang, { ru: "Ты открыл новый ранг.", en: "You unlocked a new rank.", kk: "Сен жаңа дәрежеге жеттің." })}
       </Text>
       <Text
         style={[
@@ -177,25 +187,7 @@ function HeroBlock({ theme, lang, memento = false }: { theme: RankTheme; lang: "
           { color: theme.textPrimary, fontFamily: display.fontFamilyTitle },
         ]}
       >
-        {lang === "en"
-          ? display.index === 1
-            ? "Novice"
-            : display.index === 2
-            ? "Amateur"
-            : display.index === 3
-            ? "Confident"
-            : display.index === 4
-            ? "Master"
-            : "Pro"
-          : display.index === 1
-          ? "Новичок"
-          : display.index === 2
-          ? "Любитель"
-          : display.index === 3
-          ? "Уверенный"
-          : display.index === 4
-          ? "Мастер"
-          : "Профи"}
+        {rankTitle(display.index, lang)}
       </Text>
     </View>
   );
@@ -246,7 +238,7 @@ const heroStyles = StyleSheet.create({
   },
 });
 
-function ShowtimeRecording({ uri, theme, lang }: { uri?: string; theme: RankTheme; lang: "ru" | "en" }) {
+function ShowtimeRecording({ uri, theme, lang }: { uri?: string; theme: RankTheme; lang: Lang }) {
   const [playing, setPlaying] = useState(false);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const webAudioRef = React.useRef<HTMLAudioElement | null>(null);
@@ -299,10 +291,10 @@ function ShowtimeRecording({ uri, theme, lang }: { uri?: string; theme: RankThem
   return (
     <View style={[blockStyles.card, { borderColor: theme.borderColor, backgroundColor: theme.cardBg }]}>
       <Text style={[blockStyles.label, { color: theme.accent, fontFamily: theme.fontFamily }]}>
-        {lang === "en" ? "Block 1 · The beginning" : "Блок 1 · Начало"}
+        {pickLang(lang, { ru: "Блок 1 · Начало", en: "Block 1 · The beginning", kk: "1-блок · Бастауы" })}
       </Text>
       <Text style={[blockStyles.heading, { color: theme.textPrimary, fontFamily: theme.fontFamilyTitle }]}>
-        {lang === "en" ? "This is who you were…" : "Вот каким ты был в начале…"}
+        {pickLang(lang, { ru: "Вот каким ты был в начале…", en: "This is who you were…", kk: "Басында сен осындай едің…" })}
       </Text>
       {uri ? (
         <Pressable
@@ -312,7 +304,7 @@ function ShowtimeRecording({ uri, theme, lang }: { uri?: string; theme: RankThem
             { borderColor: theme.accent, opacity: pressed ? 0.85 : 1 },
           ]}
           accessibilityRole="button"
-          accessibilityLabel={lang === "en" ? "Play first recording" : "Воспроизвести первую запись"}
+          accessibilityLabel={pickLang(lang, { ru: "Воспроизвести первую запись", en: "Play first recording", kk: "Алғашқы жазбаны ойнату" })}
           testID="rankup-play-recording"
         >
           <Ionicons
@@ -322,21 +314,15 @@ function ShowtimeRecording({ uri, theme, lang }: { uri?: string; theme: RankThem
           />
           <Text style={[blockStyles.playText, { color: theme.accent, fontFamily: theme.fontFamilyTitle }]}>
             {playing
-              ? lang === "en"
-                ? "Playing your first take…"
-                : "Слушаем твою первую запись…"
-              : lang === "en"
-              ? "Play first Show Time"
-              : "Воспроизвести первый Show Time"}
+              ? pickLang(lang, { ru: "Слушаем твою первую запись…", en: "Playing your first take…", kk: "Алғашқы жазбаңды тыңдап жатырмыз…" })
+              : pickLang(lang, { ru: "Воспроизвести первый Show Time", en: "Play first Show Time", kk: "Алғашқы Show Time-ды ойнату" })}
           </Text>
         </Pressable>
       ) : (
         <View style={[blockStyles.empty, { borderColor: theme.borderColor }]}>
           <Ionicons name="mic-outline" size={20} color={theme.textMuted} />
           <Text style={[blockStyles.emptyText, { color: theme.textMuted, fontFamily: theme.fontFamily }]}>
-            {lang === "en"
-              ? "No early Show Time recording yet — your future self will hear it."
-              : "Ранней записи Show Time пока нет — твой будущий ты её услышит."}
+            {pickLang(lang, { ru: "Ранней записи Show Time пока нет — твой будущий ты её услышит.", en: "No early Show Time recording yet — your future self will hear it.", kk: "Ерте Show Time жазбасы әзірге жоқ — болашақтағы сен оны міндетті түрде естисің." })}
           </Text>
         </View>
       )}
@@ -344,11 +330,11 @@ function ShowtimeRecording({ uri, theme, lang }: { uri?: string; theme: RankThem
   );
 }
 
-function QuoteBlock({ theme, lang }: { theme: RankTheme; lang: "ru" | "en" }) {
+function QuoteBlock({ theme, lang }: { theme: RankTheme; lang: Lang }) {
   return (
     <View style={[blockStyles.card, { borderColor: theme.borderColor, backgroundColor: theme.cardBg }]}>
       <Text style={[blockStyles.label, { color: theme.accent, fontFamily: theme.fontFamily }]}>
-        {lang === "en" ? "Block 2 · A great voice" : "Блок 2 · Великий голос"}
+        {pickLang(lang, { ru: "Блок 2 · Великий голос", en: "Block 2 · A great voice", kk: "2-блок · Ұлы дауыс" })}
       </Text>
       <Text style={[blockStyles.quote, { color: theme.textPrimary, fontFamily: theme.fontFamilyTitle }]}>
         {pickLocalized(theme.motivationalQuote, lang)}
@@ -375,7 +361,7 @@ function TrendChip({
 }: {
   trend: MetricTrend;
   theme: RankTheme;
-  lang: "ru" | "en";
+  lang: Lang;
 }) {
   const delta = trend.now - trend.before;
   const improved = delta > TREND_EPSILON;
@@ -390,9 +376,7 @@ function TrendChip({
         { borderColor: color + "55", backgroundColor: color + "14" },
       ]}
       accessibilityLabel={
-        lang === "en"
-          ? `Before ${fmt(trend.before)}, now ${fmt(trend.now)}`
-          : `Было ${fmt(trend.before)}, сейчас ${fmt(trend.now)}`
+        pickLang(lang, { ru: `Было ${fmt(trend.before)}, сейчас ${fmt(trend.now)}`, en: `Before ${fmt(trend.before)}, now ${fmt(trend.now)}`, kk: `Бұрын ${fmt(trend.before)}, қазір ${fmt(trend.now)}` })
       }
     >
       <Text style={[blockStyles.trendNumber, { color, fontFamily: theme.fontFamilyTitle }]}>
@@ -425,21 +409,21 @@ function TipsBlock({
   trends,
 }: {
   theme: RankTheme;
-  lang: "ru" | "en";
+  lang: Lang;
   metrics: string[];
   trends: Record<string, MetricTrend | null>;
 }) {
   return (
     <View style={[blockStyles.card, { borderColor: theme.borderColor, backgroundColor: theme.cardBg }]}>
       <Text style={[blockStyles.label, { color: theme.accent, fontFamily: theme.fontFamily }]}>
-        {lang === "en" ? "Block 3 · For your next rank" : "Блок 3 · Для следующего ранга"}
+        {pickLang(lang, { ru: "Блок 3 · Для следующего ранга", en: "Block 3 · For your next rank", kk: "3-блок · Келесі дәреже үшін" })}
       </Text>
       <Text style={[blockStyles.heading, { color: theme.textPrimary, fontFamily: theme.fontFamilyTitle }]}>
-        {lang === "en" ? "Three things to refine" : "Три вещи, которые стоит отточить"}
+        {pickLang(lang, { ru: "Три вещи, которые стоит отточить", en: "Three things to refine", kk: "Шыңдай түсетін үш нәрсе" })}
       </Text>
       {metrics.map((m, i) => {
-        const label = METRIC_LABELS[m] ?? { ru: m, en: m };
-        const tip = METRIC_TIPS[m] ?? { ru: "Продолжай практиковаться.", en: "Keep practicing." };
+        const label = METRIC_LABELS[m] ?? { ru: m, en: m, kk: m };
+        const tip = METRIC_TIPS[m] ?? { ru: "Продолжай практиковаться.", en: "Keep practicing.", kk: "Жаттығуды жалғастыр." };
         const trend = trends[m];
         return (
           <View key={m + i} style={blockStyles.tipRow}>
@@ -639,27 +623,17 @@ export default function RankUpScreen({ fromRank, memento = false }: Props) {
         <Animated.View entering={FadeInDown.duration(400).delay(420)} style={rankUpStyles.bigTitleBlock}>
           <Text style={[rankUpStyles.bigLead, { color: theme.textSecondary, fontFamily: theme.fontFamily }]}>
             {memento
-              ? lang === "en"
-                ? "Block 4 · A keepsake"
-                : "Блок 4 · Воспоминание"
+              ? pickLang(lang, { ru: "Блок 4 · Воспоминание", en: "Block 4 · A keepsake", kk: "4-блок · Естелік" })
               : isFinal
-              ? lang === "en"
-                ? "You completed every rank"
-                : "Ты прошёл все ранги"
-              : lang === "en"
-              ? "Block 4 · Welcome to"
-              : "Блок 4 · Добро пожаловать в"}
+              ? pickLang(lang, { ru: "Ты прошёл все ранги", en: "You completed every rank", kk: "Сен барлық дәрежеден өттің" })
+              : pickLang(lang, { ru: "Блок 4 · Добро пожаловать в", en: "Block 4 · Welcome to", kk: "4-блок · Жаңа дәрежең:" })}
           </Text>
           <Text style={[rankUpStyles.bigTitle, { color: memento ? theme.accent : (next.textPrimary === theme.textPrimary ? theme.textPrimary : next.accent), fontFamily: (memento ? theme : next).fontFamilyTitle }]}>
             {memento
-              ? lang === "en"
-                ? theme.index === 1 ? "Novice" : theme.index === 2 ? "Amateur" : theme.index === 3 ? "Confident" : theme.index === 4 ? "Master" : "Pro"
-                : theme.index === 1 ? "Новичок" : theme.index === 2 ? "Любитель" : theme.index === 3 ? "Уверенный" : theme.index === 4 ? "Мастер" : "Профи"
+              ? rankTitle(theme.index, lang)
               : isFinal
-              ? lang === "en" ? "The Voice is Yours" : "Твой Голос"
-              : lang === "en"
-              ? next.index === 2 ? "Amateur" : next.index === 3 ? "Confident" : next.index === 4 ? "Master" : "Pro"
-              : next.index === 2 ? "Любитель" : next.index === 3 ? "Уверенный" : next.index === 4 ? "Мастер" : "Профи"}
+              ? pickLang(lang, { ru: "Твой Голос", en: "The Voice is Yours", kk: "Дауыс — сенікі" })
+              : rankTitle(next.index, lang)}
           </Text>
         </Animated.View>
 
@@ -687,8 +661,8 @@ export default function RankUpScreen({ fromRank, memento = false }: Props) {
           accessibilityRole="button"
           accessibilityLabel={
             memento
-              ? lang === "en" ? "Close memory" : "Закрыть воспоминание"
-              : lang === "en" ? "Start the new rank" : "Начать новый ранг"
+              ? pickLang(lang, { ru: "Закрыть воспоминание", en: "Close memory", kk: "Естелікті жабу" })
+              : pickLang(lang, { ru: "Начать новый ранг", en: "Start the new rank", kk: "Жаңа дәрежені бастау" })
           }
           testID="rankup-cta"
         >
@@ -700,10 +674,10 @@ export default function RankUpScreen({ fromRank, memento = false }: Props) {
           />
           <Text style={[rankUpStyles.ctaText, { fontFamily: (memento ? theme : next).fontFamilyTitle }]}>
             {memento
-              ? lang === "en" ? "Close memory" : "Закрыть воспоминание"
+              ? pickLang(lang, { ru: "Закрыть воспоминание", en: "Close memory", kk: "Естелікті жабу" })
               : isFinal
-              ? lang === "en" ? "Return home" : "Вернуться на главный"
-              : lang === "en" ? "Start the new rank" : "Начать новый ранг"}
+              ? pickLang(lang, { ru: "Вернуться на главный", en: "Return home", kk: "Басты бетке оралу" })
+              : pickLang(lang, { ru: "Начать новый ранг", en: "Start the new rank", kk: "Жаңа дәрежені бастау" })}
           </Text>
           <Ionicons name={memento ? "close" : "arrow-forward"} size={20} color="#fff" />
         </Pressable>

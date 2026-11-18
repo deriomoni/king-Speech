@@ -25,7 +25,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
 import { SvgXml } from "react-native-svg";
 import { useGame, getRankForSection } from "@/context/GameContext";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { getApiUrl } from "@/lib/query-client";
 import { playSfx } from "@/lib/sfx";
@@ -432,7 +432,7 @@ export default function ShowtimePlaybackScreen() {
       const res = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audioBase64, title, moduleNumber, scriptText: scriptTextParam ?? "" }),
+        body: JSON.stringify({ audioBase64, title, moduleNumber, scriptText: scriptTextParam ?? "", lang }),
       });
       const data = await res.json();
       if (typeof data.stars === "number") {
@@ -585,7 +585,6 @@ export default function ShowtimePlaybackScreen() {
   const headerStyle = useAnimatedStyle(() => ({ opacity: headerOpacity.value }));
   const contentStyle = useAnimatedStyle(() => ({ opacity: contentOpacity.value, transform: [{ translateY: contentY.value }] }));
 
-  const ru = lang !== "en";
   const sum = analysisResult && !isSilent ? summarize(analysisResult) : null;
   const verdict = sum ? (sum.finalStars === 3 ? t("excellent") : sum.finalStars === 2 ? t("good") : t("keepGoing")) : "";
   const metrics = analysisResult?.metrics;
@@ -609,14 +608,14 @@ export default function ShowtimePlaybackScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.Text style={[pb.title, { color: theme.text }, headerStyle]}>
-          {ru ? "Разбор выступления" : "Performance review"}
+          {pickLang(lang, { ru: "Разбор выступления", en: "Performance review", kk: "Сөз сөйлеуді талдау" })}
         </Animated.Text>
 
         <Animated.View style={[contentStyle, { flexGrow: 1 }]}>
           {/* Overall score + verdict */}
           {sum ? (
             <Animated.View entering={FadeInUp.delay(100).duration(500)} style={pb.scoreBlock}>
-              <Text style={[pb.label, { color: labelColor }]}>{ru ? "ОЦЕНКА" : "SCORE"}</Text>
+              <Text style={[pb.label, { color: labelColor }]}>{pickLang(lang, { ru: "ОЦЕНКА", en: "SCORE", kk: "БАҒА" })}</Text>
               <Animated.View entering={ZoomIn.delay(250).duration(400)} style={pb.scoreRow}>
                 <Text style={[pb.scoreNum, { color: theme.accentInk }]}>{sum.overall10.toFixed(1)}</Text>
                 <Text style={[pb.scoreMax, { color: dimColor }]}>/10</Text>
@@ -651,9 +650,11 @@ export default function ShowtimePlaybackScreen() {
             <Animated.View entering={FadeInUp.delay(100).duration(500)} style={[pb.card, cardStyle, { marginTop: 28, gap: 12 }]}>
               <Text style={[pb.label, { color: theme.accentInk }]}>{t("notCounted").toUpperCase()}</Text>
               <Text style={[pb.tip, { color: theme.text }]}>
-                {ru
-                  ? "Кажется, ты не читал текст вслух. Прочитай его и пройди уровень снова."
-                  : "Looks like the text wasn't read aloud. Read it and pass the level again."}
+                {pickLang(lang, {
+                  ru: "Кажется, ты не читал текст вслух. Прочитай его и пройди уровень снова.",
+                  en: "Looks like the text wasn't read aloud. Read it and pass the level again.",
+                  kk: "Мәтінді дауыстап оқымаған сияқтысың. Оны оқып, деңгейден қайта өт.",
+                })}
               </Text>
             </Animated.View>
           ) : null}
@@ -661,7 +662,7 @@ export default function ShowtimePlaybackScreen() {
           {/* Coaching tip — surfaced from /api/analyze-speech.tip */}
           {sum && tip ? (
             <Animated.View entering={FadeIn.delay(600).duration(400)} style={[pb.card, cardStyle, { marginTop: 28, gap: 16 }]}>
-              <Text style={[pb.label, { color: theme.accentInk }]}>{ru ? "СОВЕТ" : "TIP"}</Text>
+              <Text style={[pb.label, { color: theme.accentInk }]}>{pickLang(lang, { ru: "СОВЕТ", en: "TIP", kk: "КЕҢЕС" })}</Text>
               <Text style={[pb.tip, { color: theme.text }]}>{tip}</Text>
             </Animated.View>
           ) : null}
@@ -687,13 +688,13 @@ export default function ShowtimePlaybackScreen() {
           ) : null}
 
           <Text style={[pb.label, { color: labelColor, marginTop: 36, marginBottom: 12 }]}>
-            {ru ? "ВЫСТУПЛЕНИЕ" : "PERFORMANCE"}
+            {pickLang(lang, { ru: "ВЫСТУПЛЕНИЕ", en: "PERFORMANCE", kk: "СӨЗ СӨЙЛЕУ" })}
           </Text>
 
           {/* Performance card: theme, replay, characteristics */}
           <View style={[pb.card, cardStyle, { gap: 14 }]}>
             <View style={pb.cardHead}>
-              <Text style={[pb.label, { color: labelColor }]}>{ru ? "ТЕМА" : "TOPIC"}</Text>
+              <Text style={[pb.label, { color: labelColor }]}>{pickLang(lang, { ru: "ТЕМА", en: "TOPIC", kk: "ТАҚЫРЫП" })}</Text>
               {sum ? (
                 <View style={pb.ansScore}>
                   <Text style={[pb.ansScoreNum, { color: theme.accentInk }]}>{sum.overall10.toFixed(1)}</Text>
@@ -721,7 +722,7 @@ export default function ShowtimePlaybackScreen() {
                   accessibilityState={{ expanded: detailsOpen }}
                 >
                   <Text style={[pb.toggleText, { color: isDark ? "rgba(240,238,233,0.7)" : theme.textSecondary }]}>
-                    {ru ? "Характеристики" : "Breakdown"}
+                    {pickLang(lang, { ru: "Характеристики", en: "Breakdown", kk: "Көрсеткіштер" })}
                   </Text>
                   <View style={[pb.chevron, { backgroundColor: isDark ? "rgba(240,238,233,0.08)" : "rgba(38,38,40,0.06)" }]}>
                     <Ionicons name={detailsOpen ? "chevron-up" : "chevron-down"} size={16} color={theme.text} />
@@ -778,7 +779,7 @@ export default function ShowtimePlaybackScreen() {
                 <>
                   <Ionicons name="book-outline" size={16} color={theme.textMuted} />
                   <Text style={[pb.btnTextPrimary, { color: theme.textMuted }]}>
-                    {ru ? "Прочитай текст" : "Read the text"}
+                    {pickLang(lang, { ru: "Прочитай текст", en: "Read the text", kk: "Мәтінді оқы" })}
                   </Text>
                 </>
               ) : (
@@ -798,17 +799,19 @@ export default function ShowtimePlaybackScreen() {
       <StageGlassDialog
         visible={showListenPrompt}
         icon={<SvgXml xml={headphonesXml} width={38} height={38} />}
-        title={lang === "en" ? "Listen to yourself" : "Послушай себя"}
+        title={pickLang(lang, { ru: "Послушай себя", en: "Listen to yourself", kk: "Өзіңді тыңда" })}
         message={
-          lang === "en"
-            ? "Listen to your speech to the end — honest self-reflection is a real step toward getting better."
-            : "Прослушай свою речь до конца - честный самоанализ это шаг к тому, чтобы стать лучше."
+          pickLang(lang, {
+            ru: "Прослушай свою речь до конца - честный самоанализ это шаг к тому, чтобы стать лучше.",
+            en: "Listen to your speech to the end — honest self-reflection is a real step toward getting better.",
+            kk: "Сөзіңді соңына дейін тыңда - өзіңді шынайы талдау жақсаруға жасалған қадам.",
+          })
         }
         stacked
         onRequestClose={() => setShowListenPrompt(false)}
         buttons={[
-          { label: lang === "en" ? "Listen" : "Дослушать", variant: "primary", onPress: () => setShowListenPrompt(false) },
-          { label: lang === "en" ? "Skip" : "Пропустить", variant: "link", onPress: skipListening },
+          { label: pickLang(lang, { ru: "Дослушать", en: "Listen", kk: "Тыңдау" }), variant: "primary", onPress: () => setShowListenPrompt(false) },
+          { label: pickLang(lang, { ru: "Пропустить", en: "Skip", kk: "Өткізіп жіберу" }), variant: "link", onPress: skipListening },
         ]}
       />
     </View>

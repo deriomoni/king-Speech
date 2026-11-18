@@ -15,6 +15,7 @@ import type { WarmupMouth } from "@/constants/contentLoader";
 import { warmupFonts } from "@/components/warmup/warmupTheme";
 import { useAppColors } from "@/hooks/useAppColors";
 import { useTheme } from "@/context/ThemeContext";
+import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { MouthHelpDialog } from "@/components/warmup/WarmupHelpDialog";
 import IllustratedExerciseView, { ILLUSTRATED_EXERCISES } from "@/components/warmup/IllustratedExerciseView";
 
@@ -100,8 +101,75 @@ const MOUTH_INFO: Record<string, MouthInfo> = {
   },
 };
 
-function resolveMouth(ex: WarmupMouth): MouthInfo {
-  const info = MOUTH_INFO[ex.name?.trim()];
+// Kazakh copy for the same exercises, keyed by the RU exercise name (pass the
+// RU name via the `infoKey` prop when the exercise itself is localized).
+const MOUTH_INFO_KK: Record<string, MouthInfo> = {
+  "Трубочка — Улыбка": {
+    steps: ["Ерніңді түтікше етіп алға соз", "Енді кең жымий"],
+    desc: "Ерінді екі пішін арасында ауыстыра отырып жаттықтырады.",
+    tip: "Ерін керілген, тіс жабық — тек ерін жұмыс істейді.",
+  },
+  "Часики": {
+    steps: ["Тіліңмен ерніңнің сол жақ бұрышына созыл", "Енді оң жақ бұрышына"],
+    desc: "Тіл бұлшықеттерін екі жаққа созып, қыздырады.",
+    tip: "Ауыз сәл ашық, тек тіл қозғалады — жақ қимылсыз.",
+  },
+  "Лошадка": {
+    steps: ["Тіліңді баяу тықылдат", "Ал енді жылдамырақ"],
+    desc: "Тілдің ұшын дамытып, бұлшықеттерін нығайтады.",
+    tip: "Ауыз кең ашылып жымиған, төменгі жақ қимылсыз.",
+  },
+  "Иголочка": {
+    steps: ["Жіңішке үшкір тіліңді алға шығар", "Тіліңді босат"],
+    desc: "Тілді жіңішке әрі керілген күйге жинауға үйретеді.",
+    tip: "Тіл жіңішке әрі үшкір, тура алға созылады.",
+  },
+  "Лопаточка": {
+    steps: ["Жалпақ тіліңді төменгі ерніңе қой", "Тегіс ұста, күшенбе"],
+    desc: "Тілді босатып, жалпақ күйде ұстауға үйретеді.",
+    tip: "Тіл жалпақ әрі босаңсыған, төменгі ерінде жатыр.",
+  },
+  "Качели": {
+    steps: ["Тіліңнің ұшымен мұрныңа қарай созыл", "Енді иегіңе қарай"],
+    desc: "Тілді жоғары-төмен жаттықтырып, қозғалғыштығын дамытады.",
+    tip: "Ауыз ашық, тілдің ұшын жоғары және төмен созамыз.",
+  },
+  "Надуть — сдуть щёки": {
+    steps: ["Ауа жұтып, ұртыңды толтыр", "Баяу шығар"],
+    desc: "Ұртты қыздырып, тынысты басқаруды жаттықтырады.",
+    tip: "Ұртты тығыз толтырамыз, ауаны баяу шығарамыз.",
+  },
+  "Чистим зубки": {
+    steps: ["Тіліңді тістеріңнің бойымен оңға жүргіз", "Енді солға"],
+    desc: "Тілді тістер бойымен жаттықтырып, артикуляцияны жақсартады.",
+    tip: "Ауыз жабық, тіл тістер бойымен сырғиды — жақ қимылсыз.",
+  },
+  "Вкусное варенье": {
+    steps: ["Үстіңгі ерніңді жоғарыдан төмен жала", "Тағы бір рет, тосап татып тұрғандай"],
+    desc: "Тілдің көтерілуі мен икемділігін дамытады.",
+    tip: "Жалпақ тілмен үстіңгі ерінді жоғарыдан төмен жалаймыз.",
+  },
+  "Маятник": {
+    steps: ["Төменгі жағыңды солға жылжыт", "Енді оңға"],
+    desc: "Төменгі жақты екі жаққа жаттықтырады.",
+    tip: "Ерін босаңсыған, жақты солға-оңға баяу жылжытамыз.",
+  },
+  "Заборчик": {
+    steps: ["Тісіңді жауып, ерніңді «қоршау» етіп соз", "Ұстап тұр да, босат"],
+    desc: "Ерін мен күлкі бұлшықеттерін қыздырады.",
+    tip: "Тіс жабық, ерін кең жымиғандай созылған.",
+  },
+  "Барабанчик": {
+    steps: ["Тіліңмен үстіңгі тістің артын қақ: «д-д-д»", "Жылдамдат: «д-д-д-д»"],
+    desc: "Тілдің ұшын және дыбыстардың анықтығын жаттықтырады.",
+    tip: "Тіл үстіңгі тістің артын қағады — жақ қимылсыз.",
+  },
+};
+
+function resolveMouth(ex: WarmupMouth, lang: Lang, infoKey?: string): MouthInfo {
+  const key = (infoKey ?? ex.name)?.trim();
+  // TODO(kk-content): EN has no per-exercise copy here; EN falls back to RU.
+  const info = (lang === "kk" ? MOUTH_INFO_KK[key] : undefined) ?? MOUTH_INFO[key];
   const steps = ex.steps && ex.steps.length ? ex.steps : info?.steps ?? [ex.instruction];
   return {
     steps,
@@ -116,6 +184,8 @@ type Phase = "idle" | "name" | "running" | "illustrated";
 
 interface Props {
   exercise: WarmupMouth;
+  /** RU exercise name, used to look up the per-exercise copy when `exercise` is localized. */
+  infoKey?: string;
   topPad: number;
   onComplete: () => void;
   onBack: () => void;
@@ -123,16 +193,18 @@ interface Props {
 
 export default function MouthExerciseView({
   exercise,
+  infoKey,
   topPad,
   onComplete,
   onBack,
 }: Props) {
+  const { lang } = useLang();
   const { colors } = useAppColors();
   const { theme } = useTheme();
   // Gold used as text: gold on dark, ink on light.
   const accent = theme.accentInk;
 
-  const { steps, desc, tip } = resolveMouth(exercise);
+  const { steps, desc, tip } = resolveMouth(exercise, lang, infoKey);
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [nameCount, setNameCount] = useState(NAME_SEC);
@@ -266,7 +338,7 @@ export default function MouthExerciseView({
       {/* IDLE — title + start + "back" link */}
       {phase === "idle" && (
         <View style={styles.center}>
-          <Text style={[styles.idleTitle, { color: colors.text }]}>Разминка полости рта</Text>
+          <Text style={[styles.idleTitle, { color: colors.text }]}>{pickLang(lang, { ru: "Разминка полости рта", en: "Mouth warm-up", kk: "Ауыз жаттығуы" })}</Text>
           <Animated.View entering={FadeInDown.delay(120).duration(420)} style={styles.idleActions}>
             <Pressable
               onPress={start}
@@ -276,10 +348,10 @@ export default function MouthExerciseView({
               ]}
             >
               <Ionicons name="play" size={13} color={theme.accentText} />
-              <Text style={[styles.ctaText, { color: theme.accentText }]}>Старт</Text>
+              <Text style={[styles.ctaText, { color: theme.accentText }]}>{pickLang(lang, { ru: "Старт", en: "Start", kk: "Бастау" })}</Text>
             </Pressable>
             <Pressable onPress={onBack} hitSlop={8} style={styles.backLink}>
-              <Text style={[styles.backLinkText, { color: colors.textMuted }]}>Вернуться назад</Text>
+              <Text style={[styles.backLinkText, { color: colors.textMuted }]}>{pickLang(lang, { ru: "Вернуться назад", en: "Go back", kk: "Артқа оралу" })}</Text>
             </Pressable>
           </Animated.View>
         </View>
@@ -338,7 +410,7 @@ export default function MouthExerciseView({
           {/* Skip */}
           <View style={styles.footer}>
             <Pressable onPress={startIllustrated} hitSlop={8} style={styles.skip}>
-              <Text style={[styles.skipText, { color: colors.textMuted }]}>Пропустить →</Text>
+              <Text style={[styles.skipText, { color: colors.textMuted }]}>{pickLang(lang, { ru: "Пропустить →", en: "Skip →", kk: "Өткізіп жіберу →" })}</Text>
             </Pressable>
           </View>
         </>

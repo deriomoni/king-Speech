@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeIn, FadeInDown, FadeInUp, ZoomIn } from "react-native-reanimated";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth, Gender } from "@/context/AuthContext";
 import { KingSpeechLogo, PillButton, useInk } from "@/components/auth/AuthUI";
@@ -27,7 +27,6 @@ export default function ProfileSetupScreen() {
   const { theme } = useTheme();
   const { ink, stroke } = useInk();
   const { saveProfile, user } = useAuth();
-  const en = lang === "en";
 
   const [name, setName] = useState(user?.name ?? "");
   const [gender, setGender] = useState<Gender>(user?.gender ?? "male");
@@ -45,8 +44,8 @@ export default function ProfileSetupScreen() {
   };
 
   const GENDERS: { key: Gender; big: string; small: string }[] = [
-    { key: "male", big: en ? "He" : "Он", small: en ? "Male" : "Мужской" },
-    { key: "female", big: en ? "She" : "Она", small: en ? "Female" : "Женский" },
+    { key: "male", big: pickLang(lang, { ru: "Он", en: "He", kk: "Ер" }), small: pickLang(lang, { ru: "Мужской", en: "Male", kk: "Ер адам" }) },
+    { key: "female", big: pickLang(lang, { ru: "Она", en: "She", kk: "Әйел" }), small: pickLang(lang, { ru: "Женский", en: "Female", kk: "Әйел адам" }) },
   ];
 
   return (
@@ -68,13 +67,11 @@ export default function ProfileSetupScreen() {
         {/* Header */}
         <Animated.View entering={FadeInUp.delay(80).duration(500)}>
           <Text style={[s.title, { color: theme.text }]}>
-            {en ? "How should we\n" : "Как тебя\n"}
-            <Text style={{ color: theme.accentInk }}>{en ? "announce you?" : "объявить?"}</Text>
+            {pickLang(lang, { ru: "Как тебя\n", en: "How should we\n", kk: "Сені қалай\n" })}
+            <Text style={{ color: theme.accentInk }}>{pickLang(lang, { ru: "объявить?", en: "announce you?", kk: "таныстырамыз?" })}</Text>
           </Text>
           <Text style={[s.sub, { color: ink(0.65) }]}>
-            {en
-              ? "This is how the host will call you before you go on stage"
-              : "Так тебя будет называть ведущий перед выходом на сцену"}
+            {pickLang(lang, { ru: "Так тебя будет называть ведущий перед выходом на сцену", en: "This is how the host will call you before you go on stage", kk: "Сахнаға шығар алдында жүргізуші сені осылай атайды" })}
           </Text>
         </Animated.View>
 
@@ -87,7 +84,7 @@ export default function ProfileSetupScreen() {
           ]}
         >
           <Text style={[s.kicker, { color: canContinue ? "rgba(38,38,40,0.7)" : ink(0.4) }]}>
-            {en ? "TONIGHT ON STAGE" : "СЕГОДНЯ НА СЦЕНЕ"}
+            {pickLang(lang, { ru: "СЕГОДНЯ НА СЦЕНЕ", en: "TONIGHT ON STAGE", kk: "БҮГІН САХНАДА" })}
           </Text>
           <Text
             style={[s.posterName, { color: canContinue ? theme.accentText : ink(0.25) }]}
@@ -100,11 +97,11 @@ export default function ProfileSetupScreen() {
 
         {/* Name input */}
         <Animated.View entering={FadeInDown.delay(160).duration(500)}>
-          <Text style={[s.label, { color: ink(0.5) }]}>{en ? "NAME ON THE POSTER" : "ИМЯ НА АФИШЕ"}</Text>
+          <Text style={[s.label, { color: ink(0.5) }]}>{pickLang(lang, { ru: "ИМЯ НА АФИШЕ", en: "NAME ON THE POSTER", kk: "АФИШАДАҒЫ ЕСІМ" })}</Text>
           <TextInput
             value={name}
             onChangeText={setName}
-            placeholder={en ? "e.g. Aigerim" : "Например, Айгерим"}
+            placeholder={pickLang(lang, { ru: "Например, Айгерим", en: "e.g. Aigerim", kk: "Мысалы, Әйгерім" })}
             placeholderTextColor={ink(0.35)}
             selectionColor={theme.accent}
             cursorColor={theme.accent}
@@ -131,7 +128,7 @@ export default function ProfileSetupScreen() {
         {/* Gender */}
         <Animated.View entering={FadeInDown.delay(240).duration(500)}>
           <Text style={[s.label, { color: ink(0.5) }]}>
-            {en ? "HOW SHOULD WE ADDRESS YOU" : "КАК К ТЕБЕ ОБРАЩАТЬСЯ"}
+            {pickLang(lang, { ru: "КАК К ТЕБЕ ОБРАЩАТЬСЯ", en: "HOW SHOULD WE ADDRESS YOU", kk: "ЖЫНЫСЫҢДЫ ТАҢДА" })}
           </Text>
           <View style={s.genderRow}>
             {GENDERS.map((g) => {
@@ -165,7 +162,7 @@ export default function ProfileSetupScreen() {
         {/* Continue button */}
         <Animated.View entering={FadeInDown.delay(320).duration(500)} style={s.btnWrap}>
           <PillButton
-            label={en ? "Continue  →" : "Продолжить  →"}
+            label={pickLang(lang, { ru: "Продолжить  →", en: "Continue  →", kk: "Жалғастыру  →" })}
             variant={canContinue ? "primary" : "secondary"}
             onPress={handleContinue}
             disabled={!canContinue}

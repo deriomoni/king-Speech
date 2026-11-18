@@ -9,6 +9,7 @@ import { warmupFonts, warmupTheme } from "@/components/warmup/warmupTheme";
 import { getPathColors } from "@/constants/pathPalette";
 import { useAppColors } from "@/hooks/useAppColors";
 import { useTheme } from "@/context/ThemeContext";
+import { useLang, pickLang } from "@/context/LangContext";
 
 export interface WarmupCompletePayload {
   scores: number[];
@@ -34,7 +35,11 @@ export default function WarmupLevelView({
   onTaskComplete,
   onAllComplete,
 }: Props) {
-  const data = getNormalizedWarmup(moduleId);
+  const { lang } = useLang();
+  // Localized warm-up texts (kk via getLocalizedWarmup; EN currently falls back to RU).
+  const data = getNormalizedWarmup(moduleId, lang);
+  // RU exercise name — key for MouthExerciseView's per-exercise copy.
+  const mouthInfoKey = lang === "ru" ? undefined : getNormalizedWarmup(moduleId)?.task2_mouth.name;
   const { colors } = useAppColors();
   const { theme } = useTheme();
   // Background follows the app theme (light in light mode, dark in dark mode);
@@ -87,13 +92,14 @@ export default function WarmupLevelView({
 
       {step === "transition" && (
         <View style={[styles.transition, { paddingTop: topPad, backgroundColor: colors.background }]}>
-          <Text style={[styles.transitionText, { color: theme.accentInk }]}>Задание 2 из 2</Text>
+          <Text style={[styles.transitionText, { color: theme.accentInk }]}>{pickLang(lang, { ru: "Задание 2 из 2", en: "Task 2 of 2", kk: "Тапсырма 2/2" })}</Text>
         </View>
       )}
 
       {step === "mouth" && data && (
         <MouthExerciseView
           exercise={data.task2_mouth}
+          infoKey={mouthInfoKey}
           topPad={topPad}
           onComplete={handleMouthComplete}
           onBack={() => setStep("breathing")}

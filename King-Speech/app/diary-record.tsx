@@ -36,7 +36,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import AppDialog from "@/components/AppDialog";
 import Cassette, { labelTextStyle, useDiaryFonts } from "@/components/diary/Cassette";
@@ -54,27 +54,27 @@ const BIG_CASSETTE = 236;
 const TITLE_MAX = 18;
 const TOP_ROW = 44; // room for the corner back / close button
 
-const QUESTIONS: { ru: string; en: string }[] = [
-  { ru: "Что сегодня заставило тебя улыбнуться?", en: "What made you smile today?" },
-  { ru: "Какой момент дня ты хочешь запомнить?", en: "Which moment of today do you want to remember?" },
-  { ru: "Что сегодня получилось лучше, чем ты ждал?", en: "What went better than you expected today?" },
-  { ru: "Что тебя сегодня удивило?", en: "What surprised you today?" },
-  { ru: "О чём ты думаешь прямо сейчас?", en: "What are you thinking about right now?" },
-  { ru: "Что было самым трудным сегодня?", en: "What was the hardest part of today?" },
-  { ru: "За что ты можешь себя похвалить?", en: "What can you praise yourself for?" },
-  { ru: "Кому ты сегодня благодарен и почему?", en: "Who are you grateful to today, and why?" },
-  { ru: "Что ты узнал сегодня нового?", en: "What did you learn today?" },
-  { ru: "Какое чувство было главным за день?", en: "Which feeling was the main one today?" },
-  { ru: "Что бы ты сделал иначе, если бы мог?", en: "What would you do differently if you could?" },
-  { ru: "Чего ты ждёшь от завтрашнего дня?", en: "What are you looking forward to tomorrow?" },
-  { ru: "Расскажи о разговоре, который тебе запомнился.", en: "Tell about a conversation you remember from today." },
-  { ru: "Что помогло тебе сегодня успокоиться?", en: "What helped you calm down today?" },
-  { ru: "Когда сегодня ты почувствовал себя смелым?", en: "When did you feel brave today?" },
-  { ru: "Что тебя сейчас волнует больше всего?", en: "What's on your mind the most right now?" },
-  { ru: "Опиши свой день тремя словами — и объясни их.", en: "Describe your day in three words — and explain them." },
-  { ru: "Что маленькое, но приятное случилось сегодня?", en: "What small but nice thing happened today?" },
-  { ru: "О чём ты мечтаешь в последнее время?", en: "What have you been dreaming about lately?" },
-  { ru: "Что ты хочешь сказать себе через год?", en: "What would you like to tell yourself a year from now?" },
+const QUESTIONS: { ru: string; en: string; kk: string }[] = [
+  { ru: "Что сегодня заставило тебя улыбнуться?", en: "What made you smile today?", kk: "Бүгін сені не күлдірді?" },
+  { ru: "Какой момент дня ты хочешь запомнить?", en: "Which moment of today do you want to remember?", kk: "Күннің қай сәтін есте сақтағың келеді?" },
+  { ru: "Что сегодня получилось лучше, чем ты ждал?", en: "What went better than you expected today?", kk: "Бүгін не күткеніңнен де жақсы шықты?" },
+  { ru: "Что тебя сегодня удивило?", en: "What surprised you today?", kk: "Бүгін сені не таң қалдырды?" },
+  { ru: "О чём ты думаешь прямо сейчас?", en: "What are you thinking about right now?", kk: "Дәл қазір не туралы ойлап отырсың?" },
+  { ru: "Что было самым трудным сегодня?", en: "What was the hardest part of today?", kk: "Бүгін ең қиыны не болды?" },
+  { ru: "За что ты можешь себя похвалить?", en: "What can you praise yourself for?", kk: "Өзіңді не үшін мақтай аласың?" },
+  { ru: "Кому ты сегодня благодарен и почему?", en: "Who are you grateful to today, and why?", kk: "Бүгін кімге ризасың және неге?" },
+  { ru: "Что ты узнал сегодня нового?", en: "What did you learn today?", kk: "Бүгін қандай жаңа нәрсе білдің?" },
+  { ru: "Какое чувство было главным за день?", en: "Which feeling was the main one today?", kk: "Күні бойы қай сезім басым болды?" },
+  { ru: "Что бы ты сделал иначе, если бы мог?", en: "What would you do differently if you could?", kk: "Мүмкіндігің болса, нені басқаша істер едің?" },
+  { ru: "Чего ты ждёшь от завтрашнего дня?", en: "What are you looking forward to tomorrow?", kk: "Ертеңгі күннен не күтесің?" },
+  { ru: "Расскажи о разговоре, который тебе запомнился.", en: "Tell about a conversation you remember from today.", kk: "Есіңде қалған бір әңгіме туралы айтып бер." },
+  { ru: "Что помогло тебе сегодня успокоиться?", en: "What helped you calm down today?", kk: "Бүгін саған сабасыңа түсуге не көмектесті?" },
+  { ru: "Когда сегодня ты почувствовал себя смелым?", en: "When did you feel brave today?", kk: "Бүгін қай кезде өзіңді батыл сезіндің?" },
+  { ru: "Что тебя сейчас волнует больше всего?", en: "What's on your mind the most right now?", kk: "Қазір сені ең көп не толғандырады?" },
+  { ru: "Опиши свой день тремя словами — и объясни их.", en: "Describe your day in three words — and explain them.", kk: "Күніңді үш сөзбен сипатта — және оларды түсіндір." },
+  { ru: "Что маленькое, но приятное случилось сегодня?", en: "What small but nice thing happened today?", kk: "Бүгін қандай кішкентай, бірақ жағымды нәрсе болды?" },
+  { ru: "О чём ты мечтаешь в последнее время?", en: "What have you been dreaming about lately?", kk: "Соңғы кезде не туралы армандайсың?" },
+  { ru: "Что ты хочешь сказать себе через год?", en: "What would you like to tell yourself a year from now?", kk: "Бір жылдан кейінгі өзіңе не айтқың келеді?" },
 ];
 
 function pickQuestion(prev: number) {
@@ -90,7 +90,7 @@ type WebSession = { mr: MediaRecorder; stream: MediaStream; chunks: Blob[]; done
 export default function DiaryRecordScreen() {
   const insets = useSafeAreaInsets();
   const { lang } = useLang();
-  const en = lang === "en";
+  const tr = (ru: string, en: string, kk: string) => pickLang(lang, { ru, en, kk });
   const { theme: c } = useTheme();
   useDiaryFonts();
   const dark = c.mode === "dark";
@@ -302,7 +302,7 @@ export default function DiaryRecordScreen() {
       uriRef.current = stored;
       await addDiaryEntry({
         uri: stored,
-        title: title.trim() || (en ? "my day" : "мой день"),
+        title: title.trim() || tr("мой день", "my day", "менің күнім"),
         emotion: emotion ?? "neutral",
         durationSec: durationRef.current,
       });
@@ -339,7 +339,7 @@ export default function DiaryRecordScreen() {
                   onChangeText={(t) => setTitle(t.slice(0, TITLE_MAX))}
                   maxLength={TITLE_MAX}
                   autoFocus
-                  placeholder={en ? "name your tape" : "подпиши меня"}
+                  placeholder={tr("подпиши меня", "name your tape", "маған ат қой")}
                   placeholderTextColor="rgba(43,42,51,0.35)"
                   selectionColor="#FFC414"
                   cursorColor="#FFC414"
@@ -347,16 +347,16 @@ export default function DiaryRecordScreen() {
                   submitBehavior="blurAndSubmit"
                   autoCorrect={false}
                   style={[labelTextStyle(BIG_CASSETTE), s.labelInput]}
-                  accessibilityLabel={en ? "Cassette title" : "Название кассеты"}
+                  accessibilityLabel={tr("Название кассеты", "Cassette title", "Кассета атауы")}
                 />
               }
             />
           </Animated.View>
 
-          <Text style={[s.signTitle, { color: c.text }]}>{en ? "Sign your cassette" : "Подпиши кассету"}</Text>
+          <Text style={[s.signTitle, { color: c.text }]}>{tr("Подпиши кассету", "Sign your cassette", "Кассетаға ат қой")}</Text>
 
           <View style={[s.moodCard, { backgroundColor: cardBg }]}>
-            <Text style={[s.moodTitle, { color: c.text }]}>{en ? "How do you feel?" : "Выбери своё ощущение"}</Text>
+            <Text style={[s.moodTitle, { color: c.text }]}>{tr("Выбери своё ощущение", "How do you feel?", "Көңіл күйіңді таңда")}</Text>
             <View style={s.moods}>
               {EMOTIONS.map((m) => {
                 const on = emotion === m.key;
@@ -371,7 +371,7 @@ export default function DiaryRecordScreen() {
                     hitSlop={4}
                     accessibilityRole="button"
                     accessibilityState={{ selected: on }}
-                    accessibilityLabel={en ? m.en : m.ru}
+                    accessibilityLabel={pickLang(lang, m)}
                     style={s.mood}
                   >
                     {on && <View style={[s.moodRing, { borderColor: c.text }]} />}
@@ -389,7 +389,7 @@ export default function DiaryRecordScreen() {
             style={({ pressed }) => [s.saveBtn, { opacity: saving ? 0.6 : pressed ? 0.85 : 1 }]}
             accessibilityRole="button"
           >
-            <Text style={s.btnText}>{en ? "Save" : "Сохранить"}</Text>
+            <Text style={s.btnText}>{tr("Сохранить", "Save", "Сақтау")}</Text>
           </Pressable>
         </ScrollView>
       ) : (
@@ -402,25 +402,27 @@ export default function DiaryRecordScreen() {
           {phase === "denied" ? (
             <View style={[s.question, { backgroundColor: cardBg, flexDirection: "column", gap: 12 }]}>
               <Text style={[s.questionText, { color: c.text, textAlign: "center" }]}>
-                {en
-                  ? "King Speech needs the microphone to record your diary. Allow access in Settings."
-                  : "Чтобы записать дневник, King Speech нужен микрофон. Разреши доступ в настройках."}
+                {tr(
+                  "Чтобы записать дневник, King Speech нужен микрофон. Разреши доступ в настройках.",
+                  "King Speech needs the microphone to record your diary. Allow access in Settings.",
+                  "Күнделік жазу үшін King Speech-ке микрофон керек. Баптаулардан рұқсат бер.",
+                )}
               </Text>
               {Platform.OS !== "web" && (
                 <Pressable onPress={() => Linking.openSettings().catch(() => {})} style={s.settingsBtn}>
-                  <Text style={s.btnText}>{en ? "Open Settings" : "Открыть настройки"}</Text>
+                  <Text style={s.btnText}>{tr("Открыть настройки", "Open Settings", "Баптауларды ашу")}</Text>
                 </Pressable>
               )}
             </View>
           ) : (
             <View style={[s.question, { backgroundColor: cardBg }]}>
-              <Text style={[s.questionText, { color: c.text }]}>{en ? q.en : q.ru}</Text>
+              <Text style={[s.questionText, { color: c.text }]}>{pickLang(lang, q)}</Text>
               <Pressable
                 onPress={() => setQIdx((i) => pickQuestion(i))}
                 hitSlop={10}
                 style={s.refresh}
                 accessibilityRole="button"
-                accessibilityLabel={en ? "Another question" : "Другой вопрос"}
+                accessibilityLabel={tr("Другой вопрос", "Another question", "Басқа сұрақ")}
               >
                 <Ionicons name="refresh" size={18} color={c.text} />
               </Pressable>
@@ -440,14 +442,14 @@ export default function DiaryRecordScreen() {
             <RecButton
               kind="stop"
               onPress={stopRecording}
-              accessibilityLabel={en ? "Stop recording" : "Остановить запись"}
+              accessibilityLabel={tr("Остановить запись", "Stop recording", "Жазуды тоқтату")}
             />
           ) : phase !== "denied" ? (
             <RecButton
               kind="record"
               onPress={startRecording}
               disabled={phase !== "ready"}
-              accessibilityLabel={en ? "Start recording" : "Начать запись"}
+              accessibilityLabel={tr("Начать запись", "Start recording", "Жазуды бастау")}
             />
           ) : null}
         </View>
@@ -461,7 +463,7 @@ export default function DiaryRecordScreen() {
           hitSlop={12}
           style={[s.iconBtn, s.cornerRight, { top: topPad + 10 }]}
           accessibilityRole="button"
-          accessibilityLabel={en ? "Discard" : "Удалить запись"}
+          accessibilityLabel={tr("Удалить запись", "Discard", "Жазбаны жою")}
         >
           <Ionicons name="close" size={26} color={c.text} />
         </Pressable>
@@ -471,7 +473,7 @@ export default function DiaryRecordScreen() {
           hitSlop={12}
           style={[s.iconBtn, s.cornerLeft, { top: topPad + 10 }]}
           accessibilityRole="button"
-          accessibilityLabel={en ? "Back" : "Назад"}
+          accessibilityLabel={tr("Назад", "Back", "Артқа")}
         >
           <Ionicons name="chevron-back" size={26} color={c.text} />
         </Pressable>
@@ -479,11 +481,11 @@ export default function DiaryRecordScreen() {
 
       <AppDialog
         visible={confirmDiscard}
-        title={en ? "Discard this recording?" : "Удалить эту запись?"}
-        message={en ? "The cassette won't be saved." : "Кассета не сохранится."}
+        title={tr("Удалить эту запись?", "Discard this recording?", "Бұл жазбаны жою керек пе?")}
+        message={tr("Кассета не сохранится.", "The cassette won't be saved.", "Кассета сақталмайды.")}
         buttons={[
-          { label: en ? "Discard" : "Удалить", onPress: discardAndLeave, variant: "primary" },
-          { label: en ? "Keep" : "Остаться", onPress: () => setConfirmDiscard(false), variant: "secondary" },
+          { label: tr("Удалить", "Discard", "Жою"), onPress: discardAndLeave, variant: "primary" },
+          { label: tr("Остаться", "Keep", "Қалу"), onPress: () => setConfirmDiscard(false), variant: "secondary" },
         ]}
         onRequestClose={() => setConfirmDiscard(false)}
       />

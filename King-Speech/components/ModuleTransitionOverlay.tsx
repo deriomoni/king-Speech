@@ -33,7 +33,7 @@ import Svg, {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "@/lib/haptics";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useGame, getModuleQuote } from "@/context/GameContext";
 import { getModuleColor } from "@/constants/pathPalette";
@@ -61,7 +61,7 @@ import {
 const MODULE_REWARD_COINS = 50;
 const REWARDED_KEY = "@kingspeech_module_rewards_v1";
 
-const FALLBACK_QUOTES: Record<"ru" | "en", string[]> = {
+const FALLBACK_QUOTES: Record<Lang, string[]> = {
   ru: [
     "Каждый шаг делает твой голос сильнее.",
     "Ты растёшь — и это слышно.",
@@ -75,6 +75,13 @@ const FALLBACK_QUOTES: Record<"ru" | "en", string[]> = {
     "The courage to speak is half the battle.",
     "A new module, a new height. Let's go!",
     "Small wins build big confidence.",
+  ],
+  kk: [
+    "Әр қадам дауысыңды күшейтеді.",
+    "Сен өсіп келесің — бұл анық естіледі.",
+    "Сөйлеуге батылдық — жеңістің жартысы.",
+    "Жаңа модуль — жаңа биік. Алға!",
+    "Кішкентай жеңістер үлкен сенімділікке жетелейді.",
   ],
 };
 
@@ -197,7 +204,6 @@ export default function ModuleTransitionOverlay({
   onDone: () => void;
 }) {
   const { lang } = useLang();
-  const en = lang === "en";
   const { theme, themeMode } = useTheme();
   const dark = themeMode === "dark";
   const { addCoins } = useGame();
@@ -210,7 +216,7 @@ export default function ModuleTransitionOverlay({
 
   const quote =
     getModuleQuote(to, lang) ||
-    FALLBACK_QUOTES[en ? "en" : "ru"][to % FALLBACK_QUOTES.ru.length];
+    (FALLBACK_QUOTES[lang] ?? FALLBACK_QUOTES.ru)[to % FALLBACK_QUOTES.ru.length];
   const newLevels = useMemo(
     () => getLevelsData(lang).filter((l) => l.module === to).length,
     [lang, to],
@@ -358,7 +364,7 @@ export default function ModuleTransitionOverlay({
           >
             <View style={[styles.kickerDot, { backgroundColor: moduleColor, shadowColor: moduleColor }]} />
             <Text style={[styles.kickerText, { color: theme.text }]}>
-              {(en ? "MODULE " : "МОДУЛЬ ") + to}
+              {(pickLang(lang, { ru: "МОДУЛЬ ", en: "MODULE ", kk: "МОДУЛЬ " })) + to}
             </Text>
           </View>
         </View>
@@ -380,7 +386,7 @@ export default function ModuleTransitionOverlay({
             </View>
             {!!quote && <Text style={[styles.quote, { color: theme.text }]}>«{quote}»</Text>}
             <Text style={[styles.done, { color: dark ? theme.accent : theme.accentInk }]}>
-              {en ? `Module ${from} complete` : `Модуль ${from} пройден`}
+              {pickLang(lang, { ru: `Модуль ${from} пройден`, en: `Module ${from} complete`, kk: `${from}-модуль өтілді` })}
             </Text>
           </View>
         </Animated.View>
@@ -393,13 +399,13 @@ export default function ModuleTransitionOverlay({
               <CoinIcon size={22} color={theme.accent} />
             </View>
             <Text style={[styles.rewardLabel, { color: theme.text }]}>
-              {en ? "coins for the module" : "монет за модуль"}
+              {pickLang(lang, { ru: "монет за модуль", en: "coins for the module", kk: "модуль үшін монета" })}
             </Text>
           </View>
           <View style={[styles.reward, { backgroundColor: `rgba(${ink},0.05)`, borderColor: `rgba(${ink},0.14)` }]}>
             <Text style={[styles.rewardValue, { color: theme.text }]}>{newLevels}</Text>
             <Text style={[styles.rewardLabel, { color: theme.text }]}>
-              {en ? "new levels" : "новых уровней"}
+              {pickLang(lang, { ru: "новых уровней", en: "new levels", kk: "жаңа деңгей" })}
             </Text>
           </View>
         </View>
@@ -411,10 +417,10 @@ export default function ModuleTransitionOverlay({
             { backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.9 : 1 },
           ]}
         >
-          <Text style={[styles.ctaText, { color: theme.accentText }]}>{en ? "Next →" : "Далее →"}</Text>
+          <Text style={[styles.ctaText, { color: theme.accentText }]}>{pickLang(lang, { ru: "Далее →", en: "Next →", kk: "Келесі →" })}</Text>
         </Pressable>
         <Pressable onPress={proceed} hitSlop={10} style={({ pressed }) => [{ marginTop: 10, opacity: pressed ? 0.6 : 1 }]}>
-          <Text style={[styles.later, { color: `rgba(${ink},0.5)` }]}>{en ? "Exit" : "Выйти"}</Text>
+          <Text style={[styles.later, { color: `rgba(${ink},0.5)` }]}>{pickLang(lang, { ru: "Выйти", en: "Exit", kk: "Шығу" })}</Text>
         </Pressable>
       </View>
     </Animated.View>

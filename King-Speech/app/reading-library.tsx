@@ -17,7 +17,7 @@ import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
 import { useGame, type ReadingRecording } from "@/context/GameContext";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang, LANG_LOCALE, type Lang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import RecordingPlayer from "@/components/RecordingPlayer";
 import AppDialog from "@/components/AppDialog";
@@ -25,12 +25,12 @@ import { getLiterature, getLiteratureFullText } from "@/constants/literatureLoad
 
 type Filter = "all" | "showtime" | "interview" | "reading" | "tonguetwister";
 
-const FILTERS: { key: Filter; ru: string; en: string }[] = [
-  { key: "all", ru: "Все", en: "All" },
-  { key: "showtime", ru: "Show Time", en: "Show Time" },
-  { key: "interview", ru: "Интервью", en: "Interview" },
-  { key: "reading", ru: "Чтение", en: "Reading" },
-  { key: "tonguetwister", ru: "Скороговорки", en: "Tongue twisters" },
+const FILTERS: { key: Filter; ru: string; en: string; kk: string }[] = [
+  { key: "all", ru: "Все", en: "All", kk: "Барлығы" },
+  { key: "showtime", ru: "Show Time", en: "Show Time", kk: "Show Time" },
+  { key: "interview", ru: "Интервью", en: "Interview", kk: "Сұхбат" },
+  { key: "reading", ru: "Чтение", en: "Reading", kk: "Оқу" },
+  { key: "tonguetwister", ru: "Скороговорки", en: "Tongue twisters", kk: "Жаңылтпаштар" },
 ];
 
 // work title → literature text, built once (module ids 1..67).
@@ -39,8 +39,9 @@ function excerptFor(title: string): string {
   if (!EXCERPTS) {
     EXCERPTS = new Map();
     for (let i = 1; i <= 67; i++) {
-      const lit = getLiterature(i);
-      if (lit) EXCERPTS.set(lit.work, getLiteratureFullText(lit).replace(/\s*\n+\s*/g, " "));
+      for (const lit of [getLiterature(i), getLiterature(i, "kk")]) {
+        if (lit) EXCERPTS.set(lit.work, getLiteratureFullText(lit).replace(/\s*\n+\s*/g, " "));
+      }
     }
   }
   return EXCERPTS.get(title) ?? "";
@@ -52,19 +53,19 @@ function fmtDuration(sec?: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
-function fmtWhen(ms: number, lang: "ru" | "en") {
+function fmtWhen(ms: number, lang: Lang) {
   try {
     const d = new Date(ms);
     const now = new Date();
     const day = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
     const diff = Math.round((day(now) - day(d)) / 86400000);
-    const time = d.toLocaleTimeString(lang === "ru" ? "ru-RU" : "en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+    const time = d.toLocaleTimeString(LANG_LOCALE[lang], { hour: "2-digit", minute: "2-digit", hour12: false });
     let date: string;
-    if (diff === 0) date = lang === "ru" ? "Сегодня" : "Today";
-    else if (diff === 1) date = lang === "ru" ? "Вчера" : "Yesterday";
+    if (diff === 0) date = pickLang(lang, { ru: "Сегодня", en: "Today", kk: "Бүгін" });
+    else if (diff === 1) date = pickLang(lang, { ru: "Вчера", en: "Yesterday", kk: "Кеше" });
     else
       date = d
-        .toLocaleDateString(lang === "ru" ? "ru-RU" : "en-US", { day: "numeric", month: "short" })
+        .toLocaleDateString(LANG_LOCALE[lang], { day: "numeric", month: "short" })
         .replace(".", "");
     return `${date} · ${time}`;
   } catch {
@@ -94,12 +95,12 @@ function RecordRow({
   onMore: () => void;
   theme: any;
   isDark: boolean;
-  lang: "ru" | "en";
+  lang: Lang;
 }) {
   const ink = (a: number) => (isDark ? `rgba(240,238,233,${a})` : `rgba(38,38,40,${a})`);
   const excerpt = excerptFor(rec.title) || rec.author || "";
   const score = scoreOf(rec);
-  const mode = lang === "ru" ? "Чтение" : "Reading";
+  const mode = pickLang(lang, { ru: "Чтение", en: "Reading", kk: "Оқу" });
 
   return (
     <Animated.View entering={FadeInDown.delay(40 + index * 40).duration(380)} style={[row.wrap, { borderBottomColor: theme.divider }]}>
@@ -121,7 +122,7 @@ function RecordRow({
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             onToggle();
           }}
-          accessibilityLabel={lang === "ru" ? "Слушать запись" : "Play recording"}
+          accessibilityLabel={pickLang(lang, { ru: "Слушать запись", en: "Play recording", kk: "Жазбаны тыңдау" })}
           style={({ pressed }) => [row.pill, row.playPill, { backgroundColor: ink(0.08), opacity: pressed ? 0.7 : 1 }]}
         >
           <Ionicons name={expanded ? "pause" : "play"} size={12} color={theme.text} />
@@ -133,7 +134,7 @@ function RecordRow({
           </View>
         ) : null}
         <View style={{ flex: 1 }} />
-        <Pressable onPress={onMore} hitSlop={12} accessibilityLabel="Ещё" style={row.more}>
+        <Pressable onPress={onMore} hitSlop={12} accessibilityLabel={pickLang(lang, { ru: "Ещё", en: "More", kk: "Тағы" })} style={row.more}>
           <Ionicons name="ellipsis-horizontal" size={22} color={ink(0.5)} />
         </Pressable>
       </View>
@@ -197,7 +198,7 @@ export default function ReadingLibraryScreen() {
           onPress={() => router.back()}
           hitSlop={12}
           style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
-          accessibilityLabel="Назад"
+          accessibilityLabel={pickLang(lang, { ru: "Назад", en: "Back", kk: "Артқа" })}
         >
           <Ionicons name="chevron-back" size={24} color={theme.text} />
         </Pressable>
@@ -209,7 +210,7 @@ export default function ReadingLibraryScreen() {
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder={lang === "ru" ? "Поиск по записям" : "Search recordings"}
+            placeholder={pickLang(lang, { ru: "Поиск по записям", en: "Search recordings", kk: "Жазбалардан іздеу" })}
             placeholderTextColor={ink(0.5)}
             style={[styles.searchInput, { color: theme.text }]}
             returnKeyType="search"
@@ -244,7 +245,7 @@ export default function ReadingLibraryScreen() {
                 ]}
               >
                 <Text style={[styles.chipText, { color: on ? theme.accentInk : ink(0.7) }]}>
-                  {lang === "ru" ? f.ru : f.en}
+                  {pickLang(lang, f)}
                 </Text>
               </Pressable>
             );
@@ -257,14 +258,16 @@ export default function ReadingLibraryScreen() {
               <Ionicons name="mic-outline" size={36} color={theme.accentInk} />
             </View>
             <Text style={[styles.emptyTitle, { color: theme.text }]}>
-              {empty ? t("libraryEmptyTitle") : lang === "ru" ? "Ничего не найдено" : "Nothing found"}
+              {empty ? t("libraryEmptyTitle") : pickLang(lang, { ru: "Ничего не найдено", en: "Nothing found", kk: "Ештеңе табылмады" })}
             </Text>
             <Text style={[styles.emptyBody, { color: ink(0.65) }]}>
               {empty
                 ? t("libraryEmptyBody")
-                : lang === "ru"
-                  ? "Попробуй другой запрос или фильтр."
-                  : "Try another search or filter."}
+                : pickLang(lang, {
+                    ru: "Попробуй другой запрос или фильтр.",
+                    en: "Try another search or filter.",
+                    kk: "Басқа сұраныс не сүзгіні байқап көр.",
+                  })}
             </Text>
           </View>
         ) : (
@@ -294,7 +297,7 @@ export default function ReadingLibraryScreen() {
         buttons={[
           { label: t("cancel"), onPress: () => setPendingDelete(null) },
           {
-            label: lang === "ru" ? "Удалить" : "Delete",
+            label: pickLang(lang, { ru: "Удалить", en: "Delete", kk: "Жою" }),
             variant: "primary",
             onPress: () => {
               const rec = pendingDelete;

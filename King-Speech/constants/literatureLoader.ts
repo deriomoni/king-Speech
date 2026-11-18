@@ -1,6 +1,10 @@
 import { z } from "zod";
 import type { ReadingCategory } from "@/constants/gameContent";
 import literatureRaw from "@/assets/content/king_speech_literature_content.json";
+// Kazakh works, same schema (one entry per module). Modules missing here fall
+// back to the Russian collection.
+import literatureKkRaw from "@/assets/content/kk/literature_kk.json";
+import type { Lang } from "@/context/LangContext";
 
 /**
  * Loader for the "reading" (literature) levels.
@@ -42,7 +46,25 @@ const BY_MODULE = new Map<number, LiteratureModule>(
 );
 
 /** Get the literature entry for a module (1..67), or null if missing/invalid. */
-export function getLiterature(moduleId: number): LiteratureModule | null {
+const parsedKk = z.array(LiteratureModuleSchema).safeParse(literatureKkRaw);
+if (!parsedKk.success) {
+  console.warn("[literatureLoader] invalid KK literature JSON:", parsedKk.error.issues.slice(0, 3));
+}
+const BY_MODULE_KK = new Map<number, LiteratureModule>(
+  (parsedKk.success ? parsedKk.data : []).map((m) => [m.module, m]),
+);
+
+/** True when a Kazakh work exists for this module. */
+export function hasKazakhLiterature(moduleId: number): boolean {
+  return BY_MODULE_KK.has(moduleId);
+}
+
+/**
+ * Get the literature entry for a module (1..67), or null if missing/invalid.
+ * For kk returns the Kazakh work when present, otherwise the Russian one.
+ */
+export function getLiterature(moduleId: number, lang: Lang = "ru"): LiteratureModule | null {
+  if (lang === "kk") return BY_MODULE_KK.get(moduleId) ?? BY_MODULE.get(moduleId) ?? null;
   return BY_MODULE.get(moduleId) ?? null;
 }
 
@@ -56,8 +78,8 @@ export function getModuleFromReadingId(levelId: string): number {
 /** Derive the reading display category from the literary `kind`. */
 export function literatureCategory(kind: string): ReadingCategory {
   const k = kind.toLowerCase();
-  if (k.includes("басн")) return "fable";
-  if (k.includes("проз")) return "prose"; // "Стихотворение в прозе"
+  if (k.includes("басн") || k.includes("мысал")) return "fable";
+  if (k.includes("проз") || k.includes("әңгіме") || k.includes("повесть")) return "prose"; // "Стихотворение в прозе"
   return "poetry";
 }
 

@@ -4,6 +4,8 @@
  * - Russian: the Snowball "russian" algorithm
  *   (https://snowballstem.org/algorithms/russian/stemmer.html), reimplemented.
  * - English: the classic Porter algorithm.
+ * - Kazakh: a conservative suffix stripper (agglutinative case / possessive /
+ *   plural endings), see `stemKk`.
  *
  * Used by fillers/tautology/diversity to compare lemmas rather than surface
  * forms. Input is assumed already normalized (lowercase, ё→е).
@@ -295,7 +297,85 @@ export function stemEn(word: string): string {
   return w;
 }
 
+// ---------------------------------------------------------------------------
+// Kazakh (conservative suffix stripping)
+// ---------------------------------------------------------------------------
+//
+// Kazakh is agglutinative: stem + plural + possessive + case. We peel endings
+// from the right in that reverse order (case → possessive → plural), longest
+// first, and repeat until nothing changes. Goal is CONSISTENCY (all inflected
+// forms of a word map to one key for tautology/diversity), not a dictionary
+// lemma. Guards keep it conservative:
+//   - a multi-letter ending is removed only if ≥ 3 letters remain;
+//   - a one-letter ending (-а/-е/-ы/-і, -м/-ң) only if ≥ 4 letters remain,
+//     and -м/-ң only after a vowel (possessive after a vowel stem: бала-м);
+//   - -сы/-сі only after a vowel (бала-сы), so «жақсы» is not cut;
+//   - stem-final voiced б/г/ғ (from кітап→кітабы, жүрек→жүрегі) is mapped back
+//     to п/к/қ so both alternants share a key.
+
+const KK_VOWELS = 'аәеиоөуұүыіэюя';
+
+const KK_CASE = [
+  // genitive
+  'ның', 'нің', 'дың', 'дің', 'тың', 'тің',
+  // ablative
+  'нан', 'нен', 'дан', 'ден', 'тан', 'тен',
+  // locative
+  'нда', 'нде', 'да', 'де', 'та', 'те',
+  // instrumental
+  'мен', 'бен', 'пен',
+  // dative
+  'ға', 'ге', 'қа', 'ке', 'на', 'не', 'а', 'е',
+  // accusative
+  'ны', 'ні', 'ды', 'ді', 'ты', 'ті',
+].sort((a, b) => b.length - a.length);
+
+const KK_POSSESSIVE = [
+  'ымыз', 'іміз', 'ыңыз', 'іңіз', 'мыз', 'міз', 'ңыз', 'ңіз',
+  'ың', 'ің', 'ым', 'ім', 'сы', 'сі', 'ы', 'і', 'м', 'ң',
+].sort((a, b) => b.length - a.length);
+
+const KK_PLURAL = ['лар', 'лер', 'дар', 'дер', 'тар', 'тер'];
+
+function kkStripOne(w: string, endings: readonly string[]): string {
+  for (const e of endings) {
+    if (!w.endsWith(e)) continue;
+    const rest = w.slice(0, w.length - e.length);
+    if (e.length === 1) {
+      if (rest.length < 4) continue;
+      if ((e === 'м' || e === 'ң') && KK_VOWELS.indexOf(rest[rest.length - 1]) < 0) continue;
+    } else if (rest.length < 3) {
+      continue;
+    } else if ((e === 'сы' || e === 'сі') && KK_VOWELS.indexOf(rest[rest.length - 1]) < 0) {
+      // 3rd-person possessive -сы/-сі only follows a vowel (бала-сы); this
+      // keeps adjectives like «жақсы» intact.
+      continue;
+    }
+    return rest;
+  }
+  return w;
+}
+
+const KK_DEVOICE: Record<string, string> = { б: 'п', г: 'к', ғ: 'қ' };
+
+export function stemKk(word: string): string {
+  let w = word.toLowerCase();
+  if (w.length <= 3) return w;
+  for (let pass = 0; pass < 4; pass++) {
+    const before = w;
+    w = kkStripOne(w, KK_CASE);
+    w = kkStripOne(w, KK_POSSESSIVE);
+    w = kkStripOne(w, KK_PLURAL);
+    if (w === before) break;
+  }
+  const last = w[w.length - 1];
+  if (w !== word && KK_DEVOICE[last]) w = w.slice(0, -1) + KK_DEVOICE[last];
+  return w;
+}
+
 /** Stem `word` for the given locale (defaults to Russian). */
-export function stem(word: string, locale: 'ru' | 'en' = 'ru'): string {
-  return locale === 'en' ? stemEn(word) : stemRu(word);
+export function stem(word: string, locale: 'ru' | 'en' | 'kk' = 'ru'): string {
+  if (locale === 'en') return stemEn(word);
+  if (locale === 'kk') return stemKk(word);
+  return stemRu(word);
 }

@@ -29,9 +29,11 @@ import Animated, {
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { VOCAB_WORDS_RU, VocabWord, checkSynonymAdvanced } from "@/constants/vocabularyData";
+import { VOCAB_WORDS_KK } from "@/constants/vocabularyDataKk";
 import { useGame, MODULE_COLORS } from "@/context/GameContext";
 import { useModuleTransition } from "@/context/ModuleTransitionContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useLang, pickLang, LANG_LOCALE } from "@/context/LangContext";
 import { useWaveformBars } from "@/hooks/useWaveformBars";
 import LevelIcon from "@/components/path/LevelIcon";
 import VocabPlayView, {
@@ -74,19 +76,21 @@ function usePads() {
 
 function useInk() {
   const { theme, themeMode } = useTheme();
+  const { lang } = useLang();
   const isDark = themeMode === "dark";
   const ink = (a: number) => (isDark ? `rgba(240,238,233,${a})` : `rgba(38,38,40,${a})`);
-  return { theme, isDark, ink };
+  return { theme, isDark, ink, lang };
 }
 
 function CloseButton({ onPress }: { onPress: () => void }) {
   const { theme } = useTheme();
+  const { lang } = useLang();
   return (
     <Pressable
       onPress={onPress}
       hitSlop={10}
       accessibilityRole="button"
-      accessibilityLabel="Закрыть"
+      accessibilityLabel={pickLang(lang, { ru: "Закрыть", en: "Close", kk: "Жабу" })}
       style={({ pressed }) => [styles.close, { opacity: pressed ? 0.6 : 1 }]}
     >
       <Ionicons name="close" size={26} color={theme.text} />
@@ -277,14 +281,28 @@ function TutorialPhase({
   onDone: () => void;
   onClose: () => void;
 }) {
-  const { theme, ink } = useInk();
+  const { theme, ink, lang } = useInk();
   const pads = usePads();
-  const rules = [
-    "Нажми «Стоп» - получишь слово",
-    "Нажми «Старт» и говори синонимы",
-    "За каждый синоним +3 очка",
-    "Чем больше слов - тем выше балл",
-  ];
+  const rules = pickLang(lang, {
+    ru: [
+      "Нажми «Стоп» - получишь слово",
+      "Нажми «Старт» и говори синонимы",
+      "За каждый синоним +3 очка",
+      "Чем больше слов - тем выше балл",
+    ],
+    en: [
+      "Tap «Stop» - you'll get a word",
+      "Tap «Start» and say synonyms",
+      "+3 points for each synonym",
+      "The more words - the higher the score",
+    ],
+    kk: [
+      "«Стоп» батырмасын бас - сөз аласың",
+      "«Старт» батырмасын бас та, синонимдерді айт",
+      "Әр синоним үшін +3 ұпай",
+      "Сөз неғұрлым көп болса - ұпай соғұрлым жоғары",
+    ],
+  });
 
   return (
     <View
@@ -299,8 +317,8 @@ function TutorialPhase({
 
       <View style={{ flex: 1 }} />
 
-      <Text style={[styles.tutTitle, { color: theme.text }]}>Словарный запас</Text>
-      <Text style={[styles.tutSub, { color: ink(0.6) }]}>Синонимы на скорость</Text>
+      <Text style={[styles.tutTitle, { color: theme.text }]}>{pickLang(lang, { ru: "Словарный запас", en: "Vocabulary", kk: "Сөздік қор" })}</Text>
+      <Text style={[styles.tutSub, { color: ink(0.6) }]}>{pickLang(lang, { ru: "Синонимы на скорость", en: "Synonyms against the clock", kk: "Жылдамдыққа синонимдер" })}</Text>
 
       <View style={[styles.steps, { backgroundColor: ink(0.06), borderColor: ink(0.1) }]}>
         {rules.map((text, i) => (
@@ -319,7 +337,7 @@ function TutorialPhase({
       <View style={styles.tip}>
         <View style={[styles.tipDot, { backgroundColor: theme.accent }]} />
         <Text style={[styles.tipText, { color: ink(0.5) }]}>
-          Говори вслух - микрофон засчитает каждое слово
+          {pickLang(lang, { ru: "Говори вслух - микрофон засчитает каждое слово", en: "Speak out loud - the mic will count every word", kk: "Дауыстап айт - микрофон әр сөзді есептейді" })}
         </Text>
       </View>
 
@@ -332,9 +350,9 @@ function TutorialPhase({
           { backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.85 : 1 },
         ]}
         accessibilityRole="button"
-        accessibilityLabel="Понятно, начать"
+        accessibilityLabel={pickLang(lang, { ru: "Понятно, начать", en: "Got it, let's start", kk: "Түсінікті, бастайық" })}
       >
-        <Text style={[styles.primaryBtnText, { color: theme.accentText }]}>Понятно, начать</Text>
+        <Text style={[styles.primaryBtnText, { color: theme.accentText }]}>{pickLang(lang, { ru: "Понятно, начать", en: "Got it, let's start", kk: "Түсінікті, бастайық" })}</Text>
       </Pressable>
     </View>
   );
@@ -391,7 +409,7 @@ function ReelRow({
 // Intro «Выбери слово» (148:444): a big two-line title over a clean
 // background for ~1s, then it fades out and the drum is revealed.
 function SpinIntro({ onDone }: { onDone: () => void }) {
-  const { theme, ink } = useInk();
+  const { theme, ink, lang } = useInk();
   const [visible, setVisible] = useState(true);
   const op = useSharedValue(1);
   const doneRef = useRef(onDone);
@@ -417,8 +435,8 @@ function SpinIntro({ onDone }: { onDone: () => void }) {
   return (
     <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, wrapStyle]}>
       <View style={[styles.introWrap, { backgroundColor: theme.bg }]}>
-        <Text style={[styles.introTitle, { color: theme.text }]}>{"Выбери\nслово"}</Text>
-        <Text style={[styles.introSub, { color: ink(0.5) }]}>Останови барабан - получишь слово</Text>
+        <Text style={[styles.introTitle, { color: theme.text }]}>{pickLang(lang, { ru: "Выбери\nслово", en: "Pick\na word", kk: "Сөз\nтаңда" })}</Text>
+        <Text style={[styles.introSub, { color: ink(0.5) }]}>{pickLang(lang, { ru: "Останови барабан - получишь слово", en: "Stop the reel - you'll get a word", kk: "Барабанды тоқтат - сөз аласың" })}</Text>
       </View>
     </Animated.View>
   );
@@ -426,7 +444,7 @@ function SpinIntro({ onDone }: { onDone: () => void }) {
 
 // «Словарный запас» chip with the level glyph on a gold tile (148:473).
 function LevelChip() {
-  const { theme, ink } = useInk();
+  const { theme, ink, lang } = useInk();
   return (
     <View style={[styles.levelChip, { backgroundColor: ink(0.06), borderColor: ink(0.1) }]}>
       <View style={[styles.levelTile, { backgroundColor: theme.accent }]}>
@@ -436,7 +454,7 @@ function LevelChip() {
           </View>
         </View>
       </View>
-      <Text style={[styles.levelChipText, { color: theme.text }]}>Словарный запас</Text>
+      <Text style={[styles.levelChipText, { color: theme.text }]}>{pickLang(lang, { ru: "Словарный запас", en: "Vocabulary", kk: "Сөздік қор" })}</Text>
     </View>
   );
 }
@@ -450,7 +468,7 @@ function SpinPhase({
   onPicked: (w: VocabWord) => void;
   onClose: () => void;
 }) {
-  const { theme, isDark, ink } = useInk();
+  const { theme, isDark, ink, lang } = useInk();
   const pads = usePads();
   const [introDone, setIntroDone] = useState(false);
   // A finite reel of Russian words, frozen ONCE at mount. Because the strip is
@@ -458,8 +476,9 @@ function SpinPhase({
   // word — which changes excludeIds — can never reshuffle it mid-spin, so the
   // word you land on is exactly the word you play.
   const [reel] = useState<VocabWord[]>(() => {
-    const available = VOCAB_WORDS_RU.filter((w) => !excludeIds.includes(w.id));
-    const base = available.length > 0 ? available : VOCAB_WORDS_RU;
+    const words = lang === "kk" ? VOCAB_WORDS_KK : VOCAB_WORDS_RU;
+    const available = words.filter((w) => !excludeIds.includes(w.id));
+    const base = available.length > 0 ? available : words;
     const shuffled = [...base].sort(() => Math.random() - 0.5);
     return Array.from(
       { length: REEL_LEN },
@@ -591,11 +610,11 @@ function SpinPhase({
             },
           ]}
           accessibilityRole="button"
-          accessibilityLabel="Стоп"
+          accessibilityLabel={pickLang(lang, { ru: "Стоп", en: "Stop", kk: "Стоп" })}
         >
-          <Text style={[styles.stopRoundText, { color: theme.accentText }]}>СТОП</Text>
+          <Text style={[styles.stopRoundText, { color: theme.accentText }]}>{pickLang(lang, { ru: "СТОП", en: "STOP", kk: "СТОП" })}</Text>
         </Pressable>
-        <Text style={[styles.stopCaption, { color: ink(0.45) }]}>Нажми, чтобы остановить</Text>
+        <Text style={[styles.stopCaption, { color: ink(0.45) }]}>{pickLang(lang, { ru: "Нажми, чтобы остановить", en: "Tap to stop", kk: "Тоқтату үшін бас" })}</Text>
       </View>
 
       <SpinIntro onDone={() => setIntroDone(true)} />
@@ -628,6 +647,12 @@ function PlayPhase({
 }) {
   const { coins, spendCoins } = useGame();
   const pads = usePads();
+  const { lang } = useLang();
+  // Recognizer language follows the word list (KK list for kk, RU otherwise).
+  const srLocale = lang === "kk" ? LANG_LOCALE.kk : LANG_LOCALE.ru;
+  // Read inside long-lived recognition callbacks without re-creating them.
+  const langRef = useRef(lang);
+  langRef.current = lang;
 
   // Open confirm pop-up, if any (replace word / exit).
   const [modal, setModal] = useState<VocabModal>(null);
@@ -828,7 +853,11 @@ function PlayPhase({
     const sr = getSpeechRecognitionModule();
     if (!sr || !sr.isRecognitionAvailable()) {
       setRecognitionError(
-        "Распознавание речи недоступно в Expo Go. Введи синоним вручную или используй dev-сборку.",
+        pickLang(langRef.current, {
+          ru: "Распознавание речи недоступно в Expo Go. Введи синоним вручную или используй dev-сборку.",
+          en: "Speech recognition isn't available in Expo Go. Type the synonym or use a dev build.",
+          kk: "Expo Go-да сөзді тану қолжетімсіз. Синонимді қолмен енгіз немесе dev-нұсқаны қолдан.",
+        }),
       );
       return;
     }
@@ -836,13 +865,21 @@ function PlayPhase({
       const perm = await sr.requestPermissionsAsync();
       if (!perm.granted) {
         setRecognitionError(
-          "Доступ к микрофону или распознаванию запрещён. Введи синоним вручную.",
+          pickLang(langRef.current, {
+            ru: "Доступ к микрофону или распознаванию запрещён. Введи синоним вручную.",
+            en: "Microphone or speech recognition access is denied. Type the synonym instead.",
+            kk: "Микрофонға немесе сөзді тануға рұқсат жоқ. Синонимді қолмен енгіз.",
+          }),
         );
         return;
       }
     } catch {
       setRecognitionError(
-        "Не удалось получить доступ к микрофону. Введи синоним вручную.",
+        pickLang(langRef.current, {
+          ru: "Не удалось получить доступ к микрофону. Введи синоним вручную.",
+          en: "Couldn't access the microphone. Type the synonym instead.",
+          kk: "Микрофонға қол жеткізу мүмкін болмады. Синонимді қолмен енгіз.",
+        }),
       );
       return;
     }
@@ -867,8 +904,16 @@ function PlayPhase({
           } catch {}
           setRecognitionError(
             event.error === "audio-capture"
-              ? "Микрофон недоступен. Введи синоним вручную."
-              : "Распознавание речи запрещено. Введи синоним вручную.",
+              ? pickLang(langRef.current, {
+                  ru: "Микрофон недоступен. Введи синоним вручную.",
+                  en: "The microphone is unavailable. Type the synonym instead.",
+                  kk: "Микрофон қолжетімсіз. Синонимді қолмен енгіз.",
+                })
+              : pickLang(langRef.current, {
+                  ru: "Распознавание речи запрещено. Введи синоним вручную.",
+                  en: "Speech recognition is blocked. Type the synonym instead.",
+                  kk: "Сөзді тануға тыйым салынған. Синонимді қолмен енгіз.",
+                }),
           );
         }
         // Transient errors → the "end" listener restarts automatically.
@@ -880,7 +925,7 @@ function PlayPhase({
         // Auto-restart so recognition keeps streaming for the whole round.
         try {
           sr.start({
-            lang: "ru-RU",
+            lang: srLocale, // word list is RU or KK; EN plays the RU list
             interimResults: true,
             continuous: true,
             maxAlternatives: 3,
@@ -893,7 +938,7 @@ function PlayPhase({
       if (!isPlayingRef.current) return;
       try {
         sr.start({
-          lang: "ru-RU",
+          lang: srLocale,
           interimResults: true,
           continuous: true,
           maxAlternatives: 3,
@@ -907,7 +952,13 @@ function PlayPhase({
           return;
         }
         console.warn("[vocab] SR start failed", err);
-        setRecognitionError("Не удалось запустить распознавание.");
+        setRecognitionError(
+          pickLang(langRef.current, {
+            ru: "Не удалось запустить распознавание.",
+            en: "Couldn't start speech recognition.",
+            kk: "Сөзді тануды іске қосу мүмкін болмады.",
+          }),
+        );
       }
     };
     isPlayingRef.current = true;

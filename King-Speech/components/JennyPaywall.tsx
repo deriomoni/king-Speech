@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 import RoundStar from "@/components/RoundStar";
+import type { Lang } from "@/context/LangContext";
 
 const jennyHero = require("@/assets/jenny/jenny_smiling.png");
 const { height: SH } = Dimensions.get("window");
@@ -20,8 +21,6 @@ const { height: SH } = Dimensions.get("window");
 const GOLD = "#F5C451";
 const BG_TOP = "#140B2E";
 const BG_BOT = "#0A0F28";
-
-type Lang = "ru" | "en";
 
 const COPY: Record<Lang, {
   badge: string;
@@ -60,6 +59,20 @@ const COPY: Record<Lang, {
     note: "Pay per interview — nothing wasted on idle subscriptions",
     dev: "Unlock for testing",
     close: "Later",
+  },
+  kk: {
+    badge: "PREMIUM",
+    title: "Дженнимен сұхбат",
+    subtitle: "Сені тыңдап, дауыспен жауап беретін сұхбатшымен жанды әңгіме.",
+    benefits: [
+      { icon: "mic", title: "Жанды дауыс", desc: "Дженни робот емес, адам сияқты сөйлейді" },
+      { icon: "sparkles", title: "Ақылды сұрақтар", desc: "Нағыз әңгіме — ол сенің жауаптарыңды естиді" },
+      { icon: "stats-chart", title: "Сөйлеуді талдау", desc: "Шешендік стандарттар бойынша бағалау" },
+    ],
+    cta: "Premium ашу",
+    note: "Әр сұхбат үшін төлем — бос жазылымсыз",
+    dev: "Тест үшін ашу",
+    close: "Кейінірек",
   },
 };
 

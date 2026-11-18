@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { Cairo, type Backend } from "./cairo";
+import type { Lang } from "@/context/LangContext";
 import { Audience, HALL, loadCast, setBackgroundSprites, setSpriteMeta, type BgSprite, type Person } from "./scene";
 
 export type AudiencePhase = "idle" | "live" | "done";
@@ -16,7 +17,7 @@ export type LiveAudienceProps = {
   dim: number;
   /** live slider value while dragging (read every frame, no re-render needed) */
   dimRef?: React.MutableRefObject<number>;
-  lang: "ru" | "en";
+  lang: Lang;
   /** recent mic levels 0..1 (newest last): pauses → more chatter, a strong voice → quieter hall */
   levelsRef?: React.MutableRefObject<number[]>;
   /** lighting kit (spotlights + bulbs), chosen by the module */
@@ -88,9 +89,10 @@ const getCast = () => {
   return CAST.map((p) => ({ ...p, G: { ...p.G } }));
 };
 
-const CHAT: Record<"ru" | "en", string[]> = {
+const CHAT: Record<Lang, string[]> = {
   ru: ["шу-шу", "а ты знал?", "хм…", "тсс!", "ого", "интересно", "согласен", "ха-ха", "м-да", "слушай…", "серьёзно?", "ну да"],
   en: ["psst", "did you know?", "hmm…", "shh!", "wow", "interesting", "agreed", "ha-ha", "well…", "listen…", "really?", "yeah"],
+  kk: ["сыбыр-сыбыр", "білесің бе?", "хм…", "тсс!", "ойбай", "қызық екен", "келісемін", "ха-ха", "иә-ә…", "тыңдашы…", "шын ба?", "солай-солай"],
 };
 
 type Bubble = { id: number; x: number; y: number; text: string; side: 1 | -1 };

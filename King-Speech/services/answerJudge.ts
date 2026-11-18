@@ -1,5 +1,6 @@
 import { fetch as expoFetch } from "expo/fetch";
 import { getApiUrl } from "@/lib/query-client";
+import type { Lang } from "@/context/LangContext";
 
 // AI judge for interview answers. It only answers two questions — did the player
 // address THIS question (relevance, primary) and how competent the wording is —
@@ -23,7 +24,7 @@ function num(v: any): number | undefined {
 export async function judgeAnswer(params: {
   question: string;
   transcript: string;
-  lang: "ru" | "en";
+  lang: Lang;
   timeoutMs?: number;
 }): Promise<AnswerJudge> {
   const { question, transcript, lang, timeoutMs = 8000 } = params;

@@ -13,6 +13,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import OscarMascot from "@/components/OscarMascot";
 import { useTheme } from "@/context/ThemeContext";
+import { pickLang, type Lang } from "@/context/LangContext";
 
 
 const PHRASES_RU = [
@@ -33,6 +34,16 @@ const PHRASES_EN = [
   "Checking your volume…",
   "Tracking your tempo…",
   "Preparing your personal report…",
+];
+
+const PHRASES_KK = [
+  "Сөзіңді талдап жатырмыз…",
+  "Интонацияңды тыңдап жатырмыз…",
+  "Паразит сөздерді санап жатырмыз…",
+  "Дикцияның анықтығын бағалап жатырмыз…",
+  "Дауыс қаттылығын тексеріп жатырмыз…",
+  "Сөйлеу қарқынын салыстырып жатырмыз…",
+  "Жеке есебіңді дайындап жатырмыз…",
 ];
 
 const PHRASE_INTERVAL_MS = 2000;
@@ -92,7 +103,7 @@ function RotatingPhrase({ phrases }: { phrases: string[] }) {
 
 interface Props {
   visible: boolean;
-  lang: "ru" | "en";
+  lang: Lang;
 }
 
 export default function SpeechAnalyzingLoader({ visible, lang }: Props) {
@@ -128,7 +139,7 @@ export default function SpeechAnalyzingLoader({ visible, lang }: Props) {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const phrases = lang === "en" ? PHRASES_EN : PHRASES_RU;
+  const phrases = pickLang(lang, { ru: PHRASES_RU, en: PHRASES_EN, kk: PHRASES_KK });
 
   return (
     <Animated.View

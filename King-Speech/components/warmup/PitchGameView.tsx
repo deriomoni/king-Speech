@@ -13,6 +13,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
+import { useLang, pickLang } from "@/context/LangContext";
 import { LinearGradient } from "expo-linear-gradient";
 import PitchTrackSkia, {
   buildTrackSegments,
@@ -54,6 +55,7 @@ export default function PitchGameView({
   onBack,
 }: Props) {
   const pitch = usePitchDetection();
+  const { lang } = useLang();
   const segments = useMemo(
     () =>
       buildTrackSegments(
@@ -301,7 +303,7 @@ export default function PitchGameView({
       </View>
 
       <View style={styles.soundPill}>
-        <Text style={styles.soundText}>Звук: {data.sound}</Text>
+        <Text style={styles.soundText}>{pickLang(lang, { ru: "Звук", en: "Sound", kk: "Дыбыс" })}: {data.sound}</Text>
       </View>
 
       {phase === "countdown" && (
@@ -311,7 +313,7 @@ export default function PitchGameView({
             entering={FadeInDown.duration(200)}
             style={styles.countdown}
           >
-            {countdown || "Пой!"}
+            {countdown || pickLang(lang, { ru: "Пой!", en: "Sing!", kk: "Ән сал!" })}
           </Animated.Text>
         </View>
       )}
@@ -325,7 +327,7 @@ export default function PitchGameView({
           {session.comboMax > 0 && session.combo >= 3 && (
             <Animated.View style={[styles.comboPill, comboStyle]}>
               <Ionicons name="flame" size={14} color={warmupTheme.gold} />
-              <Text style={styles.comboText}>Комбо ×{session.combo}</Text>
+              <Text style={styles.comboText}>{pickLang(lang, { ru: "Комбо", en: "Combo", kk: "Комбо" })} ×{session.combo}</Text>
             </Animated.View>
           )}
 
@@ -348,8 +350,16 @@ export default function PitchGameView({
           </View>
           <Text style={styles.hint}>
             {pitch.pitchMode === "metering"
-              ? "Пой в микрофон — на телефоне оценка по активности голоса"
-              : "Веди жёлтый шарик по нотам"}
+              ? pickLang(lang, {
+                  ru: "Пой в микрофон — на телефоне оценка по активности голоса",
+                  en: "Sing into the mic — on phones the score is based on voice activity",
+                  kk: "Микрофонға ән сал — телефонда баға дауыс белсенділігі бойынша қойылады",
+                })
+              : pickLang(lang, {
+                  ru: "Веди жёлтый шарик по нотам",
+                  en: "Guide the yellow ball along the notes",
+                  kk: "Сары шарикті ноталар бойымен жүргіз",
+                })}
           </Text>
         </Animated.View>
       )}

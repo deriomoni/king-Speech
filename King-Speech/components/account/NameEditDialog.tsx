@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Pressable, Modal, TextInput, Platform } from "react-native";
 import { useAppColors } from "@/hooks/useAppColors";
+import { useLang, pickLang } from "@/context/LangContext";
 
 /** Small rename dialog styled like AppDialog (same frame), with a text field. */
 export default function NameEditDialog({
@@ -15,6 +16,7 @@ export default function NameEditDialog({
   onSave: (name: string) => void;
 }) {
   const { colors, isDark } = useAppColors();
+  const { lang } = useLang();
   const [value, setValue] = useState(initial);
   useEffect(() => {
     if (visible) setValue(initial);
@@ -28,27 +30,27 @@ export default function NameEditDialog({
       <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} />
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.title, { color: colors.text }]}>Имя</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{pickLang(lang, { ru: "Имя", en: "Name", kk: "Аты" })}</Text>
           <TextInput
             value={value}
             onChangeText={setValue}
             autoFocus
             maxLength={40}
-            placeholder="Как тебя зовут?"
+            placeholder={pickLang(lang, { ru: "Как тебя зовут?", en: "What's your name?", kk: "Атың кім?" })}
             placeholderTextColor={colors.textSecondary}
             onSubmitEditing={() => onSave(value)}
             style={[styles.input, { color: colors.text, borderColor: colors.border }]}
           />
           <View style={styles.btns}>
             <Pressable onPress={onCancel} style={[styles.btn, { borderWidth: 1.5, borderColor: colors.border }]}>
-              <Text style={[styles.btnText, { color: colors.text }]}>Отмена</Text>
+              <Text style={[styles.btnText, { color: colors.text }]}>{pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" })}</Text>
             </Pressable>
             <Pressable
               onPress={() => onSave(value)}
               disabled={!value.trim()}
               style={[styles.btn, { backgroundColor: ink, opacity: value.trim() ? 1 : 0.5 }]}
             >
-              <Text style={[styles.btnText, { color: onInk }]}>Сохранить</Text>
+              <Text style={[styles.btnText, { color: onInk }]}>{pickLang(lang, { ru: "Сохранить", en: "Save", kk: "Сақтау" })}</Text>
             </Pressable>
           </View>
         </View>

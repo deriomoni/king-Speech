@@ -95,6 +95,20 @@ const MESSAGES_EN: Record<RetryReason, string> = {
   too_loud_clipping: 'The mic is overloaded — speak a bit softer or move back.',
 };
 
+const MESSAGES_KK: Record<RetryReason, string> = {
+  too_short: 'Қысқа шықты — тағы бір рет, сәл ұзағырақ айтып көр.',
+  mostly_silence: 'Дауысың әрең естіледі — тағы байқап көр.',
+  nothing_recognized: 'Естімей қалдым — тағы бір рет айтайықшы.',
+  off_script: 'Басқа мәтін сияқты болды — басынан бастап көр.',
+  too_loud_clipping: 'Микрофон шамадан тыс жүктелді — сәл ақырынырақ сөйле немесе алысырақ тұр.',
+};
+
+const MESSAGES: Record<Locale, Record<RetryReason, string>> = {
+  ru: MESSAGES_RU,
+  en: MESSAGES_EN,
+  kk: MESSAGES_KK,
+};
+
 export function retryMessage(reason: RetryReason, locale: Locale): string {
-  return (locale === 'en' ? MESSAGES_EN : MESSAGES_RU)[reason];
+  return (MESSAGES[locale] ?? MESSAGES_RU)[reason];
 }

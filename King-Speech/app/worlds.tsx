@@ -15,7 +15,7 @@ import * as Haptics from "@/lib/haptics";
 import { router } from "expo-router";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useGame, RANKS_MODULAR, MODULE_COLORS } from "@/context/GameContext";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useTheme, type Theme } from "@/context/ThemeContext";
 import { useDevTools } from "@/context/DevToolsContext";
 import {
@@ -42,10 +42,11 @@ function rankStatusFor(
   return "locked";
 }
 
-function rankNameFor(rankIndex: number, lang: "ru" | "en"): string {
+function rankNameFor(rankIndex: number, lang: Lang): string {
   const ru = ["Новичок", "Любитель", "Уверенный", "Мастер", "Профи"];
   const en = ["Novice", "Amateur", "Confident", "Master", "Pro"];
-  return (lang === "en" ? en : ru)[Math.max(0, Math.min(4, rankIndex - 1))];
+  const kk = ["Бастаушы", "Әуесқой", "Сенімді", "Шебер", "Кәсіпқой"];
+  return pickLang(lang, { ru, en, kk })[Math.max(0, Math.min(4, rankIndex - 1))];
 }
 
 export default function WorldsMapRoute() {
@@ -99,7 +100,7 @@ export default function WorldsMapRoute() {
         <Pressable
           onPress={handleClose}
           accessibilityRole="button"
-          accessibilityLabel={lang === "en" ? "Close" : "Закрыть"}
+          accessibilityLabel={pickLang(lang, { ru: "Закрыть", en: "Close", kk: "Жабу" })}
           style={({ pressed }) => [styles.closeBtn, { opacity: pressed ? 0.7 : 1 }]}
           testID="worlds-close"
           hitSlop={12}
@@ -113,10 +114,10 @@ export default function WorldsMapRoute() {
               { color: appTheme.textMuted, fontFamily: "Geologica_500Medium" },
             ]}
           >
-            {lang === "en" ? "WORLDS" : "МИРЫ"}
+            {pickLang(lang, { ru: "МИРЫ", en: "WORLDS", kk: "ӘЛЕМДЕР" })}
           </Text>
           <Text style={[styles.title, { color: appTheme.text, fontFamily: "Geologica_700Bold" }]}>
-            {lang === "en" ? "Your journey" : "Твой путь"}
+            {pickLang(lang, { ru: "Твой путь", en: "Your journey", kk: "Сенің жолың" })}
           </Text>
         </View>
         <View style={styles.closeBtn} />
@@ -183,9 +184,11 @@ export default function WorldsMapRoute() {
               { color: appTheme.textMuted, fontFamily: "Geologica_400Regular" },
             ]}
           >
-            {lang === "en"
-              ? "Tap a completed world to revisit recordings and the rank-up moment."
-              : "Нажми на пройденный мир, чтобы пересмотреть записи и церемонию ранга."}
+            {pickLang(lang, {
+              ru: "Нажми на пройденный мир, чтобы пересмотреть записи и церемонию ранга.",
+              en: "Tap a completed world to revisit recordings and the rank-up moment.",
+              kk: "Жазбалар мен дәреже салтанатын қайта көру үшін өтілген әлемді бас.",
+            })}
           </Text>
         </View>
       </ScrollView>
@@ -212,7 +215,7 @@ interface RankCardProps {
   recordingsCount: number;
   modulePreview: ModuleDot[];
   onPress: () => void;
-  lang: "ru" | "en";
+  lang: Lang;
   isDark: boolean;
   appTheme: Theme;
 }
@@ -239,10 +242,10 @@ function RankCard({
   const isCompleted = status === "completed";
 
   const statusLabel = isLocked
-    ? lang === "en" ? "Locked" : "Закрыт"
+    ? pickLang(lang, { ru: "Закрыт", en: "Locked", kk: "Жабық" })
     : isCurrent
-    ? lang === "en" ? "Current" : "Текущий"
-    : lang === "en" ? "Completed" : "Пройден";
+    ? pickLang(lang, { ru: "Текущий", en: "Current", kk: "Ағымдағы" })
+    : pickLang(lang, { ru: "Пройден", en: "Completed", kk: "Өтілді" });
 
   const lockedGradient: readonly [string, string] = isDark
     ? ["rgba(255,255,255,0.10)", "rgba(255,255,255,0.04)"]
@@ -255,7 +258,7 @@ function RankCard({
       onPress={onPress}
       disabled={isLocked}
       accessibilityRole="button"
-      accessibilityLabel={`${lang === "en" ? "Rank" : "Ранг"} ${rank} · ${rankName} · ${statusLabel}`}
+      accessibilityLabel={`${pickLang(lang, { ru: "Ранг", en: "Rank", kk: "Дәреже" })} ${rank} · ${rankName} · ${statusLabel}`}
       testID={`worlds-rank-${rank}`}
       style={({ pressed }) => [
         cardStyles.outer,
@@ -329,7 +332,7 @@ function RankCard({
                 { color: appTheme.textMuted, fontFamily: "Geologica_500Medium" },
               ]}
             >
-              {lang === "en" ? "RANK" : "РАНГ"} {rank}
+              {pickLang(lang, { ru: "РАНГ", en: "RANK", kk: "ДӘРЕЖЕ" })} {rank}
             </Text>
             <View
               style={[
@@ -392,7 +395,7 @@ function RankCard({
               <Ionicons name="layers-outline" size={12} color={metaIcon} />
               <Text style={[cardStyles.metaText, { color: metaFg, fontFamily: "Geologica_500Medium" }]}>
                 {completedInRank}/{totalInRank}{" "}
-                {lang === "en" ? "modules" : "модулей"}
+                {pickLang(lang, { ru: "модулей", en: "modules", kk: "модуль" })}
               </Text>
             </View>
             {!isLocked && (
@@ -400,9 +403,11 @@ function RankCard({
                 <Ionicons name="mic-outline" size={12} color={metaIcon} />
                 <Text style={[cardStyles.metaText, { color: metaFg, fontFamily: "Geologica_500Medium" }]}>
                   {recordingsCount}{" "}
-                  {lang === "en"
-                    ? recordingsCount === 1 ? "recording" : "recordings"
-                    : "записей"}
+                  {pickLang(lang, {
+                    ru: "записей",
+                    en: recordingsCount === 1 ? "recording" : "recordings",
+                    kk: "жазба",
+                  })}
                 </Text>
               </View>
             )}

@@ -10,6 +10,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, RadialGradient, Stop, Circle } from "react-native-svg";
 import * as Haptics from "@/lib/haptics";
 import { RolesMaskIcon } from "./ShowTimeIcons";
+import { pickLang, type Lang } from "@/context/LangContext";
 
 type Mode = "dark" | "light";
 
@@ -214,12 +215,12 @@ function HintsArt({ look }: { look: Look }) {
 
 export function ShowTimeModeTiles({
   mode,
-  en,
+  lang,
   onRoles,
   onHints,
 }: {
   mode: Mode;
-  en: boolean;
+  lang: Lang;
   onRoles: () => void;
   onHints: () => void;
 }) {
@@ -230,8 +231,8 @@ export function ShowTimeModeTiles({
         mode={mode}
         idSuffix="roles"
         spotX={-10}
-        title={en ? "Roles" : "Роли"}
-        sub={en ? "Play a character" : "Играй персонажа"}
+        title={pickLang(lang, { ru: "Роли", en: "Roles", kk: "Рөлдер" })}
+        sub={pickLang(lang, { ru: "Играй персонажа", en: "Play a character", kk: "Кейіпкерді сомда" })}
         onPress={onRoles}
       >
         <RolesArt look={look} />
@@ -240,8 +241,8 @@ export function ShowTimeModeTiles({
         mode={mode}
         idSuffix="hints"
         spotX={-30}
-        title={en ? "Hints" : "Подсказки"}
-        sub={en ? "How to hold the room" : "Подскажет, как держать зал"}
+        title={pickLang(lang, { ru: "Подсказки", en: "Hints", kk: "Кеңестер" })}
+        sub={pickLang(lang, { ru: "Подскажет, как держать зал", en: "How to hold the room", kk: "Залды қалай ұстауды үйретеді" })}
         onPress={onHints}
       >
         <HintsArt look={look} />

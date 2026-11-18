@@ -229,7 +229,9 @@ export async function analyzeCaptured(params: AnalyzeCapturedParams): Promise<An
       const msg =
         locale === 'en'
           ? `Didn't catch it. Say it again: ${refText}`
-          : `Не расслышал. Скажи ещё раз: ${refText}`;
+          : locale === 'kk'
+            ? `Естімей қалдым. Тағы бір рет айт: ${refText}`
+            : `Не расслышал. Скажи ещё раз: ${refText}`;
       return retry('off_script', locale, msg);
     }
     result = out;
@@ -347,7 +349,9 @@ function liteResult(params: AnalyzeCapturedParams): AnalysisResult {
     // Vocabulary needs STT — skip without penalty (§9).
     return retry('nothing_recognized', locale, locale === 'en'
       ? 'Full analysis needs the voice pack — this level is skipped for now.'
-      : 'Для этого уровня нужен голосовой пакет — уровень пока пропущен.');
+      : locale === 'kk'
+        ? 'Бұл деңгейге дауыс пакеті керек — деңгей әзірге өткізіліп жіберілді.'
+        : 'Для этого уровня нужен голосовой пакет — уровень пока пропущен.');
   }
   if (!vad || vad.speechDbfs.length === 0) {
     return retry('mostly_silence', locale);
@@ -359,12 +363,28 @@ function liteResult(params: AnalyzeCapturedParams): AnalysisResult {
   const raw = 100 * (0.6 * loud.loudness + 0.4 * punctProxy);
   const shownScore = applyCurve(raw, rank);
 
+  const LITE_TEXT: Record<Locale, { praise: string; growth: string; action: string }> = {
+    ru: {
+      praise: 'Голос звучит уверенно.',
+      growth: 'Полный анализ появится после установки голосового пакета.',
+      action: 'Установи языковой пакет в настройках.',
+    },
+    en: {
+      praise: 'Your voice came through clearly.',
+      growth: 'Full analysis will unlock once the voice pack is installed.',
+      action: 'Install the language pack in settings.',
+    },
+    kk: {
+      praise: 'Дауысың сенімді естіледі.',
+      growth: 'Толық талдау дауыс пакеті орнатылғаннан кейін ашылады.',
+      action: 'Баптауларда тіл пакетін орнат.',
+    },
+  };
+  const lite = LITE_TEXT[locale] ?? LITE_TEXT.ru;
   const feedback: Feedback = {
-    praise: locale === 'en' ? 'Your voice came through clearly.' : 'Голос звучит уверенно.',
-    growth: locale === 'en'
-      ? 'Full analysis will unlock once the voice pack is installed.'
-      : 'Полный анализ появится после установки голосового пакета.',
-    action: locale === 'en' ? 'Install the language pack in settings.' : 'Установи языковой пакет в настройках.',
+    praise: lite.praise,
+    growth: lite.growth,
+    action: lite.action,
     growthCategory: 'lite',
   };
 

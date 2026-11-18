@@ -16,6 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, RadialGradient, Rect, Stop, SvgXml } from "react-native-svg";
 import * as Haptics from "@/lib/haptics";
 import { useTheme } from "@/context/ThemeContext";
+import { useLang, pickLang } from "@/context/LangContext";
 import AppDialog from "@/components/AppDialog";
 import CoinIcon from "@/components/CoinIcon";
 import {
@@ -45,27 +46,174 @@ import {
 
 type Period = "month" | "year";
 
-const FAQ: { q: string; a: string }[] = [
+type L10n<T = string> = { ru: T; en: T; kk: T };
+
+const FAQ: { q: L10n; a: L10n }[] = [
   {
-    q: "Можно ли отменить подписку?",
-    a: "Да, в любой момент в настройках App Store или Google Play. Доступ сохранится до конца оплаченного периода.",
+    q: {
+      ru: "Можно ли отменить подписку?",
+      en: "Can I cancel my subscription?",
+      kk: "Жазылымды тоқтатуға бола ма?",
+    },
+    a: {
+      ru: "Да, в любой момент в настройках App Store или Google Play. Доступ сохранится до конца оплаченного периода.",
+      en: "Yes, any time in your App Store or Google Play settings. Access stays until the end of the paid period.",
+      kk: "Иә, кез келген уақытта App Store немесе Google Play баптауларынан. Қолжетімділік төленген кезеңнің соңына дейін сақталады.",
+    },
   },
   {
-    q: "Чем Император отличается от Королевского?",
-    a: "Император — это всё из Королевского плюс личный ИИ-коуч, свои темы и сценарии, эксклюзивные награды и x2 монеты за каждый уровень.",
+    q: {
+      ru: "Чем Император отличается от Королевского?",
+      en: "How is Emperor different from Royal?",
+      kk: "Император Патшадан немен ерекшеленеді?",
+    },
+    a: {
+      ru: "Император — это всё из Королевского плюс личный ИИ-коуч, свои темы и сценарии, эксклюзивные награды и x2 монеты за каждый уровень.",
+      en: "Emperor is everything in Royal plus a personal AI coach, your own topics and scripts, exclusive awards and x2 coins for every level.",
+      kk: "Император — Патша жоспарындағының бәрі, оған қоса жеке ЖИ-коуч, өз тақырыптарың мен сценарийлерің, эксклюзив марапаттар және әр деңгей үшін x2 монета.",
+    },
   },
   {
-    q: "Как сменить план?",
-    a: "Выберите другой план на этом экране — магазин приложений сам пересчитает оплату за оставшийся период.",
+    q: {
+      ru: "Как сменить план?",
+      en: "How do I change my plan?",
+      kk: "Жоспарды қалай ауыстыруға болады?",
+    },
+    a: {
+      ru: "Выберите другой план на этом экране — магазин приложений сам пересчитает оплату за оставшийся период.",
+      en: "Pick a different plan on this screen — the app store will recalculate the payment for the remaining period.",
+      kk: "Осы экраннан басқа жоспарды таңда — қолданбалар дүкені қалған кезеңнің төлемін өзі қайта есептейді.",
+    },
   },
   {
-    q: "Сохранится ли прогресс после отмены?",
-    a: "Да. Пройденные уровни, монеты и записи останутся с вами — закроется только доступ к платным модулям.",
+    q: {
+      ru: "Сохранится ли прогресс после отмены?",
+      en: "Will I keep my progress after cancelling?",
+      kk: "Жазылымды тоқтатқаннан кейін прогресс сақтала ма?",
+    },
+    a: {
+      ru: "Да. Пройденные уровни, монеты и записи останутся с вами — закроется только доступ к платным модулям.",
+      en: "Yes. Completed levels, coins and recordings stay with you — only access to paid modules closes.",
+      kk: "Иә. Өткен деңгейлер, монеталар мен жазбалар сенде қалады — тек ақылы модульдерге қолжетімділік жабылады.",
+    },
   },
 ];
 
+// Paywall copy (RU / EN / KK).
+const STR = {
+  soonTitle: { ru: "Скоро", en: "Coming soon", kk: "Жақында" },
+  soonPay: {
+    ru: "Оплата появится в одном из ближайших обновлений.",
+    en: "Payments are coming in one of the next updates.",
+    kk: "Төлем жақын арадағы жаңартулардың бірінде қосылады.",
+  },
+  soonPromo: {
+    ru: "Промокоды заработают вместе с подпиской.",
+    en: "Promo codes will start working together with subscriptions.",
+    kk: "Промокодтар жазылыммен бірге іске қосылады.",
+  },
+  soonSupport: {
+    ru: "Чат с поддержкой появится в одном из ближайших обновлений.",
+    en: "Support chat is coming in one of the next updates.",
+    kk: "Қолдау чаты жақын арадағы жаңартулардың бірінде пайда болады.",
+  },
+  free: { ru: "Бесплатный", en: "Free", kk: "Тегін" },
+  current: { ru: "ТЕКУЩИЙ", en: "CURRENT", kk: "ҚАЗІРГІ" },
+  forever: { ru: "навсегда", en: "forever", kk: "мәңгі" },
+  freeItems: {
+    ru: ["5 уровней пути", "Разминка и скороговорки", "3 темы Show Time", "Базовый разбор речи"],
+    en: ["5 path levels", "Warm-ups and tongue twisters", "3 Show Time topics", "Basic speech analysis"],
+    kk: ["Жолдың 5 деңгейі", "Жаттығулар мен жаңылтпаштар", "Show Time-тың 3 тақырыбы", "Сөйлеуді негізгі талдау"],
+  },
+  royal: { ru: "Королевский", en: "Royal", kk: "Патша" },
+  popular: { ru: "ПОПУЛЯРНЫЙ", en: "POPULAR", kk: "ТАНЫМАЛ" },
+  royalSub: {
+    ru: "Для тех, кто выходит на сцену всерьёз",
+    en: "For those who take the stage seriously",
+    kk: "Сахнаға шындап шығатындарға арналған",
+  },
+  month: { ru: "МЕСЯЦ", en: "MONTH", kk: "АЙ" },
+  year: { ru: "ГОД", en: "YEAR", kk: "ЖЫЛ" },
+  royalPerMonth: {
+    ru: "≈ $3.33 в месяц при оплате за год",
+    en: "≈ $3.33 a month, billed yearly",
+    kk: "Жылдық төлемде айына ≈ $3.33",
+  },
+  royalItems: {
+    ru: ["Все 67 модулей пути", "Все темы Show Time и Роли", "Подробный ИИ-разбор речи", "Без рекламы"],
+    en: ["All 67 path modules", "All Show Time topics and Roles", "Detailed AI speech analysis", "No ads"],
+    kk: ["Жолдың барлық 67 модулі", "Show Time-тың барлық тақырыбы мен Рөлдер", "Сөйлеуді ЖИ-мен толық талдау", "Жарнамасыз"],
+  },
+  emperor: { ru: "Император", en: "Emperor", kk: "Император" },
+  maximum: { ru: "МАКСИМУМ", en: "MAXIMUM", kk: "МАКСИМУМ" },
+  emperorSub: {
+    ru: "Всё без границ + личный ИИ-коуч",
+    en: "Everything, no limits + a personal AI coach",
+    kk: "Бәрі шексіз + жеке ЖИ-коуч",
+  },
+  emperorPerMonth: {
+    ru: "≈ $6.67 в месяц при оплате за год",
+    en: "≈ $6.67 a month, billed yearly",
+    kk: "Жылдық төлемде айына ≈ $6.67",
+  },
+  emperorItems: {
+    ru: [
+      "Всё из Королевского",
+      "Личный ИИ-коуч и план тренировок",
+      "Свои темы и сценарии",
+      "Эксклюзивные награды и рамки",
+      "x2 монеты за каждый уровень",
+    ],
+    en: [
+      "Everything in Royal",
+      "Personal AI coach and training plan",
+      "Your own topics and scripts",
+      "Exclusive awards and frames",
+      "x2 coins for every level",
+    ],
+    kk: [
+      "Патша жоспарындағының бәрі",
+      "Жеке ЖИ-коуч және жаттығу жоспары",
+      "Өз тақырыптарың мен сценарийлерің",
+      "Эксклюзив марапаттар мен жақтаулар",
+      "Әр деңгей үшін x2 монета",
+    ],
+  },
+  close: { ru: "Закрыть", en: "Close", kk: "Жабу" },
+  restore: { ru: "Восстановить покупки", en: "Restore purchases", kk: "Сатып алуларды қалпына келтіру" },
+  title: { ru: "Стань королём\nсцены", en: "Become the king\nof the stage", kk: "Сахнаның\nпатшасы бол" },
+  subtitle: {
+    ru: "Открой все сцены, темы и разборы King Speech",
+    en: "Unlock every stage, topic and analysis in King Speech",
+    kk: "King Speech-тің барлық сахнасын, тақырыбы мен талдауын аш",
+  },
+  currentPlan: { ru: "Текущий план", en: "Current plan", kk: "Қазіргі жоспар" },
+  goRoyal: { ru: "Стать Королём →", en: "Go Royal →", kk: "Патша болу →" },
+  goEmperor: { ru: "Стать Императором →", en: "Go Emperor →", kk: "Император болу →" },
+  promoTitle: { ru: "Есть промокод?", en: "Have a promo code?", kk: "Промокодың бар ма?" },
+  promoPlaceholder: { ru: "Введите промокод", en: "Enter promo code", kk: "Промокодты енгіз" },
+  apply: { ru: "Применить", en: "Apply", kk: "Қолдану" },
+  faqTitle: { ru: "Частые вопросы", en: "FAQ", kk: "Жиі қойылатын сұрақтар" },
+  supportTitle: { ru: "Служба поддержки", en: "Support", kk: "Қолдау қызметі" },
+  supportSub: { ru: "Ответим в течение 24 часов", en: "We reply within 24 hours", kk: "24 сағат ішінде жауап береміз" },
+  write: { ru: "Написать", en: "Message us", kk: "Жазу" },
+  legal: {
+    ru: "Подписка продлевается автоматически, отменить можно в любой момент в настройках магазина приложений.",
+    en: "The subscription renews automatically; you can cancel any time in your app store settings.",
+    kk: "Жазылым автоматты түрде ұзартылады, оны кез келген уақытта қолданбалар дүкенінің баптауларынан тоқтатуға болады.",
+  },
+  legalLinks: {
+    ru: "Условия использования · Политика конфиденциальности",
+    en: "Terms of Use · Privacy Policy",
+    kk: "Пайдалану шарттары · Құпиялылық саясаты",
+  },
+  gotIt: { ru: "Понятно", en: "Got it", kk: "Түсінікті" },
+};
+
 export default function SubscriptionScreen() {
   const { theme, themeMode } = useTheme();
+  const { lang } = useLang();
+  const tr = <T,>(v: L10n<T>): T => pickLang(lang, v);
   const isDark = themeMode === "dark";
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 54 : insets.top;
@@ -80,7 +228,7 @@ export default function SubscriptionScreen() {
   const [promo, setPromo] = useState("");
   const [soon, setSoon] = useState<null | { title: string; message: string }>(null);
 
-  const showSoon = (title = "Скоро", message = "Оплата появится в одном из ближайших обновлений.") => {
+  const showSoon = (title = tr(STR.soonTitle), message = tr(STR.soonPay)) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSoon({ title, message });
   };
@@ -104,9 +252,9 @@ export default function SubscriptionScreen() {
       ]}
     >
       <View style={styles.cardHead}>
-        <Text style={[styles.freeTitle, { color: theme.text }]}>Бесплатный</Text>
+        <Text style={[styles.freeTitle, { color: theme.text }]}>{tr(STR.free)}</Text>
         <Badge
-          label="ТЕКУЩИЙ"
+          label={tr(STR.current)}
           bg={isDark ? "#4F4F4F" : "rgba(38,38,40,0.10)"}
           color={theme.text}
           style={{ marginTop: 4 }}
@@ -114,13 +262,13 @@ export default function SubscriptionScreen() {
       </View>
       <View style={styles.priceRow}>
         <Text style={[styles.bigPrice, { color: theme.text }]}>$0</Text>
-        <Text style={[styles.priceNote, { color: ink(0.55) }]}>навсегда</Text>
+        <Text style={[styles.priceNote, { color: ink(0.55) }]}>{tr(STR.forever)}</Text>
       </View>
       <View style={{ marginTop: 19 }}>
         <Checklist
           tone="free"
           color={ink(0.9)}
-          items={["5 уровней пути", "Разминка и скороговорки", "3 темы Show Time", "Базовый разбор речи"]}
+          items={tr(STR.freeItems)}
         />
       </View>
     </View>
@@ -145,35 +293,35 @@ export default function SubscriptionScreen() {
       <View pointerEvents="none" style={[styles.innerHighlight, { backgroundColor: "rgba(255,255,255,0.7)", height: 2 }]} />
       <View style={{ padding: 19, paddingTop: 21, paddingBottom: 27.5 }}>
         <View style={styles.cardHead}>
-          <Text style={[styles.planTitle, { color: INK }]}>Королевский</Text>
-          <Badge label="ПОПУЛЯРНЫЙ" star bg={INK} color={GOLD} style={{ marginTop: 4 }} />
+          <Text style={[styles.planTitle, { color: INK }]}>{tr(STR.royal)}</Text>
+          <Badge label={tr(STR.popular)} star bg={INK} color={GOLD} style={{ marginTop: 4 }} />
         </View>
         <Text style={[styles.planSub, { color: "rgba(38,38,40,0.65)", marginTop: 6 }]}>
-          Для тех, кто выходит на сцену всерьёз
+          {tr(STR.royalSub)}
         </Text>
         <View style={styles.priceTiles}>
           <PriceTile
             variant="royal"
-            label="МЕСЯЦ"
+            label={tr(STR.month)}
             price="$4.99"
             selected={royalPeriod === "month"}
             onPress={() => setRoyalPeriod("month")}
           />
           <PriceTile
             variant="royal"
-            label="ГОД"
+            label={tr(STR.year)}
             price="$39.99"
             save="−33%"
             selected={royalPeriod === "year"}
             onPress={() => setRoyalPeriod("year")}
           />
         </View>
-        <Text style={[styles.perMonth, { color: "rgba(38,38,40,0.6)" }]}>≈ $3.33 в месяц при оплате за год</Text>
+        <Text style={[styles.perMonth, { color: "rgba(38,38,40,0.6)" }]}>{tr(STR.royalPerMonth)}</Text>
         <View style={{ marginTop: 13 }}>
           <Checklist
             tone="royal"
             color="rgba(38,38,40,0.9)"
-            items={["Все 67 модулей пути", "Все темы Show Time и Роли", "Подробный ИИ-разбор речи", "Без рекламы"]}
+            items={tr(STR.royalItems)}
           />
         </View>
       </View>
@@ -217,41 +365,35 @@ export default function SubscriptionScreen() {
       </View>
       <View style={{ paddingHorizontal: 18, paddingTop: 18, paddingBottom: 24.5 }}>
         <View style={styles.cardHead}>
-          <Text style={[styles.planTitle, { color: GOLD, marginLeft: 42 }]}>Император</Text>
-          <Badge label="МАКСИМУМ" bg={GOLD} color={INK} style={{ marginTop: 6 }} />
+          <Text style={[styles.planTitle, { color: GOLD, marginLeft: 42 }]}>{tr(STR.emperor)}</Text>
+          <Badge label={tr(STR.maximum)} bg={GOLD} color={INK} style={{ marginTop: 6 }} />
         </View>
         <Text style={[styles.planSub, { color: "rgba(240,238,233,0.65)", marginTop: 7 }]}>
-          Всё без границ + личный ИИ-коуч
+          {tr(STR.emperorSub)}
         </Text>
         <View style={styles.priceTiles}>
           <PriceTile
             variant="emperor"
-            label="МЕСЯЦ"
+            label={tr(STR.month)}
             price="$9.99"
             selected={emperorPeriod === "month"}
             onPress={() => setEmperorPeriod("month")}
           />
           <PriceTile
             variant="emperor"
-            label="ГОД"
+            label={tr(STR.year)}
             price="$79.99"
             save="−33%"
             selected={emperorPeriod === "year"}
             onPress={() => setEmperorPeriod("year")}
           />
         </View>
-        <Text style={[styles.perMonth, { color: "rgba(240,238,233,0.5)" }]}>≈ $6.67 в месяц при оплате за год</Text>
+        <Text style={[styles.perMonth, { color: "rgba(240,238,233,0.5)" }]}>{tr(STR.emperorPerMonth)}</Text>
         <View style={{ marginTop: 13 }}>
           <Checklist
             tone="emperor"
             color="rgba(240,238,233,0.9)"
-            items={[
-              "Всё из Королевского",
-              "Личный ИИ-коуч и план тренировок",
-              "Свои темы и сценарии",
-              "Эксклюзивные награды и рамки",
-              "x2 монеты за каждый уровень",
-            ]}
+            items={tr(STR.emperorItems)}
             trailing={<CoinIcon size={17} color={GOLD} style={{ marginLeft: 6 }} />}
           />
         </View>
@@ -285,7 +427,7 @@ export default function SubscriptionScreen() {
 
         {/* Top bar: close ✕ + restore purchases */}
         <View style={styles.topBar}>
-          <Pressable onPress={close} hitSlop={8} accessibilityLabel="Закрыть" style={styles.closeBtn}>
+          <Pressable onPress={close} hitSlop={8} accessibilityLabel={tr(STR.close)} style={styles.closeBtn}>
             <SvgXml xml={isDark ? CLOSE_SVG : CLOSE_SVG.replace("#F0EEE9", "#262628")} width={40} height={40} />
           </Pressable>
           <Pressable
@@ -294,7 +436,7 @@ export default function SubscriptionScreen() {
               // TODO(design): restore purchases once IAP is integrated.
             }}
           >
-            <Text style={[styles.restore, { color: ink(0.6) }]}>Восстановить покупки</Text>
+            <Text style={[styles.restore, { color: ink(0.6) }]}>{tr(STR.restore)}</Text>
           </Pressable>
         </View>
 
@@ -320,16 +462,16 @@ export default function SubscriptionScreen() {
           </View>
         </View>
 
-        <Text style={[styles.title, { color: theme.text }]}>Стань королём{"\n"}сцены</Text>
+        <Text style={[styles.title, { color: theme.text }]}>{tr(STR.title)}</Text>
         <Text style={[styles.subtitle, { color: ink(0.7) }]}>
-          Открой все сцены, темы и разборы King Speech
+          {tr(STR.subtitle)}
         </Text>
 
         <View style={styles.plans}>
           <PlanWithTray
             card={freeCard}
             disabled
-            trayLabel="Текущий план"
+            trayLabel={tr(STR.currentPlan)}
             trayLabelColor="#FFFFFF"
             trayStyle={{
               backgroundColor: isDark ? "rgba(208,187,159,0.62)" : "#8F8272",
@@ -343,14 +485,14 @@ export default function SubscriptionScreen() {
           />
           <PlanWithTray
             card={royalCard}
-            trayLabel="Стать Королём →"
+            trayLabel={tr(STR.goRoyal)}
             trayLabelColor={GOLD}
             onTrayPress={() => showSoon()}
             trayStyle={{ backgroundColor: "#262628", borderWidth: 2, borderColor: "#666666" }}
           />
           <PlanWithTray
             card={emperorCard}
-            trayLabel="Стать Императором →"
+            trayLabel={tr(STR.goEmperor)}
             trayLabelColor={INK}
             onTrayPress={() => showSoon()}
             trayStyle={{ backgroundColor: GOLD, borderWidth: 4, borderColor: theme.ctaStroke, paddingBottom: 19 }}
@@ -358,33 +500,33 @@ export default function SubscriptionScreen() {
         </View>
 
         {/* Promo code */}
-        <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 26 }]}>Есть промокод?</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 26 }]}>{tr(STR.promoTitle)}</Text>
         <View style={[styles.promo, { backgroundColor: ink(0.05), borderColor: ink(0.12) }]}>
           <TextInput
             value={promo}
             onChangeText={setPromo}
-            placeholder="Введите промокод"
+            placeholder={tr(STR.promoPlaceholder)}
             placeholderTextColor={ink(0.4)}
             autoCapitalize="characters"
             autoCorrect={false}
             style={[styles.promoInput, { color: theme.text }]}
           />
           <Pressable
-            onPress={() => showSoon("Скоро", "Промокоды заработают вместе с подпиской.")}
+            onPress={() => showSoon(tr(STR.soonTitle), tr(STR.soonPromo))}
             style={({ pressed }) => [styles.applyBtn, { opacity: pressed ? 0.85 : 1 }]}
           >
-            <Text style={styles.applyText}>Применить</Text>
+            <Text style={styles.applyText}>{tr(STR.apply)}</Text>
           </Pressable>
         </View>
 
         {/* FAQ accordion */}
-        <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 32 }]}>Частые вопросы</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 32 }]}>{tr(STR.faqTitle)}</Text>
         <View style={[styles.faq, { backgroundColor: ink(0.05), borderColor: ink(0.12) }]}>
           {FAQ.map((f, i) => {
             const open = openFaq === i;
             return (
               <Pressable
-                key={f.q}
+                key={f.q.ru}
                 onPress={() => setOpenFaq(open ? null : i)}
                 style={[
                   styles.faqRow,
@@ -393,7 +535,7 @@ export default function SubscriptionScreen() {
                 ]}
               >
                 <View style={styles.faqHead}>
-                  <Text style={[styles.faqQ, { color: theme.text }]}>{f.q}</Text>
+                  <Text style={[styles.faqQ, { color: theme.text }]}>{tr(f.q)}</Text>
                   <View style={{ marginTop: 5 }}>
                     <SvgXml
                       xml={
@@ -410,7 +552,7 @@ export default function SubscriptionScreen() {
                     />
                   </View>
                 </View>
-                {open ? <Text style={[styles.faqA, { color: ink(0.65) }]}>{f.a}</Text> : null}
+                {open ? <Text style={[styles.faqA, { color: ink(0.65) }]}>{tr(f.a)}</Text> : null}
               </Pressable>
             );
           })}
@@ -424,23 +566,23 @@ export default function SubscriptionScreen() {
             height={48}
           />
           <View style={{ flex: 1, marginLeft: 14, marginRight: 8 }}>
-            <Text style={[styles.supportTitle, { color: theme.text }]}>Служба поддержки</Text>
-            <Text style={[styles.supportSub, { color: ink(0.6) }]}>Ответим в течение 24 часов</Text>
+            <Text style={[styles.supportTitle, { color: theme.text }]}>{tr(STR.supportTitle)}</Text>
+            <Text style={[styles.supportSub, { color: ink(0.6) }]}>{tr(STR.supportSub)}</Text>
           </View>
           <Pressable
             onPress={() => {
               // TODO(design): open the support chat / mail once a support channel exists.
-              showSoon("Скоро", "Чат с поддержкой появится в одном из ближайших обновлений.");
+              showSoon(tr(STR.soonTitle), tr(STR.soonSupport));
             }}
             style={({ pressed }) => [styles.writeBtn, { opacity: pressed ? 0.85 : 1 }]}
           >
-            <Text style={styles.writeText}>Написать</Text>
+            <Text style={styles.writeText}>{tr(STR.write)}</Text>
           </Pressable>
         </View>
 
         <Text style={[styles.legal, { color: ink(0.4) }]}>
-          Подписка продлевается автоматически, отменить можно в любой момент в настройках магазина приложений.
-          {"\n"}Условия использования · Политика конфиденциальности
+          {tr(STR.legal)}
+          {"\n"}{tr(STR.legalLinks)}
         </Text>
       </ScrollView>
 
@@ -449,7 +591,7 @@ export default function SubscriptionScreen() {
         title={soon?.title ?? ""}
         message={soon?.message}
         onRequestClose={() => setSoon(null)}
-        buttons={[{ label: "Понятно", variant: "primary", onPress: () => setSoon(null) }]}
+        buttons={[{ label: tr(STR.gotIt), variant: "primary", onPress: () => setSoon(null) }]}
       />
     </View>
   );

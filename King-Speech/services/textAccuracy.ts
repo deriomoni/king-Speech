@@ -26,7 +26,7 @@ function wordsOf(s: string): string[] {
   return (s || "")
     .toLowerCase()
     .replace(/ё/g, "е")
-    .replace(/[^a-zа-я\s]/gi, " ")
+    .replace(/[^a-zа-яәғқңөұүһі\s]/gi, " ")
     .replace(/\s+/g, " ")
     .trim()
     .split(" ")

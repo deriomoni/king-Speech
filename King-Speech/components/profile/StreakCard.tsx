@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import type { Theme } from "@/context/ThemeContext";
+import { pickLang, type Lang } from "@/context/LangContext";
 
 // Figma "Card · В ударе" (node 117:1091): "N дня подряд в ударе" + a Mon..Sun
 // row of day rings. Activity = finished path tasks and Show Time runs
@@ -13,6 +14,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 const DAY_LABELS_RU = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const DAY_LABELS_EN = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+const DAY_LABELS_KK = ["Дс", "Сс", "Ср", "Бс", "Жм", "Сб", "Жс"];
 
 function dayKey(d: Date) {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
@@ -125,11 +127,11 @@ export default function StreakCard({
 }: {
   theme: Theme;
   activityDates: number[];
-  lang: string;
+  lang: Lang;
 }) {
   const { streak, week } = useMemo(() => computeStreak(activityDates), [activityDates]);
   const isDark = theme.mode === "dark";
-  const labels = lang === "en" ? DAY_LABELS_EN : DAY_LABELS_RU;
+  const labels = pickLang(lang, { ru: DAY_LABELS_RU, en: DAY_LABELS_EN, kk: DAY_LABELS_KK });
   const trackColor = isDark ? "rgba(240,238,233,0.10)" : "rgba(38,38,40,0.10)";
   const stroke = isDark ? "rgba(240,238,233,0.06)" : "rgba(38,38,40,0.08)";
 
@@ -137,9 +139,11 @@ export default function StreakCard({
     <View style={[styles.card, { backgroundColor: theme.card, borderColor: stroke }]}>
       <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
         <Text style={styles.titleNum}>{streak}</Text>
-        {lang === "en"
-          ? ` ${streak === 1 ? "day" : "days"} on a roll`
-          : ` ${pluralDaysRu(streak)} подряд в ударе`}
+        {pickLang(lang, {
+          ru: ` ${pluralDaysRu(streak)} подряд в ударе`,
+          en: ` ${streak === 1 ? "day" : "days"} on a roll`,
+          kk: " күн қатарынан екпінде",
+        })}
       </Text>
       <View style={styles.daysRow}>
         {week.map((d, i) => {

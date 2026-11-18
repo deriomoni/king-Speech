@@ -10,7 +10,7 @@ export interface VocabWord {
   partOfSpeech: PartOfSpeech;
   synonyms: string[];
   timerSeconds: number;
-  lang: 'ru';
+  lang: 'ru' | 'kk';
   difficulty: 1 | 2 | 3;
 }
 
@@ -972,7 +972,7 @@ const normalize = (s: string): string =>
     .toLowerCase()
     .trim()
     .replace(/ё/g, 'е')
-    .replace(/[^а-яa-z\s]/g, '')
+    .replace(/[^а-яәғқңөұүһіa-z\s-]/g, '')
     .replace(/\s+/g, ' ');
 
 const stem = (s: string): string => {

@@ -24,7 +24,7 @@ import Animated, {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang } from "@/context/LangContext";
 import { reading as R } from "@/theme/tokens";
 import ReadingText, { tokenizeReading } from "@/components/ReadingText";
 import { readingLines } from "@/src/speech-engine/core/text/reading";
@@ -139,16 +139,10 @@ export default function ReadingLevelView({
 
   const genre =
     category === "poetry"
-      ? lang === "ru"
-        ? "Поэзия"
-        : "Poetry"
+      ? pickLang(lang, { ru: "Поэзия", en: "Poetry", kk: "Поэзия" })
       : category === "fable"
-        ? lang === "ru"
-          ? "Басня"
-          : "Fable"
-        : lang === "ru"
-          ? "Проза"
-          : "Prose";
+        ? pickLang(lang, { ru: "Басня", en: "Fable", kk: "Мысал" })
+        : pickLang(lang, { ru: "Проза", en: "Prose", kk: "Проза" });
   const kicker = [author, genre].filter(Boolean).join(" · ");
 
   const { tokens } = useMemo(() => tokenizeReading(fullText), [fullText]);
@@ -448,7 +442,7 @@ export default function ReadingLevelView({
   const progressFillStyle = useAnimatedStyle(() => ({ width: `${progP.value * 100}%` }));
 
   const speedLabel = R.pace.labels[speedIdx] ?? "1×";
-  const bio = getAuthorBio(author);
+  const bio = getAuthorBio(author, lang);
   // Info sheet ink (Figma 37:2876): heading ink, meta #969593, body #CCCAC6.
   const infoMeta = dark ? "#969593" : "rgba(38,38,40,0.5)";
   const infoBody = dark ? "#CCCAC6" : "rgba(38,38,40,0.78)";
@@ -589,7 +583,7 @@ export default function ReadingLevelView({
           style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
         >
           <Text style={[st.learnText, { color: readingInk(dark, reading ? 0.6 : 0.7) }]}>
-            {(lang === "ru" ? "Узнать больше" : "Learn more").toUpperCase()}
+            {(pickLang(lang, { ru: "Узнать больше", en: "Learn more", kk: "Толығырақ" })).toUpperCase()}
           </Text>
         </Pressable>
       </View>
@@ -613,7 +607,7 @@ export default function ReadingLevelView({
         >
           <RecDot size={13} color={btnInk} />
           <Text style={[st.startLabel, { color: btnInk }]}>
-            {lang === "ru" ? "Читать" : "Read"}
+            {pickLang(lang, { ru: "Читать", en: "Read", kk: "Оқу" })}
           </Text>
         </Pressable>
       </Animated.View>
@@ -638,7 +632,7 @@ export default function ReadingLevelView({
               {countdown}
             </Animated.Text>
             <Text style={[st.countdownHint, { color: inkFaint }]}>
-              {(lang === "ru" ? "Приготовься" : "Get ready").toUpperCase()}
+              {(pickLang(lang, { ru: "Приготовься", en: "Get ready", kk: "Дайындал" })).toUpperCase()}
             </Text>
           </Animated.View>
         </View>
@@ -650,12 +644,10 @@ export default function ReadingLevelView({
           <Animated.View exiting={FadeOut.duration(420)} style={st.overlayInner}>
             <OscarMascot emotion="happy" size={180} />
             <Text style={[st.loadQuote, { color: ink, fontFamily: R.type.bodyFont }]}>
-              {lang === "ru"
-                ? "Речь — это сцена. Выходи и говори."
-                : "Speech is a stage. Step up and speak."}
+              {pickLang(lang, { ru: "Речь — это сцена. Выходи и говори.", en: "Speech is a stage. Step up and speak.", kk: "Сөз — бұл сахна. Шық та сөйле." })}
             </Text>
             <Text style={[st.loadHint, { color: inkFaint }]}>
-              {(lang === "ru" ? "Готовим полотно" : "Preparing the canvas").toUpperCase()}
+              {(pickLang(lang, { ru: "Готовим полотно", en: "Preparing the canvas", kk: "Мәтінді дайындап жатырмыз" })).toUpperCase()}
             </Text>
           </Animated.View>
         </View>
@@ -678,7 +670,7 @@ export default function ReadingLevelView({
                 onPress={() => setShowInfo(false)}
                 hitSlop={12}
                 accessibilityRole="button"
-                accessibilityLabel={lang === "ru" ? "Закрыть" : "Close"}
+                accessibilityLabel={pickLang(lang, { ru: "Закрыть", en: "Close", kk: "Жабу" })}
                 style={({ pressed }) => [st.infoClose, { opacity: pressed ? 0.6 : 1 }]}
               >
                 <Ionicons name="close" size={22} color={readingInk(dark, 0.85)} />

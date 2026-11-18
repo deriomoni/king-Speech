@@ -639,7 +639,8 @@ function ModuleDividerBase({
       <Text style={[styles.moduleNumText, { color: theme.accentInk, fontFamily: "Geologica_700Bold" }]}>
         {moduleNum}
       </Text>
-      {lang === "ru" && getModuleName(moduleNum) ? (
+      {/* Module names exist in RU and KK (Show Time content); EN skips the title. */}
+      {lang !== "en" && getModuleName(moduleNum, lang) ? (
         <Text
           style={{
             color: colors.text,
@@ -648,7 +649,7 @@ function ModuleDividerBase({
             textAlign: "center",
           }}
         >
-          {getModuleName(moduleNum)}
+          {getModuleName(moduleNum, lang)}
         </Text>
       ) : null}
       <Text

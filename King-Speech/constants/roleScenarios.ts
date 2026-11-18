@@ -34,21 +34,21 @@ export function speakerName(s: BeatSpeaker | undefined, scenario: RoleScenario, 
 
 /** Generic nudges when a scenario has none. */
 export const GENERIC_NUDGE: Record<RoleScenario["kind"], LocalizedText> = {
-  chat: { ru: "Эй, вы тут?", en: "Hey, are you there?" },
-  live: { ru: "ау, звук пропал? 👀", en: "hello? did the sound cut out? 👀" },
-  stage: { ru: "(тишина в зале)", en: "(silence in the room)" },
+  chat: { ru: "Эй, вы тут?", en: "Hey, are you there?", kk: "Ей, осындасыз ба?" },
+  live: { ru: "ау, звук пропал? 👀", en: "hello? did the sound cut out? 👀", kk: "ау, дыбыс жоғалып кетті ме? 👀" },
+  stage: { ru: "(тишина в зале)", en: "(silence in the room)", kk: "(залда тыныштық)" },
 };
 
 /** Generic live-stream chatter mixed with each blogger scenario's own ambient lines. */
 export const GENERIC_AMBIENT: LocalizedText[] = [
-  { ru: "привет 👋", en: "hi 👋" },
+  { ru: "привет 👋", en: "hi 👋", kk: "сәлем 👋" },
   { ru: "❤️❤️❤️", en: "❤️❤️❤️" },
-  { ru: "только зашла, о чём речь?", en: "just joined, what's up?" },
+  { ru: "только зашла, о чём речь?", en: "just joined, what's up?", kk: "жаңа кірдім, не туралы әңгіме?" },
   { ru: "🔥", en: "🔥" },
-  { ru: "лайк не глядя", en: "liked already" },
-  { ru: "ты лучший!", en: "you're the best!" },
+  { ru: "лайк не глядя", en: "liked already", kk: "қарамай-ақ лайк" },
+  { ru: "ты лучший!", en: "you're the best!", kk: "сен ең мықтысың!" },
   { ru: "+", en: "+" },
-  { ru: "смотрю с работы 🤫", en: "watching from work 🤫" },
+  { ru: "смотрю с работы 🤫", en: "watching from work 🤫", kk: "жұмыстан көріп отырмын 🤫" },
 ];
 
 export const VIEWER_NICKS = [

@@ -47,7 +47,8 @@ const CTX_K = 0.6;
 function norm(s: string): string {
   return s
     .toLowerCase()
-    .replace(/[^a-zа-яё\s-]/gi, " ")
+    // Cyrillic incl. Kazakh-specific letters (ә ғ қ ң ө ұ ү һ і), Latin.
+    .replace(/[^a-zа-яёәғқңөұүһі\s-]/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -58,7 +59,9 @@ const HANGING_WORDS = new Set(
   (
     "и а но да или либо то же бы ли не ни что чтобы потому если когда как что-то " +
     "в во на с со к ко по из изо для от ото до у о об обо за под над при про без " +
-    "между чем чём этот эта это эти тот та те мой моя мои наш наша это самое ну вот"
+    "между чем чём этот эта это эти тот та те мой моя мои наш наша это самое ну вот " +
+    // Kazakh conjunctions / postpositions that can't end a finished thought.
+    "және бірақ немесе егер үшін яғни сондықтан өйткені"
   ).split(/\s+/),
 );
 

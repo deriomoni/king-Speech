@@ -37,7 +37,7 @@ export interface SttCapability {
 export type SttMode = 'FULL' | 'NO_CONF' | 'LITE';
 
 export interface RecognitionOptions {
-  /** BCP-47 locale, e.g. 'ru-RU' | 'en-US'. */
+  /** BCP-47 locale, e.g. 'ru-RU' | 'en-US' | 'kk-KZ' (see `toBcp47`). */
   locale: string;
   /**
    * When true, request the recognizer persist the captured audio to a WAV file

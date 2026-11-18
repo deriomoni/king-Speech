@@ -15,6 +15,7 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
 import type { SpeechTheme } from "@/app/showtime-stage";
 import { VinylRecord } from "./VinylRecord";
+import { useLang, pickLang } from "@/context/LangContext";
 
 const SECTION_HEIGHT = 230;
 const CENTER_SIZE = 180;
@@ -34,6 +35,7 @@ function clamp(v: number, lo: number, hi: number) {
 
 export function VinylGallery({ themes, selectedIdx, onSelect, isLight }: Props) {
   const { width: winW } = useWindowDimensions();
+  const { lang } = useLang();
 
   // Sizing — center 180×180; sides reach ~120 via scale 0.65.
   const containerWidth = Math.max(280, winW - 40);
@@ -133,7 +135,7 @@ export function VinylGallery({ themes, selectedIdx, onSelect, isLight }: Props) 
       {/* Left arrow */}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Предыдущая тема"
+        accessibilityLabel={pickLang(lang, { ru: "Предыдущая тема", en: "Previous topic", kk: "Алдыңғы тақырып" })}
         onPress={() => stepBy(-1)}
         disabled={!canPrev}
         hitSlop={10}
@@ -145,7 +147,7 @@ export function VinylGallery({ themes, selectedIdx, onSelect, isLight }: Props) 
       {/* Right arrow */}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Следующая тема"
+        accessibilityLabel={pickLang(lang, { ru: "Следующая тема", en: "Next topic", kk: "Келесі тақырып" })}
         onPress={() => stepBy(1)}
         disabled={!canNext}
         hitSlop={10}

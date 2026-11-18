@@ -18,7 +18,7 @@ export function splitAuthorText(text: string): string[] {
       const line = raw.trim();
       if (!line) continue;
       // A stray «—» or «...» on its own joins the previous sentence.
-      if (!/[0-9A-Za-zА-Яа-яЁё]/.test(line) && out.length) out[out.length - 1] += line;
+      if (!/[0-9A-Za-zА-Яа-яЁёӘәҒғҚқҢңӨөҰұҮүҺһІі]/.test(line) && out.length) out[out.length - 1] += line;
       else out.push(line);
     }
   }

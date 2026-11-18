@@ -26,6 +26,7 @@ import {
   WAVEFORM_BAR_MAX,
 } from "@/hooks/useWaveformBars";
 import RecButton, { RecGlyph } from "@/components/RecButton";
+import { pickLang, type Lang } from "@/context/LangContext";
 
 // Figma "Recorder bar" (151:1584, state Active): a 354x72 pill with a 4pt
 // translucent-ink outline, 3pt bars growing left to right, a gold playhead
@@ -47,7 +48,7 @@ interface Props {
   onPause: () => void;
   onResume: () => void;
   onRestart: () => void;
-  lang: "ru" | "en";
+  lang: Lang;
 }
 
 function formatTime(seconds: number): string {
@@ -114,14 +115,12 @@ export default function WaveformRecorder({
   const restLine = isDark ? "rgba(240,238,233,0.25)" : "rgba(38,38,40,0.2)";
   const visible = bars.slice(-VISIBLE_BARS);
 
-  const stopLabel = lang === "en" ? "Stop" : "Стоп";
-  const restartTitle = lang === "en" ? "Restart recording?" : "Начать заново?";
+  const stopLabel = pickLang(lang, { ru: "Стоп", en: "Stop", kk: "Тоқтату" });
+  const restartTitle = pickLang(lang, { ru: "Начать заново?", en: "Restart recording?", kk: "Қайта бастайсың ба?" });
   const restartMsg =
-    lang === "en"
-      ? "Your current take will be discarded."
-      : "Текущая запись будет удалена.";
-  const cancelLabel = lang === "en" ? "Cancel" : "Отмена";
-  const restartLabel = lang === "en" ? "Restart" : "Начать заново";
+    pickLang(lang, { ru: "Текущая запись будет удалена.", en: "Your current take will be discarded.", kk: "Ағымдағы жазба өшіріледі." });
+  const cancelLabel = pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" });
+  const restartLabel = pickLang(lang, { ru: "Начать заново", en: "Restart", kk: "Қайта бастау" });
 
   const handleRestartPress = () => {
     if (Platform.OS !== "web") {
@@ -206,12 +205,8 @@ export default function WaveformRecorder({
           onPress={handlePauseToggle}
           accessibilityLabel={
             isPaused
-              ? lang === "en"
-                ? "Resume"
-                : "Продолжить"
-              : lang === "en"
-                ? "Pause"
-                : "Пауза"
+              ? pickLang(lang, { ru: "Продолжить", en: "Resume", kk: "Жалғастыру" })
+              : pickLang(lang, { ru: "Пауза", en: "Pause", kk: "Кідірту" })
           }
           testID="waveform-pause"
         />

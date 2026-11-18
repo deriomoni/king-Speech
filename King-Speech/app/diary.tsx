@@ -29,7 +29,7 @@ import Animated, {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import AppDialog from "@/components/AppDialog";
 import Cassette, { useDiaryFonts } from "@/components/diary/Cassette";
@@ -42,10 +42,12 @@ if (Platform.OS !== "web") {
 
 const MONTHS_RU = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
 const MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS_KK = ["қаң", "ақп", "нау", "сәу", "мам", "мау", "шіл", "там", "қыр", "қаз", "қар", "жел"];
 
-function fmtDiaryDate(ms: number, en: boolean) {
+function fmtDiaryDate(ms: number, lang: Lang) {
   const d = new Date(ms);
-  return en ? `${MONTHS_EN[d.getMonth()]} ${d.getDate()}` : `${d.getDate()} ${MONTHS_RU[d.getMonth()]}`;
+  if (lang === "en") return `${MONTHS_EN[d.getMonth()]} ${d.getDate()}`;
+  return `${d.getDate()} ${(lang === "kk" ? MONTHS_KK : MONTHS_RU)[d.getMonth()]}`;
 }
 
 // ── Grid tile: long-press lifts + jiggles the cassette ──────────────────────
@@ -55,7 +57,7 @@ function CassetteTile({
   playing,
   lifted,
   metaColor,
-  en,
+  lang,
   onPress,
   onLongPress,
 }: {
@@ -64,7 +66,7 @@ function CassetteTile({
   playing: boolean;
   lifted: boolean;
   metaColor: string;
-  en: boolean;
+  lang: Lang;
   onPress: () => void;
   onLongPress: () => void;
 }) {
@@ -102,14 +104,14 @@ function CassetteTile({
       onLongPress={onLongPress}
       delayLongPress={450}
       accessibilityRole="button"
-      accessibilityLabel={`${playing ? (en ? "Stop" : "Стоп") : en ? "Play" : "Слушать"} ${entry.title}`}
+      accessibilityLabel={`${playing ? pickLang(lang, { ru: "Стоп", en: "Stop", kk: "Тоқтату" }) : pickLang(lang, { ru: "Слушать", en: "Play", kk: "Тыңдау" })} ${entry.title}`}
       style={({ pressed }) => ({ opacity: pressed && !lifted ? 0.92 : 1 })}
     >
       <Animated.View style={[s.tileShadow, st]}>
         <Cassette width={width} title={entry.title} emotion={entry.emotion} state={playing ? "playing" : "idle"} showKey />
       </Animated.View>
       <Text style={[s.meta, { color: metaColor }]}>
-        {fmtDiaryDate(entry.date, en)} · {fmtClock(entry.durationSec)}
+        {fmtDiaryDate(entry.date, lang)} · {fmtClock(entry.durationSec)}
       </Text>
     </Pressable>
   );
@@ -200,7 +202,7 @@ export default function DiaryScreen() {
   const insets = useSafeAreaInsets();
   const { width: screenW } = useWindowDimensions();
   const { lang } = useLang();
-  const en = lang === "en";
+  const tr = (ru: string, en: string, kk: string) => pickLang(lang, { ru, en, kk });
   const { theme: c } = useTheme();
   useDiaryFonts();
   const [entries, setEntries] = useState<DiaryEntry[] | null>(null);
@@ -278,18 +280,18 @@ export default function DiaryScreen() {
             hitSlop={12}
             style={[s.infoBtn, { top: topPad + 16, borderColor: c.text }]}
             accessibilityRole="button"
-            accessibilityLabel={en ? "About the diary" : "О дневнике"}
+            accessibilityLabel={tr("О дневнике", "About the diary", "Күнделік туралы")}
           >
             <Text style={[s.infoI, { color: c.text }]}>i</Text>
           </Pressable>
-          <Text style={[s.title, { color: c.text }]}>{en ? "Audio diary" : "Аудио-дневник"}</Text>
-          <Text style={[s.subtitle, { color: c.text }]}>{en ? "Your personal space" : "Твоё личное пространство"}</Text>
+          <Text style={[s.title, { color: c.text }]}>{tr("Аудио-дневник", "Audio diary", "Аудио-күнделік")}</Text>
+          <Text style={[s.subtitle, { color: c.text }]}>{tr("Твоё личное пространство", "Your personal space", "Сенің жеке кеңістігің")}</Text>
           <Pressable
             onPress={startRecording}
             style={({ pressed }) => [s.pill, { opacity: pressed ? 0.85 : 1 }]}
             accessibilityRole="button"
           >
-            <Text style={s.pillText}>{en ? "Start recording" : "Начать запись"}</Text>
+            <Text style={s.pillText}>{tr("Начать запись", "Start recording", "Жазуды бастау")}</Text>
           </Pressable>
         </View>
 
@@ -301,14 +303,16 @@ export default function DiaryScreen() {
             style={s.backing}
             pointerEvents="none"
           />
-          <Text style={[s.section, { color: c.text }]}>{en ? "My recordings" : "Мои записи"}</Text>
+          <Text style={[s.section, { color: c.text }]}>{tr("Мои записи", "My recordings", "Менің жазбаларым")}</Text>
           {entries && entries.length === 0 ? (
             <View style={s.empty}>
-              <Text style={[s.emptyTitle, { color: c.text }]}>{en ? "No cassettes yet" : "Пока нет кассет"}</Text>
+              <Text style={[s.emptyTitle, { color: c.text }]}>{tr("Пока нет кассет", "No cassettes yet", "Әзірге кассета жоқ")}</Text>
               <Text style={[s.emptySub, { color: c.textMuted }]}>
-                {en
-                  ? "Tell how your day went — your first cassette will appear here."
-                  : "Расскажи, как прошёл день, — и здесь появится первая кассета."}
+                {tr(
+                  "Расскажи, как прошёл день, — и здесь появится первая кассета.",
+                  "Tell how your day went — your first cassette will appear here.",
+                  "Күнің қалай өткенін айтып бер — алғашқы кассетаң осында пайда болады.",
+                )}
               </Text>
             </View>
           ) : (
@@ -325,7 +329,7 @@ export default function DiaryScreen() {
                     playing={playingId === e.id}
                     lifted={liftedId === e.id}
                     metaColor={c.text}
-                    en={en}
+                    lang={lang}
                     onPress={() => toggle(e)}
                     onLongPress={() => askDelete(e)}
                   />
@@ -345,18 +349,20 @@ export default function DiaryScreen() {
             style={[s.sheet, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingBottom: bottomPad + 22 + SHEET_TUCK }]}
           >
             <View style={[s.handle, { backgroundColor: c.textMuted }]} />
-            <Text style={[s.sheetTitle, { color: c.text }]}>{en ? "Your private diary" : "Твой личный дневник"}</Text>
+            <Text style={[s.sheetTitle, { color: c.text }]}>{tr("Твой личный дневник", "Your private diary", "Сенің жеке күнделігің")}</Text>
             <Text style={[s.sheetBody, { color: c.text }]}>
-              {en
-                ? "This is a place to share your thoughts and tell how your day went. It helps you learn to talk about yourself freely and honestly — and that's what matters most when you want to become a good storyteller.\n\nRecordings are stored only on your phone."
-                : "Это место, где можно поделиться своими мыслями и рассказать, как прошёл твой день. Так ты учишься говорить о себе свободно и честно — а это главное, когда хочешь научиться рассказывать.\n\nЗаписи хранятся только на твоём телефоне."}
+              {tr(
+                "Это место, где можно поделиться своими мыслями и рассказать, как прошёл твой день. Так ты учишься говорить о себе свободно и честно — а это главное, когда хочешь научиться рассказывать.\n\nЗаписи хранятся только на твоём телефоне.",
+                "This is a place to share your thoughts and tell how your day went. It helps you learn to talk about yourself freely and honestly — and that's what matters most when you want to become a good storyteller.\n\nRecordings are stored only on your phone.",
+                "Бұл — ойыңмен бөлісіп, күнің қалай өткенін айтып беретін орын. Осылай сен өзің туралы еркін әрі шынайы сөйлеуге үйренесің — ал жақсы әңгімеші болғың келсе, бұл ең бастысы.\n\nЖазбалар тек сенің телефоныңда сақталады.",
+              )}
             </Text>
             <Pressable
               onPress={() => setInfoOpen(false)}
               style={({ pressed }) => [s.sheetBtn, { opacity: pressed ? 0.85 : 1 }]}
               accessibilityRole="button"
             >
-              <Text style={s.pillText}>{en ? "Got it" : "Понятно"}</Text>
+              <Text style={s.pillText}>{tr("Понятно", "Got it", "Түсінікті")}</Text>
             </Pressable>
           </Animated.View>
         </Animated.View>
@@ -364,15 +370,17 @@ export default function DiaryScreen() {
 
       <AppDialog
         visible={!!toDelete}
-        title={en ? "Delete this cassette?" : "Удалить кассету?"}
+        title={tr("Удалить кассету?", "Delete this cassette?", "Кассетаны жою керек пе?")}
         message={
-          en
-            ? "The recording will be erased from your phone. This can't be undone."
-            : "Запись сотрётся с телефона. Это нельзя отменить."
+          tr(
+            "Запись сотрётся с телефона. Это нельзя отменить.",
+            "The recording will be erased from your phone. This can't be undone.",
+            "Жазба телефоннан өшіріледі. Мұны қайтару мүмкін емес.",
+          )
         }
         buttons={[
-          { label: en ? "Delete" : "Удалить", onPress: confirmDelete, variant: "primary" },
-          { label: en ? "Cancel" : "Отмена", onPress: cancelDelete, variant: "secondary" },
+          { label: tr("Удалить", "Delete", "Жою"), onPress: confirmDelete, variant: "primary" },
+          { label: tr("Отмена", "Cancel", "Болдырмау"), onPress: cancelDelete, variant: "secondary" },
         ]}
         onRequestClose={cancelDelete}
       />

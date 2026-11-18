@@ -16,14 +16,14 @@ export type ThemeCategoryId =
   | "life"
   | "art";
 
-export const THEME_CATEGORIES: { id: ThemeCategoryId; ru: string; en: string }[] = [
-  { id: "popular", ru: "Популярные", en: "Popular" },
-  { id: "confidence", ru: "Уверенность", en: "Confidence" },
-  { id: "growth", ru: "Успех", en: "Success" },
-  { id: "people", ru: "Отношения", en: "People" },
-  { id: "society", ru: "Общество", en: "Society" },
-  { id: "life", ru: "Жизнь", en: "Life" },
-  { id: "art", ru: "Искусство", en: "Art" },
+export const THEME_CATEGORIES: { id: ThemeCategoryId; ru: string; en: string; kk: string }[] = [
+  { id: "popular", ru: "Популярные", en: "Popular", kk: "Танымал" },
+  { id: "confidence", ru: "Уверенность", en: "Confidence", kk: "Сенімділік" },
+  { id: "growth", ru: "Успех", en: "Success", kk: "Табыс" },
+  { id: "people", ru: "Отношения", en: "People", kk: "Қарым-қатынас" },
+  { id: "society", ru: "Общество", en: "Society", kk: "Қоғам" },
+  { id: "life", ru: "Жизнь", en: "Life", kk: "Өмір" },
+  { id: "art", ru: "Искусство", en: "Art", kk: "Өнер" },
 ];
 
 const n = (nums: number[]) => nums.map((i) => (i === 1 ? "showtime" : `showtime${i}`));

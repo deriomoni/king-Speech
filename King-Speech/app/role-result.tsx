@@ -32,7 +32,7 @@ import Animated, {
   ZoomIn,
   Easing,
 } from "react-native-reanimated";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang } from "@/context/LangContext";
 import { useRoles } from "@/context/RolesContext";
 import { getRoleById, tx } from "@/constants/rolesData";
 import { getRoleScenario, lt } from "@/constants/roleScenarios";
@@ -97,12 +97,12 @@ interface RoleScore {
 type Stage = "self" | "scanning" | "reveal";
 
 const METRIC_ORDER: (keyof RoleScore["metrics"])[] = ["roleFit", "emotion", "clarity", "confidence", "grammar"];
-const METRIC_LABELS: Record<string, { ru: string; en: string; icon: keyof typeof Ionicons.glyphMap }> = {
-  roleFit:    { ru: "Соответствие роли", en: "Role fit", icon: "person" },
-  emotion:    { ru: "Эмоции", en: "Emotion", icon: "heart" },
-  clarity:    { ru: "Чёткость произношения", en: "Diction", icon: "chatbubble-ellipses" },
-  confidence: { ru: "Уверенность", en: "Confidence", icon: "shield-checkmark" },
-  grammar:    { ru: "Грамматика", en: "Grammar", icon: "book" },
+const METRIC_LABELS: Record<string, { ru: string; en: string; kk: string; icon: keyof typeof Ionicons.glyphMap }> = {
+  roleFit:    { ru: "Соответствие роли", en: "Role fit", kk: "Рөлге сәйкестік", icon: "person" },
+  emotion:    { ru: "Эмоции", en: "Emotion", kk: "Эмоция", icon: "heart" },
+  clarity:    { ru: "Чёткость произношения", en: "Diction", kk: "Сөздің анықтығы", icon: "chatbubble-ellipses" },
+  confidence: { ru: "Уверенность", en: "Confidence", kk: "Сенімділік", icon: "shield-checkmark" },
+  grammar:    { ru: "Грамматика", en: "Grammar", kk: "Грамматика", icon: "book" },
 };
 
 export default function RoleResultScreen() {
@@ -466,7 +466,7 @@ export default function RoleResultScreen() {
     if (!result || !result.metrics) {
       result = {
         stars: 2,
-        feedback: lang === "en" ? "Great effort in the role!" : "Отличная работа в роли!",
+        feedback: pickLang(lang, { ru: "Отличная работа в роли!", en: "Great effort in the role!", kk: "Рөлде керемет ойнадың!" }),
         metrics: { roleFit: 3, emotion: 3, clarity: 3, confidence: 3, grammar: 3 },
         categories: {},
         aiUnavailable: true,
@@ -503,9 +503,9 @@ export default function RoleResultScreen() {
   if (!perf || !role) {
     return (
       <View style={[styles.root, { alignItems: "center", justifyContent: "center" }]}>
-        <Text style={styles.title}>{lang === "en" ? "Nothing to show" : "Нечего показать"}</Text>
+        <Text style={styles.title}>{pickLang(lang, { ru: "Нечего показать", en: "Nothing to show", kk: "Көрсететін ештеңе жоқ" })}</Text>
         <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/roles"))} style={styles.secondaryBtn}>
-          <Text style={styles.secondaryBtnText}>{lang === "en" ? "Back to roles" : "К ролям"}</Text>
+          <Text style={styles.secondaryBtnText}>{pickLang(lang, { ru: "К ролям", en: "Back to roles", kk: "Рөлдерге" })}</Text>
         </Pressable>
       </View>
     );
@@ -573,8 +573,8 @@ export default function RoleResultScreen() {
         {/* ---- Self rating ---- */}
         {stage === "self" && (
           <Animated.View entering={FadeInDown} style={styles.block}>
-            <Text style={styles.blockTitle}>{lang === "en" ? "How did you do?" : "Как ты сам себя оценишь?"}</Text>
-            <Text style={styles.blockSub}>{lang === "en" ? "Rate your own performance first." : "Сначала оцени своё выступление сам."}</Text>
+            <Text style={styles.blockTitle}>{pickLang(lang, { ru: "Как ты сам себя оценишь?", en: "How did you do?", kk: "Өзіңді қалай бағалайсың?" })}</Text>
+            <Text style={styles.blockSub}>{pickLang(lang, { ru: "Сначала оцени своё выступление сам.", en: "Rate your own performance first.", kk: "Алдымен өз өнеріңді өзің бағала." })}</Text>
             <View style={styles.starsRow}>
               {[1, 2, 3, 4, 5].map((n) => (
                 <Pressable key={n} onPress={() => { haptic(); setSelfStars(n); }} hitSlop={6}>
@@ -589,7 +589,7 @@ export default function RoleResultScreen() {
             >
               <LinearGradient colors={[GOLD_SOFT, GOLD]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={StyleSheet.absoluteFill} />
               <Ionicons name="sparkles" size={20} color={ON_GOLD} />
-              <Text style={styles.primaryBtnText}>{lang === "en" ? "Get feedback" : "Оценить"}</Text>
+              <Text style={styles.primaryBtnText}>{pickLang(lang, { ru: "Оценить", en: "Get feedback", kk: "Бағалау" })}</Text>
             </Pressable>
           </Animated.View>
         )}
@@ -602,7 +602,7 @@ export default function RoleResultScreen() {
             </Animated.View>
             <Ionicons name="scan" size={40} color={VIOLET} style={{ position: "absolute", top: 40 }} />
             <Text style={[styles.blockTitle, { marginTop: 20, textAlign: "center" }]}>
-              {lang === "en" ? "Analysing your performance..." : "Анализируем твою игру..."}
+              {pickLang(lang, { ru: "Анализируем твою игру...", en: "Analysing your performance...", kk: "Ойыныңды талдап жатырмыз..." })}
             </Text>
           </Animated.View>
         )}
@@ -614,7 +614,7 @@ export default function RoleResultScreen() {
               <Animated.View entering={ZoomIn.duration(420)} style={styles.unlockBanner}>
                 <LinearGradient colors={["#FFDE5C33", "transparent"]} style={StyleSheet.absoluteFill} />
                 <Ionicons name="trophy" size={20} color={GOLD} />
-                <Text style={styles.unlockText}>{lang === "en" ? "New role added to your collection!" : "Новая роль в твоей коллекции!"}</Text>
+                <Text style={styles.unlockText}>{pickLang(lang, { ru: "Новая роль в твоей коллекции!", en: "New role added to your collection!", kk: "Коллекцияңа жаңа рөл қосылды!" })}</Text>
               </Animated.View>
             )}
 
@@ -631,7 +631,7 @@ export default function RoleResultScreen() {
                 input they gave before analysis isn't silently discarded. */}
             {selfStars > 0 && (
               <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, textAlign: "center", marginTop: 4 }}>
-                {lang === "en" ? `Your self-rating: ${selfStars}/5` : `Твоя самооценка: ${selfStars}/5`}
+                {pickLang(lang, { ru: `Твоя самооценка: ${selfStars}/5`, en: `Your self-rating: ${selfStars}/5`, kk: `Өз бағаң: ${selfStars}/5` })}
               </Text>
             )}
 
@@ -640,14 +640,14 @@ export default function RoleResultScreen() {
               {METRIC_ORDER.map((key, i) => {
                 const val = score.metrics[key] ?? 3;
                 const meta = METRIC_LABELS[key];
-                return <MetricBar key={key} label={lang === "en" ? meta.en : meta.ru} icon={meta.icon} value={val} delay={i * 90} />;
+                return <MetricBar key={key} label={pickLang(lang, meta)} icon={meta.icon} value={val} delay={i * 90} />;
               })}
             </View>
 
             {/* Scenario: how the scene ended + per-goal results */}
             {scenario && run && (
               <View style={styles.block}>
-                <Text style={styles.goalsTitle}>{lang === "en" ? "Scene goals" : "Цели сцены"}</Text>
+                <Text style={styles.goalsTitle}>{pickLang(lang, { ru: "Цели сцены", en: "Scene goals", kk: "Көрініс мақсаттары" })}</Text>
                 {run.outcome !== "open" && run.dialogue.length > 0 && (
                   <View style={[styles.endingRow, run.outcome === "win" ? styles.endingWin : styles.endingLose]}>
                     <Text style={{ fontSize: 22 }}>{scenario.persona.avatar}</Text>
@@ -656,9 +656,7 @@ export default function RoleResultScreen() {
                 )}
                 {run.outcome === "open" && (
                   <Text style={styles.goalNote}>
-                    {lang === "en"
-                      ? `You stopped after ${run.answered + run.silent} of ${run.totalBeats} lines.`
-                      : `Ты остановился на ${run.answered + run.silent} из ${run.totalBeats} реплик.`}
+                    {pickLang(lang, { ru: `Ты остановился на ${run.answered + run.silent} из ${run.totalBeats} реплик.`, en: `You stopped after ${run.answered + run.silent} of ${run.totalBeats} lines.`, kk: `Тоқтаған жерің: ${run.answered + run.silent} / ${run.totalBeats} реплика.` })}
                   </Text>
                 )}
                 {(score.goals ?? run.goals.map((g) => ({ id: g.id, text: g.text, hit: g.live === "done", note: undefined as string | undefined }))).map((g, i) => (
@@ -686,7 +684,7 @@ export default function RoleResultScreen() {
               )}
               {score.aiUnavailable && (
                 <Text style={styles.aiNote}>
-                  {lang === "en" ? "Scoring is offline right now — this is a quick estimate." : "Оценка сейчас недоступна — это быстрая прикидка."}
+                  {pickLang(lang, { ru: "Оценка сейчас недоступна — это быстрая прикидка.", en: "Scoring is offline right now — this is a quick estimate.", kk: "Бағалау қазір қолжетімсіз — бұл жылдам болжам." })}
                 </Text>
               )}
             </View>
@@ -697,10 +695,10 @@ export default function RoleResultScreen() {
               style={({ pressed }) => [styles.secondaryActionBtn, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}
             >
               <Ionicons name="repeat" size={20} color={ON_VIOLET} />
-              <Text style={styles.secondaryActionText}>{lang === "en" ? "Play another role" : "Ещё роль"}</Text>
+              <Text style={styles.secondaryActionText}>{pickLang(lang, { ru: "Ещё роль", en: "Play another role", kk: "Тағы бір рөл" })}</Text>
             </Pressable>
             <Pressable onPress={() => leaveFlowToTabs("/(tabs)/showtime")} style={styles.secondaryBtn}>
-              <Text style={styles.secondaryBtnText}>{lang === "en" ? "Done" : "Готово"}</Text>
+              <Text style={styles.secondaryBtnText}>{pickLang(lang, { ru: "Готово", en: "Done", kk: "Дайын" })}</Text>
             </Pressable>
           </Animated.View>
         )}

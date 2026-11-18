@@ -23,6 +23,7 @@ import RiveAnim from "@/components/RiveAnim";
 import Trophy3D from "@/components/Trophy3D";
 import CoinIcon from "@/components/CoinIcon";
 import { useGame } from "@/context/GameContext";
+import { pickLang, type Lang } from "@/context/LangContext";
 import {
   RAYS_SVG,
   TROPHY_GLOW_SVG,
@@ -202,7 +203,7 @@ export interface LevelCompleteModalProps {
   colors?: unknown;
   isDark?: boolean;
   t: (key: any) => string;
-  lang: "ru" | "en";
+  lang: Lang;
   roleBonus?: { emoji: string; title: string; onPlay: () => void } | null;
 }
 
@@ -220,7 +221,6 @@ function VictoryScreen({ bestScore, durationSec, xpEarned, onNext, onMap, t, lan
   const { coins: balance } = useGame();
   const insets = useSafeAreaInsets();
   const { width: W, height: H } = useWindowDimensions();
-  const en = lang === "en";
 
   // artboard → screen: uniform fit, centred; u() turns artboard units into points
   const k = Math.min(W / ART_W, H / ART_H);
@@ -287,12 +287,12 @@ function VictoryScreen({ bestScore, durationSec, xpEarned, onNext, onMap, t, lan
   const stars = score >= 9 ? 3 : score >= 7 ? 2 : 1;
   const verdict =
     score >= 9.5
-      ? en ? "PERFECT!" : "ИДЕАЛЬНО!"
+      ? pickLang(lang, { ru: "ИДЕАЛЬНО!", en: "PERFECT!", kk: "МІНСІЗ!" })
       : score >= 8
-        ? en ? "GREAT!" : "ОТЛИЧНО!"
+        ? pickLang(lang, { ru: "ОТЛИЧНО!", en: "GREAT!", kk: "КЕРЕМЕТ!" })
         : score >= 6
-          ? en ? "GOOD!" : "ХОРОШО!"
-          : en ? "PASSED!" : "ПРОЙДЕНО!";
+          ? pickLang(lang, { ru: "ХОРОШО!", en: "GOOD!", kk: "ЖАҚСЫ!" })
+          : pickLang(lang, { ru: "ПРОЙДЕНО!", en: "PASSED!", kk: "ӨТІЛДІ!" });
 
   // the swoosh stretches sideways to the screen edges (no gaps on wide phones)
   const SWOOSH_WIDE = SWOOSH_SVG.replace("<svg ", '<svg preserveAspectRatio="none" ');
@@ -444,13 +444,13 @@ function VictoryScreen({ bestScore, durationSec, xpEarned, onNext, onMap, t, lan
               }}
             />
             <View style={{ position: "absolute", left: 0, top: 0, width: uc(338), height: uc(112), borderRadius: uc(30), backgroundColor: "#FFFFFF", elevation: 11 }}>
-              <Text style={[s.label, { ...atc(28, 28), fontSize: uc(11), letterSpacing: uc(1.1) }]}>{en ? "SCORE" : "ОЦЕНКА"}</Text>
+              <Text style={[s.label, { ...atc(28, 28), fontSize: uc(11), letterSpacing: uc(1.1) }]}>{pickLang(lang, { ru: "ОЦЕНКА", en: "SCORE", kk: "БАҒА" })}</Text>
               <View style={{ ...atc(26, 42), flexDirection: "row", alignItems: "baseline" }}>
                 <Text style={[s.value, { fontSize: uc(46), letterSpacing: uc(-0.92) }]}>{scoreStr}</Text>
                 <Text style={[s.outOf, { fontSize: uc(18), marginLeft: uc(4) }]}>/10</Text>
               </View>
               <View style={{ ...atc(168, 26), width: uc(2), height: uc(62), borderRadius: 1, backgroundColor: "rgba(42,10,94,0.1)" }} />
-              <Text style={[s.label, { ...atc(194, 28), fontSize: uc(11), letterSpacing: uc(1.1) }]}>{en ? "TIME" : "ВРЕМЯ"}</Text>
+              <Text style={[s.label, { ...atc(194, 28), fontSize: uc(11), letterSpacing: uc(1.1) }]}>{pickLang(lang, { ru: "ВРЕМЯ", en: "TIME", kk: "УАҚЫТ" })}</Text>
               <Text style={[s.value, { ...atc(192, 42), fontSize: uc(46), letterSpacing: uc(-0.92) }]}>{timeStr}</Text>
             </View>
           </View>
@@ -495,7 +495,7 @@ function VictoryScreen({ bestScore, durationSec, xpEarned, onNext, onMap, t, lan
                 >
                   <LinearGradient colors={["#FFE27A", "#FFC92E"]} style={StyleSheet.absoluteFill} />
                   <View style={{ position: "absolute", left: u(14), right: u(14), top: 0, height: u(2), borderRadius: 1, backgroundColor: "rgba(255,255,255,0.6)" }} />
-                  <Text style={[s.ctaText, { fontSize: u(17) }]}>{en ? "Next →" : "Далее →"}</Text>
+                  <Text style={[s.ctaText, { fontSize: u(17) }]}>{pickLang(lang, { ru: "Далее →", en: "Next →", kk: "Келесі →" })}</Text>
                 </View>
               </>
             )}
@@ -504,7 +504,7 @@ function VictoryScreen({ bestScore, durationSec, xpEarned, onNext, onMap, t, lan
 
         <Animated.View entering={FadeIn.delay(1400)} style={{ position: "absolute", left: 0, right: 0, top: u(830), alignItems: "center" }}>
           <Pressable onPress={onMap} hitSlop={12} style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}>
-            <Text style={[s.exit, { fontSize: u(15) }]}>{en ? "Exit" : "Выход"}</Text>
+            <Text style={[s.exit, { fontSize: u(15) }]}>{pickLang(lang, { ru: "Выход", en: "Exit", kk: "Шығу" })}</Text>
           </Pressable>
         </Animated.View>
 

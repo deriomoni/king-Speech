@@ -35,7 +35,7 @@ import * as Haptics from "@/lib/haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import { leaveTo } from "@/lib/nav";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { useLang, Lang } from "@/context/LangContext";
+import { useLang, Lang, pickLang } from "@/context/LangContext";
 import {
   getShowtimeModule,
   getModuleFromShowtimeId,
@@ -4142,11 +4142,13 @@ const SPEECH_THEMES_EN: Record<string, SpeechTheme> = {
 // colors, stage interior, timer are preserved; only `title` + `speeches`
 // are replaced). Computed once and cached. English keeps the legacy themes.
 let RU_MERGED_THEMES: Record<string, SpeechTheme> | null = null;
-function getRuMergedThemes(): Record<string, SpeechTheme> {
-  if (RU_MERGED_THEMES) return RU_MERGED_THEMES;
+let KK_MERGED_THEMES: Record<string, SpeechTheme> | null = null;
+function getRuMergedThemes(lang: "ru" | "kk" = "ru"): Record<string, SpeechTheme> {
+  if (lang === "ru" && RU_MERGED_THEMES) return RU_MERGED_THEMES;
+  if (lang === "kk" && KK_MERGED_THEMES) return KK_MERGED_THEMES;
   const out: Record<string, SpeechTheme> = {};
   for (const [id, theme] of Object.entries(SPEECH_THEMES)) {
-    const mod = getShowtimeModule(getModuleFromShowtimeId(id));
+    const mod = getShowtimeModule(getModuleFromShowtimeId(id), lang);
     out[id] =
       mod && mod.parts.length > 0
         ? {
@@ -4156,7 +4158,8 @@ function getRuMergedThemes(): Record<string, SpeechTheme> {
           }
         : theme;
   }
-  RU_MERGED_THEMES = out;
+  if (lang === "kk") KK_MERGED_THEMES = out;
+  else RU_MERGED_THEMES = out;
   return out;
 }
 
@@ -4187,7 +4190,8 @@ function buildShowEnvelope(samples: number[], n: number): number[] | null {
 }
 
 export function getSpeechThemes(lang: Lang): Record<string, SpeechTheme> {
-  return lang === "en" ? SPEECH_THEMES_EN : getRuMergedThemes();
+  if (lang === "en") return SPEECH_THEMES_EN;
+  return getRuMergedThemes(lang === "kk" ? "kk" : "ru");
 }
 
 // ── NOISE EFFECTS ─────────────────────────────────────────────────────────────
@@ -4219,6 +4223,20 @@ const NOISE_EFFECTS: Record<Lang, { text: string; duration: number }[]> = {
     { text: "mm...", duration: 1800 },
     { text: "*rustling*", duration: 1600 },
     { text: "bravo!", duration: 1000 },
+  ],
+  kk: [
+    { text: "пс-с...", duration: 1800 },
+    { text: "*жөтел*", duration: 1400 },
+    { text: "*түшкіру*", duration: 1200 },
+    { text: "хм...", duration: 1600 },
+    { text: "*сыбыр*", duration: 2000 },
+    { text: "ха...", duration: 1000 },
+    { text: "...", duration: 1500 },
+    { text: "*орындық сықыры*", duration: 1300 },
+    { text: "тс-с!", duration: 1200 },
+    { text: "мм...", duration: 1800 },
+    { text: "*сыбдыр*", duration: 1600 },
+    { text: "жарайсың!", duration: 1000 },
   ],
 };
 
@@ -4619,6 +4637,20 @@ const ENCOURAGEMENTS: Record<string, string[]> = {
     "They are on your side",
     "Say it like you mean it",
   ],
+  kk: [
+    "Зал дәл сені күтіп отыр",
+    "Дем ал. Енді баста",
+    "Дауысың ойлағаныңнан да күшті",
+    "Сен сезінгеніңнен де дайынсың",
+    "Үзіліс те — сөздің бір бөлігі",
+    "Мәтінге емес, залға қара",
+    "Толқу — саған күш береді",
+    "Жаңылсаң — әрі қарай жалғастыр",
+    "Бұл сөзді сенен артық ешкім білмейді",
+    "Алғашқы сөйлемді — асықпай",
+    "Олар сенің жағыңда",
+    "Шын сенгендей сөйле",
+  ],
 };
 
 function EncouragementLine({ lang, color }: { lang: Lang; color: string }) {
@@ -4787,7 +4819,7 @@ export default function ShowtimeStageScreen() {
   const authorTheme = useMemo<SpeechTheme | null>(() => {
     if (!isAuthor) return null;
     const base = themes["showtime"];
-    const title = (authorTitleParam ?? "").trim() || (lang === "en" ? "My speech" : "Моя речь");
+    const title = (authorTitleParam ?? "").trim() || pickLang(lang, { ru: "Моя речь", en: "My speech", kk: "Менің сөзім" });
     return { ...base, levelId: "author", title, timerSeconds: null, speeches: [{ title, lines: authorLines }] };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthor, authorLines, authorTitleParam, lang]);
@@ -4827,7 +4859,7 @@ export default function ShowtimeStageScreen() {
     const minutes = Math.max(1, Math.round(words / 110));
     if (isAuthor) {
       const nA10 = words % 10, nA100 = words % 100;
-      const w = en ? "words" : nA10 === 1 && nA100 !== 11 ? "слово" : nA10 >= 2 && nA10 <= 4 && (nA100 < 12 || nA100 > 14) ? "слова" : "слов";
+      const w = en ? "words" : lang === "kk" ? "сөз" : nA10 === 1 && nA100 !== 11 ? "слово" : nA10 >= 2 && nA10 <= 4 && (nA100 < 12 || nA100 > 14) ? "слова" : "слов";
       return {
         category: authorCategoryParam ?? "",
         meta: `${minutes} ${en ? "min" : "мин"}  ·  ${words} ${w}  ·  ${en ? "Photo" : "Фото"}: ${showtimeCoverCredit(levelId)}`,
@@ -4835,21 +4867,23 @@ export default function ShowtimeStageScreen() {
     }
     const rank = getShowtimeModule(getModuleFromShowtimeId(levelId))?.rank ?? 1;
     const difficulty = rank <= 1
-      ? (en ? "Easy" : "Лёгкая")
+      ? pickLang(lang, { ru: "Лёгкая", en: "Easy", kk: "Жеңіл" })
       : rank <= 3
-        ? (en ? "Medium" : "Средняя")
-        : (en ? "Hard" : "Сложная");
+        ? pickLang(lang, { ru: "Средняя", en: "Medium", kk: "Орташа" })
+        : pickLang(lang, { ru: "Сложная", en: "Hard", kk: "Қиын" });
     const cat = THEME_CATEGORIES.find((c) => c.id === categoryOf(levelId));
     const n10 = words % 10, n100 = words % 100;
     const wordsWord = en
       ? "words"
-      : n10 === 1 && n100 !== 11
+      : lang === "kk"
+        ? "сөз"
+        : n10 === 1 && n100 !== 11
         ? "слово"
         : n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)
           ? "слова"
           : "слов";
     return {
-      category: cat ? (en ? cat.en : cat.ru) : "",
+      category: cat ? pickLang(lang, cat) : "",
       meta: `${minutes} ${en ? "min" : "мин"}  ·  ${difficulty}  ·  ${words} ${wordsWord}  ·  ${en ? "Photo" : "Фото"}: ${showtimeCoverCredit(levelId)}`,
     };
   }, [lang, levelId, speech, isAuthor, authorCategoryParam]);
@@ -5307,7 +5341,7 @@ export default function ShowtimeStageScreen() {
             phase={finished ? "done" : started && introDone ? "live" : "idle"}
             dim={dim}
             dimRef={dimRef}
-            lang={lang === "en" ? "en" : "ru"}
+            lang={lang}
             levelsRef={meterSamplesRef}
             variant={(getModuleFromShowtimeId(levelId) - 1) % 4}
           />
@@ -5427,9 +5461,11 @@ export default function ShowtimeStageScreen() {
             {/* TODO(design): themes carry no description yet — a shared brief
                 stands in until the content gets a per-theme one. */}
             <Text style={[s.pvDesc, { color: isDarkUi ? "rgba(240,238,233,0.85)" : "rgba(38,38,40,0.85)" }]}>
-              {lang === "en"
-                ? "A speech to say out loud, in front of a hall. Read it with your voice — what it means to you, you'll find out on stage."
-                : "Речь, которую нужно произнести вслух перед залом. Прочитай её голосом, а что она значит лично для тебя, поймёшь на сцене."}
+              {pickLang(lang, {
+                ru: "Речь, которую нужно произнести вслух перед залом. Прочитай её голосом, а что она значит лично для тебя, поймёшь на сцене.",
+                en: "A speech to say out loud, in front of a hall. Read it with your voice — what it means to you, you'll find out on stage.",
+                kk: "Зал алдында дауыстап айтуға арналған сөз. Оны дауысыңмен оқы — оның сен үшін не мәні бар екенін сахнада түсінесің.",
+              })}
             </Text>
             {theme.timerSeconds !== null && (
               <Text style={[s.pvMeta, { color: isDarkUi ? "rgba(240,238,233,0.5)" : "rgba(38,38,40,0.5)", marginTop: 8 }]}>
@@ -5440,15 +5476,16 @@ export default function ShowtimeStageScreen() {
 
             <Animated.View entering={pvIn(2)}>
             <Text style={[s.pvKicker, { color: isDarkUi ? "rgba(240,238,233,0.5)" : "rgba(38,38,40,0.5)" }]}>
-              {lang === "en" ? "SET YOURSELF UP" : "НАСТРОЙ НА ВЫХОД"}
+              {pickLang(lang, { ru: "НАСТРОЙ НА ВЫХОД", en: "SET YOURSELF UP", kk: "САХНАҒА ДАЙЫНДАЛ" })}
             </Text>
             {/* TODO(design): tone / pace / hall are not in the content yet —
                 the design's defaults are shown for every theme. */}
             <View style={s.pvChips}>
-              {(lang === "en"
-                ? [["Tone", "confident"], ["Pace", "calm"], ["Hall", "colleagues"]]
-                : [["Тон", "уверенный"], ["Темп", "спокойный"], ["Зал", "коллеги"]]
-              ).map(([k, v]) => (
+              {pickLang(lang, {
+                ru: [["Тон", "уверенный"], ["Темп", "спокойный"], ["Зал", "коллеги"]],
+                en: [["Tone", "confident"], ["Pace", "calm"], ["Hall", "colleagues"]],
+                kk: [["Үн", "сенімді"], ["Қарқын", "байсалды"], ["Зал", "әріптестер"]],
+              }).map(([k, v]) => (
                 <View key={k} style={[s.pvChip, { backgroundColor: ui.card, borderColor: isDarkUi ? "rgba(240,238,233,0.06)" : "rgba(38,38,40,0.08)" }]}>
                   <Text style={[s.pvChipKey, { color: isDarkUi ? "rgba(240,238,233,0.5)" : "rgba(38,38,40,0.5)" }]}>{k}</Text>
                   <Text style={[s.pvChipVal, { color: ui.text }]} numberOfLines={1}>{v}</Text>
@@ -5472,8 +5509,8 @@ export default function ShowtimeStageScreen() {
                   >
                     <Text style={[s.pvSegText, { color: active ? ui.text : isDarkUi ? "rgba(240,238,233,0.5)" : "rgba(38,38,40,0.5)" }]}>
                       {m === "manual"
-                        ? (lang === "en" ? "Manual" : "Механическая")
-                        : (lang === "en" ? "Auto-scroll" : "Авто-свайп")}
+                        ? pickLang(lang, { ru: "Механическая", en: "Manual", kk: "Қолмен" })
+                        : pickLang(lang, { ru: "Авто-свайп", en: "Auto-scroll", kk: "Авто-свайп" })}
                     </Text>
                   </Pressable>
                 );
@@ -5587,7 +5624,7 @@ export default function ShowtimeStageScreen() {
         placement="lower"
         overlay={0}
         onRequestClose={dismissTutorial}
-        buttons={[{ label: lang === "en" ? "Got it" : "Понятно", variant: "primary", onPress: dismissTutorial }]}
+        buttons={[{ label: pickLang(lang, { ru: "Понятно", en: "Got it", kk: "Түсінікті" }), variant: "primary", onPress: dismissTutorial }]}
       />
 
       {/* Exit confirmation (Figma 37:3800 "Show Time · Вы уверены?") */}
@@ -5683,7 +5720,7 @@ export default function ShowtimeStageScreen() {
                 kind={autoPaused ? "play" : "pause"}
                 size={52}
                 onPress={toggleAutoPause}
-                accessibilityLabel={autoPaused ? "Play" : "Pause"}
+                accessibilityLabel={autoPaused ? pickLang(lang, { ru: "Продолжить", en: "Play", kk: "Ойнату" }) : pickLang(lang, { ru: "Пауза", en: "Pause", kk: "Кідірту" })}
               />
             )}
 

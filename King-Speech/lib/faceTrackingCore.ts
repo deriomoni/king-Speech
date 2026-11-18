@@ -286,9 +286,9 @@ export class FaceTracker {
   }
 }
 
-export const FACE_HINT_TEXT: Record<FaceHint, { ru: string; en: string }> = {
-  closer: { ru: "Подойди ближе", en: "Move closer" },
-  farther: { ru: "Отойди чуть дальше", en: "Move back a little" },
-  center: { ru: "Встань по центру", en: "Center yourself" },
-  look: { ru: "Смотри в камеру", en: "Look at the camera" },
+export const FACE_HINT_TEXT: Record<FaceHint, { ru: string; en: string; kk: string }> = {
+  closer: { ru: "Подойди ближе", en: "Move closer", kk: "Жақынырақ кел" },
+  farther: { ru: "Отойди чуть дальше", en: "Move back a little", kk: "Сәл алысырақ тұр" },
+  center: { ru: "Встань по центру", en: "Center yourself", kk: "Ортаға тұр" },
+  look: { ru: "Смотри в камеру", en: "Look at the camera", kk: "Камераға қара" },
 };

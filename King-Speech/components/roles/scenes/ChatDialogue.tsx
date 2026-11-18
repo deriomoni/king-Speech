@@ -3,6 +3,7 @@
 // plus a persona strip with the mood meter and quick context chips.
 import React from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { pickLang } from "@/context/LangContext";
 import Animated, { FadeInDown, FadeOut, LinearTransition } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { lt } from "@/constants/roleScenarios";
@@ -41,7 +42,7 @@ export function ChatDialogue(p: SceneProps) {
       {p.awaitingOpening && !scripted && (
         <Animated.View entering={FadeInDown} style={styles.hint}>
           <Ionicons name="mic" size={13} color={SCENE.onYellow} />
-          <Text style={styles.hintText}>{lang === "en" ? "You start" : "Ты начинаешь"}: {lt(s.openingHint, lang)}</Text>
+          <Text style={styles.hintText}>{pickLang(lang, { ru: "Ты начинаешь", en: "You start", kk: "Сен бастайсың" })}: {lt(s.openingHint, lang)}</Text>
         </Animated.View>
       )}
 
@@ -55,7 +56,7 @@ export function ChatDialogue(p: SceneProps) {
               ) : (
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                   <Ionicons name="mic" size={13} color={SCENE.onYellow} />
-                  <Text style={styles.youMeta}>{lang === "en" ? "You" : "Ты"} · {Math.floor((m.seconds ?? 1) / 60)}:{String((m.seconds ?? 1) % 60).padStart(2, "0")}</Text>
+                  <Text style={styles.youMeta}>{pickLang(lang, { ru: "Ты", en: "You", kk: "Сен" })} · {Math.floor((m.seconds ?? 1) / 60)}:{String((m.seconds ?? 1) % 60).padStart(2, "0")}</Text>
                 </View>
               )}
             </View>

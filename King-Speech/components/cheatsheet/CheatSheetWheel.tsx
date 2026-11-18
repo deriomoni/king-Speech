@@ -22,6 +22,7 @@ import * as Haptics from "@/lib/haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "@/constants/colors";
 import { tx, type CheatRoute } from "@/constants/cheatsheetData";
+import { pickLang, type Lang } from "@/context/LangContext";
 
 const { width: SW, height: SH } = Dimensions.get("window");
 const ITEM_H = 108;
@@ -30,11 +31,11 @@ const PAD_V = (WHEEL_H - ITEM_H) / 2; // lets the first/last item reach the cent
 const MARKER_X = 34; // arc dot x — the fixed selection marker
 
 // Short bold name shown to the right (like "Flexible" in the reference).
-const NAME: Record<string, { ru: string; en: string }> = {
-  warmup: { ru: "Разминка", en: "Warm-up" },
-  quick: { ru: "Экспресс", en: "Express" },
-  balanced: { ru: "Баланс", en: "Balanced" },
-  full: { ru: "Полная", en: "Full" },
+const NAME: Record<string, { ru: string; en: string; kk: string }> = {
+  warmup: { ru: "Разминка", en: "Warm-up", kk: "Жаттығу" },
+  quick: { ru: "Экспресс", en: "Express", kk: "Экспресс" },
+  balanced: { ru: "Баланс", en: "Balanced", kk: "Баланс" },
+  full: { ru: "Полная", en: "Full", kk: "Толық" },
 };
 
 type AppColors = import("@/constants/colors").AppColors;
@@ -55,7 +56,7 @@ function WheelRow({
   route: CheatRoute;
   index: number;
   scrollY: SharedValue<number>;
-  lang: string;
+  lang: Lang;
   colors: AppColors;
 }) {
   // Curve the item along the arc: it hugs the marker at the centre and swings
@@ -94,7 +95,7 @@ function WheelRow({
         <Text style={[styles.unit, { color: colors.textMuted }]}>{lang === "en" ? "min" : "мин"}</Text>
       </View>
       <Animated.View style={[styles.textWrap, textStyle]}>
-        <Text style={[styles.title, { color: colors.text }]}>{NAME[route.id]?.[lang as "ru" | "en"] ?? tx(route.title, lang)}</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{NAME[route.id]?.[lang] ?? tx(route.title, lang)}</Text>
         <Text style={[styles.desc, { color: colors.textSecondary }]}>{tx(route.subtitle, lang)}</Text>
       </Animated.View>
     </Animated.View>
@@ -112,7 +113,7 @@ export default function CheatSheetWheel({
   startStyle,
 }: {
   routes: CheatRoute[];
-  lang: string;
+  lang: Lang;
   colors: AppColors;
   isDark: boolean;
   onStart: (route: CheatRoute) => void;
@@ -207,7 +208,7 @@ export default function CheatSheetWheel({
             startStyle && { color: startStyle.ink, fontFamily: "Geologica_800ExtraBold" },
           ]}
         >
-          {lang === "en" ? "Start" : "Начать"}
+          {pickLang(lang, { ru: "Начать", en: "Start", kk: "Бастау" })}
         </Text>
       </Pressable>
     </View>

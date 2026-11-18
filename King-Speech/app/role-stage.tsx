@@ -18,7 +18,7 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import Animated, { FadeIn, ZoomIn } from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from "expo-camera";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang } from "@/context/LangContext";
 import { getRoleById, tx, type RoleMode } from "@/constants/rolesData";
 import { RoleTarotCard, CrownPattern, MONO, ROLES_BG } from "@/components/roles/RoleTarotCard";
 import { FaceTrackerIcon, FACE_TRACK_COLORS, type FaceTrackState } from "@/components/roles/FaceTrackerIcon";
@@ -457,8 +457,8 @@ export default function RoleStageScreen() {
   if (!role) {
     return (
       <View style={[styles.root, { alignItems: "center", justifyContent: "center" }]}>
-        <Text style={styles.errText}>{lang === "en" ? "Role not found" : "Роль не найдена"}</Text>
-        <Pressable onPress={() => router.back()} style={styles.errBtn}><Text style={styles.errBtnText}>{lang === "en" ? "Back" : "Назад"}</Text></Pressable>
+        <Text style={styles.errText}>{pickLang(lang, { ru: "Роль не найдена", en: "Role not found", kk: "Рөл табылмады" })}</Text>
+        <Pressable onPress={() => router.back()} style={styles.errBtn}><Text style={styles.errBtnText}>{pickLang(lang, { ru: "Назад", en: "Back", kk: "Артқа" })}</Text></Pressable>
       </View>
     );
   }
@@ -472,12 +472,12 @@ export default function RoleStageScreen() {
   const faceColor = FACE_TRACK_COLORS[faceState];
   const facePill =
     faceState === "ok"
-      ? (lang === "en" ? "Face in frame" : "Лицо в кадре")
+      ? (pickLang(lang, { ru: "Лицо в кадре", en: "Face in frame", kk: "Бет кадрда" }))
       : faceState === "turn"
         ? (tracking.hint
-            ? FACE_HINT_TEXT[tracking.hint][lang === "en" ? "en" : "ru"]
-            : (lang === "en" ? "Adjust the frame" : "Поправь кадр"))
-        : (lang === "en" ? "Face lost" : "Лицо потеряно");
+            ? pickLang(lang, FACE_HINT_TEXT[tracking.hint])
+            : (pickLang(lang, { ru: "Поправь кадр", en: "Adjust the frame", kk: "Кадрды түзе" })))
+        : (pickLang(lang, { ru: "Лицо потеряно", en: "Face lost", kk: "Бет көрінбей қалды" }));
 
   const onRecordPress = () => {
     if (phase === "ready") startRecording();
@@ -573,7 +573,7 @@ export default function RoleStageScreen() {
           <View style={styles.noCamNote}>
             <Ionicons name="videocam-off" size={14} color={MUTED} />
             <Text style={styles.noCamText}>
-              {lang === "en" ? "Camera off — you can still perform with voice." : "Камера выключена — можно играть только голосом."}
+              {pickLang(lang, { ru: "Камера выключена — можно играть только голосом.", en: "Camera off — you can still perform with voice.", kk: "Камера өшірулі — тек дауыспен ойнауға болады." })}
             </Text>
           </View>
         )}
@@ -617,7 +617,7 @@ export default function RoleStageScreen() {
           <Animated.View entering={FadeIn} style={styles.finishPill}>
             <Ionicons name="flag" size={13} color="#2B2100" />
             <Text style={styles.finishText}>
-              {lang === "en" ? `Scene complete · stopping in ${finishIn}` : `Сцена сыграна · стоп через ${finishIn}`}
+              {pickLang(lang, { ru: `Сцена сыграна · стоп через ${finishIn}`, en: `Scene complete · stopping in ${finishIn}`, kk: `Көрініс ойналды · тоқтауға ${finishIn}` })}
             </Text>
           </Animated.View>
         )}
@@ -633,7 +633,7 @@ export default function RoleStageScreen() {
         {phase === "processing" ? (
           <View style={styles.processing}>
             <ActivityIndicator color={ARC_YELLOW} />
-            <Text style={styles.processingText}>{lang === "en" ? "Preparing your take..." : "Готовим твой дубль..."}</Text>
+            <Text style={styles.processingText}>{pickLang(lang, { ru: "Готовим твой дубль...", en: "Preparing your take...", kk: "Дублің дайындалып жатыр..." })}</Text>
           </View>
         ) : (
           <View style={styles.controls}>
@@ -641,8 +641,8 @@ export default function RoleStageScreen() {
               {phase === "recording" && (
                 <Text style={styles.takeHint}>
                   {take < MAX_TAKES
-                    ? (lang === "en" ? `Take ${take}/${MAX_TAKES}` : `Дубль ${take}/${MAX_TAKES}`)
-                    : (lang === "en" ? "Last take" : "Последний")}
+                    ? (pickLang(lang, { ru: `Дубль ${take}/${MAX_TAKES}`, en: `Take ${take}/${MAX_TAKES}`, kk: `Дубль ${take}/${MAX_TAKES}` }))
+                    : (pickLang(lang, { ru: "Последний", en: "Last take", kk: "Соңғы дубль" }))}
                 </Text>
               )}
             </View>
@@ -668,8 +668,8 @@ export default function RoleStageScreen() {
                   <View style={styles.sideBtn}>
                     <Ionicons name="refresh" size={22} color="#fff" />
                   </View>
-                  <Text style={styles.sideLabel}>{lang === "en" ? "Retake" : "Заново"}</Text>
-                  <Text style={styles.sideSub}>{lang === "en" ? `take ${take + 1}` : `дубль ${take + 1}`}</Text>
+                  <Text style={styles.sideLabel}>{pickLang(lang, { ru: "Заново", en: "Retake", kk: "Қайталау" })}</Text>
+                  <Text style={styles.sideSub}>{pickLang(lang, { ru: `дубль ${take + 1}`, en: `take ${take + 1}`, kk: `${take + 1}-дубль` })}</Text>
                 </Pressable>
               )}
             </View>
@@ -681,16 +681,16 @@ export default function RoleStageScreen() {
       {phase === "countdown" && (
         <Animated.View entering={FadeIn.duration(160)} style={styles.countdownWrap}>
           <Text style={styles.countdownKicker}>
-            {lang === "en" ? `Take ${take}/${MAX_TAKES}` : `Дубль ${take}/${MAX_TAKES}`}
+            {pickLang(lang, { ru: `Дубль ${take}/${MAX_TAKES}`, en: `Take ${take}/${MAX_TAKES}`, kk: `Дубль ${take}/${MAX_TAKES}` })}
           </Text>
           <Animated.Text key={countdown} entering={ZoomIn.duration(260)} style={styles.countdownNum}>{countdown}</Animated.Text>
           <Text style={styles.countdownSub}>
             {scenario
-              ? (lang === "en" ? "The scene starts from the top" : "Сцена начнётся с начала")
-              : (lang === "en" ? "Get ready" : "Приготовься")}
+              ? (pickLang(lang, { ru: "Сцена начнётся с начала", en: "The scene starts from the top", kk: "Көрініс басынан басталады" }))
+              : (pickLang(lang, { ru: "Приготовься", en: "Get ready", kk: "Дайындал" }))}
           </Text>
           <Pressable onPress={() => { haptic(); setPhase("ready"); }} hitSlop={10} style={styles.countdownCancel}>
-            <Text style={styles.countdownCancelText}>{lang === "en" ? "Not yet" : "Подожду"}</Text>
+            <Text style={styles.countdownCancelText}>{pickLang(lang, { ru: "Подожду", en: "Not yet", kk: "Күте тұрам" })}</Text>
           </Pressable>
         </Animated.View>
       )}

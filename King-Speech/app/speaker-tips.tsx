@@ -13,7 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
 import { router } from "expo-router";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang } from "@/context/LangContext";
 
 const GOLD = "#F5A623";
 const BG = "#070D1A";
@@ -23,12 +23,14 @@ const MUTED = "rgba(255,255,255,0.55)";
 type Tip = {
   ru: { title: string; text: string };
   en: { title: string; text: string };
+  kk: { title: string; text: string };
 };
 
 type Section = {
   icon: keyof typeof Ionicons.glyphMap;
   ru: string;
   en: string;
+  kk: string;
   tips: Tip[];
 };
 
@@ -37,18 +39,22 @@ const SECTIONS: Section[] = [
     icon: "mic-outline",
     ru: "Голос",
     en: "Voice",
+    kk: "Дауыс",
     tips: [
       {
         ru: { title: "Громкость", text: "Говори громче, чем обычно. Тебя должен слышать последний ряд." },
         en: { title: "Projection", text: "Speak louder than usual. The back row should hear you." },
+        kk: { title: "Дауыс қаттылығы", text: "Әдеттегіден қаттырақ сөйле. Сені соңғы қатар да естуі керек." },
       },
       {
         ru: { title: "Пауза", text: "Пауза после ключевой фразы — это сила. Не бойся тишины." },
         en: { title: "The pause", text: "A pause after a key phrase is powerful. Don't fear silence." },
+        kk: { title: "Үзіліс", text: "Негізгі сөйлемнен кейінгі үзіліс — үлкен күш. Үнсіздіктен қорықпа." },
       },
       {
         ru: { title: "Темп", text: "Не торопись. Медленная речь звучит увереннее быстрой." },
         en: { title: "Pace", text: "Don't rush. Slow speech sounds more confident than fast." },
+        kk: { title: "Қарқын", text: "Асықпа. Баяу сөз жылдам сөзден гөрі сенімдірек естіледі." },
       },
     ],
   },
@@ -56,18 +62,22 @@ const SECTIONS: Section[] = [
     icon: "body-outline",
     ru: "Тело",
     en: "Body",
+    kk: "Дене",
     tips: [
       {
         ru: { title: "Осанка", text: "Стой прямо, плечи расправлены — это передаёт уверенность." },
         en: { title: "Posture", text: "Stand straight, shoulders back — it conveys confidence." },
+        kk: { title: "Дене қалпы", text: "Тік тұр, иығыңды жаз — бұл сенімділікті білдіреді." },
       },
       {
         ru: { title: "Взгляд", text: "Смотри вперёд, в зал, а не в текст или в пол." },
         en: { title: "Eye contact", text: "Look forward at the audience, not at the text or the floor." },
+        kk: { title: "Көзқарас", text: "Мәтінге не еденге емес, алдыңа — залға қара." },
       },
       {
         ru: { title: "Жесты", text: "Руки помогают речи. Открытые жесты — да, руки в карманах — нет." },
         en: { title: "Gestures", text: "Hands support your speech. Open gestures — yes, hands in pockets — no." },
+        kk: { title: "Ым-ишара", text: "Қолдар сөзіңе көмектеседі. Ашық ым-ишара — иә, қол қалтада — жоқ." },
       },
     ],
   },
@@ -75,18 +85,22 @@ const SECTIONS: Section[] = [
     icon: "sparkles-outline",
     ru: "Подача",
     en: "Delivery",
+    kk: "Жеткізу",
     tips: [
       {
         ru: { title: "Улыбка", text: "Лёгкая улыбка расслабляет зал — и тебя самого." },
         en: { title: "The smile", text: "A slight smile relaxes the audience — and you." },
+        kk: { title: "Жымиыс", text: "Жеңіл жымиыс залды да, өзіңді де босаңсытады." },
       },
       {
         ru: { title: "Начало", text: "Первую фразу выучи наизусть — уверенный старт задаёт весь тон." },
         en: { title: "The opening", text: "Memorize your first line — a confident start sets the tone." },
+        kk: { title: "Бастау", text: "Алғашқы сөйлемді жаттап ал — сенімді бастау бүкіл сарынды белгілейді." },
       },
       {
         ru: { title: "Финал", text: "Закончи чётко и остановись. Не бормочи и не извиняйся." },
         en: { title: "The ending", text: "End clearly and stop. Don't mumble or apologize." },
+        kk: { title: "Қорытынды", text: "Анық аяқта да, тоқта. Күбірлеме және кешірім сұрама." },
       },
     ],
   },
@@ -131,9 +145,11 @@ export default function SpeakerTipsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={[st.lead, { fontFamily: "Geologica_400Regular" }]}>
-          {lang === "en"
-            ? "Nine simple rules. Glance through them before you go on stage."
-            : "Девять простых правил. Пробеги глазами перед выходом на сцену."}
+          {pickLang(lang, {
+            ru: "Девять простых правил. Пробеги глазами перед выходом на сцену.",
+            en: "Nine simple rules. Glance through them before you go on stage.",
+            kk: "Тоғыз қарапайым ереже. Сахнаға шығар алдында көз жүгіртіп шық.",
+          })}
         </Text>
 
         {SECTIONS.map((section, si) => (
@@ -141,14 +157,14 @@ export default function SpeakerTipsScreen() {
             <View style={st.sectionHeader}>
               <Ionicons name={section.icon} size={15} color={GOLD} />
               <Text style={[st.sectionTitle, { fontFamily: "Geologica_600SemiBold" }]}>
-                {(lang === "en" ? section.en : section.ru).toUpperCase()}
+                {pickLang(lang, section).toUpperCase()}
               </Text>
               <View style={st.sectionRule} />
             </View>
 
             {section.tips.map((tip, ti) => {
               n += 1;
-              const c = lang === "en" ? tip.en : tip.ru;
+              const c = pickLang(lang, tip);
               return (
                 <View key={ti} style={st.tipRow}>
                   <View style={st.tipNum}>

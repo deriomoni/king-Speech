@@ -1,6 +1,7 @@
 import { fetch as expoFetch } from "expo/fetch";
 import { getApiUrl } from "@/lib/query-client";
 import { analyzeSpeech, type SpeechAnalysis } from "@/services/speechAnalysis";
+import { pickLang, type Lang } from "@/context/LangContext";
 
 // Reusable speech-analysis pipeline for generic "speak this content" tasks
 // (tongue twisters, interview levels, articulation…). Extracted from the level
@@ -16,7 +17,7 @@ export async function analyzeGenericTask(params: {
   originalText: string;
   levelId: string;
   levelNumber: number;
-  lang: "ru" | "en";
+  lang: Lang;
   durationSeconds: number;
   audioBase64?: string;
 }): Promise<TaskAnalysisResult> {
@@ -33,7 +34,7 @@ export async function analyzeGenericTask(params: {
       const res = await expoFetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audioBase64, audioDurationSeconds: durationSeconds }),
+        body: JSON.stringify({ audioBase64, audioDurationSeconds: durationSeconds, lang }),
       });
       if (res.ok) {
         transcribedOk = true;
@@ -70,10 +71,11 @@ export async function analyzeGenericTask(params: {
     return { kind: "ok", analysis };
   } catch (e) {
     console.warn("[analyzeGenericTask] analyzeSpeech failed:", e);
-    const errMsg =
-      lang === "ru"
-        ? "Не удалось проанализировать запись. Попробуй ещё раз."
-        : "Couldn't analyze the recording. Please try again.";
+    const errMsg = pickLang(lang, {
+      ru: "Не удалось проанализировать запись. Попробуй ещё раз.",
+      en: "Couldn't analyze the recording. Please try again.",
+      kk: "Жазбаны талдау мүмкін болмады. Тағы байқап көр.",
+    });
     return {
       kind: "error",
       analysis: {
@@ -92,7 +94,7 @@ export async function analyzeGenericTask(params: {
 }
 
 /** Average a list of per-task analyses into one level-level SpeechAnalysis. */
-export function aggregateAnalyses(analyses: SpeechAnalysis[], lang: "ru" | "en"): SpeechAnalysis {
+export function aggregateAnalyses(analyses: SpeechAnalysis[], lang: Lang): SpeechAnalysis {
   const valid = analyses.filter(Boolean);
   const n = Math.max(1, valid.length);
   const avg = (k: keyof SpeechAnalysis["score"]) =>
@@ -119,7 +121,7 @@ export function aggregateAnalyses(analyses: SpeechAnalysis[], lang: "ru" | "en")
 
   const summary =
     best?.summary ||
-    (lang === "ru" ? "Итоговая оценка за уровень." : "Your level score.");
+    pickLang(lang, { ru: "Итоговая оценка за уровень.", en: "Your level score.", kk: "Деңгей бойынша қорытынды баға." });
 
   return {
     summary,

@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { pickLang, type Lang } from "@/context/LangContext";
 
 /**
  * «Шпаргалка» (Cheat Sheet) — emergency pre-performance prep content.
@@ -8,7 +9,9 @@ import { Ionicons } from "@expo/vector-icons";
  * has little time and attention, so every route is a pre-built sequence that
  * leads them by the hand ("do it with me"), not a menu of 40 exercises.
  *
- * All copy is bilingual (ru primary, en mirror). Use `tx(loc, lang)`.
+ * All copy is trilingual (ru primary, en + kk mirrors). Use `tx(loc, lang)`.
+ * Tongue-twister `text`/`sound` stay Russian for kk (the drill is the Russian
+ * twister itself; EN gets a transliteration).
  */
 
 export type IconName = keyof typeof Ionicons.glyphMap;
@@ -16,11 +19,12 @@ export type IconName = keyof typeof Ionicons.glyphMap;
 export interface Loc {
   ru: string;
   en: string;
+  kk: string;
 }
 
-export function tx(loc: Loc | undefined, lang: string): string {
+export function tx(loc: Loc | undefined, lang: Lang | string): string {
   if (!loc) return "";
-  return lang === "en" ? loc.en : loc.ru;
+  return pickLang(lang as Lang, loc);
 }
 
 // ── Step kinds ──────────────────────────────────────────────────────────────
@@ -125,13 +129,13 @@ export interface BlockMeta {
 }
 
 export const BLOCK_META: Record<BlockKind, BlockMeta> = {
-  nerves: { icon: "heart-outline", title: { ru: "Нервы", en: "Nerves" } },
-  breath: { icon: "leaf-outline", title: { ru: "Дыхание", en: "Breathing" } },
-  voice: { icon: "musical-notes-outline", title: { ru: "Голос и дикция", en: "Voice & diction" } },
-  twister: { icon: "flash-outline", title: { ru: "Скороговорки", en: "Tongue twisters" } },
-  fix: { icon: "medkit-outline", title: { ru: "Быстрые фиксы", en: "Quick fixes" } },
-  tip: { icon: "bulb-outline", title: { ru: "Советы", en: "Tips" } },
-  final: { icon: "sparkles-outline", title: { ru: "Настрой", en: "Mindset" } },
+  nerves: { icon: "heart-outline", title: { ru: "Нервы", en: "Nerves", kk: "Толқу" } },
+  breath: { icon: "leaf-outline", title: { ru: "Дыхание", en: "Breathing", kk: "Тыныс" } },
+  voice: { icon: "musical-notes-outline", title: { ru: "Голос и дикция", en: "Voice & diction", kk: "Дауыс және дикция" } },
+  twister: { icon: "flash-outline", title: { ru: "Скороговорки", en: "Tongue twisters", kk: "Жаңылтпаштар" } },
+  fix: { icon: "medkit-outline", title: { ru: "Быстрые фиксы", en: "Quick fixes", kk: "Жедел көмек" } },
+  tip: { icon: "bulb-outline", title: { ru: "Советы", en: "Tips", kk: "Кеңестер" } },
+  final: { icon: "sparkles-outline", title: { ru: "Настрой", en: "Mindset", kk: "Көңіл күй" } },
 };
 
 // ── Exercise pool ───────────────────────────────────────────────────────────
@@ -140,16 +144,17 @@ const physiologicalSigh: BreathingStep = {
   kind: "breathing",
   id: "sigh",
   block: "nerves",
-  title: { ru: "Дыхательная разминка", en: "Breathing warm-up" },
+  title: { ru: "Дыхательная разминка", en: "Breathing warm-up", kk: "Тыныс жаттығуы" },
   intro: {
     ru: "Физиологический вздох сбивает тревогу быстрее всего. Дыши вместе с кругом.",
     en: "The physiological sigh calms nerves fastest. Breathe with the circle.",
+    kk: "Физиологиялық күрсіну мазасыздықты бәрінен тез басады. Шеңбермен бірге дем ал.",
   },
   cycles: 3,
   pattern: [
-    { type: "inhale", sec: 3, label: { ru: "Вдох", en: "Inhale" }, cue: { ru: "Вдох через нос", en: "Inhale through the nose" } },
-    { type: "inhale", sec: 1, label: { ru: "Ещё чуть", en: "A bit more" }, cue: { ru: "Доберись носом", en: "Top up through the nose" } },
-    { type: "exhale", sec: 6, label: { ru: "Выдох", en: "Exhale" }, cue: { ru: "Долгий выдох ртом", en: "Long exhale through the mouth" } },
+    { type: "inhale", sec: 3, label: { ru: "Вдох", en: "Inhale", kk: "Дем алу" }, cue: { ru: "Вдох через нос", en: "Inhale through the nose", kk: "Мұрынмен дем ал" } },
+    { type: "inhale", sec: 1, label: { ru: "Ещё чуть", en: "A bit more", kk: "Тағы аздап" }, cue: { ru: "Доберись носом", en: "Top up through the nose", kk: "Мұрынмен тағы аздап жұт" } },
+    { type: "exhale", sec: 6, label: { ru: "Выдох", en: "Exhale", kk: "Дем шығару" }, cue: { ru: "Долгий выдох ртом", en: "Long exhale through the mouth", kk: "Аузыңмен ұзақ дем шығар" } },
   ],
 };
 
@@ -157,16 +162,17 @@ const diaphragmatic: BreathingStep = {
   kind: "breathing",
   id: "diaphragm",
   block: "breath",
-  title: { ru: "Ровное дыхание", en: "Steady breathing" },
+  title: { ru: "Ровное дыхание", en: "Steady breathing", kk: "Бірқалыпты тыныс" },
   intro: {
     ru: "Дыши животом, а не плечами. Выдох длиннее вдоха — это успокаивает.",
     en: "Breathe with your belly, not your shoulders. A longer exhale calms you.",
+    kk: "Иықпен емес, ішпен дем ал. Дем шығару дем алудан ұзағырақ болсын — бұл тыныштандырады.",
   },
   cycles: 4,
   pattern: [
-    { type: "inhale", sec: 4, label: { ru: "Вдох", en: "Inhale" }, cue: { ru: "Вдох носом, живот наружу", en: "Inhale, belly out" } },
-    { type: "hold", sec: 2, label: { ru: "Задержка", en: "Hold" }, cue: { ru: "Задержи дыхание", en: "Hold" } },
-    { type: "exhale", sec: 6, label: { ru: "Выдох", en: "Exhale" }, cue: { ru: "Медленный выдох ртом", en: "Slow exhale through the mouth" } },
+    { type: "inhale", sec: 4, label: { ru: "Вдох", en: "Inhale", kk: "Дем алу" }, cue: { ru: "Вдох носом, живот наружу", en: "Inhale, belly out", kk: "Мұрынмен дем ал, іш алға шықсын" } },
+    { type: "hold", sec: 2, label: { ru: "Задержка", en: "Hold", kk: "Кідіріс" }, cue: { ru: "Задержи дыхание", en: "Hold", kk: "Деміңді ұста" } },
+    { type: "exhale", sec: 6, label: { ru: "Выдох", en: "Exhale", kk: "Дем шығару" }, cue: { ru: "Медленный выдох ртом", en: "Slow exhale through the mouth", kk: "Аузыңмен баяу дем шығар" } },
   ],
 };
 
@@ -175,15 +181,15 @@ const grounding: ActionStep = {
   id: "grounding",
   block: "nerves",
   emoji: "🌿",
-  title: { ru: "Заземление 5-4-3-2-1", en: "Grounding 5-4-3-2-1" },
-  intro: { ru: "Верни себя в «здесь и сейчас». Про себя назови:", en: "Bring yourself back to the here and now. Silently name:" },
+  title: { ru: "Заземление 5-4-3-2-1", en: "Grounding 5-4-3-2-1", kk: "Жерге тірелу 5-4-3-2-1" },
+  intro: { ru: "Верни себя в «здесь и сейчас». Про себя назови:", en: "Bring yourself back to the here and now. Silently name:", kk: "Өзіңді «осы жерге және осы сәтке» қайтар. Іштей ата:" },
   seconds: 40,
   moves: [
-    { ru: "5 вещей, которые видишь", en: "5 things you can see" },
-    { ru: "4 звука, которые слышишь", en: "4 sounds you can hear" },
-    { ru: "3 ощущения в теле", en: "3 sensations in your body" },
-    { ru: "2 запаха вокруг", en: "2 smells around you" },
-    { ru: "1 медленный глубокий вдох", en: "1 slow deep breath" },
+    { ru: "5 вещей, которые видишь", en: "5 things you can see", kk: "Көріп тұрған 5 нәрсе" },
+    { ru: "4 звука, которые слышишь", en: "4 sounds you can hear", kk: "Естіп тұрған 4 дыбыс" },
+    { ru: "3 ощущения в теле", en: "3 sensations in your body", kk: "Денеңдегі 3 сезім" },
+    { ru: "2 запаха вокруг", en: "2 smells around you", kk: "Айналаңдағы 2 иіс" },
+    { ru: "1 медленный глубокий вдох", en: "1 slow deep breath", kk: "1 баяу әрі терең дем" },
   ],
 };
 
@@ -192,13 +198,13 @@ const shaking: ActionStep = {
   id: "shaking",
   block: "nerves",
   emoji: "🙆",
-  title: { ru: "Стряхни зажим", en: "Shake off the tension" },
-  intro: { ru: "Тело держит стресс. Разомни его — делай за мной:", en: "Your body holds stress. Loosen it — do it with me:" },
+  title: { ru: "Стряхни зажим", en: "Shake off the tension", kk: "Қысылуды сілкіп таста" },
+  intro: { ru: "Тело держит стресс. Разомни его — делай за мной:", en: "Your body holds stress. Loosen it — do it with me:", kk: "Дене күйзелісті ұстап қалады. Оны босат — менімен бірге жаса:" },
   seconds: 20,
   moves: [
-    { ru: "Встряхни кисти рук 10 секунд", en: "Shake out your hands for 10 seconds" },
-    { ru: "Покрути плечами назад", en: "Roll your shoulders backwards" },
-    { ru: "Урони и расслабь челюсть", en: "Drop and relax your jaw" },
+    { ru: "Встряхни кисти рук 10 секунд", en: "Shake out your hands for 10 seconds", kk: "Қолдарыңды 10 секунд сілк" },
+    { ru: "Покрути плечами назад", en: "Roll your shoulders backwards", kk: "Иықтарыңды артқа қарай айналдыр" },
+    { ru: "Урони и расслабь челюсть", en: "Drop and relax your jaw", kk: "Иегіңді түсіріп, босаңсыт" },
   ],
 };
 
@@ -207,13 +213,13 @@ const resonators: ActionStep = {
   id: "resonators",
   block: "voice",
   emoji: "🎵",
-  title: { ru: "Разбуди резонаторы", en: "Wake up your resonators" },
-  intro: { ru: "Тихо помычи «ммм» с закрытым ртом. Почувствуй вибрацию:", en: "Hum a soft 'mmm' with your mouth closed. Feel the buzz:" },
+  title: { ru: "Разбуди резонаторы", en: "Wake up your resonators", kk: "Резонаторларды ояту" },
+  intro: { ru: "Тихо помычи «ммм» с закрытым ртом. Почувствуй вибрацию:", en: "Hum a soft 'mmm' with your mouth closed. Feel the buzz:", kk: "Аузыңды жауып, ақырын «ммм» деп ыңылда. Дірілді сезін:" },
   seconds: 20,
   moves: [
-    { ru: "Вибрация в губах и носу", en: "Buzz in your lips and nose" },
-    { ru: "Опусти звук ниже — в грудь", en: "Lower the tone into your chest" },
-    { ru: "Голос звучит теплее и объёмнее", en: "Your voice grows warmer and fuller" },
+    { ru: "Вибрация в губах и носу", en: "Buzz in your lips and nose", kk: "Ерін мен мұрындағы діріл" },
+    { ru: "Опусти звук ниже — в грудь", en: "Lower the tone into your chest", kk: "Дыбысты төмен — кеудеге түсір" },
+    { ru: "Голос звучит теплее и объёмнее", en: "Your voice grows warmer and fuller", kk: "Дауыс жылырақ әрі көлемдірек естіледі" },
   ],
 };
 
@@ -222,13 +228,13 @@ const lipTrill: ActionStep = {
   id: "lip-trill",
   block: "voice",
   emoji: "😛",
-  title: { ru: "Губной вибрант «бррр»", en: "Lip trill 'brrr'" },
-  intro: { ru: "Расслабь губы и пусти воздух — они завибрируют. Делай за мной:", en: "Relax your lips and push air — they'll flutter. Do it with me:" },
+  title: { ru: "Губной вибрант «бррр»", en: "Lip trill 'brrr'", kk: "Ерін дірілі «бррр»" },
+  intro: { ru: "Расслабь губы и пусти воздух — они завибрируют. Делай за мной:", en: "Relax your lips and push air — they'll flutter. Do it with me:", kk: "Еріндеріңді босатып, ауа жібер — олар дірілдейді. Менімен бірге жаса:" },
   seconds: 20,
   moves: [
-    { ru: "Ровное «бррр» на одном дыхании", en: "A steady 'brrr' on one breath" },
-    { ru: "Веди звук вверх, как горка", en: "Glide the tone up like a slide" },
-    { ru: "И плавно опусти вниз", en: "Then slide it smoothly back down" },
+    { ru: "Ровное «бррр» на одном дыхании", en: "A steady 'brrr' on one breath", kk: "Бір демде бірқалыпты «бррр»" },
+    { ru: "Веди звук вверх, как горка", en: "Glide the tone up like a slide", kk: "Дыбысты сырғанақтай жоғары көтер" },
+    { ru: "И плавно опусти вниз", en: "Then slide it smoothly back down", kk: "Сосын баяу төмен түсір" },
   ],
 };
 
@@ -237,13 +243,13 @@ const sirena: ActionStep = {
   id: "sirena",
   block: "voice",
   emoji: "🚨",
-  title: { ru: "Сирена", en: "Siren" },
-  intro: { ru: "Тяни «у-у-у» и катай голос от низа к верху и обратно:", en: "Sustain an 'oo' and roll your voice from low to high and back:" },
+  title: { ru: "Сирена", en: "Siren", kk: "Сирена" },
+  intro: { ru: "Тяни «у-у-у» и катай голос от низа к верху и обратно:", en: "Sustain an 'oo' and roll your voice from low to high and back:", kk: "«у-у-у» деп созып, дауысыңды төменнен жоғары және кері жүргіз:" },
   seconds: 20,
   moves: [
-    { ru: "От самого низкого — плавно вверх", en: "From your lowest — smoothly up" },
-    { ru: "До самого высокого — и обратно", en: "To your highest — and back" },
-    { ru: "Без рывков, одной линией", en: "No jumps, one continuous line" },
+    { ru: "От самого низкого — плавно вверх", en: "From your lowest — smoothly up", kk: "Ең төменгісінен — біртіндеп жоғары" },
+    { ru: "До самого высокого — и обратно", en: "To your highest — and back", kk: "Ең жоғарғысына дейін — және кері" },
+    { ru: "Без рывков, одной линией", en: "No jumps, one continuous line", kk: "Секірмей, бір сызықпен" },
   ],
 };
 
@@ -251,13 +257,13 @@ const articulation: ArticulationStep = {
   kind: "articulation",
   id: "articulation",
   block: "voice",
-  title: { ru: "Разомни рот", en: "Warm up your mouth" },
-  intro: { ru: "Повторяй за подсказкой — по паре секунд на каждое движение.", en: "Follow the prompt — a couple of seconds each." },
+  title: { ru: "Разомни рот", en: "Warm up your mouth", kk: "Ауыз жаттығуы" },
+  intro: { ru: "Повторяй за подсказкой — по паре секунд на каждое движение.", en: "Follow the prompt — a couple of seconds each.", kk: "Нұсқауды қайтала — әр қимылға бірер секундтан." },
   moves: [
-    { emoji: "😗", label: { ru: "Губы: «трубочка» ↔ «улыбка»", en: "Lips: pucker ↔ smile" }, secs: 5 },
-    { emoji: "👅", label: { ru: "Язык: круги по губам", en: "Tongue: circle your lips" }, secs: 5 },
-    { emoji: "😮", label: { ru: "Челюсть: медленно вниз-вверх", en: "Jaw: slowly down and up" }, secs: 5 },
-    { emoji: "😝", label: { ru: "«Пофыркай» губами: бррр", en: "Lip trill: brrr" }, secs: 5 },
+    { emoji: "😗", label: { ru: "Губы: «трубочка» ↔ «улыбка»", en: "Lips: pucker ↔ smile", kk: "Ерін: «түтікше» ↔ «күлкі»" }, secs: 5 },
+    { emoji: "👅", label: { ru: "Язык: круги по губам", en: "Tongue: circle your lips", kk: "Тіл: ерінді айнала жүргіз" }, secs: 5 },
+    { emoji: "😮", label: { ru: "Челюсть: медленно вниз-вверх", en: "Jaw: slowly down and up", kk: "Иек: баяу төмен-жоғары" }, secs: 5 },
+    { emoji: "😝", label: { ru: "«Пофыркай» губами: бррр", en: "Lip trill: brrr", kk: "Ерінмен «пырылда»: бррр" }, secs: 5 },
   ],
 };
 
@@ -265,13 +271,13 @@ const articulationTongue: ArticulationStep = {
   kind: "articulation",
   id: "articulation-tongue",
   block: "voice",
-  title: { ru: "Разбуди язык", en: "Wake up your tongue" },
-  intro: { ru: "Дикция живёт на кончике языка. Повторяй за подсказкой:", en: "Diction lives on the tip of your tongue. Follow the prompt:" },
+  title: { ru: "Разбуди язык", en: "Wake up your tongue", kk: "Тілді ояту" },
+  intro: { ru: "Дикция живёт на кончике языка. Повторяй за подсказкой:", en: "Diction lives on the tip of your tongue. Follow the prompt:", kk: "Дикция тілдің ұшында. Нұсқауды қайтала:" },
   moves: [
-    { emoji: "👅", label: { ru: "«Цокай» языком, как копыта", en: "Click your tongue like hooves" }, secs: 5 },
-    { emoji: "🗣️", label: { ru: "Чётко: «та-да, та-да, та-да»", en: "Crisp: 'ta-da, ta-da, ta-da'" }, secs: 5 },
-    { emoji: "😬", label: { ru: "Упри язык: «ла-ла-ла»", en: "Press the tongue: 'la-la-la'" }, secs: 5 },
-    { emoji: "💨", label: { ru: "Взрывные: «па-та-ка»", en: "Plosives: 'pa-ta-ka'" }, secs: 5 },
+    { emoji: "👅", label: { ru: "«Цокай» языком, как копыта", en: "Click your tongue like hooves", kk: "Тұяқ дыбысындай тіліңді тықылдат" }, secs: 5 },
+    { emoji: "🗣️", label: { ru: "Чётко: «та-да, та-да, та-да»", en: "Crisp: 'ta-da, ta-da, ta-da'", kk: "Анық: «та-да, та-да, та-да»" }, secs: 5 },
+    { emoji: "😬", label: { ru: "Упри язык: «ла-ла-ла»", en: "Press the tongue: 'la-la-la'", kk: "Тіліңді тіре: «ла-ла-ла»" }, secs: 5 },
+    { emoji: "💨", label: { ru: "Взрывные: «па-та-ка»", en: "Plosives: 'pa-ta-ka'", kk: "Жарылыс дыбыстары: «па-та-ка»" }, secs: 5 },
   ],
 };
 
@@ -279,8 +285,8 @@ const chant: ChantStep = {
   kind: "chant",
   id: "chant-ma",
   block: "voice",
-  title: { ru: "Распевка", en: "Vocal warm-up" },
-  intro: { ru: "Тяни каждый слог, будто поёшь. Веди голос за подсветкой.", en: "Draw out each syllable like a song. Follow the highlight." },
+  title: { ru: "Распевка", en: "Vocal warm-up", kk: "Дауыс жаттығуы" },
+  intro: { ru: "Тяни каждый слог, будто поёшь. Веди голос за подсветкой.", en: "Draw out each syllable like a song. Follow the highlight.", kk: "Әр буынды ән салғандай созып айт. Дауысыңды белгіленген буынмен жүргіз." },
   syllables: ["МА", "МЭ", "МИ", "МО", "МУ"],
   tempoMs: 620,
 };
@@ -289,53 +295,56 @@ const chantBro: ChantStep = {
   kind: "chant",
   id: "chant-bro",
   block: "voice",
-  title: { ru: "Распевка на «Б»", en: "Warm-up on 'B'" },
-  intro: { ru: "Чётко смыкай губы на каждом слоге. Веди голос за подсветкой.", en: "Close your lips crisply on each syllable. Follow the highlight." },
+  title: { ru: "Распевка на «Б»", en: "Warm-up on 'B'", kk: "«Б» дыбысына дауыс жаттығуы" },
+  intro: { ru: "Чётко смыкай губы на каждом слоге. Веди голос за подсветкой.", en: "Close your lips crisply on each syllable. Follow the highlight.", kk: "Әр буында еріндеріңді анық жұмып айт. Дауысыңды белгіленген буынмен жүргіз." },
   syllables: ["БА", "БО", "БУ", "БЭ", "БЫ"],
   tempoMs: 600,
 };
 
 // Tongue twisters, grouped conceptually by target sound, with difficulty 1..4.
+// TODO(kk-content): kk shows the Russian twister text/sound as-is; consider
+// adding native Kazakh жаңылтпаштар (would need their own sound labels).
 const twSasha: TwisterStep = {
   kind: "twister",
   id: "tw-sasha",
   block: "twister",
-  title: { ru: "Шипящие", en: "Hissing sounds" },
-  sound: { ru: "Ш · С", en: "SH · S" },
+  title: { ru: "Шипящие", en: "Hissing sounds", kk: "Ысқырық дыбыстар" },
+  sound: { ru: "Ш · С", en: "SH · S", kk: "Ш · С" },
   difficulty: 1,
-  text: { ru: "Шла Саша по шоссе и сосала сушку.", en: "Shla Sasha po shosse i sosala sushku." },
+  text: { ru: "Шла Саша по шоссе и сосала сушку.", en: "Shla Sasha po shosse i sosala sushku.", kk: "Шла Саша по шоссе и сосала сушку." },
 };
 
 const twTrava: TwisterStep = {
   kind: "twister",
   id: "tw-trava",
   block: "twister",
-  title: { ru: "Звук «Р»", en: "The 'R' sound" },
-  sound: { ru: "Р · В", en: "R · V" },
+  title: { ru: "Звук «Р»", en: "The 'R' sound", kk: "«Р» дыбысы" },
+  sound: { ru: "Р · В", en: "R · V", kk: "Р · В" },
   difficulty: 2,
-  text: { ru: "На дворе трава, на траве дрова.", en: "Na dvore trava, na trave drova." },
+  text: { ru: "На дворе трава, на траве дрова.", en: "Na dvore trava, na trave drova.", kk: "На дворе трава, на траве дрова." },
 };
 
 const twKopyt: TwisterStep = {
   kind: "twister",
   id: "tw-kopyt",
   block: "twister",
-  title: { ru: "Взрывные «п/т/к»", en: "Plosives 'p/t/k'" },
-  sound: { ru: "П · Т · К", en: "P · T · K" },
+  title: { ru: "Взрывные «п/т/к»", en: "Plosives 'p/t/k'", kk: "«п/т/к» жарылыс дыбыстары" },
+  sound: { ru: "П · Т · К", en: "P · T · K", kk: "П · Т · К" },
   difficulty: 3,
-  text: { ru: "От топота копыт пыль по полю летит.", en: "Ot topota kopyt pyl po polyu letit." },
+  text: { ru: "От топота копыт пыль по полю летит.", en: "Ot topota kopyt pyl po polyu letit.", kk: "От топота копыт пыль по полю летит." },
 };
 
 const twKolpak: TwisterStep = {
   kind: "twister",
   id: "tw-kolpak",
   block: "twister",
-  title: { ru: "Адская", en: "Hellish" },
-  sound: { ru: "К · Л · П", en: "K · L · P" },
+  title: { ru: "Адская", en: "Hellish", kk: "Тозақ деңгейі" },
+  sound: { ru: "К · Л · П", en: "K · L · P", kk: "К · Л · П" },
   difficulty: 4,
   text: {
     ru: "Колпак под колпаком, а под колпаком колпак.",
     en: "Kolpak pod kolpakom, a pod kolpakom kolpak.",
+    kk: "Колпак под колпаком, а под колпаком колпак.",
   },
 };
 
@@ -343,12 +352,13 @@ const twGreki: TwisterStep = {
   kind: "twister",
   id: "tw-greki",
   block: "twister",
-  title: { ru: "Грека и рак", en: "Greka and the crab" },
-  sound: { ru: "Р · К", en: "R · K" },
+  title: { ru: "Грека и рак", en: "Greka and the crab", kk: "Грека мен шаян" },
+  sound: { ru: "Р · К", en: "R · K", kk: "Р · К" },
   difficulty: 2,
   text: {
     ru: "Ехал Грека через реку, видит Грека — в реке рак.",
     en: "Ekhal Greka cherez reku, vidit Greka — v reke rak.",
+    kk: "Ехал Грека через реку, видит Грека — в реке рак.",
   },
 };
 
@@ -356,12 +366,13 @@ const twOsip: TwisterStep = {
   kind: "twister",
   id: "tw-osip",
   block: "twister",
-  title: { ru: "Осип и Архип", en: "Osip and Arkhip" },
-  sound: { ru: "С · Х · П", en: "S · KH · P" },
+  title: { ru: "Осип и Архип", en: "Osip and Arkhip", kk: "Осип пен Архип" },
+  sound: { ru: "С · Х · П", en: "S · KH · P", kk: "С · Х · П" },
   difficulty: 2,
   text: {
     ru: "Осип охрип, а Архип осип.",
     en: "Osip okhrip, a Arkhip osip.",
+    kk: "Осип охрип, а Архип осип.",
   },
 };
 
@@ -369,12 +380,13 @@ const twKlara: TwisterStep = {
   kind: "twister",
   id: "tw-klara",
   block: "twister",
-  title: { ru: "Карл и Клара", en: "Karl and Klara" },
-  sound: { ru: "Р · К · Л", en: "R · K · L" },
+  title: { ru: "Карл и Клара", en: "Karl and Klara", kk: "Карл мен Клара" },
+  sound: { ru: "Р · К · Л", en: "R · K · L", kk: "Р · К · Л" },
   difficulty: 3,
   text: {
     ru: "Карл у Клары украл кораллы, а Клара у Карла украла кларнет.",
     en: "Karl u Klary ukral korally, a Klara u Karla ukrala klarnet.",
+    kk: "Карл у Клары украл кораллы, а Клара у Карла украла кларнет.",
   },
 };
 
@@ -382,12 +394,13 @@ const twByk: TwisterStep = {
   kind: "twister",
   id: "tw-byk",
   block: "twister",
-  title: { ru: "Тупогубый бычок", en: "The blunt-lipped bull" },
-  sound: { ru: "Б · Г", en: "B · G" },
+  title: { ru: "Тупогубый бычок", en: "The blunt-lipped bull", kk: "Доғал ерінді бұқашық" },
+  sound: { ru: "Б · Г", en: "B · G", kk: "Б · Г" },
   difficulty: 3,
   text: {
     ru: "Бык тупогуб, тупогубенький бычок, у быка бела губа была тупа.",
     en: "Byk tupogub, tupogubenkiy bychok, u byka bela guba byla tupa.",
+    kk: "Бык тупогуб, тупогубенький бычок, у быка бела губа была тупа.",
   },
 };
 
@@ -395,92 +408,93 @@ const twCherti: TwisterStep = {
   kind: "twister",
   id: "tw-cherti",
   block: "twister",
-  title: { ru: "Чертёнок", en: "Little devils" },
-  sound: { ru: "Ч · Р", en: "CH · R" },
+  title: { ru: "Чертёнок", en: "Little devils", kk: "Кішкентай шайтандар" },
+  sound: { ru: "Ч · Р", en: "CH · R", kk: "Ч · Р" },
   difficulty: 4,
   text: {
     ru: "Четыре чёрненьких чумазеньких чертёнка чертили чёрными чернилами чертёж.",
     en: "Chetyre chyornenkikh chumazenkikh chertyonka chertili chyornymi chernilami chertyozh.",
+    kk: "Четыре чёрненьких чумазеньких чертёнка чертили чёрными чернилами чертёж.",
   },
 };
 
 // Tips (советы)
 const tipExcitement: TipStep = {
   kind: "tip", id: "tip-excite", block: "tip", variant: "tip", icon: "flash-outline",
-  title: { ru: "Волнение — это топливo", en: "Nerves are fuel" },
-  text: { ru: "Не гаси волнение — направь его в первую фразу. Это энергия, а не враг.", en: "Don't fight the nerves — pour them into your opening line. It's energy, not an enemy." },
+  title: { ru: "Волнение — это топливo", en: "Nerves are fuel", kk: "Толқу — бұл отын" },
+  text: { ru: "Не гаси волнение — направь его в первую фразу. Это энергия, а не враг.", en: "Don't fight the nerves — pour them into your opening line. It's energy, not an enemy.", kk: "Толқуды басуға тырыспа — оны алғашқы сөйлеміңе бағытта. Бұл — жау емес, қуат." },
 };
 const tipTempo: TipStep = {
   kind: "tip", id: "tip-tempo", block: "tip", variant: "tip", icon: "speedometer-outline",
-  title: { ru: "Чуть медленнее", en: "A touch slower" },
-  text: { ru: "Говори чуть медленнее, чем хочется. Спешка читается как волнение.", en: "Speak a little slower than feels natural. Rushing reads as anxiety." },
+  title: { ru: "Чуть медленнее", en: "A touch slower", kk: "Сәл баяуырақ" },
+  text: { ru: "Говори чуть медленнее, чем хочется. Спешка читается как волнение.", en: "Speak a little slower than feels natural. Rushing reads as anxiety.", kk: "Өзің қалағаннан сәл баяуырақ сөйле. Асығыстық толқу сияқты көрінеді." },
 };
 const tipPauses: TipStep = {
   kind: "tip", id: "tip-pauses", block: "tip", variant: "tip", icon: "pause-outline",
-  title: { ru: "Пауза весит больше", en: "A pause carries weight" },
-  text: { ru: "Пауза после важной мысли действует сильнее, чем громкость.", en: "A pause after a key point lands harder than volume ever will." },
+  title: { ru: "Пауза весит больше", en: "A pause carries weight", kk: "Үзілістің салмағы зор" },
+  text: { ru: "Пауза после важной мысли действует сильнее, чем громкость.", en: "A pause after a key point lands harder than volume ever will.", kk: "Маңызды ойдан кейінгі үзіліс дауыс қаттылығынан да күшті әсер етеді." },
 };
 const tipEyes: TipStep = {
   kind: "tip", id: "tip-eyes", block: "tip", variant: "tip", icon: "eye-outline",
-  title: { ru: "Найди дружелюбные глаза", en: "Find friendly eyes" },
-  text: { ru: "Выбери 2–3 доброжелательных лица и говори им, а не в пустоту.", en: "Pick 2–3 friendly faces and talk to them, not to the void." },
+  title: { ru: "Найди дружелюбные глаза", en: "Find friendly eyes", kk: "Мейірімді көздерді тап" },
+  text: { ru: "Выбери 2–3 доброжелательных лица и говори им, а не в пустоту.", en: "Pick 2–3 friendly faces and talk to them, not to the void.", kk: "2–3 мейірімді жүзді таңдап, бос кеңістікке емес, соларға сөйле." },
 };
 const tipPosture: TipStep = {
   kind: "tip", id: "tip-posture", block: "tip", variant: "tip", icon: "body-outline",
-  title: { ru: "Тело спокойно — голос спокоен", en: "Calm body, calm voice" },
-  text: { ru: "Встань устойчиво, вес на обе ноги, плечи вниз. Опора даёт уверенный звук.", en: "Stand grounded, weight on both feet, shoulders down. Stability steadies your voice." },
+  title: { ru: "Тело спокойно — голос спокоен", en: "Calm body, calm voice", kk: "Дене тыныш — дауыс тыныш" },
+  text: { ru: "Встань устойчиво, вес на обе ноги, плечи вниз. Опора даёт уверенный звук.", en: "Stand grounded, weight on both feet, shoulders down. Stability steadies your voice.", kk: "Нық тұр, салмақты екі аяққа сал, иықты түсір. Тірек дауысқа сенімділік береді." },
 };
 
 // Encouraging one-liners to slip between exercises — reassure and de-stress.
 const tipYouGotThis: TipStep = {
   kind: "tip", id: "tip-yougot", block: "tip", variant: "tip", icon: "sunny-outline",
-  title: { ru: "У тебя получится", en: "You've got this" },
-  text: { ru: "Ты уже здесь и готовишься — это половина успеха. Осталось просто начать.", en: "You're here and preparing — that's half the battle. Now just begin." },
+  title: { ru: "У тебя получится", en: "You've got this", kk: "Сенің қолыңнан келеді" },
+  text: { ru: "Ты уже здесь и готовишься — это половина успеха. Осталось просто начать.", en: "You're here and preparing — that's half the battle. Now just begin.", kk: "Сен осындасың және дайындалып жатырсың — бұл табыстың жартысы. Енді тек бастау қалды." },
 };
 const tipSmile: TipStep = {
   kind: "tip", id: "tip-smile", block: "tip", variant: "tip", icon: "happy-outline",
-  title: { ru: "Улыбнись", en: "Smile" },
-  text: { ru: "Лёгкая улыбка расслабляет лицо — и голос сразу звучит теплее и живее.", en: "A light smile relaxes your face — and your voice instantly sounds warmer." },
+  title: { ru: "Улыбнись", en: "Smile", kk: "Жымиып қой" },
+  text: { ru: "Лёгкая улыбка расслабляет лицо — и голос сразу звучит теплее и живее.", en: "A light smile relaxes your face — and your voice instantly sounds warmer.", kk: "Жеңіл жымиыс бетті босаңсытады — дауыс бірден жылырақ әрі жандырақ естіледі." },
 };
 const tipMistakesOk: TipStep = {
   kind: "tip", id: "tip-mistakes", block: "tip", variant: "tip", icon: "shield-checkmark-outline",
-  title: { ru: "Ошибиться — это норм", en: "Slips are fine" },
-  text: { ru: "Даже опытные ораторы оговариваются. Не останавливайся — и никто не заметит.", en: "Even seasoned speakers stumble. Just keep going — no one will notice." },
+  title: { ru: "Ошибиться — это норм", en: "Slips are fine", kk: "Қателесу — қалыпты нәрсе" },
+  text: { ru: "Даже опытные ораторы оговариваются. Не останавливайся — и никто не заметит.", en: "Even seasoned speakers stumble. Just keep going — no one will notice.", kk: "Тәжірибелі шешендер де жаңылысады. Тоқтама — ешкім байқамайды." },
 };
 const tipShine: TipStep = {
   kind: "tip", id: "tip-shine", block: "tip", variant: "tip", icon: "sparkles-outline",
-  title: { ru: "Тебе есть что сказать", en: "You have something to say" },
-  text: { ru: "Люди пришли услышать именно тебя. Дыши ровно — и просто поделись.", en: "People came to hear you. Breathe steady — and simply share it." },
+  title: { ru: "Тебе есть что сказать", en: "You have something to say", kk: "Сенің айтарың бар" },
+  text: { ru: "Люди пришли услышать именно тебя. Дыши ровно — и просто поделись.", en: "People came to hear you. Breathe steady — and simply share it.", kk: "Адамдар дәл сені тыңдауға келді. Бірқалыпты дем ал да, жай ғана бөліс." },
 };
 
 // Quick fixes (быстрые фиксы — аварии перед выходом)
 const fixVoice: TipStep = {
   kind: "tip", id: "fix-voice", block: "fix", variant: "fix", icon: "mic-outline",
-  title: { ru: "Севший голос", en: "Voice cracked" },
-  text: { ru: "Тихо помычи «ммм» и сделай пару спокойных зевков — связки мягко проснутся.", en: "Hum a soft 'mmm' and take a couple of calm yawns — your cords wake up gently." },
+  title: { ru: "Севший голос", en: "Voice cracked", kk: "Қарлыққан дауыс" },
+  text: { ru: "Тихо помычи «ммм» и сделай пару спокойных зевков — связки мягко проснутся.", en: "Hum a soft 'mmm' and take a couple of calm yawns — your cords wake up gently.", kk: "Ақырын «ммм» деп ыңылдап, бірер рет асықпай есінеп ал — дауыс байламдары жайлап оянады." },
 };
 const fixDry: TipStep = {
   kind: "tip", id: "fix-dry", block: "fix", variant: "fix", icon: "water-outline",
-  title: { ru: "Сухость во рту", en: "Dry mouth" },
-  text: { ru: "Слегка прикуси кончик языка — вернётся слюна. Пей только тёплую воду, не ледяную.", en: "Lightly bite the tip of your tongue — saliva returns. Drink warm water only, never ice-cold." },
+  title: { ru: "Сухость во рту", en: "Dry mouth", kk: "Ауыздың құрғауы" },
+  text: { ru: "Слегка прикуси кончик языка — вернётся слюна. Пей только тёплую воду, не ледяную.", en: "Lightly bite the tip of your tongue — saliva returns. Drink warm water only, never ice-cold.", kk: "Тіліңнің ұшын сәл тістеп ал — сілекей қайта келеді. Мұздай емес, тек жылы су іш." },
 };
 const fixWarm: TipStep = {
   kind: "tip", id: "fix-warm", block: "fix", variant: "fix", icon: "flame-outline",
-  title: { ru: "Согреть связки", en: "Warm the cords" },
-  text: { ru: "Подыши на ладони тёплым воздухом, будто греешь их — то же тепло уйдёт в связки.", en: "Breathe warm air onto your palms as if warming them — that warmth reaches your cords." },
+  title: { ru: "Согреть связки", en: "Warm the cords", kk: "Дауыс байламдарын жылыту" },
+  text: { ru: "Подыши на ладони тёплым воздухом, будто греешь их — то же тепло уйдёт в связки.", en: "Breathe warm air onto your palms as if warming them — that warmth reaches your cords.", kk: "Алақандарыңды жылытқандай оларға жылы дем үрле — сол жылу дауыс байламдарына барады." },
 };
 
 const finalStep: FinalStep = {
   kind: "final",
   id: "final",
   block: "final",
-  title: { ru: "Ты готов", en: "You're ready" },
+  title: { ru: "Ты готов", en: "You're ready", kk: "Сен дайынсың" },
   lines: [
-    { ru: "Плечи вниз, макушка вверх.", en: "Shoulders down, crown up." },
-    { ru: "Один спокойный вдох.", en: "One calm breath." },
-    { ru: "Первую фразу — уверенно и не спеша.", en: "Deliver your first line with calm confidence." },
+    { ru: "Плечи вниз, макушка вверх.", en: "Shoulders down, crown up.", kk: "Иық төмен, төбе жоғары." },
+    { ru: "Один спокойный вдох.", en: "One calm breath.", kk: "Бір тыныш дем." },
+    { ru: "Первую фразу — уверенно и не спеша.", en: "Deliver your first line with calm confidence.", kk: "Алғашқы сөйлемді — сенімді әрі асықпай." },
   ],
-  mantra: { ru: "Мне есть что сказать — и я скажу это спокойно.", en: "I have something to say — and I'll say it calmly." },
+  mantra: { ru: "Мне есть что сказать — и я скажу это спокойно.", en: "I have something to say — and I'll say it calmly.", kk: "Менің айтарым бар — және мен оны сабырмен айтамын." },
 };
 
 // Full tongue-twister pool (easy → hellish) — used by the karaoke twister view's
@@ -507,8 +521,8 @@ export const ROUTES: CheatRoute[] = [
     minutes: 1,
     accent: "#4FD9A0",
     icon: "flame",
-    title: { ru: "Разминка", en: "Warm-up" },
-    subtitle: { ru: "Быстрая разминка за минуту", en: "A one-minute warm-up" },
+    title: { ru: "Разминка", en: "Warm-up", kk: "Жаттығу" },
+    subtitle: { ru: "Быстрая разминка за минуту", en: "A one-minute warm-up", kk: "Бір минуттық жылдам жаттығу" },
     // ~1 min: one calming breath, mouth + voice, and one easy twister.
     steps: [
       physiologicalSigh,
@@ -524,8 +538,8 @@ export const ROUTES: CheatRoute[] = [
     minutes: 2,
     accent: "#FFCF34",
     icon: "flash",
-    title: { ru: "2 минуты", en: "2 minutes" },
-    subtitle: { ru: "Экстренно, перед самым выходом", en: "Emergency, right before you go on" },
+    title: { ru: "2 минуты", en: "2 minutes", kk: "2 минут" },
+    subtitle: { ru: "Экстренно, перед самым выходом", en: "Emergency, right before you go on", kk: "Шұғыл, сахнаға шығар алдында" },
     // ~2 min: breath → mouth/voice → two twisters, with a tip and a fix.
     steps: [
       physiologicalSigh, tipExcitement,
@@ -543,8 +557,8 @@ export const ROUTES: CheatRoute[] = [
     minutes: 5,
     accent: "#9468FB",
     icon: "pulse",
-    title: { ru: "5 минут", en: "5 minutes" },
-    subtitle: { ru: "Сбалансированная разминка", en: "A balanced warm-up" },
+    title: { ru: "5 минут", en: "5 minutes", kk: "5 минут" },
+    subtitle: { ru: "Сбалансированная разминка", en: "A balanced warm-up", kk: "Теңгерімді жаттығу" },
     // ~5 min: full breath + voice work and a real twister set (easy → hard).
     steps: [
       physiologicalSigh, tipExcitement,
@@ -571,8 +585,8 @@ export const ROUTES: CheatRoute[] = [
     minutes: 10,
     accent: "#4FD9A0",
     icon: "shield-checkmark",
-    title: { ru: "10 минут", en: "10 minutes" },
-    subtitle: { ru: "Полная подготовка заранее", en: "Full prep, ahead of time" },
+    title: { ru: "10 минут", en: "10 minutes", kk: "10 минут" },
+    subtitle: { ru: "Полная подготовка заранее", en: "Full prep, ahead of time", kk: "Алдын ала толық дайындық" },
     // ~10 min: calm the nerves, open the breath, wake the whole apparatus, then
     // a long twister ladder from easy to hellish.
     steps: [
@@ -626,8 +640,8 @@ export const REFERENCE: RefSection[] = [
 ];
 
 export const DIFFICULTY_LABEL: Record<1 | 2 | 3 | 4, Loc> = {
-  1: { ru: "Лёгкая", en: "Easy" },
-  2: { ru: "Средняя", en: "Medium" },
-  3: { ru: "Сложная", en: "Hard" },
-  4: { ru: "Адская", en: "Hellish" },
+  1: { ru: "Лёгкая", en: "Easy", kk: "Жеңіл" },
+  2: { ru: "Средняя", en: "Medium", kk: "Орташа" },
+  3: { ru: "Сложная", en: "Hard", kk: "Қиын" },
+  4: { ru: "Адская", en: "Hellish", kk: "Өте қиын" },
 };

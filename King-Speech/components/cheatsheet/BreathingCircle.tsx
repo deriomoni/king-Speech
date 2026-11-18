@@ -13,6 +13,7 @@ import * as Haptics from "@/lib/haptics";
 import { fonts } from "@/constants/colors";
 import { useAppColors } from "@/hooks/useAppColors";
 import { tx, type BreathingStep, type PhaseType } from "@/constants/cheatsheetData";
+import { pickLang, type Lang } from "@/context/LangContext";
 
 // Distinct colour per phase so it's instantly obvious where you are.
 const C_INHALE = "#FFD857";
@@ -51,7 +52,7 @@ export default function BreathingCircle({
   onDone,
 }: {
   step: BreathingStep;
-  lang: string;
+  lang: Lang;
   onDone?: () => void;
 }) {
   const { colors } = useAppColors();
@@ -113,10 +114,12 @@ export default function BreathingCircle({
     <View style={styles.wrap}>
       <Text style={[styles.cycle, { color: colors.textMuted }]}>
         {finished
-          ? lang === "en" ? "Done — nicely breathed" : "Готово — отлично подышал"
-          : lang === "en"
-            ? `Cycle ${cycle} of ${step.cycles}`
-            : `Цикл ${cycle} из ${step.cycles}`}
+          ? pickLang(lang, { ru: "Готово — отлично подышал", en: "Done — nicely breathed", kk: "Дайын — керемет тыныстадың" })
+          : pickLang(lang, {
+              ru: `Цикл ${cycle} из ${step.cycles}`,
+              en: `Cycle ${cycle} of ${step.cycles}`,
+              kk: `${step.cycles} циклдің ${cycle}-і`,
+            })}
       </Text>
 
       {phase ? (
@@ -132,7 +135,7 @@ export default function BreathingCircle({
         <View style={[styles.cue, { backgroundColor: C_EXHALE + "1A", borderColor: C_EXHALE + "4D" }]}>
           <Ionicons name="checkmark" size={18} color={C_EXHALE} />
           <Text style={[styles.cueText, { color: C_EXHALE }]}>
-            {lang === "en" ? "Tap Forward when ready" : "Нажми «Вперёд», когда готов"}
+            {pickLang(lang, { ru: "Нажми «Вперёд», когда готов", en: "Tap Forward when ready", kk: "Дайын болғанда «Алға» түймесін бас" })}
           </Text>
         </View>
       )}

@@ -8,6 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withSequence, withTiming } from "react-native-reanimated";
 import * as Haptics from "@/lib/haptics";
 import { useTheme } from "@/context/ThemeContext";
+import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import GoldCoin from "@/components/GoldCoin";
 
 const KEY = "@kingspeech_daily_streak_v1"; // { last: "YYYY-MM-DD" }
@@ -19,26 +20,27 @@ function today() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function untilMidnight(en: boolean) {
+function untilMidnight(lang: Lang) {
   const now = new Date();
   const next = new Date(now);
   next.setHours(24, 0, 0, 0);
   const mins = Math.max(1, Math.ceil((next.getTime() - now.getTime()) / 60000));
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  return en ? `${h}h ${m}m` : `${h} ч ${m} мин`;
+  return pickLang(lang, { ru: `${h} ч ${m} мин`, en: `${h}h ${m}m`, kk: `${h} сағ ${m} мин` });
 }
 
 export default function DailyRewards({
   width,
-  en,
   onClaim,
 }: {
   width: number;
-  en: boolean;
+  /** @deprecated language now comes from useLang(); kept for caller compatibility. */
+  en?: boolean;
   onClaim: (coins: number) => void;
 }) {
   const { theme: c } = useTheme();
+  const { lang } = useLang();
   const dark = c.mode === "dark";
   const [last, setLast] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -77,12 +79,12 @@ export default function DailyRewards({
   return (
     <Animated.View style={[s.card, { borderColor: ready ? "#FFD857" : c.tileStroke, width }, popStyle]}>
       <LinearGradient colors={[c.tileTop, c.tileBottom]} style={StyleSheet.absoluteFill} pointerEvents="none" />
-      <Text style={[s.title, { color: c.text }]}>{en ? "Daily bonus" : "Ежедневный бонус"}</Text>
+      <Text style={[s.title, { color: c.text }]}>{pickLang(lang, { ru: "Ежедневный бонус", en: "Daily bonus", kk: "Күнделікті бонус" })}</Text>
 
       {ready ? (
         <Pressable onPress={claim} style={({ pressed }) => [s.cta, { opacity: pressed ? 0.9 : 1 }]}>
           <LinearGradient colors={["#FFE680", "#FFC23A"]} style={StyleSheet.absoluteFill} pointerEvents="none" />
-          <Text style={s.ctaText}>{en ? "Claim" : "Забрать"}</Text>
+          <Text style={s.ctaText}>{pickLang(lang, { ru: "Забрать", en: "Claim", kk: "Алу" })}</Text>
           <View>
             <GoldCoin size={20} />
           </View>
@@ -92,7 +94,11 @@ export default function DailyRewards({
         <View style={[s.cta, { backgroundColor: dark ? "rgba(240,238,233,0.08)" : "rgba(38,38,40,0.06)" }]}>
           <Ionicons name="time-outline" size={16} color={c.textMuted} />
           <Text style={[s.waitText, { color: c.textMuted }]}>
-            {loaded ? (en ? `Next reward in ${untilMidnight(en)}` : `Следующая награда через ${untilMidnight(en)}`) : " "}
+            {loaded ? pickLang(lang, {
+                  ru: `Следующая награда через ${untilMidnight(lang)}`,
+                  en: `Next reward in ${untilMidnight(lang)}`,
+                  kk: `Келесі сыйлыққа дейін ${untilMidnight(lang)}`,
+                }) : " "}
           </Text>
         </View>
       )}

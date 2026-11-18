@@ -45,6 +45,16 @@ const METRIC_LABELS_RU: Record<string, string> = {
   tautScore: 'Разнообразие',
   divScore: 'Словарь',
 };
+const METRIC_LABELS_KK: Record<string, string> = {
+  clarity: 'Анықтық',
+  tempoScore: 'Қарқын',
+  punctScore: 'Үзілістер',
+  loudness: 'Дауыс қаттылығы',
+  breath: 'Тыныс',
+  fillerScore: 'Сөз тазалығы',
+  tautScore: 'Әртүрлілік',
+  divScore: 'Сөздік қор',
+};
 const METRIC_LABELS_EN: Record<string, string> = {
   clarity: 'Clarity',
   tempoScore: 'Tempo',
@@ -91,10 +101,16 @@ export function weeklyProgress(record: BaselineRecord, now: number, locale: Loca
   const rolled: BaselineRecord = { ...record, weekAnchor: { values: { ...record.values }, at: now } };
   if (!bestKey) return { line: null, record: rolled };
 
-  const labels = locale === 'en' ? METRIC_LABELS_EN : METRIC_LABELS_RU;
+  const labels =
+    locale === 'en' ? METRIC_LABELS_EN : locale === 'kk' ? METRIC_LABELS_KK : METRIC_LABELS_RU;
   const label = labels[bestKey] ?? bestKey;
   const pct = Math.round(bestDelta * 100);
-  const line = locale === 'en' ? `${label} +${pct}% this week` : `${label} +${pct}% за неделю`;
+  const line =
+    locale === 'en'
+      ? `${label} +${pct}% this week`
+      : locale === 'kk'
+        ? `${label} +${pct}% осы аптада`
+        : `${label} +${pct}% за неделю`;
   return { line, record: rolled };
 }
 
@@ -118,7 +134,9 @@ const RU_VOWELS = 'аеиоуыэюя';
 const RU_SIGNS = 'ьъ';
 
 function isConsonant(c: string): boolean {
-  return /[а-яё]/.test(c) && RU_VOWELS.indexOf(c) < 0 && RU_SIGNS.indexOf(c) < 0;
+  // Cyrillic consonants incl. Kazakh-specific ғ қ ң һ (Kazakh vowels ә ө ұ ү і
+  // fall outside the class and so already count as non-consonants).
+  return /[а-яёғқңһ]/.test(c) && RU_VOWELS.indexOf(c) < 0 && RU_SIGNS.indexOf(c) < 0;
 }
 
 /** Extract consonant bi/trigrams from a word (deduped within the word). */

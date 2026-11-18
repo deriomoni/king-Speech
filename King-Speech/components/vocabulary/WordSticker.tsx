@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { ZoomIn } from "react-native-reanimated";
 import { useTheme } from "@/context/ThemeContext";
+import { useLang, pickLang } from "@/context/LangContext";
 
 /**
  * A synonym "sticker" (Figma «Word · найдено» / «Word · не разгадано»):
@@ -42,6 +43,7 @@ export default function WordSticker({
   animate?: boolean;
 }) {
   const { themeMode } = useTheme();
+  const { lang } = useLang();
   const isDark = themeMode === "dark";
   const s = SIZE[size];
   const [w, setW] = useState(0);
@@ -71,7 +73,7 @@ export default function WordSticker({
             { height: h, paddingHorizontal: s.padX, transform: [{ rotate: `${rotate}deg` }] },
           ]}
         >
-          {found ? <Text style={[styles.pts, { fontSize: s.pts }]}>+3 очка</Text> : null}
+          {found ? <Text style={[styles.pts, { fontSize: s.pts }]}>{pickLang(lang, { ru: "+3 очка", en: "+3 pts", kk: "+3 ұпай" })}</Text> : null}
           <Text
             numberOfLines={1}
             style={[

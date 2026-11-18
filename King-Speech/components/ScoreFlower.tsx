@@ -12,6 +12,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
+import { pickLang, type Lang } from "@/context/LangContext";
 
 // ───────────────────────────────────────────────────────────────────────────
 // Canonical speech aspects. Every AI-analysis surface (reading, Show Time,
@@ -28,14 +29,14 @@ export type AspectKey =
 
 export const ASPECT_META: Record<
   AspectKey,
-  { ru: string; en: string; icon: keyof typeof Ionicons.glyphMap }
+  { ru: string; en: string; kk: string; icon: keyof typeof Ionicons.glyphMap }
 > = {
-  clarity:        { ru: "Чёткость",        en: "Clarity",        icon: "chatbubble-ellipses-outline" },
-  confidence:     { ru: "Уверенность",     en: "Confidence",     icon: "shield-checkmark-outline" },
-  volume:         { ru: "Громкость",       en: "Volume",         icon: "volume-high-outline" },
-  tempo:          { ru: "Темп",            en: "Tempo",          icon: "speedometer-outline" },
-  expressiveness: { ru: "Выразительность", en: "Expressive",     icon: "sparkles-outline" },
-  pauses:         { ru: "Паузы",           en: "Pauses",         icon: "pause-circle-outline" },
+  clarity:        { ru: "Чёткость",        en: "Clarity",        kk: "Анықтық",          icon: "chatbubble-ellipses-outline" },
+  confidence:     { ru: "Уверенность",     en: "Confidence",     kk: "Сенімділік",       icon: "shield-checkmark-outline" },
+  volume:         { ru: "Громкость",       en: "Volume",         kk: "Дауыс қаттылығы",  icon: "volume-high-outline" },
+  tempo:          { ru: "Темп",            en: "Tempo",          kk: "Қарқын",           icon: "speedometer-outline" },
+  expressiveness: { ru: "Выразительность", en: "Expressive",     kk: "Мәнерлілік",       icon: "sparkles-outline" },
+  pauses:         { ru: "Паузы",           en: "Pauses",         kk: "Үзілістер",        icon: "pause-circle-outline" },
 };
 
 // Display order around the flower (top, then clockwise).
@@ -50,11 +51,11 @@ export interface FlowerAspect {
 /** Build the six-aspect list from a 0..10 SpeechScore-like object. */
 export function aspectsFromScore10(
   s: Partial<Record<AspectKey, number>>,
-  lang: "ru" | "en",
+  lang: Lang,
 ): FlowerAspect[] {
   return ORDER.map((key) => ({
     key,
-    label: lang === "en" ? ASPECT_META[key].en : ASPECT_META[key].ru,
+    label: pickLang(lang, ASPECT_META[key]),
     score: clamp10(Number(s[key] ?? 0)),
   }));
 }
@@ -62,11 +63,11 @@ export function aspectsFromScore10(
 /** Build the six-aspect list from 1..5 server `metrics`. */
 export function aspectsFromMetrics5(
   m: Partial<Record<AspectKey, number>>,
-  lang: "ru" | "en",
+  lang: Lang,
 ): FlowerAspect[] {
   return ORDER.map((key) => ({
     key,
-    label: lang === "en" ? ASPECT_META[key].en : ASPECT_META[key].ru,
+    label: pickLang(lang, ASPECT_META[key]),
     score: clamp10(Number(m[key] ?? 0) * 2),
   }));
 }

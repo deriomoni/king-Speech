@@ -14,7 +14,7 @@ import { useRouter } from "expo-router";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { Image } from "expo-image";
 import { SvgXml } from "react-native-svg";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import OscarMascot from "@/components/OscarMascot";
@@ -31,9 +31,9 @@ type Visual =
 
 interface SlideData {
   gold: boolean; // gold stage tile (acts II–IV) vs card tile
-  kicker: [string, string];
-  title: [string, string]; // RU, EN — "\n" splits the two headline lines
-  body: [string, string];
+  kicker: [string, string, string];
+  title: [string, string, string]; // RU, EN, KK — "\n" splits the two headline lines
+  body: [string, string, string];
   visual: Visual;
   numeral?: string;
 }
@@ -41,41 +41,41 @@ interface SlideData {
 const SLIDES: SlideData[] = [
   {
     gold: false,
-    kicker: ["АКТ I · ЗНАКОМСТВО", "ACT I · HELLO"],
-    title: ["Привет,\n{name}!", "Hi,\n{name}!"],
-    body: ["Давай покажу, как тут всё устроено", "Let me show you how everything works"],
+    kicker: ["АКТ I · ЗНАКОМСТВО", "ACT I · HELLO", "I АКТ · ТАНЫСУ"],
+    title: ["Привет,\n{name}!", "Hi,\n{name}!", "Сәлем,\n{name}!"],
+    body: ["Давай покажу, как тут всё устроено", "Let me show you how everything works", "Мұнда бәрі қалай құрылғанын көрсетейін"],
     visual: { kind: "oscarHi" },
     numeral: "01",
   },
   {
     gold: true,
-    kicker: ["АКТ II · ПУТЬ", "ACT II · PATH"],
-    title: ["Главный\nэкран", "Home\nscreen"],
-    body: ["Здесь ты видишь свой путь - уровни и задания", "Here you can see your path - levels and tasks"],
+    kicker: ["АКТ II · ПУТЬ", "ACT II · PATH", "II АКТ · ЖОЛ"],
+    title: ["Главный\nэкран", "Home\nscreen", "Басты\nэкран"],
+    body: ["Здесь ты видишь свой путь - уровни и задания", "Here you can see your path - levels and tasks", "Мұнда өз жолыңды көресің — деңгейлер мен тапсырмалар"],
     visual: { kind: "icon", xml: ICON_PATH_SVG, w: 120, h: 116.782 },
     numeral: "02",
   },
   {
     gold: true,
-    kicker: ["АКТ III · РЕЖИМЫ", "ACT III · MODES"],
-    title: ["Режимы\nтренировок", "Training\nmodes"],
-    body: ["Выбирай режим и нажимай «Старт»", "Pick a mode and tap “Start”"],
+    kicker: ["АКТ III · РЕЖИМЫ", "ACT III · MODES", "III АКТ · РЕЖИМДЕР"],
+    title: ["Режимы\nтренировок", "Training\nmodes", "Жаттығу\nрежимдері"],
+    body: ["Выбирай режим и нажимай «Старт»", "Pick a mode and tap “Start”", "Режимді таңда да, «Бастау» түймесін бас"],
     visual: { kind: "icon", xml: ICON_MIC_SVG, w: 83.0769, h: 120 },
     numeral: "03",
   },
   {
     gold: true,
-    kicker: ["АКТ IV · НАГРАДЫ", "ACT IV · REWARDS"],
-    title: ["Зарабатывай\nочки", "Earn\npoints"],
-    body: ["Проходи уровни, набирай XP и прокачивай свой голос", "Complete levels, earn XP and level up your voice"],
+    kicker: ["АКТ IV · НАГРАДЫ", "ACT IV · REWARDS", "IV АКТ · МАРАПАТТАР"],
+    title: ["Зарабатывай\nочки", "Earn\npoints", "Ұпай\nжина"],
+    body: ["Проходи уровни, набирай XP и прокачивай свой голос", "Complete levels, earn XP and level up your voice", "Деңгейлерден өт, XP жина және дауысыңды шыңда"],
     visual: { kind: "icon", xml: ICON_STAR_SVG, w: 120, h: 111.892 },
     numeral: "04",
   },
   {
     gold: false,
-    kicker: ["ФИНАЛ · СОВЕТ ДНЯ", "FINALE · DAILY TIP"],
-    title: ["Совет\nдня", "Daily\ntip"],
-    body: ["Заходи каждый день - даже 5 минут делают тебя лучше!", "Come back every day - even 5 minutes makes you better!"],
+    kicker: ["ФИНАЛ · СОВЕТ ДНЯ", "FINALE · DAILY TIP", "ФИНАЛ · КҮН КЕҢЕСІ"],
+    title: ["Совет\nдня", "Daily\ntip", "Күн\nкеңесі"],
+    body: ["Заходи каждый день - даже 5 минут делают тебя лучше!", "Come back every day - even 5 minutes makes you better!", "Күн сайын кіріп тұр — тіпті 5 минуттың өзі сені шыңдайды!"],
     visual: { kind: "oscarTux" },
   },
 ];
@@ -89,7 +89,6 @@ export default function OnboardingScreen() {
   const { theme } = useTheme();
   const { ink } = useInk();
   const { user, completeOnboarding } = useAuth();
-  const en = lang === "en";
 
   const [step, setStep] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
@@ -132,7 +131,7 @@ export default function OnboardingScreen() {
         <KingSpeechLogo width={111.3} color={theme.text} />
         {!isLast && (
           <Pressable onPress={handleSkip} hitSlop={12}>
-            <Text style={[s.skipTxt, { color: ink(0.55) }]}>{en ? "Skip" : "Пропустить"}</Text>
+            <Text style={[s.skipTxt, { color: ink(0.55) }]}>{pickLang(lang, { ru: "Пропустить", en: "Skip", kk: "Өткізіп жіберу" })}</Text>
           </Pressable>
         )}
       </Animated.View>
@@ -156,14 +155,14 @@ export default function OnboardingScreen() {
         style={s.slider}
       >
         {SLIDES.map((sl, i) => (
-          <OnboardingSlide key={i} slide={sl} en={en} userName={user?.name ?? ""} />
+          <OnboardingSlide key={i} slide={sl} lang={lang} userName={user?.name ?? ""} />
         ))}
       </ScrollView>
 
       {/* Navigation */}
       <Animated.View entering={FadeIn.delay(200)} style={s.nav}>
         <PillButton
-          label={isLast ? (en ? "Let's go!" : "Погнали!") : en ? "Next  →" : "Далее  →"}
+          label={isLast ? pickLang(lang, { ru: "Погнали!", en: "Let's go!", kk: "Кеттік!" }) : pickLang(lang, { ru: "Далее  →", en: "Next  →", kk: "Келесі  →" })}
           onPress={goNext}
         />
       </Animated.View>
@@ -171,10 +170,10 @@ export default function OnboardingScreen() {
   );
 }
 
-function OnboardingSlide({ slide, en, userName }: { slide: SlideData; en: boolean; userName: string }) {
+function OnboardingSlide({ slide, lang, userName }: { slide: SlideData; lang: Lang; userName: string }) {
   const { theme } = useTheme();
   const { ink, stroke } = useInk();
-  const L = en ? 1 : 0;
+  const L = lang === "en" ? 1 : lang === "kk" ? 2 : 0;
   const [line1, line2] = slide.title[L].replace("{name}", userName).split("\n");
   const firstSlide = slide.visual.kind === "oscarHi";
 

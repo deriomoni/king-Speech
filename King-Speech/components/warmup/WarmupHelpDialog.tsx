@@ -5,6 +5,7 @@ import { BlurView } from "expo-blur";
 import Svg, { Defs, RadialGradient, Rect, Stop, LinearGradient } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
+import { useLang, pickLang } from "@/context/LangContext";
 
 /**
  * "Как выполнять?" pop-ups of the Разогрев level (Figma 37:5023 breathing,
@@ -84,24 +85,41 @@ function Shell({
 /** Breathing help — left-aligned copy with a close cross (Figma 37:5023). */
 export function BreathingHelpDialog({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { theme } = useTheme();
+  const { lang } = useLang();
   return (
     <Shell visible={visible} onClose={onClose} width={346} cardStyle={styles.breathCard}>
       <Pressable onPress={onClose} hitSlop={12} style={styles.close}>
         <Ionicons name="close" size={22} color={theme.textSecondary} />
       </Pressable>
-      <Text style={[styles.bTitle, { color: theme.text }]}>Как выполнять?</Text>
+      <Text style={[styles.bTitle, { color: theme.text }]}>{pickLang(lang, { ru: "Как выполнять?", en: "How to do it?", kk: "Қалай орындау керек?" })}</Text>
       <Text style={[styles.bText, { color: theme.textSecondary }]}>
-        Дышите вместе с кругом: расширяется - вдох, сжимается - выдох. Текст на круге подскажет ритм.
+        {pickLang(lang, {
+          ru: "Дышите вместе с кругом: расширяется - вдох, сжимается - выдох. Текст на круге подскажет ритм.",
+          en: "Breathe with the circle: it grows - inhale, it shrinks - exhale. The text on the circle keeps the rhythm.",
+          kk: "Шеңбермен бірге тыныс ал: үлкейсе - дем ал, кішірейсе - дем шығар. Шеңбердегі мәтін ырғақты айтып тұрады.",
+        })}
       </Text>
       <Text style={[styles.bText, { color: theme.textSecondary }]}>
-        Дыхательная разминка - базовое упражнение перед выступлением. Успокаивает дыхание, снимает напряжение и готовит связки к работе.
+        {pickLang(lang, {
+          ru: "Дыхательная разминка - базовое упражнение перед выступлением. Успокаивает дыхание, снимает напряжение и готовит связки к работе.",
+          en: "Breathing warm-up is the basic exercise before a speech. It calms your breath, releases tension and gets your vocal cords ready.",
+          kk: "Тыныс жаттығуы - сөз сөйлеу алдындағы негізгі жаттығу. Тынысты тыныштандырады, кернеуді басады және дауыс байламдарын жұмысқа дайындайды.",
+        })}
       </Text>
-      <Text style={[styles.bSub, { color: theme.text }]}>Разминка рта</Text>
+      <Text style={[styles.bSub, { color: theme.text }]}>{pickLang(lang, { ru: "Разминка рта", en: "Mouth warm-up", kk: "Ауыз жаттығуы" })}</Text>
       <Text style={[styles.bText, { color: theme.textSecondary }]}>
-        Простые упражнения для мышц языка, губ и голосовых связок. Подсказки по выполнению задания появятся на экране.
+        {pickLang(lang, {
+          ru: "Простые упражнения для мышц языка, губ и голосовых связок. Подсказки по выполнению задания появятся на экране.",
+          en: "Simple exercises for your tongue, lips and vocal cords. Hints on how to do each task will appear on screen.",
+          kk: "Тіл, ерін және дауыс байламдарына арналған қарапайым жаттығулар. Тапсырманы орындау бойынша кеңестер экранда шығады.",
+        })}
       </Text>
       <Text style={[styles.bFoot, { color: theme.textMuted }]}>
-        Уровень не требует микрофона. За выполнение задания начисляется 10 баллов. При желании уровень можно пройти повторно.
+        {pickLang(lang, {
+          ru: "Уровень не требует микрофона. За выполнение задания начисляется 10 баллов. При желании уровень можно пройти повторно.",
+          en: "This level doesn't need a microphone. You get 10 points for completing the task. You can replay the level any time.",
+          kk: "Бұл деңгейге микрофон қажет емес. Тапсырманы орындағаның үшін 10 ұпай беріледі. Қаласаң, деңгейді қайта өтуге болады.",
+        })}
       </Text>
     </Shell>
   );
@@ -110,11 +128,16 @@ export function BreathingHelpDialog({ visible, onClose }: { visible: boolean; on
 /** Mouth help — centered title/message + gold «Понятно» (Figma 37:5074). */
 export function MouthHelpDialog({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { theme } = useTheme();
+  const { lang } = useLang();
   return (
     <Shell visible={visible} onClose={onClose} width={330} cardStyle={styles.mouthCard}>
-      <Text style={[styles.mTitle, { color: theme.text }]}>Как выполнять?</Text>
+      <Text style={[styles.mTitle, { color: theme.text }]}>{pickLang(lang, { ru: "Как выполнять?", en: "How to do it?", kk: "Қалай орындау керек?" })}</Text>
       <Text style={[styles.mText, { color: theme.textSecondary }]}>
-        Сначала появится название упражнения и короткое описание. Затем - задание и подсказка, как его выполнять. Повторяй движение вместе с таймером, спокойно и без напряжения.
+        {pickLang(lang, {
+          ru: "Сначала появится название упражнения и короткое описание. Затем - задание и подсказка, как его выполнять. Повторяй движение вместе с таймером, спокойно и без напряжения.",
+          en: "First you'll see the exercise name and a short description. Then the task and a hint on how to do it. Repeat the movement with the timer, calmly and without strain.",
+          kk: "Алдымен жаттығудың атауы мен қысқаша сипаттамасы шығады. Содан кейін - тапсырма және оны қалай орындау керектігі туралы кеңес. Қимылды таймермен бірге, асықпай әрі күшенбей қайтала.",
+        })}
       </Text>
       <View style={styles.mBtns}>
         <Pressable
@@ -124,7 +147,7 @@ export function MouthHelpDialog({ visible, onClose }: { visible: boolean; onClos
             { backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.9 : 1 },
           ]}
         >
-          <Text style={[styles.mBtnText, { color: theme.accentText }]}>Понятно</Text>
+          <Text style={[styles.mBtnText, { color: theme.accentText }]}>{pickLang(lang, { ru: "Понятно", en: "Got it", kk: "Түсінікті" })}</Text>
         </Pressable>
       </View>
     </Shell>

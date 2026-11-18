@@ -9,11 +9,50 @@ const JOURNALIST_NAME = "JENNY";
 const MAX_QUESTIONS   = 5;
 const MAX_SKIPS       = 4;
 
-type Lang = "ru" | "en";
+type Lang = "ru" | "en" | "kk";
+
+function isLang(v: unknown): v is Lang {
+  return v === "ru" || v === "en" || v === "kk";
+}
 
 function getLang(body: any): Lang {
-  return body?.lang === "en" ? "en" : "ru";
+  return isLang(body?.lang) ? body.lang : "ru";
 }
+
+/**
+ * Pick a per-language value. Model-facing text may omit `kk` — Kazakh then
+ * reuses the English prompt wording (see `withLangDirective`). User-facing
+ * strings (fallbacks, labels) must always pass `kk`.
+ */
+function L<T>(lang: Lang, v: { ru: T; en: T; kk?: T }): T {
+  return lang === "kk" ? (v.kk ?? v.en) : v[lang];
+}
+
+/**
+ * Kazakh output directive. For kk we send the English prompt (same scoring
+ * logic as ru/en) and append this so every user-facing string comes back in
+ * natural Kazakh and Kazakh speech is judged by Kazakh norms.
+ */
+const KK_OUTPUT_DIRECTIVE = `
+
+LANGUAGE — KAZAKH (this overrides any earlier instruction about the output language):
+- The speaker speaks Kazakh (Cyrillic script). Any transcript or answer you receive is Kazakh speech. Mixing in Russian words is common and natural in Kazakhstan — do not over-penalize it.
+- When judging grammar, wording or literacy, apply Kazakh language norms (not Russian or English ones).
+- Write EVERY user-facing string in your output (summary, tip, feedback, errors, notes, greeting, questions, strengths, weaknesses, closing, reasons, paragraphs) in natural, modern, warm Kazakh with correct Kazakh letters (ә, ғ, қ, ң, ө, ұ, ү, һ, і). Address the user informally with «сен», like a friendly mentor — never the formal «сіз». Do not calque Russian phrasing.
+- Keep JSON keys and fixed enum values (e.g. "positive", "neutral", "yes", "partial", "off") exactly as specified, in English.`;
+
+/** Append the language directive to a system prompt (no-op for ru/en). */
+function withLangDirective(lang: Lang, system: string): string {
+  return lang === "kk" ? system + KK_OUTPUT_DIRECTIVE : system;
+}
+
+/** Kazakh text costs noticeably more tokens per word — give it headroom. */
+function tokensFor(lang: Lang, n: number): number {
+  return lang === "kk" ? Math.ceil(n * 1.6) : n;
+}
+
+/** Cyrillic (incl. Kazakh-specific letters) + Latin word characters. */
+const WORD_SPLIT_RE = /[^a-zа-яёәғқңөұүһі0-9]+/i;
 
 interface InterviewAnswer {
   question:     string;
@@ -100,6 +139,18 @@ const INTERVIEW_TOPICS: Record<Lang, string[]> = {
     "Travel and discoveries",
     "Creativity and self-expression",
   ],
+  kk: [
+    "Сенің жеке өмірің",
+    "Сенің армандарың мен құндылықтарың",
+    "Өміріңдегі адамдар мен қарым-қатынастар",
+    "Бақыт және өмірдің мәні",
+    "Өмірлік тәжірибе және жеке сабақтар",
+    "Сенің мақсаттарың мен ұмтылыстарың",
+    "Балалық шақ және естеліктер",
+    "Сенің қорқыныштарың және оларды қалай жеңесің",
+    "Саяхат және жаңалықтар",
+    "Шығармашылық және өзін-өзі көрсету",
+  ],
 };
 
 const MAX_DAILY_INTERVIEWS = 2;
@@ -110,7 +161,7 @@ function getDailyTopics(lang: Lang): { topics: string[]; dateKey: string } {
   let seed = 0;
   for (let i = 0; i < dateKey.length; i++) seed = ((seed << 5) - seed + dateKey.charCodeAt(i)) | 0;
   seed = Math.abs(seed);
-  const topics = INTERVIEW_TOPICS[lang];
+  const topics = INTERVIEW_TOPICS[lang] ?? INTERVIEW_TOPICS.ru;
   const i1 = seed % topics.length;
   let i2 = (seed * 7 + 3) % topics.length;
   if (i2 === i1) i2 = (i2 + 1) % topics.length;
@@ -122,19 +173,21 @@ function generateSessionId() {
 }
 
 async function generateGreeting(topic: string, lang: Lang): Promise<string> {
-  const systemPrompt = lang === "en"
+  const systemPrompt = lang !== "ru"
     ? `You are ${JOURNALIST_NAME}, a warm and professional virtual journalist. Greet the interviewee, introduce yourself by name "${JOURNALIST_NAME}" and announce the interview topic. Be friendly and supportive. 2-3 sentences in English. Plain text, no paragraphs.`
     : `Ты — ${JOURNALIST_NAME}, тёплый и профессиональный виртуальный журналист. Поприветствуй собеседника, представься по имени "${JOURNALIST_NAME}" и объяви тему интервью. Будь дружелюбной и поддерживающей. 2–3 предложения на русском языке. Сплошной текст, без абзацев.`;
 
-  const userPrompt = lang === "en"
+  const userPrompt = lang !== "ru"
     ? `Interview topic: "${topic}". Write a greeting.`
     : `Тема интервью: "${topic}". Напиши приветствие.`;
 
-  const fallback = lang === "en"
-    ? `Hello! I'm ${JOURNALIST_NAME}, your virtual journalist. Today we'll talk about "${topic}". Glad to meet you — let's begin!`
-    : `Здравствуйте! Я ${JOURNALIST_NAME}, ваш виртуальный журналист. Сегодня мы поговорим о теме «${topic}». Рада нашей встрече — давайте начнём!`;
+  const fallback = L(lang, {
+    en: `Hello! I'm ${JOURNALIST_NAME}, your virtual journalist. Today we'll talk about "${topic}". Glad to meet you — let's begin!`,
+    ru: `Здравствуйте! Я ${JOURNALIST_NAME}, ваш виртуальный журналист. Сегодня мы поговорим о теме «${topic}». Рада нашей встрече — давайте начнём!`,
+    kk: `Сәлем! Мен ${JOURNALIST_NAME}, сенің виртуалды журналисіңмін. Бүгін «${topic}» тақырыбында сөйлесеміз. Танысқаныма қуаныштымын — бастайық!`,
+  });
 
-  const out = await chatComplete({ system: systemPrompt, user: userPrompt, maxTokens: 130 });
+  const out = await chatComplete({ system: withLangDirective(lang, systemPrompt), user: userPrompt, maxTokens: tokensFor(lang, 130) });
   return out || fallback;
 }
 
@@ -146,29 +199,45 @@ async function generateInterviewQuestion(
 ): Promise<string> {
   const prevContext =
     previousAnswers.length > 0
-      ? (lang === "en"
+      ? (lang !== "ru"
         ? `Conversation so far:\n${previousAnswers.map((a) => `You asked: ${a.question}\nThey answered: ${a.transcript?.trim() || "(they stayed silent)"}`).join("\n\n")}`
         : `Беседа до этого момента:\n${previousAnswers.map((a) => `Вы спросили: ${a.question}\nОни ответили: ${a.transcript?.trim() || "(человек промолчал)"}`).join("\n\n")}`)
       : "";
 
   // Jenny's personality lives here: she runs a real conversation, not a form —
   // every question builds on what the person actually just said.
-  const systemPrompt = lang === "en"
+  const systemPrompt = lang !== "ru"
     ? `You are ${JOURNALIST_NAME}, a warm, alive and emotionally attuned interviewer. Topic of the conversation: "${topic}". You are NOT running a questionnaire — you are having a real human conversation. Listen closely and let your next question grow out of what the person just said: pick up their exact words, their feelings, a detail they mentioned ("You said your father... tell me more about that"). Keep questions simple, open, human and easy to answer. If they stayed silent or gave a very short answer, gently come at it from an easier, more concrete angle. Ask ONE warm question, one or two sentences. Return ONLY the question text — no preface, no quotation marks.`
     : `Ты — ${JOURNALIST_NAME}, тёплый, живой и эмоционально чуткий интервьюер. Тема беседы: "${topic}". Ты ведёшь НЕ анкету, а настоящий человеческий разговор. Внимательно слушай и строй следующий вопрос на том, что человек только что сказал: подхватывай его слова, чувства, упомянутую деталь («Вы сказали, что ваш отец… расскажите об этом подробнее»). Вопросы простые, открытые, человечные, лёгкие для ответа. Если человек промолчал или ответил очень коротко — мягко зайди с другой, более простой и конкретной стороны. Задай ОДИН тёплый вопрос, одно-два предложения. Верни ТОЛЬКО текст вопроса — без вступлений и без кавычек.`;
 
-  const userPrompt = lang === "en"
+  const userPrompt = lang !== "ru"
     ? `${prevContext}\n\nThis is question ${questionIndex + 1} of about ${MAX_QUESTIONS}. Ask your next question — make it follow naturally from their last answer.`
     : `${prevContext}\n\nЭто примерно ${questionIndex + 1}-й вопрос из ${MAX_QUESTIONS}. Задай следующий вопрос — пусть он естественно вытекает из последнего ответа человека.`;
 
-  const fallback = lang === "en" ? "What does happiness mean to you?" : "Что для вас значит счастье?";
+  const fallback = L(lang, {
+    en: "What does happiness mean to you?",
+    ru: "Что для вас значит счастье?",
+    kk: "Сен үшін бақыт деген не?",
+  });
 
-  const out = await chatComplete({ system: systemPrompt, user: userPrompt, maxTokens: 80 });
+  const out = await chatComplete({ system: withLangDirective(lang, systemPrompt), user: userPrompt, maxTokens: tokensFor(lang, 80) });
   return out || fallback;
 }
 
 function getTransition(grammarScore: number, dictionScore: number, lang: Lang): string {
   const score = grammarScore + dictionScore;
+  if (lang === "kk") {
+    if (score >= 8) {
+      const opts = ["Тамаша! Өте мазмұнды жауап.", "Керемет, рахмет! Ойың өте дәл.", "Тамаша жауап, мен әсерлендім."];
+      return opts[Math.floor(Math.random() * opts.length)];
+    } else if (score >= 5) {
+      const opts = ["Жауабың үшін рахмет.", "Қызықты ой, рахмет.", "Жақсы, жалғастырайық."];
+      return opts[Math.floor(Math.random() * opts.length)];
+    } else {
+      const opts = ["Түсінікті, рахмет.", "Жақсы, келесі сұраққа көшейік.", "Рахмет, жалғастырамыз."];
+      return opts[Math.floor(Math.random() * opts.length)];
+    }
+  }
   if (lang === "en") {
     if (score >= 8) {
       const opts = ["Wonderful! A very insightful answer.", "Excellent, thank you! Your thought is very precise.", "Great answer, I'm impressed."];
@@ -208,7 +277,7 @@ async function analyzeAnswer(
   topic: string,
   lang: Lang
 ): Promise<AnalysisResult> {
-  const systemPrompt = lang === "en"
+  const systemPrompt = lang !== "ru"
     ? `You are an expert in oratory and a content moderator. Perform two actions simultaneously:
 1. Evaluate the candidate's answer by two criteria (each 0 to 5):
    - grammarScore — grammar, coherence, vocabulary richness
@@ -230,15 +299,19 @@ Respond STRICTLY in JSON: {"grammarScore": <0-5>, "dictionScore": <0-5>, "feedba
    - violationReason — причина нарушения (пустая строка если нет)
 Отвечай СТРОГО в JSON: {"grammarScore": <0-5>, "dictionScore": <0-5>, "feedback": "<текст>", "sentiment": "positive"|"negative"|"neutral", "violated": false|true, "violationReason": ""}`;
 
-  const topicLabel = lang === "en" ? "Topic" : "Тема";
-  const questionLabel = lang === "en" ? "Question" : "Вопрос";
-  const answerLabel = lang === "en" ? "Answer" : "Ответ";
-  const fallbackFeedback = lang === "en" ? "Good answer, keep developing." : "Хороший ответ, продолжайте развиваться.";
+  const topicLabel = lang !== "ru" ? "Topic" : "Тема";
+  const questionLabel = lang !== "ru" ? "Question" : "Вопрос";
+  const answerLabel = lang !== "ru" ? "Answer" : "Ответ";
+  const fallbackFeedback = L(lang, {
+    en: "Good answer, keep developing.",
+    ru: "Хороший ответ, продолжайте развиваться.",
+    kk: "Жақсы жауап, дамуды жалғастыр.",
+  });
 
   const out = await chatComplete({
-    system: systemPrompt,
+    system: withLangDirective(lang, systemPrompt),
     user: `${topicLabel}: "${topic}"\n${questionLabel}: ${question}\n${answerLabel}: ${transcript}`,
-    maxTokens: 200,
+    maxTokens: tokensFor(lang, 200),
     json: true,
   });
   try {
@@ -263,27 +336,31 @@ Respond STRICTLY in JSON: {"grammarScore": <0-5>, "dictionScore": <0-5>, "feedba
 async function generateStructuredSummary(session: InterviewSession): Promise<FinalSummary> {
   const lang = session.lang ?? "ru";
   const answersText = session.answers
-    .map((a, i) => lang === "en"
+    .map((a, i) => lang !== "ru"
       ? `Question ${i + 1}: ${a.question}\nAnswer: ${a.transcript || "(no answer)"}`
       : `Вопрос ${i + 1}: ${a.question}\nОтвет: ${a.transcript || "(нет ответа)"}`)
     .join("\n\n");
 
-  const systemPrompt = lang === "en"
+  const systemPrompt = lang !== "ru"
     ? `You are ${JOURNALIST_NAME}, a journalist who has finished an interview. Give caring, developmental feedback. Respond STRICTLY in JSON:\n{"strengths": ["strength 1", "strength 2", "strength 3"], "weaknesses": ["growth area 1", "growth area 2"], "closing": "Warm supportive words, 1-2 sentences."}\nExamples of strengths: confident tone, good speech pace, sincerity, clear formulations, openness.\nExamples of growth areas: short answers, long pauses, filler words, uncertain sentence beginnings.\nFormulate carefully and constructively.`
     : `Ты — ${JOURNALIST_NAME}, журналист завершивший интервью. Дай бережную, развивающую обратную связь. Отвечай СТРОГО в JSON:\n{"strengths": ["сильная сторона 1", "сильная сторона 2", "сильная сторона 3"], "weaknesses": ["точка роста 1", "точка роста 2"], "closing": "Тёплые слова поддержки, 1-2 предложения."}\nПримеры сильных сторон: уверенный тон, хорошая скорость речи, искренность, ясные формулировки, открытость.\nПримеры точек роста: короткие ответы, длинные паузы, слова-паразиты, неуверенное начало фразы.\nФормулируй бережно и конструктивно.`;
 
-  const topicLabel = lang === "en" ? "Topic" : "Тема";
-  const fallbackStrengths = lang === "en"
-    ? ["You participated in the interview", "Courage to speak out loud"]
-    : ["Вы участвовали в интервью", "Смелость говорить вслух"];
-  const fallbackClosing = lang === "en"
-    ? "Thank you for the interview! Great job, keep training."
-    : "Спасибо за интервью! Вы молодец, продолжайте тренироваться.";
+  const topicLabel = lang !== "ru" ? "Topic" : "Тема";
+  const fallbackStrengths = L(lang, {
+    en: ["You participated in the interview", "Courage to speak out loud"],
+    ru: ["Вы участвовали в интервью", "Смелость говорить вслух"],
+    kk: ["Сен сұхбатқа қатыстың", "Дауыстап сөйлеуге батылдық"],
+  });
+  const fallbackClosing = L(lang, {
+    en: "Thank you for the interview! Great job, keep training.",
+    ru: "Спасибо за интервью! Вы молодец, продолжайте тренироваться.",
+    kk: "Сұхбат үшін рахмет! Сен жарайсың, жаттығуды жалғастыр.",
+  });
 
   const out = await chatComplete({
-    system: systemPrompt,
+    system: withLangDirective(lang, systemPrompt),
     user: `${topicLabel}: "${session.topic}"\n\n${answersText}`,
-    maxTokens: 350,
+    maxTokens: tokensFor(lang, 350),
     json: true,
   });
   try {
@@ -317,7 +394,7 @@ const JUDGE_MODEL = process.env.JUDGE_MODEL ?? "claude-haiku-4-5-20251001";
 // so a very long Show Time script never becomes a heavy computation.
 function textCoverage(scriptText: string, transcript: string): number {
   const norm = (s: string) =>
-    (s || "").toLowerCase().replace(/ё/g, "е").replace(/[^a-zа-я\s]/gi, " ").replace(/\s+/g, " ").trim();
+    (s || "").toLowerCase().replace(/ё/g, "е").replace(/[^a-zа-яәғқңөұүһі\s]/gi, " ").replace(/\s+/g, " ").trim();
   const scriptWords = Array.from(new Set(norm(scriptText).split(" ").filter(Boolean))).slice(0, 800);
   if (scriptWords.length === 0) return 0;
   const spoken = new Set(norm(transcript).split(" ").filter(Boolean));
@@ -396,7 +473,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // (services/speechAnalysis.ts) for warmup / tongue-twister / show-time /
   // reading levels — anything that doesn't need a GPT judgement, just the
   // words the user actually said.
-  // Contract: { audioBase64, audioDurationSeconds? } →
+  // Contract: { audioBase64, audioDurationSeconds?, lang? } →
   //   { transcript, audioDurationSeconds, audioRms, audioPeak, audioMeanVolumeDb, audioMaxVolumeDb }.
   // - Duration is sourced from the client (it's the recording timer that
   //   drove the UI); the server echoes it as the single source of truth.
@@ -405,6 +482,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/transcribe", async (req: Request, res: Response) => {
     try {
       const { audioBase64, audioDurationSeconds } = req.body;
+      // Optional: old clients don't send it → auto-detect as before. When
+      // present, an ISO-639-1 hint markedly improves accuracy (esp. kk, which
+      // auto-detect often mistakes for Russian).
+      const sttLang = isLang(req.body?.lang) ? req.body.lang : undefined;
       if (!audioBase64 || typeof audioBase64 !== "string") {
         return res.status(400).json({ error: "audioBase64 required" });
       }
@@ -440,7 +521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Run transcription and loudness measurement in parallel — they both
       // operate on the same converted buffer and don't depend on each other.
       const [transcript, loudness] = await Promise.all([
-        speechToText(buffer, format),
+        speechToText(buffer, format, sttLang),
         computeLoudness(buffer).catch((err) => {
           console.warn("computeLoudness failed:", err);
           return { ok: false, rms: 0, peak: 0, meanVolumeDb: -Infinity, maxVolumeDb: -Infinity };
@@ -499,13 +580,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Nothing to score — return neutral 6s so the analyzer can carry on.
         return res.json({ logic: 6, eloquence: 6 });
       }
-      const systemPrompt = lang === "en"
+      const systemPrompt = lang !== "ru"
         ? `You are a strict speech coach scoring an interview answer. Rate two qualities on a 0..10 scale:\n- logic: clarity of thought, structure (thesis → argument → conclusion), coherence.\n- eloquence: vocabulary range, precise wording, expressive style (penalize generic phrases & filler).\nReturn STRICTLY JSON: {"logic": <0-10>, "eloquence": <0-10>, "tip": "<one short coaching tip in English>"}`
         : `Ты — строгий тренер по речи, оценивающий ответ на интервью. Оцени два качества по шкале 0..10:\n- logic: ясность мысли, структура (тезис → аргумент → вывод), связность.\n- eloquence: богатство словаря, точность формулировок, выразительность (штрафуй за шаблоны и слова-паразиты).\nВерни СТРОГО JSON: {"logic": <0-10>, "eloquence": <0-10>, "tip": "<один короткий совет на русском>"}`;
       const out = await chatComplete({
-        system: systemPrompt,
+        system: withLangDirective(lang, systemPrompt),
         user: transcript.trim().slice(0, 4000),
-        maxTokens: 200,
+        maxTokens: tokensFor(lang, 200),
         json: true,
       });
       let parsed: any = {};
@@ -542,9 +623,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     judgeInFlight++;
     try {
-      const system = lang === "en"
+      const system = withLangDirective(lang, lang !== "ru"
         ? `You are a fair but strict interview examiner. You are given a QUESTION and the TRANSCRIPT of a spoken answer. Judge ONLY two things:\n1) relevance (0..10) — how well the answer actually ADDRESSES THIS SPECIFIC QUESTION. This is the priority: 10 = answers it directly and fully; 5 = partial / adjacent; 0 = did not answer / off-topic.\n2) competence (0..10) — how literate and coherent the wording is (logic, precision, range; penalize waffle and fillers).\nIgnore pronunciation and loudness — text only.\nverdict: "yes" | "partial" | "off".\nnote: one short English sentence on what to improve (relevance first).\nReturn STRICTLY JSON: {"relevance":<0-10>,"competence":<0-10>,"verdict":"yes|partial|off","note":"..."}`
-        : `Ты — справедливый, но строгий экзаменатор на собеседовании. Тебе дают ВОПРОС и РАСШИФРОВКУ устного ответа. Оцени СТРОГО две вещи:\n1) relevance (0..10) — насколько ответ ПО СУЩЕСТВУ отвечает ИМЕННО НА ЭТОТ вопрос. Это приоритет: 10 = ответил прямо и полно; 5 = частично / рядом; 0 = не ответил / не о том.\n2) competence (0..10) — насколько грамотно и связно построен ответ (логика, точность, богатство речи; штрафуй за воду и слова-паразиты).\nНе оценивай произношение и громкость — только текст.\nverdict: "yes" | "partial" | "off" — ответил ли по теме.\nnote: одна короткая фраза на русском, что улучшить (в первую очередь про соответствие вопросу).\nВерни СТРОГО JSON: {"relevance":<0-10>,"competence":<0-10>,"verdict":"yes|partial|off","note":"..."}`;
+        : `Ты — справедливый, но строгий экзаменатор на собеседовании. Тебе дают ВОПРОС и РАСШИФРОВКУ устного ответа. Оцени СТРОГО две вещи:\n1) relevance (0..10) — насколько ответ ПО СУЩЕСТВУ отвечает ИМЕННО НА ЭТОТ вопрос. Это приоритет: 10 = ответил прямо и полно; 5 = частично / рядом; 0 = не ответил / не о том.\n2) competence (0..10) — насколько грамотно и связно построен ответ (логика, точность, богатство речи; штрафуй за воду и слова-паразиты).\nНе оценивай произношение и громкость — только текст.\nverdict: "yes" | "partial" | "off" — ответил ли по теме.\nnote: одна короткая фраза на русском, что улучшить (в первую очередь про соответствие вопросу).\nВерни СТРОГО JSON: {"relevance":<0-10>,"competence":<0-10>,"verdict":"yes|partial|off","note":"..."}`);
       const user = JSON.stringify({
         question: String(question ?? "").slice(0, 600),
         answer: transcript.trim().slice(0, 3000),
@@ -553,10 +634,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // the default (known-good) model so the judge still works.
       let out: string;
       try {
-        out = await chatComplete({ system, user, maxTokens: 160, json: true, model: JUDGE_MODEL });
+        out = await chatComplete({ system, user, maxTokens: tokensFor(lang, 160), json: true, model: JUDGE_MODEL });
       } catch (modelErr) {
         console.warn(`judge-answer: model "${JUDGE_MODEL}" failed, retrying with default model:`, (modelErr as any)?.message);
-        out = await chatComplete({ system, user, maxTokens: 160, json: true });
+        out = await chatComplete({ system, user, maxTokens: tokensFor(lang, 160), json: true });
       }
       let parsed: any = {};
       try { parsed = JSON.parse(out || "{}"); } catch { parsed = {}; }
@@ -594,20 +675,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/feedback/showtime", async (req: Request, res: Response) => {
     try {
       const { metrics, worstQuotes, rank } = req.body ?? {};
-      const lang = getLang(req.body);
+      // The speech-engine formatter sends `locale`; older callers may send `lang`.
+      const lang = getLang({ lang: req.body?.lang ?? req.body?.locale });
       if (!metrics || typeof metrics !== "object") {
         return res.status(400).json({ error: "metrics required" });
       }
       const quotes: string[] = Array.isArray(worstQuotes)
         ? worstQuotes.filter((q: unknown) => typeof q === "string").slice(0, 4)
         : [];
-      const systemPrompt = lang === "en"
+      const systemPrompt = lang !== "ru"
         ? `You are an editor for a speech-training app, NOT an analyzer. You are given already-computed metrics (0..1 unless noted) and up to 4 short quotes. Turn them into exactly 3 short, supportive paragraphs of coaching. Rules: invent NO facts beyond the metrics; name at most ONE growth area; always open with genuine praise; warm, concrete, second person. No lists, no scores, no markdown.`
         : `Ты — редактор приложения для тренировки речи, а НЕ аналитик. Тебе даны уже посчитанные метрики (0..1, если не указано иное) и до 4 коротких цитат. Преврати их РОВНО в 3 коротких поддерживающих абзаца разбора. Правила: не придумывай фактов сверх метрик; называй не больше ОДНОЙ зоны роста; всегда начинай с искренней похвалы; тепло, конкретно, на «ты». Без списков, без баллов, без разметки.`;
       const feedback = await chatComplete({
-        system: systemPrompt,
+        system: withLangDirective(lang, systemPrompt),
         user: JSON.stringify({ metrics, worstQuotes: quotes, rank }).slice(0, 4000),
-        maxTokens: 500,
+        maxTokens: tokensFor(lang, 500),
       });
       return res.json({ feedback: feedback.trim() });
     } catch (err) {
@@ -625,19 +707,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const rawBuffer = Buffer.from(audioBase64, "base64");
       const { buffer, format } = await ensureCompatibleFormat(rawBuffer);
-      const transcript = await speechToText(buffer, format);
+      const transcript = await speechToText(buffer, format, isLang(req.body?.lang) ? req.body.lang : undefined);
 
-      const labels = lang === "en"
-        ? { diction: "Diction", expressiveness: "Expressiveness", voice: "Voice", confidence: "Confidence" }
-        : { diction: "Дикция", expressiveness: "Выразительность", voice: "Голос", confidence: "Уверенность" };
+      const labels = L(lang, {
+        en: { diction: "Diction", expressiveness: "Expressiveness", voice: "Voice", confidence: "Confidence" },
+        ru: { diction: "Дикция", expressiveness: "Выразительность", voice: "Голос", confidence: "Уверенность" },
+        kk: { diction: "Дикция", expressiveness: "Мәнерлілік", voice: "Дауыс", confidence: "Сенімділік" },
+      });
 
       if (!transcript || transcript.trim().length < 8) {
-        const silentFeedback = lang === "en"
-          ? "We didn't quite hear you. No worries — to pass this level just speak out loud, a little louder and closer to the mic."
-          : "Кажется, мы тебя не услышали. Ничего страшного — чтобы пройти уровень, просто говори вслух, чуть увереннее и ближе к микрофону.";
-        const silentError = lang === "en"
-          ? "Speech not detected - microphone didn't pick up voice or speech wasn't delivered."
-          : "Речь не обнаружена — микрофон не уловил голос или выступление не было произнесено.";
+        const silentFeedback = L(lang, {
+          en: "We didn't quite hear you. No worries — to pass this level just speak out loud, a little louder and closer to the mic.",
+          ru: "Кажется, мы тебя не услышали. Ничего страшного — чтобы пройти уровень, просто говори вслух, чуть увереннее и ближе к микрофону.",
+          kk: "Сені естімей қалдық білем. Ештеңе етпейді — деңгейден өту үшін дауыстап, сәл сенімдірек әрі микрофонға жақынырақ сөйле.",
+        });
+        const silentError = L(lang, {
+          en: "Speech not detected - microphone didn't pick up voice or speech wasn't delivered.",
+          ru: "Речь не обнаружена — микрофон не уловил голос или выступление не было произнесено.",
+          kk: "Сөз анықталмады — микрофон дауысты қабылдамады немесе сөз айтылмады.",
+        });
         return res.json({
           stars: 0, score: 0, silent: true, transcript: transcript ?? "",
           feedback: silentFeedback,
@@ -661,7 +749,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ok: false, rms: 0, peak: 0, meanVolumeDb: -Infinity, maxVolumeDb: -Infinity,
       }));
       // Speech rate (tempo) and filler density from the transcript + duration.
-      const tokens = transcript.toLowerCase().split(/[^a-zа-яё0-9]+/i).filter(Boolean);
+      const tokens = transcript.toLowerCase().split(WORD_SPLIT_RE).filter(Boolean);
       const wordCount = tokens.length;
       // Hidden Show Time signals: how much of the script was actually read, and
       // whether this counts as a genuine read (not a skip / random noise).
@@ -669,14 +757,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const readOk = wordCount >= 12 && (textMatch == null || textMatch >= 0.15);
       const FILLERS_RU = ["э", "эм", "ну", "типа", "значит", "вот", "короче", "это", "блин", "как бы", "в общем", "так сказать", "это самое"];
       const FILLERS_EN = ["um", "uh", "like", "basically", "actually", "so", "well", "you know", "i mean", "kinda", "sorta"];
-      const single = new Set((lang === "en" ? FILLERS_EN : FILLERS_RU).filter((f) => !f.includes(" ")));
-      const multi = (lang === "en" ? FILLERS_EN : FILLERS_RU).filter((f) => f.includes(" "));
+      // Kazakh parasites + the Russian ones Kazakh speakers commonly mix in.
+      const FILLERS_KK = ["э", "эм", "ммм", "яғни", "енді", "әлгі", "сосын", "негізі", "мынау", "бәсе", "қысқасы", "былай", "ал енді", "короче", "типа", "вот", "ну", "как бы"];
+      const fillerList = L(lang, { ru: FILLERS_RU, en: FILLERS_EN, kk: FILLERS_KK });
+      const single = new Set(fillerList.filter((f) => !f.includes(" ")));
+      const multi = fillerList.filter((f) => f.includes(" "));
       const lowerText = " " + transcript.toLowerCase() + " ";
       let fillerCount = tokens.filter((t) => single.has(t)).length;
       for (const phrase of multi) fillerCount += lowerText.split(phrase).length - 1;
       const dur = typeof durationSeconds === "number" && durationSeconds > 0 ? durationSeconds : null;
       const wpm = dur ? Math.round(wordCount / (dur / 60)) : null;
-      const naLabel = lang === "en" ? "not measured" : "не измерено";
+      const naLabel = lang !== "ru" ? "not measured" : "не измерено";
 
       // Translate the raw acoustic loudness into a plain, human-readable level
       // BEFORE handing it to the AI. This keeps scoring grounded in the real
@@ -692,13 +783,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       })();
       const loudnessText = (() => {
         if (!loudnessLevel) return naLabel;
-        const map = lang === "en"
+        const map = lang !== "ru"
           ? { tooLoud: "too loud, the voice is overloaded", loud: "strong, maybe a touch too loud", good: "clear and confident", quiet: "a little quiet", tooQuiet: "barely audible (too quiet)" }
           : { tooLoud: "слишком громко, голос перегружен", loud: "сильно, возможно чуть громко", good: "чисто и уверенно", quiet: "немного тихо", tooQuiet: "почти не слышно (слишком тихо)" };
         return map[loudnessLevel];
       })();
 
-      const signals = lang === "en"
+      const signals = lang !== "ru"
         ? `Measured signals (rely on these — do NOT guess volume or tempo):\n- Duration: ${dur ? dur.toFixed(1) + " s" : naLabel}\n- Words: ${wordCount}\n- Speech rate: ${wpm ? wpm + " words/min" : naLabel}\n- Voice loudness: ${loudnessText}\n- Filler words detected: ${fillerCount}`
         : `Измеренные сигналы (опирайся на них — НЕ угадывай громкость и темп):\n- Длительность: ${dur ? dur.toFixed(1) + " c" : naLabel}\n- Слов: ${wordCount}\n- Темп речи: ${wpm ? wpm + " слов/мин" : naLabel}\n- Громкость голоса: ${loudnessText}\n- Слов-паразитов: ${fillerCount}`;
 
@@ -710,7 +801,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const modNum = typeof moduleNumber === "number" && Number.isFinite(moduleNumber) ? moduleNumber : null;
       const tier: "early" | "mid" | "advanced" =
         modNum == null ? "mid" : modNum <= 10 ? "early" : modNum <= 30 ? "mid" : "advanced";
-      const leniencyDirective = (lang === "en"
+      const leniencyDirective = (lang !== "ru"
         ? {
             early: `DIFFICULTY — EARLY module: keep the WORDING warm and encouraging, but score HONESTLY — do NOT inflate or round borderline scores up. Reflect exactly how the delivery actually sounded: if a criterion was weak, score it low (1-2 when warranted) and frame the fix as an easy next step. Accuracy in the numbers, kindness only in the tone.`,
             mid: `DIFFICULTY — MID-LEVEL module: keep a warm, balanced tone. Acknowledge what worked, then give one honest, concrete thing to improve. Score fairly — neither inflating nor harsh.`,
@@ -722,18 +813,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             advanced: `СЛОЖНОСТЬ — ПРОДВИНУТЫЙ модуль: игрок уже опытный. Будь честным и точным, держи более высокую планку и НЕ завышай баллы. Оставайся поддерживающим и уважительным — требовательно, но никогда не жёстко и не обескураживающе.`,
           })[tier];
 
-      const systemPrompt = lang === "en"
+      const systemPrompt = lang !== "ru"
         ? `You are a warm, encouraging speech mentor who genuinely believes in the speaker. The speaker is reading a PRE-WRITTEN text aloud — so do NOT judge the text itself: its wording, content, grammar, structure and word choice are NOT graded. Score ONLY how it is VOICED (delivery) on 6 criteria (each 1-5), using the transcription for pacing/fillers AND the measured signals (do not guess volume/tempo — rely on the data):\n1. diction — articulation & intelligibility; lower it for mumbled/garbled/cut-off words.\n2. expressiveness — VOCAL expressiveness: intonation variety, emphasis, emotional colour in the VOICE (not the text's content).\n3. voice — loudness & projection. Use the measured "Voice loudness" level: "clear and confident" = strong (4-5); "a little quiet" or "barely audible" = weak (1-2); "too loud, the voice is overloaded" also loses points.\n4. confidence — steady, firm voice without hesitation; many fillers/false starts lower it.\n5. tempo — from speech rate: a comfortable conversational pace (~110-150 words/min) is best (4-5); racing through (>180) or dragging (<90) lowers it. If rate not measured, judge from phrasing.\n6. pauses — meaningful pauses are good; frequent fillers/hesitation are not (use the filler count).\nCalibration: 5 = experienced speaker, 3 = average, 1 = serious problems. Be honest, but kind — lead with what went well, then gently point to one thing to grow.\nstars: 1 if average < 2.5; 2 if 2.5-3.9; 3 if >= 4.0.\n${leniencyDirective}\nTONE — THIS IS CRITICAL:\n- Write "summary", "tip" and "errors" like a warm human mentor talking to a friend, NEVER like a technical analyzer. The speaker should finish feeling encouraged and motivated, not criticized.\n- NEVER use technical terms or units. Forbidden: dBFS, decibels, dB, clipping, overload, signal, amplitude, frequency, and bare numbers with units. Turn every issue into plain, caring language. For example:\n  • too loud / overloaded → "your voice sounds too loud and a little strained — try speaking a touch softer"\n  • too quiet / barely audible → "you're hard to hear — speak up a bit, with more confidence"\n  • mumbling → "some words blur together — open your mouth a little more and they'll land"\n  • rushing → "you're speeding up a little — give your words room to breathe"\n- "summary", "tip" and "errors" must be about DELIVERY only (mumbling, rushing, monotone, too quiet, fillers) — NEVER about the wording or content of the text.\nReturn STRICTLY JSON: {"stars":<1|2|3>,"diction":<1-5>,"expressiveness":<1-5>,"voice":<1-5>,"confidence":<1-5>,"tempo":<1-5>,"pauses":<1-5>,"summary":"<one warm sentence about delivery>","tip":"<one concrete, kind delivery tip for the weakest criterion>","errors":["<delivery issue in plain, supportive words>", ...]}`
         : `Ты — тёплый, поддерживающий наставник по речи, который искренне верит в говорящего. Спикер читает вслух ЗАГОТОВЛЕННЫЙ текст — поэтому НЕ оценивай сам текст: его слова, содержание, грамматику, структуру и формулировки НЕ суди. Оценивай ТОЛЬКО то, как это ОЗВУЧЕНО (подачу), по 6 критериям (каждый 1-5), используя транскрипцию для темпа/слов-паразитов И измеренные сигналы (НЕ угадывай громкость/темп — опирайся на данные):\n1. diction — Дикция: чёткость и разборчивость; снижай за смазанные/оборванные слова.\n2. expressiveness — ВОКАЛЬНАЯ выразительность: интонационное разнообразие, акценты, эмоциональная окраска ГОЛОСА (не содержание текста).\n3. voice — Голос/громкость: опирайся на измеренный уровень «Громкость голоса»: «чисто и уверенно» = сильно (4-5); «немного тихо» или «почти не слышно» = слабо (1-2); «слишком громко, голос перегружен» тоже минус.\n4. confidence — Уверенность: ровный, твёрдый голос без колебаний; много слов-паразитов и оговорок снижают балл.\n5. tempo — Темп: по скорости речи: спокойный разговорный темп (~110-150 слов/мин) — лучше всего (4-5); тараторит (>180) или тянет (<90) — ниже. Если скорость не измерена — оцени по построению фраз.\n6. pauses — Паузы: осмысленные паузы хорошо; частые запинки/слова-паразиты плохо (учитывай число слов-паразитов).\nКалибровка: 5 = опытный спикер, 3 = средне, 1 = серьёзные проблемы. Будь честным, но добрым — сначала отметь, что получилось, потом мягко подскажи одно, над чем поработать.\nstars: 1 если средний < 2.5; 2 если 2.5-3.9; 3 если >= 4.0.\n${leniencyDirective}\nТОН — ЭТО КРИТИЧЕСКИ ВАЖНО:\n- Пиши "summary", "tip" и "errors" как тёплый живой наставник, говорящий с другом, НИКОГДА как технический анализатор. После обратной связи игрок должен чувствовать поддержку и желание продолжать, а не критику.\n- НИКОГДА не используй технические термины и единицы. Запрещено: dBFS, децибелы, дБ, клиппинг, перегруз, сигнал, амплитуда, частота и голые числа с единицами. Переводи каждую проблему на простой, тёплый язык. Например:\n  • слишком громко / перегруз → «твой голос звучит слишком громко и немного напряжённо — попробуй говорить чуть мягче»\n  • слишком тихо / почти не слышно → «тебя почти не слышно — говори увереннее и чуть громче»\n  • смазанность → «некоторые слова сливаются — открывай рот чуть шире, и они зазвучат чётко»\n  • спешка → «ты немного ускоряешься — дай словам пространство, не торопись»\n- "summary", "tip" и "errors" — ТОЛЬКО про подачу голосом (смазанность, спешка, монотонность, тихо, слова-паразиты), НИКОГДА про слова или содержание текста.\nВерни СТРОГО JSON: {"stars":<1|2|3>,"diction":<1-5>,"expressiveness":<1-5>,"voice":<1-5>,"confidence":<1-5>,"tempo":<1-5>,"pauses":<1-5>,"summary":"<одно тёплое предложение про подачу>","tip":"<один конкретный, добрый совет по подаче для самого слабого критерия>","errors":["<проблема подачи простыми, поддерживающими словами>", ...]}`;
 
-      const topicLabel = lang === "en" ? "Speech topic" : "Тема выступления";
-      const transcriptLabel = lang === "en" ? "Transcription" : "Транскрипция";
-      const fallbackSummary = lang === "en" ? "Good performance!" : "Хорошее выступление!";
+      const topicLabel = lang !== "ru" ? "Speech topic" : "Тема выступления";
+      const transcriptLabel = lang !== "ru" ? "Transcription" : "Транскрипция";
+      const fallbackSummary = L(lang, {
+        en: "Good performance!",
+        ru: "Хорошее выступление!",
+        kk: "Жақсы сөйледің!",
+      });
 
       const out = await chatComplete({
-        system: systemPrompt,
-        user: `${topicLabel}: "${title ?? (lang === "en" ? "public speech" : "публичное выступление")}"\n\n${signals}\n\n${transcriptLabel}:\n${transcript}`,
-        maxTokens: 400,
+        system: withLangDirective(lang, systemPrompt),
+        user: `${topicLabel}: "${title ?? (lang !== "ru" ? "public speech" : "публичное выступление")}"\n\n${signals}\n\n${transcriptLabel}:\n${transcript}`,
+        maxTokens: tokensFor(lang, 400),
         json: true,
       });
 
@@ -794,9 +889,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ---------------------------------------------------------------------
   app.post("/api/analyze-role", async (req: Request, res: Response) => {
     const lang = getLang(req.body);
-    const roleLabels = lang === "en"
-      ? { roleFit: "Role fit", emotion: "Emotion", clarity: "Diction", confidence: "Confidence", grammar: "Grammar" }
-      : { roleFit: "Соответствие роли", emotion: "Эмоции", clarity: "Чёткость произношения", confidence: "Уверенность", grammar: "Грамматика" };
+    const roleLabels = L(lang, {
+      en: { roleFit: "Role fit", emotion: "Emotion", clarity: "Diction", confidence: "Confidence", grammar: "Grammar" },
+      ru: { roleFit: "Соответствие роли", emotion: "Эмоции", clarity: "Чёткость произношения", confidence: "Уверенность", grammar: "Грамматика" },
+      kk: { roleFit: "Рөлге сәйкестік", emotion: "Эмоция", clarity: "Айтылу анықтығы", confidence: "Сенімділік", grammar: "Грамматика" },
+    });
 
     const {
       audioBase64,
@@ -846,8 +943,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           text: g.text,
           hit,
           note: hit
-            ? (lang === "en" ? "Nicely done." : "Получилось.")
-            : (lang === "en" ? "Didn't quite land this time." : "В этот раз не прозвучало."),
+            ? L(lang, { en: "Nicely done.", ru: "Получилось.", kk: "Жақсы шықты." })
+            : L(lang, { en: "Didn't quite land this time.", ru: "В этот раз не прозвучало.", kk: "Бұл жолы айтылмай қалды." }),
         };
       });
     };
@@ -875,12 +972,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const grammar = s(4, enough);
       const avg = (roleFit + emotion + clarity + confidence + grammar) / 5;
       const stars = avg >= 4.4 ? 3 : avg >= 3.2 ? 2 : 1;
-      const summary = lang === "en"
-        ? "Nice work stepping into the role! Keep leaning into the character — a bit more emotion and energy will make it shine."
-        : "Отличный заход в роль! Продолжай вживаться в персонажа — чуть больше эмоций и энергии, и будет блестяще.";
-      const tip = lang === "en"
-        ? "Try exaggerating the emotion a little more than feels natural — on camera it reads as just right."
-        : "Попробуй сыграть эмоцию чуть ярче, чем кажется естественным — на камере это смотрится как раз в меру.";
+      const summary = L(lang, {
+        en: "Nice work stepping into the role! Keep leaning into the character — a bit more emotion and energy will make it shine.",
+        ru: "Отличный заход в роль! Продолжай вживаться в персонажа — чуть больше эмоций и энергии, и будет блестяще.",
+        kk: "Рөлге керемет кірдің! Кейіпкерді сезінуді жалғастыр — сәл көбірек эмоция мен қуат қоссаң, керемет болады.",
+      });
+      const tip = L(lang, {
+        en: "Try exaggerating the emotion a little more than feels natural — on camera it reads as just right.",
+        ru: "Попробуй сыграть эмоцию чуть ярче, чем кажется естественным — на камере это смотрится как раз в меру.",
+        kk: "Эмоцияны өзіңе табиғи көрінгеннен сәл жарқынырақ ойнап көр — камерада бұл дәл өлшемінде көрінеді.",
+      });
       return {
         stars,
         transcript,
@@ -911,7 +1012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let transcript = "";
       try {
         const { buffer, format } = await ensureCompatibleFormat(rawBuffer);
-        transcript = await speechToText(buffer, format);
+        transcript = await speechToText(buffer, format, isLang(req.body?.lang) ? req.body.lang : undefined);
       } catch (e) {
         console.warn("analyze-role: transcription unavailable:", e);
       }
@@ -924,7 +1025,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         loudnessOk = loud.ok ? loud.meanVolumeDb >= -30 : true;
       } catch {}
 
-      const tokens = transcript.toLowerCase().split(/[^a-zа-яё0-9]+/i).filter(Boolean);
+      const tokens = transcript.toLowerCase().split(WORD_SPLIT_RE).filter(Boolean);
       const wordCount = tokens.length;
       const dur = typeof durationSeconds === "number" && durationSeconds > 0 ? durationSeconds : null;
       const wpm = dur && wordCount > 0 ? Math.round(wordCount / (dur / 60)) : null;
@@ -935,32 +1036,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const modeLabel = mode === "scripted"
-        ? (lang === "en" ? "reading a scripted line for the role" : "читает заготовленную реплику для роли")
-        : (lang === "en" ? "improvising in the role" : "импровизирует в роли");
+        ? (lang !== "ru" ? "reading a scripted line for the role" : "читает заготовленную реплику для роли")
+        : (lang !== "ru" ? "improvising in the role" : "импровизирует в роли");
 
-      const systemPrompt = lang === "en"
+      const systemPrompt = lang !== "ru"
         ? `You are a warm, playful acting coach helping someone train adaptability by performing life ROLES (a salesperson, a blogger, a barista, a showman...). The player is ${modeLabel}. Rate how well they INHABITED THE ROLE on 5 criteria, each 1-5:\n1. roleFit — did the delivery match the character & situation? Energy, vocabulary and attitude of the role.\n2. emotion — vividness and emotional colour of the voice; playing it flat scores low.\n3. clarity — articulation & intelligibility.\n4. confidence — steady, believable, no hesitation.\n5. grammar — correctness & fluency of speech (in improv judge phrasing; in scripted mode be lenient on wording).\nCalibration: 5 = a natural performer, 3 = decent, 1 = barely in character. Be honest but kind and fun.\nstars: 1 if average < 2.6; 2 if 2.6-3.9; 3 if >= 4.0.\nTONE: write "summary" and "tip" like an excited coach cheering a friend on — plain, warm language, no technical terms, no numbers/units. End the player feeling like a star who wants to play again.\nReturn ONLY JSON: {"roleFit":n,"emotion":n,"clarity":n,"confidence":n,"grammar":n,"stars":n,"summary":"...","tip":"..."}`
         : `Ты — тёплый, игривый тренер по актёрскому мастерству. Игрок тренирует адаптивность, играя жизненные РОЛИ (продажник, блогер, бариста, шоумен...). Игрок ${modeLabel}. Оцени, насколько он ВЖИЛСЯ В РОЛЬ, по 5 критериям, каждый 1-5:\n1. roleFit — Соответствие роли: попала ли подача в характер и ситуацию? Энергия, лексика и настрой роли.\n2. emotion — Эмоции: яркость и эмоциональная окраска голоса; плоская подача — низкий балл.\n3. clarity — Чёткость произношения: артикуляция и разборчивость.\n4. confidence — Уверенность: ровно, убедительно, без колебаний.\n5. grammar — Грамматика: правильность и плавность речи (в импровизации суди построение фраз; в режиме чтения будь снисходителен к формулировкам).\nКалибровка: 5 = прирождённый артист, 3 = неплохо, 1 = почти не в образе. Честно, но по-доброму и с азартом.\nstars: 1 если среднее < 2.6; 2 если 2.6-3.9; 3 если >= 4.0.\nТОН: пиши "summary" и "tip" как воодушевлённый тренер, который болеет за друга — простым тёплым языком, без технических терминов, без чисел и единиц. После фидбэка игрок должен чувствовать себя звездой и хотеть сыграть ещё.\nВерни ТОЛЬКО JSON: {"roleFit":n,"emotion":n,"clarity":n,"confidence":n,"grammar":n,"stars":n,"summary":"...","tip":"..."}`;
 
       // Scenario add-on: judge the DIALOGUE, not a monologue, and give per-goal verdicts.
       const scenarioRules = scenario && scenario.goals.length
-        ? (lang === "en"
+        ? (lang !== "ru"
           ? `\n\nThis was a TWO-SIDED scene: the other side's lines appeared on screen and the player answered them out loud (only the player's voice is in the transcript). Judge roleFit mostly by how well they HANDLED the conversation — answered questions and objections, kept the other side engaged, steered toward the goals. Also return "goals": an array with one item per goal {"id":"...","hit":true|false,"note":"one short friendly sentence"}. Be fair: a goal is hit if the player clearly attempted it in spirit, even with other words.\nReturn ONLY JSON: {"roleFit":n,"emotion":n,"clarity":n,"confidence":n,"grammar":n,"stars":n,"summary":"...","tip":"...","goals":[...]}`
           : `\n\nЭто была ДВУСТОРОННЯЯ сцена: реплики собеседника появлялись на экране, а игрок отвечал вслух (в расшифровке только голос игрока). Оценивай roleFit в первую очередь по тому, как он ВЁЛ РАЗГОВОР — отвечал на вопросы и возражения, удерживал собеседника, вёл к целям. Также верни "goals": массив, по одному элементу на цель {"id":"...","hit":true|false,"note":"одно короткое доброе предложение"}. Будь справедлив: цель достигнута, если игрок явно к ней стремился по смыслу, даже другими словами.\nВерни ТОЛЬКО JSON: {"roleFit":n,"emotion":n,"clarity":n,"confidence":n,"grammar":n,"stars":n,"summary":"...","tip":"...","goals":[...]}`)
         : "";
       const scenarioCtx = scenario && scenario.goals.length
-        ? (lang === "en"
+        ? (lang !== "ru"
           ? `\n\nCounterpart: ${scenario.persona || "-"}\nGoals:\n${scenario.goals.map((g: any) => `- [${g.id}] ${g.text}`).join("\n")}\nLines the other side said, in order (player's answer length in brackets):\n${scenario.dialogue.map((d: any) => `${d.who}: "${d.text}"${d.answer ? ` [${d.answer}]` : ""}`).join("\n")}\nScene reached its ending: ${scenario.outcome === "open" ? "no (stopped early)" : "yes"}.`
           : `\n\nСобеседник: ${scenario.persona || "-"}\nЦели:\n${scenario.goals.map((g: any) => `- [${g.id}] ${g.text}`).join("\n")}\nРеплики собеседника по порядку (в скобках — насколько развёрнуто ответил игрок: full/short/silent):\n${scenario.dialogue.map((d: any) => `${d.who}: "${d.text}"${d.answer ? ` [${d.answer}]` : ""}`).join("\n")}\nСцена дошла до финала: ${scenario.outcome === "open" ? "нет (остановлена раньше)" : "да"}.`)
         : "";
 
-      const roleCtx = lang === "en"
+      const roleCtx = lang !== "ru"
         ? `Role: "${roleTitle ?? "a life role"}"\nScene: ${roleScene ?? "-"}${mode === "scripted" && scriptedText ? `\nScript they read: "${scriptedText}"` : ""}\n\nWhat they actually said:\n${transcript}`
         : `Роль: "${roleTitle ?? "жизненная роль"}"\nСцена: ${roleScene ?? "-"}${mode === "scripted" && scriptedText ? `\nТекст, который читали: "${scriptedText}"` : ""}\n\nЧто игрок реально сказал:\n${transcript}`;
 
       let parsed: any = null;
       try {
-        const out = await chatComplete({ system: systemPrompt + scenarioRules, user: roleCtx + scenarioCtx, maxTokens: scenario ? 700 : 400, json: true });
+        const out = await chatComplete({
+          system: withLangDirective(lang, systemPrompt + scenarioRules),
+          user: roleCtx + scenarioCtx,
+          maxTokens: tokensFor(lang, scenario ? 700 : 400),
+          json: true,
+        });
         parsed = JSON.parse(out || "{}");
       } catch (e) {
         console.warn("analyze-role: AI scoring unavailable, using fallback:", e);
@@ -990,7 +1096,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transcript,
         feedback: typeof parsed.summary === "string" && parsed.summary.trim()
           ? parsed.summary
-          : (lang === "en" ? "Great job in the role!" : "Отличная работа в роли!"),
+          : L(lang, { en: "Great job in the role!", ru: "Отличная работа в роли!", kk: "Рөлді керемет ойнадың!" }),
         tip: typeof parsed.tip === "string" ? parsed.tip : undefined,
         metrics: { roleFit, emotion, clarity, confidence, grammar },
         categories: {
@@ -1011,7 +1117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/interview/daily-plan", (req: Request, res: Response) => {
-    const lang: Lang = req.query.lang === "en" ? "en" : "ru";
+    const lang: Lang = isLang(req.query.lang) ? req.query.lang : "ru";
     const { topics, dateKey } = getDailyTopics(lang);
     return res.json({ topics, dateKey, maxDaily: MAX_DAILY_INTERVIEWS });
   });
@@ -1067,15 +1173,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const rawBuffer = Buffer.from(audioBase64, "base64");
       const { buffer, format } = await ensureCompatibleFormat(rawBuffer);
-      const transcript = await speechToText(buffer, format);
+      const transcript = await speechToText(buffer, format, lang);
 
       if (!transcript || transcript.trim().length < 3) {
-        const emptyFeedback = lang === "en"
-          ? "Answer not recognized. Speak more clearly and closer to the microphone."
-          : "Ответ не распознан. Говорите чётче и ближе к микрофону.";
-        const emptyTransition = lang === "en"
-          ? "It seems you weren't heard. Shall we try again?"
-          : "Кажется, вас не было слышно. Попробуем ещё раз?";
+        const emptyFeedback = L(lang, {
+          en: "Answer not recognized. Speak more clearly and closer to the microphone.",
+          ru: "Ответ не распознан. Говорите чётче и ближе к микрофону.",
+          kk: "Жауап танылмады. Анығырақ әрі микрофонға жақынырақ сөйле.",
+        });
+        const emptyTransition = L(lang, {
+          en: "It seems you weren't heard. Shall we try again?",
+          ru: "Кажется, вас не было слышно. Попробуем ещё раз?",
+          kk: "Сені естімей қалдым білем. Тағы байқап көрейік пе?",
+        });
         return res.json({
           transcript: "", grammarScore: 0, dictionScore: 0,
           feedback: emptyFeedback,
@@ -1090,7 +1200,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await analyzeAnswer(session.currentQuestion, transcript, session.topic, lang);
 
       if (violated) {
-        const violationFeedback = lang === "en" ? "Platform rules violation." : "Нарушение правил платформы.";
+        const violationFeedback = L(lang, {
+          en: "Platform rules violation.",
+          ru: "Нарушение правил платформы.",
+          kk: "Платформа ережесі бұзылды.",
+        });
         return res.json({
           transcript, grammarScore: 0, dictionScore: 0,
           feedback: violationReason || violationFeedback,
@@ -1142,9 +1256,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (session.skipCount >= MAX_SKIPS) {
         const summary = await generateStructuredSummary(session);
-        const endMsg = lang === "en"
-          ? "It seems like it's hard to engage today - that's okay. Let's wrap up the interview here. You still did great for trying!"
-          : "Похоже, сегодня вам непросто включиться в диалог — это нормально. Давайте завершим интервью на этом этапе. Вы всё равно молодец, что попробовали!";
+        const endMsg = L(lang, {
+          en: "It seems like it's hard to engage today - that's okay. Let's wrap up the interview here. You still did great for trying!",
+          ru: "Похоже, сегодня вам непросто включиться в диалог — это нормально. Давайте завершим интервью на этом этапе. Вы всё равно молодец, что попробовали!",
+          kk: "Бүгін әңгімеге қосылу оңай болмай тұрған сияқты — бұл қалыпты жағдай. Сұхбатты осы жерде аяқтайық. Бәрібір байқап көргенің үшін жарайсың!",
+        });
         saveSessions();
         return res.json({
           nextQuestion: "", skipCount: session.skipCount, ended: true,

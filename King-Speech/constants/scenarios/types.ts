@@ -17,6 +17,7 @@
 export interface LocalizedText {
   ru: string;
   en: string;
+  kk?: string;
 }
 
 /** Which overlay family the stage renders. */
@@ -77,7 +78,7 @@ export interface ScenarioGoal {
    * Lower-case word STEMS that suggest the goal was attempted. Used for the
    * offline fallback scoring on the server (and documentation for the judge).
    */
-  keywords: { ru: string[]; en: string[] };
+  keywords: { ru: string[]; en: string[]; kk?: string[] };
 }
 
 export interface ScenarioPersona {
@@ -120,21 +121,20 @@ export interface RoleScenario {
 
 // --- compact authoring helpers ---------------------------------------------
 
-export const L = (ru: string, en: string): LocalizedText => ({ ru, en });
+export const L = (ru: string, en: string, kk?: string): LocalizedText => (kk ? { ru, en, kk } : { ru, en });
 
-/** beat(lineRu, lineEn, replyRu, replyEn, extra?) */
+/** beat(L(lineRu, lineEn, lineKk), L(replyRu, replyEn, replyKk), extra?) */
 export function beat(
-  lineRu: string,
-  lineEn: string,
-  replyRu: string,
-  replyEn: string,
+  line: LocalizedText,
+  reply: LocalizedText,
   extra: Partial<Omit<ScenarioBeat, "line" | "reply">> = {},
 ): ScenarioBeat {
-  return { line: L(lineRu, lineEn), reply: L(replyRu, replyEn), ...extra };
+  return { line, reply, ...extra };
 }
 
-export function goal(id: string, ru: string, en: string, kwRu: string[], kwEn: string[]): ScenarioGoal {
-  return { id, text: L(ru, en), keywords: { ru: kwRu, en: kwEn } };
+/** goal(id, L(ru, en, kk), kwRu, kwEn, kwKk?) */
+export function goal(id: string, text: LocalizedText, kwRu: string[], kwEn: string[], kwKk?: string[]): ScenarioGoal {
+  return { id, text, keywords: kwKk ? { ru: kwRu, en: kwEn, kk: kwKk } : { ru: kwRu, en: kwEn } };
 }
 
 /** A viewer / troll / cue speaker. */

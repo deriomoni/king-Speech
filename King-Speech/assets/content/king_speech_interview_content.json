@@ -12,6 +12,12 @@
       ["Tell us a little about yourself — what do you do and what do you enjoy in your free time?", "What does your usual day look like? What's the nicest part of it?", "What are you into? Tell us about a favorite hobby."],
       ["What's your favorite music genre? If you could only listen to one for life, which would it be?", "What's your favorite dish, and why that one?", "Tell us about a place where you always feel good."],
       ["If you had a free day just for yourself, how would you spend it?", "What lifts your mood on an ordinary day?", "What gift would you be happiest to receive?"]
+    ],
+    "theme_kk": "Танысу",
+    "q_kk": [
+      ["Өзің туралы аздап айтып берші — немен айналысасың, бос уақытыңда не істегенді ұнатасың?", "Күнің әдетте қалай өтеді? Оның ең жағымды сәті қайсы?", "Немен әуестенесің? Сүйікті ісің туралы айтып бер."],
+      ["Музыканың қай жанрын ұнатасың? Тек біреуін ғана тыңдауға болса — қайсысын таңдар едің?", "Сүйікті тағамың қандай және неге дәл сол?", "Әрқашан көңілің жайланатын бір жер туралы айтып бер."],
+      ["Тек өзіңе арналған бос күнің болса — оны қалай өткізер едің?", "Қарапайым күні көңіліңді не көтереді?", "Қандай сыйлық алсаң, ең қатты қуанар едің?"]
     ]
   },
   {
@@ -27,6 +33,12 @@
       ["Where do you like to be in silence — at home, in nature, somewhere else?", "Do you enjoy silence, or are you more comfortable with music and sounds around you?", "What time of day feels calmest to you?"],
       ["Tell us about something you enjoy doing on your own.", "What weather do you like most, and what mood does it bring?", "Is there a place you escape to from everyone — what is it like?"],
       ["What's better rest for you — a lively crowd or a quiet evening?", "Does a pause or a walk help you when you need to think?", "What do you love doing in complete silence?"]
+    ],
+    "theme_kk": "Үнсіздік те — сөздің бөлігі",
+    "q_kk": [
+      ["Тыныштықта қай жерде болғанды ұнатасың — үйде, табиғатта, әлде басқа жерде ме?", "Тыныштықты жақсы көресің бе, әлде айналаңда музыка мен дыбыс болғаны ыңғайлы ма?", "Күннің қай мезгілінде көңілің ең тыныш болады?"],
+      ["Өзіңмен-өзің оңаша болғанда ұнайтын бір іс туралы айтып бер.", "Қандай ауа райын бәрінен артық көресің және ол қандай көңіл-күй сыйлайды?", "Бәрінен қашып кеткің келетін бір жер бар ма — ол қандай?"],
+      ["Сен үшін ең жақсы демалыс қайсы — шулы орта ма, әлде тыныш кеш пе?", "Ойлану керек болғанда үзіліс не серуен көмектесе ме?", "Толық тыныштықта не істегенді жақсы көресің?"]
     ]
   },
   {
@@ -42,6 +54,12 @@
       ["Tell us about a film that recently impressed you.", "What book did you read last, and what impression did it leave?", "What's something you can talk about for a long time and with joy?"],
       ["If you became a teacher for one day — what subject would you teach and why?", "Explain your hobby in simple words to someone who knows nothing about it.", "What topic is always easy for you to explain to friends?"],
       ["What helps you get your point across clearly to others?", "What advice would you give someone who's shy about speaking?", "What does speaking honestly and to the point mean to you?"]
+    ],
+    "theme_kk": "Анықтық — шебердің сыпайылығы",
+    "q_kk": [
+      ["Жақында саған әсер еткен бір фильм туралы айтып бер.", "Соңғы оқыған кітабың қандай еді, ол қандай әсер қалдырды?", "Қандай тақырыпта ұзақ әрі рахаттанып әңгімелей аласың?"],
+      ["Бір күнге мұғалім болсаң — қай пәнді оқытар едің және неге?", "Өз хоббиіңді ол туралы ештеңе білмейтін адамға қарапайым сөзбен түсіндіріп көр.", "Достарыңа қай тақырыпты түсіндіру саған әрқашан оңай?"],
+      ["Ойыңды басқаларға түсінікті жеткізуге не көмектеседі?", "Сөйлеуге ұялатын адамға қандай кеңес берер едің?", "Сен үшін адал әрі нақты сөйлеу деген не?"]
     ]
   },
   {
@@ -57,6 +75,12 @@
       ["What words or compliment do you most enjoy hearing?", "Who knows how to support you with just a couple of words?", "What kind word once stayed with you for a long time?"],
       ["Tell us about a person whose words influenced you.", "What color do you think describes you, and why?", "What phrase do you often say to people close to you?"],
       ["What matters more in a conversation — what is said or how it's said?", "How do you usually support a friend when they're having a hard time?", "What words easily lift your mood?"]
+    ],
+    "theme_kk": "Сөз — жүрек кілті",
+    "q_kk": [
+      ["Қандай сөз не мақтау естігенді бәрінен артық ұнатасың?", "Кім сені бір-екі сөзбен-ақ қолдай алады?", "Бір кезде естіген қандай жылы сөз есіңде ұзақ сақталды?"],
+      ["Сөзі саған әсер еткен бір адам туралы айтып бер.", "Сенің ойыңша, қай түс сені сипаттайды және неге?", "Жақындарыңа жиі айтатын қандай сөзің бар?"],
+      ["Әңгімеде не маңыздырақ — не айтылғаны ма, әлде қалай айтылғаны ма?", "Досыңа қиын болғанда оны әдетте қалай қолдайсың?", "Қандай сөздер көңіліңді оп-оңай көтереді?"]
     ]
   },
   {
@@ -72,6 +96,12 @@
       ["What do you like to do on weekends?", "What have you long wanted to try — a sport, a hobby, a trip?", "What activity gives you the feeling the day wasn't wasted?"],
       ["What country or city would you love to visit, and why?", "Tell us about something you made with your own hands.", "What small step recently took you out of your comfort zone?"],
       ["What's easier for you — coming up with an idea or doing it?", "How do you usually start when you take on something new?", "What habit has genuinely improved your life?"]
+    ],
+    "theme_kk": "Іс сөзден күшті",
+    "q_kk": [
+      ["Демалыс күндері немен айналысқанды ұнатасың?", "Көптен бері нені байқап көргің келеді — спорт па, хобби ме, сапар ма?", "Қандай іс күнім босқа өтпеді деген сезім береді?"],
+      ["Қай елге не қалаға барғың келеді және неге?", "Өз қолыңмен жасаған бір нәрсең туралы айтып бер.", "Жақында қандай кішкентай қадам сені жайлы аймағыңнан шығарды?"],
+      ["Саған қайсысы оңай — ойлап табу ма, әлде жасау ма?", "Жаңа іске кіріскенде әдетте неден бастайсың?", "Қандай әдет өміріңді шынымен жақсартты?"]
     ]
   },
   {
@@ -87,6 +117,12 @@
       ["What's your favorite painting, photo, or view — and what do you like about it?", "What makes an ordinary day beautiful for you?", "What's the most beautiful place you've ever been to?"],
       ["Tell us about a moment that felt truly beautiful to you.", "What music feels beautiful to you?", "What do you find beautiful in people?"],
       ["Is beauty about looks or about something else?", "Where do you most often notice beauty around you?", "What would you show a guest to surprise them with your city's beauty?"]
+    ],
+    "theme_kk": "Сұлулық — көрушінің көзінде",
+    "q_kk": [
+      ["Сүйікті суретің, фотоң не көрінісің қандай — ол несімен ұнайды?", "Қарапайым күнді сен үшін не әдемі етеді?", "Барған жерлеріңнің ішінде қайсысы ең әдемі болып көрінеді?"],
+      ["Саған шынымен әдемі болып көрінген бір сәт туралы айтып бер.", "Қандай музыка саған әдемі болып естіледі?", "Адамдардағы нені әдемі деп санайсың?"],
+      ["Сұлулық — сыртқы келбет пе, әлде басқа бір нәрсе ме?", "Айналаңдағы сұлулықты көбіне қай жерден байқайсың?", "Қонағыңды қаланың сұлулығымен таң қалдыру үшін не көрсетер едің?"]
     ]
   },
   {
@@ -102,6 +138,12 @@
       ["What can you praise yourself for lately?", "What comes easily to you, as if on its own?", "Which of your qualities do you value most?"],
       ["If you became someone else for a day — who and why?", "Tell us about a moment you were proud of yourself.", "Who believes in you, and how does it help you?"],
       ["What helps you believe in yourself before something important?", "What would you say to yourself in a hard moment?", "What strength of yours surprises other people?"]
+    ],
+    "theme_kk": "Өзіңе сену",
+    "q_kk": [
+      ["Соңғы кезде өзіңді не үшін мақтай аласың?", "Саған не оңай, өз-өзінен болып кететіндей келеді?", "Өзіңдегі қай қасиетті бәрінен жоғары бағалайсың?"],
+      ["Бір күнге басқа адам болсаң — кім болар едің және неге?", "Өзіңді мақтан тұтқан бір сәтің туралы айтып бер.", "Саған кім сенеді және бұл саған қалай көмектеседі?"],
+      ["Маңызды бір істің алдында өзіңе сенуге не көмектеседі?", "Қиын сәтте өзіңе не айтар едің?", "Сенің қай мықты жағың басқаларды таң қалдырады?"]
     ]
   },
   {
@@ -117,6 +159,12 @@
       ["What quote or phrase inspires you?", "Favorite blogger, host, or storyteller — what hooks you?", "What story do you love retelling to friends?"],
       ["Tell us about words that once supported you.", "Whose speech or talk stayed with you?", "What expression do you use a lot?"],
       ["Can words change moods and decisions — how is it for you?", "What would you like to be better at saying?", "What compliment would you give a loved one right now?"]
+    ],
+    "theme_kk": "Сөздің күші",
+    "q_kk": [
+      ["Қандай дәйексөз не сөз тіркесі саған шабыт береді?", "Сүйікті блогерің, жүргізушің не әңгімешің кім — несімен баурайды?", "Достарыңа қайта-қайта айтып беретін қандай оқиғаң бар?"],
+      ["Бір кезде сені қолдаған сөздер туралы айтып бер.", "Кімнің сөзі не сөз сөйлеуі есіңде қалды?", "Қандай сөз тіркесін жиі қолданасың?"],
+      ["Сөз көңіл-күй мен шешімді өзгерте ала ма — сенде қалай?", "Нені жақсырақ айта білгің келеді?", "Дәл қазір жақын адамыңа қандай мақтау сөз айтар едің?"]
     ]
   },
   {
@@ -132,6 +180,12 @@
       ["Tell us about a funny moment you remember with a smile.", "What has your favorite hobby taught you?", "What small setback later turned into something good?"],
       ["What would you advise yourself at the start of some new task?", "Tell us how you once learned something by trial and error.", "What lesson did you take from an everyday situation?"],
       ["How do you usually treat your own mistakes?", "What helps you not give up after a miss?", "What would you say to a friend who's afraid of making mistakes?"]
+    ],
+    "theme_kk": "Қателік — жеңіліс емес",
+    "q_kk": [
+      ["Күлімсіреп еске алатын бір күлкілі оқиға туралы айтып бер.", "Сүйікті хоббиің саған не үйретті?", "Қандай кішкентай сәтсіздік кейін жақсылыққа айналды?"],
+      ["Бір істің басында өзіңе қандай кеңес берер едің?", "Бір нәрсені байқап-сынап жүріп қалай үйренгеніңді айтып бер.", "Күнделікті өмірдегі бір жағдайдан қандай сабақ алдың?"],
+      ["Өз қателіктеріңе әдетте қалай қарайсың?", "Қателескен соң берілмеуге не көмектеседі?", "Қателесуден қорқатын досыңа не айтар едің?"]
     ]
   },
   {
@@ -147,6 +201,12 @@
       ["What pleasantly excites you before something new?", "What small achievement made you happy?", "What did you do even though you were a little scared at first?"],
       ["What dream do you think about most often?", "Tell us about a moment when the nerves were worth it.", "What would you try if you weren't afraid at all?"],
       ["How do you handle mild nervousness?", "What matters more to you — comfort or an exciting risk?", "What helps you take the first step?"]
+    ],
+    "theme_kk": "Қорықсаң — демек маңызды",
+    "q_kk": [
+      ["Жаңа бір істің алдында сені не жағымды толқытады?", "Қандай кішкентай жетістігің сені қуантты?", "Басында сәл қорықсаң да, нені жасадың?"],
+      ["Қай арманың туралы жиі ойлайсың?", "Толқуың босқа болмаған бір сәт туралы айтып бер.", "Мүлдем қорықпасаң, нені байқап көрер едің?"],
+      ["Аздаған толқуды қалай жеңесің?", "Сен үшін не маңыздырақ — жайлылық па, әлде қызықты тәуекел ме?", "Алғашқы қадам жасауға не көмектеседі?"]
     ]
   },
   {
@@ -162,6 +222,12 @@
       ["What's a great day for you?", "What recent experience charged you with energy?", "What do you like to do to feel life more vividly?"],
       ["Tell us about a small joy that makes your day better.", "What trip or adventure stayed with you?", "What's on your 'want to try someday' list?"],
       ["What does living life fully mean to you?", "What would you give more time to if you had more of it?", "What would you do this very weekend just for fun?"]
+    ],
+    "theme_kk": "Өмірді толық сүру",
+    "q_kk": [
+      ["Сен үшін керемет өткен күн деген қандай?", "Жақында қандай әсер саған қуат берді?", "Өмірді жарқынырақ сезіну үшін не істегенді ұнатасың?"],
+      ["Күнді жақсартатын бір кішкентай қуаныш туралы айтып бер.", "Қандай саяхат не шытырман оқиға есіңде қалды?", "«Бір күні байқап көргім келеді» тізіміңде не бар?"],
+      ["Сен үшін өмірді толық сүру деген не?", "Уақытың көбірек болса, неге көбірек көңіл бөлер едің?", "Дәл осы демалыс күндері көңіл үшін не істер едің?"]
     ]
   },
   {
@@ -177,6 +243,12 @@
       ["Who among people inspires you, and why?", "What small kind act recently made you happy?", "What good could you do for your loved ones today?"],
       ["Tell us about someone who changed something around them.", "If you could improve one thing in your city — what would it be?", "What cause would you like to support?"],
       ["Can one person change anything — what do you think?", "Where do big changes start, in your view?", "What mark would you like to leave around you?"]
+    ],
+    "theme_kk": "Әлемді кім өзгерте алады",
+    "q_kk": [
+      ["Қай адам саған шабыт береді және неге?", "Жақында қандай кішкентай жақсылық сені қуантты?", "Жақындарың үшін бүгін-ақ қандай жақсылық жасай аласың?"],
+      ["Айналасындағы бір нәрсені өзгерткен адам туралы айтып бер.", "Қалаңдағы бір нәрсені жақсарта алсаң — ол не болар еді?", "Қандай істі қолдағың келеді?"],
+      ["Бір адам бір нәрсені өзгерте ала ма — қалай ойлайсың?", "Сенің ойыңша, үлкен өзгерістер неден басталады?", "Айналаңда қандай із қалдырғың келеді?"]
     ]
   },
   {
@@ -192,6 +264,12 @@
       ["What's a good result in your favorite activity for you?", "What small step of yours are you happy with lately?", "What do you enjoy doing even without a reward?"],
       ["Tell us how you achieved something step by step.", "What goal interests you right now?", "What helps you move toward what you planned?"],
       ["What does success mean to you — in your own words?", "What matters more — the result or the process itself?", "How do you know a day went well?"]
+    ],
+    "theme_kk": "Табыс — бұл жол",
+    "q_kk": [
+      ["Сүйікті ісіңде сен үшін жақсы нәтиже деген не?", "Соңғы кезде қай кішкентай қадамыңа ризасың?", "Сыйақысыз-ақ немен рахаттанып айналысасың?"],
+      ["Бір нәрсеге біртіндеп қалай жеткеніңді айтып бер.", "Қазір саған қандай мақсат қызық?", "Ойлағаныңа қарай жылжуға не көмектеседі?"],
+      ["Табыс сен үшін не — өз сөзіңмен айтшы?", "Не маңыздырақ — нәтиже ме, әлде процестің өзі ме?", "Күннің сәтті өткенін қалай түсінесің?"]
     ]
   },
   {
@@ -207,6 +285,12 @@
       ["What do you like to do right now, without postponing?", "What spontaneous decision turned out well?", "What usually helps you finally get started?"],
       ["Tell us about a time you went for it without waiting for the perfect moment.", "What have you been putting off but would like to try?", "What day became special even though it was ordinary?"],
       ["Do you plan more or act as things come?", "What's 'the right moment' for you?", "What would you start if you decided not to wait?"]
+    ],
+    "theme_kk": "Мінсіз сәт болмайды",
+    "q_kk": [
+      ["Кейінге қалдырмай, дәл қазір не істегенді ұнатасың?", "Қандай кенеттен қабылдаған шешімің сәтті болып шықты?", "Ақыры бастап кетуге әдетте не көмектеседі?"],
+      ["Мінсіз сәтті күтпей-ақ батылдық танытқан бір жағдай туралы айтып бер.", "Көптен бері кейінге қалдырып жүрген, бірақ байқап көргің келетін не бар?", "Қарапайым болса да, ерекше болып қалған қай күн?"],
+      ["Сен көбірек жоспарлайсың ба, әлде жағдайға қарай әрекет етесің бе?", "Сен үшін «қолайлы сәт» деген не?", "Күтпеуге шешім қабылдасаң, нені бастар едің?"]
     ]
   },
   {
@@ -222,6 +306,12 @@
       ["Tea or coffee, morning or evening — tell us about your little preferences.", "What recent choice made your day better?", "What do you choose when you want to relax?"],
       ["Tell us about a choice you're happy with.", "How do you usually choose what to watch or read?", "What decision came easily and turned out right?"],
       ["What helps you make choices?", "Do you listen more to logic or intuition?", "What does the right to choose your own way mean to you?"]
+    ],
+    "theme_kk": "Таңдау күші",
+    "q_kk": [
+      ["Шай ма, кофе ме, таң ба, кеш пе — кішкентай қалауларың туралы айтып бер.", "Жақында қандай таңдауың күніңді жақсартты?", "Демалғың келгенде нені таңдайсың?"],
+      ["Өзің риза болған бір таңдау туралы айтып бер.", "Не көруді не оқуды әдетте қалай таңдайсың?", "Қандай шешім оңай қабылданып, дұрыс болып шықты?"],
+      ["Таңдау жасауға не көмектеседі?", "Көбірек логикаға құлақ асасың ба, әлде түйсікке ме?", "Сен үшін өз таңдауыңды жасау құқығы деген не?"]
     ]
   },
   {
@@ -237,6 +327,12 @@
       ["What made you happy today, even a small thing?", "What everyday thing lifts your mood?", "How do you like to start your morning?"],
       ["Tell us about a little ritual that makes your day nicer.", "What smell, taste, or sound brings you joy?", "What recent moment made you smile?"],
       ["Where do you most often find joy in ordinary life?", "What's an ideal calm evening for you?", "How do you like to treat yourself?"]
+    ],
+    "theme_kk": "Әр күннің қуанышы",
+    "q_kk": [
+      ["Бүгін сені не қуантты, тіпті ұсақ нәрсе болса да?", "Қандай үйреншікті нәрсе көңіліңді көтереді?", "Таңды неден бастағанды ұнатасың?"],
+      ["Күнді жағымдырақ ететін бір кішкентай рәсімің туралы айтып бер.", "Қандай иіс, дәм не дыбыс саған қуаныш сыйлайды?", "Жақында қандай сәт сені күлімсіретті?"],
+      ["Қарапайым өмірде қуанышты көбіне қайдан табасың?", "Сен үшін мінсіз тыныш кеш қандай?", "Өзіңді немен еркелеткенді ұнатасың?"]
     ]
   },
   {
@@ -252,6 +348,12 @@
       ["What social media or blogs do you enjoy, and who do you happily follow?", "What content lifts your mood in your feed?", "What do you watch more — videos, photos, or texts?"],
       ["Tell us about a post or clip that recently caught you.", "What author or topic do you enjoy following?", "What would you happily film or post yourself?"],
       ["Does social media help you more or distract you?", "How do you choose who to follow?", "What would you advise people who get too glued to their phones?"]
+    ],
+    "theme_kk": "Әлеуметтік желілер",
+    "q_kk": [
+      ["Қандай әлеуметтік желілер не блогтарды ұнатасың, кімге қуана жазыласың?", "Лентадағы қандай контент көңіліңді көтереді?", "Көбіне не көресің — видео ма, фото ма, әлде мәтін бе?"],
+      ["Жақында сені баурап алған бір пост не ролик туралы айтып бер.", "Қай автордың не тақырыптың соңынан ерген саған қызық?", "Өзің не түсіріп не жариялағың келер еді?"],
+      ["Әлеуметтік желілер саған көбірек көмектесе ме, әлде алаңдата ма?", "Кімге жазылатыныңды қалай таңдайсың?", "Телефонға тым көп үңілетіндерге не кеңес берер едің?"]
     ]
   },
   {
@@ -267,6 +369,12 @@
       ["What would you definitely like to try at least once in life?", "What moment are you glad you didn't miss?", "What did you recently do 'while there's a chance'?"],
       ["Tell us about a time you took a chance.", "What offer or invitation made you happy?", "What would you do if you knew it would definitely work out?"],
       ["Do you grab the moment more often, or prefer to think it over?", "What helps you decide when a chance is near?", "What opportunity wouldn't you want to miss this year?"]
+    ],
+    "theme_kk": "Бір мүмкіндік",
+    "q_kk": [
+      ["Өмірде кем дегенде бір рет нені міндетті түрде байқап көргің келеді?", "Қай сәтті жіберіп алмағаныңа қуаныштысың?", "Жақында «мүмкіндік барда» деп не істедің?"],
+      ["Мүмкіндікті пайдаланған бір жағдай туралы айтып бер.", "Қандай ұсыныс не шақыру сені қуантты?", "Міндетті түрде шығатынын білсең, не істер едің?"],
+      ["Сәтті бірден ұстайсың ба, әлде ойланғанды жөн көресің бе?", "Мүмкіндік жақын тұрғанда батылдық танытуға не көмектеседі?", "Биыл қандай мүмкіндікті жіберіп алғың келмейді?"]
     ]
   },
   {
@@ -282,6 +390,12 @@
       ["What recently made you curious to learn more?", "What question do you like to ask new acquaintances?", "What can you ask about for hours?"],
       ["Tell us about a question that made you think.", "What have you always wanted to find out but never got to?", "What answer once pleasantly surprised you?"],
       ["What helps you understand a person better — listening or asking?", "What question would you ask any interesting person?", "What would you find interesting to be asked yourself?"]
+    ],
+    "theme_kk": "Сұрақтың күші",
+    "q_kk": [
+      ["Жақында нені білгің келіп қызықтың?", "Жаңа таныстарыңа қандай сұрақ қойғанды ұнатасың?", "Не туралы сағаттап сұрай бере аласың?"],
+      ["Сені ойландырған бір сұрақ туралы айтып бер.", "Әрқашан білгің келген, бірақ үлгермеген не бар?", "Қандай жауап сені бір кезде жағымды таң қалдырды?"],
+      ["Адамды түсінуге не көбірек көмектеседі — тыңдау ма, әлде сұрау ма?", "Кез келген қызықты адамға қандай сұрақ қояр едің?", "Өзіңнен қандай сұрақ сұрағанын қалар едің?"]
     ]
   },
   {
@@ -297,6 +411,12 @@
       ["Tell us about a friend you always feel at ease with.", "Who among your loved ones lifts your mood most often?", "Who do you like to spend your free time with?"],
       ["Tell us about a nice tradition with friends or family.", "Who taught you something useful?", "What are you grateful to your loved ones for?"],
       ["What kind of people give you energy?", "What does good company mean to you?", "How do you keep in touch with those who matter to you?"]
+    ],
+    "theme_kk": "Менің ортам",
+    "q_kk": [
+      ["Әрқашан жеңіл сезінетін досың туралы айтып бер.", "Жақындарыңның ішінде кім көңіліңді жиі көтереді?", "Бос уақытыңды кіммен өткізгенді ұнатасың?"],
+      ["Достарыңмен не отбасыңмен бір жағымды дәстүр туралы айтып бер.", "Саған кім пайдалы бір нәрсе үйретті?", "Жақындарыңа не үшін ризасың?"],
+      ["Қандай адамдар саған қуат береді?", "Сен үшін жақсы орта деген не?", "Өзіңе қымбат адамдармен байланысты қалай сақтайсың?"]
     ]
   },
   {
@@ -312,6 +432,12 @@
       ["How do you like to spend your free time?", "What will you always find time for, no matter what?", "What does your ideal day off look like?"],
       ["Tell us how you rest and recharge.", "What activity is definitely not a waste of time for you?", "What did you recently get done that you're happy with?"],
       ["Do you plan your time more or live by your mood?", "What would you like to give more time to?", "What does spending time well mean to you?"]
+    ],
+    "theme_kk": "Уақыт — біздің байлығымыз",
+    "q_kk": [
+      ["Бос уақытыңды қалай өткізгенді ұнатасың?", "Не болса да, неге әрқашан уақыт табылады?", "Мінсіз демалыс күнің қандай?"],
+      ["Қалай демалып, күш жинайтыныңды айтып бер.", "Қандай іс сен үшін уақытты босқа өткізу емес?", "Жақында нені үлгеріп, оған ризасың?"],
+      ["Уақытыңды көбірек жоспарлайсың ба, әлде көңіл-күйге қарай өмір сүресің бе?", "Неге көбірек уақыт бөлгің келеді?", "Сен үшін уақытты пайдалы өткізу деген не?"]
     ]
   },
   {
@@ -327,6 +453,12 @@
       ["What are you slowly learning right now?", "What small progress made you happy recently?", "What do you do regularly, even if a little at a time?"],
       ["Tell us how you mastered something step by step.", "What habit formed gradually for you?", "What are you better at now than before?"],
       ["What matters more to you — moving fast or steadily?", "How do you keep from quitting what you started?", "What helps you continue when there's no quick result?"]
+    ],
+    "theme_kk": "Жылдамдықтан гөрі қозғалыс маңызды",
+    "q_kk": [
+      ["Дәл қазір асықпай нені үйреніп жүрсің?", "Жақында қандай кішкентай ілгерілеу сені қуантты?", "Азын-аулақ болса да, нені тұрақты түрде істейсің?"],
+      ["Бір нәрсені қадам-қадаммен қалай меңгергеніңді айтып бер.", "Қандай әдет саған біртіндеп келді?", "Не бұрынғыдан жақсырақ шыға бастады?"],
+      ["Сен үшін не маңыздырақ — жылдам жылжу ма, әлде бірқалыпты жылжу ма?", "Бастаған ісіңді тастап кетпеу үшін не істейсің?", "Жылдам нәтиже көрінбегенде жалғастыруға не көмектеседі?"]
     ]
   },
   {
@@ -342,6 +474,12 @@
       ["Tell us about a small kind act — yours or someone else's.", "Who has been kind to you recently?", "What touches you in other people?"],
       ["Tell us how a stranger once helped you.", "How do you like to make your loved ones happy?", "What kind gesture stayed with you for a long time?"],
       ["Is it easy to be kind every day — how is it for you?", "What does real care mean to you?", "How does kindness help in communication, in your view?"]
+    ],
+    "theme_kk": "Мейірімділік — күш",
+    "q_kk": [
+      ["Бір кішкентай жақсылық туралы айтып бер — өзіңнің не біреудің.", "Жақында саған кім мейірім көрсетті?", "Басқа адамдардағы не сені тебірентеді?"],
+      ["Бейтаныс адамның саған бір кезде қалай көмектескенін айтып бер.", "Жақындарыңды немен қуантқанды ұнатасың?", "Қандай мейірімді әрекет есіңде ұзақ қалды?"],
+      ["Күн сайын мейірімді болу оңай ма — сенде қалай?", "Сен үшін нағыз қамқорлық деген не?", "Сенің ойыңша, мейірімділік қарым-қатынасқа қалай көмектеседі?"]
     ]
   },
   {
@@ -357,6 +495,12 @@
       ["What useful habit have you already settled into?", "How do you usually start a productive day?", "What helps you get going when you feel lazy?"],
       ["Tell us how you saw some task through to the end.", "What routine suits you best?", "What do you do to avoid getting distracted?"],
       ["Are you strict or gentle with yourself — and what works better?", "What does keeping a promise to yourself mean to you?", "What small routine genuinely changed your day?"]
+    ],
+    "theme_kk": "Өзін-өзі тәртіптеу",
+    "q_kk": [
+      ["Қандай пайдалы әдетің әбден орнықты?", "Өнімді күнді әдетте неден бастайсың?", "Ерінгенде өзіңді жинауға не көмектеседі?"],
+      ["Бір істі аяғына дейін қалай жеткізгеніңді айтып бер.", "Қандай күн тәртібі саған бәрінен жақсы келеді?", "Алаңдамау үшін не істейсің?"],
+      ["Өзіңе қатаңсың ба, әлде жұмсақсың ба — қайсысы жақсы нәтиже береді?", "Сен үшін өзіңе берген уәдеңде тұру деген не?", "Қандай кішкентай тәртіп күніңді шынымен өзгертті?"]
     ]
   },
   {
@@ -372,6 +516,12 @@
       ["What music, film, or book do you really love?", "What piece of art recently moved you?", "What do you like to do for the soul?"],
       ["Tell us about a work that touched your heart.", "Do you create something yourself — draw, sing, write, cook?", "What kind of art inspires you?"],
       ["Why do people need art — what do you think?", "What matters more in art for you — beauty or meaning?", "What art form would you like to learn?"]
+    ],
+    "theme_kk": "Өнердің рөлі",
+    "q_kk": [
+      ["Қандай музыка, фильм не кітап саған шынымен ұнайды?", "Өнердің қай туындысы жақында сені тебірентті?", "Жаның үшін немен айналысқанды ұнатасың?"],
+      ["Жаныңа жақын болған бір туынды туралы айтып бер.", "Өзің бірдеңе жасайсың ба — сурет саласың ба, ән айтасың ба, жазасың ба, тамақ дайындайсың ба?", "Қандай шығармашылық саған шабыт береді?"],
+      ["Адамдарға өнер не үшін керек — қалай ойлайсың?", "Өнерде сен үшін не маңыздырақ — сұлулық па, әлде мағына ма?", "Өнердің қай түрін меңгергің келер еді?"]
     ]
   },
   {
@@ -387,6 +537,12 @@
       ["Is it easier for you to say it as it is, or stay quiet?", "Who do you trust the most?", "What does being honest with loved ones mean to you?"],
       ["Tell us about a time when honesty was the right choice.", "When were you glad someone spoke to you directly?", "What honest conversation stayed with you?"],
       ["What matters more in friendship — honesty or convenience?", "Is it easy for you to tell the truth kindly?", "How do you tell that a person can be trusted?"]
+    ],
+    "theme_kk": "Адалдық па, пайда ма",
+    "q_kk": [
+      ["Саған қайсысы оңай — барын айту ма, әлде үндемей қалу ма?", "Кімге бәрінен көп сенесің?", "Сен үшін жақындарыңа адал болу деген не?"],
+      ["Адалдық дұрыс таңдау болып шыққан бір жағдай туралы айтып бер.", "Саған тура сөйлегені қашан ұнады?", "Қандай ашық әңгіме есіңде қалды?"],
+      ["Достықта не маңыздырақ — адалдық па, әлде ыңғайлылық па?", "Шындықты жылы сөзбен айту саған оңай ма?", "Адамға сенуге болатынын қалай түсінесің?"]
     ]
   },
   {
@@ -402,6 +558,12 @@
       ["How do you like to rest so you really recover?", "What helps you spend time in your own space?", "When is it important for you to be alone?"],
       ["Tell us how you find balance between tasks and rest.", "What do you do when you're tired of the rush?", "What personal rule helps you protect your energy?"],
       ["Is it easy for you to say 'no' when needed?", "What does respecting someone else's space mean to you?", "How do you know it's time to rest?"]
+    ],
+    "theme_kk": "Жеке шекаралар",
+    "q_kk": [
+      ["Күш жинау үшін қалай демалғанды ұнатасың?", "Өз кеңістігіңде болуға не көмектеседі?", "Жалғыз қалу саған қашан маңызды?"],
+      ["Іс пен демалыстың арасындағы тепе-теңдікті қалай табатыныңды айтып бер.", "Әбігерден шаршағанда не істейсің?", "Күшіңді сақтауға қандай жеке ережең көмектеседі?"],
+      ["Керек кезде «жоқ» деу саған оңай ма?", "Сен үшін өзгенің кеңістігін құрметтеу деген не?", "Демалатын уақыт келгенін қалай түсінесің?"]
     ]
   },
   {
@@ -417,6 +579,12 @@
       ["What or who can easily make you laugh?", "What made you smile today?", "What comedy or meme lifts your mood?"],
       ["Tell us about a funny moment you remember with a smile.", "Which friend knows how to cheer you up?", "What story always makes you laugh?"],
       ["Does a smile help in communication — how is it for you?", "What do you do to lift the mood for yourself and others?", "What's worth smiling at more often, in your view?"]
+    ],
+    "theme_kk": "Күлкінің күші",
+    "q_kk": [
+      ["Сені не немесе кім оңай күлдіре алады?", "Бүгін сені не күлімсіретті?", "Қандай комедия не мем көңіліңді көтереді?"],
+      ["Күлімсіреп еске алатын бір күлкілі сәт туралы айтып бер.", "Достарыңның ішінде кім сені көңілдендіре алады?", "Қай оқиға сені әрқашан күлдіреді?"],
+      ["Күлкі қарым-қатынасқа көмектесе ме — сенде қалай?", "Өзіңнің де, өзгелердің де көңілін көтеру үшін не істейсің?", "Сенің ойыңша, неге жиірек күлімсіреу керек?"]
     ]
   },
   {
@@ -432,6 +600,12 @@
       ["Who is always interesting for you to listen to?", "What story from a friend stayed with you recently?", "What can you listen to for a long time with interest?"],
       ["Tell us about a conversation you enjoyed having.", "Who knows how to really hear you out?", "What advice did you once truly take to heart?"],
       ["What matters more in communication — talking or listening?", "How do you show a person that they're interesting?", "What helps you be a good conversation partner?"]
+    ],
+    "theme_kk": "Тыңдай білу",
+    "q_kk": [
+      ["Кімді тыңдау саған әрқашан қызық?", "Жақында досыңның қай әңгімесі есіңде қалды?", "Не туралы ұзақ әрі қызыға тыңдай аласың?"],
+      ["Сөйлесу саған ұнаған бір әңгіме туралы айтып бер.", "Сені кім тыңдай біледі?", "Қандай кеңесті бір кезде шын жүрекпен естідің?"],
+      ["Қарым-қатынаста не маңыздырақ — сөйлеу ме, әлде тыңдау ма?", "Адамға қызығып тұрғаныңды қалай көрсетесің?", "Жақсы әңгімелесуші болуға не көмектеседі?"]
     ]
   },
   {
@@ -447,6 +621,12 @@
       ["What character trait do you like in yourself?", "What in childhood shaped who you are now?", "What did your favorite game or activity teach you?"],
       ["Tell us about a person from whom you picked up something good.", "What event taught you something?", "What do you value most in people?"],
       ["Is character given or built — what do you think?", "What helps you become better?", "What trait of yours would you like to develop?"]
+    ],
+    "theme_kk": "Мінез қалай қалыптасады",
+    "q_kk": [
+      ["Өзіңдегі қай мінез-құлық саған ұнайды?", "Балалық шақтағы не сенің қазіргі болмысыңа әсер етті?", "Сүйікті ойының не ісің саған не үйретті?"],
+      ["Бір жақсы қасиетін өзіңе үйренген адам туралы айтып бер.", "Қандай жағдай саған бір нәрсе үйретті?", "Адамдардағы нені бәрінен жоғары бағалайсың?"],
+      ["Мінез туа біте ме, әлде қалыптаса ма — қалай ойлайсың?", "Жақсырақ болуға не көмектеседі?", "Өзіңдегі қай қасиетті дамытқың келеді?"]
     ]
   },
   {
@@ -462,6 +642,12 @@
       ["What do you respect in the people around you?", "Who earns your sincere respect, and why?", "What does respectful treatment mean to you?"],
       ["Tell us about a person you admire.", "When did it feel good to be respected?", "What act by another person impressed you?"],
       ["How do you earn respect, in your view?", "What matters more — respect or popularity?", "How do you show respect in communication?"]
+    ],
+    "theme_kk": "Құрмет",
+    "q_kk": [
+      ["Айналаңдағы адамдарды не үшін құрметтейсің?", "Кім сенде шынайы құрмет тудырады және неге?", "Сен үшін құрметпен қарау деген не?"],
+      ["Өзің тамсанатын адам туралы айтып бер.", "Өзіңе деген құрметті сезіну саған қашан жағымды болды?", "Басқа адамның қандай әрекеті саған әсер етті?"],
+      ["Сенің ойыңша, құрметке қалай лайық болуға болады?", "Не маңыздырақ — құрмет пе, әлде танымалдық па?", "Қарым-қатынаста құрметіңді қалай көрсетесің?"]
     ]
   },
   {
@@ -477,6 +663,12 @@
       ["On what topic do you feel confident and can speak easily?", "When are you most comfortable presenting or telling a story?", "What can you talk about with no preparation?"],
       ["Tell us about a moment when you spoke or answered confidently.", "Who speaks in a way you could listen to all day?", "What helps you gather yourself before an important talk?"],
       ["What does speaking confidently mean to you?", "Where does confidence in speech come from, in your view?", "What advice would you give someone nervous about presenting?"]
+    ],
+    "theme_kk": "Сенімді сөйлеу",
+    "q_kk": [
+      ["Қай тақырыпта өзіңді сенімді сезініп, еркін сөйлей аласың?", "Сөз сөйлеу не әңгімелеу саған қашан бәрінен ыңғайлы?", "Не туралы дайындықсыз айтып бере аласың?"],
+      ["Сенімді сөйлеген не жауап берген бір сәтің туралы айтып бер.", "Кім ұйып тыңдайтындай етіп сөйлей біледі?", "Маңызды әңгіменің алдында өзіңді жинауға не көмектеседі?"],
+      ["Сен үшін сенімді сөйлеу деген не?", "Сенің ойыңша, сөздегі сенімділік қайдан келеді?", "Сөз сөйлеуге толқитын адамға қандай кеңес бересің?"]
     ]
   },
   {
@@ -492,6 +684,12 @@
       ["What did you do for a long time until it finally worked?", "What did you not give up on, even though it was hard?", "What helps you keep going when you want to stop?"],
       ["Tell us how you reached a goal despite difficulties.", "Who supported you when it was tough?", "What small success came to you through persistence?"],
       ["Where do you get the strength not to give up?", "What matters more — talent or persistence?", "What would you say to someone who wants to quit everything?"]
+    ],
+    "theme_kk": "Берілмеу",
+    "q_kk": [
+      ["Нені ұзақ істеп, ақыры шығардың?", "Оңай болмаса да, қай істі тастамадың?", "Тоқтағың келгенде жалғастыруға не көмектеседі?"],
+      ["Қиындықтарға қарамастан мақсатыңа қалай жеткеніңді айтып бер.", "Қиын кезде сені кім қолдады?", "Қандай кішкентай табысқа табандылықпен жеттің?"],
+      ["Берілмеуге күшті қайдан аласың?", "Не маңыздырақ — дарын ба, әлде табандылық па?", "Бәрін тастағысы келетін адамға не айтар едің?"]
     ]
   },
   {
@@ -507,6 +705,12 @@
       ["What decision made your life better?", "What good thing started from one step of yours?", "What choice did you make and never regretted?"],
       ["Tell us about a decision that changed a lot for you.", "What advice once nudged you toward change?", "How did your new hobby begin?"],
       ["Do you decide slowly or quickly?", "What helps you make important decisions?", "What decision are you thinking over right now?"]
+    ],
+    "theme_kk": "Бір шешім бәрін өзгертеді",
+    "q_kk": [
+      ["Қандай шешім өміріңді жақсартты?", "Сенің бір қадамыңнан қандай жақсылық басталды?", "Қандай таңдау жасап, бір рет те өкінбедің?"],
+      ["Сен үшін көп нәрсені өзгерткен бір шешім туралы айтып бер.", "Қандай кеңес бір кезде сені өзгеріске итермеледі?", "Жаңа әуестігің неден басталды?"],
+      ["Шешімді ұзақ қабылдайсың ба, әлде тез бе?", "Маңызды шешім қабылдауға не көмектеседі?", "Қазір қандай шешімді ойланып жүрсің?"]
     ]
   },
   {
@@ -522,6 +726,12 @@
       ["In what moments do you feel most confident?", "What gives you confidence in the morning?", "What do you do so well that you have no doubts?"],
       ["Tell us about a moment when you believed in your own strength.", "Who or what helps you feel grounded?", "What win of yours added to your confidence?"],
       ["Is confidence inborn, or can it be developed?", "What helps you before something important?", "What would you advise a friend for confidence?"]
+    ],
+    "theme_kk": "Сенімділік қайдан келеді",
+    "q_kk": [
+      ["Қандай сәттерде өзіңді ең сенімді сезінесің?", "Таңертең саған не сенімділік береді?", "Не нәрсені күмәнсіз жасай аласың?"],
+      ["Өз күшіңе сенген бір сәтің туралы айтып бер.", "Тірек сезінуге кім не не көмектеседі?", "Қай жеңісің саған сенімділік қосты?"],
+      ["Сенімділік туа бітеді ме, әлде оны дамытуға бола ма?", "Маңызды бір нәрсенің алдында саған не көмектеседі?", "Сенімді болу үшін досыңа не кеңес берер едің?"]
     ]
   },
   {
@@ -537,6 +747,12 @@
       ["What have you been dreaming about lately?", "What dream did you have as a child?", "What would you do if everything were possible?"],
       ["Tell us about a dream you're slowly moving toward.", "What wish have you already managed to fulfill?", "What trip or pursuit do you dream about?"],
       ["Why do people need dreams — what do you think?", "Should dreams be big or achievable?", "What helps you not forget your dreams?"]
+    ],
+    "theme_kk": "Адамға арман не үшін керек",
+    "q_kk": [
+      ["Соңғы кезде не туралы армандайсың?", "Балалық шағыңда қандай арманың болды?", "Бәрі мүмкін болса, не істер едің?"],
+      ["Ақырындап жақындап келе жатқан арманың туралы айтып бер.", "Қандай тілегің орындалып үлгерді?", "Қандай саяхатты не істі армандайсың?"],
+      ["Адамға арман не үшін керек — қалай ойлайсың?", "Арман үлкен болуы керек пе, әлде қолжетімді ме?", "Армандарыңды ұмытпауға не көмектеседі?"]
     ]
   },
   {
@@ -552,6 +768,12 @@
       ["What helps you calm down before an important moment?", "How do you come back to yourself when you're worried?", "What relaxes you best?"],
       ["Tell us how you handled nerves and it all went well.", "What simple trick helps you gather yourself?", "When did the worry turn out to be for nothing — and it worked out?"],
       ["Do nerves get in the way or help — how is it for you?", "What do you tell yourself when you're nervous?", "What would you advise someone who worries a lot?"]
+    ],
+    "theme_kk": "Толқумен күресу",
+    "q_kk": [
+      ["Маңызды сәттің алдында сабыр сақтауға не көмектеседі?", "Уайымдағанда өзіңе қалай келесің?", "Сені бәрінен жақсы не босаңсытады?"],
+      ["Толқуыңды жеңіп, бәрі жақсы өткен бір жағдай туралы айтып бер.", "Өзіңді жинауға қандай қарапайым тәсіл көмектеседі?", "Толқуың бекер болып, бәрі сәтті шыққан кез болды ма?"],
+      ["Толқу кедергі ме, әлде көмек пе — сенде қалай?", "Мазасызданғанда өзіңе не айтасың?", "Қатты толқитын адамға не кеңес берер едің?"]
     ]
   },
   {
@@ -567,6 +789,12 @@
       ["How do you act when plans suddenly change?", "What helps you adjust quickly to something new?", "What unexpected change turned out to be good for you?"],
       ["Tell us how you adapted to a new place or situation.", "What new thing have you picked up lately?", "What move, job, or trip taught you a lot?"],
       ["Do you like change or a familiar order?", "What helps you not get lost in a new setting?", "How do you find upsides in unexpected situations?"]
+    ],
+    "theme_kk": "Бейімделгіштік",
+    "q_kk": [
+      ["Жоспарлар кенет өзгергенде өзіңді қалай ұстайсың?", "Жаңаға тез үйренуге не көмектеседі?", "Қандай күтпеген өзгеріс саған пайдасын тигізді?"],
+      ["Жаңа жерге не жағдайға қалай бейімделгеніңді айтып бер.", "Соңғы кезде не жаңаны меңгердің?", "Қандай көшу, жұмыс не сапар саған көп нәрсе үйретті?"],
+      ["Өзгерісті ұнатасың ба, әлде үйреншікті тәртіпті ме?", "Жаңа ортада абдырап қалмауға не көмектеседі?", "Күтпеген жағдайлардан жақсы жағын қалай табасың?"]
     ]
   },
   {
@@ -582,6 +810,12 @@
       ["Who do you consider a truly strong person?", "What trait helps people cope with difficulties?", "What's your strength, do you think?"],
       ["Tell us about a person whose resilience impressed you.", "When did you feel strong?", "What helped you get through a tough period?"],
       ["Is strength about character or muscles?", "What makes you stronger day by day?", "What would you say to someone who feels weak?"]
+    ],
+    "theme_kk": "Адамды не күшті етеді",
+    "q_kk": [
+      ["Кімді шынымен күшті адам деп санайсың?", "Адамдарға қиындықты жеңуге қай қасиет көмектеседі?", "Сенің күшің неде — қалай ойлайсың?"],
+      ["Төзімділігі саған әсер еткен адам туралы айтып бер.", "Өзіңді қашан күшті сезіндің?", "Қиын кезеңнен өтуге не көмектесті?"],
+      ["Күш — мінезге қатысты ма, әлде бұлшықетке ме?", "Күн өткен сайын сені не күштірек етеді?", "Өзін әлсіз сезінетін адамға не айтар едің?"]
     ]
   },
   {
@@ -597,6 +831,12 @@
       ["What content in your feed lifts your mood?", "Who is pleasant and useful for you to follow?", "What do you watch to get inspired?"],
       ["Tell us about a blog or author who influences you in a good way.", "What helps you not compare yourself to pictures from the internet?", "What piece of advice from social media actually came in handy?"],
       ["Does social media affect self-esteem — how is it for you?", "What helps you stay yourself in the age of likes?", "What would you advise people who compare themselves to others online?"]
+    ],
+    "theme_kk": "Медианың өзін-өзі бағалауға әсері",
+    "q_kk": [
+      ["Лентадағы қандай контент көңіліңді көтереді?", "Кімге жазылу саған әрі жағымды, әрі пайдалы?", "Шабыттану үшін не көресің?"],
+      ["Саған жақсы мағынада әсер ететін бір блог не автор туралы айтып бер.", "Өзіңді интернеттегі суреттермен салыстырмауға не көмектеседі?", "Әлеуметтік желідегі қандай кеңес саған шынымен пайдасын тигізді?"],
+      ["Әлеуметтік желілер өзін-өзі бағалауға әсер ете ме — сенде қалай?", "Лайктар заманында өзің болып қалуға не көмектеседі?", "Өзін басқалармен онлайн салыстыратындарға не кеңес берер едің?"]
     ]
   },
   {
@@ -612,6 +852,12 @@
       ["What small failure later taught you something?", "What did you realize when something didn't go as planned?", "What experience turned out more useful than it first seemed?"],
       ["Tell us how a miss turned into a good lesson.", "What did a situation you wouldn't want to repeat teach you?", "What advice did you take from your own mistake?"],
       ["How do you feel about failures?", "What helps you try again?", "What would you say to a friend after a setback?"]
+    ],
+    "theme_kk": "Сәтсіздік не үйретеді",
+    "q_kk": [
+      ["Қандай кішкентай сәтсіздік кейін саған бір нәрсе үйретті?", "Бір нәрсе жоспар бойынша жүрмегенде нені түсіндің?", "Қандай тәжірибе алғашында көрінгенінен пайдалырақ болып шықты?"],
+      ["Қателіктің жақсы сабаққа қалай айналғанын айтып бер.", "Қайталағың келмейтін бір жағдай саған не үйретті?", "Өз қателігіңнен қандай кеңес алып шықтың?"],
+      ["Сәтсіздіктерге қалай қарайсың?", "Қайта байқап көруге не көмектеседі?", "Сәтсіздіктен кейін досыңа не айтар едің?"]
     ]
   },
   {
@@ -627,6 +873,12 @@
       ["Whose praise is especially nice for you?", "What were you thanked for recently?", "What result of yours got noticed and appreciated?"],
       ["Tell us about a moment when your efforts were appreciated.", "Whose opinion matters to you, and why?", "What recognition made you happy?"],
       ["What matters more — others' recognition or your own sense of it?", "Do you do something just for yourself, without any judgment?", "What does being needed mean to you?"]
+    ],
+    "theme_kk": "Мойындалуды іздеу",
+    "q_kk": [
+      ["Кімнің мақтауы саған ерекше жағымды?", "Жақында саған не үшін алғыс айтты?", "Сенің қай нәтижеңді байқап, бағалады?"],
+      ["Еңбегіңді бағалаған бір сәт туралы айтып бер.", "Сенің пікірің кім үшін маңызды және неге?", "Қандай мойындау сені қуантты?"],
+      ["Не маңыздырақ — өзгелердің мойындауы ма, әлде өз сезімің бе?", "Бағасыз-ақ, тек өзің үшін бірдеңе істейсің бе?", "Сен үшін керек болу деген не?"]
     ]
   },
   {
@@ -642,6 +894,12 @@
       ["What would you like to be remembered for by your loved ones?", "What kind deed do you enjoy doing for others?", "What good do you bring to your circle of friends?"],
       ["Tell us what you could teach others.", "What advice would you pass on to younger people?", "Which of your habits would you like to pass forward?"],
       ["What does leaving a good trace mean to you?", "What deeds matter most, in your view?", "What would you like to be remembered for warmly?"]
+    ],
+    "theme_kk": "Менен не қалады",
+    "q_kk": [
+      ["Жақындарыңның есінде немен қалғың келеді?", "Өзгелер үшін қандай жақсылық жасау саған ұнайды?", "Достар ортасына қандай жақсылық әкелесің?"],
+      ["Басқаларға не үйрете алатыныңды айтып бер.", "Кішілерге қандай кеңес берер едің?", "Әдеттеріңнің қайсысын келесі ұрпаққа бергің келеді?"],
+      ["Сен үшін жақсы із қалдыру деген не?", "Сенің ойыңша, қандай істер бәрінен маңызды?", "Сені не үшін жылы сөзбен еске алғанын қалар едің?"]
     ]
   },
   {
@@ -657,6 +915,12 @@
       ["How do you take a break from the stream of news and notifications?", "What helps you focus when there's a lot going on around you?", "What do you replace your phone with when you want quiet?"],
       ["Tell us how you give yourself a break from the screen.", "What calm activity recharges you?", "What do you do to let your mind rest?"],
       ["How do you choose what to give attention to?", "Is 'too much information' about you?", "What helps you hear what matters amid the noise?"]
+    ],
+    "theme_kk": "Ақпараттық шу",
+    "q_kk": [
+      ["Жаңалықтар мен хабарламалар ағынынан қалай демаласың?", "Айналада бәрі көп болғанда зейін қоюға не көмектеседі?", "Тыныштық керек болғанда телефонның орнына немен айналысасың?"],
+      ["Экраннан қалай үзіліс жасайтыныңды айтып бер.", "Қандай тыныш іс сені қайта жаңартады?", "Басың демалуы үшін не істейсің?"],
+      ["Неге назар аударатыныңды қалай таңдайсың?", "Ақпараттың тым көптігі — сен туралы ма?", "Шудың арасынан ең бастысын естуге не көмектеседі?"]
     ]
   },
   {
@@ -672,6 +936,12 @@
       ["Do you prefer working in a team or alone?", "Tell us about something you did together with someone.", "What role in a team feels closer to you?"],
       ["Tell us about good teamwork that stayed with you.", "Who on your team or among friends complements you well?", "What joint project made you happy?"],
       ["What makes a team truly good?", "How do you contribute to a shared effort?", "What matters more — a personal result or a shared one?"]
+    ],
+    "theme_kk": "Командада жұмыс істеу",
+    "q_kk": [
+      ["Командада жұмыс істеген ұнай ма, әлде жалғыз ба?", "Біреумен бірге атқарған бір іс туралы айтып бер.", "Командадағы қай рөл саған жақынырақ?"],
+      ["Есіңде қалған жақсы командалық жұмыс туралы айтып бер.", "Командаңнан не достарыңнан кім сені керемет толықтырады?", "Қандай бірлескен жоба сені қуантты?"],
+      ["Команданы шынымен жақсы ететін не?", "Ортақ іске қалай көмектесесің?", "Не маңыздырақ — жеке нәтиже ме, әлде ортақ па?"]
     ]
   },
   {
@@ -687,6 +957,12 @@
       ["What or who do you enjoy being responsible for?", "What task do you always see through to the end?", "What does keeping your word mean to you?"],
       ["Tell us about a time people relied on you — and were right to.", "What are you responsible for in your family or group?", "What duty are you actually proud of?"],
       ["Is responsibility a burden or a support?", "How do you decide what's most important to do first?", "What helps you be dependable?"]
+    ],
+    "theme_kk": "Жауапкершілік",
+    "q_kk": [
+      ["Не үшін не кім үшін жауап бергенді ұнатасың?", "Қай істі әрқашан аяғына дейін жеткізесің?", "Сен үшін сөзіңде тұру деген не?"],
+      ["Саған сенім артқан — және бекер емес болған бір жағдай туралы айтып бер.", "Отбасыңда не достарыңның арасында не үшін жауаптысың?", "Қай міндетіңді шын мәнінде мақтан тұтасың?"],
+      ["Жауапкершілік — жүк пе, әлде тірек пе?", "Бірінші кезекте нені істеу маңыздырақ екенін қалай шешесің?", "Сенімді адам болуға не көмектеседі?"]
     ]
   },
   {
@@ -702,6 +978,12 @@
       ["What music, films, or things from the past do you still love?", "What about your generation do you remember warmly?", "What nostalgia hits you sometimes?"],
       ["Tell us about a game, cartoon, or song from your childhood.", "What technology greatly changed your life?", "What used to be popular and you still like it?"],
       ["How do generations differ, in your view?", "What's good about the young, and what about the older?", "What can different generations teach each other?"]
+    ],
+    "theme_kk": "Миллениалдар",
+    "q_kk": [
+      ["Өткеннің қандай музыкасы, фильмі не заттары саған әлі күнге ұнайды?", "Өз буыныңның нені жылы сезіммен еске аласың?", "Кейде қандай сағыныш сені баурап алады?"],
+      ["Балалық шағыңдағы бір ойын, мультфильм не ән туралы айтып бер.", "Қандай технология өміріңді қатты өзгертті?", "Бұрын танымал болған, бірақ саған әлі ұнайтын не бар?"],
+      ["Сенің ойыңша, буындар немен ерекшеленеді?", "Жастардың қандай жақсы жағы бар, үлкендердің ше?", "Әр буын бір-біріне не үйрете алады?"]
     ]
   },
   {
@@ -717,6 +999,12 @@
       ["What trend did you recently like?", "What popular thing did you try and didn't regret?", "What new things are interesting for you to follow?"],
       ["Tell us about a trend or hobby that caught you.", "What trendy thing turned out genuinely useful?", "What trend would you recommend to friends?"],
       ["Is it important to stay on top of trends — how is it for you?", "Do you follow trends or go your own way?", "What trend seems funny or strange to you?"]
+    ],
+    "theme_kk": "Трендтер және хабардар болу",
+    "q_kk": [
+      ["Жақында қандай тренд саған ұнады?", "Танымал нәрсенің қайсысын байқап көріп, өкінбедің?", "Қандай жаңалықтарды бақылау саған қызық?"],
+      ["Сені баурап алған бір сән не әуестік туралы айтып бер.", "Сәнді нәрселердің қайсысы шынымен пайдалы болып шықты?", "Достарыңа қандай трендті ұсынар едің?"],
+      ["Трендтерден хабардар болу маңызды ма — сенде қалай?", "Сәннің соңынан ересің бе, әлде өз жолыңмен жүресің бе?", "Қандай тренд саған күлкілі не оғаш көрінеді?"]
     ]
   },
   {
@@ -732,6 +1020,12 @@
       ["What do you do in your own way, not like others?", "How are you different from your friends in a good way?", "What feature of yours do you like?"],
       ["Tell us about a talent or skill you're happy with.", "When did you feel glad about your own progress?", "What do you value in yourself without looking at others?"],
       ["Does comparing yourself to others help — how is it for you?", "What helps you enjoy your own wins?", "What would you say to someone who compares themselves a lot?"]
+    ],
+    "theme_kk": "Өзгелермен салыстыру",
+    "q_kk": [
+      ["Не нәрсе саған басқалардан өзгеше, өзіңше шығады?", "Достарыңнан жақсы мағынада немен ерекшеленесің?", "Өзіңдегі қай ерекшелік саған ұнайды?"],
+      ["Өзің риза болатын дарының не шеберлігің туралы айтып бер.", "Өз ілгерілеуіңе қашан қуандың?", "Басқаларға қарамай, өзіңдегі нені бағалайсың?"],
+      ["Өзгелермен салыстыру көмектесе ме — сенде қалай?", "Өз табыстарыңа қуануға не көмектеседі?", "Өзін жиі салыстыратын адамға не айтар едің?"]
     ]
   },
   {
@@ -747,6 +1041,12 @@
       ["What time of day do you work best?", "What helps you focus on a task?", "What's your way of getting things done?"],
       ["Tell us about a day when you got a lot done and felt good.", "What simple trick makes you more productive?", "How do you reward yourself after good work?"],
       ["What matters more — doing a lot or doing what's important?", "How do you rest so you can work with energy afterward?", "What does a well-organized day mean to you?"]
+    ],
+    "theme_kk": "Мінсіз өнімділік",
+    "q_kk": [
+      ["Тәуліктің қай уақытында ең жақсы жұмыс істейсің?", "Іске зейін қоюға не көмектеседі?", "Бәрін үлгерудің сенің тәсілің қандай?"],
+      ["Көп нәрсе үлгеріп, риза болған бір күнің туралы айтып бер.", "Қандай қарапайым тәсіл сені өнімдірек етеді?", "Жақсы жұмыстан кейін өзіңді немен марапаттайсың?"],
+      ["Не маңыздырақ — көп істеу ме, әлде маңыздысын істеу ме?", "Кейін күш-қуатпен жұмыс істеу үшін қалай демаласың?", "Сен үшін жақсы ұйымдастырылған күн деген не?"]
     ]
   },
   {
@@ -762,6 +1062,12 @@
       ["What's great time well spent for you, even at home?", "What quiet evening do you prefer over a loud party?", "What brings you joy without any rush?"],
       ["Tell us about a time when quiet was better than the buzz.", "What would you happily skip for the sake of rest?", "What 'staying home' choice turned out to be the right one?"],
       ["Is it important for you to be everywhere, or is your own enough?", "What helps you not chase everything at once?", "How do you tell what you actually need right now?"]
+    ],
+    "theme_kk": "Бірдеңені жіберіп алу қорқынышы",
+    "q_kk": [
+      ["Үйде болса да, сен үшін керемет өткен уақыт деген не?", "Шулы кештен гөрі қандай тыныш кеш саған көбірек ұнайды?", "Асықпай-ақ саған не қуаныш сыйлайды?"],
+      ["Тыныштық думаннан жақсырақ болып шыққан бір сәт туралы айтып бер.", "Демалыс үшін нені қуана-қуана өткізіп жіберер едің?", "«Үйде қаламын» деген қай таңдауың дұрыс болып шықты?"],
+      ["Саған барлық жерге үлгеру маңызды ма, әлде өзіңдікі жетеді ме?", "Бәрінің артынан бірден қумауға не көмектеседі?", "Саған қазір шынымен не керек екенін қалай түсінесің?"]
     ]
   },
   {
@@ -777,6 +1083,12 @@
       ["How do you usually settle small disagreements with loved ones?", "What helps you reach an agreement calmly?", "How do you talk about what matters to you?"],
       ["Tell us about a conversation that made things easier afterward.", "When did you manage to find common ground with someone?", "What argument ended well thanks to talking it out?"],
       ["What matters more in dialogue — listening or explaining?", "How do you find a compromise?", "What helps you understand someone else's point of view?"]
+    ],
+    "theme_kk": "Шекаралар және диалог",
+    "q_kk": [
+      ["Жақындарыңмен болатын ұсақ келіспеушіліктерді әдетте қалай шешесің?", "Сабырмен келісуге не көмектеседі?", "Өзің үшін маңызды нәрсе туралы қалай айтасың?"],
+      ["Кейін жаныңа жеңіл болған бір әңгіме туралы айтып бер.", "Біреумен ортақ тіл табуың қашан сәтті болды?", "Қандай дау әңгіменің арқасында жақсы аяқталды?"],
+      ["Диалогта не маңыздырақ — тыңдау ма, әлде түсіндіру ме?", "Ымыраны қалай табасың?", "Өзгенің көзқарасын түсінуге не көмектеседі?"]
     ]
   },
   {
@@ -792,6 +1104,12 @@
       ["What pursuit feels truly yours?", "What gives you the feeling you're in the right place?", "What would you do even if you didn't have to?"],
       ["Tell us how you realized you liked something.", "What choice led you to where you are now?", "What hints to you where to go next?"],
       ["Is there one right path — what do you think?", "What helps you choose your own direction?", "How do you know you're heading the right way?"]
+    ],
+    "theme_kk": "Дұрыс жол",
+    "q_kk": [
+      ["Қандай іс саған шынымен өзіңдікі болып көрінеді?", "Өз орныңда екеніңді не сезіндіреді?", "Қажет болмаса да, немен айналысар едің?"],
+      ["Бір нәрсенің жаныңа жақын екенін қалай түсінгеніңді айтып бер.", "Қандай таңдау сені қазіргі орныңа әкелді?", "Әрі қарай қайда жылжу керегін саған не айтып тұрады?"],
+      ["Бір ғана дұрыс жол бар ма — қалай ойлайсың?", "Өз бағытыңды таңдауға не көмектеседі?", "Дұрыс жаққа бара жатқаныңды қалай түсінуге болады?"]
     ]
   },
   {
@@ -807,6 +1125,12 @@
       ["What helps you recover your energy?", "How do you know it's time to rest?", "What truly relaxes you?"],
       ["Tell us about your favorite way to recharge.", "What rest brought your energy back recently?", "What do you do when you have no energy but want to support yourself gently?"],
       ["Where does tiredness without a cause come from, in your view?", "What matters more — resting more or loading yourself less?", "How do you take care of yourself on days like that?"]
+    ],
+    "theme_kk": "Себепсіз шаршау",
+    "q_kk": [
+      ["Күш жинауға не көмектеседі?", "Демалатын уақыт келгенін қалай түсінесің?", "Сені шынымен не босаңсытады?"],
+      ["Қайта жаңарудың сүйікті тәсілің туралы айтып бер.", "Жақында қандай демалыс саған қуатыңды қайтарды?", "Күшің жоқ, бірақ өзіңді жайлап қолдау керек болғанда не істейсің?"],
+      ["Сенің ойыңша, себепсіз шаршау қайдан пайда болады?", "Не маңыздырақ — көбірек демалу ма, әлде азырақ жүктелу ме?", "Ондай күндері өзіңе қалай қамқорлық жасайсың?"]
     ]
   },
   {
@@ -822,6 +1146,12 @@
       ["What helps you tune in to a good day?", "How do you lift your own spirits when needed?", "What do you tell yourself at the start of the day?"],
       ["Tell us how a fresh take on a situation helped you cope.", "When did a change of mindset truly change the outcome?", "What thought keeps you going?"],
       ["Is it true that a lot depends on mindset — how is it for you?", "What helps you see the upsides?", "How do you switch from bad to good?"]
+    ],
+    "theme_kk": "Бәрі ойлау жүйесіне байланысты",
+    "q_kk": [
+      ["Жақсы күнге көңіл бұруға не көмектеседі?", "Керек кезде көңіл-күйіңді қалай көтересің?", "Күннің басында өзіңе не айтасың?"],
+      ["Жағдайға деген көзқарасың оны жеңуге қалай көмектескенін айтып бер.", "Көңіл-күйдің өзгеруі нәтижені шынымен қашан өзгертті?", "Қандай ой сені қолдайды?"],
+      ["Көп нәрсе көңіл-күйге байланысты деген рас па — сенде қалай?", "Жақсы жағын көруге не көмектеседі?", "Жаманнан жақсыға қалай ауысасың?"]
     ]
   },
   {
@@ -837,6 +1167,12 @@
       ["What helps you feel at ease when meeting someone?", "How do you usually start a conversation with a new person?", "What in people makes a good impression on you?"],
       ["Tell us about a meeting that grew into friendship.", "When did a first impression of someone pleasantly surprise you?", "Who did you remember right away, and why?"],
       ["How important is a first impression — what do you think?", "What do you value in a first conversation?", "How do you win people over?"]
+    ],
+    "theme_kk": "Алғашқы әсер",
+    "q_kk": [
+      ["Танысқанда өзіңді еркін сезінуге не көмектеседі?", "Жаңа адаммен әңгімені әдетте қалай бастайсың?", "Адамдардағы не саған жақсы әсер қалдырады?"],
+      ["Достыққа ұласқан бір таныстық туралы айтып бер.", "Біреу туралы алғашқы әсер сені қашан жағымды таң қалдырды?", "Кімді бірден есіңе сақтадың және неге?"],
+      ["Алғашқы әсер қаншалықты маңызды — қалай ойлайсың?", "Алғашқы әңгімеде нені бағалайсың?", "Адамдарды өзіңе қалай тартасың?"]
     ]
   },
   {
@@ -852,6 +1188,12 @@
       ["What did you recently want to learn or try?", "What topic genuinely interests you?", "What do you like to read about or watch videos on?"],
       ["Tell us about something new you learned and were surprised by.", "What discovery or fact amazed you?", "What would you gladly learn?"],
       ["Where does your interest in new things come from?", "What helps you keep your curiosity?", "What would you study if you had a free month?"]
+    ],
+    "theme_kk": "Қызығушылық",
+    "q_kk": [
+      ["Жақында нені білгің не байқап көргің келді?", "Қандай тақырып саған шынымен қызық?", "Не туралы оқығанды не ролик көргенді ұнатасың?"],
+      ["Біліп алып, таң қалған бір жаңа нәрсе туралы айтып бер.", "Қандай жаңалық не дерек сені таңғалдырды?", "Неге қуана-қуана үйренер едің?"],
+      ["Жаңаға деген қызығушылық сенде қайдан келеді?", "Қызығушылықты сақтауға не көмектеседі?", "Бір ай бос уақытың болса, нені зерттер едің?"]
     ]
   },
   {
@@ -867,6 +1209,12 @@
       ["What do you do calmly and unhurriedly, with pleasure?", "What activity teaches you patience?", "What helps you wait without irritation?"],
       ["Tell us how patience helped you achieve something.", "What did you grow, collect, or build over a long time?", "What result was worth the wait?"],
       ["Are you a patient person — what do you think?", "What matters more — speed or calm?", "How do you stay calm when things drag on?"]
+    ],
+    "theme_kk": "Сабыр",
+    "q_kk": [
+      ["Нені асықпай, сабырмен әрі рахаттанып істейсің?", "Қандай іс сені сабырлылыққа үйретеді?", "Ашуланбай күтуге не көмектеседі?"],
+      ["Сабырдың бір нәрсеге жетуге қалай көмектескенін айтып бер.", "Нені ұзақ өсірдің, жинадың не құрастырдың?", "Қандай нәтиже күтуге тұрарлық болды?"],
+      ["Сен сабырлы адамсың ба — қалай ойлайсың?", "Не маңыздырақ — жылдамдық па, әлде сабыр ма?", "Бәрі созылып кеткенде сабырыңды қалай сақтайсың?"]
     ]
   },
   {
@@ -882,6 +1230,12 @@
       ["What are you grateful for today, even a small thing?", "Who would you like to say thank you to?", "What good thing happened to you recently?"],
       ["Tell us about a person you're grateful to.", "What gift or help touched you?", "What moment in life are you especially grateful for?"],
       ["Does gratitude help you feel happier?", "How do you express gratitude to loved ones?", "What are you grateful to yourself for?"]
+    ],
+    "theme_kk": "Алғыс",
+    "q_kk": [
+      ["Бүгін не үшін ризасың, тіпті ұсақ нәрсе болса да?", "Кімге рахмет айтқың келеді?", "Жақында басыңнан қандай жақсы нәрсе өтті?"],
+      ["Өзің алғыс сезінетін адам туралы айтып бер.", "Қандай сыйлық не көмек сені тебірентті?", "Өміріңдегі қай сәт үшін ерекше ризасың?"],
+      ["Алғыс сезімі өзіңді бақыттырақ сезінуге көмектесе ме?", "Жақындарыңа алғысыңды қалай білдіресің?", "Өзіңе не үшін ризасың?"]
     ]
   },
   {
@@ -897,6 +1251,12 @@
       ["What helps you let go of small grudges?", "How do you make up with loved ones after a quarrel?", "What does starting with a clean slate mean to you?"],
       ["Tell us how you felt lighter once you let something go.", "When was it nice to be forgiven?", "What conversation helped you make peace?"],
       ["Is it easy for you to forgive — how is it for you?", "What matters more — being right or keeping the relationship?", "How do you let go of what can't be changed?"]
+    ],
+    "theme_kk": "Кешірім",
+    "q_kk": [
+      ["Ұсақ өкпені жіберуге не көмектеседі?", "Жақындарыңмен ұрыстан кейін қалай татуласасың?", "Сен үшін бәрін жаңа парақтан бастау деген не?"],
+      ["Бір нәрсені жібере салғанда жаныңа қалай жеңіл болғанын айтып бер.", "Сені кешіргені саған қашан жағымды болды?", "Қандай әңгіме татуласуға көмектесті?"],
+      ["Кешіру саған оңай ма — сенде қалай?", "Не маңыздырақ — дұрыс болу ма, әлде қарым-қатынасты сақтау ма?", "Енді өзгертуге болмайтын нәрсені қалай жібересің?"]
     ]
   },
   {
@@ -912,6 +1272,12 @@
       ["What do you know well and accept about yourself?", "What habit of yours suits you really well?", "Where do you definitely stay yourself?"],
       ["Tell us about a moment when you were honest with yourself.", "What did you realize about yourself lately?", "What 'yes' or 'no' of yours helped you?"],
       ["Is it easy to be honest with yourself — how is it for you?", "What helps you understand your own wishes?", "What would you like to accept in yourself a bit more?"]
+    ],
+    "theme_kk": "Өзің туралы шындық",
+    "q_kk": [
+      ["Өзіңдегі нені жақсы білесің және қабылдайсың?", "Қай әдетің саған өте жарасады?", "Қай нәрседе әрқашан өзің болып қаласың?"],
+      ["Өзіңе адал болған бір сәтің туралы айтып бер.", "Соңғы кезде өзің туралы нені түсіндің?", "Сенің қай «иә» не «жоқ» дегенің саған көмектесті?"],
+      ["Өзіңе адал болу оңай ма — сенде қалай?", "Өз қалауларыңды түсінуге не көмектеседі?", "Өзіңдегі нені сәл көбірек қабылдағың келеді?"]
     ]
   },
   {
@@ -927,6 +1293,12 @@
       ["What do you like to do on your own, for yourself?", "When does it feel good to be alone with yourself?", "What solo activity inspires you?"],
       ["Tell us about calm time spent alone.", "What did you figure out or come up with when you were alone?", "What place do you like for solitude?"],
       ["Is solitude rest or boredom for you?", "What good does time alone give you?", "How do you use such moments well?"]
+    ],
+    "theme_kk": "Оңашалықтың күші",
+    "q_kk": [
+      ["Жалғыз, өзің үшін не істегенді ұнатасың?", "Өзіңмен-өзің оңаша қалу саған қашан жақсы?", "Оңашадағы қандай іс саған шабыт береді?"],
+      ["Жалғыз өткізген тыныш уақыт туралы айтып бер.", "Жалғыз болғанда нені түсіндің не ойлап таптың?", "Оңаша қалу үшін қай жерді ұнатасың?"],
+      ["Жалғыздық сен үшін — демалыс па, әлде зерігу ме?", "Өзіңмен оңаша өткізген уақыт қандай жақсылық береді?", "Ондай сәттерді қалай пайдалы өткізесің?"]
     ]
   },
   {
@@ -942,6 +1314,12 @@
       ["What warm memory do you often recall?", "What day from the past would you like to relive?", "What from childhood is especially dear to you?"],
       ["Tell us about an event that stayed in your memory for a long time.", "What trip or celebration stayed with you?", "What lesson from the past helps you now?"],
       ["What matters more to you — memory or dreams of the future?", "How do you keep pleasant moments?", "What has your experience taught you?"]
+    ],
+    "theme_kk": "Естелік пен тәжірибе",
+    "q_kk": [
+      ["Қандай жылы естелікті жиі еске аласың?", "Өткеннің қай күнін қайта бастан кешіргің келер еді?", "Балалық шағыңнан не саған ерекше қымбат?"],
+      ["Есіңде ұзақ сақталған бір оқиға туралы айтып бер.", "Қандай сапар не мереке есіңде қалды?", "Өткеннің қай сабағы қазір саған көмектеседі?"],
+      ["Сен үшін не маңыздырақ — естелік пе, әлде болашақ туралы арман ба?", "Жағымды сәттерді қалай сақтайсың?", "Тәжірибең саған не үйретті?"]
     ]
   },
   {
@@ -957,6 +1335,12 @@
       ["What good thing are you looking forward to soon?", "What fills you with optimism?", "What do you think about with hope?"],
       ["Tell us about a moment when hope supported you.", "What helped you believe things would work out?", "What expectation makes you happy right now?"],
       ["What helps you keep hope?", "Why is it important to believe in the best, do you think?", "What would you say to someone feeling down?"]
+    ],
+    "theme_kk": "Үміт",
+    "q_kk": [
+      ["Жақын арада қандай жақсылық күтесің?", "Саған не оптимизм ұялатады?", "Не туралы үмітпен ойлайсың?"],
+      ["Үміт сені қолдаған бір сәт туралы айтып бер.", "Бәрі жақсы болатынына сенуге не көмектесті?", "Дәл қазір қандай күту сені қуантады?"],
+      ["Үмітті сақтауға не көмектеседі?", "Сенің ойыңша, жақсылыққа сену неге маңызды?", "Көңілі түсіп жүрген адамға не айтар едің?"]
     ]
   },
   {
@@ -972,6 +1356,12 @@
       ["What simple piece of life advice turned out valuable for you?", "What did your elders teach you?", "What rule do you consider truly wise?"],
       ["Tell us about a lesson you took from life.", "Whose words became wisdom for you?", "What experience made you wiser?"],
       ["Does wisdom come with age or with experience?", "What does acting wisely mean to you?", "What advice would you give your younger self?"]
+    ],
+    "theme_kk": "Даналық",
+    "q_kk": [
+      ["Өмірдегі қандай қарапайым кеңес сен үшін құнды болып шықты?", "Үлкендер саған не үйретті?", "Қандай ережені шынымен дана деп санайсың?"],
+      ["Өмірден алған бір сабағың туралы айтып бер.", "Кімнің сөзі сен үшін даналыққа айналды?", "Қандай тәжірибе сені даналырақ етті?"],
+      ["Даналық жаспен келе ме, әлде тәжірибемен бе?", "Сен үшін дана әрекет ету деген не?", "Жасырақ кезіңдегі өзіңе қандай кеңес берер едің?"]
     ]
   },
   {
@@ -987,6 +1377,12 @@
       ["What good would you like to pass on to others?", "What advice would you leave for future generations?", "What can you teach those who are younger?"],
       ["Tell us about a tradition or value from your family.", "What did your family pass to you that you cherish?", "What skill would you like to pass forward?"],
       ["What does leaving something good behind mean?", "What deeds last a long time, in your view?", "What would you like to be remembered for?"]
+    ],
+    "theme_kk": "Мұра",
+    "q_kk": [
+      ["Басқаларға қандай жақсылық бергің келер еді?", "Болашақ ұрпаққа қандай кеңес қалдырар едің?", "Өзіңнен кішілерге не үйрете аласың?"],
+      ["Отбасыңдағы бір дәстүр не құндылық туралы айтып бер.", "Туыстарың саған не берді, оны қадірлейсің?", "Қандай шеберлігіңді келесі буынға бергің келеді?"],
+      ["Артыңда жақсы бір нәрсе қалдыру деген не?", "Сенің ойыңша, қандай істер ұзақ сақталады?", "Сені не үшін есте сақтағанын қалар едің?"]
     ]
   },
   {
@@ -1002,6 +1398,12 @@
       ["What do you always want to talk about?", "What would you say to the world if you had a stage?", "What topic is truly yours?"],
       ["Tell us about a moment when your voice was heard.", "What are you proud of in the way you speak?", "What story of yours do you love the most?"],
       ["What does having your own voice mean to you?", "How has your speech changed during your time in the app?", "What would you say to those just beginning to speak more boldly?"]
+    ],
+    "theme_kk": "Сенің дауысың",
+    "q_kk": [
+      ["Не туралы әрқашан айтқың келеді?", "Сахнаң болса, әлемге не айтар едің?", "Қай тақырып — шынымен сенікі?"],
+      ["Дауысың естілген бір сәт туралы айтып бер.", "Сөйлеу мәнеріңнің несін мақтан тұтасың?", "Қай әңгімеңді бәрінен жақсы көресің?"],
+      ["Сен үшін өз дауысың болу деген не?", "Қосымшада жүрген уақытта сөйлеуің қалай өзгерді?", "Батылырақ сөйлей бастаған адамдарға не айтар едің?"]
     ]
   }
 ]

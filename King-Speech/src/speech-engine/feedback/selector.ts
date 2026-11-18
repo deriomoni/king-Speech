@@ -19,6 +19,11 @@ import { Feedback, Locale } from '../types';
 import { Insight, InsightId } from './insights';
 import { synonymsFor, FILLER_ADVICE, DEFAULT_FILLER_ADVICE } from './dictionaries.ru';
 import {
+  synonymsForKk,
+  FILLER_ADVICE_KK,
+  DEFAULT_FILLER_ADVICE_KK,
+} from './dictionaries.kk';
+import {
   fillTemplate,
   GROWTH_INSIGHTS_RU,
   METRIC_GROWTH_RU,
@@ -32,6 +37,12 @@ import {
   METRIC_PRAISE_EN,
   PRAISE_INSIGHTS_EN,
 } from './templates.en';
+import {
+  GROWTH_INSIGHTS_KK,
+  METRIC_GROWTH_KK,
+  METRIC_PRAISE_KK,
+  PRAISE_INSIGHTS_KK,
+} from './templates.kk';
 
 export interface MetricValue {
   key: MetricKey;
@@ -68,17 +79,20 @@ export interface SelectorOutput {
 
 const METRIC_LABEL_CATEGORY = (key: MetricKey): string => `metric:${key}`;
 
+function byLocale<T>(locale: Locale, v: Record<Locale, T>): T {
+  return v[locale] ?? v.ru;
+}
 function growthInsightTemplates(locale: Locale) {
-  return locale === 'en' ? GROWTH_INSIGHTS_EN : GROWTH_INSIGHTS_RU;
+  return byLocale(locale, { ru: GROWTH_INSIGHTS_RU, en: GROWTH_INSIGHTS_EN, kk: GROWTH_INSIGHTS_KK });
 }
 function praiseInsightTemplates(locale: Locale) {
-  return locale === 'en' ? PRAISE_INSIGHTS_EN : PRAISE_INSIGHTS_RU;
+  return byLocale(locale, { ru: PRAISE_INSIGHTS_RU, en: PRAISE_INSIGHTS_EN, kk: PRAISE_INSIGHTS_KK });
 }
 function metricGrowthTemplates(locale: Locale) {
-  return locale === 'en' ? METRIC_GROWTH_EN : METRIC_GROWTH_RU;
+  return byLocale(locale, { ru: METRIC_GROWTH_RU, en: METRIC_GROWTH_EN, kk: METRIC_GROWTH_KK });
 }
 function metricPraiseTemplates(locale: Locale) {
-  return locale === 'en' ? METRIC_PRAISE_EN : METRIC_PRAISE_RU;
+  return byLocale(locale, { ru: METRIC_PRAISE_RU, en: METRIC_PRAISE_EN, kk: METRIC_PRAISE_KK });
 }
 
 /** Choose a variant index avoiding the last two used for this category. */
@@ -98,6 +112,10 @@ function pushRecent(list: number[] | undefined, value: number): number[] {
 }
 
 function synonymText(stem: string | undefined, locale: Locale): string {
+  if (locale === 'kk') {
+    const kkSyns = stem ? synonymsForKk(stem) : [];
+    return kkSyns.length > 0 ? `байқап көр: ${kkSyns.join(', ')}` : 'балама сөз ізде';
+  }
   const syns = stem ? synonymsFor(stem) : [];
   if (syns.length > 0) {
     return locale === 'en' ? `try: ${syns.join(', ')}` : `попробуй: ${syns.join(', ')}`;
@@ -232,6 +250,10 @@ function resolveAction(
   if (id === 'filler_word' && locale === 'ru') {
     const word = insight.evidence.word ?? '';
     return FILLER_ADVICE[word]?.advice ?? DEFAULT_FILLER_ADVICE;
+  }
+  if (id === 'filler_word' && locale === 'kk') {
+    const word = insight.evidence.word ?? '';
+    return FILLER_ADVICE_KK[word]?.advice ?? DEFAULT_FILLER_ADVICE_KK;
   }
   return defaultAction;
 }

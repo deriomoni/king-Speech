@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SvgXml } from "react-native-svg";
 import type { Theme } from "@/context/ThemeContext";
+import { pickLang, type Lang } from "@/context/LangContext";
 import {
   CROWN_SVG,
   SPARKLE_SVG,
@@ -19,10 +20,9 @@ export default function ProPromoCard({
   onUpgrade,
 }: {
   theme: Theme;
-  lang: string;
+  lang: Lang;
   onUpgrade: () => void;
 }) {
-  const en = lang === "en";
   return (
     <View style={styles.card}>
       <LinearGradient
@@ -42,10 +42,10 @@ export default function ProPromoCard({
       <SvgXml xml={SPARKLE2_SVG} width={18} height={18} style={[styles.abs, { top: 58, right: 142 }]} />
 
       <Text style={styles.title}>
-        {en ? "Become the king\nof the stage" : "Стань королём\nсцены"}
+        {pickLang(lang, { ru: "Стань королём\nсцены", en: "Become the king\nof the stage", kk: "Сахнаның\nпатшасы бол" })}
       </Text>
       <Text style={styles.sub}>
-        {en ? "All topics and modes, no limits" : "Все темы и режимы без ограничений"}
+        {pickLang(lang, { ru: "Все темы и режимы без ограничений", en: "All topics and modes, no limits", kk: "Барлық тақырып пен режим — шексіз" })}
       </Text>
 
       <Pressable
@@ -56,7 +56,7 @@ export default function ProPromoCard({
           pressed && { opacity: 0.85 },
         ]}
       >
-        <Text style={styles.btnTxt}>{en ? "Upgrade" : "Улучшить"}</Text>
+        <Text style={styles.btnTxt}>{pickLang(lang, { ru: "Улучшить", en: "Upgrade", kk: "Жаңарту" })}</Text>
         <Text style={styles.btnTxt}>→</Text>
       </Pressable>
 

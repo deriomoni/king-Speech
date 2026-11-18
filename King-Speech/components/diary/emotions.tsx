@@ -11,14 +11,15 @@ export const EMOTIONS: {
   color: string;
   ru: string;
   en: string;
+  kk: string;
 }[] = [
-  { key: "joy", color: "#FFE7A3", ru: "Радость", en: "Joy" },
-  { key: "calm", color: "#CBEBD5", ru: "Спокойствие", en: "Calm" },
-  { key: "love", color: "#FFD3DF", ru: "Влюблённость", en: "In love" },
-  { key: "sad", color: "#BFD7F2", ru: "Грусть", en: "Sadness" },
-  { key: "anxious", color: "#FFD6B8", ru: "Тревога", en: "Anxiety" },
-  { key: "angry", color: "#F7C1BC", ru: "Злость", en: "Anger" },
-  { key: "tired", color: "#E4E0DA", ru: "Усталость", en: "Tiredness" },
+  { key: "joy", color: "#FFE7A3", ru: "Радость", en: "Joy", kk: "Қуаныш" },
+  { key: "calm", color: "#CBEBD5", ru: "Спокойствие", en: "Calm", kk: "Тыныштық" },
+  { key: "love", color: "#FFD3DF", ru: "Влюблённость", en: "In love", kk: "Ғашықтық" },
+  { key: "sad", color: "#BFD7F2", ru: "Грусть", en: "Sadness", kk: "Мұң" },
+  { key: "anxious", color: "#FFD6B8", ru: "Тревога", en: "Anxiety", kk: "Алаңдау" },
+  { key: "angry", color: "#F7C1BC", ru: "Злость", en: "Anger", kk: "Ашу" },
+  { key: "tired", color: "#E4E0DA", ru: "Усталость", en: "Tiredness", kk: "Шаршау" },
 ];
 
 const INK = "#2B2A33";

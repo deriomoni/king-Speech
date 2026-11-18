@@ -27,7 +27,7 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage
 import { useGame } from "@/context/GameContext";
 import CoinIcon from "@/components/CoinIcon";
 import { useAuth } from "@/context/AuthContext";
-import { useLang } from "@/context/LangContext";
+import { useLang, pickLang } from "@/context/LangContext";
 import { storage as fbStorage, auth as fbAuth, firebaseConfigured } from "@/lib/firebase";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -121,7 +121,6 @@ function Stat({
 export default function ProfileScreen() {
   const { theme } = useTheme();
   const { t, lang } = useLang();
-  const en = lang === "en";
   const insets = useSafeAreaInsets();
   const { levels, coins, readingRecordings, activityLog, currentRank } = useGame();
   const { user, setPhotoURL, saveProfile } = useAuth();
@@ -164,7 +163,7 @@ export default function ProfileScreen() {
         } catch (e: any) {
           console.warn("[profile] avatar upload failed:", e);
           await setPhotoURL(asset.uri);
-          Alert.alert("Загрузка", "Не удалось загрузить в облако — фото сохранено локально.");
+          Alert.alert(pickLang(lang, { ru: "Загрузка", en: "Upload", kk: "Жүктеу" }), pickLang(lang, { ru: "Не удалось загрузить в облако — фото сохранено локально.", en: "Couldn't upload to the cloud — the photo is saved on this device.", kk: "Бұлтқа жүктеу мүмкін болмады — фото құрылғыда сақталды." }));
         }
       } else {
         await setPhotoURL(asset.uri);
@@ -178,7 +177,7 @@ export default function ProfileScreen() {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert("Доступ к фото", "Разреши доступ к галерее, чтобы установить аватар.");
+        Alert.alert(pickLang(lang, { ru: "Доступ к фото", en: "Photo access", kk: "Фотоға рұқсат" }), pickLang(lang, { ru: "Разреши доступ к галерее, чтобы установить аватар.", en: "Allow gallery access to set your avatar.", kk: "Аватар орнату үшін галереяға рұқсат бер." }));
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -191,7 +190,7 @@ export default function ProfileScreen() {
       await uploadPickedAsset(result.assets[0]);
     } catch (e: any) {
       console.warn("[profile] pick avatar failed:", e);
-      Alert.alert("Ошибка", e?.message ?? "Не удалось выбрать фото");
+      Alert.alert(pickLang(lang, { ru: "Ошибка", en: "Error", kk: "Қате" }), e?.message ?? pickLang(lang, { ru: "Не удалось выбрать фото", en: "Couldn't pick a photo", kk: "Фото таңдау мүмкін болмады" }));
     }
   };
 
@@ -199,7 +198,7 @@ export default function ProfileScreen() {
     try {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert("Доступ к камере", "Разреши доступ к камере, чтобы сделать селфи.");
+        Alert.alert(pickLang(lang, { ru: "Доступ к камере", en: "Camera access", kk: "Камераға рұқсат" }), pickLang(lang, { ru: "Разреши доступ к камере, чтобы сделать селфи.", en: "Allow camera access to take a selfie.", kk: "Селфи түсіру үшін камераға рұқсат бер." }));
         return;
       }
       const result = await ImagePicker.launchCameraAsync({
@@ -212,7 +211,7 @@ export default function ProfileScreen() {
       await uploadPickedAsset(result.assets[0]);
     } catch (e: any) {
       console.warn("[profile] take selfie failed:", e);
-      Alert.alert("Ошибка", e?.message ?? "Не удалось сделать селфи");
+      Alert.alert(pickLang(lang, { ru: "Ошибка", en: "Error", kk: "Қате" }), e?.message ?? pickLang(lang, { ru: "Не удалось сделать селфи", en: "Couldn't take a selfie", kk: "Селфи түсіру мүмкін болмады" }));
     }
   };
 
@@ -255,7 +254,7 @@ export default function ProfileScreen() {
       return;
     }
     closeMenuThen(() => {
-      Alert.alert(en ? "Profile photo" : "Фото профиля", undefined, [
+      Alert.alert(pickLang(lang, { ru: "Фото профиля", en: "Profile photo", kk: "Профиль фотосы" }), undefined, [
         { text: t("takeSelfie"), onPress: () => handleTakeSelfie() },
         { text: t("chooseFromGallery"), onPress: () => handlePickFromGallery() },
         { text: t("cancel"), style: "cancel" },
@@ -305,7 +304,7 @@ export default function ProfileScreen() {
       await saveProfile(trimmed, user?.gender ?? "male");
     } catch (e: any) {
       console.warn("[profile] save name failed:", e);
-      Alert.alert("Ошибка", e?.message ?? "Не удалось сохранить имя");
+      Alert.alert(pickLang(lang, { ru: "Ошибка", en: "Error", kk: "Қате" }), e?.message ?? pickLang(lang, { ru: "Не удалось сохранить имя", en: "Couldn't save the name", kk: "Атты сақтау мүмкін болмады" }));
     }
   };
 
@@ -313,19 +312,19 @@ export default function ProfileScreen() {
     {
       key: "photo",
       icon: "camera",
-      label: en ? "Upload profile photo" : "Загрузить фото профиля",
+      label: pickLang(lang, { ru: "Загрузить фото профиля", en: "Upload profile photo", kk: "Профиль фотосын жүктеу" }),
       onPress: handleUploadPhoto,
     },
     {
       key: "bg",
       icon: "image",
-      label: en ? "Plate background" : "Фон таблички",
+      label: pickLang(lang, { ru: "Фон таблички", en: "Plate background", kk: "Тақтайша фоны" }),
       onPress: openCoverMenu,
     },
     {
       key: "name",
       icon: "pencil",
-      label: en ? "Change profile name" : "Изменить имя профиля",
+      label: pickLang(lang, { ru: "Изменить имя профиля", en: "Change profile name", kk: "Профиль атын өзгерту" }),
       onPress: openNameEdit,
     },
     ...(user?.photoURL
@@ -460,19 +459,19 @@ export default function ProfileScreen() {
             <Stat
               theme={theme}
               value={`${currentRank}`}
-              label={en ? "Rank" : "Ранг"}
+              label={pickLang(lang, { ru: "Ранг", en: "Rank", kk: "Дәреже" })}
               left={<SvgXml xml={themedSvg(RANK_SHIELD, mode)} width={22} height={22} />}
             />
             <Stat
               theme={theme}
               value={`${currentModule}`}
-              label={en ? "Module" : "Модуль"}
+              label={pickLang(lang, { ru: "Модуль", en: "Module", kk: "Модуль" })}
               left={<LayersIcon color={theme.text} />}
             />
             <Stat
               theme={theme}
               value={`${coins}`}
-              label={en ? "Coins" : "Монеты"}
+              label={pickLang(lang, { ru: "Монеты", en: "Coins", kk: "Монеталар" })}
               right={<CoinIcon size={22} color={theme.text} />}
             />
           </EdgeScale>
@@ -497,8 +496,8 @@ export default function ProfileScreen() {
               idSuffix="diary"
               height={112}
               text={{
-                title: en ? "Audio diary" : "Аудио-дневник",
-                sub: en ? "Tell how your day went" : "Расскажи, как прошёл день",
+                title: pickLang(lang, { ru: "Аудио-дневник", en: "Audio diary", kk: "Аудио-күнделік" }),
+                sub: pickLang(lang, { ru: "Расскажи, как прошёл день", en: "Tell how your day went", kk: "Күнің қалай өткенін айтып бер" }),
                 x: 20,
                 y: 32,
                 titleSize: 18,
@@ -521,8 +520,8 @@ export default function ProfileScreen() {
               height={156}
               style={{ flex: 1 }}
               text={{
-                title: en ? "Become an author" : "Стать автором",
-                sub: en ? "Suggest your topic" : "Предложи свою тему",
+                title: pickLang(lang, { ru: "Стать автором", en: "Become an author", kk: "Автор болу" }),
+                sub: pickLang(lang, { ru: "Предложи свою тему", en: "Suggest your topic", kk: "Өз тақырыбыңды ұсын" }),
                 x: 16,
                 y: 104,
                 titleSize: 17,
@@ -539,8 +538,8 @@ export default function ProfileScreen() {
               height={156}
               style={{ flex: 1 }}
               text={{
-                title: en ? "Awards" : "Награды",
-                sub: en ? "Cups and achievements" : "Кубки и достижения",
+                title: pickLang(lang, { ru: "Награды", en: "Awards", kk: "Марапаттар" }),
+                sub: pickLang(lang, { ru: "Кубки и достижения", en: "Cups and achievements", kk: "Кубоктар мен жетістіктер" }),
                 x: 16,
                 y: 104,
                 titleSize: 17,
@@ -561,8 +560,8 @@ export default function ProfileScreen() {
               idSuffix="library"
               height={112}
               text={{
-                title: en ? "My library" : "Моя библиотека",
-                sub: en ? "Recordings of your performances" : "Записи твоих выступлений",
+                title: pickLang(lang, { ru: "Моя библиотека", en: "My library", kk: "Менің кітапханам" }),
+                sub: pickLang(lang, { ru: "Записи твоих выступлений", en: "Recordings of your performances", kk: "Өнер көрсетулеріңнің жазбалары" }),
                 x: 20,
                 y: 32,
                 titleSize: 18,
@@ -581,8 +580,8 @@ export default function ProfileScreen() {
               idSuffix="coins"
               height={92}
               text={{
-                title: en ? "Buy coins" : "Купить монеты",
-                sub: en ? "Hints, themes and bonuses" : "Подсказки, темы и бонусы",
+                title: pickLang(lang, { ru: "Купить монеты", en: "Buy coins", kk: "Монета сатып алу" }),
+                sub: pickLang(lang, { ru: "Подсказки, темы и бонусы", en: "Hints, themes and bonuses", kk: "Кеңестер, тақырыптар мен бонустар" }),
                 x: 22,
                 y: 22,
                 titleSize: 21,
@@ -623,12 +622,12 @@ export default function ProfileScreen() {
             onPress={(e) => e.stopPropagation()}
           >
             <Text style={[styles.sheetTitle, { color: theme.text }]}>
-              {en ? "Change profile name" : "Изменить имя профиля"}
+              {pickLang(lang, { ru: "Изменить имя профиля", en: "Change profile name", kk: "Профиль атын өзгерту" })}
             </Text>
             <TextInput
               value={draftName}
               onChangeText={setDraftName}
-              placeholder={en ? "Your name" : "Ваше имя"}
+              placeholder={pickLang(lang, { ru: "Ваше имя", en: "Your name", kk: "Атың" })}
               placeholderTextColor={theme.textMuted}
               style={[
                 styles.nameInput,
@@ -651,7 +650,7 @@ export default function ProfileScreen() {
               ]}
             >
               <Text style={[styles.nameSaveTxt, { color: theme.accentText }]}>
-                {en ? "Save" : "Сохранить"}
+                {pickLang(lang, { ru: "Сохранить", en: "Save", kk: "Сақтау" })}
               </Text>
             </Pressable>
           </Pressable>
@@ -674,7 +673,7 @@ export default function ProfileScreen() {
             onPress={(e) => e.stopPropagation()}
           >
             <Text style={[styles.sheetTitle, { color: theme.text }]}>
-              {en ? "Plate background" : "Фон таблички"}
+              {pickLang(lang, { ru: "Фон таблички", en: "Plate background", kk: "Тақтайша фоны" })}
             </Text>
             <ScrollView style={{ maxHeight: 520 }} showsVerticalScrollIndicator={false}>
             <View style={styles.coverGrid}>
@@ -706,7 +705,7 @@ export default function ProfileScreen() {
                       )}
                     </View>
                     <Text style={[styles.coverName, { color: selected ? theme.text : theme.textSecondary }]} numberOfLines={1}>
-                      {p ? (en ? p.en : p.ru) : en ? "Plain" : "Без узора"}
+                      {p ? pickLang(lang, p) : pickLang(lang, { ru: "Без узора", en: "Plain", kk: "Өрнексіз" })}
                     </Text>
                   </PressScale>
                   </View>
