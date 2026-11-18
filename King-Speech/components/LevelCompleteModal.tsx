@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from "react-native";
 import Animated, {
   useSharedValue,
@@ -148,8 +148,9 @@ function Sparkle({ s, i, u }: { s: (typeof SPARKLES)[number]; i: number; u: (n: 
   );
 }
 
-/** one of the three stars: pops in, then floats and rocks; lit ones glow and breathe */
-function Star({ on, big, rot, delay, i, u }: { on: boolean; big?: boolean; rot: number; delay: number; i: number; u: (n: number) => number }) {
+/** one of the three stars: pops in, then floats and rocks; lit ones glow and breathe.
+ *  With `glowOnly` just the breathing glow is drawn — the star itself is 3D (Trophy3D). */
+function Star({ on, big, rot, delay, i, u, glowOnly }: { on: boolean; big?: boolean; rot: number; delay: number; i: number; u: (n: number) => number; glowOnly?: boolean }) {
   const w = big ? 72 : 54;
   const h = big ? 70 : 52;
   const k = u(1);
@@ -169,7 +170,7 @@ function Star({ on, big, rot, delay, i, u }: { on: boolean; big?: boolean; rot: 
             <SvgXml xml={STAR_GLOW_SVG} width={u(106)} height={u(106)} />
           </Animated.View>
         ) : null}
-        <SvgXml xml={on ? STAR_ON_SVG : STAR_OFF_SVG} width={u(w)} height={u(h)} />
+        {glowOnly ? null : <SvgXml xml={on ? STAR_ON_SVG : STAR_OFF_SVG} width={u(w)} height={u(h)} />}
       </Animated.View>
     </Animated.View>
   );
@@ -241,6 +242,7 @@ function VictoryScreen({ bestScore, durationSec, onNext, onMap, t, lang }: Level
     );
     return () => { cancelAnimation(spin); cancelAnimation(wiggle); };
   }, []);
+  const [flatStars, setFlatStars] = useState(false);
   const raysSpin = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value}deg` }] }));
   const badgeWiggle = useAnimatedStyle(() => ({ transform: [{ rotate: `${-3 + wiggle.value}deg` }] }));
 
@@ -351,12 +353,31 @@ function VictoryScreen({ bestScore, durationSec, onNext, onMap, t, lang }: Level
           </View>
         </Animated.View>
 
-        {/* Trophy · 3D model spinning on its base, then rising into the centre
-            (the flat trophy + podium stay as the fallback) */}
-        <Animated.View entering={FadeIn.delay(150).duration(400)} style={{ ...at(31, 200), width: u(340), height: u(340) }}>
+        {/* Stars — glows here; the stars themselves are 3D in the trophy's view
+            (flat SVG stars come back if 3D can't run) */}
+        <View style={at(96, 535)}>
+          <Star on={stars >= 1} rot={-10} delay={500} i={0} u={u} glowOnly={!flatStars} />
+        </View>
+        <View style={at(165, 508)}>
+          <Star on={stars >= 2} big rot={0} delay={640} i={1} u={u} glowOnly={!flatStars} />
+        </View>
+        <View style={at(252, 535)}>
+          <Star on={stars >= 3} rot={10} delay={780} i={2} u={u} glowOnly={!flatStars} />
+        </View>
+
+        {/* Trophy · 3D model spinning on its base, then rising into the centre,
+            and the three 3D stars under it (the flat trophy + podium stay as the fallback) */}
+        <Animated.View entering={FadeIn.delay(150).duration(400)} style={{ ...at(31, 200), width: u(340), height: u(400) }}>
           <Trophy3D
-            style={{ width: u(340), height: u(340) }}
+            style={{ width: u(340), height: u(400) }}
             delayMs={150}
+            trophyFrac={340 / 400}
+            onFail={() => setFlatStars(true)}
+            stars={[
+              { fx: 92 / 340, fy: 361 / 400, fr: 25 / 340, rot: -10, on: stars >= 1, at: 0.5 },
+              { fx: 170 / 340, fy: 343 / 400, fr: 33 / 340, rot: 0, on: stars >= 2, at: 0.64 },
+              { fx: 248 / 340, fy: 361 / 400, fr: 25 / 340, rot: 10, on: stars >= 3, at: 0.78 },
+            ]}
             fallback={
               <>
                 <View style={{ position: "absolute", left: u(70), top: u(234) }}>
@@ -369,17 +390,6 @@ function VictoryScreen({ bestScore, durationSec, onNext, onMap, t, lang }: Level
             }
           />
         </Animated.View>
-
-        {/* Stars */}
-        <View style={at(96, 535)}>
-          <Star on={stars >= 1} rot={-10} delay={500} i={0} u={u} />
-        </View>
-        <View style={at(165, 508)}>
-          <Star on={stars >= 2} big rot={0} delay={640} i={1} u={u} />
-        </View>
-        <View style={at(252, 535)}>
-          <Star on={stars >= 3} rot={10} delay={780} i={2} u={u} />
-        </View>
 
         {/* Result card · tilted white ticket with a solid purple underside */}
         <Animated.View

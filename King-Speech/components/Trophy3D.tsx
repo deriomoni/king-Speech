@@ -13,7 +13,10 @@ import * as THREE from "three";
 // the base shows — rocking a little to different sides as it turns; the spin
 // winds down facing front, then it lifts up into the centre and floats there.
 // Once it has settled the player can spin it left/right with a finger (with
-// a bit of momentum). Look: frosted yellow glass glowing from inside.
+// a bit of momentum). Look: matte frosted yellow glass with a soft inner glow.
+// The three rating stars are 3D too (puffy extruded stars, drawn in the same
+// GL view with an orthographic camera below the trophy): they pop in one by
+// one, then float, rock and turn a little. Lit stars are gold, unlit violet.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TROPHY_GLB = require("@/assets/models/trophy.glb");
@@ -50,17 +53,59 @@ void main() {
   vec3 n = normalize(vN);
   vec3 nw = normalize(vNw);
   if (!gl_FrontFacing) { n = -n; nw = -nw; }
-  float ndv = clamp(dot(n, normalize(vV)), 0.0, 1.0);
-  float fr = pow(1.0 - ndv, 1.7);
+  #ifdef ORTHO
+  vec3 v = vec3(0.0, 0.0, 1.0);
+  #else
+  vec3 v = normalize(vV);
+  #endif
+  float ndv = clamp(dot(n, v), 0.0, 1.0);
+  float fr = pow(1.0 - ndv, 2.4);
   float up = nw.y * 0.5 + 0.5;
-  // body: deeper in the middle of each face, lighter towards the top
-  vec3 col = mix(uDeep, uBody, clamp(up * 0.75 + (1.0 - ndv) * 0.35, 0.0, 1.0));
-  // frosted rim light
-  col += uRim * fr * 1.0;
-  // inner glow pooling along the lower edges
-  col += uUnder * fr * smoothstep(0.65, 0.05, up) * 1.9;
+  // matte body: soft diffuse light from the top-left, deep amber in the shade
+  float diff = max(dot(n, normalize(vec3(-0.45, 0.8, 0.6))), 0.0);
+  vec3 col = mix(uDeep, uBody, clamp(0.3 + 0.6 * diff + 0.2 * up, 0.0, 1.0));
+  // a faint frosted rim
+  col += uRim * fr * 0.4;
+  // a little warm glow left along the lower edges
+  col += uUnder * fr * smoothstep(0.6, 0.05, up) * 0.8;
   gl_FragColor = vec4(min(col, vec3(1.0)), 1.0);
 }`;
+
+export type Star3D = {
+  /** centre, as a fraction of the view's width / height */
+  fx: number; fy: number;
+  /** outer radius as a fraction of the view's width */
+  fr: number;
+  /** resting tilt, degrees */
+  rot: number;
+  on: boolean;
+  /** seconds after mount when it pops in */
+  at: number;
+};
+
+/** a five-point star with rounded tips, outer radius 1 */
+function starShape() {
+  const pts: THREE.Vector2[] = [];
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    const r = i % 2 ? 0.5 : 1;
+    pts.push(new THREE.Vector2(Math.cos(a) * r, -Math.sin(a) * r));
+  }
+  const shape = new THREE.Shape();
+  const k = 0.22; // how much of each edge the corner rounding eats
+  pts.forEach((p, i) => {
+    const prev = pts[(i + 9) % 10], next = pts[(i + 1) % 10];
+    const a = p.clone().lerp(prev, k), b = p.clone().lerp(next, k);
+    if (i === 0) shape.moveTo(a.x, a.y); else shape.lineTo(a.x, a.y);
+    shape.quadraticCurveTo(p.x, p.y, b.x, b.y);
+  });
+  shape.closePath();
+  const g = new THREE.ExtrudeGeometry(shape, {
+    depth: 0.18, bevelEnabled: true, bevelThickness: 0.16, bevelSize: 0.1, bevelSegments: 6, curveSegments: 6,
+  });
+  g.center();
+  return g;
+}
 
 const easeOutCubic = (x: number) => 1 - (1 - x) ** 3;
 const easeOutBack = (x: number) => { const c = 1.6; return 1 + (c + 1) * (x - 1) ** 3 + c * (x - 1) ** 2; };
@@ -102,7 +147,18 @@ function parseGlb(buf: ArrayBuffer): THREE.BufferGeometry {
   return g;
 }
 
-export default function Trophy3D({ style, delayMs = 0, fallback }: { style?: ViewStyle; delayMs?: number; fallback?: React.ReactNode }) {
+export default function Trophy3D({
+  style, delayMs = 0, fallback, trophyFrac = 1, stars = [], onFail,
+}: {
+  style?: ViewStyle;
+  delayMs?: number;
+  fallback?: React.ReactNode;
+  /** the trophy is drawn in the top part of the view (this fraction of its height) */
+  trophyFrac?: number;
+  stars?: Star3D[];
+  /** called if 3D can't run here (the caller can show its flat stars) */
+  onFail?: () => void;
+}) {
   const [failed, setFailed] = useState(false);
   const raf = useRef(0);
   const alive = useRef(true);
@@ -158,7 +214,8 @@ export default function Trophy3D({ style, delayMs = 0, fallback }: { style?: Vie
 
       const scene = new THREE.Scene();
       // a little above the trophy, looking down at it — the top of the base shows
-      const camera = new THREE.PerspectiveCamera(33, w / h, 0.01, 10);
+      const th = Math.round(h * trophyFrac);
+      const camera = new THREE.PerspectiveCamera(33, w / th, 0.01, 10);
       camera.position.set(0, 0.25, 0.92);
       camera.lookAt(0, 0.085, 0);
 
@@ -177,6 +234,26 @@ export default function Trophy3D({ style, delayMs = 0, fallback }: { style?: Vie
         side: THREE.DoubleSide,
       });
       const mesh = new THREE.Mesh(geo, mat);
+
+      // stars: same glass, flat-on orthographic view in drawing-buffer pixels
+      const starScene = new THREE.Scene();
+      const ortho = new THREE.OrthographicCamera(0, w, 0, -h, -2000, 2000);
+      ortho.position.z = 1000;
+      const glass = (deep: string, body: string, rim: string, under: string) => new THREE.ShaderMaterial({
+        vertexShader: GLASS_VERT, fragmentShader: GLASS_FRAG, defines: { ORTHO: 1 }, side: THREE.DoubleSide,
+        uniforms: { uDeep: { value: rgb(deep) }, uBody: { value: rgb(body) }, uRim: { value: rgb(rim) }, uUnder: { value: rgb(under) } },
+      });
+      const goldStar = glass("#B5600A", "#FFCF34", "#FFF3B0", "#FF8A1F");
+      const violetStar = glass("#2A0B6E", "#5A2BC4", "#B9A0FF", "#8F5CFF");
+      const starGeo = starShape();
+      const starMeshes = stars.map((st) => {
+        const m = new THREE.Mesh(starGeo, st.on ? goldStar : violetStar);
+        m.visible = false;
+        starScene.add(m);
+        return m;
+      });
+      renderer.autoClear = false;
+      let tm0 = -1;
       // pivot = the bottom centre of the base (the model's origin)
       const pivot = new THREE.Group();
       pivot.add(mesh);
@@ -186,6 +263,8 @@ export default function Trophy3D({ style, delayMs = 0, fallback }: { style?: Vie
       const frame = (now: number) => {
         if (!alive.current) return;
         if (t0 < 0) t0 = now + delayMs;
+        if (tm0 < 0) tm0 = now;
+        const tm = (now - tm0) / 1000; // since mount (the stars' clock)
         const t = Math.max(0, (now - t0) / 1000);
         const dt = last < 0 ? 0 : Math.min(0.05, (now - last) / 1000); last = now;
         settled.current = t >= SPIN_SEC + RISE_SEC;
@@ -216,12 +295,34 @@ export default function Trophy3D({ style, delayMs = 0, fallback }: { style?: Vie
           d.sway += ((d.active || Math.abs(d.vel) > 0.3 ? 0 : 1) - d.sway) * Math.min(1, dt * 2);
           pivot.rotation.set(0, d.angle + Math.sin(s * 0.7) * 0.32 * d.sway, 0);
         }
+        stars.forEach((st, i) => {
+          const m = starMeshes[i];
+          const p = (tm - st.at) / 0.6;
+          if (p <= 0) { m.visible = false; return; }
+          m.visible = true;
+          const r = st.fr * w;
+          const pop = p >= 1 ? 1 : 1 + 3.2 * (p - 1) ** 3 + 2.2 * (p - 1) ** 2; // springy overshoot
+          m.scale.set(r * pop, r * pop, r * pop);
+          const ph = tm * ((Math.PI * 2) / (2.4 + i * 0.3)) + i * 1.3;
+          m.position.set(st.fx * w, -(st.fy * h) + Math.sin(ph) * r * 0.1, 0);
+          // spins in on the way, then rocks and turns a little to show its depth
+          const spinIn = p < 1 ? (1 - easeOutCubic(p)) * Math.PI * 2 : 0;
+          m.rotation.set(Math.sin(ph * 0.7) * 0.18, spinIn + Math.sin(ph + 0.6) * 0.42, (-st.rot * Math.PI) / 180 + Math.sin(ph + 0.8) * (st.on ? 0.12 : 0.07));
+        });
         try {
+          renderer.setViewport(0, 0, w, h);
+          renderer.clear();
+          renderer.setViewport(0, h - th, w, th);
           renderer.render(scene, camera);
+          if (stars.length) {
+            renderer.setViewport(0, 0, w, h);
+            renderer.clearDepth();
+            renderer.render(starScene, ortho);
+          }
           gl.endFrameEXP();
         } catch (e) {
           console.warn("[Trophy3D] render failed, falling back to the flat trophy:", e);
-          if (alive.current) setFailed(true);
+          if (alive.current) { setFailed(true); onFail?.(); }
           return;
         }
         raf.current = requestAnimationFrame(frame);
@@ -229,7 +330,7 @@ export default function Trophy3D({ style, delayMs = 0, fallback }: { style?: Vie
       raf.current = requestAnimationFrame(frame);
     } catch (e) {
       console.warn("[Trophy3D] falling back to the flat trophy:", e);
-      if (alive.current) setFailed(true);
+      if (alive.current) { setFailed(true); onFail?.(); }
     }
   };
 
