@@ -25,7 +25,7 @@ import * as SystemUI from "expo-system-ui";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
+import { View, Text, ActivityIndicator, StyleSheet, BackHandler } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import Animated, {
@@ -47,8 +47,23 @@ import { RolesProvider } from "@/context/RolesContext";
 
 SplashScreen.preventAutoHideAsync();
 
+/** Android's back button / back-swipe must not pull the player out of a level
+ *  either: outside the main tabs it does nothing — leaving is done with the
+ *  screen's own buttons. (Screens with their own back handling still get it
+ *  first: their listeners are added later and run before this one.) */
+function useBlockHardwareBack() {
+  const segments = useSegments();
+  const inTabs = segments[0] === "(tabs)" || segments[0] === "(auth)" || (segments as string[]).length === 0;
+  useEffect(() => {
+    if (inTabs) return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => true);
+    return () => sub.remove();
+  }, [inTabs]);
+}
+
 function RootLayoutNav() {
   const { themeMode, theme } = useTheme();
+  useBlockHardwareBack();
   // Everything behind the screens (navigation cards, the native root view /
   // window) is the theme background — fast horizontal swipes, the iOS
   // back-swipe and overscroll never reveal a white edge.
@@ -63,7 +78,10 @@ function RootLayoutNav() {
   return (
     <NavThemeProvider value={navTheme}>
       <StatusBar style={themeMode === "dark" ? "light" : "dark"} animated />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: bg } }}>
+      {/* No swipe-back anywhere: a stray horizontal swipe (e.g. spinning the
+          victory trophy) must never drop the player out of a level — screens
+          are left only through their own buttons. */}
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: bg }, gestureEnabled: false, fullScreenGestureEnabled: false }}>
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="level/[id]" options={{ headerShown: false }} />

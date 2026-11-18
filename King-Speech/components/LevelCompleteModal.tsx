@@ -272,14 +272,14 @@ function VictoryScreen({ bestScore, durationSec, onNext, onMap, t, lang }: Level
   // differently; padding leaves room for the glow (iOS clips it to the box)
   const sp = title.indexOf(" ");
   const titleLines = sp > 0 ? [title.slice(0, sp), title.slice(sp + 1)] : [title];
-  const GX = 30, GY = 22;
+  const GX = 24, GY = 22;
   const titleText = {
     paddingHorizontal: u(GX),
     paddingVertical: u(GY),
     fontFamily: "Geologica_900Black",
-    fontSize: u(54),
-    lineHeight: u(52),
-    letterSpacing: u(-0.81),
+    fontSize: u(46),
+    lineHeight: u(46),
+    letterSpacing: u(-0.7),
     textAlign: "center" as const,
   };
 
@@ -333,14 +333,16 @@ function VictoryScreen({ bestScore, durationSec, onNext, onMap, t, lang }: Level
         {/* Title · «Уровень пройден!», tilted, glow + solid purple drop */}
         <Animated.View
           entering={ZoomIn.springify().damping(11)}
-          style={{ ...at(201 - 173.9, 74.37), width: u(347.8), height: u(133.2), alignItems: "center", justifyContent: "center" }}
+          style={{ ...at(0, 74.37), width: u(402), height: u(133.2), alignItems: "center", justifyContent: "center" }}
         >
           <View style={{ transform: [{ rotate: "-5deg" }], alignItems: "center" }}>
             {titleLines.map((line, i) => (
               <View key={i} style={{ marginTop: i ? -u(GY * 2) : 0 }}>
-                <Text numberOfLines={1} style={[titleText, { position: "absolute", left: 0, top: u(5), color: "#4A12B8" }]}>{line}</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[titleText, { position: "absolute", left: 0, top: u(5), color: "#4A12B8" }]}>{line}</Text>
                 <Text
                   numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
                   style={[
                     titleText,
                     { color: "#FFFFFF", textShadowColor: "rgba(255,217,255,0.7)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: u(22) },
