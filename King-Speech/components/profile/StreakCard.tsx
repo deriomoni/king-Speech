@@ -4,11 +4,11 @@ import Svg, { Circle } from "react-native-svg";
 import type { Theme } from "@/context/ThemeContext";
 
 // Figma "Card · В ударе" (node 117:1091): "N дня подряд в ударе" + a Mon..Sun
-// row of day rings. Activity is derived from real dated data (timestamps of
-// saved recordings) — no fake numbers. A day's ring fills by how many dated
-// activities happened that day vs DAILY_GOAL.
+// row of day rings. Activity = finished path tasks and Show Time runs
+// (GameContext.activityLog). A day's ring outline fills by how many happened
+// that day vs DAILY_GOAL: orange when low, yellow midway, glowing mint when full.
 
-const DAILY_GOAL = 1;
+const DAILY_GOAL = 3;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const DAY_LABELS_RU = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
@@ -68,15 +68,17 @@ function pluralDaysRu(n: number) {
 
 // Ring colour by how much of the day's goal was completed (Figma ring/progress):
 // ≥90% green, ≥50% amber, otherwise coral. A missed day shows only the grey track.
+export const MINT = "#3EE6B0";
 export function ringColor(progress: number) {
-  if (progress >= 0.9) return "#22C55E";
-  if (progress >= 0.5) return "#FFB020";
-  return "#FF6B5B";
+  if (progress >= 1) return MINT;
+  if (progress >= 0.5) return "#FFD23F";
+  return "#FF8A1F";
 }
 
-const RING = 40;
-const R = 18;
-const STROKE = 4;
+const RING = 46;
+const C0 = RING / 2;
+const R = 19;
+const STROKE = 4.5;
 const CIRC = 2 * Math.PI * R;
 
 function DayRing({
@@ -89,12 +91,19 @@ function DayRing({
   color: string;
 }) {
   return (
-    <Svg width={RING} height={RING} viewBox="0 0 40 40">
-      <Circle cx={20} cy={20} r={R} stroke={trackColor} strokeWidth={STROKE} fill="none" />
+    <Svg width={RING} height={RING} viewBox={`0 0 ${RING} ${RING}`}>
+      {progress >= 1 ? (
+        // soft mint glow around a completed day
+        <>
+          <Circle cx={C0} cy={C0} r={R} stroke={color} strokeOpacity={0.14} strokeWidth={STROKE + 6} fill="none" />
+          <Circle cx={C0} cy={C0} r={R} stroke={color} strokeOpacity={0.22} strokeWidth={STROKE + 3} fill="none" />
+        </>
+      ) : null}
+      <Circle cx={C0} cy={C0} r={R} stroke={trackColor} strokeWidth={STROKE} fill="none" />
       {progress > 0 ? (
         <Circle
-          cx={20}
-          cy={20}
+          cx={C0}
+          cy={C0}
           r={R}
           stroke={color}
           strokeWidth={STROKE}
@@ -102,7 +111,7 @@ function DayRing({
           strokeLinecap={progress >= 1 ? "butt" : "round"}
           strokeDasharray={progress >= 1 ? undefined : `${CIRC * progress} ${CIRC}`}
           // Start at 12 o'clock, run clockwise (as in the Figma arcs).
-          transform="rotate(-90 20 20)"
+          transform={`rotate(-90 ${C0} ${C0})`}
         />
       ) : null}
     </Svg>
@@ -170,7 +179,7 @@ export default function StreakCard({
 
 const styles = StyleSheet.create({
   card: {
-    height: 124,
+    paddingBottom: 14,
     borderRadius: 22,
     borderWidth: 2,
     paddingTop: 15,
@@ -185,17 +194,18 @@ const styles = StyleSheet.create({
     fontFamily: "Geologica_900Black",
   },
   daysRow: {
-    marginTop: 12,
+    marginTop: 8,
     flexDirection: "row",
     justifyContent: "space-between",
   },
   day: {
-    width: 40,
-    height: 56,
+    width: RING,
     alignItems: "center",
   },
   dayLabel: {
-    height: 15,
+    height: 14,
+    lineHeight: 14,
+    marginBottom: 5,
     fontSize: 11,
     fontFamily: "Geologica_700Bold",
     textAlign: "center",
@@ -203,7 +213,6 @@ const styles = StyleSheet.create({
   ringWrap: {
     width: RING,
     height: RING,
-    marginTop: -1,
   },
   ringNumWrap: {
     position: "absolute",
@@ -215,9 +224,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   ringNum: {
-    fontSize: 16,
-    lineHeight: 16,
+    fontSize: 15,
+    lineHeight: 18,
     fontFamily: "Geologica_900Black",
     textAlign: "center",
+    textAlignVertical: "center",
+    includeFontPadding: false,
   },
 });

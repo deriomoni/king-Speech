@@ -123,7 +123,7 @@ export default function ProfileScreen() {
   const { t, lang } = useLang();
   const en = lang === "en";
   const insets = useSafeAreaInsets();
-  const { levels, coins, readingRecordings, currentRank } = useGame();
+  const { levels, coins, readingRecordings, activityLog, currentRank } = useGame();
   const { user, setPhotoURL, saveProfile } = useAuth();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
@@ -356,11 +356,11 @@ export default function ProfileScreen() {
   );
   const currentModule = activeLevel?.module ?? (maxCompletedModule || 1);
 
-  // Daily activity for the streak card. The app has no dedicated activity
-  // log, so we use the only dated activity it stores: saved recordings.
+  // Daily activity for the streak card: finished path tasks + Show Time runs
+  // (activityLog), plus dated recordings saved before the log existed.
   const activityDates = useMemo(
-    () => readingRecordings.map((r) => r.date).filter((d) => typeof d === "number"),
-    [readingRecordings],
+    () => [...activityLog, ...readingRecordings.map((r) => r.date).filter((d) => typeof d === "number")],
+    [activityLog, readingRecordings],
   );
 
   const initials = (name || "?").split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 1);

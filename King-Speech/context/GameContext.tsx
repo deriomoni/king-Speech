@@ -187,6 +187,10 @@ const COINS_KEY = "@kingspeech_coins_v2";
 const START_COINS = 0;
 // Daily-free Show Time tracker (stores the local YYYY-MM-DD of the last free run).
 const SHOWTIME_FREE_KEY = "@kingspeech_showtime_free_v1";
+// Activity log for the profile «В ударе» rings: one timestamp per finished
+// path task / Show Time run. Trimmed to the last ACTIVITY_DAYS days.
+const ACTIVITY_KEY = "@kingspeech_activity_v1";
+const ACTIVITY_DAYS = 60;
 const PROGRESS_KEY = "@kingspeech_progress_v5";
 
 // Local calendar day as YYYY-MM-DD (not UTC), so the free run resets at the
@@ -307,6 +311,8 @@ interface GameContextValue {
   markPortalCompleted: (rankId: number) => void;
   // Private reading library — every recorded reading take, newest first.
   readingRecordings: ReadingRecording[];
+  /** Timestamps of finished path tasks / Show Time runs (streak rings). */
+  activityLog: number[];
   addReadingRecording: (rec: ReadingRecording) => void;
   removeReadingRecording: (uri: string) => void;
 }
@@ -327,6 +333,25 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [portalCompleted, setPortalCompleted] = useState<Record<number, boolean>>({});
   const [readingRecordings, setReadingRecordings] = useState<ReadingRecording[]>([]);
   const [showTimeLastFree, setShowTimeLastFree] = useState<string | null>(null);
+  const [activityLog, setActivityLog] = useState<number[]>([]);
+  useEffect(() => {
+    AsyncStorage.getItem(ACTIVITY_KEY)
+      .then((raw) => {
+        const v = raw ? JSON.parse(raw) : [];
+        if (Array.isArray(v)) setActivityLog(v.filter((t) => typeof t === "number"));
+      })
+      .catch(() => {});
+  }, []);
+  // Counts toward today's ring even on replays of finished levels — it's practice.
+  const logActivity = () => {
+    const now = Date.now();
+    const cutoff = now - ACTIVITY_DAYS * 24 * 60 * 60 * 1000;
+    setActivityLog((prev) => {
+      const next = [...prev.filter((t) => t >= cutoff), now];
+      AsyncStorage.setItem(ACTIVITY_KEY, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+  };
 
   useEffect(() => {
     Promise.all([
@@ -466,6 +491,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   };
 
   const completeTask = (levelId: LevelType, taskNumber: number, score: number) => {
+    logActivity();
     // Open Testing is a pure runtime override: never persist progress while it
     // is enabled, so toggling it off restores the original lock state. The
     // task panel still advances visually because `effectiveStatus` in
@@ -539,6 +565,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // For reading levels: complete every task in one shot, unlock the next
   // level, and award XP only once.
   const completeAllTasksForLevel = (levelId: LevelType, score: number) => {
+    logActivity();
     if (isOpenTestingEnabled) return;
     const target = levels.find((l) => l.id === levelId);
     if (!target) return;
@@ -632,6 +659,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Mark a level as completed and unlock the next level in the path. Used
   // by vocabulary screens that don't fit the per-task scoring model.
   const markLevelComplete = (levelId: LevelType) => {
+    logActivity();
     if (isOpenTestingEnabled) return;
     const target = levels.find((l) => l.id === levelId);
     if (!target) return;
@@ -686,6 +714,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setMetricSeries({});
     setPortalCompleted({});
     setReadingRecordings([]);
+    setActivityLog([]);
+    AsyncStorage.setItem(ACTIVITY_KEY, JSON.stringify([]));
     AsyncStorage.setItem(PROGRESS_KEY, JSON.stringify([]));
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(buildLevelsFromContent(lang, null)));
     AsyncStorage.setItem(XP_KEY, "0");
@@ -893,8 +923,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setMetricSeries({});
       setPortalCompleted({});
       setReadingRecordings([]);
+      setActivityLog([]);
       try {
         await Promise.all([
+          AsyncStorage.setItem(ACTIVITY_KEY, JSON.stringify([])),
           AsyncStorage.setItem(PROGRESS_KEY, JSON.stringify([])),
           AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(buildLevelsFromContent(lang, null))),
           AsyncStorage.setItem(XP_KEY, "0"),
@@ -1278,10 +1310,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
       portalCompleted,
       markPortalCompleted,
       readingRecordings,
+      activityLog,
       addReadingRecording,
       removeReadingRecording,
     }),
-    [levels, totalXp, coins, showTimeLastFree, isLoaded, currentRank, showTimeRecordings, metricScores, metricSeries, portalCompleted, readingRecordings]
+    [levels, totalXp, coins, showTimeLastFree, isLoaded, currentRank, showTimeRecordings, metricScores, metricSeries, portalCompleted, readingRecordings, activityLog]
   );
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
