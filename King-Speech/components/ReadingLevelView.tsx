@@ -611,7 +611,7 @@ export default function ReadingLevelView({
             },
           ]}
         >
-          <RecDot size={13} />
+          <RecDot size={13} color={btnInk} />
           <Text style={[st.startLabel, { color: btnInk }]}>
             {lang === "ru" ? "Читать" : "Read"}
           </Text>

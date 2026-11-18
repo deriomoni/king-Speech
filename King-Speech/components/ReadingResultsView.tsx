@@ -262,31 +262,12 @@ function SelfStar({
 }: {
   active: boolean;
   locked: boolean;
-  hint: boolean; // unlocked but not yet rated → glow + blink to invite a tap
+  hint: boolean; // unlocked but not yet rated → accent tint so it reads as tappable
   accent: string;
   trackColor: string;
   onPress: () => void;
 }) {
-  const scale = useSharedValue(1);
-  const blink = useSharedValue(1);
-  useEffect(() => {
-    if (active) {
-      scale.value = withSequence(withSpring(1.25, { damping: 6 }), withSpring(1));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active]);
-  useEffect(() => {
-    if (hint && !active) {
-      blink.value = withRepeat(withTiming(0.5, { duration: 650 }), -1, true);
-    } else {
-      cancelAnimation(blink);
-      blink.value = withTiming(1, { duration: 200 });
-    }
-    return () => cancelAnimation(blink);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hint, active]);
-  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }], opacity: blink.value }));
-  const glow = active || hint;
+  // Static on purpose: no glow / blink / pop (it distracted from the results).
   const color = locked ? trackColor : active || hint ? accent : trackColor;
   return (
     <Pressable
@@ -295,18 +276,7 @@ function SelfStar({
       hitSlop={6}
       style={({ pressed }) => ({ opacity: pressed && !locked ? 0.7 : 1 })}
     >
-      <Animated.View style={style}>
-        {/* Glow on the glyph itself (a View shadow paints a box on web). */}
-        {/* soft glow: a bigger translucent star behind the glyph */}
-        {glow ? (
-          <RoundStar
-            size={60}
-            color={withAlpha(accent, 0.28)}
-            style={{ position: "absolute", left: -8, top: -8 }}
-          />
-        ) : null}
-        <RoundStar size={44} filled={active || hint} color={color} emptyColor={color} emptyOpacity={0.35} />
-      </Animated.View>
+      <RoundStar size={44} filled={active} color={color} emptyColor={color} emptyOpacity={0.35} />
     </Pressable>
   );
 }
