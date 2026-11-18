@@ -168,7 +168,7 @@ export function StageFeed(p: SceneProps) {
       {p.awaitingOpening && !scripted && (
         <Animated.View entering={FadeInDown} style={styles.hint}>
           <Ionicons name="sparkles" size={13} color={SCENE.onYellow} />
-          <Text style={styles.hintText}>{pickLang(lang, { ru: "Твой выход: ", en: "Your entrance: ", kk: "Сенің шығуың: " })}{lt(s.openingHint, lang)}</Text>
+          <Text style={styles.hintText}>{pickLang(lang, { ru: "Твой выход: ", en: "Your entrance: ", kk: "Сіздің шығуыңыз: " })}{lt(s.openingHint, lang)}</Text>
         </Animated.View>
       )}
 

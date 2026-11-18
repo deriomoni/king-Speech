@@ -4236,7 +4236,7 @@ const NOISE_EFFECTS: Record<Lang, { text: string; duration: number }[]> = {
     { text: "тс-с!", duration: 1200 },
     { text: "мм...", duration: 1800 },
     { text: "*сыбдыр*", duration: 1600 },
-    { text: "жарайсың!", duration: 1000 },
+    { text: "жарайсыз!", duration: 1000 },
   ],
 };
 
@@ -4638,18 +4638,18 @@ const ENCOURAGEMENTS: Record<string, string[]> = {
     "Say it like you mean it",
   ],
   kk: [
-    "Зал дәл сені күтіп отыр",
-    "Дем ал. Енді баста",
-    "Дауысың ойлағаныңнан да күшті",
-    "Сен сезінгеніңнен де дайынсың",
+    "Зал дәл сізді күтіп отыр",
+    "Дем алыңыз. Енді бастаңыз",
+    "Дауысыңыз ойлағаныңыздан да күшті",
+    "Сіз сезінгеніңізден де дайынсыз",
     "Үзіліс те — сөздің бір бөлігі",
-    "Мәтінге емес, залға қара",
-    "Толқу — саған күш береді",
-    "Жаңылсаң — әрі қарай жалғастыр",
-    "Бұл сөзді сенен артық ешкім білмейді",
+    "Мәтінге емес, залға қараңыз",
+    "Толқу — сізге күш береді",
+    "Жаңылсаңыз — әрі қарай жалғастырыңыз",
+    "Бұл сөзді сізден артық ешкім білмейді",
     "Алғашқы сөйлемді — асықпай",
-    "Олар сенің жағыңда",
-    "Шын сенгендей сөйле",
+    "Олар сіздің жағыңызда",
+    "Шын сенгендей сөйлеңіз",
   ],
 };
 
@@ -5464,7 +5464,7 @@ export default function ShowtimeStageScreen() {
               {pickLang(lang, {
                 ru: "Речь, которую нужно произнести вслух перед залом. Прочитай её голосом, а что она значит лично для тебя, поймёшь на сцене.",
                 en: "A speech to say out loud, in front of a hall. Read it with your voice — what it means to you, you'll find out on stage.",
-                kk: "Зал алдында дауыстап айтуға арналған сөз. Оны дауысыңмен оқы — оның сен үшін не мәні бар екенін сахнада түсінесің.",
+                kk: "Зал алдында дауыстап айтуға арналған сөз. Оны дауысыңызбен оқыңыз — оның сіз үшін не мәні бар екенін сахнада түсінесіз.",
               })}
             </Text>
             {theme.timerSeconds !== null && (
@@ -5476,7 +5476,7 @@ export default function ShowtimeStageScreen() {
 
             <Animated.View entering={pvIn(2)}>
             <Text style={[s.pvKicker, { color: isDarkUi ? "rgba(240,238,233,0.5)" : "rgba(38,38,40,0.5)" }]}>
-              {pickLang(lang, { ru: "НАСТРОЙ НА ВЫХОД", en: "SET YOURSELF UP", kk: "САХНАҒА ДАЙЫНДАЛ" })}
+              {pickLang(lang, { ru: "НАСТРОЙ НА ВЫХОД", en: "SET YOURSELF UP", kk: "САХНАҒА ДАЙЫНДЫҚ" })}
             </Text>
             {/* TODO(design): tone / pace / hall are not in the content yet —
                 the design's defaults are shown for every theme. */}

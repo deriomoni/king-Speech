@@ -267,7 +267,7 @@ function TwisterView({ step, lang, c, isDark }: { step: TwisterStep; lang: Lang;
         {pickLang(lang, {
           ru: "Веди голос за подсветкой — каждый круг быстрее.",
           en: "Follow the highlight — it speeds up each pass.",
-          kk: "Белгіленген сөзбен бірге айт — әр айналым жылдамырақ.",
+          kk: "Белгіленген сөзбен бірге айтыңыз — әр айналым жылдамырақ.",
         })}
       </Text>
 

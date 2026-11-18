@@ -232,7 +232,7 @@ export function ShowTimeModeTiles({
         idSuffix="roles"
         spotX={-10}
         title={pickLang(lang, { ru: "Роли", en: "Roles", kk: "Рөлдер" })}
-        sub={pickLang(lang, { ru: "Играй персонажа", en: "Play a character", kk: "Кейіпкерді сомда" })}
+        sub={pickLang(lang, { ru: "Играй персонажа", en: "Play a character", kk: "Кейіпкерді сомдаңыз" })}
         onPress={onRoles}
       >
         <RolesArt look={look} />

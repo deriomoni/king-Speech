@@ -46,7 +46,7 @@ export const GENERIC_AMBIENT: LocalizedText[] = [
   { ru: "только зашла, о чём речь?", en: "just joined, what's up?", kk: "жаңа кірдім, не туралы әңгіме?" },
   { ru: "🔥", en: "🔥" },
   { ru: "лайк не глядя", en: "liked already", kk: "қарамай-ақ лайк" },
-  { ru: "ты лучший!", en: "you're the best!", kk: "сен ең мықтысың!" },
+  { ru: "ты лучший!", en: "you're the best!", kk: "сіз ең мықтысыз!" },
   { ru: "+", en: "+" },
   { ru: "смотрю с работы 🤫", en: "watching from work 🤫", kk: "жұмыстан көріп отырмын 🤫" },
 ];

@@ -46,21 +46,21 @@ const C_EXHALE = warmupTheme.gold;
 const PATTERN: Phase[] = [
   {
     type: "inhale",
-    label: { ru: "Вдох", en: "Inhale", kk: "Дем ал" },
+    label: { ru: "Вдох", en: "Inhale", kk: "Дем алу" },
     sec: 3,
     via: { ru: "носом", en: "through the nose", kk: "мұрынмен" },
     color: C_INHALE,
   },
   {
     type: "hold",
-    label: { ru: "Задержка", en: "Hold", kk: "Ұста" },
+    label: { ru: "Задержка", en: "Hold", kk: "Ұстау" },
     sec: 2,
-    via: { ru: "держи", en: "hold it", kk: "ұстап тұр" },
+    via: { ru: "держи", en: "hold it", kk: "ұстап тұрыңыз" },
     color: C_HOLD,
   },
   {
     type: "exhale",
-    label: { ru: "Выдох", en: "Exhale", kk: "Дем шығар" },
+    label: { ru: "Выдох", en: "Exhale", kk: "Дем шығару" },
     sec: 4,
     via: { ru: "ртом", en: "through the mouth", kk: "ауызбен" },
     color: C_EXHALE,

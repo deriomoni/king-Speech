@@ -64,32 +64,32 @@ const METRIC_TIPS: Record<string, { ru: string; en: string; kk?: string }> = {
   pauses: {
     ru: "Не бойся пауз — они подчёркивают самое важное.",
     en: "Don't fear pauses — they highlight what matters most.",
-    kk: "Үзілістерден қорықпа — олар ең маңыздысын ерекшелейді.",
+    kk: "Үзілістерден қорықпаңыз — олар ең маңыздысын ерекшелейді.",
   },
   tempo: {
     ru: "Найди свой темп: не торопись, но и не растягивай.",
     en: "Find your tempo: don't rush, don't drag.",
-    kk: "Өз қарқыныңды тап: асықпа, бірақ созба да.",
+    kk: "Өз қарқыныңызды табыңыз: асықпаңыз, бірақ созбаңыз да.",
   },
   expressiveness: {
     ru: "Меняй интонацию — голос должен звучать живо.",
     en: "Vary your intonation — let your voice sound alive.",
-    kk: "Интонацияңды өзгертіп отыр — дауысың жанды естілсін.",
+    kk: "Интонацияңызды өзгертіп отырыңыз — дауысыңыз жанды естілсін.",
   },
   confidence: {
     ru: "Говори громче, чем тебе кажется нужным — это придаёт уверенности.",
     en: "Speak a little louder than you think — it brings confidence.",
-    kk: "Өзіңе керек сияқты көрінгеннен сәл қаттырақ сөйле — бұл сенімділік береді.",
+    kk: "Өзіңізге керек сияқты көрінгеннен сәл қаттырақ сөйлеңіз — бұл сенімділік береді.",
   },
   clarity: {
     ru: "Заверши каждое слово — звуки в конце не должны проглатываться.",
     en: "Finish every word — don't swallow the endings.",
-    kk: "Әр сөзді соңына дейін айт — сөз соңын жұтып қойма.",
+    kk: "Әр сөзді соңына дейін айтыңыз — сөз соңын жұтып қоймаңыз.",
   },
   volume: {
     ru: "Дыши глубже — звук опирается на дыхание.",
     en: "Breathe deeper — sound rests on breath.",
-    kk: "Тереңірек дем ал — дыбыс тынысқа сүйенеді.",
+    kk: "Тереңірек дем алыңыз — дыбыс тынысқа сүйенеді.",
   },
 };
 
@@ -176,10 +176,10 @@ function HeroBlock({ theme, lang, memento = false }: { theme: RankTheme; lang: L
         ]}
       >
         {memento
-          ? pickLang(lang, { ru: "Мир, который ты прошёл.", en: "A world you've completed.", kk: "Сен өткен әлем." })
+          ? pickLang(lang, { ru: "Мир, который ты прошёл.", en: "A world you've completed.", kk: "Сіз өткен әлем." })
           : targetIsFinal
-          ? pickLang(lang, { ru: "Ты завершил путь.", en: "You finished the path.", kk: "Сен жолды аяқтадың." })
-          : pickLang(lang, { ru: "Ты открыл новый ранг.", en: "You unlocked a new rank.", kk: "Сен жаңа дәрежеге жеттің." })}
+          ? pickLang(lang, { ru: "Ты завершил путь.", en: "You finished the path.", kk: "Сіз жолды аяқтадыңыз." })
+          : pickLang(lang, { ru: "Ты открыл новый ранг.", en: "You unlocked a new rank.", kk: "Сіз жаңа дәрежеге жеттіңіз." })}
       </Text>
       <Text
         style={[
@@ -294,7 +294,7 @@ function ShowtimeRecording({ uri, theme, lang }: { uri?: string; theme: RankThem
         {pickLang(lang, { ru: "Блок 1 · Начало", en: "Block 1 · The beginning", kk: "1-блок · Бастауы" })}
       </Text>
       <Text style={[blockStyles.heading, { color: theme.textPrimary, fontFamily: theme.fontFamilyTitle }]}>
-        {pickLang(lang, { ru: "Вот каким ты был в начале…", en: "This is who you were…", kk: "Басында сен осындай едің…" })}
+        {pickLang(lang, { ru: "Вот каким ты был в начале…", en: "This is who you were…", kk: "Басында сіз осындай едіңіз…" })}
       </Text>
       {uri ? (
         <Pressable
@@ -314,15 +314,15 @@ function ShowtimeRecording({ uri, theme, lang }: { uri?: string; theme: RankThem
           />
           <Text style={[blockStyles.playText, { color: theme.accent, fontFamily: theme.fontFamilyTitle }]}>
             {playing
-              ? pickLang(lang, { ru: "Слушаем твою первую запись…", en: "Playing your first take…", kk: "Алғашқы жазбаңды тыңдап жатырмыз…" })
-              : pickLang(lang, { ru: "Воспроизвести первый Show Time", en: "Play first Show Time", kk: "Алғашқы Show Time-ды ойнату" })}
+              ? pickLang(lang, { ru: "Слушаем твою первую запись…", en: "Playing your first take…", kk: "Алғашқы жазбаңызды тыңдап жатырмыз…" })
+              : pickLang(lang, { ru: "Воспроизвести первый Show Time", en: "Play first Show Time", kk: "Алғашқы Сахна уақытын ойнату" })}
           </Text>
         </Pressable>
       ) : (
         <View style={[blockStyles.empty, { borderColor: theme.borderColor }]}>
           <Ionicons name="mic-outline" size={20} color={theme.textMuted} />
           <Text style={[blockStyles.emptyText, { color: theme.textMuted, fontFamily: theme.fontFamily }]}>
-            {pickLang(lang, { ru: "Ранней записи Show Time пока нет — твой будущий ты её услышит.", en: "No early Show Time recording yet — your future self will hear it.", kk: "Ерте Show Time жазбасы әзірге жоқ — болашақтағы сен оны міндетті түрде естисің." })}
+            {pickLang(lang, { ru: "Ранней записи Show Time пока нет — твой будущий ты её услышит.", en: "No early Show Time recording yet — your future self will hear it.", kk: "Ерте Сахна уақыты жазбасы әзірге жоқ — болашақтағы сіз оны міндетті түрде естисіз." })}
           </Text>
         </View>
       )}
@@ -423,7 +423,7 @@ function TipsBlock({
       </Text>
       {metrics.map((m, i) => {
         const label = METRIC_LABELS[m] ?? { ru: m, en: m, kk: m };
-        const tip = METRIC_TIPS[m] ?? { ru: "Продолжай практиковаться.", en: "Keep practicing.", kk: "Жаттығуды жалғастыр." };
+        const tip = METRIC_TIPS[m] ?? { ru: "Продолжай практиковаться.", en: "Keep practicing.", kk: "Жаттығуды жалғастырыңыз." };
         const trend = trends[m];
         return (
           <View key={m + i} style={blockStyles.tipRow}>
@@ -625,14 +625,14 @@ export default function RankUpScreen({ fromRank, memento = false }: Props) {
             {memento
               ? pickLang(lang, { ru: "Блок 4 · Воспоминание", en: "Block 4 · A keepsake", kk: "4-блок · Естелік" })
               : isFinal
-              ? pickLang(lang, { ru: "Ты прошёл все ранги", en: "You completed every rank", kk: "Сен барлық дәрежеден өттің" })
-              : pickLang(lang, { ru: "Блок 4 · Добро пожаловать в", en: "Block 4 · Welcome to", kk: "4-блок · Жаңа дәрежең:" })}
+              ? pickLang(lang, { ru: "Ты прошёл все ранги", en: "You completed every rank", kk: "Сіз барлық дәрежеден өттіңіз" })
+              : pickLang(lang, { ru: "Блок 4 · Добро пожаловать в", en: "Block 4 · Welcome to", kk: "4-блок · Жаңа дәрежеңіз:" })}
           </Text>
           <Text style={[rankUpStyles.bigTitle, { color: memento ? theme.accent : (next.textPrimary === theme.textPrimary ? theme.textPrimary : next.accent), fontFamily: (memento ? theme : next).fontFamilyTitle }]}>
             {memento
               ? rankTitle(theme.index, lang)
               : isFinal
-              ? pickLang(lang, { ru: "Твой Голос", en: "The Voice is Yours", kk: "Дауыс — сенікі" })
+              ? pickLang(lang, { ru: "Твой Голос", en: "The Voice is Yours", kk: "Дауыс — сіздікі" })
               : rankTitle(next.index, lang)}
           </Text>
         </Animated.View>

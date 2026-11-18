@@ -66,10 +66,10 @@ export default function WarmupTask1Results({ result, onNext }: Props) {
         <OreoMascot size={120} shouldPlay />
         <Text style={styles.cheer}>
           {result.stars >= 3
-            ? pickLang(lang, { ru: "Блестяще! Голос разогрет.", en: "Brilliant! Your voice is warmed up.", kk: "Тамаша! Дауысың қызды." })
+            ? pickLang(lang, { ru: "Блестяще! Голос разогрет.", en: "Brilliant! Your voice is warmed up.", kk: "Тамаша! Дауысыңыз қызды." })
             : result.stars >= 2
-              ? pickLang(lang, { ru: "Хорошо! Голос разогревается.", en: "Good! Your voice is warming up.", kk: "Жақсы! Дауысың қызып келеді." })
-              : pickLang(lang, { ru: "Отличное начало — продолжай!", en: "Great start — keep going!", kk: "Керемет бастама — жалғастыр!" })}
+              ? pickLang(lang, { ru: "Хорошо! Голос разогревается.", en: "Good! Your voice is warming up.", kk: "Жақсы! Дауысыңыз қызып келеді." })
+              : pickLang(lang, { ru: "Отличное начало — продолжай!", en: "Great start — keep going!", kk: "Керемет бастама — жалғастырыңыз!" })}
         </Text>
 
         <View style={styles.starsRow}>

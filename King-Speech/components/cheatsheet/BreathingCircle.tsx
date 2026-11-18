@@ -114,7 +114,7 @@ export default function BreathingCircle({
     <View style={styles.wrap}>
       <Text style={[styles.cycle, { color: colors.textMuted }]}>
         {finished
-          ? pickLang(lang, { ru: "Готово — отлично подышал", en: "Done — nicely breathed", kk: "Дайын — керемет тыныстадың" })
+          ? pickLang(lang, { ru: "Готово — отлично подышал", en: "Done — nicely breathed", kk: "Дайын — керемет тыныстадыңыз" })
           : pickLang(lang, {
               ru: `Цикл ${cycle} из ${step.cycles}`,
               en: `Cycle ${cycle} of ${step.cycles}`,
@@ -135,7 +135,7 @@ export default function BreathingCircle({
         <View style={[styles.cue, { backgroundColor: C_EXHALE + "1A", borderColor: C_EXHALE + "4D" }]}>
           <Ionicons name="checkmark" size={18} color={C_EXHALE} />
           <Text style={[styles.cueText, { color: C_EXHALE }]}>
-            {pickLang(lang, { ru: "Нажми «Вперёд», когда готов", en: "Tap Forward when ready", kk: "Дайын болғанда «Алға» түймесін бас" })}
+            {pickLang(lang, { ru: "Нажми «Вперёд», когда готов", en: "Tap Forward when ready", kk: "Дайын болғанда «Алға» түймесін басыңыз" })}
           </Text>
         </View>
       )}

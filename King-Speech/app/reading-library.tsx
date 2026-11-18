@@ -27,10 +27,10 @@ type Filter = "all" | "showtime" | "interview" | "reading" | "tonguetwister";
 
 const FILTERS: { key: Filter; ru: string; en: string; kk: string }[] = [
   { key: "all", ru: "Все", en: "All", kk: "Барлығы" },
-  { key: "showtime", ru: "Show Time", en: "Show Time", kk: "Show Time" },
+  { key: "showtime", ru: "Show Time", en: "Show Time", kk: "Сахна уақыты" },
   { key: "interview", ru: "Интервью", en: "Interview", kk: "Сұхбат" },
   { key: "reading", ru: "Чтение", en: "Reading", kk: "Оқу" },
-  { key: "tonguetwister", ru: "Скороговорки", en: "Tongue twisters", kk: "Жаңылтпаштар" },
+  { key: "tonguetwister", ru: "Скороговорки", en: "Tongue twisters", kk: "Тіл бұрауыштар" },
 ];
 
 // work title → literature text, built once (module ids 1..67).
@@ -266,7 +266,7 @@ export default function ReadingLibraryScreen() {
                 : pickLang(lang, {
                     ru: "Попробуй другой запрос или фильтр.",
                     en: "Try another search or filter.",
-                    kk: "Басқа сұраныс не сүзгіні байқап көр.",
+                    kk: "Басқа сұраныс не сүзгіні байқап көріңіз.",
                   })}
             </Text>
           </View>

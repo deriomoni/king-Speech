@@ -38,7 +38,8 @@ const KK_OUTPUT_DIRECTIVE = `
 LANGUAGE — KAZAKH (this overrides any earlier instruction about the output language):
 - The speaker speaks Kazakh (Cyrillic script). Any transcript or answer you receive is Kazakh speech. Mixing in Russian words is common and natural in Kazakhstan — do not over-penalize it.
 - When judging grammar, wording or literacy, apply Kazakh language norms (not Russian or English ones).
-- Write EVERY user-facing string in your output (summary, tip, feedback, errors, notes, greeting, questions, strengths, weaknesses, closing, reasons, paragraphs) in natural, modern, warm Kazakh with correct Kazakh letters (ә, ғ, қ, ң, ө, ұ, ү, һ, і). Address the user informally with «сен», like a friendly mentor — never the formal «сіз». Do not calque Russian phrasing.
+- Write EVERY user-facing string in your output (summary, tip, feedback, errors, notes, greeting, questions, strengths, weaknesses, closing, reasons, paragraphs) in natural, modern, warm Kazakh with correct Kazakh letters (ә, ғ, қ, ң, ө, ұ, ү, һ, і). Always address the user with the respectful «сіз» form (сіз, сіздің, сізге; polite imperatives like «айтыңыз», «сөйлеңіз», «дем алыңыз»; possessives like «дауысыңыз»; verb endings like «аласыз», «сөйледіңіз») — never the informal «сен/сенің/саған» or informal imperatives. Keep the tone warm and encouraging, like a caring mentor. Do not calque Russian phrasing.
+- Terminology: call Show Time «Сахна уақыты», a tongue twister «тіл бұрауыш» (plural «тіл бұрауыштар»), and the app «қосымша».
 - Keep JSON keys and fixed enum values (e.g. "positive", "neutral", "yes", "partial", "off") exactly as specified, in English.`;
 
 /** Append the language directive to a system prompt (no-op for ru/en). */
@@ -140,14 +141,14 @@ const INTERVIEW_TOPICS: Record<Lang, string[]> = {
     "Creativity and self-expression",
   ],
   kk: [
-    "Сенің жеке өмірің",
-    "Сенің армандарың мен құндылықтарың",
-    "Өміріңдегі адамдар мен қарым-қатынастар",
+    "Сіздің жеке өміріңіз",
+    "Сіздің армандарыңыз бен құндылықтарыңыз",
+    "Өміріңіздегі адамдар мен қарым-қатынастар",
     "Бақыт және өмірдің мәні",
     "Өмірлік тәжірибе және жеке сабақтар",
-    "Сенің мақсаттарың мен ұмтылыстарың",
+    "Сіздің мақсаттарыңыз бен ұмтылыстарыңыз",
     "Балалық шақ және естеліктер",
-    "Сенің қорқыныштарың және оларды қалай жеңесің",
+    "Сіздің қорқыныштарыңыз және оларды қалай жеңесіз",
     "Саяхат және жаңалықтар",
     "Шығармашылық және өзін-өзі көрсету",
   ],
@@ -184,7 +185,7 @@ async function generateGreeting(topic: string, lang: Lang): Promise<string> {
   const fallback = L(lang, {
     en: `Hello! I'm ${JOURNALIST_NAME}, your virtual journalist. Today we'll talk about "${topic}". Glad to meet you — let's begin!`,
     ru: `Здравствуйте! Я ${JOURNALIST_NAME}, ваш виртуальный журналист. Сегодня мы поговорим о теме «${topic}». Рада нашей встрече — давайте начнём!`,
-    kk: `Сәлем! Мен ${JOURNALIST_NAME}, сенің виртуалды журналисіңмін. Бүгін «${topic}» тақырыбында сөйлесеміз. Танысқаныма қуаныштымын — бастайық!`,
+    kk: `Сәлеметсіз бе! Мен ${JOURNALIST_NAME}, сіздің виртуалды журналисіңізбін. Бүгін «${topic}» тақырыбында сөйлесеміз. Танысқаныма қуаныштымын — бастайық!`,
   });
 
   const out = await chatComplete({ system: withLangDirective(lang, systemPrompt), user: userPrompt, maxTokens: tokensFor(lang, 130) });
@@ -217,7 +218,7 @@ async function generateInterviewQuestion(
   const fallback = L(lang, {
     en: "What does happiness mean to you?",
     ru: "Что для вас значит счастье?",
-    kk: "Сен үшін бақыт деген не?",
+    kk: "Сіз үшін бақыт деген не?",
   });
 
   const out = await chatComplete({ system: withLangDirective(lang, systemPrompt), user: userPrompt, maxTokens: tokensFor(lang, 80) });
@@ -228,10 +229,10 @@ function getTransition(grammarScore: number, dictionScore: number, lang: Lang): 
   const score = grammarScore + dictionScore;
   if (lang === "kk") {
     if (score >= 8) {
-      const opts = ["Тамаша! Өте мазмұнды жауап.", "Керемет, рахмет! Ойың өте дәл.", "Тамаша жауап, мен әсерлендім."];
+      const opts = ["Тамаша! Өте мазмұнды жауап.", "Керемет, рахмет! Ойыңыз өте дәл.", "Тамаша жауап, мен әсерлендім."];
       return opts[Math.floor(Math.random() * opts.length)];
     } else if (score >= 5) {
-      const opts = ["Жауабың үшін рахмет.", "Қызықты ой, рахмет.", "Жақсы, жалғастырайық."];
+      const opts = ["Жауабыңыз үшін рахмет.", "Қызықты ой, рахмет.", "Жақсы, жалғастырайық."];
       return opts[Math.floor(Math.random() * opts.length)];
     } else {
       const opts = ["Түсінікті, рахмет.", "Жақсы, келесі сұраққа көшейік.", "Рахмет, жалғастырамыз."];
@@ -305,7 +306,7 @@ Respond STRICTLY in JSON: {"grammarScore": <0-5>, "dictionScore": <0-5>, "feedba
   const fallbackFeedback = L(lang, {
     en: "Good answer, keep developing.",
     ru: "Хороший ответ, продолжайте развиваться.",
-    kk: "Жақсы жауап, дамуды жалғастыр.",
+    kk: "Жақсы жауап, дамуды жалғастырыңыз.",
   });
 
   const out = await chatComplete({
@@ -349,12 +350,12 @@ async function generateStructuredSummary(session: InterviewSession): Promise<Fin
   const fallbackStrengths = L(lang, {
     en: ["You participated in the interview", "Courage to speak out loud"],
     ru: ["Вы участвовали в интервью", "Смелость говорить вслух"],
-    kk: ["Сен сұхбатқа қатыстың", "Дауыстап сөйлеуге батылдық"],
+    kk: ["Сіз сұхбатқа қатыстыңыз", "Дауыстап сөйлеуге батылдық"],
   });
   const fallbackClosing = L(lang, {
     en: "Thank you for the interview! Great job, keep training.",
     ru: "Спасибо за интервью! Вы молодец, продолжайте тренироваться.",
-    kk: "Сұхбат үшін рахмет! Сен жарайсың, жаттығуды жалғастыр.",
+    kk: "Сұхбат үшін рахмет! Сіз жарайсыз, жаттығуды жалғастырыңыз.",
   });
 
   const out = await chatComplete({
@@ -719,7 +720,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const silentFeedback = L(lang, {
           en: "We didn't quite hear you. No worries — to pass this level just speak out loud, a little louder and closer to the mic.",
           ru: "Кажется, мы тебя не услышали. Ничего страшного — чтобы пройти уровень, просто говори вслух, чуть увереннее и ближе к микрофону.",
-          kk: "Сені естімей қалдық білем. Ештеңе етпейді — деңгейден өту үшін дауыстап, сәл сенімдірек әрі микрофонға жақынырақ сөйле.",
+          kk: "Сізді естімей қалдық білем. Ештеңе етпейді — деңгейден өту үшін дауыстап, сәл сенімдірек әрі микрофонға жақынырақ сөйлеңіз.",
         });
         const silentError = L(lang, {
           en: "Speech not detected - microphone didn't pick up voice or speech wasn't delivered.",
@@ -822,7 +823,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fallbackSummary = L(lang, {
         en: "Good performance!",
         ru: "Хорошее выступление!",
-        kk: "Жақсы сөйледің!",
+        kk: "Жақсы сөйледіңіз!",
       });
 
       const out = await chatComplete({
@@ -975,12 +976,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const summary = L(lang, {
         en: "Nice work stepping into the role! Keep leaning into the character — a bit more emotion and energy will make it shine.",
         ru: "Отличный заход в роль! Продолжай вживаться в персонажа — чуть больше эмоций и энергии, и будет блестяще.",
-        kk: "Рөлге керемет кірдің! Кейіпкерді сезінуді жалғастыр — сәл көбірек эмоция мен қуат қоссаң, керемет болады.",
+        kk: "Рөлге керемет кірдіңіз! Кейіпкерді сезінуді жалғастырыңыз — сәл көбірек эмоция мен қуат қоссаңыз, керемет болады.",
       });
       const tip = L(lang, {
         en: "Try exaggerating the emotion a little more than feels natural — on camera it reads as just right.",
         ru: "Попробуй сыграть эмоцию чуть ярче, чем кажется естественным — на камере это смотрится как раз в меру.",
-        kk: "Эмоцияны өзіңе табиғи көрінгеннен сәл жарқынырақ ойнап көр — камерада бұл дәл өлшемінде көрінеді.",
+        kk: "Эмоцияны өзіңізге табиғи көрінгеннен сәл жарқынырақ ойнап көріңіз — камерада бұл дәл өлшемінде көрінеді.",
       });
       return {
         stars,
@@ -1096,7 +1097,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transcript,
         feedback: typeof parsed.summary === "string" && parsed.summary.trim()
           ? parsed.summary
-          : L(lang, { en: "Great job in the role!", ru: "Отличная работа в роли!", kk: "Рөлді керемет ойнадың!" }),
+          : L(lang, { en: "Great job in the role!", ru: "Отличная работа в роли!", kk: "Рөлді керемет ойнадыңыз!" }),
         tip: typeof parsed.tip === "string" ? parsed.tip : undefined,
         metrics: { roleFit, emotion, clarity, confidence, grammar },
         categories: {
@@ -1179,12 +1180,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const emptyFeedback = L(lang, {
           en: "Answer not recognized. Speak more clearly and closer to the microphone.",
           ru: "Ответ не распознан. Говорите чётче и ближе к микрофону.",
-          kk: "Жауап танылмады. Анығырақ әрі микрофонға жақынырақ сөйле.",
+          kk: "Жауап танылмады. Анығырақ әрі микрофонға жақынырақ сөйлеңіз.",
         });
         const emptyTransition = L(lang, {
           en: "It seems you weren't heard. Shall we try again?",
           ru: "Кажется, вас не было слышно. Попробуем ещё раз?",
-          kk: "Сені естімей қалдым білем. Тағы байқап көрейік пе?",
+          kk: "Сізді естімей қалдым білем. Тағы байқап көрейік пе?",
         });
         return res.json({
           transcript: "", grammarScore: 0, dictionScore: 0,
@@ -1259,7 +1260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const endMsg = L(lang, {
           en: "It seems like it's hard to engage today - that's okay. Let's wrap up the interview here. You still did great for trying!",
           ru: "Похоже, сегодня вам непросто включиться в диалог — это нормально. Давайте завершим интервью на этом этапе. Вы всё равно молодец, что попробовали!",
-          kk: "Бүгін әңгімеге қосылу оңай болмай тұрған сияқты — бұл қалыпты жағдай. Сұхбатты осы жерде аяқтайық. Бәрібір байқап көргенің үшін жарайсың!",
+          kk: "Бүгін әңгімеге қосылу оңай болмай тұрған сияқты — бұл қалыпты жағдай. Сұхбатты осы жерде аяқтайық. Бәрібір байқап көргеніңіз үшін жарайсыз!",
         });
         saveSessions();
         return res.json({

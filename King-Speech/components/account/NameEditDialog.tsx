@@ -36,7 +36,7 @@ export default function NameEditDialog({
             onChangeText={setValue}
             autoFocus
             maxLength={40}
-            placeholder={pickLang(lang, { ru: "Как тебя зовут?", en: "What's your name?", kk: "Атың кім?" })}
+            placeholder={pickLang(lang, { ru: "Как тебя зовут?", en: "What's your name?", kk: "Атыңыз кім?" })}
             placeholderTextColor={colors.textSecondary}
             onSubmitEditing={() => onSave(value)}
             style={[styles.input, { color: colors.text, borderColor: colors.border }]}

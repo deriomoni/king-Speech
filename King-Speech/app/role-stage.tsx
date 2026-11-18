@@ -476,7 +476,7 @@ export default function RoleStageScreen() {
       : faceState === "turn"
         ? (tracking.hint
             ? pickLang(lang, FACE_HINT_TEXT[tracking.hint])
-            : (pickLang(lang, { ru: "Поправь кадр", en: "Adjust the frame", kk: "Кадрды түзе" })))
+            : (pickLang(lang, { ru: "Поправь кадр", en: "Adjust the frame", kk: "Кадрды түзеңіз" })))
         : (pickLang(lang, { ru: "Лицо потеряно", en: "Face lost", kk: "Бет көрінбей қалды" }));
 
   const onRecordPress = () => {
@@ -633,7 +633,7 @@ export default function RoleStageScreen() {
         {phase === "processing" ? (
           <View style={styles.processing}>
             <ActivityIndicator color={ARC_YELLOW} />
-            <Text style={styles.processingText}>{pickLang(lang, { ru: "Готовим твой дубль...", en: "Preparing your take...", kk: "Дублің дайындалып жатыр..." })}</Text>
+            <Text style={styles.processingText}>{pickLang(lang, { ru: "Готовим твой дубль...", en: "Preparing your take...", kk: "Дубліңіз дайындалып жатыр..." })}</Text>
           </View>
         ) : (
           <View style={styles.controls}>
@@ -687,10 +687,10 @@ export default function RoleStageScreen() {
           <Text style={styles.countdownSub}>
             {scenario
               ? (pickLang(lang, { ru: "Сцена начнётся с начала", en: "The scene starts from the top", kk: "Көрініс басынан басталады" }))
-              : (pickLang(lang, { ru: "Приготовься", en: "Get ready", kk: "Дайындал" }))}
+              : (pickLang(lang, { ru: "Приготовься", en: "Get ready", kk: "Дайындалыңыз" }))}
           </Text>
           <Pressable onPress={() => { haptic(); setPhase("ready"); }} hitSlop={10} style={styles.countdownCancel}>
-            <Text style={styles.countdownCancelText}>{pickLang(lang, { ru: "Подожду", en: "Not yet", kk: "Күте тұрам" })}</Text>
+            <Text style={styles.countdownCancelText}>{pickLang(lang, { ru: "Подожду", en: "Not yet", kk: "Күте тұрайын" })}</Text>
           </Pressable>
         </Animated.View>
       )}

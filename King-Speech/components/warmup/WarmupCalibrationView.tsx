@@ -119,12 +119,12 @@ export default function WarmupCalibrationView({ topPad, onComplete, onBack }: Pr
       </Pressable>
 
       <Animated.View entering={FadeIn.duration(400)} style={styles.body}>
-        <Text style={styles.title}>{pickLang(lang, { ru: "Настроим под твой голос", en: "Let's tune to your voice", kk: "Дауысыңа баптайық" })}</Text>
+        <Text style={styles.title}>{pickLang(lang, { ru: "Настроим под твой голос", en: "Let's tune to your voice", kk: "Дауысыңызға баптайық" })}</Text>
         <Text style={styles.sub}>
           {pickLang(lang, {
             ru: "Оскар слушает и подстроит ноты под твой диапазон",
             en: "Oscar listens and fits the notes to your range",
-            kk: "Оскар тыңдап, ноталарды сенің диапазоныңа бейімдейді",
+            kk: "Оскар тыңдап, ноталарды сіздің диапазоныңызға бейімдейді",
           })}
         </Text>
 
@@ -140,8 +140,8 @@ export default function WarmupCalibrationView({ topPad, onComplete, onBack }: Pr
           <GlassCard glow style={styles.card}>
             <Text style={styles.prompt}>
               {step === "low"
-                ? pickLang(lang, { ru: "Скажи низко: Мууу", en: "Say it low: Mooo", kk: "Төмен айт: Мууу" })
-                : pickLang(lang, { ru: "Скажи высоко: Миии", en: "Say it high: Meee", kk: "Жоғары айт: Миии" })}
+                ? pickLang(lang, { ru: "Скажи низко: Мууу", en: "Say it low: Mooo", kk: "Төмен айтыңыз: Мууу" })
+                : pickLang(lang, { ru: "Скажи высоко: Миии", en: "Say it high: Meee", kk: "Жоғары айтыңыз: Миии" })}
             </Text>
             <Animated.View style={[styles.orb, orbStyle]}>
               <LinearGradient
@@ -156,7 +156,7 @@ export default function WarmupCalibrationView({ topPad, onComplete, onBack }: Pr
         {step === "done" && range && (
           <Animated.View entering={FadeInDown.duration(350)} style={styles.ladderWrap}>
             <GlassCard glow>
-              <Text style={styles.ladderTitle}>{pickLang(lang, { ru: "Твоя лестница голоса", en: "Your voice ladder", kk: "Дауыс сатың" })}</Text>
+              <Text style={styles.ladderTitle}>{pickLang(lang, { ru: "Твоя лестница голоса", en: "Your voice ladder", kk: "Дауыс сатыңыз" })}</Text>
               <View style={styles.ladder}>
                 <LinearGradient
                   colors={["#4FD9A0", warmupTheme.gold]}

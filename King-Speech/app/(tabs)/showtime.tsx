@@ -230,7 +230,7 @@ export default function ShowTimeScreen() {
 
         <EdgeScale>
         <Text style={[st.sectionHeading, { color: c.text }]}>
-          {pickLang(lang, { ru: "Актуальные темы для вас", en: "Trending topics for you", kk: "Сен үшін өзекті тақырыптар" })}
+          {pickLang(lang, { ru: "Актуальные темы для вас", en: "Trending topics for you", kk: "Сіз үшін өзекті тақырыптар" })}
         </Text>
         </EdgeScale>
 

@@ -47,14 +47,14 @@ type Filter = "all" | Mode;
 
 const FILTERS: { key: Filter; ru: string; en: string; kk: string }[] = [
   { key: "all", ru: "Все", en: "All", kk: "Барлығы" },
-  { key: "showtime", ru: "Show Time", en: "Show Time", kk: "Show Time" },
+  { key: "showtime", ru: "Show Time", en: "Show Time", kk: "Сахна уақыты" },
   { key: "reading", ru: "Чтение", en: "Reading", kk: "Оқу" },
   { key: "interview", ru: "Интервью", en: "Interview", kk: "Сұхбат" },
   { key: "roles", ru: "Роли", en: "Roles", kk: "Рөлдер" },
 ];
 
 const MODE_LABEL: Record<Mode, { ru: string; en: string; kk: string }> = {
-  showtime: { ru: "Show Time", en: "Show Time", kk: "Show Time" },
+  showtime: { ru: "Show Time", en: "Show Time", kk: "Сахна уақыты" },
   reading: { ru: "Чтение", en: "Reading", kk: "Оқу" },
   interview: { ru: "Интервью", en: "Interview", kk: "Сұхбат" },
   roles: { ru: "Роли", en: "Roles", kk: "Рөлдер" },
@@ -426,7 +426,7 @@ export default function LibraryScreen() {
           </Pressable>
           <Text style={[s.title, { color: c.text }]}>{tr("Моя библиотека", "My library", "Менің кітапханам")}</Text>
           <Text style={[s.subtitle, { color: c.textMuted }]}>
-            {tr("Выступления, которые ты сохранил", "Performances you saved", "Сен сақтаған сөйлеулер")}
+            {tr("Выступления, которые ты сохранил", "Performances you saved", "Сіз сақтаған сөйлеулер")}
           </Text>
           <ScrollView
             horizontal
@@ -479,7 +479,7 @@ export default function LibraryScreen() {
                   : tr(
                       "Запиши выступление — и оно появится здесь.",
                       "Record a performance and it will appear here.",
-                      "Сөйлеуіңді жазып ал — ол осында пайда болады.",
+                      "Сөйлеуіңізді жазып алыңыз — ол осында пайда болады.",
                     )}
               </Text>
             </View>

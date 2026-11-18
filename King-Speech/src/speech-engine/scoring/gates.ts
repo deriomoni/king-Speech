@@ -96,11 +96,11 @@ const MESSAGES_EN: Record<RetryReason, string> = {
 };
 
 const MESSAGES_KK: Record<RetryReason, string> = {
-  too_short: 'Қысқа шықты — тағы бір рет, сәл ұзағырақ айтып көр.',
-  mostly_silence: 'Дауысың әрең естіледі — тағы байқап көр.',
+  too_short: 'Қысқа шықты — тағы бір рет, сәл ұзағырақ айтып көріңіз.',
+  mostly_silence: 'Дауысыңыз әрең естіледі — тағы байқап көріңіз.',
   nothing_recognized: 'Естімей қалдым — тағы бір рет айтайықшы.',
-  off_script: 'Басқа мәтін сияқты болды — басынан бастап көр.',
-  too_loud_clipping: 'Микрофон шамадан тыс жүктелді — сәл ақырынырақ сөйле немесе алысырақ тұр.',
+  off_script: 'Басқа мәтін сияқты болды — басынан бастап көріңіз.',
+  too_loud_clipping: 'Микрофон шамадан тыс жүктелді — сәл ақырынырақ сөйлеңіз немесе алысырақ тұрыңыз.',
 };
 
 const MESSAGES: Record<Locale, Record<RetryReason, string>> = {

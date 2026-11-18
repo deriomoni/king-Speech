@@ -33,9 +33,14 @@ App languages: `ru` (base), `en`, `kk` (Қазақ тілі, Cyrillic script).
 
 ## Style
 
-- Address the user informally with **сен** (as RU uses «ты»): «Сен жасай аласың!»,
-  «Дайынсың ба?». Imperatives in 2nd person informal: «Оқы», «Айт», «Тыңда»,
-  «Дем ал».
+- **Always the respectful form «сіз»** (owner's decision, 2026-11-18), even where
+  RU uses «ты»: «Сіз жасай аласыз!», «Дайынсыз ба?», «Сіздің нәтижеңіз».
+  Imperatives: polite -ыңыз/-іңіз/-ңыз/-ңіз: «Оқыңыз», «Айтыңыз», «Тыңдаңыз»,
+  «Дем алыңыз», «Бастаңыз». Possessives: -ыңыз/-іңіз (дауысыңыз, атыңыз).
+  Verb person endings: -сыз/-сіз (аласыз, білесіз). Plural audience: сіздер.
+  Never «сен/сенің/саған/-сың/-ың» addressing the user. Exceptions: quoted
+  speech of characters inside role-play scenes and audience chat bubbles may
+  stay informal between characters; tongue twisters and literary quotes as is.
 - Buttons / menu items: verbal noun (-у/-ю) form, like iOS Kazakh UI:
   «Бастау», «Жалғастыру», «Келесі», «Өткізіп жіберу», «Болдырмау», «Сақтау»,
   «Шығу», «Қайталау», «Жабу», «Дайын».
@@ -50,7 +55,10 @@ App languages: `ru` (base), `en`, `kk` (Қазақ тілі, Cyrillic script).
 
 | RU | kk |
 |---|---|
-| King Speech, Show Time, Pro, XP, Jenny, Оскар | unchanged |
+| King Speech, Pro, XP, Jenny, Оскар | unchanged |
+| Show Time (in kk text) | Сахна уақыты |
+| Get Ready (cheat-sheet hero) | Жылдам дайындық |
+| Приложение | Қосымша |
 | Путь (tab) | Жол |
 | Уровень | Деңгей |
 | Модуль | Модуль |
@@ -60,7 +68,7 @@ App languages: `ru` (base), `en`, `kk` (Қазақ тілі, Cyrillic script).
 | Настройки | Баптаулар |
 | Распевка | Дауыс жаттығуы |
 | Разминка рта / артикуляция | Ауыз жаттығуы / артикуляция |
-| Скороговорка | Жаңылтпаш |
+| Скороговорка | Тіл бұрауыш (pl. тіл бұрауыштар) |
 | Чтение | Оқу |
 | Интервью | Сұхбат |
 | Словарный запас / лексика (vocabulary level) | Сөздік қор |

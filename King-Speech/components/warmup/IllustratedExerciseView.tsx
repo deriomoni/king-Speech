@@ -71,12 +71,12 @@ export const ILLUSTRATED_EXERCISES: IllustratedExercise[] = [
       { art: tubeLeftArt, arrow: arrowLeftArt, desc: {
           ru: "Вытяни губы вперёд и уведи их влево",
           en: "Push your lips forward and move them to the left",
-          kk: "Ерніңді алға созып, солға бұр",
+          kk: "Ерніңізді алға созып, солға бұрыңыз",
         } },
       { art: tubeRightArt, arrow: arrowRightArt, desc: {
           ru: "Вытяни губы вперёд и уведи их вправо",
           en: "Push your lips forward and move them to the right",
-          kk: "Ерніңді алға созып, оңға бұр",
+          kk: "Ерніңізді алға созып, оңға бұрыңыз",
         } },
     ],
     frameSec: 3,
@@ -88,7 +88,7 @@ export const ILLUSTRATED_EXERCISES: IllustratedExercise[] = [
     desc: {
       ru: "Зажми пробку губами и говори чётко",
       en: "Hold a cork between your lips and speak clearly",
-      kk: "Тығынды ерініңмен қысып, анық сөйле",
+      kk: "Тығынды ерніңізбен қысып, анық сөйлеңіз",
     },
     frames: [{ art: corkArt }],
     totalSec: 20,
@@ -99,7 +99,7 @@ export const ILLUSTRATED_EXERCISES: IllustratedExercise[] = [
     desc: {
       ru: "Губы сомкнуты. Води языком по кругу\nпо часовой стрелке",
       en: "Lips closed. Circle your tongue\nclockwise",
-      kk: "Ерін жабық. Тіліңді сағат тілі\nбағытымен айналдыр",
+      kk: "Ерін жабық. Тіліңізді сағат тілі\nбағытымен айналдырыңыз",
     },
     frames: [{ art: circle1Art }, { art: circle2Art }, { art: circle3Art }, { art: circle4Art }],
     frameSec: 1,

@@ -124,7 +124,7 @@ function SpinOverlay({ onClose, onLanded }: { onClose: () => void; onLanded: (ro
       <View style={styles.spinBackdrop}>
         <CrownPattern width={SW} height={SH} />
         <Text style={styles.spinLabel}>
-          {done ? (pickLang(lang, { ru: "ТВОЯ РОЛЬ", en: "YOUR ROLE", kk: "СЕНІҢ РӨЛІҢ" })) : (pickLang(lang, { ru: "ТЯНЕМ КАРТУ...", en: "DRAWING...", kk: "КАРТА ТАРТЫЛУДА..." }))}
+          {done ? (pickLang(lang, { ru: "ТВОЯ РОЛЬ", en: "YOUR ROLE", kk: "СІЗДІҢ РӨЛІҢІЗ" })) : (pickLang(lang, { ru: "ТЯНЕМ КАРТУ...", en: "DRAWING...", kk: "КАРТА ТАРТЫЛУДА..." }))}
         </Text>
         <Animated.View
           key={current.id + (done ? "-done" : "")}
@@ -202,7 +202,7 @@ export default function RolesScreen() {
             <Text style={styles.title}>{pickLang(lang, { ru: "Роли", en: "Roles", kk: "Рөлдер" })}</Text>
           </View>
           <Text style={styles.subtitle}>
-            {pickLang(lang, { ru: "Примерь чужой образ и прокачай импровизацию", en: "Try on someone else's persona and level up your improv", kk: "Басқа біреудің бейнесіне еніп, импровизацияңды шыңда" })}
+            {pickLang(lang, { ru: "Примерь чужой образ и прокачай импровизацию", en: "Try on someone else's persona and level up your improv", kk: "Басқа біреудің бейнесіне еніп, импровизацияңызды шыңдаңыз" })}
           </Text>
         </Animated.View>
 

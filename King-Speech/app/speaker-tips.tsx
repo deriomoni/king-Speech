@@ -44,17 +44,17 @@ const SECTIONS: Section[] = [
       {
         ru: { title: "Громкость", text: "Говори громче, чем обычно. Тебя должен слышать последний ряд." },
         en: { title: "Projection", text: "Speak louder than usual. The back row should hear you." },
-        kk: { title: "Дауыс қаттылығы", text: "Әдеттегіден қаттырақ сөйле. Сені соңғы қатар да естуі керек." },
+        kk: { title: "Дауыс қаттылығы", text: "Әдеттегіден қаттырақ сөйлеңіз. Сізді соңғы қатар да естуі керек." },
       },
       {
         ru: { title: "Пауза", text: "Пауза после ключевой фразы — это сила. Не бойся тишины." },
         en: { title: "The pause", text: "A pause after a key phrase is powerful. Don't fear silence." },
-        kk: { title: "Үзіліс", text: "Негізгі сөйлемнен кейінгі үзіліс — үлкен күш. Үнсіздіктен қорықпа." },
+        kk: { title: "Үзіліс", text: "Негізгі сөйлемнен кейінгі үзіліс — үлкен күш. Үнсіздіктен қорықпаңыз." },
       },
       {
         ru: { title: "Темп", text: "Не торопись. Медленная речь звучит увереннее быстрой." },
         en: { title: "Pace", text: "Don't rush. Slow speech sounds more confident than fast." },
-        kk: { title: "Қарқын", text: "Асықпа. Баяу сөз жылдам сөзден гөрі сенімдірек естіледі." },
+        kk: { title: "Қарқын", text: "Асықпаңыз. Баяу сөз жылдам сөзден гөрі сенімдірек естіледі." },
       },
     ],
   },
@@ -67,17 +67,17 @@ const SECTIONS: Section[] = [
       {
         ru: { title: "Осанка", text: "Стой прямо, плечи расправлены — это передаёт уверенность." },
         en: { title: "Posture", text: "Stand straight, shoulders back — it conveys confidence." },
-        kk: { title: "Дене қалпы", text: "Тік тұр, иығыңды жаз — бұл сенімділікті білдіреді." },
+        kk: { title: "Дене қалпы", text: "Тік тұрыңыз, иығыңызды жазыңыз — бұл сенімділікті білдіреді." },
       },
       {
         ru: { title: "Взгляд", text: "Смотри вперёд, в зал, а не в текст или в пол." },
         en: { title: "Eye contact", text: "Look forward at the audience, not at the text or the floor." },
-        kk: { title: "Көзқарас", text: "Мәтінге не еденге емес, алдыңа — залға қара." },
+        kk: { title: "Көзқарас", text: "Мәтінге не еденге емес, алдыңызға — залға қараңыз." },
       },
       {
         ru: { title: "Жесты", text: "Руки помогают речи. Открытые жесты — да, руки в карманах — нет." },
         en: { title: "Gestures", text: "Hands support your speech. Open gestures — yes, hands in pockets — no." },
-        kk: { title: "Ым-ишара", text: "Қолдар сөзіңе көмектеседі. Ашық ым-ишара — иә, қол қалтада — жоқ." },
+        kk: { title: "Ым-ишара", text: "Қолдар сөзіңізге көмектеседі. Ашық ым-ишара — иә, қол қалтада — жоқ." },
       },
     ],
   },
@@ -90,17 +90,17 @@ const SECTIONS: Section[] = [
       {
         ru: { title: "Улыбка", text: "Лёгкая улыбка расслабляет зал — и тебя самого." },
         en: { title: "The smile", text: "A slight smile relaxes the audience — and you." },
-        kk: { title: "Жымиыс", text: "Жеңіл жымиыс залды да, өзіңді де босаңсытады." },
+        kk: { title: "Жымиыс", text: "Жеңіл жымиыс залды да, өзіңізді де босаңсытады." },
       },
       {
         ru: { title: "Начало", text: "Первую фразу выучи наизусть — уверенный старт задаёт весь тон." },
         en: { title: "The opening", text: "Memorize your first line — a confident start sets the tone." },
-        kk: { title: "Бастау", text: "Алғашқы сөйлемді жаттап ал — сенімді бастау бүкіл сарынды белгілейді." },
+        kk: { title: "Бастау", text: "Алғашқы сөйлемді жаттап алыңыз — сенімді бастау бүкіл сарынды белгілейді." },
       },
       {
         ru: { title: "Финал", text: "Закончи чётко и остановись. Не бормочи и не извиняйся." },
         en: { title: "The ending", text: "End clearly and stop. Don't mumble or apologize." },
-        kk: { title: "Қорытынды", text: "Анық аяқта да, тоқта. Күбірлеме және кешірім сұрама." },
+        kk: { title: "Қорытынды", text: "Анық аяқтап, тоқтаңыз. Күбірлемеңіз және кешірім сұрамаңыз." },
       },
     ],
   },
@@ -148,7 +148,7 @@ export default function SpeakerTipsScreen() {
           {pickLang(lang, {
             ru: "Девять простых правил. Пробеги глазами перед выходом на сцену.",
             en: "Nine simple rules. Glance through them before you go on stage.",
-            kk: "Тоғыз қарапайым ереже. Сахнаға шығар алдында көз жүгіртіп шық.",
+            kk: "Тоғыз қарапайым ереже. Сахнаға шығар алдында көз жүгіртіп шығыңыз.",
           })}
         </Text>
 

@@ -336,7 +336,7 @@ export default function VocabPlayView({
           >
             {countdown === 0 ? pickLang(lang, { ru: "СТАРТ", en: "START", kk: "СТАРТ" }) : countdown}
           </Animated.Text>
-          <Text style={[styles.countdownHint, { color: ink(0.6) }]}>{pickLang(lang, { ru: "Готовься называть синонимы", en: "Get ready to name synonyms", kk: "Синонимдерді атауға дайындал" })}</Text>
+          <Text style={[styles.countdownHint, { color: ink(0.6) }]}>{pickLang(lang, { ru: "Готовься называть синонимы", en: "Get ready to name synonyms", kk: "Синонимдерді атауға дайындалыңыз" })}</Text>
         </View>
       ) : (
         <>
@@ -367,7 +367,7 @@ export default function VocabPlayView({
                 <TextInput
                   value={fallbackInput}
                   onChangeText={onFallbackChange}
-                  placeholder={pickLang(lang, { ru: "Введите синоним", en: "Type a synonym", kk: "Синоним енгіз" })}
+                  placeholder={pickLang(lang, { ru: "Введите синоним", en: "Type a synonym", kk: "Синоним енгізіңіз" })}
                   placeholderTextColor={ink(0.4)}
                   style={[
                     styles.fallbackInput,
@@ -445,7 +445,7 @@ export default function VocabPlayView({
                       {pickLang(lang, {
                         ru: "Скажи первое слово -\nоно появится здесь",
                         en: "Say the first word -\nit will appear here",
-                        kk: "Бірінші сөзді айт -\nол осы жерде шығады",
+                        kk: "Бірінші сөзді айтыңыз -\nол осы жерде шығады",
                       })}
                     </Text>
                   </View>
@@ -522,7 +522,7 @@ export default function VocabPlayView({
       {/* ── Pop-ups ─────────────────────────────────────────────────────── */}
       <StageGlassDialog
         visible={modal === "replace"}
-        title={pickLang(lang, { ru: "Вы точно хотите заменить слово?", en: "Are you sure you want to replace the word?", kk: "Сөзді шынымен ауыстырасың ба?" })}
+        title={pickLang(lang, { ru: "Вы точно хотите заменить слово?", en: "Are you sure you want to replace the word?", kk: "Сөзді шынымен ауыстырасыз ба?" })}
         message={canReplace ? undefined : pickLang(lang, { ru: "Не хватает монет. Можно посмотреть рекламу.", en: "Not enough coins. You can watch an ad.", kk: "Монета жетпейді. Жарнама көруге болады." })}
         onRequestClose={onDismissModal}
         buttons={[
@@ -568,7 +568,7 @@ export default function VocabPlayView({
               ? pickLang(lang, { ru: "Реклама за доп. время", en: "Ad for extra time", kk: "Қосымша уақыт үшін жарнама" })
               : pickLang(lang, { ru: "Реклама за подсказку", en: "Ad for a hint", kk: "Көмек үшін жарнама" })
         }
-        message={pickLang(lang, { ru: "Досмотрите короткий ролик, чтобы получить награду.", en: "Watch a short video to get the reward.", kk: "Сыйлық алу үшін қысқа роликті соңына дейін көр." })}
+        message={pickLang(lang, { ru: "Досмотрите короткий ролик, чтобы получить награду.", en: "Watch a short video to get the reward.", kk: "Сыйлық алу үшін қысқа роликті соңына дейін көріңіз." })}
         onRequestClose={onAdCancel}
         buttons={[
           { label: pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" }), variant: "secondary", onPress: onAdCancel },
@@ -578,7 +578,7 @@ export default function VocabPlayView({
 
       <StageGlassDialog
         visible={modal === "exit"}
-        title={pickLang(lang, { ru: "Выйти?", en: "Leave?", kk: "Шығасың ба?" })}
+        title={pickLang(lang, { ru: "Выйти?", en: "Leave?", kk: "Шығасыз ба?" })}
         message={pickLang(lang, { ru: "Прогресс этого задания не сохранится", en: "Progress on this task won't be saved", kk: "Бұл тапсырманың прогресі сақталмайды" })}
         onRequestClose={onDismissModal}
         buttons={[

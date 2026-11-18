@@ -179,7 +179,7 @@ export default function SettingsScreen() {
                     {userName}
                   </Text>
                   <Text style={[styles.accountSub, { color: theme.textMuted }]} numberOfLines={1}>
-                    {pickLang(appLang, { ru: `Вход через ${authLabel}`, en: `Signed in with ${authLabel}`, kk: `${authLabel} арқылы кірдің` })}
+                    {pickLang(appLang, { ru: `Вход через ${authLabel}`, en: `Signed in with ${authLabel}`, kk: `${authLabel} арқылы кірдіңіз` })}
                   </Text>
                 </View>
                 <Chevron theme={theme} />
@@ -317,7 +317,7 @@ export default function SettingsScreen() {
               <ListRow
                 theme={theme}
                 icon={<RoundStar size={21} color={theme.text} />}
-                label={pickLang(appLang, { ru: "Оценить приложение", en: "Rate the app", kk: "Қолданбаны бағалау" })}
+                label={pickLang(appLang, { ru: "Оценить приложение", en: "Rate the app", kk: "Қосымшаны бағалау" })}
                 divider
                 onPress={() => {
                   // TODO(design): store review prompt not wired yet.
@@ -362,7 +362,7 @@ export default function SettingsScreen() {
           <EdgeScale>
           <View style={styles.credits}>
             <Text style={[styles.creditsLabel, { color: theme.textMuted }]}>
-              {pickLang(appLang, { ru: "ПРИЛОЖЕНИЕ СОЗДАНО", en: "APP CREATED BY", kk: "ҚОЛДАНБАНЫ ЖАСАҒАН" })}
+              {pickLang(appLang, { ru: "ПРИЛОЖЕНИЕ СОЗДАНО", en: "APP CREATED BY", kk: "ҚОСЫМШАНЫ ЖАСАҒАН" })}
             </Text>
             <View style={{ opacity: 0.7 }}>
               <ThemedSvg xml={bekWaveLogoXml} width={150} height={20} fg={theme.text} />

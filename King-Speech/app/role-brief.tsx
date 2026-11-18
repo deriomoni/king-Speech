@@ -80,7 +80,7 @@ export default function RoleBriefScreen() {
       {/* Top bar */}
       <View style={[styles.topBar, { paddingTop: topPad }]}>
         <View style={{ width: 40 }} />
-        <Text style={styles.kicker}>{pickLang(lang, { ru: "ТВОЯ РОЛЬ", en: "YOUR ROLE", kk: "СЕНІҢ РӨЛІҢ" })}</Text>
+        <Text style={styles.kicker}>{pickLang(lang, { ru: "ТВОЯ РОЛЬ", en: "YOUR ROLE", kk: "СІЗДІҢ РӨЛІҢІЗ" })}</Text>
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.closeBtn}>
           <Ionicons name="close" size={26} color={TEXT} />
         </Pressable>
@@ -99,7 +99,7 @@ export default function RoleBriefScreen() {
 
           {scenario ? (
             <>
-              <Text style={styles.panelLabel}>{pickLang(lang, { ru: "С КЕМ ТЫ ГОВОРИШЬ", en: "YOU'LL BE TALKING TO", kk: "КІММЕН СӨЙЛЕСЕСІҢ" })}</Text>
+              <Text style={styles.panelLabel}>{pickLang(lang, { ru: "С КЕМ ТЫ ГОВОРИШЬ", en: "YOU'LL BE TALKING TO", kk: "КІММЕН СӨЙЛЕСЕСІЗ" })}</Text>
               <View style={styles.personaRow}>
                 <View style={styles.personaAvatar}>
                   <Text style={{ fontSize: 24 }}>{scenario.persona.avatar}</Text>
@@ -112,7 +112,7 @@ export default function RoleBriefScreen() {
               <Text style={styles.personaAbout}>{lt(scenario.persona.about, lang)}</Text>
               <Text style={styles.metaLine}>
                 {sceneKind} · {scenario.beats.length} {pickLang(lang, { ru: "реплик", en: "lines", kk: "реплика" })} · {pickLang(lang, { ru: "1–2 мин", en: "1–2 min", kk: "1–2 мин" })}
-                {scenario.opening ? (pickLang(lang, { ru: " · ты начинаешь", en: " · you open", kk: " · сен бастайсың" })) : ""}
+                {scenario.opening ? (pickLang(lang, { ru: " · ты начинаешь", en: " · you open", kk: " · сіз бастайсыз" })) : ""}
               </Text>
 
               <View style={styles.divider} />
@@ -127,12 +127,12 @@ export default function RoleBriefScreen() {
                 </View>
               ))}
               <Text style={styles.metaLine}>
-                {pickLang(lang, { ru: "Реплики появляются, когда ты делаешь паузу. Веди разговор к целям — они отмечаются по ходу.", en: "Lines appear when you pause. Steer the talk toward the goals — they tick live.", kk: "Үзіліс жасағанда репликалар пайда болады. Әңгімені мақсаттарға қарай бұр — олар бірден белгіленеді." })}
+                {pickLang(lang, { ru: "Реплики появляются, когда ты делаешь паузу. Веди разговор к целям — они отмечаются по ходу.", en: "Lines appear when you pause. Steer the talk toward the goals — they tick live.", kk: "Үзіліс жасағанда репликалар пайда болады. Әңгімені мақсаттарға қарай бұрыңыз — олар бірден белгіленеді." })}
               </Text>
             </>
           ) : (
             <>
-              <Text style={styles.panelLabel}>{pickLang(lang, { ru: "ТВОИ ЗАДАНИЯ", en: "YOUR TASKS", kk: "СЕНІҢ ТАПСЫРМАЛАРЫҢ" })}</Text>
+              <Text style={styles.panelLabel}>{pickLang(lang, { ru: "ТВОИ ЗАДАНИЯ", en: "YOUR TASKS", kk: "СІЗДІҢ ТАПСЫРМАЛАРЫҢЫЗ" })}</Text>
               {tasks.slice(0, 3).map((t, i) => (
                 <View key={i} style={styles.taskRow}>
                   <View style={[styles.taskDot, { backgroundColor: dotBg }]}>

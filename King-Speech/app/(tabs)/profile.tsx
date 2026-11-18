@@ -177,7 +177,7 @@ export default function ProfileScreen() {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert(pickLang(lang, { ru: "Доступ к фото", en: "Photo access", kk: "Фотоға рұқсат" }), pickLang(lang, { ru: "Разреши доступ к галерее, чтобы установить аватар.", en: "Allow gallery access to set your avatar.", kk: "Аватар орнату үшін галереяға рұқсат бер." }));
+        Alert.alert(pickLang(lang, { ru: "Доступ к фото", en: "Photo access", kk: "Фотоға рұқсат" }), pickLang(lang, { ru: "Разреши доступ к галерее, чтобы установить аватар.", en: "Allow gallery access to set your avatar.", kk: "Аватар орнату үшін галереяға рұқсат беріңіз." }));
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -198,7 +198,7 @@ export default function ProfileScreen() {
     try {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert(pickLang(lang, { ru: "Доступ к камере", en: "Camera access", kk: "Камераға рұқсат" }), pickLang(lang, { ru: "Разреши доступ к камере, чтобы сделать селфи.", en: "Allow camera access to take a selfie.", kk: "Селфи түсіру үшін камераға рұқсат бер." }));
+        Alert.alert(pickLang(lang, { ru: "Доступ к камере", en: "Camera access", kk: "Камераға рұқсат" }), pickLang(lang, { ru: "Разреши доступ к камере, чтобы сделать селфи.", en: "Allow camera access to take a selfie.", kk: "Селфи түсіру үшін камераға рұқсат беріңіз." }));
         return;
       }
       const result = await ImagePicker.launchCameraAsync({
@@ -497,7 +497,7 @@ export default function ProfileScreen() {
               height={112}
               text={{
                 title: pickLang(lang, { ru: "Аудио-дневник", en: "Audio diary", kk: "Аудио-күнделік" }),
-                sub: pickLang(lang, { ru: "Расскажи, как прошёл день", en: "Tell how your day went", kk: "Күнің қалай өткенін айтып бер" }),
+                sub: pickLang(lang, { ru: "Расскажи, как прошёл день", en: "Tell how your day went", kk: "Күніңіз қалай өткенін айтып беріңіз" }),
                 x: 20,
                 y: 32,
                 titleSize: 18,
@@ -521,7 +521,7 @@ export default function ProfileScreen() {
               style={{ flex: 1 }}
               text={{
                 title: pickLang(lang, { ru: "Стать автором", en: "Become an author", kk: "Автор болу" }),
-                sub: pickLang(lang, { ru: "Предложи свою тему", en: "Suggest your topic", kk: "Өз тақырыбыңды ұсын" }),
+                sub: pickLang(lang, { ru: "Предложи свою тему", en: "Suggest your topic", kk: "Өз тақырыбыңызды ұсыныңыз" }),
                 x: 16,
                 y: 104,
                 titleSize: 17,
@@ -561,7 +561,7 @@ export default function ProfileScreen() {
               height={112}
               text={{
                 title: pickLang(lang, { ru: "Моя библиотека", en: "My library", kk: "Менің кітапханам" }),
-                sub: pickLang(lang, { ru: "Записи твоих выступлений", en: "Recordings of your performances", kk: "Өнер көрсетулеріңнің жазбалары" }),
+                sub: pickLang(lang, { ru: "Записи твоих выступлений", en: "Recordings of your performances", kk: "Өнер көрсетулеріңіздің жазбалары" }),
                 x: 20,
                 y: 32,
                 titleSize: 18,
@@ -627,7 +627,7 @@ export default function ProfileScreen() {
             <TextInput
               value={draftName}
               onChangeText={setDraftName}
-              placeholder={pickLang(lang, { ru: "Ваше имя", en: "Your name", kk: "Атың" })}
+              placeholder={pickLang(lang, { ru: "Ваше имя", en: "Your name", kk: "Атыңыз" })}
               placeholderTextColor={theme.textMuted}
               style={[
                 styles.nameInput,

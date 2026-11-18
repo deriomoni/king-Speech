@@ -43,7 +43,7 @@ export function ScriptPrompter({
       </View>
 
       {finished ? (
-        <Text style={styles.done}>{pickLang(lang, { ru: "Сцена сыграна — жми стоп ■", en: "Scene complete — tap stop ■", kk: "Көрініс ойналды — тоқтатуды бас ■" })}</Text>
+        <Text style={styles.done}>{pickLang(lang, { ru: "Сцена сыграна — жми стоп ■", en: "Scene complete — tap stop ■", kk: "Көрініс ойналды — тоқтатуды басыңыз ■" })}</Text>
       ) : typing ? (
         <View style={styles.oppRow}>
           <Avatar emoji={s.persona.avatar} size={22} />
@@ -63,7 +63,7 @@ export function ScriptPrompter({
             )}
             {yourLine && (
               <>
-                <Text style={styles.youLabel}>{pickLang(lang, { ru: "ТЫ", en: "YOU", kk: "СЕН" })}</Text>
+                <Text style={styles.youLabel}>{pickLang(lang, { ru: "ТЫ", en: "YOU", kk: "СІЗ" })}</Text>
                 <Text style={styles.yourText}>{lt(yourLine, lang)}</Text>
               </>
             )}

@@ -70,7 +70,7 @@ export default function AccountScreen() {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert(pickLang(lang, { ru: "Доступ к фото", en: "Photo access", kk: "Фотоға рұқсат" }), pickLang(lang, { ru: "Разреши доступ к галерее, чтобы установить аватар.", en: "Allow gallery access to set your avatar.", kk: "Аватар орнату үшін галереяға рұқсат бер." }));
+        Alert.alert(pickLang(lang, { ru: "Доступ к фото", en: "Photo access", kk: "Фотоға рұқсат" }), pickLang(lang, { ru: "Разреши доступ к галерее, чтобы установить аватар.", en: "Allow gallery access to set your avatar.", kk: "Аватар орнату үшін галереяға рұқсат беріңіз." }));
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -107,7 +107,7 @@ export default function AccountScreen() {
   const confirmSignOut = () =>
     setDialog({
       title: pickLang(lang, { ru: "Выйти из аккаунта?", en: "Sign out?", kk: "Аккаунттан шығу керек пе?" }),
-      message: pickLang(lang, { ru: "Вы сможете войти снова в любой момент.", en: "You can sign back in at any time.", kk: "Кез келген уақытта қайта кіре аласың." }),
+      message: pickLang(lang, { ru: "Вы сможете войти снова в любой момент.", en: "You can sign back in at any time.", kk: "Кез келген уақытта қайта кіре аласыз." }),
       buttons: [
         { label: pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" }), onPress: closeDialog },
         {

@@ -72,7 +72,7 @@ export function useShowTimeEntry() {
   const dialog = (
     <StageGlassDialog
       visible={payOpen}
-      title={pickLang(lang, { ru: "Ещё один выход в Show Time?", en: "Enter Show Time again?", kk: "Show Time-ға тағы шығасың ба?" })}
+      title={pickLang(lang, { ru: "Ещё один выход в Show Time?", en: "Enter Show Time again?", kk: "Сахна уақытына тағы шығасыз ба?" })}
       message={
         canPay
           ? pickLang(lang, {
@@ -83,7 +83,7 @@ export function useShowTimeEntry() {
           : pickLang(lang, {
               ru: "Не хватает монет - зарабатывайте их, проходя уровни.",
               en: "Not enough coins — earn them by finishing levels.",
-              kk: "Монета жетпейді - оларды деңгейлерден өтіп жина.",
+              kk: "Монета жетпейді - оларды деңгейлерден өтіп жинаңыз.",
             })
       }
       overlay={0.6}

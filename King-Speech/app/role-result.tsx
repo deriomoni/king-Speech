@@ -466,7 +466,7 @@ export default function RoleResultScreen() {
     if (!result || !result.metrics) {
       result = {
         stars: 2,
-        feedback: pickLang(lang, { ru: "Отличная работа в роли!", en: "Great effort in the role!", kk: "Рөлде керемет ойнадың!" }),
+        feedback: pickLang(lang, { ru: "Отличная работа в роли!", en: "Great effort in the role!", kk: "Рөлде керемет ойнадыңыз!" }),
         metrics: { roleFit: 3, emotion: 3, clarity: 3, confidence: 3, grammar: 3 },
         categories: {},
         aiUnavailable: true,
@@ -573,8 +573,8 @@ export default function RoleResultScreen() {
         {/* ---- Self rating ---- */}
         {stage === "self" && (
           <Animated.View entering={FadeInDown} style={styles.block}>
-            <Text style={styles.blockTitle}>{pickLang(lang, { ru: "Как ты сам себя оценишь?", en: "How did you do?", kk: "Өзіңді қалай бағалайсың?" })}</Text>
-            <Text style={styles.blockSub}>{pickLang(lang, { ru: "Сначала оцени своё выступление сам.", en: "Rate your own performance first.", kk: "Алдымен өз өнеріңді өзің бағала." })}</Text>
+            <Text style={styles.blockTitle}>{pickLang(lang, { ru: "Как ты сам себя оценишь?", en: "How did you do?", kk: "Өзіңізді қалай бағалайсыз?" })}</Text>
+            <Text style={styles.blockSub}>{pickLang(lang, { ru: "Сначала оцени своё выступление сам.", en: "Rate your own performance first.", kk: "Алдымен өз өнеріңізді өзіңіз бағалаңыз." })}</Text>
             <View style={styles.starsRow}>
               {[1, 2, 3, 4, 5].map((n) => (
                 <Pressable key={n} onPress={() => { haptic(); setSelfStars(n); }} hitSlop={6}>
@@ -602,7 +602,7 @@ export default function RoleResultScreen() {
             </Animated.View>
             <Ionicons name="scan" size={40} color={VIOLET} style={{ position: "absolute", top: 40 }} />
             <Text style={[styles.blockTitle, { marginTop: 20, textAlign: "center" }]}>
-              {pickLang(lang, { ru: "Анализируем твою игру...", en: "Analysing your performance...", kk: "Ойыныңды талдап жатырмыз..." })}
+              {pickLang(lang, { ru: "Анализируем твою игру...", en: "Analysing your performance...", kk: "Ойыныңызды талдап жатырмыз..." })}
             </Text>
           </Animated.View>
         )}
@@ -614,7 +614,7 @@ export default function RoleResultScreen() {
               <Animated.View entering={ZoomIn.duration(420)} style={styles.unlockBanner}>
                 <LinearGradient colors={["#FFDE5C33", "transparent"]} style={StyleSheet.absoluteFill} />
                 <Ionicons name="trophy" size={20} color={GOLD} />
-                <Text style={styles.unlockText}>{pickLang(lang, { ru: "Новая роль в твоей коллекции!", en: "New role added to your collection!", kk: "Коллекцияңа жаңа рөл қосылды!" })}</Text>
+                <Text style={styles.unlockText}>{pickLang(lang, { ru: "Новая роль в твоей коллекции!", en: "New role added to your collection!", kk: "Коллекцияңызға жаңа рөл қосылды!" })}</Text>
               </Animated.View>
             )}
 
@@ -631,7 +631,7 @@ export default function RoleResultScreen() {
                 input they gave before analysis isn't silently discarded. */}
             {selfStars > 0 && (
               <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, textAlign: "center", marginTop: 4 }}>
-                {pickLang(lang, { ru: `Твоя самооценка: ${selfStars}/5`, en: `Your self-rating: ${selfStars}/5`, kk: `Өз бағаң: ${selfStars}/5` })}
+                {pickLang(lang, { ru: `Твоя самооценка: ${selfStars}/5`, en: `Your self-rating: ${selfStars}/5`, kk: `Өз бағаңыз: ${selfStars}/5` })}
               </Text>
             )}
 
@@ -656,7 +656,7 @@ export default function RoleResultScreen() {
                 )}
                 {run.outcome === "open" && (
                   <Text style={styles.goalNote}>
-                    {pickLang(lang, { ru: `Ты остановился на ${run.answered + run.silent} из ${run.totalBeats} реплик.`, en: `You stopped after ${run.answered + run.silent} of ${run.totalBeats} lines.`, kk: `Тоқтаған жерің: ${run.answered + run.silent} / ${run.totalBeats} реплика.` })}
+                    {pickLang(lang, { ru: `Ты остановился на ${run.answered + run.silent} из ${run.totalBeats} реплик.`, en: `You stopped after ${run.answered + run.silent} of ${run.totalBeats} lines.`, kk: `Тоқтаған жеріңіз: ${run.answered + run.silent} / ${run.totalBeats} реплика.` })}
                   </Text>
                 )}
                 {(score.goals ?? run.goals.map((g) => ({ id: g.id, text: g.text, hit: g.live === "done", note: undefined as string | undefined }))).map((g, i) => (

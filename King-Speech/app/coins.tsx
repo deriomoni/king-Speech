@@ -244,7 +244,7 @@ export default function CoinsScreen() {
             <View style={{ flex: 1 }}>
               <Text style={[s.freeTitle, { color: c.text }]}>{pickLang(lang, { ru: "Бесплатные монеты", en: "Free coins", kk: "Тегін монеталар" })}</Text>
               <Text style={[s.freeSub, { color: c.textMuted }]}>
-                {pickLang(lang, { ru: "Посмотри короткое видео", en: "Watch a short video", kk: "Қысқа бейне көр" })}
+                {pickLang(lang, { ru: "Посмотри короткое видео", en: "Watch a short video", kk: "Қысқа бейне көріңіз" })}
               </Text>
             </View>
             <View style={s.freePill}>

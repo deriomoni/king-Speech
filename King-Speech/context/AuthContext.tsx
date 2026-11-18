@@ -288,7 +288,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!googleResponse) return;
     if (googleResponse.type !== "success") {
       if (googleResponse.type === "error") {
-        setAuthError(tx({ ru: "Не удалось войти через Google. Попробуй ещё раз.", en: "Couldn't sign in with Google. Please try again.", kk: "Google арқылы кіру мүмкін болмады. Тағы байқап көр." }));
+        setAuthError(tx({ ru: "Не удалось войти через Google. Попробуй ещё раз.", en: "Couldn't sign in with Google. Please try again.", kk: "Google арқылы кіру мүмкін болмады. Тағы байқап көріңіз." }));
       } else if (googleResponse.type === "cancel" || googleResponse.type === "dismiss") {
         // Reset UI without showing a noisy alert. Bumping the cancel
         // token lets the login screen clear its busy spinner immediately
@@ -305,7 +305,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // explicit error instead of silently leaving the button spinning
       // until the 30s safety timeout fires.
       console.warn("[auth] google success response missing id_token");
-      setAuthError(tx({ ru: "Google не вернул id_token. Проверь Client ID.", en: "Google didn't return an id_token. Check the Client ID.", kk: "Google id_token қайтармады. Client ID-ді тексер." }));
+      setAuthError(tx({ ru: "Google не вернул id_token. Проверь Client ID.", en: "Google didn't return an id_token. Check the Client ID.", kk: "Google id_token қайтармады. Client ID-ді тексеріңіз." }));
       setAuthCancelToken((n) => n + 1);
       return;
     }
@@ -344,7 +344,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = useCallback(async () => {
     setAuthError(null);
     if (!firebaseConfigured) {
-      setAuthError(tx({ ru: "Авторизация не настроена. Добавь Firebase-ключи в Secrets.", en: "Sign-in isn't configured. Add the Firebase keys to Secrets.", kk: "Авторизация бапталмаған. Firebase кілттерін Secrets-ке қос." }));
+      setAuthError(tx({ ru: "Авторизация не настроена. Добавь Firebase-ключи в Secrets.", en: "Sign-in isn't configured. Add the Firebase keys to Secrets.", kk: "Авторизация бапталмаған. Firebase кілттерін Secrets-ке қосыңыз." }));
       return;
     }
     const anyGoogleId =
@@ -352,7 +352,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       googleClientIds.webClientId ||
       googleClientIds.androidClientId;
     if (!anyGoogleId) {
-      setAuthError(tx({ ru: "Google Sign-In не настроен. Добавь EXPO_PUBLIC_GOOGLE_*_CLIENT_ID.", en: "Google Sign-In isn't configured. Add EXPO_PUBLIC_GOOGLE_*_CLIENT_ID.", kk: "Google Sign-In бапталмаған. EXPO_PUBLIC_GOOGLE_*_CLIENT_ID қос." }));
+      setAuthError(tx({ ru: "Google Sign-In не настроен. Добавь EXPO_PUBLIC_GOOGLE_*_CLIENT_ID.", en: "Google Sign-In isn't configured. Add EXPO_PUBLIC_GOOGLE_*_CLIENT_ID.", kk: "Google Sign-In бапталмаған. EXPO_PUBLIC_GOOGLE_*_CLIENT_ID қосыңыз." }));
       return;
     }
     try {
@@ -366,7 +366,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithApple = useCallback(async () => {
     setAuthError(null);
     if (!firebaseConfigured || !fbAuth) {
-      setAuthError(tx({ ru: "Авторизация не настроена. Добавь Firebase-ключи в Secrets.", en: "Sign-in isn't configured. Add the Firebase keys to Secrets.", kk: "Авторизация бапталмаған. Firebase кілттерін Secrets-ке қос." }));
+      setAuthError(tx({ ru: "Авторизация не настроена. Добавь Firebase-ключи в Secrets.", en: "Sign-in isn't configured. Add the Firebase keys to Secrets.", kk: "Авторизация бапталмаған. Firebase кілттерін Secrets-ке қосыңыз." }));
       return;
     }
     if (Platform.OS !== "ios") {

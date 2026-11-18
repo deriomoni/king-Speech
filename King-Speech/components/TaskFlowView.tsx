@@ -541,7 +541,7 @@ export default function TaskFlowView({
   };
 
   const kindLabel = levelId.startsWith("tonguetwister")
-    ? pickLang(lang, { ru: "Скороговорка", en: "Tongue twister", kk: "Жаңылтпаш" })
+    ? pickLang(lang, { ru: "Скороговорка", en: "Tongue twister", kk: "Тіл бұрауыш" })
     : pickLang(lang, { ru: "Задание", en: "Task", kk: "Тапсырма" });
 
   const isDarkTheme = themeMode === "dark";
@@ -572,7 +572,7 @@ export default function TaskFlowView({
           {isInterview
             ? `${pickLang(lang, { ru: "Вопрос", en: "Question", kk: "Сұрақ" })} ${index + 1}/${total}`
             : isTongue
-            ? `${pickLang(lang, { ru: "Скороговорка", en: "Tongue twister", kk: "Жаңылтпаш" })} ${index + 1}/${total}`
+            ? `${pickLang(lang, { ru: "Скороговорка", en: "Tongue twister", kk: "Тіл бұрауыш" })} ${index + 1}/${total}`
             : `${kindLabel} ${index + 1}/${total}`}
         </Text>
         <Text numberOfLines={1} style={[st.levelTitle, { color: ink, fontFamily: "Geologica_700Bold" }]}>
@@ -660,7 +660,7 @@ export default function TaskFlowView({
             entering={FadeIn}
             style={[st.emptyHint, { color: inkSoft, fontFamily: "Geologica_600SemiBold" }]}
           >
-            {pickLang(lang, { ru: "Кажется, мы тебя не услышали — попробуй ещё раз, чуть увереннее.", en: "We didn't hear you — try again, a little louder.", kk: "Сені естімей қалған сияқтымыз — тағы байқап көр, сәл батылырақ." })}
+            {pickLang(lang, { ru: "Кажется, мы тебя не услышали — попробуй ещё раз, чуть увереннее.", en: "We didn't hear you — try again, a little louder.", kk: "Сізді естімей қалған сияқтымыз — тағы байқап көріңіз, сәл батылырақ." })}
           </Animated.Text>
         ) : null}
 
@@ -863,7 +863,7 @@ function LevelCorridor({
         style={st.corridorPress}
         onPressIn={() => { pausedRef.current = true; }}
         onPressOut={() => { pausedRef.current = false; }}
-        accessibilityLabel={pickLang(lang, { ru: "Удерживай, чтобы поставить на паузу", en: "Hold to pause", kk: "Кідірту үшін басып тұр" })}
+        accessibilityLabel={pickLang(lang, { ru: "Удерживай, чтобы поставить на паузу", en: "Hold to pause", kk: "Кідірту үшін басып тұрыңыз" })}
       >
         <View style={[st.storyTrack, { top: topPad - 9, backgroundColor: isDark ? "rgba(240,238,233,0.25)" : "rgba(38,38,40,0.15)" }]}>
           <View style={[st.storyFill, { width: `${progress * 100}%`, backgroundColor: theme.text }]} />
@@ -882,7 +882,7 @@ function LevelCorridor({
         </Animated.View>
 
         <Text style={[st.corridorHint, { bottom: bottomPad + 33, color: isDark ? "rgba(240,238,233,0.35)" : theme.textMuted }]}>
-          {pickLang(lang, { ru: "Удерживай экран, чтобы поставить на паузу", en: "Hold the screen to pause", kk: "Кідірту үшін экранды басып тұр" })}
+          {pickLang(lang, { ru: "Удерживай экран, чтобы поставить на паузу", en: "Hold the screen to pause", kk: "Кідірту үшін экранды басып тұрыңыз" })}
         </Text>
       </Pressable>
 
@@ -1107,7 +1107,7 @@ function DevReport({
         showsVerticalScrollIndicator={false}
       >
         <Text style={[st.devTitle, { color: theme.text }]}>
-          {isTongue ? (pickLang(lang, { ru: "Разбор\nскороговорок", en: "Tongue-twister\nreview", kk: "Жаңылтпаштар\nталдауы" })) : pickLang(lang, { ru: "Разбор ответов", en: "Answer breakdown", kk: "Жауаптар талдауы" })}
+          {isTongue ? (pickLang(lang, { ru: "Разбор\nскороговорок", en: "Tongue-twister\nreview", kk: "Тіл бұрауыштар\nталдауы" })) : pickLang(lang, { ru: "Разбор ответов", en: "Answer breakdown", kk: "Жауаптар талдауы" })}
         </Text>
 
         <View style={{ marginTop: 28, gap: 4 }}>
@@ -1150,7 +1150,7 @@ function DevReport({
         ) : null}
 
         <Text style={[st.devLabel, { color: labelColor, marginTop: 36, marginBottom: 12 }]}>
-          {isTongue ? (pickLang(lang, { ru: "СКОРОГОВОРКИ", en: "TONGUE TWISTERS", kk: "ЖАҢЫЛТПАШТАР" })) : pickLang(lang, { ru: "ОТВЕТЫ", en: "ANSWERS", kk: "ЖАУАПТАР" })}
+          {isTongue ? (pickLang(lang, { ru: "СКОРОГОВОРКИ", en: "TONGUE TWISTERS", kk: "ТІЛ БҰРАУЫШТАР" })) : pickLang(lang, { ru: "ОТВЕТЫ", en: "ANSWERS", kk: "ЖАУАПТАР" })}
         </Text>
 
         <View style={{ gap: 12 }}>
@@ -1173,7 +1173,7 @@ function DevReport({
               <View key={i} style={[st.devCard, cardStyle, { gap: 14 }]}>
                 <View style={st.devRowHead}>
                   <Text style={[st.devLabel, { color: labelColor }]}>
-                    {(isTongue ? (pickLang(lang, { ru: "СКОРОГОВОРКА ", en: "TWISTER ", kk: "ЖАҢЫЛТПАШ " })) : pickLang(lang, { ru: "ВОПРОС ", en: "QUESTION ", kk: "СҰРАҚ " })) +
+                    {(isTongue ? (pickLang(lang, { ru: "СКОРОГОВОРКА ", en: "TWISTER ", kk: "ТІЛ БҰРАУЫШ " })) : pickLang(lang, { ru: "ВОПРОС ", en: "QUESTION ", kk: "СҰРАҚ " })) +
                       (i + 1) +
                       (hasAudio ? " · " + fmtDuration(r.durationSec) : "")}
                   </Text>
@@ -1219,7 +1219,7 @@ function DevReport({
                         {r.transcript
                           ? `«${r.transcript}»`
                           : isTongue
-                            ? pickLang(lang, { ru: "Речь не распознана - проверь микрофон и связь", en: "Speech not recognized - check mic and connection", kk: "Сөз танылмады - микрофон мен байланысты тексер" })
+                            ? pickLang(lang, { ru: "Речь не распознана - проверь микрофон и связь", en: "Speech not recognized - check mic and connection", kk: "Сөз танылмады - микрофон мен байланысты тексеріңіз" })
                             : pickLang(lang, { ru: "Речь не распознана - нет связи с сервером", en: "Speech not recognized - no connection to the server", kk: "Сөз танылмады - сервермен байланыс жоқ" })}
                       </Text>
                     </View>

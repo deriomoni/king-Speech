@@ -67,7 +67,7 @@ export default function CheatSheetScreen() {
   const dailyText = pickLang(lang, {
     ru: "Сначала разогрейся - слова придут сами.",
     en: "Your quick prep before you speak.",
-    kk: "Алдымен дауысыңды қыздыр — сөз өзі келеді.",
+    kk: "Алдымен дауысыңызды қыздырыңыз — сөз өзі келеді.",
   });
   const [activeRoute, setActiveRoute] = useState<CheatRoute | null>(null);
   // The warm-up chosen on the wheel, held during the 5-second countdown.
@@ -127,7 +127,14 @@ export default function CheatSheetScreen() {
       >
         {/* Hero */}
         <Animated.View entering={FadeIn.duration(400)} style={{ gap: 10 }}>
-          <GetReadyLogo width={210} color={colors.text} />
+          {lang === "kk" ? (
+            // The "Get Ready" wordmark is a Latin SVG; Kazakh gets a text title.
+            <Text style={[styles.hero, { color: colors.text, fontSize: 44, lineHeight: 48 }]}>
+              {"Жылдам\nдайындық"}
+            </Text>
+          ) : (
+            <GetReadyLogo width={210} color={colors.text} />
+          )}
           <Text style={[styles.heroSub, { color: colors.textSecondary }]}>
             {dailyText}
           </Text>
@@ -158,13 +165,13 @@ export default function CheatSheetScreen() {
           onPress={() => setPending(null)}
         >
           <Text style={[styles.countKicker, { color: colors.textSecondary }]}>
-            {pickLang(lang, { ru: "Приготовьтесь", en: "Get ready", kk: "Дайындал" })}
+            {pickLang(lang, { ru: "Приготовьтесь", en: "Get ready", kk: "Дайындалыңыз" })}
           </Text>
           <Text style={[styles.countNum, { color: pending.accent }]}>
             {count}
           </Text>
           <Text style={[styles.countHint, { color: colors.textMuted }]}>
-            {pickLang(lang, { ru: "Нажмите, чтобы отменить", en: "Tap to cancel", kk: "Болдырмау үшін бас" })}
+            {pickLang(lang, { ru: "Нажмите, чтобы отменить", en: "Tap to cancel", kk: "Болдырмау үшін басыңыз" })}
           </Text>
         </Pressable>
       )}

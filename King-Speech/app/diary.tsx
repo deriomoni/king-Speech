@@ -285,7 +285,7 @@ export default function DiaryScreen() {
             <Text style={[s.infoI, { color: c.text }]}>i</Text>
           </Pressable>
           <Text style={[s.title, { color: c.text }]}>{tr("Аудио-дневник", "Audio diary", "Аудио-күнделік")}</Text>
-          <Text style={[s.subtitle, { color: c.text }]}>{tr("Твоё личное пространство", "Your personal space", "Сенің жеке кеңістігің")}</Text>
+          <Text style={[s.subtitle, { color: c.text }]}>{tr("Твоё личное пространство", "Your personal space", "Сіздің жеке кеңістігіңіз")}</Text>
           <Pressable
             onPress={startRecording}
             style={({ pressed }) => [s.pill, { opacity: pressed ? 0.85 : 1 }]}
@@ -311,7 +311,7 @@ export default function DiaryScreen() {
                 {tr(
                   "Расскажи, как прошёл день, — и здесь появится первая кассета.",
                   "Tell how your day went — your first cassette will appear here.",
-                  "Күнің қалай өткенін айтып бер — алғашқы кассетаң осында пайда болады.",
+                  "Күніңіз қалай өткенін айтып беріңіз — алғашқы кассетаңыз осында пайда болады.",
                 )}
               </Text>
             </View>
@@ -349,12 +349,12 @@ export default function DiaryScreen() {
             style={[s.sheet, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingBottom: bottomPad + 22 + SHEET_TUCK }]}
           >
             <View style={[s.handle, { backgroundColor: c.textMuted }]} />
-            <Text style={[s.sheetTitle, { color: c.text }]}>{tr("Твой личный дневник", "Your private diary", "Сенің жеке күнделігің")}</Text>
+            <Text style={[s.sheetTitle, { color: c.text }]}>{tr("Твой личный дневник", "Your private diary", "Сіздің жеке күнделігіңіз")}</Text>
             <Text style={[s.sheetBody, { color: c.text }]}>
               {tr(
                 "Это место, где можно поделиться своими мыслями и рассказать, как прошёл твой день. Так ты учишься говорить о себе свободно и честно — а это главное, когда хочешь научиться рассказывать.\n\nЗаписи хранятся только на твоём телефоне.",
                 "This is a place to share your thoughts and tell how your day went. It helps you learn to talk about yourself freely and honestly — and that's what matters most when you want to become a good storyteller.\n\nRecordings are stored only on your phone.",
-                "Бұл — ойыңмен бөлісіп, күнің қалай өткенін айтып беретін орын. Осылай сен өзің туралы еркін әрі шынайы сөйлеуге үйренесің — ал жақсы әңгімеші болғың келсе, бұл ең бастысы.\n\nЖазбалар тек сенің телефоныңда сақталады.",
+                "Бұл — ойыңызбен бөлісіп, күніңіз қалай өткенін айтып беретін орын. Осылай сіз өзіңіз туралы еркін әрі шынайы сөйлеуге үйренесіз — ал жақсы әңгімеші болғыңыз келсе, бұл ең бастысы.\n\nЖазбалар тек сіздің телефоныңызда сақталады.",
               )}
             </Text>
             <Pressable

@@ -114,7 +114,7 @@ function pushRecent(list: number[] | undefined, value: number): number[] {
 function synonymText(stem: string | undefined, locale: Locale): string {
   if (locale === 'kk') {
     const kkSyns = stem ? synonymsForKk(stem) : [];
-    return kkSyns.length > 0 ? `байқап көр: ${kkSyns.join(', ')}` : 'балама сөз ізде';
+    return kkSyns.length > 0 ? `байқап көріңіз: ${kkSyns.join(', ')}` : 'балама сөз іздеңіз';
   }
   const syns = stem ? synonymsFor(stem) : [];
   if (syns.length > 0) {

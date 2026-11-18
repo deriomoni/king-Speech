@@ -42,7 +42,7 @@ export default function ProPromoCard({
       <SvgXml xml={SPARKLE2_SVG} width={18} height={18} style={[styles.abs, { top: 58, right: 142 }]} />
 
       <Text style={styles.title}>
-        {pickLang(lang, { ru: "Стань королём\nсцены", en: "Become the king\nof the stage", kk: "Сахнаның\nпатшасы бол" })}
+        {pickLang(lang, { ru: "Стань королём\nсцены", en: "Become the king\nof the stage", kk: "Сахнаның\nпатшасы болыңыз" })}
       </Text>
       <Text style={styles.sub}>
         {pickLang(lang, { ru: "Все темы и режимы без ограничений", en: "All topics and modes, no limits", kk: "Барлық тақырып пен режим — шексіз" })}

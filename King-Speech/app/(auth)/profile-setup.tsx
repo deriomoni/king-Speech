@@ -67,11 +67,11 @@ export default function ProfileSetupScreen() {
         {/* Header */}
         <Animated.View entering={FadeInUp.delay(80).duration(500)}>
           <Text style={[s.title, { color: theme.text }]}>
-            {pickLang(lang, { ru: "Как тебя\n", en: "How should we\n", kk: "Сені қалай\n" })}
+            {pickLang(lang, { ru: "Как тебя\n", en: "How should we\n", kk: "Сізді қалай\n" })}
             <Text style={{ color: theme.accentInk }}>{pickLang(lang, { ru: "объявить?", en: "announce you?", kk: "таныстырамыз?" })}</Text>
           </Text>
           <Text style={[s.sub, { color: ink(0.65) }]}>
-            {pickLang(lang, { ru: "Так тебя будет называть ведущий перед выходом на сцену", en: "This is how the host will call you before you go on stage", kk: "Сахнаға шығар алдында жүргізуші сені осылай атайды" })}
+            {pickLang(lang, { ru: "Так тебя будет называть ведущий перед выходом на сцену", en: "This is how the host will call you before you go on stage", kk: "Сахнаға шығар алдында жүргізуші сізді осылай атайды" })}
           </Text>
         </Animated.View>
 
@@ -128,7 +128,7 @@ export default function ProfileSetupScreen() {
         {/* Gender */}
         <Animated.View entering={FadeInDown.delay(240).duration(500)}>
           <Text style={[s.label, { color: ink(0.5) }]}>
-            {pickLang(lang, { ru: "КАК К ТЕБЕ ОБРАЩАТЬСЯ", en: "HOW SHOULD WE ADDRESS YOU", kk: "ЖЫНЫСЫҢДЫ ТАҢДА" })}
+            {pickLang(lang, { ru: "КАК К ТЕБЕ ОБРАЩАТЬСЯ", en: "HOW SHOULD WE ADDRESS YOU", kk: "ЖЫНЫСЫҢЫЗДЫ ТАҢДАҢЫЗ" })}
           </Text>
           <View style={s.genderRow}>
             {GENDERS.map((g) => {

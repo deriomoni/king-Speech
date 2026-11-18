@@ -117,7 +117,7 @@ export default function WorldsMapRoute() {
             {pickLang(lang, { ru: "МИРЫ", en: "WORLDS", kk: "ӘЛЕМДЕР" })}
           </Text>
           <Text style={[styles.title, { color: appTheme.text, fontFamily: "Geologica_700Bold" }]}>
-            {pickLang(lang, { ru: "Твой путь", en: "Your journey", kk: "Сенің жолың" })}
+            {pickLang(lang, { ru: "Твой путь", en: "Your journey", kk: "Сіздің жолыңыз" })}
           </Text>
         </View>
         <View style={styles.closeBtn} />
@@ -187,7 +187,7 @@ export default function WorldsMapRoute() {
             {pickLang(lang, {
               ru: "Нажми на пройденный мир, чтобы пересмотреть записи и церемонию ранга.",
               en: "Tap a completed world to revisit recordings and the rank-up moment.",
-              kk: "Жазбалар мен дәреже салтанатын қайта көру үшін өтілген әлемді бас.",
+              kk: "Жазбалар мен дәреже салтанатын қайта көру үшін өтілген әлемді басыңыз.",
             })}
           </Text>
         </View>

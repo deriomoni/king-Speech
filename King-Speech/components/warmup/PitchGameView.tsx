@@ -313,7 +313,7 @@ export default function PitchGameView({
             entering={FadeInDown.duration(200)}
             style={styles.countdown}
           >
-            {countdown || pickLang(lang, { ru: "Пой!", en: "Sing!", kk: "Ән сал!" })}
+            {countdown || pickLang(lang, { ru: "Пой!", en: "Sing!", kk: "Ән салыңыз!" })}
           </Animated.Text>
         </View>
       )}
@@ -353,12 +353,12 @@ export default function PitchGameView({
               ? pickLang(lang, {
                   ru: "Пой в микрофон — на телефоне оценка по активности голоса",
                   en: "Sing into the mic — on phones the score is based on voice activity",
-                  kk: "Микрофонға ән сал — телефонда баға дауыс белсенділігі бойынша қойылады",
+                  kk: "Микрофонға ән салыңыз — телефонда баға дауыс белсенділігі бойынша қойылады",
                 })
               : pickLang(lang, {
                   ru: "Веди жёлтый шарик по нотам",
                   en: "Guide the yellow ball along the notes",
-                  kk: "Сары шарикті ноталар бойымен жүргіз",
+                  kk: "Сары шарикті ноталар бойымен жүргізіңіз",
                 })}
           </Text>
         </Animated.View>

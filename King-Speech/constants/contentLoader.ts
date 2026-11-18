@@ -212,9 +212,9 @@ const INTERVIEW_TASK_META: Record<Lang, { title: string; instruction: string; ti
     { title: "Your opinion", instruction: "Say what you think — in your own words, no right answers.", tips: ["Be yourself", "Explain why", "Finish calmly"] },
   ],
   kk: [
-    { title: "Жеңіл сұрақ", instruction: "Дауыспен жауап бер — досыңмен сөйлескендей, сабырлы. 30–60 секунд.", tips: ["Асықпа", "Өз сөзіңмен айт", "Мұнда қате жауап жоқ"] },
-    { title: "Оқиға айтып бер", instruction: "Өміріңнен шағын бір оқиғамен бөліс. Мысал келтірсең болады.", tips: ["Бір деталь не сезім қос", "Шын жүректен сөйле", "Үзілістен қорықпа"] },
-    { title: "Сенің пікірің", instruction: "Не ойлайтыныңды өз сөзіңмен айт — дұрыс жауап деген жоқ.", tips: ["Өзің бол", "Неге екенін түсіндір", "Сабырмен аяқта"] },
+    { title: "Жеңіл сұрақ", instruction: "Дауыспен жауап беріңіз — досыңызбен сөйлескендей, сабырлы. 30–60 секунд.", tips: ["Асықпаңыз", "Өз сөзіңізбен айтыңыз", "Мұнда қате жауап жоқ"] },
+    { title: "Оқиға айтып беріңіз", instruction: "Өміріңізден шағын бір оқиғамен бөлісіңіз. Мысал келтірсеңіз болады.", tips: ["Бір деталь не сезім қосыңыз", "Шын жүректен сөйлеңіз", "Үзілістен қорықпаңыз"] },
+    { title: "Сіздің пікіріңіз", instruction: "Не ойлайтыныңызды өз сөзіңізбен айтыңыз — дұрыс жауап деген жоқ.", tips: ["Өзіңіз болыңыз", "Неге екенін түсіндіріңіз", "Сабырмен аяқтаңыз"] },
   ],
 };
 
@@ -293,13 +293,13 @@ export function getWarmupTasksForLevel(moduleId: number, lang: Lang): TaskData[]
       instruction: pickLang(lang, {
         ru: `Спой слоги по нотам. Темп: ${norm.tempo}.`,
         en: `Sing syllables along the notes. Tempo: ${norm.tempo}.`,
-        kk: `Буындарды ноталар бойынша айтып шық. Қарқын: ${norm.tempo}.`,
+        kk: `Буындарды ноталар бойынша айтып шығыңыз. Қарқын: ${norm.tempo}.`,
       }),
       content: norm.syllables.join(" · "),
       tips: pickLang(lang, {
         ru: ["Дыши спокойно", "Следи за высотой тона", norm.tempo],
         en: ["Breathe calmly", "Follow the pitch", norm.tempo],
-        kk: ["Сабырлы дем ал", "Дауыс биіктігін қадағала", norm.tempo],
+        kk: ["Сабырлы дем алыңыз", "Дауыс биіктігін қадағалаңыз", norm.tempo],
       }),
     },
     {

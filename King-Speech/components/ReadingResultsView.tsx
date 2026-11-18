@@ -472,7 +472,7 @@ export default function ReadingResultsView({
             style={[st.card, st.savePrompt, { backgroundColor: cardBg, borderColor: cardBorder }]}
           >
             <Text style={[st.savePromptText, { color: fg }]}>
-              {pickLang(lang, { ru: "Сохранить в библиотеку?", en: "Save to library?", kk: "Кітапханаға сақтайсың ба?" })}
+              {pickLang(lang, { ru: "Сохранить в библиотеку?", en: "Save to library?", kk: "Кітапханаға сақтайсыз ба?" })}
             </Text>
             <View style={st.savePromptBtns}>
               <Pressable
@@ -689,7 +689,7 @@ function ListenStage({
     <Animated.View entering={FadeIn.duration(260)} style={[st.container, { backgroundColor: bg }]}>
       <View style={[st.lsHeader, { paddingTop: topPad + 14 }]}>
         <Text style={[st.lsKicker, { color: tint }]}>
-          {(pickLang(lang, { ru: "Твоя запись", en: "Your recording", kk: "Сенің жазбаң" })).toUpperCase()}
+          {(pickLang(lang, { ru: "Твоя запись", en: "Your recording", kk: "Сіздің жазбаңыз" })).toUpperCase()}
         </Text>
         {onClose ? (
           <Pressable
@@ -817,7 +817,7 @@ function ListenStage({
           ]}
         >
           <Text style={[st.lsRateText, { color: theme.accentText }]}>
-            {pickLang(lang, { ru: "Оценить себя", en: "Rate yourself", kk: "Өзіңді бағала" })}
+            {pickLang(lang, { ru: "Оценить себя", en: "Rate yourself", kk: "Өзіңізді бағалау" })}
           </Text>
         </Pressable>
       </View>

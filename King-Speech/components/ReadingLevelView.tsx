@@ -632,7 +632,7 @@ export default function ReadingLevelView({
               {countdown}
             </Animated.Text>
             <Text style={[st.countdownHint, { color: inkFaint }]}>
-              {(pickLang(lang, { ru: "Приготовься", en: "Get ready", kk: "Дайындал" })).toUpperCase()}
+              {(pickLang(lang, { ru: "Приготовься", en: "Get ready", kk: "Дайындалыңыз" })).toUpperCase()}
             </Text>
           </Animated.View>
         </View>
@@ -644,7 +644,7 @@ export default function ReadingLevelView({
           <Animated.View exiting={FadeOut.duration(420)} style={st.overlayInner}>
             <OscarMascot emotion="happy" size={180} />
             <Text style={[st.loadQuote, { color: ink, fontFamily: R.type.bodyFont }]}>
-              {pickLang(lang, { ru: "Речь — это сцена. Выходи и говори.", en: "Speech is a stage. Step up and speak.", kk: "Сөз — бұл сахна. Шық та сөйле." })}
+              {pickLang(lang, { ru: "Речь — это сцена. Выходи и говори.", en: "Speech is a stage. Step up and speak.", kk: "Сөз — бұл сахна. Шығып, сөйлеңіз." })}
             </Text>
             <Text style={[st.loadHint, { color: inkFaint }]}>
               {(pickLang(lang, { ru: "Готовим полотно", en: "Preparing the canvas", kk: "Мәтінді дайындап жатырмыз" })).toUpperCase()}

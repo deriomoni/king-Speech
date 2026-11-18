@@ -75,7 +75,7 @@ export default function LoginScreen() {
 
   const handleGoogle = async () => {
     if (!configured) {
-      Alert.alert(pickLang(lang, { ru: "Вход", en: "Sign in", kk: "Кіру" }), pickLang(lang, { ru: "Авторизация не настроена. Добавь Firebase-ключи в Replit Secrets.", en: "Sign-in isn't configured. Add the Firebase keys to Replit Secrets.", kk: "Авторизация бапталмаған. Firebase кілттерін Replit Secrets-ке қос." }));
+      Alert.alert(pickLang(lang, { ru: "Вход", en: "Sign in", kk: "Кіру" }), pickLang(lang, { ru: "Авторизация не настроена. Добавь Firebase-ключи в Replit Secrets.", en: "Sign-in isn't configured. Add the Firebase keys to Replit Secrets.", kk: "Авторизация бапталмаған. Firebase кілттерін Replit Secrets-ке қосыңыз." }));
       return;
     }
     setBusy("google");
@@ -84,7 +84,7 @@ export default function LoginScreen() {
 
   const handleApple = async () => {
     if (!configured) {
-      Alert.alert(pickLang(lang, { ru: "Вход", en: "Sign in", kk: "Кіру" }), pickLang(lang, { ru: "Авторизация не настроена. Добавь Firebase-ключи в Replit Secrets.", en: "Sign-in isn't configured. Add the Firebase keys to Replit Secrets.", kk: "Авторизация бапталмаған. Firebase кілттерін Replit Secrets-ке қос." }));
+      Alert.alert(pickLang(lang, { ru: "Вход", en: "Sign in", kk: "Кіру" }), pickLang(lang, { ru: "Авторизация не настроена. Добавь Firebase-ключи в Replit Secrets.", en: "Sign-in isn't configured. Add the Firebase keys to Replit Secrets.", kk: "Авторизация бапталмаған. Firebase кілттерін Replit Secrets-ке қосыңыз." }));
       return;
     }
     setBusy("apple");
@@ -113,14 +113,14 @@ export default function LoginScreen() {
       <View style={{ flex: 1 }} />
 
       <Animated.View entering={FadeInUp.delay(100).duration(500)}>
-        <Text style={[s.headline, { color: INK }]}>{pickLang(lang, { ru: "ТВОЙ\nВЫХОД.", en: "YOUR\nSTAGE.", kk: "СЕНІҢ\nСАХНАҢ." })}</Text>
+        <Text style={[s.headline, { color: INK }]}>{pickLang(lang, { ru: "ТВОЙ\nВЫХОД.", en: "YOUR\nSTAGE.", kk: "СІЗДІҢ\nСАХНАҢЫЗ." })}</Text>
         <Text style={[s.panelNote, { color: "rgba(38,38,40,0.75)" }]}>
-          {pickLang(lang, { ru: "Сцена ждёт. Прогресс и короны - с тобой.", en: "The stage awaits. Progress and crowns stay with you.", kk: "Сахна күтіп тұр. Прогресс пен тәждер — сенімен бірге." })}
+          {pickLang(lang, { ru: "Сцена ждёт. Прогресс и короны - с тобой.", en: "The stage awaits. Progress and crowns stay with you.", kk: "Сахна күтіп тұр. Прогресс пен тәждер — сізбен бірге." })}
         </Text>
       </Animated.View>
 
       <Text style={[s.subtitle, { color: INK }]}>
-        {pickLang(lang, { ru: "Войди, чтобы сохранять прогресс и достижения", en: "Sign in to save your progress and achievements", kk: "Прогресс пен жетістіктерді сақтау үшін кір" })}
+        {pickLang(lang, { ru: "Войди, чтобы сохранять прогресс и достижения", en: "Sign in to save your progress and achievements", kk: "Прогресс пен жетістіктерді сақтау үшін кіріңіз" })}
       </Text>
 
       {!configured && (

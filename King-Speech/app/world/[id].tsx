@@ -395,7 +395,7 @@ function RecordingsBlock({
             { color: theme.textPrimary, fontFamily: theme.fontFamilyTitle },
           ]}
         >
-          {pickLang(lang, { ru: "Записи Show Time", en: "Show Time recordings", kk: "Show Time жазбалары" })}
+          {pickLang(lang, { ru: "Записи Show Time", en: "Show Time recordings", kk: "Сахна уақыты жазбалары" })}
         </Text>
       </View>
       <Text
@@ -406,7 +406,7 @@ function RecordingsBlock({
       >
         {recordings.length === 0
           ? pickLang(lang, { ru: "В этом ранге записи не сохранились.", en: "No recordings were saved during this rank.", kk: "Бұл дәрежеде жазбалар сақталмаған." })
-          : pickLang(lang, { ru: `${recordings.length} записей из твоего пути. Удерживай, чтобы переименовать, поделиться или удалить.`, en: `${recordings.length} ${recordings.length === 1 ? "recording" : "recordings"} from your journey. Long-press to rename, share, or delete.`, kk: `Жолыңнан ${recordings.length} жазба. Атын өзгерту, бөлісу не жою үшін басып тұр.` })}
+          : pickLang(lang, { ru: `${recordings.length} записей из твоего пути. Удерживай, чтобы переименовать, поделиться или удалить.`, en: `${recordings.length} ${recordings.length === 1 ? "recording" : "recordings"} from your journey. Long-press to rename, share, or delete.`, kk: `Жолыңыздан ${recordings.length} жазба. Атын өзгерту, бөлісу не жою үшін басып тұрыңыз.` })}
       </Text>
       {recordings.length > 0 && (
         <View style={{ gap: 8, marginTop: 8 }}>
@@ -667,7 +667,7 @@ function RenameModal({
               { color: theme.textMuted, fontFamily: theme.fontFamily },
             ]}
           >
-            {pickLang(lang, { ru: "Оставь пустым, чтобы вернуть автоназвание.", en: "Leave empty to restore the auto label.", kk: "Автоатауды қайтару үшін бос қалдыр." })}
+            {pickLang(lang, { ru: "Оставь пустым, чтобы вернуть автоназвание.", en: "Leave empty to restore the auto label.", kk: "Автоатауды қайтару үшін бос қалдырыңыз." })}
           </Text>
           <View style={detailStyles.renameButtons}>
             <Pressable
@@ -1155,7 +1155,7 @@ function MementoBlock({
           ]}
         >
           {available
-            ? pickLang(lang, { ru: "Пересмотри церемонию портала как воспоминание.", en: "Re-watch your portal ceremony as a keepsake.", kk: "Портал салтанатын естелік ретінде қайта көр." })
+            ? pickLang(lang, { ru: "Пересмотри церемонию портала как воспоминание.", en: "Re-watch your portal ceremony as a keepsake.", kk: "Портал салтанатын естелік ретінде қайта көріңіз." })
             : pickLang(lang, { ru: "Портал не пройден — церемонии нет.", en: "Portal not finished — no ceremony to revisit.", kk: "Портал өтілмеген — салтанат жоқ." })}
         </Text>
       </View>
@@ -1204,7 +1204,7 @@ function ModulesBlock({
           { color: theme.textSecondary, fontFamily: theme.fontFamily },
         ]}
       >
-        {pickLang(lang, { ru: "Нажми на модуль, чтобы вернуться к нему. Прогресс сохраняется.", en: "Tap any module to revisit it. Your progress here is preserved.", kk: "Модульге оралу үшін оны бас. Прогресс сақталады." })}
+        {pickLang(lang, { ru: "Нажми на модуль, чтобы вернуться к нему. Прогресс сохраняется.", en: "Tap any module to revisit it. Your progress here is preserved.", kk: "Модульге оралу үшін оны басыңыз. Прогресс сақталады." })}
       </Text>
       <View style={{ marginTop: 4 }}>
         {sorted.map((l) => {

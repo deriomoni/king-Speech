@@ -55,26 +55,26 @@ const TITLE_MAX = 18;
 const TOP_ROW = 44; // room for the corner back / close button
 
 const QUESTIONS: { ru: string; en: string; kk: string }[] = [
-  { ru: "Что сегодня заставило тебя улыбнуться?", en: "What made you smile today?", kk: "Бүгін сені не күлдірді?" },
-  { ru: "Какой момент дня ты хочешь запомнить?", en: "Which moment of today do you want to remember?", kk: "Күннің қай сәтін есте сақтағың келеді?" },
-  { ru: "Что сегодня получилось лучше, чем ты ждал?", en: "What went better than you expected today?", kk: "Бүгін не күткеніңнен де жақсы шықты?" },
-  { ru: "Что тебя сегодня удивило?", en: "What surprised you today?", kk: "Бүгін сені не таң қалдырды?" },
-  { ru: "О чём ты думаешь прямо сейчас?", en: "What are you thinking about right now?", kk: "Дәл қазір не туралы ойлап отырсың?" },
+  { ru: "Что сегодня заставило тебя улыбнуться?", en: "What made you smile today?", kk: "Бүгін сізді не күлдірді?" },
+  { ru: "Какой момент дня ты хочешь запомнить?", en: "Which moment of today do you want to remember?", kk: "Күннің қай сәтін есте сақтағыңыз келеді?" },
+  { ru: "Что сегодня получилось лучше, чем ты ждал?", en: "What went better than you expected today?", kk: "Бүгін не күткеніңізден де жақсы шықты?" },
+  { ru: "Что тебя сегодня удивило?", en: "What surprised you today?", kk: "Бүгін сізді не таң қалдырды?" },
+  { ru: "О чём ты думаешь прямо сейчас?", en: "What are you thinking about right now?", kk: "Дәл қазір не туралы ойлап отырсыз?" },
   { ru: "Что было самым трудным сегодня?", en: "What was the hardest part of today?", kk: "Бүгін ең қиыны не болды?" },
-  { ru: "За что ты можешь себя похвалить?", en: "What can you praise yourself for?", kk: "Өзіңді не үшін мақтай аласың?" },
-  { ru: "Кому ты сегодня благодарен и почему?", en: "Who are you grateful to today, and why?", kk: "Бүгін кімге ризасың және неге?" },
-  { ru: "Что ты узнал сегодня нового?", en: "What did you learn today?", kk: "Бүгін қандай жаңа нәрсе білдің?" },
+  { ru: "За что ты можешь себя похвалить?", en: "What can you praise yourself for?", kk: "Өзіңізді не үшін мақтай аласыз?" },
+  { ru: "Кому ты сегодня благодарен и почему?", en: "Who are you grateful to today, and why?", kk: "Бүгін кімге ризасыз және неге?" },
+  { ru: "Что ты узнал сегодня нового?", en: "What did you learn today?", kk: "Бүгін қандай жаңа нәрсе білдіңіз?" },
   { ru: "Какое чувство было главным за день?", en: "Which feeling was the main one today?", kk: "Күні бойы қай сезім басым болды?" },
-  { ru: "Что бы ты сделал иначе, если бы мог?", en: "What would you do differently if you could?", kk: "Мүмкіндігің болса, нені басқаша істер едің?" },
-  { ru: "Чего ты ждёшь от завтрашнего дня?", en: "What are you looking forward to tomorrow?", kk: "Ертеңгі күннен не күтесің?" },
-  { ru: "Расскажи о разговоре, который тебе запомнился.", en: "Tell about a conversation you remember from today.", kk: "Есіңде қалған бір әңгіме туралы айтып бер." },
-  { ru: "Что помогло тебе сегодня успокоиться?", en: "What helped you calm down today?", kk: "Бүгін саған сабасыңа түсуге не көмектесті?" },
-  { ru: "Когда сегодня ты почувствовал себя смелым?", en: "When did you feel brave today?", kk: "Бүгін қай кезде өзіңді батыл сезіндің?" },
-  { ru: "Что тебя сейчас волнует больше всего?", en: "What's on your mind the most right now?", kk: "Қазір сені ең көп не толғандырады?" },
-  { ru: "Опиши свой день тремя словами — и объясни их.", en: "Describe your day in three words — and explain them.", kk: "Күніңді үш сөзбен сипатта — және оларды түсіндір." },
+  { ru: "Что бы ты сделал иначе, если бы мог?", en: "What would you do differently if you could?", kk: "Мүмкіндігіңіз болса, нені басқаша істер едіңіз?" },
+  { ru: "Чего ты ждёшь от завтрашнего дня?", en: "What are you looking forward to tomorrow?", kk: "Ертеңгі күннен не күтесіз?" },
+  { ru: "Расскажи о разговоре, который тебе запомнился.", en: "Tell about a conversation you remember from today.", kk: "Есіңізде қалған бір әңгіме туралы айтып беріңіз." },
+  { ru: "Что помогло тебе сегодня успокоиться?", en: "What helped you calm down today?", kk: "Бүгін сізге сабаңызға түсуге не көмектесті?" },
+  { ru: "Когда сегодня ты почувствовал себя смелым?", en: "When did you feel brave today?", kk: "Бүгін қай кезде өзіңізді батыл сезіндіңіз?" },
+  { ru: "Что тебя сейчас волнует больше всего?", en: "What's on your mind the most right now?", kk: "Қазір сізді ең көп не толғандырады?" },
+  { ru: "Опиши свой день тремя словами — и объясни их.", en: "Describe your day in three words — and explain them.", kk: "Күніңізді үш сөзбен сипаттаңыз — және оларды түсіндіріңіз." },
   { ru: "Что маленькое, но приятное случилось сегодня?", en: "What small but nice thing happened today?", kk: "Бүгін қандай кішкентай, бірақ жағымды нәрсе болды?" },
-  { ru: "О чём ты мечтаешь в последнее время?", en: "What have you been dreaming about lately?", kk: "Соңғы кезде не туралы армандайсың?" },
-  { ru: "Что ты хочешь сказать себе через год?", en: "What would you like to tell yourself a year from now?", kk: "Бір жылдан кейінгі өзіңе не айтқың келеді?" },
+  { ru: "О чём ты мечтаешь в последнее время?", en: "What have you been dreaming about lately?", kk: "Соңғы кезде не туралы армандайсыз?" },
+  { ru: "Что ты хочешь сказать себе через год?", en: "What would you like to tell yourself a year from now?", kk: "Бір жылдан кейінгі өзіңізге не айтқыңыз келеді?" },
 ];
 
 function pickQuestion(prev: number) {
@@ -353,10 +353,10 @@ export default function DiaryRecordScreen() {
             />
           </Animated.View>
 
-          <Text style={[s.signTitle, { color: c.text }]}>{tr("Подпиши кассету", "Sign your cassette", "Кассетаға ат қой")}</Text>
+          <Text style={[s.signTitle, { color: c.text }]}>{tr("Подпиши кассету", "Sign your cassette", "Кассетаға ат қойыңыз")}</Text>
 
           <View style={[s.moodCard, { backgroundColor: cardBg }]}>
-            <Text style={[s.moodTitle, { color: c.text }]}>{tr("Выбери своё ощущение", "How do you feel?", "Көңіл күйіңді таңда")}</Text>
+            <Text style={[s.moodTitle, { color: c.text }]}>{tr("Выбери своё ощущение", "How do you feel?", "Көңіл күйіңізді таңдаңыз")}</Text>
             <View style={s.moods}>
               {EMOTIONS.map((m) => {
                 const on = emotion === m.key;
@@ -405,7 +405,7 @@ export default function DiaryRecordScreen() {
                 {tr(
                   "Чтобы записать дневник, King Speech нужен микрофон. Разреши доступ в настройках.",
                   "King Speech needs the microphone to record your diary. Allow access in Settings.",
-                  "Күнделік жазу үшін King Speech-ке микрофон керек. Баптаулардан рұқсат бер.",
+                  "Күнделік жазу үшін King Speech-ке микрофон керек. Баптаулардан рұқсат беріңіз.",
                 )}
               </Text>
               {Platform.OS !== "web" && (

@@ -121,7 +121,7 @@ export function LiveFeed(p: SceneProps) {
       {p.awaitingOpening && !scripted && (
         <Animated.View entering={FadeInDown} style={styles.hint}>
           <Ionicons name="radio" size={13} color={SCENE.onYellow} />
-          <Text style={styles.hintText}>{pickLang(lang, { ru: "Ты в эфире! ", en: "You're live! ", kk: "Сен эфирдесің! " })}{lt(s.openingHint, lang)}</Text>
+          <Text style={styles.hintText}>{pickLang(lang, { ru: "Ты в эфире! ", en: "You're live! ", kk: "Сіз эфирдесіз! " })}{lt(s.openingHint, lang)}</Text>
         </Animated.View>
       )}
 

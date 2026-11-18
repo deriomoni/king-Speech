@@ -286,7 +286,7 @@ export default function AuthorScreen() {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert(tr("Доступ к фото", "Photos", "Фотоға рұқсат"), tr("Разреши доступ к галерее, чтобы выбрать обложку.", "Allow photo access to pick a cover.", "Мұқаба таңдау үшін галереяға рұқсат бер."));
+        Alert.alert(tr("Доступ к фото", "Photos", "Фотоға рұқсат"), tr("Разреши доступ к галерее, чтобы выбрать обложку.", "Allow photo access to pick a cover.", "Мұқаба таңдау үшін галереяға рұқсат беріңіз."));
         return;
       }
       const res = await ImagePicker.launchImageLibraryAsync({
@@ -338,7 +338,7 @@ export default function AuthorScreen() {
 
           <Text style={[s.title, { color: c.text }]}>{tr("Стать автором", "Become an author", "Автор болу")}</Text>
           <Text style={[s.subtitle, { color: c.textMuted }]}>
-            {tr("Напиши своё выступление и прочитай его", "Write your speech and read it aloud", "Сөзіңді жазып, оны дауыстап оқы")}
+            {tr("Напиши своё выступление и прочитай его", "Write your speech and read it aloud", "Сөзіңізді жазып, оны дауыстап оқыңыз")}
           </Text>
 
           {/* Field · Название */}
@@ -409,7 +409,7 @@ export default function AuthorScreen() {
             <Text style={s.readText}>{tr("Прочитать вслух", "Read aloud", "Дауыстап оқу")}</Text>
           </Pressable>
           <Text style={[s.hint, { color: c.textMuted }]}>
-            {tr("Сначала прочитай — потом сможешь опубликовать", "Read it first — then you can publish", "Алдымен оқы — содан кейін жариялай аласың")}
+            {tr("Сначала прочитай — потом сможешь опубликовать", "Read it first — then you can publish", "Алдымен оқыңыз — содан кейін жариялай аласыз")}
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -422,9 +422,9 @@ export default function AuthorScreen() {
             style={[s.sheet, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingBottom: bottomPad + 20 + SHEET_TUCK }]}
           >
             <View style={[s.grabber, { backgroundColor: c.textMuted }]} />
-            <Text style={[s.sheetTitle, { color: c.text }]}>{tr("Отлично прочитано!", "Nicely read!", "Керемет оқыдың!")}</Text>
+            <Text style={[s.sheetTitle, { color: c.text }]}>{tr("Отлично прочитано!", "Nicely read!", "Керемет оқыдыңыз!")}</Text>
             <Text style={[s.sheetSub, { color: c.textSecondary }]}>
-              {tr("Поделись темой — её смогут прочитать другие игроки", "Share the topic — other players can read it too", "Тақырыбыңмен бөліс — оны басқа ойыншылар да оқи алады")}
+              {tr("Поделись темой — её смогут прочитать другие игроки", "Share the topic — other players can read it too", "Тақырыбыңызбен бөлісіңіз — оны басқа ойыншылар да оқи алады")}
             </Text>
 
             <View style={[s.preview, { backgroundColor: c.card, borderColor: stroke }]}>
@@ -462,7 +462,7 @@ export default function AuthorScreen() {
               >
                 <Ionicons name={playing ? "stop" : "play"} size={16} color={c.text} />
                 <Text style={[s.listenText, { color: c.text }]}>
-                  {playing ? tr("Остановить", "Stop", "Тоқтату") : tr("Послушать своё чтение", "Listen to your reading", "Өз оқуыңды тыңдау")}
+                  {playing ? tr("Остановить", "Stop", "Тоқтату") : tr("Послушать своё чтение", "Listen to your reading", "Өз оқуыңызды тыңдау")}
                 </Text>
               </Pressable>
             )}
@@ -481,7 +481,7 @@ export default function AuthorScreen() {
                   {coverUri ? tr("Сменить фото", "Change photo", "Фотоны ауыстыру") : tr("Загрузить фото", "Upload photo", "Фото жүктеу")}
                 </Text>
                 <Text style={[s.uploadSub, { color: c.textMuted }]}>
-                  {tr("Твоя любимая фотография для обложки", "Your favourite photo for the cover", "Мұқабаға арналған сүйікті фотоң")}
+                  {tr("Твоя любимая фотография для обложки", "Your favourite photo for the cover", "Мұқабаға арналған сүйікті фотоңыз")}
                 </Text>
               </View>
             </Pressable>

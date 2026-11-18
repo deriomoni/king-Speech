@@ -155,7 +155,7 @@ export default function ThemeCatalogScreen() {
 
         <Text style={[s.title, { color: c.text }]}>{tr("Каталог тем", "Topic catalog", "Тақырыптар каталогы")}</Text>
         <Text style={[s.subtitle, { color: c.textMuted }]}>
-          {tr("Выбери тему и выходи на сцену", "Pick a topic and take the stage", "Тақырып таңда да, сахнаға шық")}
+          {tr("Выбери тему и выходи на сцену", "Pick a topic and take the stage", "Тақырып таңдап, сахнаға шығыңыз")}
         </Text>
 
         <View style={[s.search, { backgroundColor: c.card, borderColor: stroke }]}>

@@ -116,7 +116,7 @@ export default function WaveformRecorder({
   const visible = bars.slice(-VISIBLE_BARS);
 
   const stopLabel = pickLang(lang, { ru: "Стоп", en: "Stop", kk: "Тоқтату" });
-  const restartTitle = pickLang(lang, { ru: "Начать заново?", en: "Restart recording?", kk: "Қайта бастайсың ба?" });
+  const restartTitle = pickLang(lang, { ru: "Начать заново?", en: "Restart recording?", kk: "Қайта бастайсыз ба?" });
   const restartMsg =
     pickLang(lang, { ru: "Текущая запись будет удалена.", en: "Your current take will be discarded.", kk: "Ағымдағы жазба өшіріледі." });
   const cancelLabel = pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" });

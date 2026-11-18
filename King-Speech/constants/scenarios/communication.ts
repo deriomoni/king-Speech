@@ -24,11 +24,11 @@ export const COMMUNICATION_SCENARIOS: RoleScenario[] = [
     meterLabel: L("Настроение гостя", "Guest mood", "Қонақтың көңіл-күйі"),
     nudge: L("Э-э… я могу заказать?", "Uh… can I order?", "Ә-ә… тапсырыс берсем бола ма?"),
     goals: [
-      goal("warm", L("Тепло поприветствуй и подними настроение", "Greet warmly and lift his mood", "Жылы амандасып, көңіл-күйін көтер"),
+      goal("warm", L("Тепло поприветствуй и подними настроение", "Greet warmly and lift his mood", "Жылы амандасып, көңіл-күйін көтеріңіз"),
         ["доброе утро", "рад", "улыб", "как вы", "отличн"], ["good morning", "glad", "smile", "how are you", "great"], ["қайырлы таң", "сәлеметсіз бе", "қуаныштымын", "күлімде", "қалыңыз қалай", "керемет"]),
-      goal("ask", L("Задай вопрос и подбери напиток", "Ask a question and match a drink", "Сұрақ қойып, сусын таңда"),
+      goal("ask", L("Задай вопрос и подбери напиток", "Ask a question and match a drink", "Сұрақ қойып, сусын таңдаңыз"),
         ["какой", "любите", "крепк", "молок", "сладк", "посоветую"], ["which", "like", "strong", "milk", "sweet", "recommend"], ["қандай", "ұнатасыз", "күшті", "сүт", "тәтті", "ұсынамын"]),
-      goal("extra", L("Предложи что-то к кофе", "Offer something with the coffee", "Кофеге бір нәрсе ұсын"),
+      goal("extra", L("Предложи что-то к кофе", "Offer something with the coffee", "Кофеге бір нәрсе ұсыныңыз"),
         ["круассан", "сырник", "печень", "десерт", "к кофе"], ["croissant", "muffin", "cookie", "pastry", "with your coffee"], ["круассан", "сырник", "печенье", "десерт", "кофеге"]),
     ],
     beats: [
@@ -91,11 +91,11 @@ export const COMMUNICATION_SCENARIOS: RoleScenario[] = [
     meterLabel: L("Спокойствие пассажира", "Passenger calm", "Жолаушының тыныштығы"),
     nudge: L("Извините… вы меня слышите?", "Excuse me… can you hear me?", "Кешіріңіз… мені естіп тұрсыз ба?"),
     goals: [
-      goal("calm", L("Успокой пассажирку, а не отмахнись", "Calm her down, don't brush her off", "Жолаушыны елемей кетпе, тыныштандыр"),
+      goal("calm", L("Успокой пассажирку, а не отмахнись", "Calm her down, don't brush her off", "Жолаушыны елеусіз қалдырмай, тыныштандырыңыз"),
         ["понимаю", "не волнуйтесь", "всё хорошо", "дышите", "рядом", "безопас"], ["understand", "don't worry", "all good", "breathe", "here", "safe"], ["түсінемін", "уайымдамаңыз", "бәрі жақсы", "дем алыңыз", "қасыңыздамын", "қауіпсіз"]),
-      goal("explain", L("Объясни тряску простыми словами", "Explain turbulence in simple words", "Шайқалуды қарапайым сөзбен түсіндір"),
+      goal("explain", L("Объясни тряску простыми словами", "Explain turbulence in simple words", "Шайқалуды қарапайым сөзбен түсіндіріңіз"),
         ["турбулент", "кочк", "дорог", "воздух", "нормаль", "пилот"], ["turbulence", "bumps", "road", "air", "normal", "pilot"], ["турбулент", "кедір-бұдыр", "жол", "ауа", "қалыпты", "ұшқыш"]),
-      goal("second", L("Вежливо разберись с требовательным соседом", "Politely handle the demanding neighbour", "Талапшыл көршімен сыпайы сөйлес"),
+      goal("second", L("Вежливо разберись с требовательным соседом", "Politely handle the demanding neighbour", "Талапшыл көршімен сыпайы сөйлесіңіз"),
         ["минутку", "сейчас подойду", "обязательно", "спасибо за терпение"], ["one moment", "be right with you", "of course", "thank you for your patience"], ["бір минут", "қазір келемін", "міндетті түрде", "шыдамдылығыңызға рахмет"]),
     ],
     beats: [
@@ -158,11 +158,11 @@ export const COMMUNICATION_SCENARIOS: RoleScenario[] = [
     meterLabel: L("Настроение гостя", "Guest mood", "Қонақтың көңіл-күйі"),
     nudge: L("Алло, есть кто-нибудь?", "Hello, anyone there?", "Алло, мұнда біреу бар ма?"),
     goals: [
-      goal("welcome", L("Тепло встреть и назови гостя по имени", "Welcome him warmly by name", "Қонақты жылы қарсы алып, атымен ата"),
+      goal("welcome", L("Тепло встреть и назови гостя по имени", "Welcome him warmly by name", "Қонақты жылы қарсы алып, атымен атаңыз"),
         ["добро пожаловать", "рады", "господин", "мистер", "дорога"], ["welcome", "glad", "mr", "mister", "journey"], ["қош келдіңіз", "қуаныштымыз", "мырза", "жол", "сапар"]),
-      goal("problem", L("Признай проблему и предложи решение", "Own the problem and offer a fix", "Мәселені мойындап, шешім ұсын"),
+      goal("problem", L("Признай проблему и предложи решение", "Own the problem and offer a fix", "Мәселені мойындап, шешім ұсыныңыз"),
         ["извин", "прошу прощения", "апгрейд", "другой номер", "компенс", "за наш счёт"], ["sorry", "apolog", "upgrade", "another room", "compens", "on us"], ["кешірім", "кешіріңіз", "апгрейд", "басқа нөмір", "өтемақы", "біздің есебімізден"]),
-      goal("care", L("Позаботься о мелочах", "Take care of the small things", "Ұсақ-түйекке дейін қамқор бол"),
+      goal("care", L("Позаботься о мелочах", "Take care of the small things", "Ұсақ-түйекке дейін қамқор болыңыз"),
         ["ужин", "в номер", "будильник", "завтрак", "вода", "чемодан"], ["dinner", "room service", "wake-up", "breakfast", "water", "luggage"], ["кешкі ас", "нөмірге", "оятқыш", "таңғы ас", "су", "чемодан", "жүк"]),
     ],
     beats: [
@@ -225,11 +225,11 @@ export const COMMUNICATION_SCENARIOS: RoleScenario[] = [
     meterLabel: L("Доверие покупателя", "Shopper trust", "Сатып алушының сенімі"),
     nudge: L("Ну… я, наверное, пойду.", "Well… I guess I'll go.", "Ал… мен кетейін, шамасы."),
     goals: [
-      goal("nopush", L("Не дави — задай вопросы", "Don't push — ask questions", "Қыспа — сұрақ қой"),
+      goal("nopush", L("Не дави — задай вопросы", "Don't push — ask questions", "Қыспаңыз — сұрақ қойыңыз"),
         ["для кого", "как она", "что слушает", "где", "расскажите", "важно"], ["who for", "how does she", "listens", "where", "tell me", "important"], ["кімге", "ол қалай", "не тыңдайды", "қайда", "айтыңызшы", "маңызды"]),
-      goal("match", L("Предложи 1–2 варианта под её привычки", "Suggest 1–2 options that fit her habits", "Оның әдеттеріне сай 1–2 нұсқа ұсын"),
+      goal("match", L("Предложи 1–2 варианта под её привычки", "Suggest 1–2 options that fit her habits", "Оның әдеттеріне сай 1–2 нұсқа ұсыныңыз"),
         ["шумодав", "беспровод", "спорт", "лёгк", "батаре", "подойдут"], ["noise cancel", "wireless", "sport", "light", "battery", "suit"], ["шу басатын", "сымсыз", "спорт", "жеңіл", "батарея", "жарайды"]),
-      goal("safe", L("Сними страх ошибиться с подарком", "Remove the fear of a wrong gift", "Сыйлықпен қателесу қорқынышын сейілт"),
+      goal("safe", L("Сними страх ошибиться с подарком", "Remove the fear of a wrong gift", "Сыйлықпен қателесу қорқынышын сейілтіңіз"),
         ["обмен", "вернуть", "14 дней", "чек", "подарочн"], ["exchange", "return", "14 days", "receipt", "gift"], ["айырбас", "қайтару", "14 күн", "чек", "сыйлық"]),
     ],
     beats: [
@@ -292,11 +292,11 @@ export const COMMUNICATION_SCENARIOS: RoleScenario[] = [
     meterLabel: L("Лояльность клиента", "Client loyalty", "Клиенттің адалдығы"),
     nudge: L("Вы вообще меня слушаете?!", "Are you even listening to me?!", "Мені тыңдап тұрсыз ба өзі?!"),
     goals: [
-      goal("listen", L("Выслушай и признай проблему", "Listen and acknowledge the problem", "Тыңдап, мәселені мойында"),
+      goal("listen", L("Выслушай и признай проблему", "Listen and acknowledge the problem", "Тыңдап, мәселені мойындаңыз"),
         ["понимаю", "вы правы", "извин", "сожале", "это неприемлемо"], ["understand", "you're right", "sorry", "apolog", "unacceptable"], ["түсінемін", "сіз дұрыс айтасыз", "кешіріңіз", "кешірім", "өкінемін", "жол берілмейді"]),
-      goal("fix", L("Предложи конкретное решение и срок", "Offer a concrete fix and a deadline", "Нақты шешім мен мерзім ұсын"),
+      goal("fix", L("Предложи конкретное решение и срок", "Offer a concrete fix and a deadline", "Нақты шешім мен мерзім ұсыныңыз"),
         ["сегодня", "завтра", "до", "часов", "лично", "курьер", "срок"], ["today", "tomorrow", "by", "o'clock", "personally", "courier", "deadline"], ["бүгін", "ертең", "дейін", "сағат", "өзім", "курьер", "мерзім"]),
-      goal("keep", L("Удержи клиента: компенсация и забота", "Keep the client: compensation and care", "Клиентті ұстап қал: өтемақы мен қамқорлық"),
+      goal("keep", L("Удержи клиента: компенсация и забота", "Keep the client: compensation and care", "Клиентті ұстап қалыңыз: өтемақы мен қамқорлық"),
         ["скидк", "компенс", "бесплатн", "лично", "на связи", "мой номер"], ["discount", "compensat", "free", "personally", "reach me", "my number"], ["жеңілдік", "өтемақы", "тегін", "өзім", "байланыста", "менің нөмірім"]),
     ],
     beats: [

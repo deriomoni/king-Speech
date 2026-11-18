@@ -185,12 +185,12 @@ const TranscriptBlock = React.memo(function TranscriptBlock({
   const cardA11yLabel = pickLang(lang, {
     ru: "Что мы услышали из вашей записи",
     en: "What we heard from your recording",
-    kk: "Жазбаңнан не естідік",
+    kk: "Жазбаңыздан не естідік",
   });
   const cardA11yHint = isLong
     ? (expanded
-        ? pickLang(lang, { ru: "Нажмите, чтобы свернуть полный текст", en: "Tap to collapse the full transcript", kk: "Толық мәтінді жасыру үшін бас" })
-        : pickLang(lang, { ru: "Нажмите, чтобы показать полный текст", en: "Tap to show the full transcript", kk: "Толық мәтінді көру үшін бас" }))
+        ? pickLang(lang, { ru: "Нажмите, чтобы свернуть полный текст", en: "Tap to collapse the full transcript", kk: "Толық мәтінді жасыру үшін басыңыз" })
+        : pickLang(lang, { ru: "Нажмите, чтобы показать полный текст", en: "Tap to show the full transcript", kk: "Толық мәтінді көру үшін басыңыз" }))
     : undefined;
 
   return (
@@ -522,13 +522,13 @@ function EmptyRecordingSheet({
             <Ionicons name="mic-off-outline" size={18} color={accent} />
           </View>
           <Text style={[ers.title, { color: fg, fontFamily: "Geologica_700Bold" }]}>
-            {pickLang(lang, { ru: "Кажется, мы тебя не услышали", en: "We didn't quite hear you", kk: "Сені естімей қалған сияқтымыз" })}
+            {pickLang(lang, { ru: "Кажется, мы тебя не услышали", en: "We didn't quite hear you", kk: "Сізді естімей қалған сияқтымыз" })}
           </Text>
           <Text style={[ers.body, { color: muted, fontFamily: "Geologica_400Regular" }]}>
             {pickLang(lang, {
               ru: "Чтобы пройти уровень, нужно говорить вслух. Ничего страшного — попробуй ещё раз, чуть увереннее и ближе к микрофону.",
               en: "To pass this level you need to speak out loud. No worries — give it another go, a little louder and closer to the mic.",
-              kk: "Деңгейден өту үшін дауыстап сөйлеу керек. Ештеңе етпейді — тағы байқап көр, сәл батылырақ және микрофонға жақынырақ.",
+              kk: "Деңгейден өту үшін дауыстап сөйлеу керек. Ештеңе етпейді — тағы байқап көріңіз, сәл батылырақ және микрофонға жақынырақ.",
             })}
           </Text>
           <Pressable
@@ -953,7 +953,7 @@ export default function LevelScreen() {
         const errMsg = pickLang(lang, {
           ru: "Не удалось проанализировать запись. Попробуй ещё раз.",
           en: "Couldn't analyze the recording. Please try again.",
-          kk: "Жазбаны талдау мүмкін болмады. Тағы байқап көр.",
+          kk: "Жазбаны талдау мүмкін болмады. Тағы байқап көріңіз.",
         });
         setCurrentAnalysis({
           summary: errMsg,
@@ -1316,7 +1316,7 @@ export default function LevelScreen() {
             restarts the reading from the top, «Выйти» → map. */}
         <StageGlassDialog
           visible={readingExitConfirm}
-          title={pickLang(lang, { ru: "Выйти из чтения?", en: "Leave the reading?", kk: "Оқудан шығасың ба?" })}
+          title={pickLang(lang, { ru: "Выйти из чтения?", en: "Leave the reading?", kk: "Оқудан шығасыз ба?" })}
           message={
             pickLang(lang, {
               ru: "Прогресс этого чтения не сохранится — придётся читать заново.",

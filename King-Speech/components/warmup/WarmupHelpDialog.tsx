@@ -96,7 +96,7 @@ export function BreathingHelpDialog({ visible, onClose }: { visible: boolean; on
         {pickLang(lang, {
           ru: "Дышите вместе с кругом: расширяется - вдох, сжимается - выдох. Текст на круге подскажет ритм.",
           en: "Breathe with the circle: it grows - inhale, it shrinks - exhale. The text on the circle keeps the rhythm.",
-          kk: "Шеңбермен бірге тыныс ал: үлкейсе - дем ал, кішірейсе - дем шығар. Шеңбердегі мәтін ырғақты айтып тұрады.",
+          kk: "Шеңбермен бірге тыныс алыңыз: үлкейсе - дем алыңыз, кішірейсе - дем шығарыңыз. Шеңбердегі мәтін ырғақты айтып тұрады.",
         })}
       </Text>
       <Text style={[styles.bText, { color: theme.textSecondary }]}>
@@ -118,7 +118,7 @@ export function BreathingHelpDialog({ visible, onClose }: { visible: boolean; on
         {pickLang(lang, {
           ru: "Уровень не требует микрофона. За выполнение задания начисляется 10 баллов. При желании уровень можно пройти повторно.",
           en: "This level doesn't need a microphone. You get 10 points for completing the task. You can replay the level any time.",
-          kk: "Бұл деңгейге микрофон қажет емес. Тапсырманы орындағаның үшін 10 ұпай беріледі. Қаласаң, деңгейді қайта өтуге болады.",
+          kk: "Бұл деңгейге микрофон қажет емес. Тапсырманы орындағаныңыз үшін 10 ұпай беріледі. Қаласаңыз, деңгейді қайта өтуге болады.",
         })}
       </Text>
     </Shell>
@@ -136,7 +136,7 @@ export function MouthHelpDialog({ visible, onClose }: { visible: boolean; onClos
         {pickLang(lang, {
           ru: "Сначала появится название упражнения и короткое описание. Затем - задание и подсказка, как его выполнять. Повторяй движение вместе с таймером, спокойно и без напряжения.",
           en: "First you'll see the exercise name and a short description. Then the task and a hint on how to do it. Repeat the movement with the timer, calmly and without strain.",
-          kk: "Алдымен жаттығудың атауы мен қысқаша сипаттамасы шығады. Содан кейін - тапсырма және оны қалай орындау керектігі туралы кеңес. Қимылды таймермен бірге, асықпай әрі күшенбей қайтала.",
+          kk: "Алдымен жаттығудың атауы мен қысқаша сипаттамасы шығады. Содан кейін - тапсырма және оны қалай орындау керектігі туралы кеңес. Қимылды таймермен бірге, асықпай әрі күшенбей қайталаңыз.",
         })}
       </Text>
       <View style={styles.mBtns}>

@@ -297,8 +297,8 @@ function TutorialPhase({
       "The more words - the higher the score",
     ],
     kk: [
-      "«Стоп» батырмасын бас - сөз аласың",
-      "«Старт» батырмасын бас та, синонимдерді айт",
+      "«Стоп» батырмасын басыңыз - сөз аласыз",
+      "«Старт» батырмасын басып, синонимдерді айтыңыз",
       "Әр синоним үшін +3 ұпай",
       "Сөз неғұрлым көп болса - ұпай соғұрлым жоғары",
     ],
@@ -337,7 +337,7 @@ function TutorialPhase({
       <View style={styles.tip}>
         <View style={[styles.tipDot, { backgroundColor: theme.accent }]} />
         <Text style={[styles.tipText, { color: ink(0.5) }]}>
-          {pickLang(lang, { ru: "Говори вслух - микрофон засчитает каждое слово", en: "Speak out loud - the mic will count every word", kk: "Дауыстап айт - микрофон әр сөзді есептейді" })}
+          {pickLang(lang, { ru: "Говори вслух - микрофон засчитает каждое слово", en: "Speak out loud - the mic will count every word", kk: "Дауыстап айтыңыз - микрофон әр сөзді есептейді" })}
         </Text>
       </View>
 
@@ -435,8 +435,8 @@ function SpinIntro({ onDone }: { onDone: () => void }) {
   return (
     <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, wrapStyle]}>
       <View style={[styles.introWrap, { backgroundColor: theme.bg }]}>
-        <Text style={[styles.introTitle, { color: theme.text }]}>{pickLang(lang, { ru: "Выбери\nслово", en: "Pick\na word", kk: "Сөз\nтаңда" })}</Text>
-        <Text style={[styles.introSub, { color: ink(0.5) }]}>{pickLang(lang, { ru: "Останови барабан - получишь слово", en: "Stop the reel - you'll get a word", kk: "Барабанды тоқтат - сөз аласың" })}</Text>
+        <Text style={[styles.introTitle, { color: theme.text }]}>{pickLang(lang, { ru: "Выбери\nслово", en: "Pick\na word", kk: "Сөз\nтаңдаңыз" })}</Text>
+        <Text style={[styles.introSub, { color: ink(0.5) }]}>{pickLang(lang, { ru: "Останови барабан - получишь слово", en: "Stop the reel - you'll get a word", kk: "Барабанды тоқтатыңыз - сөз аласыз" })}</Text>
       </View>
     </Animated.View>
   );
@@ -614,7 +614,7 @@ function SpinPhase({
         >
           <Text style={[styles.stopRoundText, { color: theme.accentText }]}>{pickLang(lang, { ru: "СТОП", en: "STOP", kk: "СТОП" })}</Text>
         </Pressable>
-        <Text style={[styles.stopCaption, { color: ink(0.45) }]}>{pickLang(lang, { ru: "Нажми, чтобы остановить", en: "Tap to stop", kk: "Тоқтату үшін бас" })}</Text>
+        <Text style={[styles.stopCaption, { color: ink(0.45) }]}>{pickLang(lang, { ru: "Нажми, чтобы остановить", en: "Tap to stop", kk: "Тоқтату үшін басыңыз" })}</Text>
       </View>
 
       <SpinIntro onDone={() => setIntroDone(true)} />
@@ -856,7 +856,7 @@ function PlayPhase({
         pickLang(langRef.current, {
           ru: "Распознавание речи недоступно в Expo Go. Введи синоним вручную или используй dev-сборку.",
           en: "Speech recognition isn't available in Expo Go. Type the synonym or use a dev build.",
-          kk: "Expo Go-да сөзді тану қолжетімсіз. Синонимді қолмен енгіз немесе dev-нұсқаны қолдан.",
+          kk: "Expo Go-да сөзді тану қолжетімсіз. Синонимді қолмен енгізіңіз немесе dev-нұсқаны қолданыңыз.",
         }),
       );
       return;
@@ -868,7 +868,7 @@ function PlayPhase({
           pickLang(langRef.current, {
             ru: "Доступ к микрофону или распознаванию запрещён. Введи синоним вручную.",
             en: "Microphone or speech recognition access is denied. Type the synonym instead.",
-            kk: "Микрофонға немесе сөзді тануға рұқсат жоқ. Синонимді қолмен енгіз.",
+            kk: "Микрофонға немесе сөзді тануға рұқсат жоқ. Синонимді қолмен енгізіңіз.",
           }),
         );
         return;
@@ -878,7 +878,7 @@ function PlayPhase({
         pickLang(langRef.current, {
           ru: "Не удалось получить доступ к микрофону. Введи синоним вручную.",
           en: "Couldn't access the microphone. Type the synonym instead.",
-          kk: "Микрофонға қол жеткізу мүмкін болмады. Синонимді қолмен енгіз.",
+          kk: "Микрофонға қол жеткізу мүмкін болмады. Синонимді қолмен енгізіңіз.",
         }),
       );
       return;
@@ -907,12 +907,12 @@ function PlayPhase({
               ? pickLang(langRef.current, {
                   ru: "Микрофон недоступен. Введи синоним вручную.",
                   en: "The microphone is unavailable. Type the synonym instead.",
-                  kk: "Микрофон қолжетімсіз. Синонимді қолмен енгіз.",
+                  kk: "Микрофон қолжетімсіз. Синонимді қолмен енгізіңіз.",
                 })
               : pickLang(langRef.current, {
                   ru: "Распознавание речи запрещено. Введи синоним вручную.",
                   en: "Speech recognition is blocked. Type the synonym instead.",
-                  kk: "Сөзді тануға тыйым салынған. Синонимді қолмен енгіз.",
+                  kk: "Сөзді тануға тыйым салынған. Синонимді қолмен енгізіңіз.",
                 }),
           );
         }

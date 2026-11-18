@@ -653,7 +653,7 @@ export default function ShowtimePlaybackScreen() {
                 {pickLang(lang, {
                   ru: "Кажется, ты не читал текст вслух. Прочитай его и пройди уровень снова.",
                   en: "Looks like the text wasn't read aloud. Read it and pass the level again.",
-                  kk: "Мәтінді дауыстап оқымаған сияқтысың. Оны оқып, деңгейден қайта өт.",
+                  kk: "Мәтінді дауыстап оқымаған сияқтысыз. Оны оқып, деңгейден қайта өтіңіз.",
                 })}
               </Text>
             </Animated.View>
@@ -779,7 +779,7 @@ export default function ShowtimePlaybackScreen() {
                 <>
                   <Ionicons name="book-outline" size={16} color={theme.textMuted} />
                   <Text style={[pb.btnTextPrimary, { color: theme.textMuted }]}>
-                    {pickLang(lang, { ru: "Прочитай текст", en: "Read the text", kk: "Мәтінді оқы" })}
+                    {pickLang(lang, { ru: "Прочитай текст", en: "Read the text", kk: "Мәтінді оқу" })}
                   </Text>
                 </>
               ) : (
@@ -799,12 +799,12 @@ export default function ShowtimePlaybackScreen() {
       <StageGlassDialog
         visible={showListenPrompt}
         icon={<SvgXml xml={headphonesXml} width={38} height={38} />}
-        title={pickLang(lang, { ru: "Послушай себя", en: "Listen to yourself", kk: "Өзіңді тыңда" })}
+        title={pickLang(lang, { ru: "Послушай себя", en: "Listen to yourself", kk: "Өзіңізді тыңдаңыз" })}
         message={
           pickLang(lang, {
             ru: "Прослушай свою речь до конца - честный самоанализ это шаг к тому, чтобы стать лучше.",
             en: "Listen to your speech to the end — honest self-reflection is a real step toward getting better.",
-            kk: "Сөзіңді соңына дейін тыңда - өзіңді шынайы талдау жақсаруға жасалған қадам.",
+            kk: "Сөзіңізді соңына дейін тыңдаңыз - өзіңізді шынайы талдау жақсаруға жасалған қадам.",
           })
         }
         stacked

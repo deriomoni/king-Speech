@@ -1,7 +1,7 @@
 {
   "CFBundleDisplayName": "King Speech",
-  "NSCameraUsageDescription": "King Speech «Рөлдер» жаттығуларында сені түсіріп, кадрға қалай тұру керегін көрсету үшін камераны пайдаланады. Бейне телефоныңда қалады.",
-  "NSMicrophoneUsageDescription": "King Speech жаттығуларда сөйлеуіңді жазу үшін микрофонды пайдаланады.",
+  "NSCameraUsageDescription": "King Speech «Рөлдер» жаттығуларында сізді түсіріп, кадрға қалай тұру керегін көрсету үшін камераны пайдаланады. Бейне телефоныңызда қалады.",
+  "NSMicrophoneUsageDescription": "King Speech жаттығуларда сөйлеуіңізді жазу үшін микрофонды пайдаланады.",
   "NSSpeechRecognitionUsageDescription": "King Speech айтылған сөздерді сөздікпен салыстыру үшін сөйлеуді тану функциясын пайдаланады.",
-  "NSPhotoLibraryUsageDescription": "King Speech аватарыңды орнату үшін фотосуреттерге қол жеткізуді пайдаланады."
+  "NSPhotoLibraryUsageDescription": "King Speech аватарыңызды орнату үшін фотосуреттерге қол жеткізуді пайдаланады."
 }

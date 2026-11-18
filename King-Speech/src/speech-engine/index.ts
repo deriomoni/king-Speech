@@ -230,7 +230,7 @@ export async function analyzeCaptured(params: AnalyzeCapturedParams): Promise<An
         locale === 'en'
           ? `Didn't catch it. Say it again: ${refText}`
           : locale === 'kk'
-            ? `Естімей қалдым. Тағы бір рет айт: ${refText}`
+            ? `Естімей қалдым. Тағы бір рет айтыңыз: ${refText}`
             : `Не расслышал. Скажи ещё раз: ${refText}`;
       return retry('off_script', locale, msg);
     }
@@ -375,9 +375,9 @@ function liteResult(params: AnalyzeCapturedParams): AnalysisResult {
       action: 'Install the language pack in settings.',
     },
     kk: {
-      praise: 'Дауысың сенімді естіледі.',
+      praise: 'Дауысыңыз сенімді естіледі.',
       growth: 'Толық талдау дауыс пакеті орнатылғаннан кейін ашылады.',
-      action: 'Баптауларда тіл пакетін орнат.',
+      action: 'Баптауларда тіл пакетін орнатыңыз.',
     },
   };
   const lite = LITE_TEXT[locale] ?? LITE_TEXT.ru;

@@ -74,7 +74,7 @@ export async function analyzeGenericTask(params: {
     const errMsg = pickLang(lang, {
       ru: "Не удалось проанализировать запись. Попробуй ещё раз.",
       en: "Couldn't analyze the recording. Please try again.",
-      kk: "Жазбаны талдау мүмкін болмады. Тағы байқап көр.",
+      kk: "Жазбаны талдау мүмкін болмады. Тағы байқап көріңіз.",
     });
     return {
       kind: "error",

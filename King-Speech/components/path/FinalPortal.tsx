@@ -322,7 +322,7 @@ export default function FinalPortal({ theme, status, onPress, testID }: Props) {
         <View style={[portalStyles.lockedRow, { borderColor: theme.borderColor }]}>
           <Ionicons name="lock-closed" size={12} color={theme.textMuted} />
           <Text style={[portalStyles.lockedText, { color: theme.textMuted, fontFamily: theme.fontFamily }]}>
-            {pickLang(lang, { ru: "Пройди все ступени этого ранга", en: "Complete all steps of this rank", kk: "Осы дәреженің барлық сатысынан өт" })}
+            {pickLang(lang, { ru: "Пройди все ступени этого ранга", en: "Complete all steps of this rank", kk: "Осы дәреженің барлық сатысынан өтіңіз" })}
           </Text>
         </View>
       )}
