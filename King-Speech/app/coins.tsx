@@ -18,7 +18,7 @@ import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { COINS, themedSvg } from "@/assets/figma/profile/tiles";
 
-const OSCAR_HAPPY = require("@/assets/figma/levels/oscar-happy.png");
+const OSCAR_BAGS = require("@/assets/figma/levels/oscar-bags.png");
 const GOLD = "#FFD857";
 
 // One gold coin with the crown mark (no bar under the crown).
@@ -132,8 +132,8 @@ export default function CoinsScreen() {
           <Text style={[s.title, { color: c.text }]}>{en ? "Coins" : "Монеты"}</Text>
 
           <Animated.View entering={FadeInDown.delay(60).duration(420)} style={s.hero}>
-            <Image source={OSCAR_HAPPY} style={s.oscar} resizeMode="contain" />
-            <SvgXml xml={themedSvg(COINS, mode)} width={162} height={98} style={s.stack} />
+            <Image source={OSCAR_BAGS} style={s.oscar} resizeMode="contain" />
+            <SvgXml xml={themedSvg(COINS, mode)} width={132} height={80} style={s.stack} />
           </Animated.View>
 
           <View style={s.balanceRow}>
@@ -255,8 +255,8 @@ const s = StyleSheet.create({
   back: { position: "absolute", left: 16, width: 44, height: 44, justifyContent: "center", zIndex: 2 },
   title: { fontSize: 32, letterSpacing: -0.5, fontFamily: "Geologica_800ExtraBold", marginTop: 34 },
   hero: { width: 362, maxWidth: "100%", height: 172, marginTop: 4 },
-  oscar: { position: "absolute", left: 0, top: 0, width: 200, height: 200 },
-  stack: { position: "absolute", left: 194, top: 50 },
+  oscar: { position: "absolute", left: 0, top: 6, width: 230, height: 165 },
+  stack: { position: "absolute", left: 228, top: 88 },
   balanceRow: { flexDirection: "row", alignItems: "baseline", gap: 8 },
   balance: { fontSize: 42, letterSpacing: -0.8, fontFamily: "Geologica_900Black" },
   balanceUnit: { fontSize: 17, fontFamily: "Geologica_700Bold" },
