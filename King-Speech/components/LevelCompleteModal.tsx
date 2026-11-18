@@ -262,6 +262,20 @@ function VictoryScreen({ bestScore, durationSec, xpEarned, onNext, onMap, t, lan
     bump.value = withSequence(withTiming(1, { duration: 70 }), withTiming(0, { duration: 220 }));
     Haptics.selectionAsync().catch(() => {});
   };
+  // the pill is only there while coins are being credited: it slides in just
+  // before the first coin leaves and slides away a moment after the last lands
+  const pillVis = useSharedValue(0);
+  useEffect(() => {
+    if (earned <= 0) return;
+    const id = setTimeout(() => { pillVis.value = withTiming(1, { duration: 320, easing: Easing.out(Easing.cubic) }); }, 1450);
+    return () => clearTimeout(id);
+  }, []);
+  useEffect(() => {
+    if (landed < COIN_N) return;
+    const id = setTimeout(() => { pillVis.value = withTiming(0, { duration: 380, easing: Easing.in(Easing.cubic) }); }, 1300);
+    return () => clearTimeout(id);
+  }, [landed]);
+  const pillShow = useAnimatedStyle(() => ({ opacity: pillVis.value, transform: [{ translateY: (1 - pillVis.value) * -14 * k }] }));
   const pillBump = useAnimatedStyle(() => ({ transform: [{ translateY: -bump.value * 3 * k }] }));
   const pillGlow = useAnimatedStyle(() => ({ opacity: bump.value }));
   const raysSpin = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value}deg` }] }));
@@ -495,7 +509,7 @@ function VictoryScreen({ bestScore, durationSec, xpEarned, onNext, onMap, t, lan
         </Animated.View>
 
         {/* Balance pill — the coins fly in here and the number ticks up */}
-        <Animated.View entering={FadeIn.delay(900).duration(400)} style={{ ...at(PILL.x, PILL.y), width: u(PILL.w), height: u(PILL.h) }} pointerEvents="none">
+        <Animated.View style={[{ ...at(PILL.x, PILL.y), width: u(PILL.w), height: u(PILL.h) }, pillShow]} pointerEvents="none">
           <Animated.View style={[{ flex: 1 }, pillBump]}>
             <Animated.View
               style={[{ position: "absolute", left: -u(6), right: -u(6), top: -u(6), bottom: -u(6), borderRadius: u(24), backgroundColor: "rgba(255,207,52,0.28)" }, pillGlow]}

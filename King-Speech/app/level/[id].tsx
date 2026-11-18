@@ -583,6 +583,14 @@ export default function LevelScreen() {
           })(),
         }
       : baseLevel;
+  // Was this level already passed before this visit? The «Уровень пройден»
+  // celebration (and its coins) is for the first clear only — a replay ends
+  // straight back on the map. (Coins are already awarded once: completeTask /
+  // completeAllTasksForLevel ignore tasks that are completed.)
+  const clearedBefore = React.useRef<boolean | null>(null);
+  if (clearedBefore.current === null && baseLevel) {
+    clearedBefore.current = !!baseLevel.completed || baseLevel.tasks.every((tk) => tk.status === "completed");
+  }
   const [activeTaskIndex, setActiveTaskIndex] = useState<number | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [currentAnalysis, setCurrentAnalysis] = useState<SpeechAnalysis | null>(null);
@@ -678,6 +686,11 @@ export default function LevelScreen() {
   useEffect(() => {
     setShowLevelComplete(false);
   }, [levelId]);
+
+  // Replay of a passed level: no victory screen — back to the map.
+  useEffect(() => {
+    if (showLevelComplete && clearedBefore.current) handleLevelCompleteMap();
+  }, [showLevelComplete, handleLevelCompleteMap]);
 
   // Snapshot duration when modal opens
   useEffect(() => {
@@ -1139,7 +1152,7 @@ export default function LevelScreen() {
           onAllComplete={handleWarmupAllComplete}
         />
         <LevelCompleteModal
-          visible={showLevelComplete}
+          visible={showLevelComplete && !clearedBefore.current}
           levelTitle={level.title}
           xpEarned={12 + scores.filter((s) => s >= 8).length * 2}
           avgScore={avgScore}
@@ -1240,7 +1253,7 @@ export default function LevelScreen() {
         />
 
         <LevelCompleteModal
-          visible={showLevelComplete}
+          visible={showLevelComplete && !clearedBefore.current}
           levelTitle={level.title}
           xpEarned={12 + (scores.filter((s) => s >= 8).length * 2)}
           avgScore={avgScore}
@@ -1383,7 +1396,7 @@ export default function LevelScreen() {
 
       {/* Level Complete Modal */}
       <LevelCompleteModal
-        visible={showLevelComplete}
+        visible={showLevelComplete && !clearedBefore.current}
         levelTitle={level.title}
         xpEarned={12 + (scores.filter((s) => s >= 8).length * 2)}
         avgScore={avgScore}

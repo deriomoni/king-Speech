@@ -105,7 +105,10 @@ export default function VocabularyLevelScreen() {
   }>();
   const levelId = String(params.levelId ?? "vocabulary");
   const { theme } = useTheme();
-  const { addXP, markLevelComplete } = useGame();
+  const { addXP, markLevelComplete, getLevelById } = useGame();
+  // coins and the module-passed celebration are for the first clear only
+  const clearedBefore = React.useRef<boolean | null>(null);
+  if (clearedBefore.current === null) clearedBefore.current = !!getLevelById(levelId as any)?.completed;
   const { triggerModuleTransition } = useModuleTransition();
   // Vocabulary is a module's LAST level, so finishing it crosses into the next
   // module. Resolve the current module number (from the param, fallback to id).
@@ -241,15 +244,15 @@ export default function VocabularyLevelScreen() {
           foundSynonyms={foundSynonyms}
           score={score}
           onNext={() => {
-            const xp = Math.min(50, foundSynonyms.length * 6);
-            addXP(xp);
+            const first = !clearedBefore.current;
+            if (first) addXP(Math.min(50, foundSynonyms.length * 6));
             markLevelComplete(levelId);
             // Module boundary: finishing vocabulary advances to the next module.
             // Play the full-screen corridor (current → next), floor tinted to the
             // next module's color, then return to the map (already auto-scrolled
             // to the new module). Skipped at the final module.
             const nextModule = moduleNum + 1;
-            if (nextModule <= 67) {
+            if (first && nextModule <= 67) {
               const color = MODULE_COLORS[nextModule]?.color ?? "#9468FB";
               triggerModuleTransition(moduleNum, nextModule, color);
             }

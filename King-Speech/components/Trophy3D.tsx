@@ -125,6 +125,8 @@ export type CoinFlight = {
   onArrive?: (i: number) => void;
 };
 
+const MAX_TILT = 0.32; // radians the player can tip it up/down
+const RETURN_AFTER_MS = 2000;
 const COIN_FLY_SEC = 1.25;
 const COIN_GAP_SEC = 0.08;
 
@@ -191,24 +193,29 @@ export default function Trophy3D({
   useEffect(() => () => { alive.current = false; cancelAnimationFrame(raf.current); }, []);
   // finger spin (only once the entrance is over)
   const settled = useRef(false);
-  const drag = useRef({ active: false, angle: 0, vel: 0, sway: 1, startAngle: 0, lastX: 0, lastT: 0 });
+  // angle: free spin left/right; tilt: a little up/down, limited; after the
+  // finger lets go both ease back to the resting pose a couple of seconds later
+  const drag = useRef({ active: false, angle: 0, vel: 0, sway: 1, startAngle: 0, lastX: 0, lastT: 0, tilt: 0, startTilt: 0, releasedAt: 0 });
   const pan = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => settled.current,
-      onMoveShouldSetPanResponder: (_, g) => settled.current && Math.abs(g.dx) > 4 && Math.abs(g.dx) > Math.abs(g.dy),
+      onMoveShouldSetPanResponder: (_, g) => settled.current && (Math.abs(g.dx) > 4 || Math.abs(g.dy) > 4),
       onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: (_, g) => {
-        const d = drag.current; d.active = true; d.startAngle = d.angle; d.vel = 0; d.lastX = g.dx; d.lastT = Date.now();
+        const d = drag.current; d.active = true; d.startAngle = d.angle; d.startTilt = d.tilt; d.vel = 0; d.lastX = g.dx; d.lastT = Date.now();
       },
       onPanResponderMove: (_, g) => {
         const d = drag.current; const now = Date.now();
         d.angle = d.startAngle + g.dx * 0.012;
+        // up/down only a little, with a soft stop
+        const raw = d.startTilt + g.dy * 0.006;
+        d.tilt = Math.sign(raw) * MAX_TILT * Math.tanh(Math.abs(raw) / MAX_TILT);
         const dtm = Math.max(1, now - d.lastT);
         d.vel = ((g.dx - d.lastX) * 0.012) / (dtm / 1000);
         d.lastX = g.dx; d.lastT = now;
       },
-      onPanResponderRelease: () => { const d = drag.current; d.active = false; d.vel = Math.max(-14, Math.min(14, d.vel)); },
-      onPanResponderTerminate: () => { drag.current.active = false; },
+      onPanResponderRelease: () => { const d = drag.current; d.active = false; d.vel = Math.max(-14, Math.min(14, d.vel)); d.releasedAt = Date.now(); },
+      onPanResponderTerminate: () => { const d = drag.current; d.active = false; d.releasedAt = Date.now(); },
     }),
   ).current;
 
@@ -328,10 +335,19 @@ export default function Trophy3D({
           pivot.position.y = HIGH_Y + Math.sin(s * 1.6) * 0.006;
           // the player's spin: follows the finger, then coasts and slows down
           const d = drag.current;
-          if (!d.active) { d.angle += d.vel * dt; d.vel *= Math.pow(0.04, dt); }
+          if (!d.active) {
+            d.angle += d.vel * dt; d.vel *= Math.pow(0.04, dt);
+            // a couple of seconds after letting go: settle back to the resting pose
+            if (d.releasedAt && Date.now() - d.releasedAt > RETURN_AFTER_MS) {
+              const home = Math.round(d.angle / (Math.PI * 2)) * Math.PI * 2; // nearest «facing front»
+              const f = 1 - Math.pow(0.02, dt);
+              d.angle += (home - d.angle) * f; d.tilt += (0 - d.tilt) * f; d.vel *= 0.5;
+              if (Math.abs(home - d.angle) < 0.002 && Math.abs(d.tilt) < 0.002) { d.angle = 0; d.tilt = 0; d.releasedAt = 0; }
+            }
+          }
           // the idle sway fades out while it's being spun and comes back after
           d.sway += ((d.active || Math.abs(d.vel) > 0.3 ? 0 : 1) - d.sway) * Math.min(1, dt * 2);
-          pivot.rotation.set(0, d.angle + Math.sin(s * 0.7) * 0.32 * d.sway, 0);
+          pivot.rotation.set(d.tilt, d.angle + Math.sin(s * 0.7) * 0.32 * d.sway, 0);
         }
         stars.forEach((st, i) => {
           const m = starMeshes[i];
