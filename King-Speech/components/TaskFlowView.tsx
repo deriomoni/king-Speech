@@ -27,6 +27,7 @@ import { readableText } from "@/constants/pathPalette";
 import { useTheme } from "@/context/ThemeContext";
 import { aggregateAnalyses } from "@/services/analyzeGenericTask";
 import { Image } from "expo-image";
+import RoundStar from "@/components/RoundStar";
 
 // Figma "Оскар · все позы" exports (04/05): the corridor illustration. Keyed to
 // transparent so they sit on the dark illustration well in both themes.
@@ -910,7 +911,7 @@ function MiniScore({ analysis, ru }: { analysis: SpeechAnalysis; ru: boolean }) 
         <Text style={[st.miniVerdict, { color: tone, fontFamily: "Geologica_800ExtraBold" }]}>{verdict}</Text>
         <View style={st.starsRow}>
           {[1, 2, 3].map((i) => (
-            <Ionicons key={i} name={i <= stars ? "star" : "star-outline"} size={14} color={i <= stars ? brand.gold : "rgba(150,150,160,0.5)"} />
+            <RoundStar key={i} size={14} filled={i <= stars} color={brand.gold} />
           ))}
         </View>
       </View>

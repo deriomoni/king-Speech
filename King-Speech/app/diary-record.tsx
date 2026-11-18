@@ -38,11 +38,11 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
 import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
-import { PlayTriangleIcon } from "@/components/showtime/ShowTimeIcons";
 import AppDialog from "@/components/AppDialog";
 import Cassette, { labelTextStyle, useDiaryFonts } from "@/components/diary/Cassette";
 import { EMOTIONS, MoodFace, type PickableEmotion } from "@/components/diary/emotions";
 import { addDiaryEntry, discardDiaryAudio, fmtClock, persistDiaryAudio } from "@/lib/diaryStorage";
+import RecButton from "@/components/RecButton";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -437,24 +437,18 @@ export default function DiaryRecordScreen() {
           </View>
 
           {phase === "recording" ? (
-            <Pressable
+            <RecButton
+              kind="stop"
               onPress={stopRecording}
-              style={({ pressed }) => [s.stopBtn, { opacity: pressed ? 0.85 : 1 }]}
-              accessibilityRole="button"
               accessibilityLabel={en ? "Stop recording" : "Остановить запись"}
-            >
-              <View style={s.stopSquare} />
-            </Pressable>
+            />
           ) : phase !== "denied" ? (
-            <Pressable
+            <RecButton
+              kind="record"
               onPress={startRecording}
               disabled={phase !== "ready"}
-              style={({ pressed }) => [s.stopBtn, { opacity: phase !== "ready" ? 0.5 : pressed ? 0.85 : 1 }]}
-              accessibilityRole="button"
               accessibilityLabel={en ? "Start recording" : "Начать запись"}
-            >
-              <PlayTriangleIcon color="#2A1C02" scale={1.3} />
-            </Pressable>
+            />
           ) : null}
         </View>
       )}
@@ -581,15 +575,6 @@ const s = StyleSheet.create({
   wave: { height: 70, flexDirection: "row", alignItems: "center", gap: 4.5, opacity: 0.6 },
   bar: { width: 12, borderRadius: 6 },
   timer: { marginTop: 14, fontSize: 15, fontFamily: "Geologica_600SemiBold", opacity: 0.6 },
-  stopBtn: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "#FFD857",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  stopSquare: { width: 20, height: 20, borderRadius: 5, backgroundColor: "#2A1C02" },
 
   signScroll: { flexGrow: 1, alignItems: "center" },
   signCassette: { marginTop: 108 },

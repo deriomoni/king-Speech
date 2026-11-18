@@ -12,6 +12,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
+import RoundStar from "@/components/RoundStar";
 
 const jennyHero = require("@/assets/jenny/jenny_smiling.png");
 const { height: SH } = Dimensions.get("window");
@@ -99,7 +100,7 @@ export default function JennyPaywall({
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(80).duration(360)} style={styles.badge}>
-          <Ionicons name="star" size={12} color="#3A2A00" />
+          <RoundStar size={13} color="#3A2A00" />
           <Text style={styles.badgeText}>{c.badge}</Text>
         </Animated.View>
 

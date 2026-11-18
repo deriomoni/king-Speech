@@ -12,6 +12,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useLang } from "@/context/LangContext";
 import WaveformRecorder from "@/components/WaveformRecorder";
 import { useWaveformBars, WAVEFORM_BAR_MIN, WAVEFORM_BAR_MAX } from "@/hooks/useWaveformBars";
+import { RecDot } from "@/components/RecButton";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -447,7 +448,7 @@ export default function WaveformVoiceRecorder({
             },
           ]}
         >
-          <Ionicons name="mic" size={17} color={theme.accentText} />
+          <RecDot size={15} />
           <Text style={[styles.startPillText, { color: theme.accentText }]}>{label}</Text>
         </Pressable>
       </View>

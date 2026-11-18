@@ -39,6 +39,7 @@ import { getRoleScenario, lt } from "@/constants/roleScenarios";
 import RoleArt from "@/components/roles/RoleArt";
 import { takeRolePerformance, type RolePerformance } from "@/lib/rolePerformance";
 import { getApiUrl } from "@/lib/query-client";
+import RoundStar from "@/components/RoundStar";
 
 let AudioMod: any = null;
 if (Platform.OS !== "web") {
@@ -577,7 +578,7 @@ export default function RoleResultScreen() {
             <View style={styles.starsRow}>
               {[1, 2, 3, 4, 5].map((n) => (
                 <Pressable key={n} onPress={() => { haptic(); setSelfStars(n); }} hitSlop={6}>
-                  <Ionicons name={n <= selfStars ? "star" : "star-outline"} size={40} color={n <= selfStars ? GOLD : "#5A4E7A"} />
+                  <RoundStar size={40} filled={n <= selfStars} color={GOLD} emptyColor="#8C7BC0" emptyOpacity={0.35} />
                 </Pressable>
               ))}
             </View>
@@ -621,7 +622,7 @@ export default function RoleResultScreen() {
             <View style={styles.overallStars}>
               {[1, 2, 3].map((n) => (
                 <Animated.View key={n} entering={ZoomIn.delay(n * 120)}>
-                  <Ionicons name={n <= score.stars ? "star" : "star-outline"} size={44} color={n <= score.stars ? GOLD : "#5A4E7A"} />
+                  <RoundStar size={44} filled={n <= score.stars} color={GOLD} emptyColor="#8C7BC0" emptyOpacity={0.35} />
                 </Animated.View>
               ))}
             </View>

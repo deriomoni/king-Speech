@@ -34,7 +34,8 @@ import { getLevelsData } from "@/constants/gameContent";
 import SpeechAnalyzingLoader from "@/components/SpeechAnalyzingLoader";
 import StageGlassDialog from "@/components/showtime/StageGlassDialog";
 import { aspectsFromMetrics5 } from "@/components/ScoreFlower";
-import { starOnXml, starOffXml, headphonesXml } from "@/assets/figma/showtime-stage/svgs";
+import { headphonesXml } from "@/assets/figma/showtime-stage/svgs";
+import RoundStar from "@/components/RoundStar";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -626,10 +627,11 @@ export default function ShowtimePlaybackScreen() {
                 <View style={pb.starsRow}>
                   {[1, 2, 3].map((n) => (
                     <Animated.View key={n} entering={ZoomIn.delay(300 + n * 150).duration(300)}>
-                      <SvgXml
-                        xml={n <= sum.finalStars ? starOnXml : starOffXml.replace(/__INK__/g, isDark ? "#F0EEE9" : "#262628")}
-                        width={30}
-                        height={30}
+                      <RoundStar
+                        size={30}
+                        filled={n <= sum.finalStars}
+                        emptyColor={isDark ? "#F0EEE9" : "#262628"}
+                        emptyOpacity={0.12}
                       />
                     </Animated.View>
                   ))}

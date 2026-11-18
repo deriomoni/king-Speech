@@ -32,6 +32,7 @@ import {
 } from "@/components/settings/SettingsParts";
 import { kingSpeechLogoXml } from "@/assets/figma/settings/logo";
 import { bekWaveLogoXml } from "@/assets/figma/settings/bekwave";
+import RoundStar from "@/components/RoundStar";
 
 // Figma "icon/crown-outline" (405:1310); __FG__ is swapped for theme.text.
 const CROWN_OUTLINE_XML = `<svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -316,7 +317,7 @@ export default function SettingsScreen() {
               />
               <ListRow
                 theme={theme}
-                icon={icon("star-outline")}
+                icon={<RoundStar size={21} color={theme.text} />}
                 label={en ? "Rate the app" : "Оценить приложение"}
                 divider
                 onPress={() => {

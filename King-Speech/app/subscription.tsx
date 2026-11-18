@@ -146,7 +146,7 @@ export default function SubscriptionScreen() {
       <View style={{ padding: 19, paddingTop: 21, paddingBottom: 27.5 }}>
         <View style={styles.cardHead}>
           <Text style={[styles.planTitle, { color: INK }]}>Королевский</Text>
-          <Badge label="★ ПОПУЛЯРНЫЙ" bg={INK} color={GOLD} style={{ marginTop: 4 }} />
+          <Badge label="ПОПУЛЯРНЫЙ" star bg={INK} color={GOLD} style={{ marginTop: 4 }} />
         </View>
         <Text style={[styles.planSub, { color: "rgba(38,38,40,0.65)", marginTop: 6 }]}>
           Для тех, кто выходит на сцену всерьёз

@@ -49,11 +49,11 @@ import CoinIcon from "@/components/CoinIcon";
 import { SvgXml } from "react-native-svg";
 import { useTheme } from "@/context/ThemeContext";
 import { categoryOf, THEME_CATEGORIES } from "@/components/showtime/themeCategories";
-import { playCircleXml } from "@/assets/figma/showtime-stage/svgs";
 import { showtimeCover, showtimeCoverCredit } from "@/constants/showtimeCovers";
 import { clearFlightLaunch, isFlightLanding, requestFlightReturn } from "@/components/showtime/coverFlightStore";
 import { LiveAudience, HALL_RATIO } from "@/components/audience/LiveAudience";
 import { OVATION_SEC } from "@/components/audience/scene";
+import RecButton, { RecDot as RecMark } from "@/components/RecButton";
 
 // Audience halls (first-person, speaker POV). Used as the variable stage
 // backdrop — the speech text sits on a white sheet at the bottom that blurs up
@@ -5486,7 +5486,7 @@ export default function ShowtimeStageScreen() {
               onPress={() => (paidEntry ? showTimeEntry.begin(() => void handleStart()) : void handleStart())}
               style={({ pressed }) => [s.pvCta, { backgroundColor: ui.accent, borderColor: ui.ctaStroke, opacity: pressed ? 0.88 : 1 }]}
             >
-              <SvgXml xml={playCircleXml.replace(/__INK__/g, "#3A3A3B")} width={22} height={24} />
+              <RecMark size={16} />
               <Text style={[s.pvCtaText, { color: ui.accentText }]}>{t("goOnStage")}</Text>
               {entryCost ? (
                 <View style={s.pvCtaCost}>
@@ -5679,13 +5679,12 @@ export default function ShowtimeStageScreen() {
             </Pressable>
 
             {scrollMode === "auto" && (
-              <Pressable
+              <RecButton
+                kind={autoPaused ? "play" : "pause"}
+                size={52}
                 onPress={toggleAutoPause}
-                hitSlop={12}
-                style={({ pressed }) => [s.navBtn, { opacity: pressed ? 0.55 : 1 }]}
-              >
-                <Ionicons name={autoPaused ? "play" : "pause"} size={30} color="#FFFFFF" />
-              </Pressable>
+                accessibilityLabel={autoPaused ? "Play" : "Pause"}
+              />
             )}
 
             <Pressable

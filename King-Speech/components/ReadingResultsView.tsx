@@ -27,6 +27,7 @@ import {
 } from "@/components/reading/readingTheme";
 import type { AppColors } from "@/constants/colors";
 import type { SpeechAnalysis } from "@/services/speechAnalysis";
+import RoundStar from "@/components/RoundStar";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -296,12 +297,15 @@ function SelfStar({
     >
       <Animated.View style={style}>
         {/* Glow on the glyph itself (a View shadow paints a box on web). */}
-        <Ionicons
-          name={active ? "star" : "star-outline"}
-          size={44}
-          color={color}
-          style={glow ? { textShadowColor: withAlpha(accent, 0.75), textShadowRadius: 10, textShadowOffset: { width: 0, height: 0 } } : undefined}
-        />
+        {/* soft glow: a bigger translucent star behind the glyph */}
+        {glow ? (
+          <RoundStar
+            size={60}
+            color={withAlpha(accent, 0.28)}
+            style={{ position: "absolute", left: -8, top: -8 }}
+          />
+        ) : null}
+        <RoundStar size={44} filled={active || hint} color={color} emptyColor={color} emptyOpacity={0.35} />
       </Animated.View>
     </Pressable>
   );

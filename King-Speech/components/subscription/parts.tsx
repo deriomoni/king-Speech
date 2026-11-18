@@ -7,6 +7,7 @@ import {
   CHECK_ROYAL_SVG,
   CHECK_EMPEROR_SVG,
 } from "@/assets/figma/new/svgs";
+import RoundStar from "@/components/RoundStar";
 
 export const INK = "#262628";
 export const GOLD = "#FFD857";
@@ -54,14 +55,17 @@ export function Badge({
   bg,
   color,
   style,
+  star,
 }: {
   label: string;
   bg: string;
   color: string;
   style?: ViewStyle;
+  star?: boolean;
 }) {
   return (
-    <View style={[s.badge, { backgroundColor: bg }, style]}>
+    <View style={[s.badge, { backgroundColor: bg }, style, star && { flexDirection: "row", alignItems: "center", gap: 4 }]}>
+      {star ? <RoundStar size={11} color={color} /> : null}
       <Text style={[s.badgeText, { color }]}>{label}</Text>
     </View>
   );

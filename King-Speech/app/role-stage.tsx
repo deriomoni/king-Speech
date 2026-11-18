@@ -36,6 +36,7 @@ import {
   ScriptPrompter,
   GoalTracker,
 } from "@/components/roles/scenes/RoleScene";
+import { RecGlyph, REC_GOLD } from "@/components/RecButton";
 
 /** Minimal recording surface shared by expo-camera's CameraView and VisionFaceCamera. */
 type RecordableCamera = {
@@ -653,7 +654,9 @@ export default function RoleStageScreen() {
               style={({ pressed }) => [styles.recordBtn, { opacity: phase === "scan" ? 0.5 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] }]}
             >
               <RecordRing progress={phase === "recording" ? Math.min(1, elapsed / (scenario ? ARC_SECONDS_SCENARIO : ARC_SECONDS)) : 0} />
-              {phase === "recording" ? <View style={styles.recSquare} /> : <View style={styles.recCircle} />}
+              <View style={styles.recFace}>
+                <RecGlyph kind={phase === "recording" ? "stop" : "record"} size={REC - 18} />
+              </View>
             </Pressable>
 
             {/* Figma shows «Пауза» here; recording can't be paused (expo-camera
@@ -778,8 +781,7 @@ const styles = StyleSheet.create({
   countdownCancelText: { color: "#fff", fontFamily: "Geologica_600SemiBold", fontSize: 14 },
   takeHint: { color: MUTED, fontFamily: "Geologica_700Bold", fontSize: 11, letterSpacing: 0.6, textTransform: "uppercase" },
   recordBtn: { width: REC, height: REC, alignItems: "center", justifyContent: "center" },
-  recCircle: { width: REC - 18, height: REC - 18, borderRadius: (REC - 18) / 2, backgroundColor: REC_RED },
-  recSquare: { width: 30, height: 30, borderRadius: 8, backgroundColor: REC_RED },
+  recFace: { position: "absolute", width: REC - 18, height: REC - 18, borderRadius: (REC - 18) / 2, backgroundColor: REC_GOLD, alignItems: "center", justifyContent: "center" },
 
   processing: { height: REC, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12 },
   processingText: { color: TEXT, fontFamily: "Geologica_600SemiBold", fontSize: 15 },

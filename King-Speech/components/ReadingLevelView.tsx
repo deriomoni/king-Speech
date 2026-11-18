@@ -39,6 +39,7 @@ import {
   readingInk,
   readingTint,
 } from "@/components/reading/readingTheme";
+import { RecDot } from "@/components/RecButton";
 
 // Figma 312:4346 reading canvas: Literata 20 on a 34pt line step. The IDLE
 // cover shows the same canvas scaled to 16.56pt (37:5850).
@@ -610,7 +611,7 @@ export default function ReadingLevelView({
             },
           ]}
         >
-          <Ionicons name="play" size={13} color={btnInk} />
+          <RecDot size={13} />
           <Text style={[st.startLabel, { color: btnInk }]}>
             {lang === "ru" ? "Читать" : "Read"}
           </Text>

@@ -15,6 +15,7 @@ import { GlassCard, PrimaryButton } from "@/components/ds";
 import CelebrationBurst from "@/components/warmup/CelebrationBurst";
 import { warmupFonts, warmupSpring, warmupTheme } from "@/components/warmup/warmupTheme";
 import type { WarmupScoreResult } from "@/services/warmupScoring";
+import RoundStar from "@/components/RoundStar";
 
 interface Props {
   result: WarmupScoreResult;
@@ -72,11 +73,7 @@ export default function WarmupTask1Results({ result, onNext }: Props) {
         <View style={styles.starsRow}>
           {[0, 1, 2].map((i) => (
             <Animated.View key={i} style={starStyles[i]}>
-              <Ionicons
-                name={i < result.stars ? "star" : "star-outline"}
-                size={40}
-                color={warmupTheme.gold}
-              />
+              <RoundStar size={40} filled={i < result.stars} color={warmupTheme.gold} />
             </Animated.View>
           ))}
         </View>

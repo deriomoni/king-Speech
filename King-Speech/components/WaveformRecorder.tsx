@@ -25,6 +25,7 @@ import {
   WAVEFORM_BAR_MIN,
   WAVEFORM_BAR_MAX,
 } from "@/hooks/useWaveformBars";
+import RecButton, { RecGlyph } from "@/components/RecButton";
 
 // Figma "Recorder bar" (151:1584, state Active): a 354x72 pill with a 4pt
 // translucent-ink outline, 3pt bars growing left to right, a gold playhead
@@ -195,13 +196,14 @@ export default function WaveformRecorder({
           ]}
           testID="waveform-stop"
         >
-          <View style={[styles.stopIcon, { backgroundColor: theme.accentText }]} />
+          <RecGlyph kind="stop" size={40} />
           <Text style={[styles.stopPillText, { color: theme.accentText }]}>{stopLabel}</Text>
         </Pressable>
 
-        <Pressable
+        <RecButton
+          kind={isPaused ? "record" : "pause"}
+          size={50}
           onPress={handlePauseToggle}
-          accessibilityRole="button"
           accessibilityLabel={
             isPaused
               ? lang === "en"
@@ -211,12 +213,8 @@ export default function WaveformRecorder({
                 ? "Pause"
                 : "Пауза"
           }
-          hitSlop={10}
-          style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
           testID="waveform-pause"
-        >
-          <Ionicons name={isPaused ? "mic" : "pause"} size={21} color={theme.accentInk} />
-        </Pressable>
+        />
       </View>
     </View>
   );
@@ -307,11 +305,6 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 32,
     borderWidth: 4,
-  },
-  stopIcon: {
-    width: 12.4,
-    height: 12.4,
-    borderRadius: 2,
   },
   stopPillText: {
     fontFamily: "Geologica_700Bold",
