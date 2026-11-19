@@ -765,7 +765,10 @@ export default function PathScreen() {
   // The Final Portal is the rank-terminal "7th level" — it lives at the end
   // of the last module of the rank. Because the path renders top-to-bottom
   // (newest module first), the portal is the very first item in renderItems.
+  // The door crowns the map; the last module's title sits right above its
+  // own bricks (below the door), like every other module.
   const lastModule = rankBounds.toSection;
+  renderItems.push({ type: "portal", key: `portal_${currentRank}` });
   if (MODULE_COLORS[lastModule]) {
     renderItems.push({
       type: "divider",
@@ -773,7 +776,6 @@ export default function PathScreen() {
       key: `div_${lastModule}`,
     });
   }
-  renderItems.push({ type: "portal", key: `portal_${currentRank}` });
 
   let currentModule = lastModule;
   let gIdx = 0;
@@ -1218,6 +1220,7 @@ export default function PathScreen() {
                     testID="rank-final-portal"
                   />
                 </View>
+                {!ri.nextIsDivider && (
                 <SnakeConnector
                   fromSide="center"
                   toSide={ri.toSide ?? "right"}
@@ -1229,6 +1232,7 @@ export default function PathScreen() {
                         : PATH_CONNECTOR[themeMode]
                   }
                 />
+                )}
               </AnimatedRow>
             );
           }

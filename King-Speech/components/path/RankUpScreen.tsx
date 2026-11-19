@@ -29,6 +29,7 @@ import { getRankTheme, pickLocalized, type RankTheme } from "./rankTheme";
 import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useGame, type MetricTrend } from "@/context/GameContext";
 import OscarMascot from "@/components/OscarMascot";
+import RankDoorTransition from "./RankDoorTransition";
 
 interface Props {
   fromRank: number;
@@ -548,6 +549,11 @@ export default function RankUpScreen({ fromRank, memento = false }: Props) {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
+  // Live rank-up opens with the door cut-scene; the screen content mounts at
+  // the white-out peak so its entrance animations play as the light fades.
+  const [doorScene, setDoorScene] = useState(!memento);
+  const [revealed, setRevealed] = useState(memento);
+
   const recordings = showTimeRecordings[fromRank] ?? [];
   const firstRecording = recordings[0]?.uri;
 
@@ -597,6 +603,7 @@ export default function RankUpScreen({ fromRank, memento = false }: Props) {
     <View style={{ flex: 1, backgroundColor: theme.bgColors[0] }}>
       <RankBackground theme={theme} themeMode={themeMode} />
 
+      {revealed && (
       <ScrollView
         contentContainerStyle={[
           rankUpStyles.scroll,
@@ -645,11 +652,13 @@ export default function RankUpScreen({ fromRank, memento = false }: Props) {
           <OscarMascot emotion="cool" size={128} />
         </Animated.View>
       </ScrollView>
+      )}
 
+      {revealed && (
       <Animated.View
         // In memento mode the close affordance fades in a beat after mount so
         // the keepsake feels intentional, not a re-used celebration screen.
-        entering={memento ? FadeIn.duration(420).delay(420) : undefined}
+        entering={memento ? FadeIn.duration(420).delay(420) : FadeIn.duration(500).delay(300)}
         style={[rankUpStyles.ctaWrap, { paddingBottom: bottomPad + 16 }]}
       >
         <Pressable
@@ -682,6 +691,20 @@ export default function RankUpScreen({ fromRank, memento = false }: Props) {
           <Ionicons name={memento ? "close" : "arrow-forward"} size={20} color="#fff" />
         </Pressable>
       </Animated.View>
+      )}
+
+      {doorScene && (
+        <RankDoorTransition
+          lead={
+            isFinal
+              ? pickLang(lang, { ru: "Ты прошёл все ранги", en: "You completed every rank", kk: "Сіз барлық дәрежеден өттіңіз" })
+              : pickLang(lang, { ru: "Ты переходишь в новый ранг", en: "You're entering a new rank", kk: "Сіз жаңа дәрежеге өтесіз" })
+          }
+          title={isFinal ? pickLang(lang, { ru: "Твой Голос", en: "The Voice is Yours", kk: "Дауыс — сіздікі" }) : rankTitle(next.index, lang)}
+          onReveal={() => setRevealed(true)}
+          onDone={() => setDoorScene(false)}
+        />
+      )}
     </View>
   );
 }

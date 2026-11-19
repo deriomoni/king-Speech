@@ -1,21 +1,21 @@
 import React, { useEffect } from "react";
-import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { View, Pressable, StyleSheet, Platform } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
   withTiming,
   withSpring,
-  withSequence,
   cancelAnimation,
+  Easing,
 } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
 import type { RankTheme } from "./rankTheme";
 import { pickLocalized } from "./rankTheme";
-import { useLang, pickLang } from "@/context/LangContext";
+import { useLang } from "@/context/LangContext";
 import { useIsFocused } from "expo-router";
+import Svg, { Defs, Ellipse, RadialGradient, Stop } from "react-native-svg";
+import Door3D, { DOOR_VB_H, DOOR_VB_W, DOORWAY_CENTER } from "./Door3D";
 
 interface Props {
   theme: RankTheme;
@@ -24,264 +24,40 @@ interface Props {
   testID?: string;
 }
 
-function PortalShape({ theme, glowing }: { theme: RankTheme; glowing: boolean }) {
-  const breathe = useSharedValue(1);
-  const ring = useSharedValue(0);
+const DOOR_W = 168;
+const DOOR_H = (DOOR_W * DOOR_VB_H) / DOOR_VB_W;
+const GLOW_W = 230;
+const GLOW_H = 280;
 
-  // Loops run only while they are visible: glowing, and the Path focused.
-  const focused = useIsFocused();
-  useEffect(() => {
-    if (!glowing || !focused) return;
-    breathe.value = withRepeat(withTiming(1.06, { duration: 2200 }), -1, true);
-    ring.value = withRepeat(withTiming(1, { duration: 2400 }), -1, false);
-    return () => {
-      cancelAnimation(breathe);
-      cancelAnimation(ring);
-    };
-  }, [glowing, focused]);
-
-  const breatheStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: glowing ? breathe.value : 1 }],
-  }));
-  const ringStyle = useAnimatedStyle(() => ({
-    opacity: glowing ? 0.5 - ring.value * 0.5 : 0,
-    transform: [{ scale: 1 + ring.value * 0.6 }],
-  }));
-
-  // Different shapes per rank's portal type
-  switch (theme.portalShape) {
-    case "door":
-      return (
-        <View style={portalStyles.shapeWrap}>
-          {/* Hand-drawn door */}
-          <Animated.View
-            style={[
-              ringStyle,
-              {
-                position: "absolute",
-                width: 150,
-                height: 200,
-                borderRadius: 90,
-                backgroundColor: theme.portalGlow,
-              },
-            ]}
-          />
-          <Animated.View style={[breatheStyle, portalStyles.doorBox, { borderColor: theme.accentDark }]}>
-            <LinearGradient
-              colors={theme.portalGradient}
-              start={{ x: 0.5, y: 0 }}
-              end={{ x: 0.5, y: 1 }}
-              style={[StyleSheet.absoluteFill, { borderRadius: 60 }]}
-            />
-            <View style={[portalStyles.doorHandle, { backgroundColor: theme.accentDark }]} />
-            <Ionicons
-              name={theme.portalIcon}
-              size={32}
-              color="#fff"
-              style={{ marginTop: -8 }}
-            />
-          </Animated.View>
-        </View>
-      );
-
-    case "neon-arch":
-      return (
-        <View style={portalStyles.shapeWrap}>
-          <Animated.View
-            style={[
-              ringStyle,
-              {
-                position: "absolute",
-                width: 180,
-                height: 200,
-                borderRadius: 100,
-                backgroundColor: theme.portalGlow,
-              },
-            ]}
-          />
-          <Animated.View style={[breatheStyle, portalStyles.neonArch]}>
-            <LinearGradient
-              colors={theme.portalGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[StyleSheet.absoluteFill, { borderTopLeftRadius: 80, borderTopRightRadius: 80 }]}
-            />
-            <View
-              style={{
-                position: "absolute",
-                top: 8,
-                left: 8,
-                right: 8,
-                bottom: 0,
-                borderTopLeftRadius: 70,
-                borderTopRightRadius: 70,
-                borderWidth: 2,
-                borderColor: "rgba(255,255,255,0.5)",
-                borderBottomWidth: 0,
-              }}
-            />
-            <Ionicons name={theme.portalIcon} size={36} color="#fff" />
-          </Animated.View>
-        </View>
-      );
-
-    case "hologram":
-      return (
-        <View style={portalStyles.shapeWrap}>
-          <Animated.View
-            style={[
-              ringStyle,
-              {
-                position: "absolute",
-                width: 170,
-                height: 170,
-                borderRadius: 16,
-                backgroundColor: theme.portalGlow,
-              },
-            ]}
-          />
-          <Animated.View style={[breatheStyle, portalStyles.holo, { borderColor: theme.accent }]}>
-            <LinearGradient
-              colors={[theme.accent + "44", theme.accentDark + "22"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[StyleSheet.absoluteFill, { borderRadius: 14 }]}
-            />
-            {/* hologram scanlines */}
-            {Array.from({ length: 8 }).map((_, i) => (
-              <View
-                key={i}
-                style={{
-                  position: "absolute",
-                  left: 8,
-                  right: 8,
-                  top: 12 + i * 14,
-                  height: 1,
-                  backgroundColor: theme.accent + "60",
-                }}
-              />
-            ))}
-            <Ionicons name={theme.portalIcon} size={36} color={theme.accent} />
-          </Animated.View>
-        </View>
-      );
-
-    case "gold-gate":
-      return (
-        <View style={portalStyles.shapeWrap}>
-          <Animated.View
-            style={[
-              ringStyle,
-              {
-                position: "absolute",
-                width: 180,
-                height: 180,
-                borderRadius: 24,
-                backgroundColor: theme.portalGlow,
-              },
-            ]}
-          />
-          <Animated.View style={[breatheStyle, portalStyles.goldGate, { borderColor: theme.accent }]}>
-            <LinearGradient
-              colors={theme.portalGradient}
-              start={{ x: 0.5, y: 0 }}
-              end={{ x: 0.5, y: 1 }}
-              style={[StyleSheet.absoluteFill, { borderRadius: 18 }]}
-            />
-            {/* art deco bars */}
-            {[0, 1, 2].map((i) => (
-              <View
-                key={i}
-                style={{
-                  position: "absolute",
-                  top: 18 + i * 22,
-                  left: 18,
-                  right: 18,
-                  height: 2,
-                  backgroundColor: "rgba(0,0,0,0.18)",
-                }}
-              />
-            ))}
-            <Ionicons name={theme.portalIcon} size={36} color="#08231C" />
-          </Animated.View>
-        </View>
-      );
-
-    case "star-crown":
-    default:
-      return (
-        <View style={portalStyles.shapeWrap}>
-          <Animated.View
-            style={[
-              ringStyle,
-              {
-                position: "absolute",
-                width: 200,
-                height: 200,
-                borderRadius: 100,
-                backgroundColor: theme.portalGlow,
-              },
-            ]}
-          />
-          <Animated.View style={[breatheStyle, portalStyles.starCrown, { borderColor: theme.accent }]}>
-            <LinearGradient
-              colors={theme.portalGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[StyleSheet.absoluteFill, { borderRadius: 70 }]}
-            />
-            {/* radiating lines */}
-            {Array.from({ length: 8 }).map((_, i) => (
-              <View
-                key={i}
-                style={{
-                  position: "absolute",
-                  width: 1.5,
-                  height: 70,
-                  backgroundColor: theme.accent,
-                  top: 0,
-                  left: "50%",
-                  marginLeft: -0.75,
-                  transform: [
-                    { rotate: `${i * 45}deg` },
-                    { translateY: -50 },
-                  ],
-                  opacity: 0.5,
-                }}
-              />
-            ))}
-            <Ionicons name={theme.portalIcon} size={40} color="#fff" />
-          </Animated.View>
-        </View>
-      );
-  }
-}
-
+/**
+ * The rank's final step on the Path: the same panel door that opens in the
+ * rank-up cut-scene. Shut while the rank is in progress, ajar with light
+ * spilling out once every step is done, open after the rank is passed.
+ */
 export default function FinalPortal({ theme, status, onPress, testID }: Props) {
   const { lang } = useLang();
   const isLocked = status === "locked";
   const isDone = status === "completed";
+  const glowing = status === "available";
   const press = useSharedValue(1);
+  const pulse = useSharedValue(0);
 
-  const pressStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: press.value }],
+  // The glow loop runs only while visible: available and the Path focused.
+  const focused = useIsFocused();
+  useEffect(() => {
+    if (!glowing || !focused) return;
+    pulse.value = withRepeat(withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.sin) }), -1, true);
+    return () => cancelAnimation(pulse);
+  }, [glowing, focused]);
+
+  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: press.value }] }));
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowing ? 0.35 + pulse.value * 0.35 : 0,
+    transform: [{ scale: 0.92 + pulse.value * 0.12 }],
   }));
 
   return (
-    <View style={portalStyles.outer}>
-      <View style={portalStyles.captionRow}>
-        <View style={[portalStyles.captionLine, { backgroundColor: theme.accent + "55" }]} />
-        <Text
-          style={[
-            portalStyles.captionText,
-            { color: theme.textSecondary, fontFamily: theme.fontFamily },
-          ]}
-        >
-          {pickLocalized(theme.portalCaption, lang)}
-        </Text>
-        <View style={[portalStyles.captionLine, { backgroundColor: theme.accent + "55" }]} />
-      </View>
-
+    <View style={styles.outer}>
       <Pressable
         onPress={() => {
           if (isLocked) return;
@@ -301,170 +77,52 @@ export default function FinalPortal({ theme, status, onPress, testID }: Props) {
         accessibilityRole="button"
         accessibilityLabel={pickLocalized(theme.portalLabel, lang)}
         testID={testID ?? "final-portal"}
-        style={portalStyles.pressable}
       >
-        <Animated.View style={[pressStyle, { opacity: isLocked ? 0.45 : 1 }]}>
-          <PortalShape theme={theme} glowing={!isLocked && !isDone} />
+        <Animated.View style={[pressStyle, { width: DOOR_W, height: DOOR_H }]}>
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.glow,
+              glowStyle,
+              {
+                left: DOOR_W * DOORWAY_CENTER.x - GLOW_W / 2,
+                top: DOOR_H * DOORWAY_CENTER.y - GLOW_H / 2,
+              },
+            ]}
+          >
+            <Svg width={GLOW_W} height={GLOW_H}>
+              <Defs>
+                <RadialGradient id="fpGlow" cx="50%" cy="50%" r="50%">
+                  <Stop offset="0" stopColor="#FFD45C" stopOpacity={0.9} />
+                  <Stop offset="0.5" stopColor="#FFD45C" stopOpacity={0.35} />
+                  <Stop offset="1" stopColor="#FFD45C" stopOpacity={0} />
+                </RadialGradient>
+              </Defs>
+              <Ellipse cx={GLOW_W / 2} cy={GLOW_H / 2} rx={GLOW_W / 2} ry={GLOW_H / 2} fill="url(#fpGlow)" />
+            </Svg>
+          </Animated.View>
+          <View style={{ opacity: isLocked ? 0.82 : 1 }}>
+            <Door3D
+              width={DOOR_W}
+              open={isDone ? 0.42 : glowing ? 0.22 : 0}
+              light={isDone ? 0.9 : glowing ? 0.95 : 0}
+            />
+          </View>
         </Animated.View>
       </Pressable>
-
-      <Text
-        style={[
-          portalStyles.label,
-          { color: theme.textPrimary, fontFamily: theme.fontFamilyTitle },
-        ]}
-        numberOfLines={2}
-      >
-        {pickLocalized(theme.portalLabel, lang)}
-      </Text>
-
-      {isLocked && (
-        <View style={[portalStyles.lockedRow, { borderColor: theme.borderColor }]}>
-          <Ionicons name="lock-closed" size={12} color={theme.textMuted} />
-          <Text style={[portalStyles.lockedText, { color: theme.textMuted, fontFamily: theme.fontFamily }]}>
-            {pickLang(lang, { ru: "Пройди все ступени этого ранга", en: "Complete all steps of this rank", kk: "Осы дәреженің барлық сатысынан өтіңіз" })}
-          </Text>
-        </View>
-      )}
-
-      {isDone && (
-        <View style={[portalStyles.doneRow, { backgroundColor: theme.accentSoft }]}>
-          <Ionicons name="checkmark-circle" size={14} color={theme.accent} />
-          <Text style={[portalStyles.doneText, { color: theme.accent, fontFamily: theme.fontFamilyTitle }]}>
-            {pickLang(lang, { ru: "Портал открыт", en: "Portal opened", kk: "Портал ашылды" })}
-          </Text>
-        </View>
-      )}
     </View>
   );
 }
 
-const portalStyles = StyleSheet.create({
+const styles = StyleSheet.create({
   outer: {
     alignItems: "center",
-    paddingVertical: 22,
-    gap: 14,
+    paddingTop: 22,
+    paddingBottom: 8,
   },
-  captionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 24,
-  },
-  captionLine: {
-    width: 30,
-    height: 1,
-  },
-  captionText: {
-    fontSize: 13,
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-  },
-  pressable: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  shapeWrap: {
-    width: 140,
-    height: 160,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  doorBox: {
-    width: 110,
-    height: 150,
-    borderTopLeftRadius: 60,
-    borderTopRightRadius: 60,
-    borderRadius: 16,
-    borderWidth: 3,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.18,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
-  },
-  doorHandle: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  glow: {
     position: "absolute",
-    right: 14,
-    top: 90,
+    width: GLOW_W,
+    height: GLOW_H,
   },
-  neonArch: {
-    width: 130,
-    height: 150,
-    borderTopLeftRadius: 70,
-    borderTopRightRadius: 70,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    shadowColor: "#fff",
-    shadowOpacity: 0.5,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  holo: {
-    width: 140,
-    height: 140,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  goldGate: {
-    width: 140,
-    height: 150,
-    borderRadius: 18,
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    shadowColor: "#D4A24C",
-    shadowOpacity: 0.55,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-  },
-  starCrown: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    shadowColor: "#A78BFA",
-    shadowOpacity: 0.55,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  label: {
-    fontSize: 22,
-    textAlign: "center",
-    paddingHorizontal: 20,
-    lineHeight: 28,
-  },
-  lockedRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  lockedText: { fontSize: 12 },
-  doneRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  doneText: { fontSize: 12, fontWeight: "600" },
 });
