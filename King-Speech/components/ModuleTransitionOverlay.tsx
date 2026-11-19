@@ -135,6 +135,63 @@ function useClock(totalMs: number) {
   return t;
 }
 
+// «key press» wave over the front steps, repeated every PRESS_EVERY ms
+const PRESS_EVERY = 5000;
+const PRESS_GAP = 140;
+const PRESS_DUR = 380;
+const PRESS_TOTAL = 2 * PRESS_GAP + PRESS_DUR;
+
+/** ms since the current press wave started, or -1 between waves. */
+function usePressWave(firstAtMs: number) {
+  const [pt, setPt] = useState(-1);
+  useEffect(() => {
+    let raf = 0;
+    const run = () => {
+      const start = Date.now();
+      const loop = () => {
+        const e = Date.now() - start;
+        if (e >= PRESS_TOTAL) {
+          setPt(-1);
+          return;
+        }
+        setPt(e);
+        raf = requestAnimationFrame(loop);
+      };
+      raf = requestAnimationFrame(loop);
+    };
+    let iv: ReturnType<typeof setInterval> | undefined;
+    const first = setTimeout(() => {
+      run();
+      iv = setInterval(run, PRESS_EVERY);
+    }, firstAtMs);
+    return () => {
+      clearTimeout(first);
+      if (iv) clearInterval(iv);
+      cancelAnimationFrame(raf);
+    };
+  }, [firstAtMs]);
+  return pt;
+}
+
+function mixHex(a: string, b: string, k: number) {
+  const p = (h: string) => (/^#[0-9a-f]{6}$/i.test(h) ? [1, 3, 5].map((o) => parseInt(h.slice(o, o + 2), 16)) : null);
+  const ca = p(a);
+  const cb = p(b);
+  if (!ca || !cb) return a;
+  return "#" + ca.map((v, i) => Math.round(v + (cb[i] - v) * k).toString(16).padStart(2, "0")).join("");
+}
+
+/** The stone faces blended `k` of the way into the background — opaque «haze». */
+function hazeFaces(f: Faces, bg: string, k: number): Faces {
+  return {
+    front: [mixHex(f.front[0], bg, k), mixHex(f.front[1], bg, k)],
+    top: mixHex(f.top, bg, k),
+    side: mixHex(f.side, bg, k),
+    edge: "transparent",
+    num: f.num,
+  };
+}
+
 /** One extruded block standing on (x, baseY): front, lit top, shaded right side. */
 function Block({
   id,
@@ -305,6 +362,7 @@ export default function ModuleTransitionOverlay({
   // ── stage layout (measured, so the scene fits any screen height) ──
   const [stage, setStage] = useState<LayoutRectangle | null>(null);
   const t = useClock(END_AT + 50);
+  const pressT = usePressWave(END_AT + 600);
 
   const podW = Math.min(W - 56, 320);
   const dx = Math.round(podW * 0.09);
@@ -493,8 +551,17 @@ export default function ModuleTransitionOverlay({
                   const rdy = dy * r.s;
                   const tallest = unit * r.rel[2] * r.s;
                   const fogH = tallest * 0.6;
+                  // opaque colours pre-mixed with the background (group opacity showed the seams)
+                  const hz = hazeFaces(stone, theme.bg, 1 - r.op);
+                  const gid = `gHaze${r.k}`;
                   return (
-                    <G key={r.k} opacity={r.op}>
+                    <G key={r.k}>
+                      <Defs>
+                        <SvgLinearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+                          <Stop offset="0" stopColor={hz.front[0]} />
+                          <Stop offset="1" stopColor={hz.front[1]} />
+                        </SvgLinearGradient>
+                      </Defs>
                       {/* painted left → right so each block's shaded side sits behind its right neighbour */}
                       {[0, 1, 2]
                         .map((i) => ({ i, col: r.cols[i] }))
@@ -502,14 +569,14 @@ export default function ModuleTransitionOverlay({
                         .map(({ i, col }) => (
                           <Block
                             key={i}
-                            id="gStone"
+                            id={gid}
                             x={r.left + rs * col}
                             baseY={r.base}
                             w={rs}
                             h={unit * r.rel[i] * r.s * easeGrow(clamp01((t - r.at - i * BACK_GAP) / BLOCK_DUR))}
                             dx={rdx}
                             dy={rdy}
-                            faces={stone}
+                            faces={hz}
                           />
                         ))}
                       <Rect x={r.left - 6} y={r.base - fogH} width={rs * 3 + rdx + 12} height={fogH + 3} fill="url(#gFog)" />
@@ -520,6 +587,9 @@ export default function ModuleTransitionOverlay({
                 {/* front staircase — each block grows straight out of the floor */}
                 {heights.map((h, i) => {
                   const g = grow(i);
+                  // every few seconds the steps up to the current one dip in turn, like keys
+                  const pl = clamp01((pressT - i * PRESS_GAP) / PRESS_DUR);
+                  const dip = pressT >= 0 ? Math.sin(Math.PI * pl) * 0.06 : 0;
                   return (
                     <Block
                       key={i}
@@ -527,7 +597,7 @@ export default function ModuleTransitionOverlay({
                       x={x0 + sw * i}
                       baseY={floorY}
                       w={sw}
-                      h={h * g}
+                      h={h * g * (1 - dip)}
                       dx={dx}
                       dy={dy}
                       faces={i === 2 ? GOLD : stone}
@@ -540,9 +610,9 @@ export default function ModuleTransitionOverlay({
               </Svg>
 
               <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, tailStyle]}>
-                <Sparkle x={goldCx + sw * 0.55} y={goldTop - 4} s={20} delay={0} />
-                <Sparkle x={goldCx - sw * 0.5} y={goldTop - 30} s={13} delay={350} />
-                <Sparkle x={goldCx + sw * 0.15} y={goldTop - 52} s={9} delay={700} />
+                <Sparkle x={goldCx + sw * 0.55} y={goldTop - 6} s={28} delay={0} />
+                <Sparkle x={goldCx - sw * 0.5} y={goldTop - 34} s={19} delay={350} />
+                <Sparkle x={goldCx + sw * 0.12} y={goldTop - 60} s={13} delay={700} />
               </Animated.View>
             </>
           )}
