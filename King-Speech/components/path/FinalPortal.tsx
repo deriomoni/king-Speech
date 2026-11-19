@@ -15,7 +15,8 @@ import { pickLocalized } from "./rankTheme";
 import { useLang } from "@/context/LangContext";
 import { useIsFocused } from "expo-router";
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from "react-native-svg";
-import Door3D, { DOOR_VB_H, DOOR_VB_W, DOORWAY_CENTER } from "./Door3D";
+import Door3D, { DOOR_VB_H, DOOR_VB_W, DOORWAY_CENTER, doorPaletteForRank } from "./Door3D";
+import { useAppColors } from "@/hooks/useAppColors";
 
 interface Props {
   theme: RankTheme;
@@ -38,6 +39,7 @@ const GLOW_H = 280;
  */
 export default function FinalPortal({ theme, status, onPress, testID, devPreview = false }: Props) {
   const { lang } = useLang();
+  const { themeMode } = useAppColors();
   const isLocked = status === "locked" && !devPreview;
   const isDone = status === "completed";
   const glowing = status === "available";
@@ -108,6 +110,8 @@ export default function FinalPortal({ theme, status, onPress, testID, devPreview
               width={DOOR_W}
               open={isDone ? 0.42 : glowing ? 0.22 : 0}
               light={isDone ? 0.9 : glowing ? 0.95 : 0}
+              palette={doorPaletteForRank(theme.index)}
+              shadowColor={themeMode === "dark" ? "#000000" : "#6E6680"}
             />
           </View>
         </Animated.View>

@@ -6,7 +6,7 @@
 // their own clock — the same door is used on the Path map and in the
 // rank-up cut-scene.
 import React, { useId } from "react";
-import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Polygon, RadialGradient, Rect, Stop } from "react-native-svg";
+import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Pattern, Polygon, RadialGradient, Rect, Stop } from "react-native-svg";
 
 export const DOOR_VB_W = 240;
 export const DOOR_VB_H = 300;
@@ -58,40 +58,30 @@ export type DoorPalette = {
   room: string;
 };
 
+// Each rank has its own noble pastel door — never dark. Outlines are a deep
+// tint of the same hue, not black.
+const mk = (slab: string, casing: string, jamb: string, stroke: string): DoorPalette => ({
+  slab,
+  casing,
+  jamb,
+  stroke,
+  handle: "#E8B43A",
+  light: "#FFCF34",
+  lightCore: "#FFF8E1",
+  room: "#F2C75C",
+});
 export const DOOR_PALETTES = {
-  graphite: {
-    slab: "#34323B",
-    casing: "#26252C",
-    jamb: "#2C2B33",
-    handle: "#FFCF34",
-    stroke: "#131217",
-    light: "#FFCF34",
-    lightCore: "#FFF8E1",
-    room: "#121115",
-  },
-  white: {
-    slab: "#F3F1EC",
-    casing: "#D9D5CD",
-    jamb: "#C9C4BA",
-    handle: "#FFCF34",
-    stroke: "#2A2830",
-    light: "#FFCF34",
-    lightCore: "#FFF8E1",
-    room: "#121115",
-  },
-  violet: {
-    slab: "#5B3FC4",
-    casing: "#2E2450",
-    jamb: "#3A2C66",
-    handle: "#FFCF34",
-    stroke: "#16112A",
-    light: "#FFCF34",
-    lightCore: "#FFF8E1",
-    room: "#121115",
-  },
-} satisfies Record<string, DoorPalette>;
+  butter: mk("#F3D98B", "#FBEDC6", "#EACB7E", "#8C6B2C"), // 1 · Новичок
+  lavender: mk("#CDBAF0", "#E8DEF8", "#BDA8E4", "#5F4C8A"), // 2 · Любитель
+  sage: mk("#B7D0AA", "#DCE9D4", "#A7C29A", "#4E6A45"), // 3 · Уверенный
+  powder: mk("#B2CEEA", "#DAE8F6", "#A0BCDC", "#46627F"), // 4 · Мастер
+  rose: mk("#F2C0B4", "#FADFD8", "#E6AEA1", "#89564C"), // 5 · Профи
+};
+const RANK_DOORS = [DOOR_PALETTES.butter, DOOR_PALETTES.lavender, DOOR_PALETTES.sage, DOOR_PALETTES.powder, DOOR_PALETTES.rose];
+/** The door of rank `index` (1..5). */
+export const doorPaletteForRank = (index: number): DoorPalette => RANK_DOORS[Math.max(0, Math.min(4, index - 1))];
 
-export const DEFAULT_DOOR_PALETTE: DoorPalette = DOOR_PALETTES.graphite;
+export const DEFAULT_DOOR_PALETTE: DoorPalette = DOOR_PALETTES.butter;
 
 // ── colour helpers ──────────────────────────────────────────────────────────
 const rgb = (h: string) => {
@@ -116,6 +106,16 @@ const KEY: V3 = (() => {
 })();
 const dot = (a: V3, b: V3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
+// Deterministic stipple for the grain tile.
+const GRAIN_TILE = 12;
+const GRAIN = Array.from({ length: 30 }, (_, i) => {
+  const r = (n: number) => {
+    const x = Math.sin((i + 1) * 91.17 + n * 47.53) * 24634.6345;
+    return x - Math.floor(x);
+  };
+  return { x: r(1) * GRAIN_TILE, y: r(2) * GRAIN_TILE, r: 0.22 + r(3) * 0.3, dark: i % 4 !== 0 };
+});
+
 type Face = { pts: V3[]; n: V3; kind: "face" | "edge" };
 
 type Props = {
@@ -127,9 +127,11 @@ type Props = {
   palette?: DoorPalette;
   /** Draw the pool of light spilling over the floor. */
   floorLight?: boolean;
+  /** Colour of the cast shadow on the floor. */
+  shadowColor?: string;
 };
 
-export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALETTE, floorLight = true }: Props) {
+export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALETTE, floorLight = true, shadowColor = "#3A3446" }: Props) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const id = (s: string) => `d3${uid}${s}`;
   const p = palette;
@@ -171,7 +173,7 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
     const k = Math.max(0, dot(f.n, KEY));
     // the doorway light hits faces turned toward the room, and rims the edges
     const warm = L * (Math.max(0, -f.n[2]) * 0.55 + (f.kind === "edge" && theta > 0.02 ? 0.45 : 0));
-    return lit(p.slab, 0.6 + 0.4 * k, p.light, warm);
+    return lit(p.slab, 0.8 + 0.22 * k, p.light, warm);
   };
 
   const pts = (q: V3[]) => q.map((v) => proj(v).map((n) => n.toFixed(2)).join(",")).join(" ");
@@ -205,7 +207,7 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
   // round knob near the free edge.
   const faceT = frontVisible ? -0.25 : SLAB_T + 0.25;
   const faceN = frontVisible ? slab[0].n : slab[1].n;
-  const faceK = 0.6 + 0.4 * Math.max(0, dot(faceN, KEY));
+  const faceK = 0.8 + 0.22 * Math.max(0, dot(faceN, KEY));
   const faceWarm = L * Math.max(0, -faceN[2]) * 0.55;
   const tone = (k: number) => lit(p.slab, faceK * k, p.light, faceWarm);
   const fp = (u: number, y: number) => proj(P(u, y, faceT)).map((n) => n.toFixed(2)).join(",");
@@ -233,14 +235,26 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
   const sw = 1.3;
   const jambTone = (base: number, warmK: number) => lit(p.jamb, base, p.light, warmK * L);
   const staticFaces: (Face & { fill: string })[] = [
-    { pts: head, n: [0, 1, 0], kind: "face", fill: jambTone(0.55, 0.35) },
-    { pts: jambL, n: [1, 0, 0], kind: "face", fill: jambTone(0.85, 0.65) },
-    { pts: jambR, n: [-1, 0, 0], kind: "face", fill: jambTone(0.62, 0.5) },
-    { pts: sill, n: [0, -1, 0], kind: "face", fill: jambTone(0.95, 0.85) },
-    { pts: cSideT, n: [0, -1, 0], kind: "face", fill: lit(p.casing, 1.25, p.light, 0) },
-    { pts: cSideR, n: [1, 0, 0], kind: "face", fill: lit(p.casing, 0.72, p.light, 0) },
-    { pts: cSideL, n: [-1, 0, 0], kind: "face", fill: lit(p.casing, 0.72, p.light, 0) },
+    { pts: head, n: [0, 1, 0], kind: "face", fill: jambTone(0.8, 0.35) },
+    { pts: jambL, n: [1, 0, 0], kind: "face", fill: jambTone(0.95, 0.6) },
+    { pts: jambR, n: [-1, 0, 0], kind: "face", fill: jambTone(0.86, 0.5) },
+    { pts: sill, n: [0, -1, 0], kind: "face", fill: jambTone(1, 0.8) },
+    { pts: cSideT, n: [0, -1, 0], kind: "face", fill: lit(p.casing, 1.05, p.light, 0) },
+    { pts: cSideR, n: [1, 0, 0], kind: "face", fill: lit(p.casing, 0.88, p.light, 0) },
+    { pts: cSideL, n: [-1, 0, 0], kind: "face", fill: lit(p.casing, 0.88, p.light, 0) },
   ];
+  // Cast shadows (model-left = screen-right after the mirror): a long soft
+  // sliver off the casing foot, like a low sun, and the open slab's own.
+  const shA = proj([XL - CASE, 0, 1]);
+  const shB = proj([XL - CASE - 170, 0, 34]);
+  const castShadow: V3[] = [
+    [XR + CASE * 0.3, 0, 1],
+    [XL - CASE, 0, 1],
+    [XL - CASE - 170, 0, 26],
+    [XL - CASE - 170, 0, 44],
+    [XR - 10, 0, 22],
+  ];
+  const slabShadow: V3[] = [P(0, 0, 0), P(OW - 1, 0, 0), [P(OW - 1, 0, 0)[0] - 26, 0, P(OW - 1, 0, 0)[2] + 12], [XL - 18, 0, 10]];
   const floorL = proj([XL - CASE - 26, 0, CASE_Z]);
   const floorR = proj([XR + CASE + 26, 0, CASE_Z]);
 
@@ -258,6 +272,17 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
           <Stop offset="0.5" stopColor={p.light} />
           <Stop offset="1" stopColor={lit(p.light, 0.82, "#E07A12", 0.35)} />
         </RadialGradient>
+        <LinearGradient id={id("shadow")} x1={shA[0]} y1={shA[1]} x2={shB[0]} y2={shB[1]} gradientUnits="userSpaceOnUse">
+          <Stop offset="0" stopColor={shadowColor} stopOpacity={0.38} />
+          <Stop offset="0.45" stopColor={shadowColor} stopOpacity={0.16} />
+          <Stop offset="1" stopColor={shadowColor} stopOpacity={0} />
+        </LinearGradient>
+        {/* hand-printed grain: a stipple tile laid over every surface */}
+        <Pattern id={id("grain")} patternUnits="userSpaceOnUse" width={GRAIN_TILE} height={GRAIN_TILE}>
+          {GRAIN.map((g, i) => (
+            <Circle key={i} cx={g.x} cy={g.y} r={g.r} fill={g.dark ? p.stroke : "#FFFFFF"} opacity={g.dark ? 0.13 : 0.22} />
+          ))}
+        </Pattern>
         <LinearGradient id={id("pool")} x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={p.light} stopOpacity={0.75} />
           <Stop offset="1" stopColor={p.light} stopOpacity={0} />
@@ -287,8 +312,12 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
 
       {floorLight && L > 0.01 && open > 0.02 && <Polygon points={pts(pool)} fill={`url(#${id("pool")})`} opacity={L} />}
 
+      {/* cast shadows */}
+      <Polygon points={pts(castShadow)} fill={`url(#${id("shadow")})`} />
+      {open > 0.05 && <Polygon points={pts(slabShadow)} fill={shadowColor} opacity={0.14 * Math.min(1, open * 2)} />}
+
       {/* floor line */}
-      <Rect x={floorL[0]} y={floorL[1] - 0.6} width={floorR[0] - floorL[0]} height={1.6} rx={0.8} fill={p.stroke} opacity={0.6} />
+      <Rect x={floorL[0]} y={floorL[1] - 0.5} width={floorR[0] - floorL[0]} height={1.2} rx={0.6} fill={p.stroke} opacity={0.25} />
 
       {/* light leaking under a shut door */}
       {L > 0.01 && open <= 0.02 && (
@@ -312,6 +341,14 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
       <Polygon points={knobRose} fill={lit(p.handle, 0.62, p.stroke, 0.1)} stroke={p.stroke} strokeWidth={0.9} strokeLinejoin="round" />
       <Circle cx={ball[0]} cy={ball[1]} r={ballR} fill={lit(p.handle, 0.95, p.lightCore, 0.1 * L)} stroke={p.stroke} strokeWidth={0.9} />
       <Circle cx={ball[0] + ballR * 0.35} cy={ball[1] - ballR * 0.38} r={ballR * 0.32} fill="#FFF6D6" />
+      {/* grain over the door and its frame */}
+      <Path d={ringPath(cOut) + ringPath(cIn)} fillRule="evenodd" fill={`url(#${id("grain")})`} />
+      {staticFaces.filter((f) => visible(f)).map((f, i) => (
+        <Polygon key={`gj${i}`} points={pts(f.pts)} fill={`url(#${id("grain")})`} />
+      ))}
+      {slab.filter(visible).map((f, i) => (
+        <Polygon key={`gs${i}`} points={pts(f.pts)} fill={`url(#${id("grain")})`} />
+      ))}
       </G>
     </Svg>
   );

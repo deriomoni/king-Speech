@@ -698,6 +698,8 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
 
       {doorScene && (
         <RankDoorTransition
+          rank={fromRank}
+          light={themeMode !== "dark"}
           lead={
             isFinal
               ? pickLang(lang, { ru: "Ты прошёл все ранги", en: "You completed every rank", kk: "Сіз барлық дәрежеден өттіңіз" })

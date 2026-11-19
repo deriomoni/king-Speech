@@ -22,21 +22,22 @@ import Animated, {
   type SharedValue,
 } from "react-native-reanimated";
 import * as Haptics from "@/lib/haptics";
-import Door3D, { DOOR_FLOOR_Y, DOOR_VB_H, DOOR_VB_W, DOORWAY_GAP_CENTER } from "./Door3D";
+import Door3D, { DOOR_FLOOR_Y, DOOR_VB_H, DOOR_VB_W, DOORWAY_GAP_CENTER, doorPaletteForRank } from "./Door3D";
 
 // ── timeline (ms) ────────────────────────────────────────────────────────────
-const FADE_IN = 600;
-const JIGGLE_AT = 900; // latch: the door twitches
-const OPEN_AT = 1250;
-const OPEN_DUR = 1450;
-const SWING_AT = 2450; // the draught swings it wider…
-const SWING_DUR = 650;
-const PULL_AT = 2350; // …as the camera starts getting dragged in
-const PULL_DUR = 1600;
-const FLASH_AT = 3250;
-const FLASH_DUR = 650;
+// Unhurried on purpose: the door gets a moment on screen before the pull.
+const FADE_IN = 700;
+const JIGGLE_AT = 1100; // latch: the door twitches
+const OPEN_AT = 1450;
+const OPEN_DUR = 2000;
+const PULL_AT = 3750; // the open door is held ~300ms, then the camera is dragged in
+const PULL_DUR = 1800;
+const SWING_AT = 3600; // …while the draught swings the door wider
+const SWING_DUR = 700;
+const FLASH_AT = 4900;
+const FLASH_DUR = 700;
 const REVEAL_AT = FLASH_AT + FLASH_DUR; // new rank mounts under the white
-const OUT_DUR = 800;
+const OUT_DUR = 850;
 const END_AT = REVEAL_AT + OUT_DUR;
 const DOOR_STILL_AT = SWING_AT + SWING_DUR; // no more door re-renders after this
 
@@ -98,7 +99,7 @@ const RAYS = Array.from({ length: 11 }, (_, i) => ({
 
 const MOTE_BASE = 100;
 
-function Mote({ m, t, px, py, diag }: { m: (typeof MOTES)[number]; t: SharedValue<number>; px: number; py: number; diag: number }) {
+function Mote({ m, t, px, py, diag, color }: { m: (typeof MOTES)[number]; t: SharedValue<number>; px: number; py: number; diag: number; color: string }) {
   const cx = Math.cos(m.angle);
   const cy = Math.sin(m.angle);
   const style = useAnimatedStyle(() => {
@@ -122,7 +123,7 @@ function Mote({ m, t, px, py, diag }: { m: (typeof MOTES)[number]; t: SharedValu
   return (
     <Animated.View
       style={[
-        { position: "absolute", left: 0, top: 0, width: MOTE_BASE, height: m.w, borderRadius: m.w / 2, backgroundColor: LIGHT_CORE },
+        { position: "absolute", left: 0, top: 0, width: MOTE_BASE, height: m.w, borderRadius: m.w / 2, backgroundColor: color },
         style,
       ]}
     />
@@ -130,6 +131,10 @@ function Mote({ m, t, px, py, diag }: { m: (typeof MOTES)[number]; t: SharedValu
 }
 
 type Props = {
+  /** Rank being completed — picks the door colour (same door as on the Path). */
+  rank: number;
+  /** Light theme: a clean white stage instead of the dark room. */
+  light?: boolean;
   lead: string;
   title: string;
   /** Called at the white-out peak — mount the new-rank screen underneath. */
@@ -138,7 +143,8 @@ type Props = {
   onDone: () => void;
 };
 
-export default function RankDoorTransition({ lead, title, onReveal, onDone }: Props) {
+export default function RankDoorTransition({ rank, light: lightTheme = false, lead, title, onReveal, onDone }: Props) {
+  const palette = doorPaletteForRank(rank);
   const { width: W, height: H } = useWindowDimensions();
   const t = useSharedValue(0);
   const [door, setDoor] = useState({ open: 0, light: 0.35 });
@@ -249,16 +255,22 @@ export default function RankDoorTransition({ lead, title, onReveal, onDone }: Pr
   return (
     <Pressable style={[StyleSheet.absoluteFill, { zIndex: 50 }]} onPress={skip} accessibilityRole="button" accessibilityLabel={title}>
       <Animated.View style={[StyleSheet.absoluteFill, rootStyle]} pointerEvents="none">
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: "#0B0A0D" }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: lightTheme ? "#FFFFFF" : "#0B0A0D" }]} />
 
         {/* the room — scales as one piece when the camera gets pulled in */}
         <Animated.View style={[StyleSheet.absoluteFill, cameraStyle]}>
-          <ExpoLinearGradient
-            colors={["#0B0A0D", "#17131C", "#1E1822"]}
-            locations={[0, 0.6, 1]}
-            style={[StyleSheet.absoluteFill, { bottom: H - floorY }]}
-          />
-          <ExpoLinearGradient colors={["#2A2129", "#0E0C10"]} style={{ position: "absolute", left: 0, right: 0, top: floorY, bottom: 0 }} />
+          {lightTheme ? (
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: "#FFFFFF" }]} />
+          ) : (
+            <>
+              <ExpoLinearGradient
+                colors={["#0B0A0D", "#17131C", "#1E1822"]}
+                locations={[0, 0.6, 1]}
+                style={[StyleSheet.absoluteFill, { bottom: H - floorY }]}
+              />
+              <ExpoLinearGradient colors={["#2A2129", "#0E0C10"]} style={{ position: "absolute", left: 0, right: 0, top: floorY, bottom: 0 }} />
+            </>
+          )}
 
           {/* warm wash + god rays (static drawings, animated opacity) */}
           <Animated.View style={[StyleSheet.absoluteFill, washStyle]}>
@@ -293,17 +305,23 @@ export default function RankDoorTransition({ lead, title, onReveal, onDone }: Pr
           </Animated.View>
 
           <View style={{ position: "absolute", left: doorLeft, top: doorTop }}>
-            <Door3D width={doorW} open={door.open} light={door.light} />
+            <Door3D
+              width={doorW}
+              open={door.open}
+              light={door.light}
+              palette={palette}
+              shadowColor={lightTheme ? "#6E6680" : "#000000"}
+            />
           </View>
         </Animated.View>
 
         {/* motes sucked into the doorway */}
         {MOTES.map((m, i) => (
-          <Mote key={i} m={m} t={t} px={px} py={py} diag={diag} />
+          <Mote key={i} m={m} t={t} px={px} py={py} diag={diag} color={lightTheme ? "#F2B705" : LIGHT_CORE} />
         ))}
 
-        {/* vignette */}
-        <Animated.View style={[StyleSheet.absoluteFill, vignetteStyle]}>
+        {/* vignette (dark room only) */}
+        <Animated.View style={[StyleSheet.absoluteFill, vignetteStyle, lightTheme && { display: "none" }]}>
           <ExpoLinearGradient
             colors={["rgba(0,0,0,0.55)", "rgba(0,0,0,0)", "rgba(0,0,0,0)", "rgba(0,0,0,0.6)"]}
             locations={[0, 0.25, 0.75, 1]}
@@ -313,8 +331,8 @@ export default function RankDoorTransition({ lead, title, onReveal, onDone }: Pr
 
         {/* heading */}
         <Animated.View style={[styles.heading, { top: H * 0.1 }, headingStyle]}>
-          <Text style={styles.lead}>{lead}</Text>
-          <Text style={styles.title} numberOfLines={2} adjustsFontSizeToFit>
+          <Text style={[styles.lead, lightTheme && { color: "#6B6874" }]}>{lead}</Text>
+          <Text style={[styles.title, lightTheme && { color: "#232129" }]} numberOfLines={2} adjustsFontSizeToFit>
             {title}
           </Text>
         </Animated.View>
