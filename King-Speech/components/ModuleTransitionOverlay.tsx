@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import {
   BackHandler,
   Platform,
@@ -7,22 +7,24 @@ import {
   Text,
   View,
   useWindowDimensions,
+  type LayoutRectangle,
 } from "react-native";
 import Animated, {
   Easing,
   interpolate,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
   withRepeat,
   withSequence,
-  withSpring,
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
 import Svg, {
   Defs,
   Ellipse,
+  G,
   LinearGradient as SvgLinearGradient,
   Polygon,
   RadialGradient,
@@ -37,20 +39,19 @@ import * as Haptics from "@/lib/haptics";
 import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useGame, getModuleQuote } from "@/context/GameContext";
-import { getModuleColor } from "@/constants/pathPalette";
-import { getLevelsData } from "@/constants/gameContent";
-import CoinIcon from "@/components/CoinIcon";
+import GoldCoin from "@/components/GoldCoin";
 import { MT_SPARKLE_SVG } from "@/assets/figma/endings/moduleTransitionSvgs";
 
 /**
- * Full-screen module transition. Three 3D podium blocks rise out of the floor
- * one after another and settle into a staircase; the tallest (gold) block
- * carries the new module number. Title «Вы переходите на следующий модуль»
- * above, rewards (+50 coins, new levels) and the gold «Далее» CTA below.
+ * Full-screen module transition. Three 3D podium blocks grow out of the floor
+ * into a staircase (the tall gold one carries the new module number); behind
+ * them two more rows of steps climb away into the haze. Once the gold block
+ * lands, the +50 module coins burst from it and fly into a balance pill.
  */
 
 const MODULE_REWARD_COINS = 50;
 const REWARDED_KEY = "@kingspeech_module_rewards_v1";
+const COIN_N = 8;
 
 const FALLBACK_QUOTES: Record<Lang, string[]> = {
   ru: [
@@ -100,75 +101,91 @@ const STONE_LIGHT: Faces = {
   num: "rgba(38,38,40,0.32)",
 };
 
-/** One extruded block: front face + lit top face + shaded right side. */
-function Prism({
+const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
+/** settles with a barely-there overshoot (~2%) */
+const easeGrow = (x: number) => {
+  const c = 0.7;
+  return 1 + (c + 1) * (x - 1) ** 3 + c * (x - 1) ** 2;
+};
+
+// timeline (ms)
+const BLOCK_AT = 380;
+const BLOCK_GAP = 200;
+const BLOCK_DUR = 760;
+const LANDED_AT = BLOCK_AT + 2 * BLOCK_GAP + BLOCK_DUR; // gold block settled
+const BACK_AT = BLOCK_AT + 3 * BLOCK_GAP; // next floors start right after the front row
+const BACK_GAP = 150;
+const END_AT = BACK_AT + 5 * BACK_GAP + BLOCK_DUR;
+const COINS_AT = LANDED_AT + 150;
+
+/** JS clock for the podium build-up: re-renders until `totalMs` has passed. */
+function useClock(totalMs: number) {
+  const [t, setT] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const start = Date.now();
+    const loop = () => {
+      const e = Date.now() - start;
+      setT(Math.min(e, totalMs));
+      if (e < totalMs) raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [totalMs]);
+  return t;
+}
+
+/** One extruded block standing on (x, baseY): front, lit top, shaded right side. */
+function Block({
   id,
+  x,
+  baseY,
   w,
   h,
   dx,
   dy,
   faces,
   label,
-  fontSize,
+  labelOpacity = 1,
+  fontSize = 0,
 }: {
   id: string;
+  x: number;
+  baseY: number;
   w: number;
   h: number;
   dx: number;
   dy: number;
   faces: Faces;
-  label: string;
-  fontSize: number;
+  label?: string;
+  labelOpacity?: number;
+  fontSize?: number;
 }) {
+  if (h <= 0.5) return null;
+  const top = baseY - h;
   return (
-    <Svg width={w + dx} height={h + dy}>
-      <Defs>
-        <SvgLinearGradient id={`pf${id}`} x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={faces.front[0]} />
-          <Stop offset="1" stopColor={faces.front[1]} />
-        </SvgLinearGradient>
-      </Defs>
-      <Polygon points={`${w},${dy} ${w + dx},0 ${w + dx},${h} ${w},${h + dy}`} fill={faces.side} />
-      <Polygon points={`0,${dy} ${dx},0 ${w + dx},0 ${w},${dy}`} fill={faces.top} />
-      <Rect x={0} y={dy} width={w} height={h} fill={`url(#pf${id})`} />
-      <Rect x={0} y={dy} width={w} height={2} fill={faces.edge} />
-      {!!label && (
+    <G>
+      <Polygon
+        points={`${x + w},${top} ${x + w + dx},${top - dy} ${x + w + dx},${baseY - dy} ${x + w},${baseY}`}
+        fill={faces.side}
+      />
+      <Polygon points={`${x},${top} ${x + dx},${top - dy} ${x + w + dx},${top - dy} ${x + w},${top}`} fill={faces.top} />
+      <Rect x={x} y={top} width={w} height={h} fill={`url(#${id})`} />
+      <Rect x={x} y={top} width={w} height={Math.min(2, h)} fill={faces.edge} />
+      {!!label && labelOpacity > 0 && (
         <SvgText
-          x={w / 2}
-          y={dy + fontSize * 1.05}
+          x={x + w / 2}
+          y={top + fontSize * 1.05}
           textAnchor="middle"
           fontFamily="Geologica_900Black"
           fontSize={fontSize}
           fill={faces.num}
+          opacity={labelOpacity}
         >
           {label}
         </SvgText>
       )}
-    </Svg>
-  );
-}
-
-/** A block that rises out of the floor (clipped at the floor line). */
-function RisingPrism({
-  progress,
-  left,
-  boxW,
-  boxH,
-  children,
-}: {
-  progress: SharedValue<number>;
-  left: number;
-  boxW: number;
-  boxH: number;
-  children: React.ReactNode;
-}) {
-  const st = useAnimatedStyle(() => ({
-    transform: [{ translateY: interpolate(progress.value, [0, 1], [boxH + 4, 0]) }],
-  }));
-  return (
-    <View style={{ position: "absolute", left, bottom: 0, width: boxW, height: boxH, overflow: "hidden" }}>
-      <Animated.View style={st}>{children}</Animated.View>
-    </View>
+    </G>
   );
 }
 
@@ -196,6 +213,52 @@ function Sparkle({ x, y, s, delay }: { x: number; y: number; s: number; delay: n
   );
 }
 
+/** A coin that pops out of the gold block and arcs into the balance pill. */
+function FlyingCoin({
+  i,
+  from,
+  to,
+  size,
+  onArrive,
+}: {
+  i: number;
+  from: [number, number];
+  to: [number, number];
+  size: number;
+  onArrive: () => void;
+}) {
+  const p = useSharedValue(0);
+  // a fan of slightly different arcs so the coins don't stack
+  const spread = (i - (COIN_N - 1) / 2) * 16;
+  const lift = 120 + (i % 3) * 26;
+  useEffect(() => {
+    p.value = withDelay(
+      i * 85,
+      withTiming(1, { duration: 1050, easing: Easing.inOut(Easing.cubic) }, (fin) => {
+        if (fin) runOnJS(onArrive)();
+      }),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const st = useAnimatedStyle(() => {
+    const t = p.value;
+    const cx = from[0] + spread;
+    const cy = from[1] - lift;
+    const x = (1 - t) * (1 - t) * from[0] + 2 * (1 - t) * t * cx + t * t * to[0];
+    const y = (1 - t) * (1 - t) * from[1] + 2 * (1 - t) * t * cy + t * t * to[1];
+    const sc = t < 0.15 ? interpolate(t, [0, 0.15], [0.2, 1.15]) : interpolate(t, [0.15, 1], [1.15, 0.7]);
+    return {
+      opacity: t <= 0 || t >= 1 ? 0 : 1,
+      transform: [{ translateX: x - size / 2 }, { translateY: y - size / 2 }, { scale: sc }, { rotate: `${t * 540}deg` }],
+    };
+  });
+  return (
+    <Animated.View pointerEvents="none" style={[{ position: "absolute", left: 0, top: 0 }, st]}>
+      <GoldCoin size={size} />
+    </Animated.View>
+  );
+}
+
 export default function ModuleTransitionOverlay({
   from,
   to,
@@ -203,29 +266,24 @@ export default function ModuleTransitionOverlay({
 }: {
   from: number;
   to: number;
-  /** Legacy tint from callers; the module colour now comes from getModuleColor. */
+  /** Legacy tint from callers; unused since the podium redesign. */
   color?: string;
   onDone: () => void;
 }) {
   const { lang } = useLang();
   const { theme, themeMode } = useTheme();
   const dark = themeMode === "dark";
-  const { addCoins } = useGame();
+  const { addCoins, coins: balance } = useGame();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { width: W } = useWindowDimensions();
 
-  const moduleColor = getModuleColor(to);
   const ink = dark ? "240,238,233" : "38,38,40";
-
   const quote =
     getModuleQuote(to, lang) ||
     (FALLBACK_QUOTES[lang] ?? FALLBACK_QUOTES.ru)[to % FALLBACK_QUOTES.ru.length];
-  const newLevels = useMemo(
-    () => getLevelsData(lang).filter((l) => l.module === to).length,
-    [lang, to],
-  );
 
   // +50 coins for finishing a module — credited once per finished module.
+  const [rewarded, setRewarded] = useState(false);
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -234,6 +292,7 @@ export default function ModuleTransitionOverlay({
         const done: number[] = raw ? JSON.parse(raw) : [];
         if (cancelled || done.includes(from)) return;
         addCoins(MODULE_REWARD_COINS);
+        setRewarded(true);
         await AsyncStorage.setItem(REWARDED_KEY, JSON.stringify([...done, from]));
       } catch {}
     })();
@@ -243,27 +302,47 @@ export default function ModuleTransitionOverlay({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [from]);
 
-  // ── podium geometry ──
-  const podW = Math.min(width - 44, 340);
+  // ── stage layout (measured, so the scene fits any screen height) ──
+  const [stage, setStage] = useState<LayoutRectangle | null>(null);
+  const t = useClock(END_AT + 50);
+
+  const podW = Math.min(W - 56, 320);
   const dx = Math.round(podW * 0.09);
   const dy = Math.round(podW * 0.07);
   const sw = (podW - dx) / 3;
-  const unit = sw * 0.58;
-  const heights = [unit * 1.15, unit * 2.0, unit * 2.9];
-  const podH = heights[2] + dy;
-  const numSize = Math.min(Math.round(sw * 0.42), 44);
+  const sceneH = stage ? stage.height : 0;
+  const unit = Math.min(sw * 0.58, (sceneH - dy * 3 - 8) / 6.9);
+  const rel = [1.15, 2.0, 2.9];
+  const heights = rel.map((r) => unit * r);
+  const floorY = sceneH - 4;
+  const x0 = (W - podW) / 2;
   const stone = dark ? STONE_DARK : STONE_LIGHT;
   const labels = [to - 2, to - 1, to].map((n) => (n >= 1 ? String(n) : ""));
+  const numSize = Math.min(Math.round(sw * 0.42), 44);
 
-  // ── animation ──
+  // the next floors of a switchback staircase, set back behind the front row
+  // (smaller, in the haze): floor 2 climbs on from above the gold step towards
+  // the LEFT, floor 3 turns and climbs to the right again. `cols` = column of
+  // each step in climbing order, each step taller than the one before.
+  const podCx = x0 + (podW - dx) / 2;
+  const backRows = [
+    { k: "r2", s: 0.8, base: floorY - unit * 0.7, op: 0.5, rel: [3.8, 4.7, 5.6], cols: [2, 1, 0], at: BACK_AT },
+    { k: "r3", s: 0.6, base: floorY - unit * 1.75, op: 0.28, rel: [6.5, 7.4, 8.3], cols: [0, 1, 2], at: BACK_AT + 3 * BACK_GAP },
+  ].map((r) => ({ ...r, left: podCx - (sw * r.s * 3) / 2 }));
+
+  const grow = (i: number) => easeGrow(clamp01((t - BLOCK_AT - i * BLOCK_GAP) / BLOCK_DUR));
+  const goldCx = x0 + sw * 2 + (sw + dx) / 2;
+  const goldTop = floorY - heights[2] - dy;
+
+  // ── Reanimated parts: fade in/out, glow, tail, coins pill ──
   const root = useSharedValue(0);
   const head = useSharedValue(0);
-  const b0 = useSharedValue(0);
-  const b1 = useSharedValue(0);
-  const b2 = useSharedValue(0);
   const tail = useSharedValue(0);
   const glow = useSharedValue(0);
-  const bars = [b0, b1, b2];
+  const pillVis = useSharedValue(0);
+  const bump = useSharedValue(0);
+  const [flying, setFlying] = useState(false);
+  const [landed, setLanded] = useState(0);
 
   const proceed = () => {
     if (Platform.OS !== "web") Haptics.selectionAsync().catch(() => {});
@@ -272,14 +351,10 @@ export default function ModuleTransitionOverlay({
   };
 
   useEffect(() => {
-    const spring = { damping: 13, stiffness: 120, mass: 0.9 };
     root.value = withTiming(1, { duration: 320, easing: Easing.out(Easing.quad) });
-    head.value = withDelay(120, withSpring(1, { damping: 16, stiffness: 130 }));
-    b0.value = withDelay(420, withSpring(1, spring));
-    b1.value = withDelay(620, withSpring(1, spring));
-    b2.value = withDelay(820, withSpring(1, spring));
+    head.value = withDelay(100, withTiming(1, { duration: 520, easing: Easing.out(Easing.cubic) }));
     glow.value = withDelay(
-      1150,
+      LANDED_AT - 200,
       withRepeat(
         withSequence(
           withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
@@ -289,10 +364,10 @@ export default function ModuleTransitionOverlay({
         true,
       ),
     );
-    tail.value = withDelay(1200, withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) }));
+    tail.value = withDelay(LANDED_AT - 150, withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) }));
     const hap = setTimeout(() => {
       if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    }, 1050);
+    }, LANDED_AT - 120);
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
       proceed();
       return true;
@@ -304,6 +379,35 @@ export default function ModuleTransitionOverlay({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // coins fly only when the reward was actually credited now
+  useEffect(() => {
+    if (!rewarded) return;
+    const a = setTimeout(() => {
+      pillVis.value = withTiming(1, { duration: 320, easing: Easing.out(Easing.cubic) });
+    }, COINS_AT - 250);
+    const b = setTimeout(() => setFlying(true), COINS_AT);
+    return () => {
+      clearTimeout(a);
+      clearTimeout(b);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rewarded]);
+  useEffect(() => {
+    if (landed < COIN_N) return;
+    const id = setTimeout(() => {
+      pillVis.value = withTiming(0, { duration: 380, easing: Easing.in(Easing.cubic) });
+    }, 1300);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [landed]);
+  const onCoin = () => {
+    setLanded((n) => Math.min(COIN_N, n + 1));
+    bump.value = withSequence(withTiming(1, { duration: 70 }), withTiming(0, { duration: 220 }));
+    if (Platform.OS !== "web") Haptics.selectionAsync().catch(() => {});
+  };
+  const shownBalance = Math.max(0, balance - (rewarded ? MODULE_REWARD_COINS : 0)) +
+    Math.round((MODULE_REWARD_COINS * landed) / COIN_N);
+
   const rootStyle = useAnimatedStyle(() => ({ opacity: root.value }));
   const headStyle = useAnimatedStyle(() => ({
     opacity: head.value,
@@ -314,29 +418,29 @@ export default function ModuleTransitionOverlay({
     opacity: tail.value,
     transform: [{ translateY: interpolate(tail.value, [0, 1], [16, 0]) }],
   }));
+  const pillShow = useAnimatedStyle(() => ({
+    opacity: pillVis.value,
+    transform: [{ translateY: (1 - pillVis.value) * -14 }, { scale: 1 + bump.value * 0.06 }],
+  }));
+  const pillGlow = useAnimatedStyle(() => ({ opacity: bump.value }));
 
-  // gold block centre, in podium coordinates (for glow + sparkles)
-  const goldCx = sw * 2 + (sw + dx) / 2;
-  const goldTop = podH - heights[2] - dy;
+  const pillTop = Math.max(insets.top, 20) + 8;
+  const PILL_W = 104;
+  const coinTo: [number, number] = [W - 16 - PILL_W + 22, pillTop + 18];
+  const coinFrom: [number, number] = stage ? [stage.x + goldCx, stage.y + goldTop + dy / 2] : [W / 2, 400];
 
   return (
     <Animated.View style={[styles.root, { backgroundColor: theme.bg }, rootStyle]}>
       <View
         style={{
           flex: 1,
-          paddingTop: Math.max(insets.top, 54) + 18,
+          paddingTop: Math.max(insets.top, 54) + 22,
           paddingBottom: insets.bottom + 24,
           paddingHorizontal: 28,
         }}
       >
         {/* Heading */}
         <Animated.View style={[{ alignItems: "center" }, headStyle]}>
-          <View style={[styles.kicker, { backgroundColor: `rgba(${ink},0.06)`, borderColor: `rgba(${ink},0.12)` }]}>
-            <View style={[styles.kickerDot, { backgroundColor: moduleColor }]} />
-            <Text style={[styles.kickerText, { color: theme.text }]}>
-              {pickLang(lang, { ru: `МОДУЛЬ ${from} ПРОЙДЕН`, en: `MODULE ${from} COMPLETE`, kk: `${from}-МОДУЛЬ ӨТІЛДІ` })}
-            </Text>
-          </View>
           <Text style={[styles.title, { color: theme.text }]}>
             {pickLang(lang, {
               ru: "Вы переходите на\nследующий модуль",
@@ -347,79 +451,111 @@ export default function ModuleTransitionOverlay({
           {!!quote && <Text style={[styles.quote, { color: `rgba(${ink},0.55)` }]}>{quote}</Text>}
         </Animated.View>
 
-        {/* Podium staircase */}
-        <View style={styles.stage}>
-          <View style={{ width: podW, height: podH }}>
-            {/* gold glow behind the top block */}
-            <Animated.View
-              pointerEvents="none"
-              style={[{ position: "absolute", left: goldCx - 150, top: goldTop - 110, width: 300, height: 300 }, glowStyle]}
-            >
-              <Svg width={300} height={300}>
+        {/* Staircase scene — full screen width */}
+        <View style={styles.stage} onLayout={(e) => setStage(e.nativeEvent.layout)}>
+          {stage && sceneH > 0 && (
+            <>
+              <Animated.View
+                pointerEvents="none"
+                style={[{ position: "absolute", left: goldCx - 160, top: goldTop - 120, width: 320, height: 320 }, glowStyle]}
+              >
+                <Svg width={320} height={320}>
+                  <Defs>
+                    <RadialGradient id="mtGold" cx="50%" cy="50%" r="50%">
+                      <Stop offset="0" stopColor="#FFD857" stopOpacity={dark ? 0.3 : 0.4} />
+                      <Stop offset="1" stopColor="#FFD857" stopOpacity={0} />
+                    </RadialGradient>
+                  </Defs>
+                  <Ellipse cx={160} cy={160} rx={160} ry={160} fill="url(#mtGold)" />
+                </Svg>
+              </Animated.View>
+
+              <Svg width={W} height={sceneH} style={StyleSheet.absoluteFill}>
                 <Defs>
-                  <RadialGradient id="mtGold" cx="50%" cy="50%" r="50%">
-                    <Stop offset="0" stopColor="#FFD857" stopOpacity={dark ? 0.32 : 0.42} />
-                    <Stop offset="1" stopColor="#FFD857" stopOpacity={0} />
-                  </RadialGradient>
+                  <SvgLinearGradient id="gGold" x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0" stopColor={GOLD.front[0]} />
+                    <Stop offset="1" stopColor={GOLD.front[1]} />
+                  </SvgLinearGradient>
+                  <SvgLinearGradient id="gStone" x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0" stopColor={stone.front[0]} />
+                    <Stop offset="1" stopColor={stone.front[1]} />
+                  </SvgLinearGradient>
+                  <SvgLinearGradient id="gFog" x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0" stopColor={theme.bg} stopOpacity={0} />
+                    <Stop offset="1" stopColor={theme.bg} stopOpacity={0.95} />
+                  </SvgLinearGradient>
                 </Defs>
-                <Ellipse cx={150} cy={150} rx={150} ry={150} fill="url(#mtGold)" />
+
+                {/* far rows first, each dissolving into a haze at its base */}
+                {[...backRows].reverse().map((r) => {
+                  const rs = sw * r.s;
+                  const rdx = dx * r.s;
+                  const rdy = dy * r.s;
+                  const tallest = unit * r.rel[2] * r.s;
+                  const fogH = tallest * 0.6;
+                  return (
+                    <G key={r.k} opacity={r.op}>
+                      {/* painted left → right so each block's shaded side sits behind its right neighbour */}
+                      {[0, 1, 2]
+                        .map((i) => ({ i, col: r.cols[i] }))
+                        .sort((a, b) => a.col - b.col)
+                        .map(({ i, col }) => (
+                          <Block
+                            key={i}
+                            id="gStone"
+                            x={r.left + rs * col}
+                            baseY={r.base}
+                            w={rs}
+                            h={unit * r.rel[i] * r.s * easeGrow(clamp01((t - r.at - i * BACK_GAP) / BLOCK_DUR))}
+                            dx={rdx}
+                            dy={rdy}
+                            faces={stone}
+                          />
+                        ))}
+                      <Rect x={r.left - 6} y={r.base - fogH} width={rs * 3 + rdx + 12} height={fogH + 3} fill="url(#gFog)" />
+                    </G>
+                  );
+                })}
+
+                {/* front staircase — each block grows straight out of the floor */}
+                {heights.map((h, i) => {
+                  const g = grow(i);
+                  return (
+                    <Block
+                      key={i}
+                      id={i === 2 ? "gGold" : "gStone"}
+                      x={x0 + sw * i}
+                      baseY={floorY}
+                      w={sw}
+                      h={h * g}
+                      dx={dx}
+                      dy={dy}
+                      faces={i === 2 ? GOLD : stone}
+                      label={labels[i]}
+                      labelOpacity={clamp01((g - 0.75) / 0.25)}
+                      fontSize={i === 2 ? numSize : Math.round(numSize * 0.8)}
+                    />
+                  );
+                })}
               </Svg>
-            </Animated.View>
 
-            {/* floor shadow in the module colour */}
-            <View pointerEvents="none" style={{ position: "absolute", left: -30, bottom: -26, width: podW + 60, height: 52 }}>
-              <Svg width={podW + 60} height={52}>
-                <Defs>
-                  <RadialGradient id="mtFloor" cx="50%" cy="50%" r="50%">
-                    <Stop offset="0" stopColor={moduleColor} stopOpacity={dark ? 0.45 : 0.3} />
-                    <Stop offset="1" stopColor={moduleColor} stopOpacity={0} />
-                  </RadialGradient>
-                </Defs>
-                <Ellipse cx={(podW + 60) / 2} cy={26} rx={(podW + 60) / 2} ry={26} fill="url(#mtFloor)" />
-              </Svg>
-            </View>
-
-            {heights.map((h, i) => (
-              <RisingPrism key={i} progress={bars[i]} left={sw * i} boxW={sw + dx} boxH={h + dy}>
-                <Prism
-                  id={`b${i}`}
-                  w={sw}
-                  h={h}
-                  dx={dx}
-                  dy={dy}
-                  faces={i === 2 ? GOLD : stone}
-                  label={labels[i]}
-                  fontSize={i === 2 ? numSize : Math.round(numSize * 0.8)}
-                />
-              </RisingPrism>
-            ))}
-
-            <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, tailStyle]}>
-              <Sparkle x={goldCx + sw * 0.55} y={goldTop - 4} s={20} delay={0} />
-              <Sparkle x={goldCx - sw * 0.5} y={goldTop - 30} s={13} delay={350} />
-              <Sparkle x={goldCx + sw * 0.15} y={goldTop - 52} s={9} delay={700} />
-            </Animated.View>
-          </View>
+              <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, tailStyle]}>
+                <Sparkle x={goldCx + sw * 0.55} y={goldTop - 4} s={20} delay={0} />
+                <Sparkle x={goldCx - sw * 0.5} y={goldTop - 30} s={13} delay={350} />
+                <Sparkle x={goldCx + sw * 0.15} y={goldTop - 52} s={9} delay={700} />
+              </Animated.View>
+            </>
+          )}
         </View>
 
-        {/* Rewards + CTA */}
+        {/* Reward + CTA */}
         <Animated.View style={tailStyle}>
-          <View style={styles.rewards}>
-            <View style={[styles.reward, { backgroundColor: `rgba(${ink},0.05)`, borderColor: `rgba(${ink},0.12)` }]}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                <Text style={[styles.rewardValue, { color: theme.text }]}>+{MODULE_REWARD_COINS}</Text>
-                <CoinIcon size={22} color={theme.accent} />
-              </View>
-              <Text style={[styles.rewardLabel, { color: `rgba(${ink},0.6)` }]}>
-                {pickLang(lang, { ru: "монет за модуль", en: "coins for the module", kk: "модуль үшін монета" })}
-              </Text>
-            </View>
-            <View style={[styles.reward, { backgroundColor: `rgba(${ink},0.05)`, borderColor: `rgba(${ink},0.12)` }]}>
-              <Text style={[styles.rewardValue, { color: theme.text }]}>{newLevels}</Text>
-              <Text style={[styles.rewardLabel, { color: `rgba(${ink},0.6)` }]}>
-                {pickLang(lang, { ru: "новых уровней", en: "new levels", kk: "жаңа деңгей" })}
-              </Text>
-            </View>
+          <View style={[styles.reward, { backgroundColor: `rgba(${ink},0.05)`, borderColor: `rgba(${ink},0.12)` }]}>
+            <GoldCoin size={26} />
+            <Text style={[styles.rewardValue, { color: theme.text }]}>+{MODULE_REWARD_COINS}</Text>
+            <Text style={[styles.rewardLabel, { color: `rgba(${ink},0.6)` }]}>
+              {pickLang(lang, { ru: "монет за модуль", en: "coins for the module", kk: "модуль үшін монета" })}
+            </Text>
           </View>
 
           <Pressable
@@ -439,30 +575,47 @@ export default function ModuleTransitionOverlay({
           </Pressable>
         </Animated.View>
       </View>
+
+      {/* Balance pill — the coins fly in here and the number ticks up */}
+      <Animated.View
+        pointerEvents="none"
+        style={[{ position: "absolute", top: pillTop, right: 16, width: PILL_W, height: 36 }, pillShow]}
+      >
+        <Animated.View
+          style={[
+            { position: "absolute", left: -6, right: -6, top: -6, bottom: -6, borderRadius: 24, backgroundColor: "rgba(255,216,87,0.3)" },
+            pillGlow,
+          ]}
+        />
+        <View
+          style={[
+            styles.pill,
+            { backgroundColor: dark ? "rgba(255,255,255,0.08)" : "#FFFFFF", borderColor: "rgba(255,216,87,0.6)" },
+          ]}
+        >
+          <GoldCoin size={24} />
+          <Text style={[styles.pillText, { color: theme.text }]} numberOfLines={1}>
+            {shownBalance}
+          </Text>
+        </View>
+      </Animated.View>
+
+      {flying &&
+        Array.from({ length: COIN_N }, (_, i) => (
+          <FlyingCoin key={i} i={i} from={coinFrom} to={coinTo} size={26} onArrive={onCoin} />
+        ))}
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, elevation: 30 },
-  kicker: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 13,
-    paddingVertical: 6,
-    borderRadius: 32,
-    borderWidth: 1.5,
-  },
-  kickerDot: { width: 7, height: 7, borderRadius: 4 },
-  kickerText: { fontFamily: "Geologica_900Black", fontSize: 11, letterSpacing: 0.8 },
   title: {
     fontFamily: "Geologica_900Black",
     fontSize: 27,
     lineHeight: 32,
     letterSpacing: -0.6,
     textAlign: "center",
-    marginTop: 18,
   },
   quote: {
     fontFamily: "Geologica_700Bold",
@@ -472,21 +625,20 @@ const styles = StyleSheet.create({
     marginTop: 12,
     maxWidth: 300,
   },
-  stage: { flex: 1, alignItems: "center", justifyContent: "flex-end", paddingBottom: 54 },
-  rewards: { flexDirection: "row", gap: 10 },
+  stage: { flex: 1, marginHorizontal: -28, marginTop: 8, marginBottom: 40 },
   reward: {
-    flex: 1,
-    height: 64,
+    height: 58,
     borderRadius: 22,
     borderWidth: 1.5,
-    paddingLeft: 14,
-    paddingTop: 8,
-    gap: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
   },
   rewardValue: { fontFamily: "Geologica_900Black", fontSize: 20, letterSpacing: -0.1 },
-  rewardLabel: { fontFamily: "Geologica_700Bold", fontSize: 12 },
+  rewardLabel: { fontFamily: "Geologica_700Bold", fontSize: 14 },
   cta: {
-    marginTop: 16,
+    marginTop: 14,
     height: 58,
     borderRadius: 32,
     borderWidth: 4,
@@ -494,4 +646,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   ctaText: { fontFamily: "Geologica_900Black", fontSize: 18, letterSpacing: -0.09 },
+  pill: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    paddingLeft: 7,
+    paddingRight: 12,
+  },
+  pillText: { fontFamily: "Geologica_900Black", fontSize: 16, fontVariant: ["tabular-nums"] },
 });
