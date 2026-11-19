@@ -6,7 +6,7 @@
 // their own clock — the same door is used on the Path map and in the
 // rank-up cut-scene.
 import React, { useId } from "react";
-import Svg, { Defs, Ellipse, LinearGradient, Path, Polygon, RadialGradient, Rect, Stop } from "react-native-svg";
+import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Polygon, RadialGradient, Rect, Stop } from "react-native-svg";
 
 export const DOOR_VB_W = 240;
 export const DOOR_VB_H = 300;
@@ -37,11 +37,14 @@ const proj = (p: V3): [number, number] => {
   return [OX + (p[0] - CAM.x) * k, OY + (p[1] - CAM.y) * k];
 };
 
-/** Doorway centre / the lit gap right of a fully opened door / floor line — as 0..1 of the box. */
+// The model is built hinged-left / camera-right and the whole drawing is
+// mirrored, so on screen the door hangs on the RIGHT jamb and swings open to
+// the right, seen from the front-left.
+/** Doorway centre / the lit gap beside a fully opened door / floor line — as 0..1 of the box. */
 const pc = proj([0, YT / 2, 0]);
-export const DOORWAY_CENTER = { x: pc[0] / DOOR_VB_W, y: pc[1] / DOOR_VB_H };
+export const DOORWAY_CENTER = { x: 1 - pc[0] / DOOR_VB_W, y: pc[1] / DOOR_VB_H };
 const pg = proj([14, YT / 2, -DEPTH / 2]);
-export const DOORWAY_GAP_CENTER = { x: pg[0] / DOOR_VB_W, y: pg[1] / DOOR_VB_H };
+export const DOORWAY_GAP_CENTER = { x: 1 - pg[0] / DOOR_VB_W, y: pg[1] / DOOR_VB_H };
 export const DOOR_FLOOR_Y = proj([0, 0, 0])[1] / DOOR_VB_H;
 
 export type DoorPalette = {
@@ -113,7 +116,7 @@ const KEY: V3 = (() => {
 })();
 const dot = (a: V3, b: V3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
-type Face = { pts: V3[]; n: V3; kind: "face" | "edge" | "handle" };
+type Face = { pts: V3[]; n: V3; kind: "face" | "edge" };
 
 type Props = {
   width: number;
@@ -163,16 +166,9 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
 
   const slab = box(0, OW - 1, YT + 1, -SLAB_GAP, 0, SLAB_T, "face");
   const frontVisible = visible(slab[0]);
-  // slim vertical pull on whichever side faces the camera
-  const hy0 = -128;
-  const hy1 = -84;
-  const handle = frontVisible
-    ? box(OW - 15, OW - 11, hy0, hy1, -4.5, 0, "handle")
-    : box(OW - 15, OW - 11, hy0, hy1, SLAB_T, SLAB_T + 4.5, "handle");
 
   const shadeFace = (f: Face) => {
     const k = Math.max(0, dot(f.n, KEY));
-    if (f.kind === "handle") return lit(p.handle, 0.72 + 0.38 * k, p.lightCore, 0.15 * L);
     // the doorway light hits faces turned toward the room, and rims the edges
     const warm = L * (Math.max(0, -f.n[2]) * 0.55 + (f.kind === "edge" && theta > 0.02 ? 0.45 : 0));
     return lit(p.slab, 0.6 + 0.4 * k, p.light, warm);
@@ -204,6 +200,36 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
     [gapL - 30 - 30 * Math.min(1, open), 0, 140],
   ];
 
+  // ── the classic door design on whichever slab face the camera sees:
+  // an arched upper panel and a lower panel, recessed with a bevel, and a
+  // round knob near the free edge.
+  const faceT = frontVisible ? -0.25 : SLAB_T + 0.25;
+  const faceN = frontVisible ? slab[0].n : slab[1].n;
+  const faceK = 0.6 + 0.4 * Math.max(0, dot(faceN, KEY));
+  const faceWarm = L * Math.max(0, -faceN[2]) * 0.55;
+  const tone = (k: number) => lit(p.slab, faceK * k, p.light, faceWarm);
+  const fp = (u: number, y: number) => proj(P(u, y, faceT)).map((n) => n.toFixed(2)).join(",");
+  const rectD = (u0: number, y0: number, u1: number, y1: number) =>
+    `M${fp(u0, y0)}L${fp(u1, y0)}L${fp(u1, y1)}L${fp(u0, y1)}Z`;
+  const archD = (u0: number, y0: number, u1: number, y1: number, rise: number) => {
+    let d = `M${fp(u0, y1)}L${fp(u0, y0 + rise)}`;
+    for (let i = 1; i <= 14; i++) {
+      const q = i / 14;
+      d += `L${fp(u0 + (u1 - u0) * q, y0 + rise - Math.sin(Math.PI * q) * rise)}`;
+    }
+    return d + `L${fp(u1, y1)}Z`;
+  };
+  const sy = YT + 1; // slab top
+  const KU = OW - 13; // knob, near the free edge
+  const KY = sy + 116;
+  const knobRose = Array.from({ length: 16 }, (_, i) => {
+    const a = (i / 16) * Math.PI * 2;
+    return fp(KU + Math.cos(a) * 6.5, KY + Math.sin(a) * 6.5);
+  }).join(" ");
+  const ballZ = frontVisible ? -5 : SLAB_T + 5;
+  const ball = proj(P(KU, KY, ballZ));
+  const ballR = (4.6 * F) / (CAM.z - P(KU, KY, ballZ)[2]);
+
   const sw = 1.3;
   const jambTone = (base: number, warmK: number) => lit(p.jamb, base, p.light, warmK * L);
   const staticFaces: (Face & { fill: string })[] = [
@@ -220,6 +246,7 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
 
   return (
     <Svg width={width} height={height} viewBox={`0 0 ${DOOR_VB_W} ${DOOR_VB_H}`}>
+      <G transform={`translate(${DOOR_VB_W},0) scale(-1,1)`}>
       <Defs>
         <RadialGradient id={id("halo")} cx="50%" cy="50%" r="50%">
           <Stop offset="0" stopColor={p.light} stopOpacity={0.7} />
@@ -276,9 +303,16 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
       {slab.filter(visible).map((f, i) => (
         <Polygon key={`s${i}`} points={pts(f.pts)} fill={shadeFace(f)} stroke={p.stroke} strokeWidth={sw} strokeLinejoin="round" />
       ))}
-      {handle.filter(visible).map((f, i) => (
-        <Polygon key={`h${i}`} points={pts(f.pts)} fill={shadeFace(f)} stroke={p.stroke} strokeWidth={0.9} strokeLinejoin="round" />
-      ))}
+      {/* panels: outer recess (bevel, darker) + inner field */}
+      <Path d={archD(19, sy + 18, 79, sy + 118, 14)} fill={tone(0.84)} stroke={p.stroke} strokeWidth={1.1} strokeLinejoin="round" />
+      <Path d={archD(25, sy + 25, 73, sy + 111, 11)} fill={tone(0.97)} stroke={tone(1.18)} strokeWidth={0.9} strokeLinejoin="round" />
+      <Path d={rectD(19, sy + 140, 79, sy + 192)} fill={tone(0.84)} stroke={p.stroke} strokeWidth={1.1} strokeLinejoin="round" />
+      <Path d={rectD(25, sy + 147, 73, sy + 185)} fill={tone(0.97)} stroke={tone(1.18)} strokeWidth={0.9} strokeLinejoin="round" />
+      {/* knob: rose on the face + a ball standing off it */}
+      <Polygon points={knobRose} fill={lit(p.handle, 0.62, p.stroke, 0.1)} stroke={p.stroke} strokeWidth={0.9} strokeLinejoin="round" />
+      <Circle cx={ball[0]} cy={ball[1]} r={ballR} fill={lit(p.handle, 0.95, p.lightCore, 0.1 * L)} stroke={p.stroke} strokeWidth={0.9} />
+      <Circle cx={ball[0] + ballR * 0.35} cy={ball[1] - ballR * 0.38} r={ballR * 0.32} fill="#FFF6D6" />
+      </G>
     </Svg>
   );
 }

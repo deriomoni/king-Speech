@@ -103,7 +103,7 @@ export default function FinalPortal({ theme, status, onPress, testID, devPreview
               <Ellipse cx={GLOW_W / 2} cy={GLOW_H / 2} rx={GLOW_W / 2} ry={GLOW_H / 2} fill="url(#fpGlow)" />
             </Svg>
           </Animated.View>
-          <View style={{ opacity: status === "locked" ? 0.82 : 1 }}>
+          <View style={{ opacity: 1 }}>
             <Door3D
               width={DOOR_W}
               open={isDone ? 0.42 : glowing ? 0.22 : 0}

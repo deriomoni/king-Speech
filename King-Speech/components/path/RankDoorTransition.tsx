@@ -2,10 +2,25 @@
 // the latch clicks, the door swings open toward the camera, blinding light
 // pours out, motes get sucked into the doorway and the camera is pulled in
 // after them — white-out — and the new rank is revealed underneath.
-import React, { useEffect, useRef, useState } from "react";
+//
+// Performance: one shared clock on the UI thread drives everything that moves
+// (camera, rays, motes, text, white-out) through animated styles; the static
+// layers render once. Only the door's swing goes through React, and only
+// while the door is actually moving.
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Pressable, Platform, useWindowDimensions } from "react-native";
 import { LinearGradient as ExpoLinearGradient } from "expo-linear-gradient";
-import Svg, { Defs, G, Line, Polygon, RadialGradient, Rect, Stop } from "react-native-svg";
+import Svg, { Defs, G, Polygon, RadialGradient, Rect, Stop } from "react-native-svg";
+import Animated, {
+  Easing,
+  cancelAnimation,
+  runOnJS,
+  useAnimatedReaction,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from "react-native-reanimated";
 import * as Haptics from "@/lib/haptics";
 import Door3D, { DOOR_FLOOR_Y, DOOR_VB_H, DOOR_VB_W, DOORWAY_GAP_CENTER } from "./Door3D";
 
@@ -14,25 +29,54 @@ const FADE_IN = 600;
 const JIGGLE_AT = 900; // latch: the door twitches
 const OPEN_AT = 1250;
 const OPEN_DUR = 1450;
-const PULL_AT = 2350; // camera starts getting dragged in
+const SWING_AT = 2450; // the draught swings it wider…
+const SWING_DUR = 650;
+const PULL_AT = 2350; // …as the camera starts getting dragged in
 const PULL_DUR = 1600;
 const FLASH_AT = 3250;
 const FLASH_DUR = 650;
 const REVEAL_AT = FLASH_AT + FLASH_DUR; // new rank mounts under the white
 const OUT_DUR = 800;
 const END_AT = REVEAL_AT + OUT_DUR;
+const DOOR_STILL_AT = SWING_AT + SWING_DUR; // no more door re-renders after this
 
-const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
-const seg = (t: number, at: number, dur: number) => clamp01((t - at) / dur);
-const easeInOutCubic = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
-const easeInQuart = (x: number) => x * x * x * x;
-const easeOutCubic = (x: number) => 1 - Math.pow(1 - x, 3);
+function clamp01(x: number) {
+  "worklet";
+  return x < 0 ? 0 : x > 1 ? 1 : x;
+}
+function seg(t: number, at: number, dur: number) {
+  "worklet";
+  return clamp01((t - at) / dur);
+}
+function easeInOutCubic(x: number) {
+  "worklet";
+  return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+}
+function easeInQuart(x: number) {
+  "worklet";
+  return x * x * x * x;
+}
+function easeOutCubic(x: number) {
+  "worklet";
+  return 1 - Math.pow(1 - x, 3);
+}
+/** Door swing (0..1.35) and light behind it (0..1) at time t. */
+function doorAt(t: number) {
+  "worklet";
+  const jiggle = t > JIGGLE_AT && t < OPEN_AT ? Math.sin(seg(t, JIGGLE_AT, 260) * Math.PI) * 0.035 : 0;
+  const open = Math.max(jiggle, easeInOutCubic(seg(t, OPEN_AT, OPEN_DUR))) + 0.35 * easeOutCubic(seg(t, SWING_AT, SWING_DUR));
+  const light =
+    t < OPEN_AT
+      ? 0.35 + 0.15 * Math.sin(t / 180) + 0.25 * seg(t, JIGGLE_AT, OPEN_AT - JIGGLE_AT)
+      : 0.75 + 0.25 * seg(t, OPEN_AT, OPEN_DUR * 0.6);
+  return { open, light };
+}
 
 const LIGHT = "#FFD45C";
 const LIGHT_CORE = "#FFFDF4";
 
 // Deterministic "random" motes.
-const MOTES = Array.from({ length: 26 }, (_, i) => {
+const MOTES = Array.from({ length: 24 }, (_, i) => {
   const r = (n: number) => {
     const x = Math.sin((i + 1) * 12.9898 + n * 78.233) * 43758.5453;
     return x - Math.floor(x);
@@ -52,21 +96,37 @@ const RAYS = Array.from({ length: 11 }, (_, i) => ({
   len: 0.75 + ((i * 3) % 4) * 0.12,
 }));
 
-function useSceneClock(totalMs: number) {
-  const [t, setT] = useState(0);
-  const skipRef = useRef(0);
-  useEffect(() => {
-    let raf = 0;
-    const start = Date.now();
-    const loop = () => {
-      const e = Math.max(Date.now() - start, skipRef.current);
-      setT(Math.min(e, totalMs));
-      if (e < totalMs) raf = requestAnimationFrame(loop);
+const MOTE_BASE = 100;
+
+function Mote({ m, t, px, py, diag }: { m: (typeof MOTES)[number]; t: SharedValue<number>; px: number; py: number; diag: number }) {
+  const cx = Math.cos(m.angle);
+  const cy = Math.sin(m.angle);
+  const style = useAnimatedStyle(() => {
+    const q = seg(t.value, m.at, m.dur);
+    if (q <= 0 || q >= 1) return { opacity: 0 };
+    const e = easeInQuart(q);
+    const r = diag * m.dist * (1 - e);
+    const tail = 10 + 70 * e;
+    const mid = r + tail / 2;
+    return {
+      opacity: Math.sin(Math.PI * q) * 0.9,
+      transform: [
+        { translateX: px + cx * mid - MOTE_BASE / 2 },
+        { translateY: py + cy * mid - m.w / 2 },
+        { rotate: `${m.angle}rad` },
+        { scaleX: tail / MOTE_BASE },
+        { scaleY: 1 - e * 0.6 },
+      ],
     };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [totalMs]);
-  return { t, skipTo: (ms: number) => (skipRef.current = ms) } as const;
+  });
+  return (
+    <Animated.View
+      style={[
+        { position: "absolute", left: 0, top: 0, width: MOTE_BASE, height: m.w, borderRadius: m.w / 2, backgroundColor: LIGHT_CORE },
+        style,
+      ]}
+    />
+  );
 }
 
 type Props = {
@@ -80,36 +140,54 @@ type Props = {
 
 export default function RankDoorTransition({ lead, title, onReveal, onDone }: Props) {
   const { width: W, height: H } = useWindowDimensions();
-  const { t, skipTo } = useSceneClock(END_AT + 30);
+  const t = useSharedValue(0);
+  const [door, setDoor] = useState({ open: 0, light: 0.35 });
 
-  // one-shot callbacks / haptics keyed off the clock
-  const fired = useRef<Record<string, boolean>>({});
-  const once = (k: string, at: number, fn: () => void) => {
-    if (t >= at && !fired.current[k]) {
-      fired.current[k] = true;
-      fn();
-    }
-  };
-  const haptic = (fn: () => Promise<void>) => {
-    if (Platform.OS !== "web") fn().catch(() => {});
-  };
   useEffect(() => {
-    once("latch", JIGGLE_AT, () => haptic(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)));
-    once("open", OPEN_AT, () => haptic(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)));
-    once("pull", PULL_AT + 400, () => haptic(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)));
-    once("reveal", REVEAL_AT, () => {
-      haptic(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success));
-      onReveal();
-    });
-    once("done", END_AT, onDone);
-  });
+    t.value = withTiming(END_AT, { duration: END_AT, easing: Easing.linear });
+    return () => cancelAnimation(t);
+  }, []);
 
-  // ── door state ──
-  const jiggle = t > JIGGLE_AT && t < OPEN_AT ? Math.sin(seg(t, JIGGLE_AT, 260) * Math.PI) * 0.035 : 0;
-  // …and it keeps swinging wide as the draught pulls the camera through.
-  const open = Math.max(jiggle, easeInOutCubic(seg(t, OPEN_AT, OPEN_DUR))) + 0.35 * easeOutCubic(seg(t, PULL_AT, PULL_DUR * 0.7));
-  const leak = 0.35 + 0.15 * Math.sin(t / 180); // pulsing light under the shut door
-  const light = t < OPEN_AT ? leak + 0.25 * seg(t, JIGGLE_AT, OPEN_AT - JIGGLE_AT) : 0.75 + 0.25 * seg(t, OPEN_AT, OPEN_DUR * 0.6);
+  // ── JS side: door re-renders (only while it moves) + one-shot cues ──
+  const cbRef = useRef({ onReveal, onDone });
+  cbRef.current = { onReveal, onDone };
+  const cue = useCallback((name: string) => {
+    const tap = (fn: () => Promise<void>) => {
+      if (Platform.OS !== "web") fn().catch(() => {});
+    };
+    if (name === "latch") tap(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light));
+    else if (name === "open") tap(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium));
+    else if (name === "pull") tap(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy));
+    else if (name === "reveal") {
+      tap(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success));
+      cbRef.current.onReveal();
+    } else if (name === "done") cbRef.current.onDone();
+  }, []);
+
+  useAnimatedReaction(
+    () => {
+      const tt = Math.min(t.value, DOOR_STILL_AT);
+      const d = doorAt(tt);
+      // quantised so React only hears about visible changes
+      return Math.round(d.open * 400) * 1000 + Math.round(d.light * 100);
+    },
+    (key, prev) => {
+      if (key !== prev) runOnJS(setDoor)({ open: Math.floor(key / 1000) / 400, light: (key % 1000) / 100 });
+    },
+  );
+  useAnimatedReaction(
+    () => t.value,
+    (cur, prev) => {
+      const p = prev ?? -1;
+      const live = cur - p < 120; // a skip jumps the clock: no haptic barrage
+      const cross = (at: number) => p < at && cur >= at;
+      if (live && cross(JIGGLE_AT)) runOnJS(cue)("latch");
+      if (live && cross(OPEN_AT)) runOnJS(cue)("open");
+      if (live && cross(PULL_AT + 400)) runOnJS(cue)("pull");
+      if (cross(REVEAL_AT)) runOnJS(cue)("reveal");
+      if (cross(END_AT)) runOnJS(cue)("done");
+    },
+  );
 
   // ── layout ──
   const doorW = Math.min(W * 0.78, 330);
@@ -119,136 +197,131 @@ export default function RankDoorTransition({ lead, title, onReveal, onDone }: Pr
   const px = doorLeft + DOORWAY_GAP_CENTER.x * doorW;
   const py = doorTop + DOORWAY_GAP_CENTER.y * doorH;
   const floorY = doorTop + DOOR_FLOOR_Y * doorH;
-
-  // ── camera pull ──
-  const pull = easeInQuart(seg(t, PULL_AT, PULL_DUR));
-  // a short breath back before the rush in
-  const brace = Math.sin(seg(t, PULL_AT - 500, 500) * Math.PI * 0.5) * (1 - seg(t, PULL_AT, 400));
-  const s = (1 - 0.05 * brace) * (1 + pull * 11);
-  const shake = t > PULL_AT && t < FLASH_AT ? Math.sin(t / 23) * 2.2 * pull : 0;
-  const tx = (1 - s) * (px - W / 2) + shake;
-  const ty = (1 - s) * (py - H / 2) + shake * 0.6;
-
-  const flash = easeOutCubic(seg(t, FLASH_AT, FLASH_DUR));
-  const out = seg(t, REVEAL_AT, OUT_DUR);
-  const sceneIn = easeOutCubic(seg(t, 0, FADE_IN));
-  const textOp = sceneIn * (1 - seg(t, PULL_AT - 300, 450));
-  const textRise = (1 - sceneIn) * 14;
-
-  const rayOp = clamp01((light - 0.7) / 0.3) * open;
   const diag = Math.hypot(W, H) / 2;
 
+  // ── UI-thread styles ──
+  const rootStyle = useAnimatedStyle(() => ({ opacity: 1 - seg(t.value, REVEAL_AT, OUT_DUR) }));
+  const cameraStyle = useAnimatedStyle(() => {
+    const tt = t.value;
+    const pull = easeInQuart(seg(tt, PULL_AT, PULL_DUR));
+    // a short breath back before the rush in
+    const brace = Math.sin(seg(tt, PULL_AT - 500, 500) * Math.PI * 0.5) * (1 - seg(tt, PULL_AT, 400));
+    const s = (1 - 0.05 * brace) * (1 + pull * 11);
+    const shake = tt > PULL_AT && tt < FLASH_AT ? Math.sin(tt / 23) * 2.2 * pull : 0;
+    return {
+      opacity: easeOutCubic(seg(tt, 0, FADE_IN)),
+      transform: [
+        { translateX: (1 - s) * (px - W / 2) + shake },
+        { translateY: (1 - s) * (py - H / 2) + shake * 0.6 },
+        { scale: s },
+      ],
+    };
+  });
+  const washStyle = useAnimatedStyle(() => {
+    const d = doorAt(Math.min(t.value, DOOR_STILL_AT));
+    const rayOp = clamp01((d.light - 0.7) / 0.3) * Math.min(1, d.open);
+    return { opacity: 0.25 * d.light + 0.5 * rayOp };
+  });
+  const raysStyle = useAnimatedStyle(() => {
+    const d = doorAt(Math.min(t.value, DOOR_STILL_AT));
+    return { opacity: clamp01((d.light - 0.7) / 0.3) * Math.min(1, d.open) };
+  });
+  const vignetteStyle = useAnimatedStyle(() => ({ opacity: 1 - easeInQuart(seg(t.value, PULL_AT, PULL_DUR)) }));
+  const headingStyle = useAnimatedStyle(() => {
+    const sceneIn = easeOutCubic(seg(t.value, 0, FADE_IN));
+    return {
+      opacity: sceneIn * (1 - seg(t.value, PULL_AT - 300, 450)),
+      transform: [{ translateY: (1 - sceneIn) * 14 }],
+    };
+  });
+  const flashStyle = useAnimatedStyle(() => ({
+    opacity: Math.max(easeOutCubic(seg(t.value, FLASH_AT, FLASH_DUR)), easeInQuart(seg(t.value, PULL_AT, PULL_DUR)) * 0.35),
+  }));
+
+  const skip = () => {
+    const to = FLASH_AT - 200;
+    if (t.value < to) {
+      t.value = to;
+      t.value = withTiming(END_AT, { duration: END_AT - to, easing: Easing.linear });
+    }
+  };
+
   return (
-    <Pressable
-      style={[StyleSheet.absoluteFill, { zIndex: 50 }]}
-      onPress={() => {
-        if (t < FLASH_AT - 200) skipTo(FLASH_AT - 200);
-      }}
-      accessibilityRole="button"
-      accessibilityLabel={title}
-    >
-      <View style={[StyleSheet.absoluteFill, { opacity: 1 - out }]} pointerEvents="none">
+    <Pressable style={[StyleSheet.absoluteFill, { zIndex: 50 }]} onPress={skip} accessibilityRole="button" accessibilityLabel={title}>
+      <Animated.View style={[StyleSheet.absoluteFill, rootStyle]} pointerEvents="none">
         <View style={[StyleSheet.absoluteFill, { backgroundColor: "#0B0A0D" }]} />
 
         {/* the room — scales as one piece when the camera gets pulled in */}
-        <View
-          style={[
-            StyleSheet.absoluteFill,
-            { opacity: sceneIn, transform: [{ translateX: tx }, { translateY: ty }, { scale: s }] },
-          ]}
-        >
+        <Animated.View style={[StyleSheet.absoluteFill, cameraStyle]}>
           <ExpoLinearGradient
             colors={["#0B0A0D", "#17131C", "#1E1822"]}
             locations={[0, 0.6, 1]}
             style={[StyleSheet.absoluteFill, { bottom: H - floorY }]}
           />
-          <ExpoLinearGradient
-            colors={["#2A2129", "#0E0C10"]}
-            style={{ position: "absolute", left: 0, right: 0, top: floorY, bottom: 0 }}
-          />
+          <ExpoLinearGradient colors={["#2A2129", "#0E0C10"]} style={{ position: "absolute", left: 0, right: 0, top: floorY, bottom: 0 }} />
 
-          {/* god rays fanning out of the doorway */}
-          <Svg style={StyleSheet.absoluteFill} width={W} height={H}>
-            <Defs>
-              <RadialGradient id="rdtRay" cx={px} cy={py} r={diag * 1.1} gradientUnits="userSpaceOnUse">
-                <Stop offset="0" stopColor={LIGHT_CORE} stopOpacity={0.55} />
-                <Stop offset="0.35" stopColor={LIGHT} stopOpacity={0.22} />
-                <Stop offset="1" stopColor={LIGHT} stopOpacity={0} />
-              </RadialGradient>
-              <RadialGradient id="rdtWash" cx={px} cy={py} r={diag * 0.9} gradientUnits="userSpaceOnUse">
-                <Stop offset="0" stopColor={LIGHT} stopOpacity={0.5} />
-                <Stop offset="1" stopColor={LIGHT} stopOpacity={0} />
-              </RadialGradient>
-            </Defs>
-            <Rect x={0} y={0} width={W} height={H} fill="url(#rdtWash)" opacity={0.25 * light + 0.5 * rayOp} />
-            {rayOp > 0.01 && (
-              <G opacity={rayOp}>
+          {/* warm wash + god rays (static drawings, animated opacity) */}
+          <Animated.View style={[StyleSheet.absoluteFill, washStyle]}>
+            <Svg width={W} height={H}>
+              <Defs>
+                <RadialGradient id="rdtWash" cx={px} cy={py} r={diag * 0.9} gradientUnits="userSpaceOnUse">
+                  <Stop offset="0" stopColor={LIGHT} stopOpacity={0.5} />
+                  <Stop offset="1" stopColor={LIGHT} stopOpacity={0} />
+                </RadialGradient>
+              </Defs>
+              <Rect x={0} y={0} width={W} height={H} fill="url(#rdtWash)" />
+            </Svg>
+          </Animated.View>
+          <Animated.View style={[StyleSheet.absoluteFill, raysStyle]}>
+            <Svg width={W} height={H}>
+              <Defs>
+                <RadialGradient id="rdtRay" cx={px} cy={py} r={diag * 1.1} gradientUnits="userSpaceOnUse">
+                  <Stop offset="0" stopColor={LIGHT_CORE} stopOpacity={0.55} />
+                  <Stop offset="0.35" stopColor={LIGHT} stopOpacity={0.22} />
+                  <Stop offset="1" stopColor={LIGHT} stopOpacity={0} />
+                </RadialGradient>
+              </Defs>
+              <G>
                 {RAYS.map((r, i) => {
-                  const a = r.a + Math.sin(t / 900 + i) * 0.03;
-                  const L = diag * 1.3 * r.len;
-                  const p1 = [px + Math.cos(a - r.spread) * L, py + Math.sin(a - r.spread) * L];
-                  const p2 = [px + Math.cos(a + r.spread) * L, py + Math.sin(a + r.spread) * L];
-                  return (
-                    <Polygon
-                      key={i}
-                      points={`${px},${py} ${p1[0]},${p1[1]} ${p2[0]},${p2[1]}`}
-                      fill="url(#rdtRay)"
-                    />
-                  );
+                  const len = diag * 1.3 * r.len;
+                  const p1 = [px + Math.cos(r.a - r.spread) * len, py + Math.sin(r.a - r.spread) * len];
+                  const p2 = [px + Math.cos(r.a + r.spread) * len, py + Math.sin(r.a + r.spread) * len];
+                  return <Polygon key={i} points={`${px},${py} ${p1[0]},${p1[1]} ${p2[0]},${p2[1]}`} fill="url(#rdtRay)" />;
                 })}
               </G>
-            )}
-          </Svg>
+            </Svg>
+          </Animated.View>
 
           <View style={{ position: "absolute", left: doorLeft, top: doorTop }}>
-            <Door3D width={doorW} open={open} light={light} />
+            <Door3D width={doorW} open={door.open} light={door.light} />
           </View>
-        </View>
+        </Animated.View>
 
-        {/* motes sucked into the doorway (screen space) */}
-        <Svg style={StyleSheet.absoluteFill} width={W} height={H}>
-          {MOTES.map((m, i) => {
-            const q = seg(t, m.at, m.dur);
-            if (q <= 0 || q >= 1) return null;
-            const e = easeInQuart(q);
-            const r = diag * m.dist * (1 - e);
-            const tail = 10 + 70 * e;
-            const cx = Math.cos(m.angle);
-            const cy = Math.sin(m.angle);
-            return (
-              <Line
-                key={i}
-                x1={px + cx * r}
-                y1={py + cy * r}
-                x2={px + cx * (r + tail)}
-                y2={py + cy * (r + tail)}
-                stroke={LIGHT_CORE}
-                strokeWidth={m.w * (1 - e * 0.6)}
-                strokeLinecap="round"
-                opacity={Math.sin(Math.PI * q) * 0.9}
-              />
-            );
-          })}
-        </Svg>
+        {/* motes sucked into the doorway */}
+        {MOTES.map((m, i) => (
+          <Mote key={i} m={m} t={t} px={px} py={py} diag={diag} />
+        ))}
 
         {/* vignette */}
-        <ExpoLinearGradient
-          colors={["rgba(0,0,0,0.55)", "rgba(0,0,0,0)", "rgba(0,0,0,0)", "rgba(0,0,0,0.6)"]}
-          locations={[0, 0.25, 0.75, 1]}
-          style={[StyleSheet.absoluteFill, { opacity: 1 - pull }]}
-        />
+        <Animated.View style={[StyleSheet.absoluteFill, vignetteStyle]}>
+          <ExpoLinearGradient
+            colors={["rgba(0,0,0,0.55)", "rgba(0,0,0,0)", "rgba(0,0,0,0)", "rgba(0,0,0,0.6)"]}
+            locations={[0, 0.25, 0.75, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
 
         {/* heading */}
-        <View style={[styles.heading, { top: H * 0.1, opacity: textOp, transform: [{ translateY: textRise }] }]}>
+        <Animated.View style={[styles.heading, { top: H * 0.1 }, headingStyle]}>
           <Text style={styles.lead}>{lead}</Text>
           <Text style={styles.title} numberOfLines={2} adjustsFontSizeToFit>
             {title}
           </Text>
-        </View>
+        </Animated.View>
 
         {/* white-out */}
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: LIGHT_CORE, opacity: Math.max(flash, pull * 0.35) }]} />
-      </View>
+        <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: LIGHT_CORE }, flashStyle]} />
+      </Animated.View>
     </Pressable>
   );
 }
