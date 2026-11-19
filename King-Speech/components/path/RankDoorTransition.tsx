@@ -72,7 +72,6 @@ function doorAt(t: number) {
   return { open, light };
 }
 
-const LIGHT = "#FFD45C";
 const LIGHT_CORE = "#FFFDF4";
 
 // Deterministic "random" motes.
@@ -252,7 +251,7 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
   };
 
   return (
-    <Pressable style={[StyleSheet.absoluteFill, { zIndex: 50 }]} onPress={skip} accessibilityRole="button" accessibilityLabel={title}>
+    <Pressable style={[StyleSheet.absoluteFill, { zIndex: 50, overflow: "hidden" }]} onPress={skip} accessibilityRole="button" accessibilityLabel={title}>
       <Animated.View style={[StyleSheet.absoluteFill, rootStyle]} pointerEvents="none">
         <View style={[StyleSheet.absoluteFill, { backgroundColor: lightTheme ? "#FFFFFF" : "#0B0A0D" }]} />
 
@@ -276,8 +275,8 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
             <Svg width={W} height={H}>
               <Defs>
                 <RadialGradient id="rdtWash" cx={px} cy={py} r={diag * 0.9} gradientUnits="userSpaceOnUse">
-                  <Stop offset="0" stopColor={LIGHT} stopOpacity={0.5} />
-                  <Stop offset="1" stopColor={LIGHT} stopOpacity={0} />
+                  <Stop offset="0" stopColor={palette.glow} stopOpacity={0.5} />
+                  <Stop offset="1" stopColor={palette.glow} stopOpacity={0} />
                 </RadialGradient>
               </Defs>
               <Rect x={0} y={0} width={W} height={H} fill="url(#rdtWash)" />
@@ -288,8 +287,8 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
               <Defs>
                 <RadialGradient id="rdtRay" cx={px} cy={py} r={diag * 1.1} gradientUnits="userSpaceOnUse">
                   <Stop offset="0" stopColor={LIGHT_CORE} stopOpacity={0.55} />
-                  <Stop offset="0.35" stopColor={LIGHT} stopOpacity={0.22} />
-                  <Stop offset="1" stopColor={LIGHT} stopOpacity={0} />
+                  <Stop offset="0.35" stopColor={palette.glow} stopOpacity={0.22} />
+                  <Stop offset="1" stopColor={palette.glow} stopOpacity={0} />
                 </RadialGradient>
               </Defs>
               <G>
@@ -316,7 +315,7 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
 
         {/* motes sucked into the doorway */}
         {MOTES.map((m, i) => (
-          <Mote key={i} m={m} t={t} px={px} py={py} diag={diag} color={lightTheme ? "#F2B705" : LIGHT_CORE} />
+          <Mote key={i} m={m} t={t} px={px} py={py} diag={diag} color={lightTheme ? palette.glow : LIGHT_CORE} />
         ))}
 
         {/* vignette (dark room only) */}

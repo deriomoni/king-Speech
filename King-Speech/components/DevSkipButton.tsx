@@ -6,7 +6,7 @@ import { leaveTo } from "@/lib/nav";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "@/lib/haptics";
 import { useDevTools } from "@/context/DevToolsContext";
-import { useGame, MODULE_COLORS } from "@/context/GameContext";
+import { useGame, MODULE_COLORS, RANKS_MODULAR } from "@/context/GameContext";
 import { useModuleTransition } from "@/context/ModuleTransitionContext";
 import { useLang } from "@/context/LangContext";
 import { getLevelsData } from "@/constants/gameContent";
@@ -59,6 +59,11 @@ export default function DevSkipButton({
     const idx = all.findIndex((l) => l.id === levelId);
     const current = idx >= 0 ? all[idx] : null;
     const next = idx >= 0 && idx < all.length - 1 ? all[idx + 1] : null;
+    // Finishing a rank's last module → the rank-up door scene.
+    if (current && RANKS_MODULAR.some((r) => r.toSection === current.module) && (!next || next.module > current.module)) {
+      router.replace("/rank-up?earned=1");
+      return;
+    }
     if (!next) {
       leaveTo("/(tabs)");
       return;

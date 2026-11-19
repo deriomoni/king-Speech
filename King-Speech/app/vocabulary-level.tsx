@@ -30,7 +30,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { VOCAB_WORDS_RU, VocabWord, checkSynonymAdvanced } from "@/constants/vocabularyData";
 import { VOCAB_WORDS_KK } from "@/constants/vocabularyDataKk";
-import { useGame, MODULE_COLORS } from "@/context/GameContext";
+import { useGame, MODULE_COLORS, RANKS_MODULAR } from "@/context/GameContext";
 import { useModuleTransition } from "@/context/ModuleTransitionContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useLang, pickLang, LANG_LOCALE } from "@/context/LangContext";
@@ -256,6 +256,11 @@ export default function VocabularyLevelScreen() {
             // next module's color, then return to the map (already auto-scrolled
             // to the new module). Skipped at the final module.
             const nextModule = moduleNum + 1;
+            // Last module of a rank → the rank-up door scene instead.
+            if (first && RANKS_MODULAR.some((r) => r.toSection === moduleNum)) {
+              router.replace("/rank-up?earned=1");
+              return;
+            }
             if (first && nextModule <= 67) {
               const color = MODULE_COLORS[nextModule]?.color ?? "#9468FB";
               triggerModuleTransition(moduleNum, nextModule, color);

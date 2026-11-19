@@ -547,7 +547,7 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
   const { lang } = useLang();
   const { themeMode } = useTheme();
   const insets = useSafeAreaInsets();
-  const { showTimeRecordings, getWorstMetricsForRank, getMetricTrendForRank, advanceRank } = useGame();
+  const { showTimeRecordings, getWorstMetricsForRank, getMetricTrendForRank, advanceRank, markPortalCompleted } = useGame();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
@@ -595,6 +595,7 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
     }
     // Final rank already at the top — just return home, no advance.
     // A dev preview never changes progress.
+    if (!preview) markPortalCompleted(fromRank);
     if (!isFinal && !preview) {
       advanceRank();
     }

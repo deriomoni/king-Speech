@@ -6,10 +6,14 @@
 // their own clock — the same door is used on the Path map and in the
 // rank-up cut-scene.
 import React, { useId } from "react";
+import { View } from "react-native";
 import Svg, { Circle, Defs, Filter, FeGaussianBlur, Ellipse, G, LinearGradient, Path, Polygon, RadialGradient, Rect, Stop } from "react-native-svg";
 
 export const DOOR_VB_W = 240;
 export const DOOR_VB_H = 300;
+// Extra canvas round the door box so glows and shadows fade out completely.
+const BLEED_X = 130;
+const BLEED_Y = 90;
 
 // ── model (world units; y grows downward, z toward the viewer) ──────────────
 const OW = 100; // opening width
@@ -56,11 +60,14 @@ export type DoorPalette = {
   light: string;
   lightCore: string;
   room: string;
+  /** Scattered light outside the doorway — tinted like the door. */
+  glow: string;
 };
 
 // Each rank has its own noble pastel door — never dark. Outlines are a deep
 // tint of the same hue, not black.
-const mk = (slab: string, casing: string, jamb: string, stroke: string): DoorPalette => ({
+const mk = (slab: string, casing: string, jamb: string, stroke: string, glow: string): DoorPalette => ({
+  glow,
   slab,
   casing,
   jamb,
@@ -71,11 +78,11 @@ const mk = (slab: string, casing: string, jamb: string, stroke: string): DoorPal
   room: "#FFFFFF",
 });
 export const DOOR_PALETTES = {
-  butter: mk("#F3D98B", "#FBEDC6", "#EACB7E", "#8C6B2C"), // 1 · Новичок
-  lavender: mk("#CDBAF0", "#E8DEF8", "#BDA8E4", "#5F4C8A"), // 2 · Любитель
-  sage: mk("#B7D0AA", "#DCE9D4", "#A7C29A", "#4E6A45"), // 3 · Уверенный
-  powder: mk("#B2CEEA", "#DAE8F6", "#A0BCDC", "#46627F"), // 4 · Мастер
-  rose: mk("#F2C0B4", "#FADFD8", "#E6AEA1", "#89564C"), // 5 · Профи
+  butter: mk("#F3D98B", "#FBEDC6", "#EACB7E", "#8C6B2C", "#F6C944"), // 1 · Новичок
+  lavender: mk("#CDBAF0", "#E8DEF8", "#BDA8E4", "#5F4C8A", "#B297F2"), // 2 · Любитель
+  sage: mk("#B7D0AA", "#DCE9D4", "#A7C29A", "#4E6A45", "#8FC57A"), // 3 · Уверенный
+  powder: mk("#B2CEEA", "#DAE8F6", "#A0BCDC", "#46627F", "#88B6EA"), // 4 · Мастер
+  rose: mk("#F2C0B4", "#FADFD8", "#E6AEA1", "#89564C", "#F29B86"), // 5 · Профи
 };
 const RANK_DOORS = [DOOR_PALETTES.butter, DOOR_PALETTES.lavender, DOOR_PALETTES.sage, DOOR_PALETTES.powder, DOOR_PALETTES.rose];
 /** The door of rank `index` (1..5). */
@@ -187,6 +194,8 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
   const gapL = Math.max(XL, Math.min(XR - 8, freeX));
   // the light that escapes grows with the swing
   const spill = L * Math.min(1, open * 1.3);
+  // the lit opening, a touch inset, blurred into a bloom
+  const bloom: V3[] = [[XL + 6, YT + 8, -DEPTH / 2], [Math.max(XL + 20, Math.min(XR, XL + OW * c + 10)), YT + 8, -DEPTH / 2], [Math.max(XL + 20, Math.min(XR, XL + OW * c + 10)), -4, -DEPTH / 2], [XL + 6, -4, -DEPTH / 2]];
   const reach = 40 + 110 * Math.min(1, open);
   const pool: V3[] = [
     [gapL, 0, 0],
@@ -253,13 +262,20 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
   const floorR = proj([XR + CASE + 26, 0, CASE_Z]);
 
   return (
-    <Svg width={width} height={height} viewBox={`0 0 ${DOOR_VB_W} ${DOOR_VB_H}`}>
+    <View style={{ width, height }} pointerEvents="none">
+    <Svg
+      style={{ position: "absolute", left: -BLEED_X * (width / DOOR_VB_W), top: -BLEED_Y * (width / DOOR_VB_W) }}
+      width={(width * (DOOR_VB_W + 2 * BLEED_X)) / DOOR_VB_W}
+      height={(width * (DOOR_VB_H + 2 * BLEED_Y)) / DOOR_VB_W}
+      viewBox={`${-BLEED_X} ${-BLEED_Y} ${DOOR_VB_W + 2 * BLEED_X} ${DOOR_VB_H + 2 * BLEED_Y}`}
+    >
       <G transform={`translate(${DOOR_VB_W},0) scale(-1,1)`}>
       <Defs>
         <RadialGradient id={id("halo")} cx="50%" cy="50%" r="50%">
-          <Stop offset="0" stopColor={p.light} stopOpacity={0.7} />
-          <Stop offset="0.55" stopColor={p.light} stopOpacity={0.18} />
-          <Stop offset="1" stopColor={p.light} stopOpacity={0} />
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={1} />
+          <Stop offset="0.3" stopColor={p.glow} stopOpacity={0.55} />
+          <Stop offset="0.65" stopColor={p.glow} stopOpacity={0.16} />
+          <Stop offset="1" stopColor={p.glow} stopOpacity={0} />
         </RadialGradient>
         <LinearGradient id={id("shadow")} x1={shA[0]} y1={shA[1]} x2={shB[0]} y2={shB[1]} gradientUnits="userSpaceOnUse">
           <Stop offset="0" stopColor={shadowColor} stopOpacity={0.55} />
@@ -267,15 +283,20 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
           <Stop offset="1" stopColor={shadowColor} stopOpacity={0} />
         </LinearGradient>
         <LinearGradient id={id("pool")} x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={p.light} stopOpacity={0.8} />
-          <Stop offset="1" stopColor={p.light} stopOpacity={0} />
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.95} />
+          <Stop offset="0.3" stopColor={p.glow} stopOpacity={0.55} />
+          <Stop offset="0.75" stopColor={p.glow} stopOpacity={0.12} />
+          <Stop offset="1" stopColor={p.glow} stopOpacity={0} />
         </LinearGradient>
         {/* soft-edged floor light and shadows */}
-        <Filter id={id("soft")} x="-60%" y="-200%" width="220%" height="500%">
+        <Filter id={id("soft")} x="-100%" y="-400%" width="300%" height="900%">
           <FeGaussianBlur stdDeviation={6} />
         </Filter>
-        <Filter id={id("softer")} x="-60%" y="-200%" width="220%" height="500%">
-          <FeGaussianBlur stdDeviation={9} />
+        <Filter id={id("softer")} x="-100%" y="-400%" width="300%" height="900%">
+          <FeGaussianBlur stdDeviation={14} />
+        </Filter>
+        <Filter id={id("bloom")} x="-100%" y="-100%" width="300%" height="300%">
+          <FeGaussianBlur stdDeviation={10} />
         </Filter>
         <RadialGradient id={id("knob")} cx="35%" cy="32%" r="75%">
           <Stop offset="0" stopColor="#FFFFFF" />
@@ -311,6 +332,11 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
         strokeWidth={sw}
         strokeLinejoin="round"
       />
+
+      {/* blinding white bloom spilling over the frame as the door opens */}
+      {spill > 0.01 && (
+        <Polygon points={pts(bloom)} fill="#FFFFFF" opacity={Math.min(1, spill * 1.1)} filter={`url(#${id("bloom")})`} />
+      )}
 
       {floorLight && spill > 0.01 && (
         <Polygon points={pts(pool)} fill={`url(#${id("pool")})`} opacity={spill} filter={`url(#${id("softer")})`} />
@@ -348,5 +374,6 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
       <Circle cx={ball[0]} cy={ball[1]} r={ballR} fill={`url(#${id("knob")})`} stroke={p.stroke} strokeWidth={0.9} />
       </G>
     </Svg>
+    </View>
   );
 }
