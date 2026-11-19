@@ -18,14 +18,15 @@ import Animated, {
   withSequence,
   withSpring,
   withTiming,
+  type SharedValue,
 } from "react-native-reanimated";
 import Svg, {
   Defs,
   Ellipse,
-  FeGaussianBlur,
-  Filter,
   LinearGradient as SvgLinearGradient,
+  Polygon,
   RadialGradient,
+  Rect,
   Stop,
   SvgXml,
   Text as SvgText,
@@ -39,23 +40,13 @@ import { useGame, getModuleQuote } from "@/context/GameContext";
 import { getModuleColor } from "@/constants/pathPalette";
 import { getLevelsData } from "@/constants/gameContent";
 import CoinIcon from "@/components/CoinIcon";
-import {
-  MT_SPOTLIGHT_SVG,
-  MT_LAMP_SVG,
-  MT_FLOOR_SVG,
-  MT_SPARKLE_SVG,
-} from "@/assets/figma/endings/moduleTransitionSvgs";
+import { MT_SPARKLE_SVG } from "@/assets/figma/endings/moduleTransitionSvgs";
 
 /**
- * Full-screen module transition — Figma 134:167 "Переход · Модуль 2"
- * (section 09 · Концовки уровней). A stage under a single spotlight: the old
- * module numeral flips away and the new one punches in (gold gradient glyph),
- * kicker "МОДУЛЬ N", the module quote, "Модуль N-1 пройден", two reward tiles
- * (+50 coins, number of new levels) and the gold "Далее" CTA.
- *
- * The module colour (67-colour ranks palette, getModuleColor) tints the kicker
- * dot, the floor light and the low radial glow; the spotlight + numeral stay
- * stage-gold as in the design.
+ * Full-screen module transition. Three 3D podium blocks rise out of the floor
+ * one after another and settle into a staircase; the tallest (gold) block
+ * carries the new module number. Title «Вы переходите на следующий модуль»
+ * above, rewards (+50 coins, new levels) and the gold «Далее» CTA below.
  */
 
 const MODULE_REWARD_COINS = 50;
@@ -85,110 +76,123 @@ const FALLBACK_QUOTES: Record<Lang, string[]> = {
   ],
 };
 
-// Sparkles / dust in iPhone-17 frame coordinates (402 wide).
-const SPARKLES = [
-  { x: 84, y: 216, s: 18 },
-  { x: 300, y: 254, s: 12 },
-  { x: 318, y: 120, s: 8 },
-  { x: 96, y: 370, s: 9 },
-  { x: 290, y: 460, s: 14 },
-];
-const DUST = [
-  { x: 140, y: 140, s: 3 },
-  { x: 250, y: 170, s: 2 },
-  { x: 200, y: 110, s: 4 },
-  { x: 120, y: 260, s: 2 },
-  { x: 280, y: 300, s: 3 },
-  { x: 170, y: 450, s: 2 },
-  { x: 230, y: 470, s: 3 },
-];
+type Faces = { front: [string, string]; top: string; side: string; edge: string; num: string };
 
-function Sparkle({ x, y, s, i }: { x: number; y: number; s: number; i: number }) {
-  const tw = useSharedValue(1);
-  useEffect(() => {
-    tw.value = withDelay(
-      i * 260,
-      withRepeat(
-        withSequence(
-          withTiming(0.35, { duration: 900, easing: Easing.inOut(Easing.sin) }),
-          withTiming(1, { duration: 900, easing: Easing.inOut(Easing.sin) }),
-        ),
-        -1,
-        false,
-      ),
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  const st = useAnimatedStyle(() => ({ opacity: tw.value, transform: [{ scale: 0.85 + tw.value * 0.15 }] }));
-  const box = (s * 34) / 18;
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[{ position: "absolute", left: x - (box - s) / 2, top: y - (box - s) / 2, width: box, height: box }, st]}
-    >
-      <SvgXml xml={MT_SPARKLE_SVG} width={box} height={box} />
-    </Animated.View>
-  );
-}
+const GOLD: Faces = {
+  front: ["#FFE07A", "#FFB52E"],
+  top: "#FFF1BF",
+  side: "#E28E17",
+  edge: "rgba(255,255,255,0.75)",
+  num: "#2A1C02",
+};
+const STONE_DARK: Faces = {
+  front: ["#3B3A42", "#2A2930"],
+  top: "#56555E",
+  side: "#1A191D",
+  edge: "rgba(255,255,255,0.10)",
+  num: "rgba(240,238,233,0.42)",
+};
+const STONE_LIGHT: Faces = {
+  front: ["#F6F3EC", "#E6E0D2"],
+  top: "#FFFFFF",
+  side: "#D3CBB8",
+  edge: "rgba(255,255,255,0.9)",
+  num: "rgba(38,38,40,0.32)",
+};
 
-/** Gold-gradient numeral with a soft glow + drop shadow (Figma "Numeral"). */
-function Numeral({ n, dark, id }: { n: number; dark: boolean; id: string }) {
-  const W = 402;
-  const H = 230;
-  const base = 162; // baseline → glyph centred in the box
-  const label = String(n);
+/** One extruded block: front face + lit top face + shaded right side. */
+function Prism({
+  id,
+  w,
+  h,
+  dx,
+  dy,
+  faces,
+  label,
+  fontSize,
+}: {
+  id: string;
+  w: number;
+  h: number;
+  dx: number;
+  dy: number;
+  faces: Faces;
+  label: string;
+  fontSize: number;
+}) {
   return (
-    <Svg width={W} height={H}>
+    <Svg width={w + dx} height={h + dy}>
       <Defs>
-        <SvgLinearGradient id={`num${id}`} x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0.1" stopColor="#FFF2C2" />
-          <Stop offset="0.55" stopColor="#FFD857" />
-          <Stop offset="0.95" stopColor="#ED9E1F" />
+        <SvgLinearGradient id={`pf${id}`} x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={faces.front[0]} />
+          <Stop offset="1" stopColor={faces.front[1]} />
         </SvgLinearGradient>
-        <Filter id={`glow${id}`} x="-50%" y="-50%" width="200%" height="200%">
-          <FeGaussianBlur stdDeviation="22" />
-        </Filter>
-        <Filter id={`drop${id}`} x="-50%" y="-50%" width="200%" height="200%">
-          <FeGaussianBlur stdDeviation="10" />
-        </Filter>
       </Defs>
-      {dark && (
+      <Polygon points={`${w},${dy} ${w + dx},0 ${w + dx},${h} ${w},${h + dy}`} fill={faces.side} />
+      <Polygon points={`0,${dy} ${dx},0 ${w + dx},0 ${w},${dy}`} fill={faces.top} />
+      <Rect x={0} y={dy} width={w} height={h} fill={`url(#pf${id})`} />
+      <Rect x={0} y={dy} width={w} height={2} fill={faces.edge} />
+      {!!label && (
         <SvgText
-          x={W / 2}
-          y={base + 18}
+          x={w / 2}
+          y={dy + fontSize * 1.05}
           textAnchor="middle"
           fontFamily="Geologica_900Black"
-          fontSize={128}
-          fill="#000"
-          fillOpacity={0.5}
-          filter={`url(#drop${id})`}
+          fontSize={fontSize}
+          fill={faces.num}
         >
           {label}
         </SvgText>
       )}
-      <SvgText
-        x={W / 2}
-        y={base}
-        textAnchor="middle"
-        fontFamily="Geologica_900Black"
-        fontSize={128}
-        fill="#FFD857"
-        fillOpacity={0.65}
-        filter={`url(#glow${id})`}
-      >
-        {label}
-      </SvgText>
-      <SvgText
-        x={W / 2}
-        y={base}
-        textAnchor="middle"
-        fontFamily="Geologica_900Black"
-        fontSize={128}
-        fill={`url(#num${id})`}
-      >
-        {label}
-      </SvgText>
     </Svg>
+  );
+}
+
+/** A block that rises out of the floor (clipped at the floor line). */
+function RisingPrism({
+  progress,
+  left,
+  boxW,
+  boxH,
+  children,
+}: {
+  progress: SharedValue<number>;
+  left: number;
+  boxW: number;
+  boxH: number;
+  children: React.ReactNode;
+}) {
+  const st = useAnimatedStyle(() => ({
+    transform: [{ translateY: interpolate(progress.value, [0, 1], [boxH + 4, 0]) }],
+  }));
+  return (
+    <View style={{ position: "absolute", left, bottom: 0, width: boxW, height: boxH, overflow: "hidden" }}>
+      <Animated.View style={st}>{children}</Animated.View>
+    </View>
+  );
+}
+
+function Sparkle({ x, y, s, delay }: { x: number; y: number; s: number; delay: number }) {
+  const tw = useSharedValue(0);
+  useEffect(() => {
+    tw.value = withDelay(
+      delay,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 700, easing: Easing.out(Easing.quad) }),
+          withTiming(0.35, { duration: 900, easing: Easing.inOut(Easing.sin) }),
+        ),
+        -1,
+        true,
+      ),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const st = useAnimatedStyle(() => ({ opacity: tw.value, transform: [{ scale: 0.6 + tw.value * 0.4 }] }));
+  return (
+    <Animated.View pointerEvents="none" style={[{ position: "absolute", left: x - s / 2, top: y - s / 2 }, st]}>
+      <SvgXml xml={MT_SPARKLE_SVG} width={s} height={s} />
+    </Animated.View>
   );
 }
 
@@ -208,11 +212,10 @@ export default function ModuleTransitionOverlay({
   const dark = themeMode === "dark";
   const { addCoins } = useGame();
   const insets = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
 
   const moduleColor = getModuleColor(to);
   const ink = dark ? "240,238,233" : "38,38,40";
-  const fxLeft = (width - 402) / 2;
 
   const quote =
     getModuleQuote(to, lang) ||
@@ -240,188 +243,201 @@ export default function ModuleTransitionOverlay({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [from]);
 
+  // ── podium geometry ──
+  const podW = Math.min(width - 44, 340);
+  const dx = Math.round(podW * 0.09);
+  const dy = Math.round(podW * 0.07);
+  const sw = (podW - dx) / 3;
+  const unit = sw * 0.58;
+  const heights = [unit * 1.15, unit * 2.0, unit * 2.9];
+  const podH = heights[2] + dy;
+  const numSize = Math.min(Math.round(sw * 0.42), 44);
+  const stone = dark ? STONE_DARK : STONE_LIGHT;
+  const labels = [to - 2, to - 1, to].map((n) => (n >= 1 ? String(n) : ""));
+
+  // ── animation ──
   const root = useSharedValue(0);
-  const enter = useSharedValue(0);
-  const roll = useSharedValue(0);
-  const pop = useSharedValue(0);
+  const head = useSharedValue(0);
+  const b0 = useSharedValue(0);
+  const b1 = useSharedValue(0);
+  const b2 = useSharedValue(0);
+  const tail = useSharedValue(0);
   const glow = useSharedValue(0);
+  const bars = [b0, b1, b2];
 
   const proceed = () => {
     if (Platform.OS !== "web") Haptics.selectionAsync().catch(() => {});
-    root.value = withTiming(0, { duration: 300, easing: Easing.in(Easing.quad) });
-    setTimeout(onDone, 300);
+    root.value = withTiming(0, { duration: 280, easing: Easing.in(Easing.quad) });
+    setTimeout(onDone, 280);
   };
 
   useEffect(() => {
-    root.value = withTiming(1, { duration: 380, easing: Easing.out(Easing.quad) });
-    enter.value = withSpring(1, { damping: 15, stiffness: 120 });
-    glow.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 1300, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0.55, { duration: 1300, easing: Easing.inOut(Easing.sin) }),
+    const spring = { damping: 13, stiffness: 120, mass: 0.9 };
+    root.value = withTiming(1, { duration: 320, easing: Easing.out(Easing.quad) });
+    head.value = withDelay(120, withSpring(1, { damping: 16, stiffness: 130 }));
+    b0.value = withDelay(420, withSpring(1, spring));
+    b1.value = withDelay(620, withSpring(1, spring));
+    b2.value = withDelay(820, withSpring(1, spring));
+    glow.value = withDelay(
+      1150,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0.6, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
+        ),
+        -1,
+        true,
       ),
-      -1,
-      true,
     );
-    roll.value = withDelay(620, withTiming(1, { duration: 720, easing: Easing.inOut(Easing.cubic) }));
-    pop.value = withDelay(880, withSpring(1, { damping: 9, stiffness: 140 }));
+    tail.value = withDelay(1200, withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) }));
+    const hap = setTimeout(() => {
+      if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    }, 1050);
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
       proceed();
       return true;
     });
-    return () => sub.remove();
+    return () => {
+      clearTimeout(hap);
+      sub.remove();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const rootStyle = useAnimatedStyle(() => ({ opacity: root.value }));
-  const stageStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: interpolate(enter.value, [0, 1], [0.92, 1]) },
-      { translateY: interpolate(enter.value, [0, 1], [20, 0]) },
-    ],
+  const headStyle = useAnimatedStyle(() => ({
+    opacity: head.value,
+    transform: [{ translateY: interpolate(head.value, [0, 1], [18, 0]) }],
   }));
-  const oldStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(roll.value, [0, 0.5], [1, 0], "clamp"),
-    transform: [
-      { perspective: 700 },
-      { translateY: interpolate(roll.value, [0, 1], [0, -120]) },
-      { rotateX: `${interpolate(roll.value, [0, 1], [0, -80])}deg` },
-      { scale: interpolate(roll.value, [0, 1], [1, 0.8]) },
-    ],
+  const glowStyle = useAnimatedStyle(() => ({ opacity: glow.value }));
+  const tailStyle = useAnimatedStyle(() => ({
+    opacity: tail.value,
+    transform: [{ translateY: interpolate(tail.value, [0, 1], [16, 0]) }],
   }));
-  const newStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(roll.value, [0.3, 0.7], [0, 1], "clamp"),
-    transform: [
-      { perspective: 700 },
-      { translateY: interpolate(roll.value, [0, 1], [120, 0]) },
-      { scale: 0.8 + 0.2 * pop.value },
-    ],
-  }));
-  const lightStyle = useAnimatedStyle(() => ({ opacity: interpolate(glow.value, [0.55, 1], [0.8, 1]) }));
+
+  // gold block centre, in podium coordinates (for glow + sparkles)
+  const goldCx = sw * 2 + (sw + dx) / 2;
+  const goldTop = podH - heights[2] - dy;
 
   return (
     <Animated.View style={[styles.root, { backgroundColor: theme.bg }, rootStyle]}>
-      {/* Low radial glow in the module colour (Figma bg radial at 201,556). */}
-      <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        <Svg width={width} height={height}>
-          <Defs>
-            <RadialGradient id="mtBg" cx="50%" cy="50%" r="50%">
-              <Stop offset="0" stopColor={moduleColor} stopOpacity={0.22} />
-              <Stop offset="1" stopColor={moduleColor} stopOpacity={0} />
-            </RadialGradient>
-          </Defs>
-          <Ellipse cx={width / 2} cy={height * 0.636} rx={width * 0.8} ry={height * 0.455} fill="url(#mtBg)" />
-        </Svg>
-      </View>
-
-      {/* Spotlight + lamp (frame coordinates). */}
-      <Animated.View
-        pointerEvents="none"
-        style={[{ position: "absolute", top: 0, left: fxLeft, width: 402, height: 700 }, lightStyle]}
-      >
-        <View style={{ position: "absolute", left: 22.39, top: -18.5, opacity: dark ? 1 : 0.8 }}>
-          <SvgXml xml={MT_SPOTLIGHT_SVG} width={355.22} height={677} />
-        </View>
-        <View style={{ position: "absolute", left: 146, top: -20 }}>
-          <SvgXml xml={MT_LAMP_SVG} width={110} height={46} />
-        </View>
-      </Animated.View>
-      <View pointerEvents="none" style={{ position: "absolute", top: 0, left: fxLeft, width: 402, height: 600 }}>
-        {DUST.map((d, i) => (
-          <View
-            key={`d${i}`}
-            style={{
-              position: "absolute",
-              left: d.x,
-              top: d.y,
-              width: d.s,
-              height: d.s,
-              borderRadius: d.s,
-              backgroundColor: "rgba(255,216,87,0.6)",
-            }}
-          />
-        ))}
-        {SPARKLES.map((sp, i) => (
-          <Sparkle key={`s${i}`} i={i} {...sp} />
-        ))}
-      </View>
-
       <View
         style={{
           flex: 1,
-          paddingTop: Math.max(insets.top, 54) + 22,
+          paddingTop: Math.max(insets.top, 54) + 18,
           paddingBottom: insets.bottom + 24,
-          paddingHorizontal: 30,
+          paddingHorizontal: 28,
         }}
       >
-        {/* Kicker · МОДУЛЬ N */}
-        <View style={{ alignItems: "center" }}>
-          <View
-            style={[
-              styles.kicker,
-              { backgroundColor: `rgba(${ink},0.08)`, borderColor: "rgba(255,216,87,0.6)" },
-            ]}
-          >
-            <View style={[styles.kickerDot, { backgroundColor: moduleColor, shadowColor: moduleColor }]} />
+        {/* Heading */}
+        <Animated.View style={[{ alignItems: "center" }, headStyle]}>
+          <View style={[styles.kicker, { backgroundColor: `rgba(${ink},0.06)`, borderColor: `rgba(${ink},0.12)` }]}>
+            <View style={[styles.kickerDot, { backgroundColor: moduleColor }]} />
             <Text style={[styles.kickerText, { color: theme.text }]}>
-              {(pickLang(lang, { ru: "МОДУЛЬ ", en: "MODULE ", kk: "МОДУЛЬ " })) + to}
+              {pickLang(lang, { ru: `МОДУЛЬ ${from} ПРОЙДЕН`, en: `MODULE ${from} COMPLETE`, kk: `${from}-МОДУЛЬ ӨТІЛДІ` })}
             </Text>
           </View>
-        </View>
-
-        {/* Numeral + quote + done label */}
-        <Animated.View style={[styles.stage, stageStyle]}>
-          <View style={styles.numeralBox}>
-            <Animated.View style={[styles.numeralLayer, oldStyle]}>
-              <Numeral n={from} dark={dark} id="old" />
-            </Animated.View>
-            <Animated.View style={[styles.numeralLayer, newStyle]}>
-              <Numeral n={to} dark={dark} id="new" />
-            </Animated.View>
-          </View>
-
-          <View style={{ alignItems: "center" }}>
-            <View pointerEvents="none" style={styles.floor}>
-              <SvgXml xml={MT_FLOOR_SVG.replace(/\{\{FLOOR\}\}/g, moduleColor)} width={340} height={70} />
-            </View>
-            {!!quote && <Text style={[styles.quote, { color: theme.text }]}>«{quote}»</Text>}
-            <Text style={[styles.done, { color: dark ? theme.accent : theme.accentInk }]}>
-              {pickLang(lang, { ru: `Модуль ${from} пройден`, en: `Module ${from} complete`, kk: `${from}-модуль өтілді` })}
-            </Text>
-          </View>
+          <Text style={[styles.title, { color: theme.text }]}>
+            {pickLang(lang, {
+              ru: "Вы переходите на\nследующий модуль",
+              en: "You're moving on\nto the next module",
+              kk: "Сіз келесі\nмодульге өтесіз",
+            })}
+          </Text>
+          {!!quote && <Text style={[styles.quote, { color: `rgba(${ink},0.55)` }]}>{quote}</Text>}
         </Animated.View>
 
-        {/* Rewards */}
-        <View style={styles.rewards}>
-          <View style={[styles.reward, { backgroundColor: `rgba(${ink},0.05)`, borderColor: `rgba(${ink},0.14)` }]}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-              <Text style={[styles.rewardValue, { color: theme.text }]}>+{MODULE_REWARD_COINS}</Text>
-              <CoinIcon size={22} color={theme.accent} />
+        {/* Podium staircase */}
+        <View style={styles.stage}>
+          <View style={{ width: podW, height: podH }}>
+            {/* gold glow behind the top block */}
+            <Animated.View
+              pointerEvents="none"
+              style={[{ position: "absolute", left: goldCx - 150, top: goldTop - 110, width: 300, height: 300 }, glowStyle]}
+            >
+              <Svg width={300} height={300}>
+                <Defs>
+                  <RadialGradient id="mtGold" cx="50%" cy="50%" r="50%">
+                    <Stop offset="0" stopColor="#FFD857" stopOpacity={dark ? 0.32 : 0.42} />
+                    <Stop offset="1" stopColor="#FFD857" stopOpacity={0} />
+                  </RadialGradient>
+                </Defs>
+                <Ellipse cx={150} cy={150} rx={150} ry={150} fill="url(#mtGold)" />
+              </Svg>
+            </Animated.View>
+
+            {/* floor shadow in the module colour */}
+            <View pointerEvents="none" style={{ position: "absolute", left: -30, bottom: -26, width: podW + 60, height: 52 }}>
+              <Svg width={podW + 60} height={52}>
+                <Defs>
+                  <RadialGradient id="mtFloor" cx="50%" cy="50%" r="50%">
+                    <Stop offset="0" stopColor={moduleColor} stopOpacity={dark ? 0.45 : 0.3} />
+                    <Stop offset="1" stopColor={moduleColor} stopOpacity={0} />
+                  </RadialGradient>
+                </Defs>
+                <Ellipse cx={(podW + 60) / 2} cy={26} rx={(podW + 60) / 2} ry={26} fill="url(#mtFloor)" />
+              </Svg>
             </View>
-            <Text style={[styles.rewardLabel, { color: theme.text }]}>
-              {pickLang(lang, { ru: "монет за модуль", en: "coins for the module", kk: "модуль үшін монета" })}
-            </Text>
-          </View>
-          <View style={[styles.reward, { backgroundColor: `rgba(${ink},0.05)`, borderColor: `rgba(${ink},0.14)` }]}>
-            <Text style={[styles.rewardValue, { color: theme.text }]}>{newLevels}</Text>
-            <Text style={[styles.rewardLabel, { color: theme.text }]}>
-              {pickLang(lang, { ru: "новых уровней", en: "new levels", kk: "жаңа деңгей" })}
-            </Text>
+
+            {heights.map((h, i) => (
+              <RisingPrism key={i} progress={bars[i]} left={sw * i} boxW={sw + dx} boxH={h + dy}>
+                <Prism
+                  id={`b${i}`}
+                  w={sw}
+                  h={h}
+                  dx={dx}
+                  dy={dy}
+                  faces={i === 2 ? GOLD : stone}
+                  label={labels[i]}
+                  fontSize={i === 2 ? numSize : Math.round(numSize * 0.8)}
+                />
+              </RisingPrism>
+            ))}
+
+            <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, tailStyle]}>
+              <Sparkle x={goldCx + sw * 0.55} y={goldTop - 4} s={20} delay={0} />
+              <Sparkle x={goldCx - sw * 0.5} y={goldTop - 30} s={13} delay={350} />
+              <Sparkle x={goldCx + sw * 0.15} y={goldTop - 52} s={9} delay={700} />
+            </Animated.View>
           </View>
         </View>
 
-        <Pressable
-          onPress={proceed}
-          style={({ pressed }) => [
-            styles.cta,
-            { backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.9 : 1 },
-          ]}
-        >
-          <Text style={[styles.ctaText, { color: theme.accentText }]}>{pickLang(lang, { ru: "Далее →", en: "Next →", kk: "Келесі →" })}</Text>
-        </Pressable>
-        <Pressable onPress={proceed} hitSlop={10} style={({ pressed }) => [{ marginTop: 10, opacity: pressed ? 0.6 : 1 }]}>
-          <Text style={[styles.later, { color: `rgba(${ink},0.5)` }]}>{pickLang(lang, { ru: "Выйти", en: "Exit", kk: "Шығу" })}</Text>
-        </Pressable>
+        {/* Rewards + CTA */}
+        <Animated.View style={tailStyle}>
+          <View style={styles.rewards}>
+            <View style={[styles.reward, { backgroundColor: `rgba(${ink},0.05)`, borderColor: `rgba(${ink},0.12)` }]}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Text style={[styles.rewardValue, { color: theme.text }]}>+{MODULE_REWARD_COINS}</Text>
+                <CoinIcon size={22} color={theme.accent} />
+              </View>
+              <Text style={[styles.rewardLabel, { color: `rgba(${ink},0.6)` }]}>
+                {pickLang(lang, { ru: "монет за модуль", en: "coins for the module", kk: "модуль үшін монета" })}
+              </Text>
+            </View>
+            <View style={[styles.reward, { backgroundColor: `rgba(${ink},0.05)`, borderColor: `rgba(${ink},0.12)` }]}>
+              <Text style={[styles.rewardValue, { color: theme.text }]}>{newLevels}</Text>
+              <Text style={[styles.rewardLabel, { color: `rgba(${ink},0.6)` }]}>
+                {pickLang(lang, { ru: "новых уровней", en: "new levels", kk: "жаңа деңгей" })}
+              </Text>
+            </View>
+          </View>
+
+          <Pressable
+            onPress={proceed}
+            style={({ pressed }) => [
+              styles.cta,
+              {
+                backgroundColor: theme.accent,
+                borderColor: theme.ctaStroke,
+                transform: [{ scale: pressed ? 0.97 : 1 }],
+              },
+            ]}
+          >
+            <Text style={[styles.ctaText, { color: theme.accentText }]}>
+              {pickLang(lang, { ru: `К модулю ${to} →`, en: `To module ${to} →`, kk: `${to}-модульге →` })}
+            </Text>
+          </Pressable>
+        </Animated.View>
       </View>
     </Animated.View>
   );
@@ -433,53 +449,44 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingHorizontal: 13,
+    paddingVertical: 6,
     borderRadius: 32,
     borderWidth: 1.5,
-    shadowColor: "#FFD857",
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 0 },
   },
-  kickerDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    shadowOpacity: 0.9,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  kickerText: { fontFamily: "Geologica_900Black", fontSize: 12, letterSpacing: 0.6 },
-  // Bottom-anchored so the numeral sits ~395pt down on iPhone 17 and the top
-  // space absorbs shorter screens.
-  stage: { flex: 1, justifyContent: "flex-end", alignItems: "center", paddingBottom: 94 },
-  numeralBox: { width: 402, height: 150, marginBottom: -3 },
-  numeralLayer: { position: "absolute", top: -40, left: 0, width: 402, height: 230 },
-  floor: { position: "absolute", top: 33, width: 340, height: 70 },
-  quote: {
+  kickerDot: { width: 7, height: 7, borderRadius: 4 },
+  kickerText: { fontFamily: "Geologica_900Black", fontSize: 11, letterSpacing: 0.8 },
+  title: {
     fontFamily: "Geologica_900Black",
-    fontSize: 20,
-    lineHeight: 24,
-    letterSpacing: -0.1,
+    fontSize: 27,
+    lineHeight: 32,
+    letterSpacing: -0.6,
     textAlign: "center",
-    maxWidth: 322,
+    marginTop: 18,
   },
-  done: { fontFamily: "Geologica_900Black", fontSize: 13, textAlign: "center", marginTop: 51 },
+  quote: {
+    fontFamily: "Geologica_700Bold",
+    fontSize: 15,
+    lineHeight: 20,
+    textAlign: "center",
+    marginTop: 12,
+    maxWidth: 300,
+  },
+  stage: { flex: 1, alignItems: "center", justifyContent: "flex-end", paddingBottom: 54 },
   rewards: { flexDirection: "row", gap: 10 },
   reward: {
     flex: 1,
     height: 64,
     borderRadius: 22,
-    borderWidth: 2,
+    borderWidth: 1.5,
     paddingLeft: 14,
-    paddingTop: 7,
-    gap: 3,
+    paddingTop: 8,
+    gap: 2,
   },
   rewardValue: { fontFamily: "Geologica_900Black", fontSize: 20, letterSpacing: -0.1 },
   rewardLabel: { fontFamily: "Geologica_700Bold", fontSize: 12 },
   cta: {
-    marginTop: 24,
+    marginTop: 16,
     height: 58,
     borderRadius: 32,
     borderWidth: 4,
@@ -487,5 +494,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   ctaText: { fontFamily: "Geologica_900Black", fontSize: 18, letterSpacing: -0.09 },
-  later: { fontFamily: "Geologica_800ExtraBold", fontSize: 14, textAlign: "center" },
 });
