@@ -7,7 +7,7 @@ import { View, Text, StyleSheet, Pressable, Platform, useWindowDimensions } from
 import { LinearGradient as ExpoLinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, G, Line, Polygon, RadialGradient, Rect, Stop } from "react-native-svg";
 import * as Haptics from "@/lib/haptics";
-import Door3D, { DOOR_VB_H, DOOR_VB_W, DOORWAY_GAP_CENTER } from "./Door3D";
+import Door3D, { DOOR_FLOOR_Y, DOOR_VB_H, DOOR_VB_W, DOORWAY_GAP_CENTER } from "./Door3D";
 
 // ── timeline (ms) ────────────────────────────────────────────────────────────
 const FADE_IN = 600;
@@ -118,7 +118,7 @@ export default function RankDoorTransition({ lead, title, onReveal, onDone }: Pr
   const doorTop = H * 0.56 - doorH * 0.5;
   const px = doorLeft + DOORWAY_GAP_CENTER.x * doorW;
   const py = doorTop + DOORWAY_GAP_CENTER.y * doorH;
-  const floorY = doorTop + (262 / DOOR_VB_H) * doorH;
+  const floorY = doorTop + DOOR_FLOOR_Y * doorH;
 
   // ── camera pull ──
   const pull = easeInQuart(seg(t, PULL_AT, PULL_DUR));
