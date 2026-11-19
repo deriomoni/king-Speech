@@ -1055,6 +1055,12 @@ export default function PathScreen() {
   }, []);
 
   const handlePortalPress = useCallback(() => {
+    // Open Testing: the door always opens and replays the rank-up cut-scene
+    // as a preview (no rank change).
+    if (isOpenTestingEnabled && portalStatus !== "available") {
+      router.push("/rank-up?preview=1");
+      return;
+    }
     if (portalStatus === "locked") return;
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
@@ -1065,7 +1071,7 @@ export default function PathScreen() {
     // gates on it — pressing an unlocked portal goes straight to the rank-up
     // screen where the player advances to the next rank.
     router.push("/rank-up");
-  }, [portalStatus]);
+  }, [portalStatus, isOpenTestingEnabled]);
 
   // Base color under the full-screen background layer — only visible for the
   // split second before it mounts, so it uses the very same token and there is
@@ -1216,6 +1222,7 @@ export default function PathScreen() {
                   <FinalPortal
                     theme={rankTheme}
                     status={portalStatus}
+                    devPreview={isOpenTestingEnabled}
                     onPress={handlePortalPress}
                     testID="rank-final-portal"
                   />

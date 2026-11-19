@@ -22,6 +22,8 @@ interface Props {
   status: "locked" | "available" | "completed";
   onPress: () => void;
   testID?: string;
+  /** Open Testing: a locked door is still pressable (replays the cut-scene). */
+  devPreview?: boolean;
 }
 
 const DOOR_W = 168;
@@ -34,9 +36,9 @@ const GLOW_H = 280;
  * rank-up cut-scene. Shut while the rank is in progress, ajar with light
  * spilling out once every step is done, open after the rank is passed.
  */
-export default function FinalPortal({ theme, status, onPress, testID }: Props) {
+export default function FinalPortal({ theme, status, onPress, testID, devPreview = false }: Props) {
   const { lang } = useLang();
-  const isLocked = status === "locked";
+  const isLocked = status === "locked" && !devPreview;
   const isDone = status === "completed";
   const glowing = status === "available";
   const press = useSharedValue(1);
@@ -101,7 +103,7 @@ export default function FinalPortal({ theme, status, onPress, testID }: Props) {
               <Ellipse cx={GLOW_W / 2} cy={GLOW_H / 2} rx={GLOW_W / 2} ry={GLOW_H / 2} fill="url(#fpGlow)" />
             </Svg>
           </Animated.View>
-          <View style={{ opacity: isLocked ? 0.82 : 1 }}>
+          <View style={{ opacity: status === "locked" ? 0.82 : 1 }}>
             <Door3D
               width={DOOR_W}
               open={isDone ? 0.42 : glowing ? 0.22 : 0}

@@ -5,8 +5,10 @@ import RankUpScreen from "@/components/path/RankUpScreen";
 import { useGame } from "@/context/GameContext";
 
 export default function RankUpRoute() {
-  const params = useLocalSearchParams<{ memento?: string; rank?: string }>();
+  const params = useLocalSearchParams<{ memento?: string; rank?: string; preview?: string }>();
   const isMemento = params.memento === "1";
+  // Dev preview (Open Testing): replay the cut-scene without passing the rank.
+  const isPreview = params.preview === "1";
   const requestedRank = useMemo(() => {
     if (!params.rank) return null;
     const n = parseInt(String(params.rank), 10);
@@ -15,7 +17,7 @@ export default function RankUpRoute() {
 
   const { currentRank, portalCompleted, isLoaded } = useGame();
   const targetRank = isMemento && requestedRank ? requestedRank : currentRank;
-  const portalDone = !!portalCompleted[targetRank];
+  const portalDone = !!portalCompleted[targetRank] || isPreview;
 
   // Route guard: this is a ceremonial screen that should only appear after
   // the user has actually completed the rank's portal interview. Memento
@@ -29,5 +31,5 @@ export default function RankUpRoute() {
 
   if (!isLoaded || !portalDone) return null;
 
-  return <RankUpScreen fromRank={targetRank} memento={isMemento} />;
+  return <RankUpScreen fromRank={targetRank} memento={isMemento} preview={isPreview} />;
 }

@@ -40,6 +40,8 @@ interface Props {
    * than a celebration.
    */
   memento?: boolean;
+  /** Dev preview: plays the door cut-scene; the CTA just goes back, no rank-up. */
+  preview?: boolean;
 }
 
 // Rank titles (RU / EN / KK) — used by the hero and the big title block.
@@ -538,7 +540,7 @@ const blockStyles = StyleSheet.create({
   },
 });
 
-export default function RankUpScreen({ fromRank, memento = false }: Props) {
+export default function RankUpScreen({ fromRank, memento = false, preview = false }: Props) {
   const theme = getRankTheme(fromRank);
   const next = getRankTheme(fromRank + 1);
   const isFinal = fromRank >= 5;
@@ -592,7 +594,8 @@ export default function RankUpScreen({ fromRank, memento = false }: Props) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     }
     // Final rank already at the top — just return home, no advance.
-    if (!isFinal) {
+    // A dev preview never changes progress.
+    if (!isFinal && !preview) {
       advanceRank();
     }
     // Opened from the Path tab — pop back to it (no second tabs navigator).
