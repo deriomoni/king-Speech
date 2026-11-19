@@ -111,7 +111,6 @@ export default function FinalPortal({ theme, status, onPress, testID, devPreview
               open={isDone ? 0.42 : glowing ? 0.22 : 0}
               light={isDone ? 0.9 : glowing ? 0.95 : 0}
               palette={doorPaletteForRank(theme.index)}
-              shadowColor={themeMode === "dark" ? "#000000" : "#6E6680"}
             />
           </View>
         </Animated.View>

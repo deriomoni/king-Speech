@@ -604,7 +604,7 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.bgColors[0] }}>
+    <View style={{ flex: 1, backgroundColor: theme.bgColors[0], overflow: "hidden" }}>
       <RankBackground theme={theme} themeMode={themeMode} />
 
       {revealed && (

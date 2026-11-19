@@ -10,7 +10,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Pressable, Platform, useWindowDimensions } from "react-native";
 import { LinearGradient as ExpoLinearGradient } from "expo-linear-gradient";
-import Svg, { Defs, G, Polygon, RadialGradient, Rect, Stop } from "react-native-svg";
+import Svg, { Defs, FeGaussianBlur, Filter, G, Polygon, RadialGradient, Rect, Stop } from "react-native-svg";
 import Animated, {
   Easing,
   cancelAnimation,
@@ -221,6 +221,15 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
       ],
     };
   });
+  const lightCamStyle = useAnimatedStyle(() => {
+    const tt = t.value;
+    const pull = easeInQuart(seg(tt, PULL_AT, PULL_DUR));
+    const s = 1 + pull * 2.5;
+    return {
+      opacity: easeOutCubic(seg(tt, 0, FADE_IN)),
+      transform: [{ translateX: (1 - s) * (px - W / 2) }, { translateY: (1 - s) * (py - H / 2) }, { scale: s }],
+    };
+  });
   const washStyle = useAnimatedStyle(() => {
     const d = doorAt(Math.min(t.value, DOOR_STILL_AT));
     const rayOp = clamp01((d.light - 0.7) / 0.3) * Math.min(1, d.open);
@@ -270,45 +279,57 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
             </>
           )}
 
-          {/* warm wash + god rays (static drawings, animated opacity) */}
+        </Animated.View>
+
+        {/* warm wash + god rays: their own layer on a much gentler zoom, drawn
+            far past the screen with blurred edges and a gradient that dies out
+            before the tips — so neither ends nor edges ever show. */}
+        <Animated.View style={[styles.lightLayer, { left: -W, top: -H, width: 3 * W, height: 3 * H }, lightCamStyle]}>
           <Animated.View style={[StyleSheet.absoluteFill, washStyle]}>
-            <Svg width={W} height={H}>
+            <Svg width={3 * W} height={3 * H}>
               <Defs>
-                <RadialGradient id="rdtWash" cx={px} cy={py} r={diag * 0.9} gradientUnits="userSpaceOnUse">
+                <RadialGradient id="rdtWash" cx={px + W} cy={py + H} r={diag * 1.1} gradientUnits="userSpaceOnUse">
                   <Stop offset="0" stopColor={palette.glow} stopOpacity={0.5} />
                   <Stop offset="1" stopColor={palette.glow} stopOpacity={0} />
                 </RadialGradient>
               </Defs>
-              <Rect x={0} y={0} width={W} height={H} fill="url(#rdtWash)" />
+              <Rect x={0} y={0} width={3 * W} height={3 * H} fill="url(#rdtWash)" />
             </Svg>
           </Animated.View>
           <Animated.View style={[StyleSheet.absoluteFill, raysStyle]}>
-            <Svg width={W} height={H}>
+            <Svg width={3 * W} height={3 * H}>
               <Defs>
-                <RadialGradient id="rdtRay" cx={px} cy={py} r={diag * 1.1} gradientUnits="userSpaceOnUse">
+                <RadialGradient id="rdtRay" cx={px + W} cy={py + H} r={diag * 1.6} gradientUnits="userSpaceOnUse">
                   <Stop offset="0" stopColor={LIGHT_CORE} stopOpacity={0.55} />
-                  <Stop offset="0.35" stopColor={palette.glow} stopOpacity={0.22} />
+                  <Stop offset="0.3" stopColor={palette.glow} stopOpacity={0.24} />
                   <Stop offset="1" stopColor={palette.glow} stopOpacity={0} />
                 </RadialGradient>
+                <Filter id="rdtRayBlur" x="-20%" y="-20%" width="140%" height="140%">
+                  <FeGaussianBlur stdDeviation={7} />
+                </Filter>
               </Defs>
-              <G>
+              <G filter="url(#rdtRayBlur)">
                 {RAYS.map((r, i) => {
-                  const len = diag * 1.3 * r.len;
-                  const p1 = [px + Math.cos(r.a - r.spread) * len, py + Math.sin(r.a - r.spread) * len];
-                  const p2 = [px + Math.cos(r.a + r.spread) * len, py + Math.sin(r.a + r.spread) * len];
-                  return <Polygon key={i} points={`${px},${py} ${p1[0]},${p1[1]} ${p2[0]},${p2[1]}`} fill="url(#rdtRay)" />;
+                  const len = diag * 2.4;
+                  const cx = px + W;
+                  const cy = py + H;
+                  const p1 = [cx + Math.cos(r.a - r.spread) * len, cy + Math.sin(r.a - r.spread) * len];
+                  const p2 = [cx + Math.cos(r.a + r.spread) * len, cy + Math.sin(r.a + r.spread) * len];
+                  return <Polygon key={i} points={`${cx},${cy} ${p1[0]},${p1[1]} ${p2[0]},${p2[1]}`} fill="url(#rdtRay)" />;
                 })}
               </G>
             </Svg>
           </Animated.View>
+        </Animated.View>
 
+        {/* the door — same camera as the room */}
+        <Animated.View style={[StyleSheet.absoluteFill, cameraStyle]}>
           <View style={{ position: "absolute", left: doorLeft, top: doorTop }}>
             <Door3D
               width={doorW}
               open={door.open}
               light={door.light}
               palette={palette}
-              shadowColor={lightTheme ? "#6E6680" : "#000000"}
             />
           </View>
         </Animated.View>
@@ -343,6 +364,7 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
 }
 
 const styles = StyleSheet.create({
+  lightLayer: { position: "absolute" },
   heading: {
     position: "absolute",
     left: 28,

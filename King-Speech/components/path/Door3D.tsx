@@ -7,7 +7,7 @@
 // rank-up cut-scene.
 import React, { useId } from "react";
 import { View } from "react-native";
-import Svg, { Circle, Defs, Filter, FeGaussianBlur, Ellipse, G, LinearGradient, Path, Polygon, RadialGradient, Rect, Stop } from "react-native-svg";
+import Svg, { Circle, Defs, Filter, FeGaussianBlur, Ellipse, G, LinearGradient, Path, Polygon, RadialGradient, Stop } from "react-native-svg";
 
 export const DOOR_VB_W = 240;
 export const DOOR_VB_H = 300;
@@ -78,11 +78,11 @@ const mk = (slab: string, casing: string, jamb: string, stroke: string, glow: st
   room: "#FFFFFF",
 });
 export const DOOR_PALETTES = {
-  butter: mk("#F3D98B", "#FBEDC6", "#EACB7E", "#8C6B2C", "#F6C944"), // 1 · Новичок
-  lavender: mk("#CDBAF0", "#E8DEF8", "#BDA8E4", "#5F4C8A", "#B297F2"), // 2 · Любитель
-  sage: mk("#B7D0AA", "#DCE9D4", "#A7C29A", "#4E6A45", "#8FC57A"), // 3 · Уверенный
-  powder: mk("#B2CEEA", "#DAE8F6", "#A0BCDC", "#46627F", "#88B6EA"), // 4 · Мастер
-  rose: mk("#F2C0B4", "#FADFD8", "#E6AEA1", "#89564C", "#F29B86"), // 5 · Профи
+  butter: mk("#F3D98B", "#FBEDC6", "#EACB7E", "#16151A", "#F6C944"), // 1 · Новичок
+  lavender: mk("#CDBAF0", "#E8DEF8", "#BDA8E4", "#16151A", "#B297F2"), // 2 · Любитель
+  sage: mk("#B7D0AA", "#DCE9D4", "#A7C29A", "#16151A", "#8FC57A"), // 3 · Уверенный
+  powder: mk("#B2CEEA", "#DAE8F6", "#A0BCDC", "#16151A", "#88B6EA"), // 4 · Мастер
+  rose: mk("#F2C0B4", "#FADFD8", "#E6AEA1", "#16151A", "#F29B86"), // 5 · Профи
 };
 const RANK_DOORS = [DOOR_PALETTES.butter, DOOR_PALETTES.lavender, DOOR_PALETTES.sage, DOOR_PALETTES.powder, DOOR_PALETTES.rose];
 /** The door of rank `index` (1..5). */
@@ -124,11 +124,9 @@ type Props = {
   palette?: DoorPalette;
   /** Draw the pool of light spilling over the floor. */
   floorLight?: boolean;
-  /** Colour of the cast shadow on the floor. */
-  shadowColor?: string;
 };
 
-export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALETTE, floorLight = true, shadowColor = "#3A3446" }: Props) {
+export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALETTE, floorLight = true }: Props) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const id = (s: string) => `d3${uid}${s}`;
   const p = palette;
@@ -181,9 +179,10 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
   const jambL: V3[] = [[XL, YT, 0], [XL, YT, -DEPTH], [XL, 0, -DEPTH], [XL, 0, 0]];
   const jambR: V3[] = [[XR, YT, -DEPTH], [XR, YT, 0], [XR, 0, 0], [XR, 0, -DEPTH]];
   const head: V3[] = [[XL, YT, 0], [XR, YT, 0], [XR, YT, -DEPTH], [XL, YT, -DEPTH]];
-  const sill: V3[] = [[XL, 0, -DEPTH], [XR, 0, -DEPTH], [XR, 0, 0], [XL, 0, 0]];
   const cOut: V3[] = [[XL - CASE, YT - CASE, CASE_Z], [XR + CASE, YT - CASE, CASE_Z], [XR + CASE, 0, CASE_Z], [XL - CASE, 0, CASE_Z]];
   const cIn: V3[] = [[XL, YT, CASE_Z], [XR, YT, CASE_Z], [XR, 0, CASE_Z], [XL, 0, CASE_Z]];
+  // the casing is an upside-down U: two legs and a head, open at the floor
+  const casingD = ringPath([cOut[3], cOut[0], cOut[1], cOut[2], cIn[2], cIn[1], cIn[0], cIn[3]]);
   // casing returns (its thin outer sides)
   const cSideR: V3[] = [[XR + CASE, YT - CASE, CASE_Z], [XR + CASE, YT - CASE, 0], [XR + CASE, 0, 0], [XR + CASE, 0, CASE_Z]];
   const cSideL: V3[] = [[XL - CASE, YT - CASE, 0], [XL - CASE, YT - CASE, CASE_Z], [XL - CASE, 0, CASE_Z], [XL - CASE, 0, 0]];
@@ -195,7 +194,8 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
   // the light that escapes grows with the swing
   const spill = L * Math.min(1, open * 1.3);
   // the lit opening, a touch inset, blurred into a bloom
-  const bloom: V3[] = [[XL + 6, YT + 8, -DEPTH / 2], [Math.max(XL + 20, Math.min(XR, XL + OW * c + 10)), YT + 8, -DEPTH / 2], [Math.max(XL + 20, Math.min(XR, XL + OW * c + 10)), -4, -DEPTH / 2], [XL + 6, -4, -DEPTH / 2]];
+  const bloomR = Math.max(XL + 24, Math.min(XR - 8, XL + OW * c + 4));
+  const bloom: V3[] = [[XL + 12, YT + 14, -DEPTH / 2], [bloomR, YT + 14, -DEPTH / 2], [bloomR, -8, -DEPTH / 2], [XL + 12, -8, -DEPTH / 2]];
   const reach = 40 + 110 * Math.min(1, open);
   const pool: V3[] = [
     [gapL, 0, 0],
@@ -234,32 +234,17 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
   const ball = proj(P(KU, KY, ballZ));
   const ballR = (4.6 * F) / (CAM.z - P(KU, KY, ballZ)[2]);
 
-  const sw = 1.3;
+  const sw = 2.6; // bold black ink outline, like a printed illustration
   // the room light is pure white, so what it hits inside the opening whitens
   const jambTone = (base: number, warmK: number) => lit(p.jamb, base, "#FFFFFF", warmK * L);
   const staticFaces: (Face & { fill: string })[] = [
     { pts: head, n: [0, 1, 0], kind: "face", fill: jambTone(0.8, 0.35) },
     { pts: jambL, n: [1, 0, 0], kind: "face", fill: jambTone(0.95, 0.6) },
     { pts: jambR, n: [-1, 0, 0], kind: "face", fill: jambTone(0.86, 0.5) },
-    { pts: sill, n: [0, -1, 0], kind: "face", fill: jambTone(1, 0.8) },
     { pts: cSideT, n: [0, -1, 0], kind: "face", fill: lit(p.casing, 1.05, p.light, 0) },
     { pts: cSideR, n: [1, 0, 0], kind: "face", fill: lit(p.casing, 0.88, p.light, 0) },
     { pts: cSideL, n: [-1, 0, 0], kind: "face", fill: lit(p.casing, 0.88, p.light, 0) },
   ];
-  // Cast shadows (model-left = screen-right after the mirror): a long soft
-  // sliver off the casing foot, like a low sun, and the open slab's own.
-  const shA = proj([XL - CASE, 0, 1]);
-  const shB = proj([XL - CASE - 170, 0, 34]);
-  const castShadow: V3[] = [
-    [XR + CASE * 0.3, 0, 1],
-    [XL - CASE, 0, 1],
-    [XL - CASE - 170, 0, 26],
-    [XL - CASE - 170, 0, 44],
-    [XR - 10, 0, 22],
-  ];
-  const slabShadow: V3[] = [P(0, 0, 0), P(OW - 1, 0, 0), [P(OW - 1, 0, 0)[0] - 26, 0, P(OW - 1, 0, 0)[2] + 12], [XL - 18, 0, 10]];
-  const floorL = proj([XL - CASE - 26, 0, CASE_Z]);
-  const floorR = proj([XR + CASE + 26, 0, CASE_Z]);
 
   return (
     <View style={{ width, height }} pointerEvents="none">
@@ -277,21 +262,13 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
           <Stop offset="0.65" stopColor={p.glow} stopOpacity={0.16} />
           <Stop offset="1" stopColor={p.glow} stopOpacity={0} />
         </RadialGradient>
-        <LinearGradient id={id("shadow")} x1={shA[0]} y1={shA[1]} x2={shB[0]} y2={shB[1]} gradientUnits="userSpaceOnUse">
-          <Stop offset="0" stopColor={shadowColor} stopOpacity={0.55} />
-          <Stop offset="0.45" stopColor={shadowColor} stopOpacity={0.24} />
-          <Stop offset="1" stopColor={shadowColor} stopOpacity={0} />
-        </LinearGradient>
         <LinearGradient id={id("pool")} x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.95} />
           <Stop offset="0.3" stopColor={p.glow} stopOpacity={0.55} />
           <Stop offset="0.75" stopColor={p.glow} stopOpacity={0.12} />
           <Stop offset="1" stopColor={p.glow} stopOpacity={0} />
         </LinearGradient>
-        {/* soft-edged floor light and shadows */}
-        <Filter id={id("soft")} x="-100%" y="-400%" width="300%" height="900%">
-          <FeGaussianBlur stdDeviation={6} />
-        </Filter>
+        {/* soft-edged floor light */}
         <Filter id={id("softer")} x="-100%" y="-400%" width="300%" height="900%">
           <FeGaussianBlur stdDeviation={14} />
         </Filter>
@@ -325,8 +302,7 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
         <Polygon key={`j${i}`} points={pts(f.pts)} fill={f.fill} stroke={p.stroke} strokeWidth={sw} strokeLinejoin="round" />
       ))}
       <Path
-        d={ringPath(cOut) + ringPath(cIn)}
-        fillRule="evenodd"
+        d={casingD}
         fill={lit(p.casing, 1, p.light, 0.12 * L)}
         stroke={p.stroke}
         strokeWidth={sw}
@@ -335,21 +311,12 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
 
       {/* blinding white bloom spilling over the frame as the door opens */}
       {spill > 0.01 && (
-        <Polygon points={pts(bloom)} fill="#FFFFFF" opacity={Math.min(1, spill * 1.1)} filter={`url(#${id("bloom")})`} />
+        <Polygon points={pts(bloom)} fill="#FFFFFF" opacity={0.85 * Math.min(1, spill * 1.1)} filter={`url(#${id("bloom")})`} />
       )}
 
       {floorLight && spill > 0.01 && (
         <Polygon points={pts(pool)} fill={`url(#${id("pool")})`} opacity={spill} filter={`url(#${id("softer")})`} />
       )}
-
-      {/* cast shadows */}
-      <Polygon points={pts(castShadow)} fill={`url(#${id("shadow")})`} filter={`url(#${id("soft")})`} />
-      {open > 0.05 && (
-        <Polygon points={pts(slabShadow)} fill={shadowColor} opacity={0.2 * Math.min(1, open * 2)} filter={`url(#${id("soft")})`} />
-      )}
-
-      {/* floor line */}
-      <Rect x={floorL[0]} y={floorL[1] - 0.5} width={floorR[0] - floorL[0]} height={1.2} rx={0.6} fill={p.stroke} opacity={0.25} />
 
       {/* light leaking under a shut door */}
       {L > 0.01 && open <= 0.02 && (
@@ -365,13 +332,13 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
         <Polygon key={`s${i}`} points={pts(f.pts)} fill={shadeFace(f)} stroke={p.stroke} strokeWidth={sw} strokeLinejoin="round" />
       ))}
       {/* panels: outer recess (bevel, darker) + inner field */}
-      <Path d={archD(19, sy + 18, 79, sy + 118, 14)} fill={tone(0.84)} stroke={p.stroke} strokeWidth={1.1} strokeLinejoin="round" />
-      <Path d={archD(25, sy + 25, 73, sy + 111, 11)} fill={tone(0.97)} stroke={tone(1.18)} strokeWidth={0.9} strokeLinejoin="round" />
-      <Path d={rectD(19, sy + 140, 79, sy + 192)} fill={tone(0.84)} stroke={p.stroke} strokeWidth={1.1} strokeLinejoin="round" />
-      <Path d={rectD(25, sy + 147, 73, sy + 185)} fill={tone(0.97)} stroke={tone(1.18)} strokeWidth={0.9} strokeLinejoin="round" />
+      <Path d={archD(19, sy + 18, 79, sy + 118, 14)} fill={tone(0.84)} stroke={p.stroke} strokeWidth={2.1} strokeLinejoin="round" />
+      <Path d={archD(25, sy + 25, 73, sy + 111, 11)} fill={tone(0.97)} stroke={p.stroke} strokeWidth={1.3} strokeLinejoin="round" />
+      <Path d={rectD(19, sy + 140, 79, sy + 192)} fill={tone(0.84)} stroke={p.stroke} strokeWidth={2.1} strokeLinejoin="round" />
+      <Path d={rectD(25, sy + 147, 73, sy + 185)} fill={tone(0.97)} stroke={p.stroke} strokeWidth={1.3} strokeLinejoin="round" />
       {/* knob: rose on the face + a ball standing off it */}
-      <Polygon points={knobRose} fill="#ECE9F1" stroke={p.stroke} strokeWidth={0.9} strokeLinejoin="round" />
-      <Circle cx={ball[0]} cy={ball[1]} r={ballR} fill={`url(#${id("knob")})`} stroke={p.stroke} strokeWidth={0.9} />
+      <Polygon points={knobRose} fill="#ECE9F1" stroke={p.stroke} strokeWidth={1.6} strokeLinejoin="round" />
+      <Circle cx={ball[0]} cy={ball[1]} r={ballR} fill={`url(#${id("knob")})`} stroke={p.stroke} strokeWidth={1.6} />
       </G>
     </Svg>
     </View>
