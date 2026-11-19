@@ -66,10 +66,9 @@ function doorAt(t: number) {
   "worklet";
   const jiggle = t > JIGGLE_AT && t < OPEN_AT ? Math.sin(seg(t, JIGGLE_AT, 260) * Math.PI) * 0.035 : 0;
   const open = Math.max(jiggle, easeInOutCubic(seg(t, OPEN_AT, OPEN_DUR))) + 0.35 * easeOutCubic(seg(t, SWING_AT, SWING_DUR));
-  const light =
-    t < OPEN_AT
-      ? 0.35 + 0.15 * Math.sin(t / 180) + 0.25 * seg(t, JIGGLE_AT, OPEN_AT - JIGGLE_AT)
-      : 0.75 + 0.25 * seg(t, OPEN_AT, OPEN_DUR * 0.6);
+  // a pulsing leak while shut, then the light swells with the swing itself
+  const leak = 0.3 + 0.1 * Math.sin(t / 180) * (1 - seg(t, JIGGLE_AT, OPEN_AT - JIGGLE_AT)) + 0.2 * seg(t, JIGGLE_AT, OPEN_AT - JIGGLE_AT);
+  const light = leak + (1 - leak) * clamp01(open * 1.15);
   return { open, light };
 }
 
