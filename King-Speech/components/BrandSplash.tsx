@@ -6,11 +6,9 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withDelay,
-  withSequence,
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import Svg, { Circle, Defs, RadialGradient, Stop } from "react-native-svg";
 import { ThemedSvg } from "@/components/settings/SettingsParts";
 import { useTheme } from "@/context/ThemeContext";
 import {
@@ -35,13 +33,13 @@ const LOGO_FULL_W = 159; // Figma logo width (viewBox units)
 const EASE_OUT = Easing.bezier(0.22, 1, 0.36, 1);
 
 // Timeline (ms)
-const CROWN_IN = 480;
-const SLIDE_AT = 760; // the wordmark starts emerging
-const SLIDE_DUR = 900;
-const LINE_STAGGER = 120;
+const CROWN_IN = 650;
+const SLIDE_AT = 1050; // the wordmark starts emerging
+const SLIDE_DUR = 1250;
+const LINE_STAGGER = 170;
 const INTRO_DONE = SLIDE_AT + LINE_STAGGER + SLIDE_DUR;
-const HOLD = 220; // pause on the finished logo before leaving
-const EXIT_DUR = 380;
+const HOLD = 300; // pause on the finished logo before leaving
+const EXIT_DUR = 480;
 
 export function BrandSplash({ ready, onFinish }: { ready: boolean; onFinish: () => void }) {
   const { theme } = useTheme();
@@ -59,7 +57,6 @@ export function BrandSplash({ ready, onFinish }: { ready: boolean; onFinish: () 
 
   const crownOpacity = useSharedValue(0);
   const crownScale = useSharedValue(0.72);
-  const glow = useSharedValue(0);
   const groupX = useSharedValue(startShift);
   // The wordmark mask starts right at the crown's edge (gap + text), so the
   // lines slide out of the crown rather than out of empty space.
@@ -79,22 +76,18 @@ export function BrandSplash({ ready, onFinish }: { ready: boolean; onFinish: () 
       withDelay(delay, withTiming(0, { duration: SLIDE_DUR, easing: EASE_OUT }));
 
     crownOpacity.value = withTiming(1, { duration: CROWN_IN, easing: EASE_OUT });
-    crownScale.value = withSpring(1, { damping: 13, stiffness: 150, mass: 0.9 });
-    glow.value = withSequence(
-      withTiming(1, { duration: 650, easing: EASE_OUT }),
-      withTiming(0, { duration: 1100, easing: Easing.inOut(Easing.quad) }),
-    );
+    crownScale.value = withSpring(1, { damping: 15, stiffness: 105, mass: 1 });
 
     groupX.value = slide(SLIDE_AT);
     kingX.value = slide(SLIDE_AT);
-    kingO.value = withDelay(SLIDE_AT + 60, withTiming(1, { duration: 420 }));
+    kingO.value = withDelay(SLIDE_AT + 80, withTiming(1, { duration: 580 }));
     speechX.value = withDelay(
       SLIDE_AT + LINE_STAGGER,
       withTiming(0, { duration: SLIDE_DUR, easing: EASE_OUT }, (fin) => {
         if (fin) runOnJS(setIntroDone)(true);
       }),
     );
-    speechO.value = withDelay(SLIDE_AT + LINE_STAGGER + 60, withTiming(1, { duration: 420 }));
+    speechO.value = withDelay(SLIDE_AT + LINE_STAGGER + 80, withTiming(1, { duration: 580 }));
 
     // Safety net: never keep the user waiting on the animation callback.
     const t = setTimeout(() => setIntroDone(true), INTRO_DONE + 400);
@@ -123,10 +116,6 @@ export function BrandSplash({ ready, onFinish }: { ready: boolean; onFinish: () 
     opacity: crownOpacity.value,
     transform: [{ scale: crownScale.value }],
   }));
-  const glowStyle = useAnimatedStyle(() => ({
-    opacity: glow.value,
-    transform: [{ scale: 0.7 + glow.value * 0.3 }],
-  }));
   const kingStyle = useAnimatedStyle(() => ({
     opacity: kingO.value,
     transform: [{ translateX: kingX.value }],
@@ -136,40 +125,14 @@ export function BrandSplash({ ready, onFinish }: { ready: boolean; onFinish: () 
     transform: [{ translateX: speechX.value }],
   }));
 
-  const glowSize = crownW * 3.2;
-
   return (
     <Animated.View
       pointerEvents="none"
       style={[StyleSheet.absoluteFill, styles.center, { backgroundColor: theme.bg }, layerStyle]}
     >
       <Animated.View style={[{ width: logoW, height: h, flexDirection: "row" }, groupStyle]}>
-        {/* Crown with a soft warm light behind it */}
+        {/* Crown */}
         <View style={{ width: crownW, height: h }}>
-          <Animated.View
-            style={[
-              {
-                position: "absolute",
-                width: glowSize,
-                height: glowSize,
-                left: crownW / 2 - glowSize / 2,
-                top: h / 2 - glowSize / 2,
-              },
-              glowStyle,
-            ]}
-          >
-            <Svg width={glowSize} height={glowSize}>
-              <Defs>
-                <RadialGradient id="ksGlow" cx="50%" cy="50%" r="50%">
-                  <Stop offset="0" stopColor={theme.accent} stopOpacity={0.22} />
-                  <Stop offset="0.3" stopColor={theme.accent} stopOpacity={0.1} />
-                  <Stop offset="0.6" stopColor={theme.accent} stopOpacity={0.03} />
-                  <Stop offset="1" stopColor={theme.accent} stopOpacity={0} />
-                </RadialGradient>
-              </Defs>
-              <Circle cx={glowSize / 2} cy={glowSize / 2} r={glowSize / 2} fill="url(#ksGlow)" />
-            </Svg>
-          </Animated.View>
           <Animated.View style={crownStyle}>
             <ThemedSvg xml={LOGO_CROWN.xml} width={crownW} height={h} fg={theme.text} />
           </Animated.View>
