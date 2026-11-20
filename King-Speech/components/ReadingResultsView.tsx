@@ -17,7 +17,7 @@ import Animated, {
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Path } from "react-native-svg";
 import * as Haptics from "@/lib/haptics";
-import { useFonts, Literata_600SemiBold } from "@expo-google-fonts/literata";
+import { useFonts, Literata_600SemiBold, Literata_700Bold, Literata_400Regular_Italic } from "@expo-google-fonts/literata";
 import { useTheme } from "@/context/ThemeContext";
 import { tokenizeReading } from "@/components/ReadingText";
 import { readingLines } from "@/src/speech-engine/core/text/reading";
@@ -326,7 +326,7 @@ export default function ReadingResultsView({
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
   const { theme, themeMode } = useTheme();
   const dark = themeMode === "dark";
-  useFonts({ Literata_600SemiBold });
+  useFonts({ Literata_600SemiBold, Literata_700Bold, Literata_400Regular_Italic });
 
   const accent = theme.accent; // gold fill (both themes)
   const accentInk = theme.accentInk; // gold as text/icon (ink on light)
@@ -421,10 +421,11 @@ export default function ReadingResultsView({
       >
         {/* Hero — work + author */}
         <Animated.View entering={FadeInDown.duration(500)} style={st.hero}>
-          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5} style={[st.workTitle, { color: fg }]}>
+          {/* Work + author on the left, in the level's accent, set in Literata */}
+          <Text numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.6} style={[st.workTitle, { color: tint }]}>
             {cleanTitle}
           </Text>
-          {author ? <Text style={[st.author, { color: fgMuted }]}>{author}</Text> : null}
+          {author ? <Text style={[st.author, { color: withAlpha(tint, 0.72) }]}>{author}</Text> : null}
           <Text style={[st.sectionLabel, st.listenLabel, { color: accentInk }]}>{t("listenYourself")}</Text>
         </Animated.View>
 
@@ -821,13 +822,12 @@ function ListenStage({
 const st = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 22 },
-  hero: { alignItems: "center" },
-  workTitle: { fontFamily: "Geologica_700Bold", fontSize: 22, letterSpacing: -0.11, textAlign: "center", lineHeight: 28 },
+  hero: { alignItems: "flex-start" },
+  workTitle: { fontFamily: "Literata_700Bold", fontSize: 28, letterSpacing: -0.3, textAlign: "left", lineHeight: 34 },
   author: {
-    fontFamily: "Geologica_400Regular",
-    fontStyle: "italic",
-    fontSize: 15,
-    textAlign: "center",
+    fontFamily: "Literata_400Regular_Italic",
+    fontSize: 17,
+    textAlign: "left",
     marginTop: 6,
   },
   sectionLabel: {
@@ -837,7 +837,7 @@ const st = StyleSheet.create({
     textTransform: "uppercase",
     textAlign: "center",
   },
-  listenLabel: { marginTop: 22, marginBottom: 41 },
+  listenLabel: { alignSelf: "stretch", textAlign: "left", marginTop: 22, marginBottom: 41 },
   hintRow: {
     flexDirection: "row",
     alignItems: "center",

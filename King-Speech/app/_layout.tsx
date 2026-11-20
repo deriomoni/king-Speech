@@ -61,6 +61,10 @@ function useBlockHardwareBack() {
   }, [inTabs]);
 }
 
+/** Levels and other full-screen exercises enter AND leave with a soft cross-fade
+ *  (owner: no abrupt slides when leaving a level for any other screen). */
+const SOFT_FADE = { animation: "fade" as const, animationDuration: 380 };
+
 function RootLayoutNav() {
   const { themeMode, theme } = useTheme();
   useBlockHardwareBack();
@@ -84,26 +88,26 @@ function RootLayoutNav() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: bg }, gestureEnabled: false, fullScreenGestureEnabled: false }}>
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="level/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="level/[id]" options={{ headerShown: false, ...SOFT_FADE }} />
       <Stack.Screen
         name="vocabulary-level"
-        options={{ headerShown: false, presentation: "fullScreenModal" }}
+        options={{ headerShown: false, presentation: "fullScreenModal", ...SOFT_FADE }}
       />
       <Stack.Screen
         name="showtime-stage"
-        options={{ headerShown: false, presentation: "fullScreenModal", animation: "fade" }}
+        options={{ headerShown: false, presentation: "fullScreenModal", ...SOFT_FADE }}
       />
       <Stack.Screen
         name="showtime-playback"
-        options={{ headerShown: false, presentation: "fullScreenModal" }}
+        options={{ headerShown: false, presentation: "fullScreenModal", ...SOFT_FADE }}
       />
       <Stack.Screen
         name="portal-interview"
-        options={{ headerShown: false, presentation: "fullScreenModal" }}
+        options={{ headerShown: false, presentation: "fullScreenModal", ...SOFT_FADE }}
       />
       <Stack.Screen
         name="rank-up"
-        options={{ headerShown: false, presentation: "fullScreenModal", gestureEnabled: false }}
+        options={{ headerShown: false, presentation: "fullScreenModal", gestureEnabled: false, ...SOFT_FADE }}
       />
       <Stack.Screen
         name="worlds"
@@ -131,11 +135,11 @@ function RootLayoutNav() {
       />
       <Stack.Screen
         name="diary-record"
-        options={{ headerShown: false, presentation: "fullScreenModal", gestureEnabled: false }}
+        options={{ headerShown: false, presentation: "fullScreenModal", gestureEnabled: false, ...SOFT_FADE }}
       />
       <Stack.Screen
         name="role-stage"
-        options={{ headerShown: false, presentation: "fullScreenModal" }}
+        options={{ headerShown: false, presentation: "fullScreenModal", ...SOFT_FADE }}
       />
       <Stack.Screen
         name="role-result"
@@ -146,9 +150,7 @@ function RootLayoutNav() {
           // transition that means "dismiss, show the level underneath, present
           // again" — a jarring bounce back to the level. A cross-fade keeps the
           // stage on screen until the result has taken over.
-          animation: "fade",
-          gestureEnabled: false,
-        }}
+          gestureEnabled: false, ...SOFT_FADE }}
       />
       </Stack>
     </NavThemeProvider>

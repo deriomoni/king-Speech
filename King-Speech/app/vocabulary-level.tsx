@@ -35,7 +35,6 @@ import { useModuleTransition } from "@/context/ModuleTransitionContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useLang, pickLang, LANG_LOCALE } from "@/context/LangContext";
 import { useWaveformBars } from "@/hooks/useWaveformBars";
-import LevelIcon from "@/components/path/LevelIcon";
 import VocabPlayView, {
   EXTRA_TIME_COST,
   HINT_COST,
@@ -367,15 +366,21 @@ function TutorialPhase({
 // PHASE 1 — SPIN · «Выбери слово» (148:444) + «Барабан слов» (148:469)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Vertical word drum. The centred word sits in a gold selection pill; its
-// neighbours shrink (36 → 26 → 20pt) and fade (100% → 40% → 15%), and the
-// top/bottom edges dissolve into the background.
+// Vertical word drum. Words ride a cylinder: each row is rotated about the X
+// axis with perspective and placed on the drum's circle, so the reel reads as a
+// real turning barrel. The centre is marked only by two small gold notches at
+// the sides — no selection pill. Neighbours shrink and fade, and the top/bottom
+// edges dissolve into the background.
 const ROW_SPACING = 84; // distance between neighbouring words
 const ROW_H = 46; // line box of the 36pt centre word
 const CENTER_OFFSET = 28; // drum centre sits 28pt below the window centre
 const REEL_LEN = 72; // long enough to keep sweeping for the full auto-stop window
 const SETTLE_COLS = 3; // slots to glide past after STOP for a natural landing
 const SPIN_SPEED = 4.2; // words per second while spinning
+const DRUM_STEP = 0.42; // radians between neighbouring words on the drum
+const DRUM_R = 80 / Math.sin(DRUM_STEP); // drum radius → ~80pt between centre and neighbour
+const HINT_AFTER_MS = 5000; // "tap to stop" shows only if the player hasn't stopped by then
+const AUTO_STOP_MS = HINT_AFTER_MS + 5000; // …and if they still ignore it, the reel stops itself
 
 function ReelRow({
   word,
@@ -395,12 +400,18 @@ function ReelRow({
   const style = useAnimatedStyle(() => {
     const rel = index - pos.value;
     const d = Math.abs(rel);
-    const opacity = interpolate(d, [0, 1, 2, 3], [1, 0.4, 0.15, 0], Extrapolation.CLAMP);
-    const size = interpolate(d, [0, 1, 2], [1, 26 / 36, 20 / 36], Extrapolation.CLAMP);
+    const a = Math.max(-1.45, Math.min(1.45, rel * DRUM_STEP));
+    const opacity = interpolate(d, [0, 1, 2, 3], [1, 0.42, 0.14, 0], Extrapolation.CLAMP);
+    const size = interpolate(d, [0, 1, 2], [1, 0.8, 0.66], Extrapolation.CLAMP);
     const scale = size * (landed ? popScale.value : 1);
     return {
       opacity,
-      transform: [{ translateY: rel * ROW_SPACING }, { scale }],
+      transform: [
+        { perspective: 700 },
+        { translateY: DRUM_R * Math.sin(a) },
+        { rotateX: `${-a}rad` },
+        { scale },
+      ],
     };
   });
 
@@ -447,23 +458,6 @@ function SpinIntro({ onDone }: { onDone: () => void }) {
   );
 }
 
-// «Словарный запас» chip with the level glyph on a gold tile (148:473).
-function LevelChip() {
-  const { theme, ink, lang } = useInk();
-  return (
-    <View style={[styles.levelChip, { backgroundColor: ink(0.06), borderColor: ink(0.1) }]}>
-      <View style={[styles.levelTile, { backgroundColor: theme.accent }]}>
-        <View style={styles.levelIconBox}>
-          <View style={styles.levelIconScale}>
-            <LevelIcon levelId="vocabulary" color="#262628" hole={theme.accent} />
-          </View>
-        </View>
-      </View>
-      <Text style={[styles.levelChipText, { color: theme.text }]}>{pickLang(lang, { ru: "Словарный запас", en: "Vocabulary", kk: "Сөздік қор" })}</Text>
-    </View>
-  );
-}
-
 function SpinPhase({
   excludeIds,
   onPicked,
@@ -504,7 +498,7 @@ function SpinPhase({
   // intro overlay) at FULL speed, so by the time the reel is revealed it's
   // already mid-spin.
   useEffect(() => {
-    const travel = SPIN_SPEED * 11;
+    const travel = SPIN_SPEED * (AUTO_STOP_MS / 1000 + 2);
     const farTarget = Math.max(START_POS - travel, SETTLE_COLS + 1);
     pos.value = withTiming(farTarget, {
       duration: ((START_POS - farTarget) / SPIN_SPEED) * 1000,
@@ -549,12 +543,29 @@ function SpinPhase({
   useEffect(() => {
     stopRef.current = stop;
   }, [stop]);
-  // Auto-pick 7s after the reel is revealed.
+  // The "tap to stop" hint appears only if the player hasn't stopped the reel
+  // within 5s; if they ignore it for another 5s, the reel stops by itself.
+  const hintOp = useSharedValue(0);
   useEffect(() => {
     if (!introDone) return;
-    const autoId = setTimeout(() => stopRef.current(), 7000);
-    return () => clearTimeout(autoId);
+    const hintId = setTimeout(() => {
+      if (!stoppedRef.current) hintOp.value = withTiming(1, { duration: 420, easing: Easing.out(Easing.quad) });
+    }, HINT_AFTER_MS);
+    const autoId = setTimeout(() => stopRef.current(), AUTO_STOP_MS);
+    return () => {
+      clearTimeout(hintId);
+      clearTimeout(autoId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [introDone]);
+  useEffect(() => {
+    if (!isSpinning) hintOp.value = withTiming(0, { duration: 200 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSpinning]);
+  const hintStyle = useAnimatedStyle(() => ({
+    opacity: hintOp.value,
+    transform: [{ translateY: (1 - hintOp.value) * 6 }],
+  }));
 
   const fadeFrom = theme.bg;
   const fadeTo = isDark ? "rgba(38,38,40,0)" : "rgba(250,249,246,0)";
@@ -563,20 +574,12 @@ function SpinPhase({
     <View style={[styles.spinRoot, { backgroundColor: theme.bg, paddingTop: pads.top + 8 }]}>
       <View style={styles.topBar}>
         <CloseButton onPress={onClose} />
-        <View pointerEvents="none" style={styles.topCenter}>
-          <LevelChip />
-        </View>
       </View>
 
       <View style={styles.reelWindow}>
-        {/* Gold selection pill (148:483). */}
-        <View
-          pointerEvents="none"
-          style={[
-            styles.selection,
-            { borderColor: theme.accent, backgroundColor: isDark ? "rgba(255,216,87,0.08)" : "rgba(255,216,87,0.16)" },
-          ]}
-        />
+        {/* Centre marks: two small gold notches at the sides (no pill). */}
+        <View pointerEvents="none" style={[styles.notch, styles.notchLeft, { backgroundColor: theme.accent }]} />
+        <View pointerEvents="none" style={[styles.notch, styles.notchRight, { backgroundColor: theme.accent }]} />
         {introDone ? (
           <Animated.View entering={FadeIn.duration(320)} style={StyleSheet.absoluteFill}>
             {reel.map((w, i) => (
@@ -619,7 +622,7 @@ function SpinPhase({
         >
           <Text style={[styles.stopRoundText, { color: theme.accentText }]}>{pickLang(lang, { ru: "СТОП", en: "STOP", kk: "СТОП" })}</Text>
         </Pressable>
-        <Text style={[styles.stopCaption, { color: ink(0.45) }]}>{pickLang(lang, { ru: "Нажми, чтобы остановить", en: "Tap to stop", kk: "Тоқтату үшін басыңыз" })}</Text>
+        <Animated.Text style={[styles.stopCaption, { color: ink(0.55) }, hintStyle]}>{pickLang(lang, { ru: "Нажми, чтобы остановить", en: "Tap to stop", kk: "Тоқтату үшін басыңыз" })}</Animated.Text>
       </View>
 
       <SpinIntro onDone={() => setIntroDone(true)} />
@@ -1236,20 +1239,6 @@ const styles = StyleSheet.create({
 
   // Spin
   spinRoot: { flex: 1 },
-  levelChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingLeft: 6,
-    paddingRight: 14,
-    paddingVertical: 4,
-    borderWidth: 2,
-    borderRadius: 32,
-  },
-  levelTile: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  levelIconBox: { width: 18, height: 18, overflow: "visible" },
-  levelIconScale: { position: "absolute", left: -4, top: -4, transform: [{ scale: 18 / 26 }] },
-  levelChipText: { fontFamily: "Geologica_800ExtraBold", fontSize: 13 },
   introWrap: { flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 72, paddingHorizontal: 24 },
   introTitle: {
     fontFamily: "Geologica_900Black",
@@ -1260,16 +1249,16 @@ const styles = StyleSheet.create({
   },
   introSub: { marginTop: 16, fontFamily: "Geologica_600SemiBold", fontSize: 15, textAlign: "center" },
   reelWindow: { flex: 1, overflow: "hidden" },
-  selection: {
+  notch: {
     position: "absolute",
-    left: 24,
-    right: 24,
     top: "50%",
-    marginTop: CENTER_OFFSET - 38,
-    height: 76,
-    borderRadius: 32,
-    borderWidth: 4,
+    marginTop: CENTER_OFFSET - 2,
+    width: 18,
+    height: 4,
+    borderRadius: 2,
   },
+  notchLeft: { left: 22 },
+  notchRight: { right: 22 },
   reelRow: {
     position: "absolute",
     left: 0,
