@@ -25,15 +25,15 @@ import * as SystemUI from "expo-system-ui";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, ActivityIndicator, StyleSheet, BackHandler } from "react-native";
+import { View, BackHandler } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import Animated, {
   ReducedMotionConfig,
   ReduceMotion,
   FadeIn,
-  FadeOut,
 } from "react-native-reanimated";
+import { BrandSplash } from "@/components/BrandSplash";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
 import { GameProvider, useGame } from "@/context/GameContext";
@@ -155,57 +155,6 @@ function RootLayoutNav() {
   );
 }
 
-function LoadingScreen() {
-  const { theme } = useTheme();
-  const { t } = useLang();
-  return (
-    <Animated.View
-      exiting={FadeOut.duration(220)}
-      style={[loadingStyles.container, { backgroundColor: theme.bg }]}
-    >
-      <View style={loadingStyles.center}>
-        <View
-          style={[
-            loadingStyles.crown,
-            {
-              backgroundColor: "transparent",
-              borderWidth: 1,
-              borderColor: "rgba(148,104,251,0.5)",
-              shadowColor: "#9468FB",
-              shadowOpacity: 0.6,
-              shadowRadius: 30,
-              shadowOffset: { width: 0, height: 0 },
-            },
-          ]}
-        >
-          <Text style={[loadingStyles.crownText, { color: "#9468FB" }]}>K</Text>
-        </View>
-        <Text
-          style={[
-            loadingStyles.title,
-            { color: theme.text, fontFamily: "Geologica_700Bold" },
-          ]}
-        >
-          King Speech
-        </Text>
-        <Text
-          style={[
-            loadingStyles.tagline,
-            { color: theme.textSecondary, fontFamily: "Geologica_400Regular" },
-          ]}
-        >
-          {t("brandTagline")}
-        </Text>
-        <ActivityIndicator
-          size="small"
-          color={theme.accent}
-          style={loadingStyles.spinner}
-        />
-      </View>
-    </Animated.View>
-  );
-}
-
 function ReadinessGate({
   fontsReady,
   children,
@@ -227,10 +176,12 @@ function ReadinessGate({
     devTools.isLoaded &&
     auth.isLoaded;
 
-  // Hide the native splash as soon as fonts/theme are ready so the in-app
-  // LoadingScreen (with logo + tagline + spinner) becomes visible. Keep the
-  // gate up until *all* providers are hydrated.
-  const canShowLoadingScreen = fontsReady && themeCtx.isLoaded && langCtx.isLoaded;
+  // Hide the native splash as soon as the theme is known so the animated
+  // BrandSplash (crown + wordmark, needs no fonts) takes over on the right
+  // background. It stays on top until *all* providers are hydrated and its
+  // intro has played, then fades out over the already-mounted app.
+  const canShowLoadingScreen = themeCtx.isLoaded;
+  const [splashGone, setSplashGone] = useState(false);
   useEffect(() => {
     if (canShowLoadingScreen) {
       SplashScreen.hideAsync().catch(() => {});
@@ -268,11 +219,17 @@ function ReadinessGate({
     if (inAuth) router.replace("/(tabs)");
   }, [ready, auth.user, segments, router]);
 
-  if (!ready) return <LoadingScreen />;
   return (
-    <Animated.View entering={FadeIn.duration(220)} style={{ flex: 1, backgroundColor: themeCtx.theme.bg }}>
-      {children}
-    </Animated.View>
+    <View style={{ flex: 1, backgroundColor: themeCtx.theme.bg }}>
+      {ready ? (
+        <Animated.View entering={FadeIn.duration(220)} style={{ flex: 1 }}>
+          {children}
+        </Animated.View>
+      ) : null}
+      {canShowLoadingScreen && !splashGone ? (
+        <BrandSplash ready={ready} onFinish={() => setSplashGone(true)} />
+      ) : null}
+    </View>
   );
 }
 
@@ -328,23 +285,3 @@ export default function RootLayout() {
   );
 }
 
-const loadingStyles = StyleSheet.create({
-  container: { flex: 1, alignItems: "center", justifyContent: "center" },
-  center: { alignItems: "center", gap: 16 },
-  crown: {
-    width: 72,
-    height: 72,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  crownText: { fontSize: 36, fontWeight: "800" },
-  title: { fontSize: 28, letterSpacing: -0.4 },
-  tagline: {
-    fontSize: 13,
-    letterSpacing: 0.2,
-    textAlign: "center",
-    paddingHorizontal: 32,
-  },
-  spinner: { marginTop: 8 },
-});
