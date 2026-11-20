@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Text, type TextLayoutLine } from "react-native";
 import type { ReadingToken } from "@/src/speech-engine/core/text/reading";
 
@@ -29,6 +29,64 @@ interface SpanProps {
   text: string;
   color: string;
   fontFamily?: string;
+}
+
+// ── Smooth line hand-over ───────────────────────────────────────────────────
+// When the active line moves, the new line fades up to `active` and the old one
+// fades down to `read` over LINE_FADE_MS instead of snapping. Only the tokens of
+// those two lines get new colors per frame (Spans are memo'd), so this stays
+// cheap on long texts. Nested <Text> can't take native-driven animations, hence
+// a short JS tween of the color strings.
+const LINE_FADE_MS = 420;
+
+type RGBA = [number, number, number, number];
+function parseColor(c: string): RGBA {
+  const s = c.trim();
+  if (s.startsWith("#")) {
+    let h = s.slice(1);
+    if (h.length === 3 || h.length === 4) h = h.split("").map((x) => x + x).join("");
+    const n = parseInt(h.slice(0, 6), 16);
+    const a = h.length === 8 ? parseInt(h.slice(6, 8), 16) / 255 : 1;
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255, a];
+  }
+  const m = s.match(/rgba?\(([^)]+)\)/i);
+  if (m) {
+    const p = m[1].split(",").map((x) => parseFloat(x));
+    return [p[0] || 0, p[1] || 0, p[2] || 0, p[3] === undefined || Number.isNaN(p[3]) ? 1 : p[3]];
+  }
+  return [0, 0, 0, 1];
+}
+function mixColor(a: string, b: string, t: number): string {
+  if (t <= 0) return a;
+  if (t >= 1) return b;
+  const A = parseColor(a);
+  const B = parseColor(b);
+  const ch = (i: number) => Math.round(A[i] + (B[i] - A[i]) * t);
+  const al = +(A[3] + (B[3] - A[3]) * t).toFixed(3);
+  return `rgba(${ch(0)},${ch(1)},${ch(2)},${al})`;
+}
+const easeOutCubic = (x: number) => 1 - Math.pow(1 - x, 3);
+
+/** 0→1 progress of the latest active-line change, plus the line that was active before it. */
+function useLineFade(activeLine: number) {
+  const [state, setState] = useState({ prev: -1, t: 1 });
+  const lastLine = useRef(activeLine);
+  useEffect(() => {
+    if (lastLine.current === activeLine) return;
+    const prev = lastLine.current;
+    lastLine.current = activeLine;
+    let raf = 0;
+    const start = Date.now();
+    const step = () => {
+      const x = Math.min(1, (Date.now() - start) / LINE_FADE_MS);
+      setState({ prev, t: easeOutCubic(x) });
+      if (x < 1) raf = requestAnimationFrame(step);
+    };
+    setState({ prev, t: 0 });
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [activeLine]);
+  return state;
 }
 
 // Memoized so a token only repaints when its resolved color changes.
@@ -68,12 +126,19 @@ function ReadingTextInner({
 }: Props) {
   // Lines already read keep the `read` tone, the current one lights up, the
   // rest wait in `unread` (Figma 312:4346: 60% · module tint · 26%).
-  const colorFor = (lineIndex: number): string =>
-    lineIndex === activeLine
+  const restColor = (lineIndex: number, active: number): string =>
+    lineIndex === active
       ? colors.active
-      : activeLine >= 0 && lineIndex < activeLine
+      : active >= 0 && lineIndex < active
         ? colors.read
         : colors.unread;
+  const { prev, t } = useLineFade(activeLine);
+  const colorFor = (lineIndex: number): string => {
+    const target = restColor(lineIndex, activeLine);
+    if (t >= 1 || (lineIndex !== activeLine && lineIndex !== prev)) return target;
+    // Tween from the color this line had under the previous active line.
+    return mixColor(restColor(lineIndex, prev), target, t);
+  };
 
   return (
     <Text

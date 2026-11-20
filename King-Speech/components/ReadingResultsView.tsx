@@ -10,7 +10,9 @@ import Animated, {
   withRepeat,
   withTiming,
   withSequence,
+  withDelay,
   cancelAnimation,
+  Easing,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Path } from "react-native-svg";
@@ -254,22 +256,58 @@ function SkipIcon({ dir, color }: { dir: "back" | "fwd"; color: string }) {
 }
 
 function SelfStar({
+  index,
   active,
   locked,
   hint,
   accent,
   trackColor,
+  bounceKey,
   onPress,
 }: {
+  index: number; // 0-based position in the row
   active: boolean;
   locked: boolean;
   hint: boolean; // unlocked but not yet rated → accent tint so it reads as tappable
   accent: string;
   trackColor: string;
+  /** Bumped on every pick: the selected stars hop + pulse in ascending order. */
+  bounceKey: number;
   onPress: () => void;
 }) {
-  // Static on purpose: no glow / blink / pop (it distracted from the results).
+  // No idle glow/blink (it distracted from the results) — motion only as the
+  // answer to a tap: each lit star hops and pulses, one after another.
   const color = locked ? trackColor : active || hint ? accent : trackColor;
+  const y = useSharedValue(0);
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    if (bounceKey === 0 || !active) return;
+    const delay = index * 85;
+    y.value = withDelay(
+      delay,
+      withSequence(
+        withTiming(-12, { duration: 150, easing: Easing.out(Easing.quad) }),
+        withSpring(0, { damping: 9, stiffness: 260, mass: 0.6 }),
+      ),
+    );
+    scale.value = withDelay(
+      delay,
+      withSequence(
+        withTiming(1.22, { duration: 150, easing: Easing.out(Easing.quad) }),
+        withSpring(1, { damping: 7, stiffness: 220, mass: 0.6 }),
+      ),
+    );
+    const t = setTimeout(() => Haptics.selectionAsync().catch(() => {}), delay);
+    return () => clearTimeout(t);
+    // Only re-run on a new pick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bounceKey]);
+
+  const anim = useAnimatedStyle(() => ({
+    transform: [{ translateY: y.value }, { scale: scale.value }],
+  }));
+
   return (
     <Pressable
       disabled={locked}
@@ -277,7 +315,9 @@ function SelfStar({
       hitSlop={6}
       style={({ pressed }) => ({ opacity: pressed && !locked ? 0.7 : 1 })}
     >
-      <RoundStar size={44} filled={active} color={color} emptyColor={color} emptyOpacity={0.35} />
+      <Animated.View style={anim}>
+        <RoundStar size={44} filled={active} color={color} emptyColor={color} emptyOpacity={0.35} />
+      </Animated.View>
     </Pressable>
   );
 }
@@ -328,6 +368,7 @@ export default function ReadingResultsView({
   // unlock the rating immediately so they can still self-assess and continue.
   const [listenedFully, setListenedFully] = useState(!audioUri);
   const [selfRating, setSelfRating] = useState(0);
+  const [starBounce, setStarBounce] = useState(0);
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const [stage, setStage] = useState<"listen" | "rate">(fullText ? "listen" : "rate");
 
@@ -362,6 +403,7 @@ export default function ReadingResultsView({
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     setSelfRating(n);
+    setStarBounce((b) => b + 1);
     setShowSavePrompt(true);
   };
 
@@ -454,6 +496,8 @@ export default function ReadingResultsView({
             {[1, 2, 3, 4, 5].map((n) => (
               <SelfStar
                 key={n}
+                index={n - 1}
+                bounceKey={starBounce}
                 active={n <= selfRating}
                 locked={!listenedFully}
                 hint={listenedFully && selfRating === 0}
