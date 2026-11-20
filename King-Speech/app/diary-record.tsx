@@ -424,7 +424,7 @@ export default function DiaryRecordScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={tr("Другой вопрос", "Another question", "Басқа сұрақ")}
               >
-                <Ionicons name="refresh" size={18} color={c.text} />
+                <Ionicons name="shuffle" size={18} color={c.text} />
               </Pressable>
             </View>
           )}

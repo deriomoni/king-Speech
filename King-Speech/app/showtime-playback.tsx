@@ -22,6 +22,7 @@ import Animated, {
   ZoomIn,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
+import NextChevron from "@/components/NextChevron";
 import * as Haptics from "@/lib/haptics";
 import { SvgXml } from "react-native-svg";
 import { useGame, getRankForSection } from "@/context/GameContext";
@@ -169,12 +170,12 @@ function AudioPlayer({ uri, waveform, onPlaybackComplete }: { uri: string; wavef
         onPress={handlePlay}
         disabled={!uri}
         hitSlop={8}
-        style={({ pressed }) => [ap.play, { backgroundColor: theme.accent, opacity: !uri ? 1 : pressed ? 0.8 : 1 }]}
+        style={({ pressed }) => [ap.play, { backgroundColor: "#000000", opacity: !uri ? 1 : pressed ? 0.8 : 1 }]}
       >
         {isPlaying ? (
-          <View style={[ap.pause, { backgroundColor: theme.accentText }]} />
+          <View style={[ap.pause, { backgroundColor: "#FFFFFF" }]} />
         ) : (
-          <Ionicons name="play" size={16} color={theme.accentText} style={{ marginLeft: 2 }} />
+          <Ionicons name="play" size={16} color="#FFFFFF" style={{ marginLeft: 2 }} />
         )}
       </Pressable>
       <View style={ap.wave} onLayout={(e) => setWaveW(e.nativeEvent.layout.width)}>
@@ -342,6 +343,11 @@ export default function ShowtimePlaybackScreen() {
 
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  // Owner: right after the stage, go straight to Oscar "thinking" — the loader
+  // is shown from the first frame while the audio session settles (the real
+  // analysis still starts after a short delay).
+  const [warmingUp, setWarmingUp] = useState(!isDemo);
+  const showOscar = (analyzing || warmingUp) && !analysisResult;
   const [completing, setCompleting] = useState(false);
   const [hasListenedFully, setHasListenedFully] = useState(false);
   const [showListenPrompt, setShowListenPrompt] = useState(false);
@@ -390,6 +396,7 @@ export default function ShowtimePlaybackScreen() {
   const runAnalysis = async () => {
     if (analyzing || analysisResult) return;
     setAnalyzing(true);
+    setWarmingUp(false);
 
     // If no recording available, give a default score so the user can still proceed
     if (!recordingUri) {
@@ -668,7 +675,7 @@ export default function ShowtimePlaybackScreen() {
           ) : null}
 
           {/* Before the result: what to listen for while it's being analysed. */}
-          {!analysisResult && !analyzing ? (
+          {!analysisResult && !showOscar ? (
             <View style={[pb.card, cardStyle, { marginTop: 28, gap: 10 }]}>
               <Text style={[pb.label, { color: theme.accentInk }]}>{t("whatToEvaluate").toUpperCase()}</Text>
               {[t("evalQ1"), t("evalQ2"), t("evalQ3"), t("evalQ4"), t("evalQ5")].map((q, i) => (
@@ -680,7 +687,7 @@ export default function ShowtimePlaybackScreen() {
             </View>
           ) : null}
 
-          {analyzing ? (
+          {showOscar ? (
             <View style={[pb.card, cardStyle, { marginTop: 28, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12 }]}>
               <ActivityIndicator color={theme.accent} size="small" />
               <Text style={[pb.evalText, { color: theme.textSecondary }]}>{t("aiAnalyzing")}</Text>
@@ -759,8 +766,7 @@ export default function ShowtimePlaybackScreen() {
                 },
               ]}
             >
-              <Ionicons name="refresh" size={16} color={theme.text} />
-              <Text style={[pb.btnTextSecondary, { color: theme.text }]}>{t("again")}</Text>
+              <Text style={[pb.btnTextSecondary, { color: theme.text }]} numberOfLines={1}>{t("again")}</Text>
             </Pressable>
             <Pressable
               onPress={handleDone}
@@ -784,8 +790,8 @@ export default function ShowtimePlaybackScreen() {
                 </>
               ) : (
                 <>
-                  <Ionicons name="arrow-forward" size={16} color={theme.accentText} />
-                  <Text style={[pb.btnTextPrimary, { color: theme.accentText }]}>{t("forward")}</Text>
+                  <Text style={[pb.btnTextPrimary, { color: theme.accentText }]} numberOfLines={1}>{t("forward")}</Text>
+                  <NextChevron color={theme.accentText} size={14} />
                 </>
               )}
             </Pressable>
@@ -793,7 +799,7 @@ export default function ShowtimePlaybackScreen() {
         </Animated.View>
       </ScrollView>
 
-      <SpeechAnalyzingLoader visible={analyzing && !analysisResult} lang={lang} />
+      <SpeechAnalyzingLoader visible={showOscar} lang={lang} />
 
       {/* Figma 36:1228 "Show Time · Послушай себя (modal)" */}
       <StageGlassDialog
@@ -853,7 +859,7 @@ const pb = StyleSheet.create({
   metricFill: { height: 6, borderRadius: 3 },
   metricValue: { width: 24, textAlign: "right", fontFamily: "Geologica_700Bold", fontSize: 15 },
   actions: { flexDirection: "row", gap: 12 },
-  btn: { flex: 1, height: 50, borderRadius: 32, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
-  btnTextSecondary: { fontFamily: "Geologica_600SemiBold", fontSize: 15 },
-  btnTextPrimary: { fontFamily: "Geologica_700Bold", fontSize: 15 },
+  btn: { flex: 1, minHeight: 50, paddingHorizontal: 20, paddingVertical: 8, borderRadius: 32, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
+  btnTextSecondary: { fontFamily: "Geologica_600SemiBold", fontSize: 15, textAlign: "center", flexShrink: 1 },
+  btnTextPrimary: { fontFamily: "Geologica_700Bold", fontSize: 15, textAlign: "center", flexShrink: 1 },
 });

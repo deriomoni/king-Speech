@@ -673,8 +673,9 @@ const styles = StyleSheet.create({
     ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as any) : null),
   },
   applyBtn: {
-    width: 116,
-    height: 44,
+    minWidth: 116,
+    minHeight: 44,
+    paddingHorizontal: 20,
     borderRadius: 32,
     alignItems: "center",
     justifyContent: "center",
@@ -699,8 +700,8 @@ const styles = StyleSheet.create({
   supportTitle: { fontSize: 15, fontFamily: "Geologica_800ExtraBold" },
   supportSub: { fontSize: 13, fontFamily: "Geologica_600SemiBold", marginTop: 4 },
   writeBtn: {
-    height: 40,
-    paddingHorizontal: 14,
+    minHeight: 44,
+    paddingHorizontal: 20,
     borderRadius: 32,
     alignItems: "center",
     justifyContent: "center",

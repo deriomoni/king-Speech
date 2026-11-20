@@ -318,9 +318,6 @@ function TutorialPhase({
       <View style={styles.topBar}>
         <CloseButton onPress={onClose} />
       </View>
-      <Text style={[styles.reelTitle, { color: theme.text }]}>
-        {pickLang(lang, { ru: "Выбери слово", en: "Pick a word", kk: "Сөз таңдаңыз" })}
-      </Text>
 
       <View style={{ flex: 1 }} />
 
@@ -578,6 +575,9 @@ function SpinPhase({
       <View style={styles.topBar}>
         <CloseButton onPress={onClose} />
       </View>
+      <Text style={[styles.reelTitle, { color: theme.text }]}>
+        {pickLang(lang, { ru: "Выбери слово", en: "Pick a word", kk: "Сөз таңдаңыз" })}
+      </Text>
 
       <View style={styles.reelWindow}>
         {introDone ? (

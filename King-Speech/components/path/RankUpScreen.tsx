@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import NextChevron from "@/components/NextChevron";
 import * as Haptics from "@/lib/haptics";
 import Animated, {
   FadeIn,
@@ -692,7 +693,7 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
               ? pickLang(lang, { ru: "Вернуться на главный", en: "Return home", kk: "Басты бетке оралу" })
               : pickLang(lang, { ru: "Начать новый ранг", en: "Start the new rank", kk: "Жаңа дәрежені бастау" })}
           </Text>
-          <Ionicons name={memento ? "close" : "arrow-forward"} size={20} color="#fff" />
+          {memento ? <Ionicons name="close" size={20} color="#fff" /> : <NextChevron size={16} color="#fff" />}
         </Pressable>
       </Animated.View>
       )}
@@ -746,8 +747,9 @@ const rankUpStyles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 12,
-    height: 56,
+    gap: 8,
+    minHeight: 56,
+    paddingHorizontal: 24,
     borderRadius: 28,
     overflow: "hidden",
     shadowColor: "#000",

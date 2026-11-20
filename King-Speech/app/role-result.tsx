@@ -694,7 +694,6 @@ export default function RoleResultScreen() {
               onPress={() => (router.canGoBack() ? router.back() : router.replace("/roles"))}
               style={({ pressed }) => [styles.secondaryActionBtn, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}
             >
-              <Ionicons name="repeat" size={20} color={ON_VIOLET} />
               <Text style={styles.secondaryActionText}>{pickLang(lang, { ru: "Ещё роль", en: "Play another role", kk: "Тағы бір рөл" })}</Text>
             </Pressable>
             <Pressable onPress={() => leaveFlowToTabs("/(tabs)/showtime")} style={styles.secondaryBtn}>
@@ -871,9 +870,9 @@ const styles = StyleSheet.create({
 
   primaryBtn: { height: 56, borderRadius: 18, overflow: "hidden", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 4 },
   primaryBtnText: { color: ON_GOLD, fontFamily: "Geologica_800ExtraBold", fontSize: 16 },
-  secondaryActionBtn: { height: 56, borderRadius: 18, backgroundColor: VIOLET, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 4 },
+  secondaryActionBtn: { minHeight: 56, paddingHorizontal: 24, borderRadius: 18, backgroundColor: VIOLET, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 4 },
   secondaryActionText: { color: ON_VIOLET, fontFamily: "Geologica_800ExtraBold", fontSize: 16 },
-  secondaryBtn: { alignItems: "center", paddingVertical: 16, marginTop: 6 },
+  secondaryBtn: { alignItems: "center", paddingVertical: 16, paddingHorizontal: 24, marginTop: 6 },
   secondaryBtnText: { color: MUTED, fontFamily: "Geologica_600SemiBold", fontSize: 15 },
 
   scanner: { width: 120, height: 120, borderRadius: 60, opacity: 0.8 },

@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import NextChevron from "@/components/NextChevron";
 import * as Haptics from "@/lib/haptics";
 import Animated, {
   FadeIn,
@@ -201,7 +202,7 @@ export default function JennyInterview({ rankIndex, onFinished }: Props) {
                   ? pickLang(lang, { ru: "Следующий вопрос", en: "Next question", kk: "Келесі сұрақ" })
                   : pickLang(lang, { ru: "Открыть портал", en: "Open the portal", kk: "Порталды ашу" })}
               </Text>
-              <Ionicons name="arrow-forward" size={18} color="#fff" />
+              <NextChevron size={16} color="#fff" />
             </Pressable>
           </View>
         )}
@@ -308,8 +309,9 @@ const styles = StyleSheet.create({
   nextBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 22,
+    gap: 8,
+    minHeight: 48,
+    paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 16,
     overflow: "hidden",

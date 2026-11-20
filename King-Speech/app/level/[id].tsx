@@ -31,6 +31,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import LevelCompleteModal from "@/components/LevelCompleteModal";
 import AppDialog from "@/components/AppDialog";
 import { Ionicons } from "@expo/vector-icons";
+import NextChevron from "@/components/NextChevron";
 import * as Haptics from "@/lib/haptics";
 import Colors from "@/constants/colors";
 import { useAppColors } from "@/hooks/useAppColors";
@@ -469,7 +470,6 @@ export function FlowerResultWindow({
                 { backgroundColor: retryBg, borderColor: retryBorder, opacity: pressed ? 0.7 : 1 },
               ]}
             >
-              <Ionicons name="refresh" size={18} color={fgMuted} />
               <Text style={[rs.retryBtnText, { color: fgMuted, fontFamily: "Geologica_600SemiBold" }]}>{t("again")}</Text>
             </Pressable>
           ) : null}
@@ -482,7 +482,7 @@ export function FlowerResultWindow({
             ]}
           >
             <Text style={[rs.nextBtnText, { fontFamily: "Geologica_700Bold", color: theme.accentText }]}>{primaryLabel}</Text>
-            <Ionicons name="arrow-forward" size={17} color={theme.accentText} />
+            <NextChevron size={16} color={theme.accentText} />
           </Pressable>
         </Animated.View>
       </ScrollView>
@@ -535,7 +535,6 @@ function EmptyRecordingSheet({
             onPress={onRetry}
             style={({ pressed }) => [ers.btn, { backgroundColor: btnBg, opacity: pressed ? 0.85 : 1 }]}
           >
-            <Ionicons name="refresh" size={18} color={btnFg} />
             <Text style={[ers.btnText, { color: btnFg, fontFamily: "Geologica_700Bold" }]}>
               {pickLang(lang, { ru: "Записать снова", en: "Record again", kk: "Қайта жазу" })}
             </Text>
@@ -552,7 +551,7 @@ const ers = StyleSheet.create({
   micBadge: { width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center", marginTop: -26 },
   title: { fontSize: 19, textAlign: "center" },
   body: { fontSize: 15, lineHeight: 22, textAlign: "center" },
-  btn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, alignSelf: "stretch", height: 52, borderRadius: 16, marginTop: 6 },
+  btn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, alignSelf: "stretch", minHeight: 52, paddingHorizontal: 24, borderRadius: 16, marginTop: 6 },
   btnText: { fontSize: 16 },
 });
 
@@ -1564,7 +1563,9 @@ const rs = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
+    minHeight: 48,
     paddingVertical: 14,
+    paddingHorizontal: 16,
     borderRadius: 16,
     borderWidth: 1,
   },
@@ -1575,7 +1576,9 @@ const rs = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
+    minHeight: 48,
     paddingVertical: 14,
+    paddingHorizontal: 20,
     borderRadius: 16,
   },
   nextBtnText: { fontSize: 16 },

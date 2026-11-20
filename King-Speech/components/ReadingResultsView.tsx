@@ -30,6 +30,7 @@ import {
 import type { AppColors } from "@/constants/colors";
 import type { SpeechAnalysis } from "@/services/speechAnalysis";
 import RoundStar from "@/components/RoundStar";
+import NextChevron from "@/components/NextChevron";
 import { pickLang, type Lang } from "@/context/LangContext";
 
 let Audio: any = null;
@@ -334,7 +335,9 @@ export default function ReadingResultsView({
 
   // When there's no audio to play back (mic blocked), don't trap the player —
   // unlock the rating immediately so they can still self-assess and continue.
-  const [listenedFully, setListenedFully] = useState(!audioUri);
+  // Owner: the player may rate the take without listening to the end, so the
+  // stars are unlocked from the start (no «listen to the end» gate).
+  const [listenedFully, setListenedFully] = useState(true);
   const [selfRating, setSelfRating] = useState(0);
   const [starBounce, setStarBounce] = useState(0);
   const [showSavePrompt, setShowSavePrompt] = useState(false);
@@ -526,7 +529,7 @@ export default function ReadingResultsView({
             ]}
           >
             <Text style={[st.saveText, { color: theme.accentText }]}>{pickLang(lang, { ru: "Дальше", en: "Next", kk: "Келесі" })}</Text>
-            <Ionicons name="arrow-forward" size={17} color={theme.accentText} />
+            <NextChevron color={theme.accentText} />
           </Pressable>
         </Animated.View>
       </ScrollView>
@@ -579,13 +582,13 @@ function RecorderBar({
         accessibilityLabel={playing ? (pickLang(lang, { ru: "Пауза", en: "Pause", kk: "Кідірту" })) : pickLang(lang, { ru: "Прослушать запись", en: "Play recording", kk: "Жазбаны тыңдау" })}
         style={({ pressed }) => [
           st.rbPlay,
-          { backgroundColor: theme.accent, opacity: disabled ? 0.45 : pressed ? 0.8 : 1 },
+          { backgroundColor: "#000000", opacity: disabled ? 0.45 : pressed ? 0.8 : 1 },
         ]}
       >
         <Ionicons
           name={playing ? "pause" : "play"}
           size={17}
-          color={theme.accentText}
+          color="#FFFFFF"
           style={{ marginLeft: playing ? 0 : 2 }}
         />
       </Pressable>
@@ -865,6 +868,7 @@ const st = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     height: 52,
+    paddingHorizontal: 20,
     borderRadius: 32,
     borderWidth: 4,
   },

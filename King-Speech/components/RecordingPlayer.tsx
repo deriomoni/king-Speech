@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable, StyleSheet, Platform, LayoutChangeEvent } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { pickLang, useLang } from "@/context/LangContext";
 import * as Haptics from "@/lib/haptics";
 import { useAudioWaveform } from "@/hooks/useAudioWaveform";
 
@@ -61,6 +62,7 @@ export default function RecordingPlayer({
   autoPlay,
   waveform,
 }: Props) {
+  const { lang } = useLang();
   // Real waveform: prefer a passed-in amplitude envelope (record-time metering),
   // otherwise decode from the audio file (works on web), otherwise fall back.
   const decoded = useAudioWaveform(uri, BAR_COUNT);
@@ -258,7 +260,9 @@ export default function RecordingPlayer({
           hitSlop={8}
           style={({ pressed }) => [s.replayBtn, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <Ionicons name="refresh" size={18} color={textColor} />
+          <Text numberOfLines={1} style={[s.replayText, { color: textColor }]}>
+            {pickLang(lang, { ru: "Заново", en: "Again", kk: "Қайталау" })}
+          </Text>
         </Pressable>
       </View>
 
@@ -297,7 +301,8 @@ const s = StyleSheet.create({
     borderWidth: 1,
   },
   waveWrap: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 1, height: 40 },
-  replayBtn: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
+  replayBtn: { minHeight: 44, paddingHorizontal: 4, alignItems: "center", justifyContent: "center" },
+  replayText: { fontFamily: "Geologica_600SemiBold", fontSize: 13 },
   progressHit: { paddingVertical: 8 },
   progressBg: { height: 4, borderRadius: 2, overflow: "visible" },
   progressFill: { height: 4, borderRadius: 2 },

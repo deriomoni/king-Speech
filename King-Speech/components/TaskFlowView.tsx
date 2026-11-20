@@ -11,6 +11,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
+import NextChevron from "@/components/NextChevron";
 import * as Haptics from "@/lib/haptics";
 import WaveformVoiceRecorder from "@/components/WaveformVoiceRecorder";
 import { toneFor } from "@/components/ScoreFlower";
@@ -612,7 +613,7 @@ export default function TaskFlowView({
             <Animated.Text
               key={`q-${index}-${replaceCounts[index] ?? 0}`}
               entering={deferred ? FadeIn.duration(1500).delay(firstCardRef.current ? 250 : CARD_OUT_MS + CARD_GAP_MS) : undefined}
-              style={[st.contentText, { color: theme.text, fontFamily: "Geologica_700Bold" }]}
+              style={[st.contentText, isInterview && st.contentTextInterview, { color: theme.text, fontFamily: "Geologica_700Bold" }]}
             >
               {(questionOverrides[index] ?? task.content) || task.title}
             </Animated.Text>
@@ -697,11 +698,10 @@ export default function TaskFlowView({
                 <Text style={[st.pillText, { color: theme.accentText, fontFamily: "Geologica_800ExtraBold" }]}>
                   {isLast ? (pickLang(lang, { ru: "Смотреть оценку", en: "See score", kk: "Бағаны көру" })) : (pickLang(lang, { ru: "Далее", en: "Next", kk: "Келесі" }))}
                 </Text>
-                <Ionicons name="arrow-forward" size={20} color={theme.accentText} />
+                <NextChevron size={16} color={theme.accentText} />
               </Pressable>
             </Animated.View>
             <Pressable onPress={retryTake} hitSlop={8} style={({ pressed }) => [st.retryLink, { opacity: pressed ? 0.5 : 1 }]}>
-              <Ionicons name="refresh" size={14} color={inkSoft} />
               <Text style={[st.retryText, { color: inkSoft, fontFamily: "Geologica_600SemiBold" }]}>
                 {pickLang(lang, { ru: "Переписать", en: "Re-record", kk: "Қайта жазу" })}
               </Text>
@@ -766,8 +766,11 @@ function StepProgress({
   isDark: boolean;
 }) {
   const { theme } = useTheme();
-  const todoFill = isDark ? "#626161" : "rgba(38,38,40,0.12)";
-  const trackFill = isDark ? "#4E4E4F" : "rgba(38,38,40,0.08)";
+  // Solid (opaque) fills only: translucent dots stacked over a translucent
+  // track made the overlap "seams" visible. Light values are the old rgba
+  // overlays pre-blended onto the light app bg (#FAF9F6).
+  const todoFill = isDark ? "#626161" : "#E1E0DD";
+  const trackFill = isDark ? "#4E4E4F" : "#E9E8E6";
   const todoInk = isDark ? "rgba(240,238,233,0.55)" : "rgba(38,38,40,0.5)";
   const n = Math.max(1, total);
   // Gold track reaches the furthest step that is done or active.
@@ -1282,6 +1285,8 @@ const st = StyleSheet.create({
   },
   instruction: { fontSize: 14, lineHeight: 20, textAlign: "center" },
   contentText: { fontSize: 27, lineHeight: 36, textAlign: "center", letterSpacing: -0.27 },
+  // Interview questions are longer — ~13% smaller so they fit the card fully.
+  contentTextInterview: { fontSize: 23.5, lineHeight: 31, letterSpacing: -0.23 },
   controls: { paddingHorizontal: 24, alignItems: "center", gap: 12, minHeight: 150, justifyContent: "flex-end" },
   controlSlot: { width: "100%", alignItems: "center", minHeight: 64, justifyContent: "center" },
   emptyHint: { fontSize: 13, lineHeight: 18, textAlign: "center", paddingHorizontal: 12 },
@@ -1291,9 +1296,9 @@ const st = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    height: 40,
-    paddingLeft: 16,
-    paddingRight: 10,
+    minHeight: 44,
+    paddingLeft: 20,
+    paddingRight: 14,
     borderRadius: 32,
     borderWidth: 2,
   },
@@ -1313,7 +1318,7 @@ const st = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
+    gap: 8,
     minWidth: 240,
     paddingHorizontal: 30,
     height: 56,
@@ -1332,7 +1337,7 @@ const st = StyleSheet.create({
     marginBottom: 6,
   },
   pillText: { fontSize: 16 },
-  retryLink: { flexDirection: "row", alignItems: "center", gap: 5, paddingVertical: 4 },
+  retryLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", minHeight: 44, paddingHorizontal: 20 },
   retryText: { fontSize: 13 },
   mini: {
     flexDirection: "row",

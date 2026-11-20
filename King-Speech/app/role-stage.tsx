@@ -666,9 +666,8 @@ export default function RoleStageScreen() {
               {phase === "recording" && take < MAX_TAKES && (
                 <Pressable onPress={restartRecording} disabled={restarting} style={{ alignItems: "center", opacity: restarting ? 0.45 : 1 }}>
                   <View style={styles.sideBtn}>
-                    <Ionicons name="refresh" size={22} color="#fff" />
+                    <Text numberOfLines={1} style={styles.sideBtnText}>{pickLang(lang, { ru: "Заново", en: "Retake", kk: "Қайталау" })}</Text>
                   </View>
-                  <Text style={styles.sideLabel}>{pickLang(lang, { ru: "Заново", en: "Retake", kk: "Қайталау" })}</Text>
                   <Text style={styles.sideSub}>{pickLang(lang, { ru: `дубль ${take + 1}`, en: `take ${take + 1}`, kk: `${take + 1}-дубль` })}</Text>
                 </Pressable>
               )}
@@ -760,10 +759,11 @@ const styles = StyleSheet.create({
   roleChipText: { color: "#fff", fontFamily: MONO, fontWeight: "700", fontSize: 12, letterSpacing: 0.5, flexShrink: 1 },
 
   controls: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 8 },
-  sideSlot: { width: 72, alignItems: "center" },
-  sideBtn: { width: 50, height: 50, borderRadius: 25, backgroundColor: "rgba(255,255,255,0.22)", alignItems: "center", justifyContent: "center" },
+  sideSlot: { width: 96, alignItems: "center" },
+  sideBtn: { minHeight: 44, paddingHorizontal: 14, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.22)", alignItems: "center", justifyContent: "center" },
+  sideBtnText: { color: "#fff", fontFamily: "Geologica_600SemiBold", fontSize: 13 },
   sideLabel: { color: "#fff", fontFamily: "Geologica_500Medium", fontSize: 11, marginTop: 6 },
-  sideSub: { color: MUTED, fontFamily: "Geologica_500Medium", fontSize: 10 },
+  sideSub: { color: MUTED, fontFamily: "Geologica_500Medium", fontSize: 10, marginTop: 6 },
   chipRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: 8 },
   finishPill: {
     alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: ARC_YELLOW,

@@ -182,7 +182,9 @@ export default function WaveformRecorder({
           style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
           testID="waveform-restart"
         >
-          <Ionicons name="refresh" size={21} color={theme.accentInk} />
+          <Text numberOfLines={1} style={[styles.restartText, { color: theme.accentInk }]}>
+            {pickLang(lang, { ru: "Заново", en: "Again", kk: "Қайталау" })}
+          </Text>
         </Pressable>
 
         <Pressable
@@ -286,18 +288,22 @@ const styles = StyleSheet.create({
     marginTop: 23,
   },
   iconBtn: {
-    width: 24,
-    height: 24,
+    minHeight: 44,
     alignItems: "center",
     justifyContent: "center",
+  },
+  restartText: {
+    fontFamily: "Geologica_700Bold",
+    fontSize: 13,
   },
   stopPill: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    width: 140,
+    minWidth: 140,
     height: 50,
+    paddingHorizontal: 20,
     borderRadius: 32,
     borderWidth: 4,
   },

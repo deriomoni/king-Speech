@@ -53,7 +53,7 @@ import { showtimeCover, showtimeCoverCredit } from "@/constants/showtimeCovers";
 import { clearFlightLaunch, isFlightLanding, requestFlightReturn } from "@/components/showtime/coverFlightStore";
 import { LiveAudience, HALL_RATIO } from "@/components/audience/LiveAudience";
 import { OVATION_SEC } from "@/components/audience/scene";
-import RecButton, { RecDot as RecMark } from "@/components/RecButton";
+import { RecDot as RecMark } from "@/components/RecButton";
 
 // Audience halls (first-person, speaker POV). Used as the variable stage
 // backdrop — the speech text sits on a white sheet at the bottom that blurs up
@@ -4590,20 +4590,6 @@ const sb = StyleSheet.create({
   label: { fontSize: 18, color: "#1A1A2E", letterSpacing: 0.2 },
 });
 
-// ── REC BLINK ─────────────────────────────────────────────────────────────────
-// The recording marker: a black tag with a red dot blinking inside it, the way
-// a camera does. The tag itself no longer pulses — a badge that keeps growing
-// and shrinking next to the text you are reading is impossible to ignore.
-function RecBlinkDot() {
-  const opacity = useSharedValue(1);
-  useEffect(() => {
-    opacity.value = withRepeat(withTiming(0.15, { duration: 700 }), -1, true);
-    return () => cancelAnimation(opacity);
-  }, []);
-  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  return <Animated.View style={[s.liveDot, style]} />;
-}
-
 // ── BEFORE YOU GO ON ──────────────────────────────────────────────────────────
 // The line under the logo on the curtain. Short, spoken the way a friend would
 // say it a second before you step out — and it changes while you stand there,
@@ -4975,8 +4961,7 @@ export default function ShowtimeStageScreen() {
   const [currentLine, setCurrentLine] = useState(0);
   const [started, setStarted] = useState(false);
   const [finished, setFinished] = useState(false);
-  // live hall: the closing applause plays out before the screen fades
-  const [ovationOver, setOvationOver] = useState(!LiveAudience);
+  // live hall: the closing applause plays out before the screen moves on
 
   // Hand over from the intro to the loop on the intro's last frame.
   useEffect(() => {
@@ -5006,7 +4991,9 @@ export default function ShowtimeStageScreen() {
   // Teleprompter scroll mode: "manual" (player taps next) or "auto"
   // (paragraphs advance on their own, highlighted, with a speed control).
   const [scrollMode, setScrollMode] = useState<"manual" | "auto">("manual");
-  const [autoPaused, setAutoPaused] = useState(false);
+  // Auto-scroll pause: the on-stage pause button was removed at the owner's
+  // request, so this stays false; kept so the auto-advance effect is unchanged.
+  const [autoPaused] = useState(false);
   const AUTO_SPEEDS = [0.5, 1, 1.5, 2];
   const [speedIdx, setSpeedIdx] = useState(1); // default 1×
   const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -5186,8 +5173,9 @@ export default function ShowtimeStageScreen() {
     noiseTimersRef.current = [];
     setFinished(true);
     playSfx("applause").catch(() => {});
+    // No "Bravo" card any more: once the hall's applause has played out (live
+    // hall only) go straight to playback, where Oscar's analysis loader runs.
     const ovationMs = LiveAudience ? OVATION_SEC * 1000 : 0;
-    if (LiveAudience) setTimeout(() => setOvationOver(true), ovationMs);
     setTimeout(() => {
       const uri = recordingUriRef.current ?? "";
       if (isAuthor) {
@@ -5195,7 +5183,7 @@ export default function ShowtimeStageScreen() {
         return;
       }
       router.push({ pathname: "/showtime-playback", params: { recordingUri: uri, title: speech.title, levelId, mode, scriptText: speech.lines.join("\n"), waveform: waveformRef.current ? JSON.stringify(waveformRef.current) : "" } });
-    }, ovationMs + 1200);
+    }, ovationMs);
   };
 
   const handleStart = async () => {
@@ -5307,11 +5295,6 @@ export default function ShowtimeStageScreen() {
   const cycleSpeed = useCallback(() => {
     Haptics.selectionAsync().catch(() => {});
     setSpeedIdx((i) => (i + 1) % AUTO_SPEEDS.length);
-  }, []);
-
-  const toggleAutoPause = useCallback(() => {
-    Haptics.selectionAsync().catch(() => {});
-    setAutoPaused((p) => !p);
   }, []);
 
   const curtainStyle = useAnimatedStyle(() => ({ opacity: curtainOpacity.value }));
@@ -5567,9 +5550,9 @@ export default function ShowtimeStageScreen() {
         <Ionicons name="close" size={26} color={started ? "#F0EEE9" : ui.text} />
       </Pressable>
 
-      {/* Header — no back arrow; LIVE centered symmetrically between two equal
-          side columns. Top-left carries the house lights and, under them, the
-          auto-scroll speed. */}
+      {/* Header — no back arrow and no LIVE tag. Top-left carries the house
+          lights and, under them, the auto-scroll speed; the empty centre keeps
+          the side columns where they were. */}
       <View style={[s.header, { paddingTop: topPad + 8 }]}>
         <View style={[s.headerSide, { alignItems: "flex-start" }]}>
           {started && !finished && (
@@ -5595,14 +5578,7 @@ export default function ShowtimeStageScreen() {
             </Pressable>
           )}
         </View>
-        <View style={s.headerCenter}>
-          {started && (
-            <View style={s.liveTag}>
-              <RecBlinkDot />
-              <Text style={[s.liveText, { fontFamily: "Geologica_700Bold" }]}>LIVE</Text>
-            </View>
-          )}
-        </View>
+        <View style={s.headerCenter} />
         <View style={[s.headerRight, s.headerSide]} />
       </View>
 
@@ -5651,17 +5627,6 @@ export default function ShowtimeStageScreen() {
         ]}
       />
 
-      {/* Finishing overlay */}
-      {finished && ovationOver && (
-        <View style={s.finishOverlay}>
-          <Animated.View entering={FadeIn.duration(600)} style={s.finishContent}>
-            <Ionicons name="trophy" size={44} color={ui.accent} />
-            <Text style={[s.finishTitle, { fontFamily: "Geologica_700Bold" }]}>{t("bravo")}</Text>
-            <Text style={[s.finishSub, { fontFamily: "Geologica_400Regular" }]}>{t("openingPlayback")}</Text>
-          </Animated.View>
-        </View>
-      )}
-
       {/* Speech panel */}
       {started && !finished && (
         <Animated.View style={[s.speechPanel, speechStyle, pumpStyle, { paddingBottom: bottomPad + 14 }]}>
@@ -5704,7 +5669,7 @@ export default function ShowtimeStageScreen() {
           </View>
 
           {/* Navigation — plain transparent white arrows, symmetric at the two
-              edges. In auto mode a pause/resume icon sits centred between them. */}
+              edges (no pause button between them). */}
           <View style={s.navRow}>
             <Pressable
               onPress={prevLine}
@@ -5714,15 +5679,6 @@ export default function ShowtimeStageScreen() {
             >
               <Ionicons name="chevron-back" size={30} color="#FFFFFF" />
             </Pressable>
-
-            {scrollMode === "auto" && (
-              <RecButton
-                kind={autoPaused ? "play" : "pause"}
-                size={52}
-                onPress={toggleAutoPause}
-                accessibilityLabel={autoPaused ? pickLang(lang, { ru: "Продолжить", en: "Play", kk: "Ойнату" }) : pickLang(lang, { ru: "Пауза", en: "Pause", kk: "Кідірту" })}
-              />
-            )}
 
             <Pressable
               onPress={nextLine}
@@ -5766,12 +5722,9 @@ const s = StyleSheet.create({
   introWrap: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center", paddingHorizontal: 34, zIndex: 30 },
   introTitle: { fontSize: 34, lineHeight: 40, color: "#FFFFFF", textAlign: "center", letterSpacing: 0.2, textShadowColor: "rgba(0,0,0,0.6)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 12 },
   lightBtn: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
-  speedTextBtn: { paddingVertical: 4, paddingHorizontal: 6, marginTop: 6 },
+  speedTextBtn: { minHeight: 44, minWidth: 44, paddingHorizontal: 8, marginTop: 2, alignItems: "center", justifyContent: "center" },
   speedText: { fontSize: 17, color: "rgba(255,255,255,0.9)", letterSpacing: 0.3, textShadowColor: "rgba(0,0,0,0.5)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 5 },
   headerCenter: { flex: 1, alignItems: "center", gap: 2 },
-  liveTag: { flexDirection: "row", alignItems: "center", gap: 5, height: 22, backgroundColor: "rgba(38,38,40,0.72)", paddingHorizontal: 9, borderRadius: 32 },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#FFD857" },
-  liveText: { fontSize: 10, color: "#F0EEE9", letterSpacing: 0.5 },
   speechTitle: { fontSize: 13, color: "rgba(17,17,20,0.6)" },
   headerRight: { minWidth: 52, alignItems: "flex-end", gap: 4 },
   timerBadge: { flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 8 },
@@ -5838,10 +5791,6 @@ const s = StyleSheet.create({
   pips: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, flexWrap: "wrap" },
   pip: { height: 6, borderRadius: 3 },
   // Finish overlay
-  finishOverlay: { position: "absolute", inset: 0, backgroundColor: "rgba(38,38,40,0.92)", alignItems: "center", justifyContent: "center", zIndex: 30 },
-  finishContent: { alignItems: "center", gap: 12 },
-  finishTitle: { fontSize: 38, color: "#fff" },
-  finishSub: { fontSize: 16, color: "rgba(255,255,255,0.5)" },
   curtainThemeWrap: { alignItems: "center" as const, gap: 2, marginTop: 4 },
   curtainThemeLabel: { fontSize: 11, letterSpacing: 1, textTransform: "uppercase" as const },
   curtainThemeName: { fontSize: 18, textAlign: "center" as const },

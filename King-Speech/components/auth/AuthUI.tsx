@@ -82,7 +82,8 @@ export function PillButton({ label, onPress, variant = "primary", disabled, busy
 
 const s = StyleSheet.create({
   pill: {
-    height: 60,
+    minHeight: 60,
+    paddingHorizontal: 24,
     borderRadius: 32,
     flexDirection: "row",
     alignItems: "center",

@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import NextChevron from "@/components/NextChevron";
 import * as Haptics from "@/lib/haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
@@ -501,7 +502,7 @@ export default function CheatSheetRunner({
           <Pressable onPress={next} hitSlop={10} style={({ pressed }) => [styles.nextBtn, styles.nextBtnFlex, pressed && { opacity: 0.9 }]}>
             <LinearGradient colors={[GOLD, "#E6B82E"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
             <Text style={styles.nextTxt}>{pickLang(lang, { ru: "Вперёд", en: "Forward", kk: "Алға" })}</Text>
-            <Ionicons name="arrow-forward" size={18} color="#41310A" />
+            <NextChevron size={16} color="#41310A" />
           </Pressable>
         </View>
       )}
@@ -607,7 +608,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   backTxt: { fontSize: 16, fontFamily: fonts.bodyBold },
-  nextBtn: { overflow: "hidden", height: 56, borderRadius: 28, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  nextBtn: { overflow: "hidden", minHeight: 56, paddingHorizontal: 24, borderRadius: 28, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   nextBtnFlex: { flex: 1 },
   nextTxt: { color: "#41310A", fontSize: 17, fontFamily: fonts.bodyBold },
 });

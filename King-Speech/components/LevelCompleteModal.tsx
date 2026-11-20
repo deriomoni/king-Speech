@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import RiveAnim from "@/components/RiveAnim";
 import Trophy3D from "@/components/Trophy3D";
 import CoinIcon from "@/components/CoinIcon";
+import NextChevron from "@/components/NextChevron";
 import { useGame } from "@/context/GameContext";
 import { pickLang, type Lang } from "@/context/LangContext";
 import {
@@ -489,13 +490,14 @@ function VictoryScreen({ bestScore, durationSec, xpEarned, onNext, onMap, t, lan
                 />
                 <View
                   style={{
-                    height: u(52), borderRadius: u(26), overflow: "hidden", alignItems: "center", justifyContent: "center", elevation: 11,
+                    height: u(52), borderRadius: u(26), overflow: "hidden", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: u(8), paddingHorizontal: u(24), elevation: 11,
                     transform: [{ translateY: pressed ? u(4) : 0 }],
                   }}
                 >
                   <LinearGradient colors={["#FFE27A", "#FFC92E"]} style={StyleSheet.absoluteFill} />
                   <View style={{ position: "absolute", left: u(14), right: u(14), top: 0, height: u(2), borderRadius: 1, backgroundColor: "rgba(255,255,255,0.6)" }} />
-                  <Text style={[s.ctaText, { fontSize: u(17) }]}>{pickLang(lang, { ru: "Далее →", en: "Next →", kk: "Келесі →" })}</Text>
+                  <Text numberOfLines={1} style={[s.ctaText, { fontSize: u(17) }]}>{pickLang(lang, { ru: "Далее", en: "Next", kk: "Келесі" })}</Text>
+                  <NextChevron size={u(16)} color={INK} />
                 </View>
               </>
             )}
