@@ -318,6 +318,9 @@ function TutorialPhase({
       <View style={styles.topBar}>
         <CloseButton onPress={onClose} />
       </View>
+      <Text style={[styles.reelTitle, { color: theme.text }]}>
+        {pickLang(lang, { ru: "Выбери слово", en: "Pick a word", kk: "Сөз таңдаңыз" })}
+      </Text>
 
       <View style={{ flex: 1 }} />
 
@@ -368,8 +371,8 @@ function TutorialPhase({
 
 // Vertical word drum. Words ride a cylinder: each row is rotated about the X
 // axis with perspective and placed on the drum's circle, so the reel reads as a
-// real turning barrel. The centre is marked only by two small gold notches at
-// the sides — no selection pill. Neighbours shrink and fade, and the top/bottom
+// real turning barrel — no selection pill or markers: the centre word is simply
+// the largest and brightest. Neighbours shrink and fade, and the top/bottom
 // edges dissolve into the background.
 const ROW_SPACING = 84; // distance between neighbouring words
 const ROW_H = 46; // line box of the 36pt centre word
@@ -577,9 +580,6 @@ function SpinPhase({
       </View>
 
       <View style={styles.reelWindow}>
-        {/* Centre marks: two small gold notches at the sides (no pill). */}
-        <View pointerEvents="none" style={[styles.notch, styles.notchLeft, { backgroundColor: theme.accent }]} />
-        <View pointerEvents="none" style={[styles.notch, styles.notchRight, { backgroundColor: theme.accent }]} />
         {introDone ? (
           <Animated.View entering={FadeIn.duration(320)} style={StyleSheet.absoluteFill}>
             {reel.map((w, i) => (
@@ -1249,16 +1249,14 @@ const styles = StyleSheet.create({
   },
   introSub: { marginTop: 16, fontFamily: "Geologica_600SemiBold", fontSize: 15, textAlign: "center" },
   reelWindow: { flex: 1, overflow: "hidden" },
-  notch: {
-    position: "absolute",
-    top: "50%",
-    marginTop: CENTER_OFFSET - 2,
-    width: 18,
-    height: 4,
-    borderRadius: 2,
+  reelTitle: {
+    marginTop: 18,
+    paddingHorizontal: 24,
+    fontFamily: "Geologica_900Black",
+    fontSize: 30,
+    letterSpacing: -0.6,
+    textAlign: "center",
   },
-  notchLeft: { left: 22 },
-  notchRight: { right: 22 },
   reelRow: {
     position: "absolute",
     left: 0,

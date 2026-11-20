@@ -4,7 +4,7 @@
 body{margin:0;display:flex;gap:24px;background:#000;padding:16px}
 .ph{width:375px;height:700px;background:#18181A;position:relative;overflow:hidden;border-radius:28px;font-family:Geologica}
 .x{position:absolute;left:24px;top:22px;width:40px;height:40px;border-radius:20px;background:rgba(240,238,233,.08);color:#F0EEE9;display:flex;align-items:center;justify-content:center;font-size:20px}
-.win{position:absolute;left:0;right:0;top:70px;bottom:190px;overflow:hidden}
+.win{position:absolute;left:0;right:0;top:130px;bottom:190px;overflow:hidden}
 .row{position:absolute;left:0;right:0;top:50%;margin-top:5px;height:46px;line-height:46px;text-align:center;font:900 36px Geologica;color:#F0EEE9;letter-spacing:-.72px}
 .notch{position:absolute;top:50%;margin-top:26px;width:18px;height:4px;border-radius:2px;background:#FFD857}
 .ft{position:absolute;left:0;right:0;top:0;height:150px;background:linear-gradient(#18181A,#18181A 20%,rgba(24,24,26,0))}
@@ -12,12 +12,12 @@ body{margin:0;display:flex;gap:24px;background:#000;padding:16px}
 .stop{position:absolute;left:50%;bottom:70px;margin-left:-52px;width:104px;height:104px;border-radius:52px;background:#FFD857;display:flex;align-items:center;justify-content:center;font:900 20px Geologica;color:#262628}
 .cap{position:absolute;bottom:36px;width:100%;text-align:center;font:600 13px Geologica;color:rgba(240,238,233,.55)}
 .hero{padding:70px 22px 0}
-.t{font:700 28px/34px Literata;color:#FF8A5B;letter-spacing:-.3px}
-.a{font:italic 400 17px Literata;color:rgba(255,138,91,.72);margin-top:6px}
-.l{margin-top:22px;text-align:center;font:600 12px Geologica;letter-spacing:.6px;color:#FFD857}
+.t{font:800 26px/31px Geologica;color:#F0EEE9;letter-spacing:-.4px}
+.a{font:500 16px Geologica;color:rgba(240,238,233,.6);margin-top:6px}
+.l{margin-top:44px;text-align:center;font:600 12px Geologica;letter-spacing:.6px;color:#FFD857}
 </style></head><body>
-<div class="ph"><div class="x">✕</div><div class="win" id="w"><div class="notch" style="left:22px"></div><div class="notch" style="right:22px"></div><div class="ft"></div><div class="fb"></div></div><div class="stop">СТОП</div><div class="cap">Нажми, чтобы остановить</div></div>
-<div class="ph"><div class="hero"><div class="t">Если жизнь тебя обманет…</div><div class="a">Александр Пушкин</div><div class="l">ПРОСЛУШАЙ СЕБЯ</div></div></div>
+<div class="ph"><div class="x">✕</div><div style="position:absolute;top:80px;width:100%;text-align:center;font:900 30px Geologica;color:#F0EEE9;letter-spacing:-.6px">Выбери слово</div><div class="win" id="w"><div class="ft"></div><div class="fb"></div></div><div class="stop">СТОП</div><div class="cap">Нажми, чтобы остановить</div></div>
+<div class="ph"><div class="hero"><div class="t">«Если жизнь тебя обманет…»</div><div class="a">Александр Пушкин</div><div class="l" style="text-align:left">ПРОСЛУШАЙ СЕБЯ</div><div style="margin-top:28px;height:64px;border-radius:32px;background:#323234"></div><div style="margin-top:12px;text-align:center;font:400 12.5px Geologica;color:rgba(240,238,233,.6)">Прослушай запись до конца, чтобы оценить себя</div></div></div>
 <script>
 const words=["Радость","Смелость","Мудрость","Победа","Мечта","Успех","Голос"];const pos=3.25,STEP=.42,R=80/Math.sin(STEP);const w=document.getElementById("w");
 words.forEach((t,i)=>{const rel=i-pos,d=Math.abs(rel),a=Math.max(-1.45,Math.min(1.45,rel*STEP));const lerp=(xs,ys)=>{for(let k=0;k<xs.length-1;k++)if(d<=xs[k+1]){const f=(d-xs[k])/(xs[k+1]-xs[k]);return ys[k]+(ys[k+1]-ys[k])*f}return ys[ys.length-1]};

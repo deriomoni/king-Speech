@@ -17,7 +17,7 @@ import Animated, {
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Path } from "react-native-svg";
 import * as Haptics from "@/lib/haptics";
-import { useFonts, Literata_600SemiBold, Literata_700Bold, Literata_400Regular_Italic } from "@expo-google-fonts/literata";
+import { useFonts, Literata_600SemiBold } from "@expo-google-fonts/literata";
 import { useTheme } from "@/context/ThemeContext";
 import { tokenizeReading } from "@/components/ReadingText";
 import { readingLines } from "@/src/speech-engine/core/text/reading";
@@ -326,7 +326,7 @@ export default function ReadingResultsView({
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
   const { theme, themeMode } = useTheme();
   const dark = themeMode === "dark";
-  useFonts({ Literata_600SemiBold, Literata_700Bold, Literata_400Regular_Italic });
+  useFonts({ Literata_600SemiBold });
 
   const accent = theme.accent; // gold fill (both themes)
   const accentInk = theme.accentInk; // gold as text/icon (ink on light)
@@ -421,11 +421,11 @@ export default function ReadingResultsView({
       >
         {/* Hero — work + author */}
         <Animated.View entering={FadeInDown.duration(500)} style={st.hero}>
-          {/* Work + author on the left, in the level's accent, set in Literata */}
-          <Text numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.6} style={[st.workTitle, { color: tint }]}>
-            {cleanTitle}
+          {/* Work (in quotes) + author on the left, in the app's display face */}
+          <Text numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.6} style={[st.workTitle, { color: fg }]}>
+            {`«${cleanTitle}»`}
           </Text>
-          {author ? <Text style={[st.author, { color: withAlpha(tint, 0.72) }]}>{author}</Text> : null}
+          {author ? <Text style={[st.author, { color: fgMuted }]}>{author}</Text> : null}
           <Text style={[st.sectionLabel, st.listenLabel, { color: accentInk }]}>{t("listenYourself")}</Text>
         </Animated.View>
 
@@ -442,8 +442,7 @@ export default function ReadingResultsView({
             lang={lang}
           />
           {!listenedFully ? (
-            <View style={[st.hintRow, { backgroundColor: theme.accentDim }]}>
-              <Ionicons name="information-circle-outline" size={15} color={accentInk} />
+            <View style={st.hintRow}>
               <Text style={[st.hintText, { color: fgMuted }]}>{t("listenBackHint")}</Text>
             </View>
           ) : null}
@@ -512,7 +511,6 @@ export default function ReadingResultsView({
             disabled={saving}
             style={({ pressed }) => [st.secondaryBtn, st.retryBtn, { backgroundColor: theme.btnSecondary }, { opacity: pressed ? 0.85 : 1 }]}
           >
-            <Ionicons name="refresh" size={16} color={theme.btnSecondaryText} />
             <Text style={[st.retryText, { color: theme.btnSecondaryText }]}>{t("replay")}</Text>
           </Pressable>
           <Pressable
@@ -823,10 +821,10 @@ const st = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 22 },
   hero: { alignItems: "flex-start" },
-  workTitle: { fontFamily: "Literata_700Bold", fontSize: 28, letterSpacing: -0.3, textAlign: "left", lineHeight: 34 },
+  workTitle: { fontFamily: "Geologica_800ExtraBold", fontSize: 26, letterSpacing: -0.4, textAlign: "left", lineHeight: 31 },
   author: {
-    fontFamily: "Literata_400Regular_Italic",
-    fontSize: 17,
+    fontFamily: "Geologica_500Medium",
+    fontSize: 16,
     textAlign: "left",
     marginTop: 6,
   },
@@ -837,17 +835,9 @@ const st = StyleSheet.create({
     textTransform: "uppercase",
     textAlign: "center",
   },
-  listenLabel: { alignSelf: "stretch", textAlign: "left", marginTop: 22, marginBottom: 41 },
-  hintRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 12,
-    paddingVertical: 9,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  hintText: { flex: 1, fontFamily: "Geologica_400Regular", fontSize: 12.5, lineHeight: 17 },
+  listenLabel: { alignSelf: "stretch", textAlign: "left", marginTop: 44, marginBottom: 28 },
+  hintRow: { marginTop: 12, paddingHorizontal: 4 },
+  hintText: { fontFamily: "Geologica_400Regular", fontSize: 12.5, lineHeight: 17, textAlign: "center" },
   card: { borderRadius: 22, borderWidth: 2 },
   ratingCard: { marginTop: 48, paddingTop: 16, paddingBottom: 22, gap: 20 },
   starsRow: { flexDirection: "row", justifyContent: "center", gap: 18 },

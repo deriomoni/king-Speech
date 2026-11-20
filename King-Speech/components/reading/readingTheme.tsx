@@ -72,8 +72,18 @@ function hslToHex(h: number, s: number, l: number): string {
  */
 export function readingTint(moduleColor: string, isDark: boolean): string {
   const [r, g, b] = hexToRgb(moduleColor);
-  const [h, s, l] = rgbToHsl(r, g, b);
-  return isDark ? hslToHex(h, s, Math.max(l, 0.7)) : hslToHex(h, clamp(s, 0, 0.75), Math.min(l, 0.42));
+  const [h0, s, l] = rgbToHsl(r, g, b);
+  // No reds in reading (owner): red / red-orange module colours read as an
+  // error state on text. Red hues move to a soft lavender, red-orange ones to
+  // a warm apricot; every other hue keeps its module identity.
+  let h = h0;
+  if (s > 0.15) {
+    if (h0 >= 340 || h0 < 14) h = 258; // red → lavender
+    else if (h0 < 26) h = 34; // red-orange → apricot
+  }
+  return isDark
+    ? hslToHex(h, clamp(s, 0, 0.85), Math.max(l, 0.76)) // lighter, softer on dark
+    : hslToHex(h, clamp(s, 0, 0.75), Math.min(l, 0.42));
 }
 
 /** `rgba()` of a hex colour. */
