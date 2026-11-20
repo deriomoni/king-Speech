@@ -5256,6 +5256,9 @@ const TASKS_EN: Record<string, TaskData[]> = {
 function abbrevAuthor(full: string): string {
   const parts = full.trim().split(/\s+/).filter(Boolean);
   if (parts.length < 2) return full.trim();
+  // Kazakh titles/epithets aren't surnames: «Ақан сері», «Төле би», «Бұқар
+  // жырау», «Халық ауыз әдебиеті» stay in full.
+  if (/^(сері|би|жырау|әдебиеті)$/i.test(parts[parts.length - 1])) return full.trim();
   const surname = parts[parts.length - 1];
   const first = parts[0];
   return `${first[0]}. ${surname}`;

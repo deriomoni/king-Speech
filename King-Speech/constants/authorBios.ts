@@ -107,6 +107,103 @@ export const AUTHOR_BIOS: Record<string, AuthorBio> = {
     bioKk: "Орыс ақыны және аудармашы.",
     bioEn: "Russian poet and translator.",
   },
+  // ── Kazakh literature (assets/content/kk/literature_kk.json) ──
+  "Абай Құнанбайұлы": {
+    life: "1845–1904",
+    bio: "Великий казахский поэт, мыслитель и переводчик, основоположник казахской письменной литературы, автор «Слов назидания» (Қара сөздер).",
+    bioKk: "Ұлы қазақ ақыны, ойшыл, аудармашы, қазақ жазба әдебиетінің негізін салушы, «Қара сөздердің» авторы.",
+    bioEn: "The great Kazakh poet, thinker and translator, founder of Kazakh written literature and author of the «Book of Words» (Qara sözder).",
+  },
+  "Ыбырай Алтынсарин": {
+    life: "1841–1889",
+    bio: "Казахский просветитель и педагог, открывавший первые светские школы для казахских детей и составивший «Киргизскую хрестоматию» (1879) со своими стихами и рассказами.",
+    bioKk: "Қазақ ағартушысы әрі педагогі, қазақ балаларына арналған алғашқы мектептерді ашып, өз өлеңдері мен әңгімелері енген «Қазақ хрестоматиясын» (1879) құрастырған.",
+    bioEn: "Kazakh educator and enlightener who opened the first secular schools for Kazakh children and compiled the «Kyrgyz Chrestomathy» (1879) containing his own poems and stories.",
+  },
+  "Ахмет Байтұрсынұлы": {
+    life: "1872–1937",
+    bio: "Казахский поэт, языковед и общественный деятель движения «Алаш», реформатор казахской письменности, издавший сборник басен «Қырық мысал» (1909) по мотивам Крылова.",
+    bioKk: "Қазақ ақыны, тіл ғалымы, «Алаш» қозғалысының қайраткері, қазақ жазуын реформалаған; Крылов мысалдары негізінде «Қырық мысал» (1909) жинағын шығарған.",
+    bioEn: "Kazakh poet, linguist and Alash movement figure who reformed Kazakh writing and published «Forty Fables» (1909), adapted from Krylov.",
+  },
+  "Міржақып Дулатұлы": {
+    life: "1885–1935",
+    bio: "Казахский поэт и писатель, деятель движения «Алаш», автор сборника стихов «Оян, қазақ!» (1909) и первого казахского романа «Бақытсыз Жамал» (1910).",
+    bioKk: "Қазақ ақыны мен жазушысы, «Алаш» қозғалысының қайраткері, «Оян, қазақ!» (1909) өлеңдер жинағының және алғашқы қазақ романы «Бақытсыз Жамалдың» (1910) авторы.",
+    bioEn: "Kazakh poet, writer and Alash movement figure, author of the poetry collection «Wake Up, Kazakh!» (1909) and the first Kazakh novel «Unhappy Zhamal» (1910).",
+  },
+  "Халық ауыз әдебиеті": {
+    life: "Халық мұрасы",
+    bio: "Казахское устное народное творчество — эпосы, песни, сказки и пословицы, веками передававшиеся из уст в уста сказителями-жырау и акынами.",
+    bioKk: "Қазақ халық ауыз әдебиеті – ғасырлар бойы жыраулар мен ақындар ауыздан-ауызға жеткізген жырлар, ертегілер, мақал-мәтелдер.",
+    bioEn: "Kazakh oral folk literature: epics, songs, tales and proverbs passed down by word of mouth by bards (zhyrau) and akyns over centuries.",
+  },
+  "Мағжан Жұмабаев": {
+    life: "1893–1938",
+    bio: "Казахский поэт и педагог, деятель движения «Алаш», автор сборника «Шолпан» (1912); репрессирован и расстрелян в 1938 году.",
+    bioKk: "Қазақ ақыны, педагог, Алаш қозғалысының қайраткері, «Шолпан» (1912) жинағының авторы; 1938 жылы қуғын-сүргін құрбаны болды.",
+    bioEn: "Kazakh poet and educator, a figure of the Alash movement and author of the collection Sholpan (1912); executed during the purges in 1938.",
+  },
+  "Сәкен Сейфуллин": {
+    life: "1894–1938",
+    bio: "Казахский поэт и писатель, один из основоположников современной казахской литературы, автор поэм «Көкшетау» и «Аққудың айрылуы»; репрессирован в 1938 году.",
+    bioKk: "Қазақ ақыны, жазушы, қазіргі қазақ әдебиетінің негізін қалаушылардың бірі, «Көкшетау», «Аққудың айрылуы» поэмаларының авторы; 1938 жылы қуғын-сүргін құрбаны болды.",
+    bioEn: "Kazakh poet and writer, one of the founders of modern Kazakh literature, author of the poems Kokshetau and Akkudyn airyluy; executed during the purges in 1938.",
+  },
+  "Ілияс Жансүгіров": {
+    life: "1894–1938",
+    bio: "Казахский поэт и писатель, автор поэм «Құлагер», «Күй», «Күйші» и стихотворения «Жетісу суреттері»; репрессирован в 1938 году.",
+    bioKk: "Қазақ ақыны, жазушы, «Құлагер», «Күй», «Күйші» поэмаларының және «Жетісу суреттері» өлеңінің авторы; 1938 жылы қуғын-сүргін құрбаны болды.",
+    bioEn: "Kazakh poet and writer, author of the poems Kulager, Kui and Kuishi and of Zhetisu suretteri; executed during the purges in 1938.",
+  },
+  "Сұлтанмахмұт Торайғыров": {
+    life: "1893–1920",
+    bio: "Казахский поэт-просветитель, автор романа «Қамар сұлу» и поэм «Адасқан өмір» и «Кедей»; умер молодым от туберкулёза.",
+    bioKk: "Қазақ ағартушы ақыны, «Қамар сұлу» романының, «Адасқан өмір», «Кедей» поэмаларының авторы; жас кезінде туберкулезден қайтыс болды.",
+    bioEn: "Kazakh enlightener poet, author of the novel Kamar sulu and the poems Adaskan omir and Kedei; died young of tuberculosis.",
+  },
+  "Ақан сері": {
+    life: "1843–1913",
+    bio: "Акан сери Корамсаулы — казахский поэт, певец и композитор из Кокшетауского края, автор песен «Құлагер», «Сырымбет», «Балқадиша», «Маңмаңгер».",
+    bioKk: "Ақан сері Қорамсаұлы – Көкшетау өңірінен шыққан ақын, әнші әрі сазгер, «Құлагер», «Сырымбет», «Балқадиша», «Маңмаңгер» әндерінің авторы.",
+    bioEn: "Akan Seri Koramsauly was a Kazakh poet, singer and composer from the Kokshetau region, author of the songs «Kulager», «Syrymbet», «Balkadisha» and «Manmanger».",
+  },
+  "Шәкәрім Құдайбердіұлы": {
+    life: "1858–1931",
+    bio: "Шакарим Кудайбердиулы — казахский поэт, философ, историк, переводчик и композитор, племянник и ученик Абая.",
+    bioKk: "Шәкәрім Құдайбердіұлы – ақын, философ, тарихшы, аудармашы әрі сазгер, Абайдың інісі әрі шәкірті.",
+    bioEn: "Shakarim Kudaiberdiuly was a Kazakh poet, philosopher, historian, translator and composer, the nephew and disciple of Abai.",
+  },
+  "Махамбет Өтемісұлы": {
+    life: "1803–1846",
+    bio: "Махамбет Утемисулы — казахский поэт и батыр, соратник Исатая Тайманулы в восстании 1836–1838 годов в Букеевской Орде.",
+    bioKk: "Махамбет Өтемісұлы – ақын әрі батыр, Бөкей Ордасындағы 1836–1838 жылғы көтерілісте Исатай Тайманұлының серігі болған.",
+    bioEn: "Makhambet Utemisuly was a Kazakh poet and warrior, comrade-in-arms of Isatai Taimanuly in the 1836–1838 uprising in the Bukey Horde.",
+  },
+  "Бұқар жырау": {
+    life: "1668–1781",
+    bio: "Бухар-жырау Калкаманулы — казахский поэт-жырау XVIII века, советник хана Абылая.",
+    bioKk: "Бұқар жырау Қалқаманұлы – XVIII ғасырдағы қазақ жырауы, Абылай ханның кеңесшісі.",
+    bioEn: "Bukhar Zhyrau Kalkamanuly was an 18th-century Kazakh poet-bard (zhyrau) and adviser to Ablai Khan.",
+  },
+  "Төле би": {
+    life: "1663–1756",
+    bio: "Төле Алибекулы — верховный бий Старшего жуза, прославленный оратор и мудрец, один из составителей свода законов «Жеті жарғы» при Тауке-хане.",
+    bioKk: "Төле Әлібекұлы – Ұлы жүздің бас биі, атақты шешен әрі дана, Тәуке хан тұсында «Жеті жарғы» заңын жасасқан билердің бірі.",
+    bioEn: "Töle Älibekuly was the chief biy (judge) of the Senior Zhuz, a renowned orator and sage, and one of the compilers of the «Zhety Zhargy» law code under Tauke Khan.",
+  },
+  "Қазыбек би": {
+    life: "1667–1764",
+    bio: "Казыбек Келдибекулы — верховный бий Среднего жуза, оратор и дипломат по прозвищу «Қаз дауысты» («с голосом гуся»), участник переговоров с Джунгарским ханством.",
+    bioKk: "Қазыбек Келдібекұлы – Орта жүздің бас биі, «Қаз дауысты» атанған шешен әрі елші, Жоңғар хандығымен келіссөздерге қатысқан.",
+    bioEn: "Kazybek Keldibekuly was the chief biy of the Middle Zhuz, an orator and diplomat nicknamed «the goose-voiced», who took part in negotiations with the Dzungar Khanate.",
+  },
+  "Әйтеке би": {
+    life: "1644–1700",
+    bio: "Айтеке Байбекулы — верховный бий Младшего жуза, знаменитый оратор, один из составителей свода законов «Жеті жарғы» при Тауке-хане.",
+    bioKk: "Әйтеке Байбекұлы – Кіші жүздің бас биі, атақты шешен, Тәуке хан тұсында «Жеті жарғы» заңын жасасқан билердің бірі.",
+    bioEn: "Äiteke Baibekuly was the chief biy of the Junior Zhuz, a famous orator and one of the compilers of the «Zhety Zhargy» law code under Tauke Khan.",
+  },
 };
 
 /**

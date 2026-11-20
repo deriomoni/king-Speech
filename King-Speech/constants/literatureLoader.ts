@@ -79,7 +79,15 @@ export function getModuleFromReadingId(levelId: string): number {
 export function literatureCategory(kind: string): ReadingCategory {
   const k = kind.toLowerCase();
   if (k.includes("басн") || k.includes("мысал")) return "fable";
-  if (k.includes("проз") || k.includes("әңгіме") || k.includes("повесть")) return "prose"; // "Стихотворение в прозе"
+  if (
+    k.includes("проз") || // "Стихотворение в прозе"
+    k.includes("әңгіме") ||
+    k.includes("повесть") ||
+    k.includes("ертегі") ||
+    k.includes("қара сөз") ||
+    k.includes("шешендік")
+  )
+    return "prose";
   return "poetry";
 }
 
