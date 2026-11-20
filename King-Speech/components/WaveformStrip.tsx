@@ -5,14 +5,16 @@ import {
   WAVEFORM_BAR_MAX,
   WAVEFORM_MAX_BARS,
 } from "@/hooks/useWaveformBars";
+import { rs } from "@/lib/responsive";
 
 const RED = "#FF3B30";
 const RED_SOFT = "rgba(255,59,48,0.10)";
 const RED_BORDER = "rgba(255,59,48,0.28)";
 const DOT_DIM = "rgba(255,59,48,0.22)";
 
-const BAR_WIDTH = 4;
-const BAR_GAP = 3;
+// Bar geometry in phone-design units; scaled for tablets at render time.
+const BAR_WIDTH = rs(4);
+const BAR_GAP = rs(3);
 
 interface Props {
   isRecording: boolean;
@@ -51,7 +53,8 @@ export default function WaveformStrip({
   });
 
   const remainingSlots = Math.max(0, maxBars - bars.length);
-  const innerHeight = Math.min(height, WAVEFORM_BAR_MAX);
+  // `height` and the hook's bar heights are phone-design units → scale here.
+  const innerHeight = rs(Math.min(height, WAVEFORM_BAR_MAX));
 
   const content = (
     <View style={[styles.inner, { height: innerHeight }]}>
@@ -60,9 +63,9 @@ export default function WaveformStrip({
           key={b.id}
           style={{
             width: BAR_WIDTH,
-            height: Math.min(b.height, innerHeight),
+            height: Math.min(rs(b.height), innerHeight),
             opacity: b.opacity,
-            borderRadius: 2,
+            borderRadius: rs(2),
             backgroundColor: color,
             marginRight: BAR_GAP,
           }}
@@ -89,7 +92,7 @@ export default function WaveformStrip({
     <View
       style={[
         styles.panel,
-        { height: height + 16, borderColor: RED_BORDER, backgroundColor: RED_SOFT },
+        { height: rs(height + 16), borderColor: RED_BORDER, backgroundColor: RED_SOFT },
       ]}
     >
       {content}

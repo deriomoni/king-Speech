@@ -2,6 +2,7 @@
 // four rounded corner brackets, two wide-set dot eyes, an L nose and a smile.
 import React from "react";
 import Svg, { Path, Circle } from "react-native-svg";
+import { rs } from "@/lib/responsive";
 
 export type FaceTrackState = "ok" | "turn" | "lost";
 
@@ -11,7 +12,7 @@ export const FACE_TRACK_COLORS: Record<FaceTrackState, string> = {
   lost: "#FF5A4E", // «Лицо потеряно»
 };
 
-export function FaceTrackerIcon({ size = 56, color = "#FFFFFF" }: { size?: number; color?: string }) {
+export function FaceTrackerIcon({ size = rs(56), color = "#FFFFFF" }: { size?: number; color?: string }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 56 56" fill="none">
       <Path d="M4 17V11a7 7 0 0 1 7-7h6" stroke={color} strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" />

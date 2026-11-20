@@ -29,6 +29,7 @@ import Animated, {
   cancelAnimation,
 } from "react-native-reanimated";
 import { sonic } from "@/constants/colors";
+import { rs } from "@/lib/responsive";
 
 /* ------------------------------------------------------------------ */
 /*  GlassCard — a frosted surface with primary glow option.            */
@@ -38,8 +39,8 @@ export function GlassCard({
   style,
   intensity = 24,
   glow = false,
-  padding = 24,
-  radius = 28,
+  padding = rs(24),
+  radius = rs(28),
 }: {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -108,7 +109,7 @@ const gc = StyleSheet.create({
 /*  Use ≤2 per screen, otherwise the screen turns to noise.            */
 /* ------------------------------------------------------------------ */
 export function GlowSphere({
-  size = 320,
+  size = rs(320),
   top,
   bottom,
   left,
@@ -172,7 +173,7 @@ export function GlowSphere({
 /*  OrbitalRings — concentric purple rings for hero / onboarding.      */
 /* ------------------------------------------------------------------ */
 export function OrbitalRings({
-  size = 260,
+  size = rs(260),
   style,
 }: {
   size?: number;
@@ -216,7 +217,7 @@ export function OrbitalRings({
               transform: [{ scaleY: 0.32 }],
               shadowColor: sonic.cta,
               shadowOpacity: 0.6,
-              shadowRadius: 14,
+              shadowRadius: rs(14),
               shadowOffset: { width: 0, height: 0 },
               elevation: 8,
             }}
@@ -269,7 +270,7 @@ export function PrimaryButton({
             colors={[sonic.cta, "#E6B82E"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={[StyleSheet.absoluteFill, { borderRadius: 28 }]}
+            style={[StyleSheet.absoluteFill, { borderRadius: rs(28) }]}
           />
         ) : null}
         <View style={pb.row}>
@@ -319,7 +320,7 @@ export function EditorialTitle({
   prefix,
   italic,
   suffix,
-  size = 56,
+  size = rs(56),
   align = "left",
   color = "#FFFFFF",
   style,
@@ -381,8 +382,8 @@ export function MicroLabel({
       style={[
         {
           color,
-          fontSize: 11,
-          letterSpacing: 1.4,
+          fontSize: rs(11),
+          letterSpacing: rs(1.4),
           textTransform: "uppercase",
           fontFamily: "Geologica_400Regular",
         },

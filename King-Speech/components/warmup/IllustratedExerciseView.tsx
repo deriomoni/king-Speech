@@ -8,6 +8,7 @@ import * as Haptics from "@/lib/haptics";
 import { useTheme } from "@/context/ThemeContext";
 import { useLang, pickLang } from "@/context/LangContext";
 import { warmupFonts } from "@/components/warmup/warmupTheme";
+import { rs } from "@/lib/responsive";
 import {
   type WarmupArt,
   chestArt,
@@ -152,12 +153,15 @@ export default function IllustratedExerciseView({ exercise, topPad, onDone, onSk
   // figure never jumps when frames switch.
   const hasArrow = exercise.frames.some((f) => !!f.arrow);
   const art = frame.art;
+  // Figma art sizes are phone-design pt — scale for tablets.
+  const artW = rs(art.width);
+  const artH = rs(art.height);
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.bg, paddingTop: topPad + 8 }]}>
+    <View style={[styles.root, { backgroundColor: theme.bg, paddingTop: topPad + rs(8) }]}>
       <View style={styles.header}>
         <Pressable onPress={onBack} hitSlop={12} style={styles.iconBtn}>
-          <Ionicons name="chevron-back" size={24} color={theme.textSecondary} />
+          <Ionicons name="chevron-back" size={rs(24)} color={theme.textSecondary} />
         </Pressable>
       </View>
 
@@ -167,16 +171,16 @@ export default function IllustratedExerciseView({ exercise, topPad, onDone, onSk
       </Animated.View>
 
       <View style={styles.center} pointerEvents="none">
-        <View style={{ width: art.width, height: art.height }}>
-          <SvgXml xml={art.xml} width={art.width} height={art.height} color={theme.text} />
+        <View style={{ width: artW, height: artH }}>
+          <SvgXml xml={art.xml} width={artW} height={artH} color={theme.text} />
           {frame.overlay && (
             <View
               style={[
                 styles.overlay,
-                { top: CHEST_ARROW_TOP, left: (art.width - frame.overlay.width) / 2 },
+                { top: rs(CHEST_ARROW_TOP), left: (artW - rs(frame.overlay.width)) / 2 },
               ]}
             >
-              <SvgXml xml={frame.overlay.xml} width={frame.overlay.width} height={frame.overlay.height} />
+              <SvgXml xml={frame.overlay.xml} width={rs(frame.overlay.width)} height={rs(frame.overlay.height)} />
             </View>
           )}
         </View>
@@ -186,7 +190,7 @@ export default function IllustratedExerciseView({ exercise, topPad, onDone, onSk
         <View style={styles.arrowSlot} pointerEvents="none">
           {frame.arrow && (
             <Animated.View key={`arrow-${frameIdx}`} entering={FadeIn.duration(200)} exiting={FadeOut.duration(120)}>
-              <SvgXml xml={frame.arrow.xml} width={frame.arrow.width} height={frame.arrow.height} />
+              <SvgXml xml={frame.arrow.xml} width={rs(frame.arrow.width)} height={rs(frame.arrow.height)} />
             </Animated.View>
           )}
         </View>
@@ -194,7 +198,7 @@ export default function IllustratedExerciseView({ exercise, topPad, onDone, onSk
 
       <View style={styles.footer}>
         <Pressable onPress={onSkip} hitSlop={8} style={styles.skip}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Text style={[styles.skipText, { color: theme.textMuted }]}>{pickLang(lang, { ru: "Пропустить", en: "Skip", kk: "Өткізіп жіберу" })}</Text><NextChevron color={theme.textMuted} size={12} /></View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: rs(6) }}><Text style={[styles.skipText, { color: theme.textMuted }]}>{pickLang(lang, { ru: "Пропустить", en: "Skip", kk: "Өткізіп жіберу" })}</Text><NextChevron color={theme.textMuted} size={rs(12)} /></View>
         </Pressable>
       </View>
     </View>

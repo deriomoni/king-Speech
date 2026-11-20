@@ -23,12 +23,21 @@ import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "@/constants/colors";
 import { tx, type CheatRoute } from "@/constants/cheatsheetData";
 import { pickLang, type Lang } from "@/context/LangContext";
+import { rs } from "@/lib/responsive";
 
 const { width: SW, height: SH } = Dimensions.get("window");
-const ITEM_H = 108;
-const WHEEL_H = Math.min(Math.round(SH * 0.46), 360);
+// Wheel geometry in real points (rs() = tablet scale, identity on phones).
+// ITEM_H_BASE is the raw design value for the (auto-scaled) stylesheet;
+// everything used in scroll / worklet / SVG math uses the scaled values.
+const ITEM_H_BASE = 108;
+const ITEM_H = rs(ITEM_H_BASE);
+const WHEEL_H = Math.min(Math.round(SH * 0.46), rs(360));
 const PAD_V = (WHEEL_H - ITEM_H) / 2; // lets the first/last item reach the centre
-const MARKER_X = 34; // arc dot x — the fixed selection marker
+const MARKER_X = rs(34); // arc dot x — the fixed selection marker
+const ARC_R = rs(560);
+const MARKER_R = rs(5);
+const SWING_K = rs(26);
+const SWING_MAX = rs(130);
 
 // Short bold name shown to the right (like "Flexible" in the reference).
 const NAME: Record<string, { ru: string; en: string; kk: string }> = {
@@ -64,7 +73,7 @@ function WheelRow({
   const rowStyle = useAnimatedStyle(() => {
     const off = index - scrollY.value / ITEM_H;
     const abs = Math.abs(off);
-    const translateX = -Math.min(abs * abs * 26, 130);
+    const translateX = -Math.min(abs * abs * SWING_K, SWING_MAX);
     const scale = Math.max(1 - abs * 0.3, 0.48);
     const opacity = Math.max(1 - abs * 0.55, 0.14);
     return {
@@ -147,7 +156,7 @@ export default function CheatSheetWheel({
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.wheel}>
+      <View style={[styles.wheel, { height: WHEEL_H }]}>
         {/* Arc + fixed selection dot on the left */}
         <Svg
           width={SW}
@@ -156,14 +165,14 @@ export default function CheatSheetWheel({
           pointerEvents="none"
         >
           <Circle
-            cx={MARKER_X - 560}
+            cx={MARKER_X - ARC_R}
             cy={WHEEL_H / 2}
-            r={560}
+            r={ARC_R}
             stroke={arcColor ?? (isDark ? "rgba(255,255,255,0.16)" : "rgba(14,14,16,0.14)")}
             strokeWidth={1}
             fill="none"
           />
-          <Circle cx={MARKER_X} cy={WHEEL_H / 2} r={5} fill={markerColor ?? selected.accent} />
+          <Circle cx={MARKER_X} cy={WHEEL_H / 2} r={MARKER_R} fill={markerColor ?? selected.accent} />
         </Svg>
 
         <Animated.ScrollView
@@ -194,14 +203,14 @@ export default function CheatSheetWheel({
                 backgroundColor: startStyle.bg,
                 borderColor: startStyle.border,
                 borderWidth: 4,
-                borderRadius: 32,
-                paddingHorizontal: 26,
+                borderRadius: rs(32),
+                paddingHorizontal: rs(26),
               }
             : { backgroundColor: selected.accent },
           { opacity: pressed ? 0.88 : 1 },
         ]}
       >
-        <Ionicons name="play" size={15} color={startStyle?.ink ?? "#20160A"} />
+        <Ionicons name="play" size={rs(15)} color={startStyle?.ink ?? "#20160A"} />
         <Text
           style={[
             styles.startTxt,
@@ -217,10 +226,10 @@ export default function CheatSheetWheel({
 
 const styles = StyleSheet.create({
   wrap: { flex: 1, justifyContent: "center", gap: 18 },
-  wheel: { height: WHEEL_H, overflow: "hidden" },
+  wheel: { overflow: "hidden" }, // height: WHEEL_H (inline, already in points)
 
   row: {
-    height: ITEM_H,
+    height: ITEM_H_BASE,
     flexDirection: "row",
     alignItems: "center",
     paddingLeft: 58,

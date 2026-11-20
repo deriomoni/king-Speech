@@ -11,6 +11,7 @@ import { ROLES, tx, type Role } from "@/constants/rolesData";
 import type { Lang } from "@/context/LangContext";
 import { pickLang } from "@/context/LangContext";
 import { RolesMaskIcon } from "@/components/showtime/ShowTimeIcons";
+import { rs, UI_SCALE } from "@/lib/responsive";
 
 // Card labels are IBM Plex Mono Bold in Figma. The font isn't bundled
 // (@expo-google-fonts/ibm-plex-mono is not installed) — system monospace instead.
@@ -77,13 +78,15 @@ export function roleNumber(id: string): string {
   return String(i < 0 ? 0 : i + 1).padStart(2, "0");
 }
 
-const PAD = 6;
+// Fixed phone-design lengths inside the card go through rs() so they grow with
+// the (already tablet-sized) `width` callers pass in.
+const PAD = rs(6);
 /** Card geometry shared by all card kinds so grid rows line up. */
 export function tarotMetrics(width: number) {
   const artW = width - PAD * 2;
   const artH = Math.round(artW * 0.94);
-  const label = Math.max(9, Math.round(width * 0.062));
-  const labelH = Math.round(label * 1.3 * 2 + 14); // room for two lines
+  const label = Math.max(rs(9), Math.round(width * 0.062));
+  const labelH = Math.round(label * 1.3 * 2 + rs(14)); // room for two lines
   return { artW, artH, label, labelH, height: PAD * 2 + artH + labelH, radius: Math.round(width * 0.075) };
 }
 
@@ -105,24 +108,24 @@ export function RoleTarotCard({
   const src = ROLE_ART[role.id];
   const artRadius = {
     borderTopLeftRadius: m.artW / 2,
-    borderTopRightRadius: 6,
-    borderBottomLeftRadius: 6,
-    borderBottomRightRadius: 6,
+    borderTopRightRadius: rs(6),
+    borderBottomLeftRadius: rs(6),
+    borderBottomRightRadius: rs(6),
   };
   return (
     <View style={[{ width, height: m.height, borderRadius: m.radius, backgroundColor: frame, padding: PAD }, style]}>
       <View
         pointerEvents="none"
-        style={[styles.innerHair, { borderRadius: m.radius - 3, borderColor: hair }]}
+        style={[styles.innerHair, { borderRadius: m.radius - rs(3), borderColor: hair }]}
       />
       <View style={[{ width: m.artW, height: m.artH, overflow: "hidden", backgroundColor: "#FFFFFF" }, artRadius]}>
         {src ? <Image source={src} style={{ width: m.artW, height: m.artH }} contentFit="cover" transition={0} /> : null}
         <View pointerEvents="none" style={[StyleSheet.absoluteFill, artRadius, { borderWidth: 1, borderColor: hair }]} />
       </View>
-      <Text style={[styles.num, { color: ink, fontSize: Math.max(9, m.label - 1), top: PAD + 3, left: PAD + 4 }]}>
+      <Text style={[styles.num, { color: ink, fontSize: Math.max(rs(9), m.label - rs(1)), top: PAD + rs(3), left: PAD + rs(4) }]}>
         {roleNumber(role.id)}
       </Text>
-      <View style={{ height: m.labelH, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 }}>
+      <View style={{ height: m.labelH, alignItems: "center", justifyContent: "center", paddingHorizontal: rs(4) }}>
         <Text
           style={[styles.label, { color: ink, fontSize: m.label, lineHeight: Math.round(m.label * 1.3) }]}
           numberOfLines={2}
@@ -140,7 +143,7 @@ export function LockedRoleCard({ width, lang, style }: { width: number; lang: La
   return (
     <View style={[{ width, height: m.height, borderRadius: m.radius, overflow: "hidden" }, style]}>
       <LinearGradient colors={["#342D52", "#16141F"]} start={{ x: 0, y: 0 }} end={{ x: 0.4, y: 1 }} style={StyleSheet.absoluteFill} />
-      <View pointerEvents="none" style={[styles.innerHair, { borderRadius: m.radius - 3, borderColor: "rgba(255,255,255,0.14)" }]} />
+      <View pointerEvents="none" style={[styles.innerHair, { borderRadius: m.radius - rs(3), borderColor: "rgba(255,255,255,0.14)" }]} />
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingTop: m.labelH / 2 }}>
         <Ionicons name="lock-closed" size={Math.round(width * 0.17)} color="#FFFFFF" />
       </View>
@@ -165,12 +168,12 @@ export function RolePlayCard({ width, style }: { width: number; style?: StylePro
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-      <View pointerEvents="none" style={[styles.innerHair, { borderRadius: m.radius - 3, borderColor: "rgba(255,255,255,0.35)" }]} />
+      <View pointerEvents="none" style={[styles.innerHair, { borderRadius: m.radius - rs(3), borderColor: "rgba(255,255,255,0.35)" }]} />
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingTop: m.labelH / 3 }}>
         <RolesMaskIcon color="#FFFFFF" width={maskW} height={Math.round(maskW * (307 / 226))} />
       </View>
       <View style={{ height: m.labelH, alignItems: "center", justifyContent: "center" }}>
-        <Text style={[styles.label, { color: "#FFFFFF", fontSize: m.label + 1, letterSpacing: 1.5 }]}>ROLE PLAY</Text>
+        <Text style={[styles.label, { color: "#FFFFFF", fontSize: m.label + rs(1), letterSpacing: rs(1.5) }]}>ROLE PLAY</Text>
       </View>
     </View>
   );
@@ -180,9 +183,12 @@ export function RolePlayCard({ width, style }: { width: number; style?: StylePro
 export const CROWN_PATH =
   "M25.58 10.7C25.81 12.65 26.69 14.46 28.07 15.84C29.46 17.22 31.27 18.08 33.21 18.29C35.14 18.5 37.09 18.03 38.74 16.98C40.38 15.92 41.61 14.34 42.24 12.48C41.02 12.2 39.95 11.46 39.26 10.41C38.56 9.36 38.29 8.08 38.5 6.84C38.71 5.59 39.38 4.47 40.38 3.71C41.38 2.95 42.63 2.6 43.87 2.73C45.12 2.87 46.27 3.48 47.08 4.44C47.9 5.4 48.32 6.63 48.26 7.89C48.2 9.15 47.67 10.34 46.76 11.22C45.86 12.1 44.66 12.59 43.41 12.61L43.41 33.18C35.15 40.75 13.11 40.75 4.86 33.18L4.86 12.61C3.61 12.59 2.4 12.1 1.5 11.22C0.6 10.34 0.07 9.15 0.01 7.89C-0.05 6.63 0.37 5.4 1.18 4.44C2 3.48 3.15 2.87 4.39 2.73C5.64 2.6 6.89 2.95 7.89 3.71C8.89 4.47 9.56 5.59 9.77 6.84C9.98 8.08 9.7 9.36 9.01 10.41C8.31 11.46 7.24 12.2 6.02 12.48C6.65 14.34 7.89 15.92 9.53 16.98C11.17 18.03 13.12 18.5 15.06 18.29C17 18.08 18.81 17.22 20.19 15.84C21.58 14.46 22.46 12.65 22.69 10.7C21.42 10.35 20.33 9.55 19.61 8.45C18.89 7.35 18.59 6.02 18.77 4.71C18.95 3.41 19.59 2.21 20.57 1.34C21.56 0.48 22.82 0 24.13 0C25.44 0 26.71 0.48 27.69 1.34C28.68 2.21 29.32 3.41 29.5 4.71C29.67 6.02 29.37 7.35 28.65 8.45C27.93 9.55 26.84 10.35 25.58 10.7Z";
 
-const CROWN_STEP_X = 64;
-const CROWN_STEP_Y = 58;
-const CROWN_SCALE = 0.5; // ≈24pt crowns
+// Whole ornament scales by UI_SCALE on tablets (exactly 1 on phones).
+const CROWN_STEP_X = 64 * UI_SCALE;
+const CROWN_STEP_Y = 58 * UI_SCALE;
+const CROWN_SCALE = 0.5 * UI_SCALE; // ≈24pt crowns
+const CROWN_X0 = 10 * UI_SCALE;
+const CROWN_Y0 = 14 * UI_SCALE;
 /** Vertical period of the ornament (two staggered rows) — scroll offsets wrap on it. */
 export const CROWN_PATTERN_PERIOD = CROWN_STEP_Y * 2;
 
@@ -200,7 +206,7 @@ export const CROWN_PATTERN_PERIOD = CROWN_STEP_Y * 2;
 function CrownPatternBase({ width, height, opacity = 0.06 }: { width: number; height: number; opacity?: number }) {
   const pid = "crownTile" + Math.round(opacity * 1000);
   const t = (x: number, y: number) => `translate(${x} ${y}) rotate(-12) scale(${CROWN_SCALE})`;
-  const y1 = 14 + CROWN_STEP_Y;
+  const y1 = CROWN_Y0 + CROWN_STEP_Y;
   return (
     <Svg width={width} height={height} style={{ position: "absolute", top: 0, left: 0 }} pointerEvents="none">
       <Defs>
@@ -212,13 +218,13 @@ function CrownPatternBase({ width, height, opacity = 0.06 }: { width: number; he
           width={CROWN_STEP_X}
           height={CROWN_PATTERN_PERIOD}
         >
-          <Path d={CROWN_PATH} fill="#FFFFFF" fillOpacity={opacity} transform={t(10, 14)} />
-          <Path d={CROWN_PATH} fill="#FFFFFF" fillOpacity={opacity} transform={t(10 - CROWN_STEP_X / 2, y1)} />
+          <Path d={CROWN_PATH} fill="#FFFFFF" fillOpacity={opacity} transform={t(CROWN_X0, CROWN_Y0)} />
+          <Path d={CROWN_PATH} fill="#FFFFFF" fillOpacity={opacity} transform={t(CROWN_X0 - CROWN_STEP_X / 2, y1)} />
           <Path
             d={CROWN_PATH}
             fill="#FFFFFF"
             fillOpacity={opacity}
-            transform={t(10 + CROWN_STEP_X / 2, y1)}
+            transform={t(CROWN_X0 + CROWN_STEP_X / 2, y1)}
           />
         </Pattern>
       </Defs>

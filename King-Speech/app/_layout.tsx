@@ -34,7 +34,6 @@ import Animated, {
   FadeIn,
 } from "react-native-reanimated";
 import { BrandSplash } from "@/components/BrandSplash";
-import { IS_TABLET, PHONE_FRAME_W } from "@/lib/tabletFrame";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
 import { GameProvider, useGame } from "@/context/GameContext";
@@ -65,10 +64,7 @@ function useBlockHardwareBack() {
 /** Levels and other full-screen exercises enter AND leave with a soft cross-fade
  *  (owner: no abrupt slides when leaving a level for any other screen). */
 const SOFT_FADE = { animation: "fade" as const, animationDuration: 380 };
-/** On tablets the app lives in a phone-width column (lib/tabletFrame); a native
- *  full-screen modal would escape it and stretch to the whole iPad, so there
- *  the same screens are presented contained in the column. */
-const FULL_MODAL = IS_TABLET ? ("containedModal" as const) : ("fullScreenModal" as const);
+const FULL_MODAL = "fullScreenModal" as const;
 
 function RootLayoutNav() {
   const { themeMode, theme } = useTheme();
@@ -245,16 +241,7 @@ function ThemedRoot({ children }: { children: React.ReactNode }) {
   const { theme } = useTheme();
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.bg }}>
-      {IS_TABLET ? (
-        // Tablet: the whole app in a centred phone-width column (lib/tabletFrame).
-        <View style={{ flex: 1, alignItems: "center", backgroundColor: theme.bg }}>
-          <View style={{ flex: 1, width: PHONE_FRAME_W, overflow: "hidden", backgroundColor: theme.bg }}>
-            {children}
-          </View>
-        </View>
-      ) : (
-        children
-      )}
+      {children}
     </GestureHandlerRootView>
   );
 }

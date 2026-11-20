@@ -21,6 +21,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { lt, type SceneCard, type StageVariant } from "@/constants/roleScenarios";
 import type { ScenarioMsg } from "@/hooks/useRoleScenario";
 import { Avatar, GoalTag, MoodMeter, SCENE, TypingDots, type SceneProps } from "./common";
+import { rs } from "@/lib/responsive";
 
 const SIDE_METER: StageVariant[] = ["comedian", "showman"];
 
@@ -43,7 +44,7 @@ export function StageOverlay({
       {variant === "interview" && <Flash k={flashKey} />}
       {variant && SIDE_METER.includes(variant) && (
         <View pointerEvents="none" style={[styles.sideMeter, { bottom }]}>
-          <Text style={{ fontSize: 20 }}>{variant === "comedian" ? "😂" : "🔥"}</Text>
+          <Text style={{ fontSize: rs(20) }}>{variant === "comedian" ? "😂" : "🔥"}</Text>
           <VerticalBar value={mood} />
           <Text style={styles.sideLabel} numberOfLines={2}>{label}</Text>
         </View>
@@ -98,9 +99,9 @@ function CueBubble({ m, s, lang, variant }: { m: ScenarioMsg; s: SceneProps["sce
       style={[styles.cue, isCue && styles.cueEarpiece, isTroll && styles.cueTroll, m.kind === "ending" && styles.cueEnding]}
     >
       <View style={styles.cueHead}>
-        {isCue ? <Ionicons name={icon} size={14} color={SCENE.yellow} /> : <Avatar emoji={m.avatar} size={22} />}
+        {isCue ? <Ionicons name={icon} size={rs(14)} color={SCENE.yellow} /> : <Avatar emoji={m.avatar} size={rs(22)} />}
         <Text style={[styles.cueName, isTroll && { color: "#FFB3B3" }]} numberOfLines={1}>{m.name.toUpperCase()}</Text>
-        {!isCue && <Ionicons name={icon} size={12} color={SCENE.muted} />}
+        {!isCue && <Ionicons name={icon} size={rs(12)} color={SCENE.muted} />}
       </View>
       <Text style={[styles.cueText, isCue && { fontStyle: "italic" }]}>{m.text}</Text>
       {m.kind === "beat" && <GoalTag scenario={s} beatIndex={m.beatIndex} lang={lang} />}
@@ -144,19 +145,19 @@ export function StageFeed(p: SceneProps) {
   const showMeter = !variant || !SIDE_METER.includes(variant);
 
   return (
-    <View style={{ gap: 8, maxHeight: p.maxHeight, justifyContent: "flex-end" }}>
+    <View style={{ gap: rs(8), maxHeight: p.maxHeight, justifyContent: "flex-end" }}>
       {showMeter && (
         <View style={styles.meterRow}>
-          <MoodMeter value={p.mood} label={lt(s.meterLabel, lang)} width={110} />
+          <MoodMeter value={p.mood} label={lt(s.meterLabel, lang)} width={rs(110)} />
         </View>
       )}
 
       {/* Weather: the map strip of every city covered so far */}
       {variant === "weather" && beatsWithCards.length > 1 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }} style={{ flexGrow: 0 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rs(6) }} style={{ flexGrow: 0 }}>
           {beatsWithCards.slice(0, -1).map((m) => (
             <View key={m.key} style={styles.mini}>
-              <Text style={{ fontSize: 14 }}>{m.card!.icon}</Text>
+              <Text style={{ fontSize: rs(14) }}>{m.card!.icon}</Text>
               <Text style={styles.miniText}>{m.card!.value}</Text>
             </View>
           ))}
@@ -167,7 +168,7 @@ export function StageFeed(p: SceneProps) {
 
       {p.awaitingOpening && !scripted && (
         <Animated.View entering={FadeInDown} style={styles.hint}>
-          <Ionicons name="sparkles" size={13} color={SCENE.onYellow} />
+          <Ionicons name="sparkles" size={rs(13)} color={SCENE.onYellow} />
           <Text style={styles.hintText}>{pickLang(lang, { ru: "Твой выход: ", en: "Your entrance: ", kk: "Сіздің шығуыңыз: " })}{lt(s.openingHint, lang)}</Text>
         </Animated.View>
       )}
@@ -175,7 +176,7 @@ export function StageFeed(p: SceneProps) {
       {!scripted && last && !p.typing && <CueBubble m={last} s={s} lang={lang} variant={variant} />}
 
       {!scripted && p.typing && (
-        <View style={[styles.cue, styles.cueEarpiece, { paddingVertical: 10 }]}>
+        <View style={[styles.cue, styles.cueEarpiece, { paddingVertical: rs(10) }]}>
           <TypingDots color={SCENE.yellow} />
         </View>
       )}

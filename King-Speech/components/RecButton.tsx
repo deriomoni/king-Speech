@@ -5,6 +5,7 @@
 import React from "react";
 import { View, Pressable, StyleSheet, ViewStyle } from "react-native";
 import Svg, { Path } from "react-native-svg";
+import { rs } from "@/lib/responsive";
 
 export const REC_GOLD = "#FFD857";
 export const REC_RED = "#FF4B3E";
@@ -38,7 +39,7 @@ export function RecGlyph({ kind, size }: { kind: RecKind; size: number }) {
 }
 
 /** Start mark for labelled pills: the same rounded triangle as the round button. */
-export function RecDot({ size = 14, color = INK }: { size?: number; color?: string }) {
+export function RecDot({ size = rs(14), color = INK }: { size?: number; color?: string }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <Path d={TRI} fill={color} />
@@ -48,7 +49,7 @@ export function RecDot({ size = 14, color = INK }: { size?: number; color?: stri
 
 export default function RecButton({
   kind,
-  size = 64,
+  size = rs(64),
   onPress,
   disabled,
   accessibilityLabel,

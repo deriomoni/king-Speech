@@ -40,6 +40,7 @@ import {
   readingTint,
 } from "@/components/reading/readingTheme";
 import { RecDot } from "@/components/RecButton";
+import { rs } from "@/lib/responsive";
 
 // Figma 312:4346 reading canvas: Literata 20 on a 34pt line step. The IDLE
 // cover shows the same canvas scaled to 16.56pt (37:5850).
@@ -136,6 +137,9 @@ export default function ReadingLevelView({
   const displayTitle = workTitle ?? title;
   const heroSize = heroSizeFor(displayTitle);
   const heroLine = Math.round(heroSize * 1.025);
+  // Tablet: worklet distances computed once on the JS side.
+  const readingHeaderH = rs(READING_HEADER_H);
+  const btnDropY = rs(10);
 
   const genre =
     category === "poetry"
@@ -402,7 +406,7 @@ export default function ReadingLevelView({
   const headerStyle = useAnimatedStyle(() => ({
     height:
       heroH.value > 0
-        ? interpolate(phaseP.value, [0, 1], [heroH.value, READING_HEADER_H])
+        ? interpolate(phaseP.value, [0, 1], [heroH.value, readingHeaderH])
         : undefined,
   }));
   const idleGroupStyle = useAnimatedStyle(() => ({
@@ -422,7 +426,7 @@ export default function ReadingLevelView({
     opacity: interpolate(btnP.value, [0, 1], [1, 0]),
     transform: [
       { scale: interpolate(btnP.value, [0, 1], [1, 0.9]) },
-      { translateY: interpolate(btnP.value, [0, 1], [0, 10]) },
+      { translateY: interpolate(btnP.value, [0, 1], [0, btnDropY]) },
     ],
   }));
   const stopStyle = useAnimatedStyle(() => ({
@@ -455,7 +459,7 @@ export default function ReadingLevelView({
         style={st.scroll}
         contentContainerStyle={[
           st.scrollContent,
-          { paddingTop: topPad + 52, paddingBottom: bottomPad + 150 },
+          { paddingTop: topPad + rs(52), paddingBottom: bottomPad + rs(150) },
         ]}
         showsVerticalScrollIndicator={false}
         scrollEnabled={!showCountdown}
@@ -478,9 +482,9 @@ export default function ReadingLevelView({
             <Text
               style={{
                 fontFamily: "Geologica_700Bold",
-                fontSize: heroSize,
-                lineHeight: heroLine,
-                letterSpacing: -heroSize * 0.02,
+                fontSize: rs(heroSize),
+                lineHeight: rs(heroLine),
+                letterSpacing: -rs(heroSize) * 0.02,
                 color: ink,
               }}
             >
@@ -490,10 +494,10 @@ export default function ReadingLevelView({
               <Text
                 numberOfLines={1}
                 style={{
-                  marginTop: 11,
+                  marginTop: rs(11),
                   fontFamily: "Geologica_700Bold",
-                  fontSize: 11,
-                  letterSpacing: 0.55,
+                  fontSize: rs(11),
+                  letterSpacing: rs(0.55),
                   color: readingInk(dark, 0.55),
                 }}
               >
@@ -505,7 +509,7 @@ export default function ReadingLevelView({
           <Animated.View style={[st.captionAbs, captionStyle]} pointerEvents="none">
             <Text
               numberOfLines={1}
-              style={{ fontFamily: "Geologica_700Bold", fontSize: 15, color: ink }}
+              style={{ fontFamily: "Geologica_700Bold", fontSize: rs(15), color: ink }}
             >
               {displayTitle}
             </Text>
@@ -513,10 +517,10 @@ export default function ReadingLevelView({
               <Text
                 numberOfLines={1}
                 style={{
-                  marginTop: 3,
+                  marginTop: rs(3),
                   fontFamily: "Geologica_600SemiBold",
-                  fontSize: 11,
-                  letterSpacing: 0.55,
+                  fontSize: rs(11),
+                  letterSpacing: rs(0.55),
                   color: readingInk(dark, 0.45),
                 }}
               >
@@ -540,8 +544,8 @@ export default function ReadingLevelView({
             colors={wordColors}
             fontFamily={R.type.bodyFont}
             activeFontFamily="Literata_600SemiBold"
-            fontSize={BODY_SIZE}
-            lineHeight={BODY_LINE}
+            fontSize={rs(BODY_SIZE)}
+            lineHeight={rs(BODY_LINE)}
             onTextLayout={onCanvasTextLayout}
           />
         </Animated.View>
@@ -550,14 +554,14 @@ export default function ReadingLevelView({
       {/* Reading progress — module tint on a 12% track (READING only) */}
       <Animated.View
         pointerEvents="none"
-        style={[st.progressTrack, { bottom: bottomPad + 47, backgroundColor: readingInk(dark, 0.12) }, progressWrapStyle]}
+        style={[st.progressTrack, { bottom: bottomPad + rs(47), backgroundColor: readingInk(dark, 0.12) }, progressWrapStyle]}
       >
         <Animated.View style={[st.progressFill, { backgroundColor: tint }, progressFillStyle]} />
       </Animated.View>
 
       {/* Footer: reading speed + learn more — stays put; quieter while reading */}
       <View
-        style={[st.footer, { bottom: bottomPad + (reading ? 12 : 22) }]}
+        style={[st.footer, { bottom: bottomPad + rs(reading ? 12 : 22) }]}
         pointerEvents={showCountdown ? "none" : "box-none"}
       >
         <Pressable
@@ -569,7 +573,7 @@ export default function ReadingLevelView({
           <Text
             style={[
               st.speedText,
-              { color: readingInk(dark, reading ? 0.6 : 0.7), fontSize: reading ? 12 : 15 },
+              { color: readingInk(dark, reading ? 0.6 : 0.7), fontSize: rs(reading ? 12 : 15) },
             ]}
           >
             {speedLabel}
@@ -590,7 +594,7 @@ export default function ReadingLevelView({
 
       {/* Start button — centered (IDLE) */}
       <Animated.View
-        style={[st.centerDock, { bottom: bottomPad + 70 }, startBtnStyle]}
+        style={[st.centerDock, { bottom: bottomPad + rs(70) }, startBtnStyle]}
         pointerEvents={busy ? "none" : "auto"}
       >
         <Pressable
@@ -605,7 +609,7 @@ export default function ReadingLevelView({
             },
           ]}
         >
-          <RecDot size={13} color={btnInk} />
+          <RecDot size={rs(13)} color={btnInk} />
           <Text style={[st.startLabel, { color: btnInk }]}>
             {pickLang(lang, { ru: "Читать", en: "Read", kk: "Оқу" })}
           </Text>
@@ -642,7 +646,7 @@ export default function ReadingLevelView({
       {loading && (
         <View style={[st.overlay, { backgroundColor: bgColor }]}>
           <Animated.View exiting={FadeOut.duration(420)} style={st.overlayInner}>
-            <OscarMascot emotion="happy" size={180} />
+            <OscarMascot emotion="happy" size={rs(180)} />
             <Text style={[st.loadQuote, { color: ink, fontFamily: R.type.bodyFont }]}>
               {pickLang(lang, { ru: "Речь — это сцена. Выходи и говори.", en: "Speech is a stage. Step up and speak.", kk: "Сөз — бұл сахна. Шығып, сөйлеңіз." })}
             </Text>
@@ -673,7 +677,7 @@ export default function ReadingLevelView({
                 accessibilityLabel={pickLang(lang, { ru: "Закрыть", en: "Close", kk: "Жабу" })}
                 style={({ pressed }) => [st.infoClose, { opacity: pressed ? 0.6 : 1 }]}
               >
-                <Ionicons name="close" size={22} color={readingInk(dark, 0.85)} />
+                <Ionicons name="close" size={rs(22)} color={readingInk(dark, 0.85)} />
               </Pressable>
 
               {author ? (
@@ -706,7 +710,10 @@ export default function ReadingLevelView({
 const st = StyleSheet.create({
   container: { flex: 1 },
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 30 },
+  // Reading column: capped and centred on wide screens so lines stay a
+  // comfortable length (660 = 600 text + 2x30 padding, auto-scaled on tablets;
+  // wider than any phone, so phones are unchanged).
+  scrollContent: { paddingHorizontal: 30, width: "100%", maxWidth: 660, alignSelf: "center" },
   header: { justifyContent: "flex-start", overflow: "hidden" },
   captionAbs: { position: "absolute", left: 0, top: 0, right: 0 },
   bodyWrap: { marginTop: 34, transformOrigin: "left top" },

@@ -18,6 +18,7 @@ import { useAppColors } from "@/hooks/useAppColors";
 import { useTheme } from "@/context/ThemeContext";
 import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { MouthHelpDialog } from "@/components/warmup/WarmupHelpDialog";
+import { rs } from "@/lib/responsive";
 import IllustratedExerciseView, { ILLUSTRATED_EXERCISES } from "@/components/warmup/IllustratedExerciseView";
 
 // Timing model:
@@ -321,15 +322,15 @@ export default function MouthExerciseView({
   }
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: topPad + 8 }]}>
+    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: topPad + rs(8) }]}>
       {/* Header: back + help */}
       <View style={styles.header}>
         <Pressable onPress={onBack} hitSlop={12} style={styles.iconBtn}>
-          <Ionicons name="chevron-back" size={24} color={colors.textSecondary} />
+          <Ionicons name="chevron-back" size={rs(24)} color={colors.textSecondary} />
         </Pressable>
         {phase === "idle" ? (
           <Pressable onPress={() => setShowHelp(true)} hitSlop={12} style={styles.iconBtn}>
-            <Ionicons name="help-circle-outline" size={24} color={colors.textSecondary} />
+            <Ionicons name="help-circle-outline" size={rs(24)} color={colors.textSecondary} />
           </Pressable>
         ) : (
           <View style={styles.iconBtn} />
@@ -348,7 +349,7 @@ export default function MouthExerciseView({
                 { backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.9 : 1 },
               ]}
             >
-              <Ionicons name="play" size={13} color={theme.accentText} />
+              <Ionicons name="play" size={rs(13)} color={theme.accentText} />
               <Text style={[styles.ctaText, { color: theme.accentText }]}>{pickLang(lang, { ru: "Старт", en: "Start", kk: "Бастау" })}</Text>
             </Pressable>
             <Pressable onPress={onBack} hitSlop={8} style={styles.backLink}>
@@ -411,7 +412,7 @@ export default function MouthExerciseView({
           {/* Skip */}
           <View style={styles.footer}>
             <Pressable onPress={startIllustrated} hitSlop={8} style={styles.skip}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Text style={[styles.skipText, { color: colors.textMuted }]}>{pickLang(lang, { ru: "Пропустить", en: "Skip", kk: "Өткізіп жіберу" })}</Text><NextChevron color={colors.textMuted} size={12} /></View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: rs(6) }}><Text style={[styles.skipText, { color: colors.textMuted }]}>{pickLang(lang, { ru: "Пропустить", en: "Skip", kk: "Өткізіп жіберу" })}</Text><NextChevron color={colors.textMuted} size={rs(12)} /></View>
             </Pressable>
           </View>
         </>

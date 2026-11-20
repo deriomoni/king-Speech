@@ -20,6 +20,7 @@ import { useAppColors } from "@/hooks/useAppColors";
 import { useTheme } from "@/context/ThemeContext";
 import { useLang, pickLang } from "@/context/LangContext";
 import { BreathingHelpDialog } from "@/components/warmup/WarmupHelpDialog";
+import { rs } from "@/lib/responsive";
 
 /**
  * Breathing warm-up — the first Разогрев task. A guided breathing drill
@@ -215,22 +216,22 @@ export default function BreathingExerciseView({
 
   // Vertically center the cue icon between the cycle text (≈ top of the center
   // area) and the top of the 280px ring. Container is 90px tall and centered.
-  const RING = 280;
+  const RING = rs(280);
   const breathIconTop =
     centerBox.h > 0
-      ? centerBox.y + (centerBox.h - RING) / 4 - 45
+      ? centerBox.y + (centerBox.h - RING) / 4 - rs(45)
       : SCREEN_H * 0.26;
 
   return (
-    <View style={[styles.root, { paddingTop: topPad + 8, backgroundColor: colors.background }]}>
+    <View style={[styles.root, { paddingTop: topPad + rs(8), backgroundColor: colors.background }]}>
       {/* Header: back + title + help */}
       <View style={styles.header}>
         <Pressable onPress={onBack} hitSlop={12} style={styles.iconBtn}>
-          <Ionicons name="chevron-back" size={24} color={colors.textSecondary} />
+          <Ionicons name="chevron-back" size={rs(24)} color={colors.textSecondary} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.text }]}>{pickLang(lang, { ru: "Дыхательная разминка", en: "Breathing warm-up", kk: "Тыныс жаттығуы" })}</Text>
         <Pressable onPress={() => setShowHelp(true)} hitSlop={12} style={styles.iconBtn}>
-          <Ionicons name="help-circle-outline" size={24} color={colors.textSecondary} />
+          <Ionicons name="help-circle-outline" size={rs(24)} color={colors.textSecondary} />
         </Pressable>
       </View>
 
@@ -252,9 +253,9 @@ export default function BreathingExerciseView({
         >
           <Animated.View style={iconPulseStyle}>
             {phase?.type === "inhale" ? (
-              <NoseIcon color={colors.text} size={57} />
+              <NoseIcon color={colors.text} size={rs(57)} />
             ) : (
-              <MouthIcon color={colors.text} size={68} />
+              <MouthIcon color={colors.text} size={rs(68)} />
             )}
           </Animated.View>
         </Animated.View>
@@ -282,7 +283,7 @@ export default function BreathingExerciseView({
               <Text style={[styles.phaseVia, { color: theme.accentInk }]}>{pickLang(lang, phase.via)}</Text>
             </>
           ) : (
-            <Butterfly color={theme.accentInk} size={113} />
+            <Butterfly color={theme.accentInk} size={rs(113)} />
           )}
         </Animated.View>
       </View>
@@ -300,7 +301,7 @@ export default function BreathingExerciseView({
           </Pressable>
         ) : (
           <Pressable onPress={onComplete} hitSlop={8} style={styles.skip}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Text style={[styles.skipText, { color: colors.textMuted }]}>{pickLang(lang, { ru: "Пропустить", en: "Skip", kk: "Өткізіп жіберу" })}</Text><NextChevron color={colors.textMuted} size={12} /></View>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: rs(6) }}><Text style={[styles.skipText, { color: colors.textMuted }]}>{pickLang(lang, { ru: "Пропустить", en: "Skip", kk: "Өткізіп жіберу" })}</Text><NextChevron color={colors.textMuted} size={rs(12)} /></View>
           </Pressable>
         )}
       </View>

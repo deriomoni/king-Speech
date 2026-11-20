@@ -37,6 +37,7 @@ import {
   GoalTracker,
 } from "@/components/roles/scenes/RoleScene";
 import { RecGlyph, REC_GOLD } from "@/components/RecButton";
+import { rs } from "@/lib/responsive";
 
 /** Minimal recording surface shared by expo-camera's CameraView and VisionFaceCamera. */
 type RecordableCamera = {
@@ -468,7 +469,7 @@ export default function RoleStageScreen() {
   const busy = phase === "processing" || phase === "countdown" || restarting;
   const showScene = !!scenario && phase !== "scan" && phase !== "processing";
   const feedMax = Math.round(SH * (scripted ? 0.2 : 0.3));
-  const overlayBottom = (Platform.OS === "web" ? 20 : insets.bottom) + 150;
+  const overlayBottom = (Platform.OS === "web" ? rs(20) : insets.bottom) + rs(150);
   const faceColor = FACE_TRACK_COLORS[faceState];
   const facePill =
     faceState === "ok"
@@ -516,7 +517,7 @@ export default function RoleStageScreen() {
         <View style={[StyleSheet.absoluteFill, styles.voiceBg]}>
           <CrownPattern width={SW} height={SH} />
           <View style={{ transform: [{ rotate: "-2deg" }] }}>
-            <RoleTarotCard role={role} width={Math.round(Math.min(SW * 0.5, 220))} lang={lang} />
+            <RoleTarotCard role={role} width={Math.round(Math.min(SW * 0.5, rs(220)))} lang={lang} />
           </View>
         </View>
       )}
@@ -538,9 +539,9 @@ export default function RoleStageScreen() {
       )}
 
       {/* Top bar: close · REC timer */}
-      <View style={[styles.topBar, { paddingTop: (Platform.OS === "web" ? 16 : insets.top) + 6 }]}>
+      <View style={[styles.topBar, { paddingTop: (Platform.OS === "web" ? rs(16) : insets.top) + rs(6) }]}>
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.closeBtn}>
-          <Ionicons name="close" size={24} color="#fff" />
+          <Ionicons name="close" size={rs(24)} color="#fff" />
         </Pressable>
         {phase === "recording" && scenario?.kind === "live" ? (
           <LiveTopBadge viewers={sc.viewers} time={`${mm}:${ss}`} />
@@ -550,14 +551,14 @@ export default function RoleStageScreen() {
             <Text style={styles.recTime}>{mm}:{ss}</Text>
           </View>
         ) : (
-          <View style={{ width: 40 }} />
+          <View style={{ width: rs(40) }} />
         )}
       </View>
 
       {/* Face tracker (camera mode only) */}
       {hasCam && (
         <Animated.View entering={FadeIn} style={styles.trackerWrap} pointerEvents="none">
-          <FaceTrackerIcon size={44} color={faceColor} />
+          <FaceTrackerIcon size={rs(44)} color={faceColor} />
           <View style={styles.facePill}>
             <View style={[styles.faceDot, { backgroundColor: faceState === "ok" ? "#34C759" : faceColor }]} />
             <Text style={styles.facePillText}>{facePill}</Text>
@@ -568,10 +569,10 @@ export default function RoleStageScreen() {
       <View style={{ flex: 1 }} />
 
       {/* Bottom: (teleprompter) · role chip · controls */}
-      <View style={[styles.bottom, { paddingBottom: (Platform.OS === "web" ? 20 : insets.bottom) + 14 }]}>
+      <View style={[styles.bottom, { paddingBottom: (Platform.OS === "web" ? rs(20) : insets.bottom) + rs(14) }]}>
         {!hasCam && wantCamera && phase !== "scan" && (
           <View style={styles.noCamNote}>
-            <Ionicons name="videocam-off" size={14} color={MUTED} />
+            <Ionicons name="videocam-off" size={rs(14)} color={MUTED} />
             <Text style={styles.noCamText}>
               {pickLang(lang, { ru: "Камера выключена — можно играть только голосом.", en: "Camera off — you can still perform with voice.", kk: "Камера өшірулі — тек дауыспен ойнауға болады." })}
             </Text>
@@ -607,7 +608,7 @@ export default function RoleStageScreen() {
           />
         ) : scripted && !scenario ? (
           <View style={styles.prompterCard}>
-            <ScrollView style={{ maxHeight: 150 }} showsVerticalScrollIndicator={false}>
+            <ScrollView style={{ maxHeight: rs(150) }} showsVerticalScrollIndicator={false}>
               <Text style={styles.prompterText}>{tx(role.scriptedText, lang)}</Text>
             </ScrollView>
           </View>
@@ -615,7 +616,7 @@ export default function RoleStageScreen() {
 
         {finishIn != null && (
           <Animated.View entering={FadeIn} style={styles.finishPill}>
-            <Ionicons name="flag" size={13} color="#2B2100" />
+            <Ionicons name="flag" size={rs(13)} color="#2B2100" />
             <Text style={styles.finishText}>
               {pickLang(lang, { ru: `Сцена сыграна · стоп через ${finishIn}`, en: `Scene complete · stopping in ${finishIn}`, kk: `Көрініс ойналды · тоқтауға ${finishIn}` })}
             </Text>
@@ -624,7 +625,7 @@ export default function RoleStageScreen() {
 
         <View style={styles.chipRow}>
           <View style={styles.roleChip}>
-            <RolesMaskIcon color="#FFFFFF" width={13} height={18} />
+            <RolesMaskIcon color="#FFFFFF" width={rs(13)} height={rs(18)} />
             <Text style={styles.roleChipText} numberOfLines={1}>{tx(role.title, lang).toUpperCase()}</Text>
           </View>
           {scenario && phase === "recording" && <GoalTracker scenario={scenario} goals={sc.goals} lang={lang} />}
@@ -655,7 +656,7 @@ export default function RoleStageScreen() {
             >
               <RecordRing progress={phase === "recording" ? Math.min(1, elapsed / (scenario ? ARC_SECONDS_SCENARIO : ARC_SECONDS)) : 0} />
               <View style={styles.recFace}>
-                <RecGlyph kind={phase === "recording" ? "stop" : "record"} size={REC - 18} />
+                <RecGlyph kind={phase === "recording" ? "stop" : "record"} size={rs(REC - 18)} />
               </View>
             </Pressable>
 
@@ -697,13 +698,15 @@ export default function RoleStageScreen() {
   );
 }
 
+// REC is used raw in StyleSheet.create (auto-scaled on tablets); the ring Svg
+// is drawn in phone units and scaled up via viewBox to the same rs(REC) box.
 const REC = 78;
 const RING_R = (REC - 5) / 2;
 const RING_C = 2 * Math.PI * RING_R;
 
 function RecordRing({ progress }: { progress: number }) {
   return (
-    <Svg width={REC} height={REC} style={{ position: "absolute", top: 0, left: 0 }}>
+    <Svg width={rs(REC)} height={rs(REC)} viewBox={`0 0 ${REC} ${REC}`} style={{ position: "absolute", top: 0, left: 0 }}>
       <Circle cx={REC / 2} cy={REC / 2} r={RING_R} stroke="#FFFFFF" strokeWidth={4} fill="none" />
       {progress > 0 && (
         <Circle

@@ -30,6 +30,7 @@ import { pickLang, type Lang } from "@/context/LangContext";
 import { aggregateAnalyses } from "@/services/analyzeGenericTask";
 import { Image } from "expo-image";
 import RoundStar from "@/components/RoundStar";
+import { rs } from "@/lib/responsive";
 
 // Figma "Оскар · все позы" exports (04/05): the corridor illustration. Keyed to
 // transparent so they sit on the dark illustration well in both themes.
@@ -554,9 +555,9 @@ export default function TaskFlowView({
   return (
     <View style={{ flex: 1 }}>
       {/* Header: exit + numbered step progress (Figma "Step progress" 174:1892) */}
-      <View style={[st.header, { paddingTop: topPad + 8 }]}>
+      <View style={[st.header, { paddingTop: topPad + rs(8) }]}>
         <Pressable onPress={onExit} hitSlop={12} style={({ pressed }) => [st.exitBtn, { opacity: pressed ? 0.6 : 1 }]}>
-          <Ionicons name="close" size={22} color={ink} />
+          <Ionicons name="close" size={rs(22)} color={ink} />
         </Pressable>
         <StepProgress
           total={total}
@@ -623,7 +624,7 @@ export default function TaskFlowView({
       </View>
 
       {/* Bottom control — record → (analyzing) → mini-score + gold Next pill */}
-      <View style={[st.controls, { paddingBottom: bottomPad + 14 }]}>
+      <View style={[st.controls, { paddingBottom: bottomPad + rs(14) }]}>
         {isInterview && phase === "record" && !corridor ? (
           <Animated.View entering={FadeIn.duration(300)} style={st.replaceQWrap}>
             <Pressable
@@ -640,7 +641,7 @@ export default function TaskFlowView({
               accessibilityRole="button"
               accessibilityLabel={pickLang(lang, { ru: "Другой вопрос", en: "Another question", kk: "Басқа сұрақ" })}
             >
-              <Ionicons name="shuffle" size={15} color={theme.text} />
+              <Ionicons name="shuffle" size={rs(15)} color={theme.text} />
               <Text style={[st.replaceQText, { color: theme.text, fontFamily: "Geologica_700Bold" }]}>
                 {usedHere >= replaceLimit
                   ? pickLang(lang, { ru: "Замен больше нет", en: "No swaps left", kk: "Ауыстыру қалмады" })
@@ -649,7 +650,7 @@ export default function TaskFlowView({
               {usedHere < replaceLimit ? (
                 <View style={[st.replaceQCost, { backgroundColor: isDarkTheme ? "rgba(240,238,233,0.08)" : "rgba(38,38,40,0.06)" }]}>
                   <Text style={[st.replaceQCostText, { color: theme.text }]}>{REPLACE_Q_COST}</Text>
-                  <CoinIcon size={9} color={theme.text} />
+                  <CoinIcon size={rs(9)} color={theme.text} />
                 </View>
               ) : null}
             </Pressable>
@@ -698,7 +699,7 @@ export default function TaskFlowView({
                 <Text style={[st.pillText, { color: theme.accentText, fontFamily: "Geologica_800ExtraBold" }]}>
                   {isLast ? (pickLang(lang, { ru: "Смотреть оценку", en: "See score", kk: "Бағаны көру" })) : (pickLang(lang, { ru: "Далее", en: "Next", kk: "Келесі" }))}
                 </Text>
-                <NextChevron size={16} color={theme.accentText} />
+                <NextChevron size={rs(16)} color={theme.accentText} />
               </Pressable>
             </Animated.View>
             <Pressable onPress={retryTake} hitSlop={8} style={({ pressed }) => [st.retryLink, { opacity: pressed ? 0.5 : 1 }]}>
@@ -790,7 +791,7 @@ function StepProgress({
             style={[
               st.stepDot,
               active
-                ? { backgroundColor: theme.accent, borderWidth: 4, borderColor: theme.ctaStroke, width: 32, height: 32, borderRadius: 16, margin: -2 }
+                ? { backgroundColor: theme.accent, borderWidth: 4, borderColor: theme.ctaStroke, width: rs(32), height: rs(32), borderRadius: rs(16), margin: rs(-2) }
                 : { backgroundColor: done ? theme.accent : todoFill },
             ]}
           >
@@ -868,7 +869,7 @@ function LevelCorridor({
         onPressOut={() => { pausedRef.current = false; }}
         accessibilityLabel={pickLang(lang, { ru: "Удерживай, чтобы поставить на паузу", en: "Hold to pause", kk: "Кідірту үшін басып тұрыңыз" })}
       >
-        <View style={[st.storyTrack, { top: topPad - 9, backgroundColor: isDark ? "rgba(240,238,233,0.25)" : "rgba(38,38,40,0.15)" }]}>
+        <View style={[st.storyTrack, { top: topPad - rs(9), backgroundColor: isDark ? "rgba(240,238,233,0.25)" : "rgba(38,38,40,0.15)" }]}>
           <View style={[st.storyFill, { width: `${progress * 100}%`, backgroundColor: theme.text }]} />
         </View>
 
@@ -884,7 +885,7 @@ function LevelCorridor({
           <Text style={st.corridorAuthor}>{`- ${author}`}</Text>
         </Animated.View>
 
-        <Text style={[st.corridorHint, { bottom: bottomPad + 33, color: isDark ? "rgba(240,238,233,0.35)" : theme.textMuted }]}>
+        <Text style={[st.corridorHint, { bottom: bottomPad + rs(33), color: isDark ? "rgba(240,238,233,0.35)" : theme.textMuted }]}>
           {pickLang(lang, { ru: "Удерживай экран, чтобы поставить на паузу", en: "Hold the screen to pause", kk: "Кідірту үшін экранды басып тұрыңыз" })}
         </Text>
       </Pressable>
@@ -892,11 +893,11 @@ function LevelCorridor({
       <Pressable
         onPress={onExit}
         hitSlop={14}
-        style={({ pressed }) => [st.corridorClose, { top: topPad + 10, opacity: pressed ? 0.6 : 1 }]}
+        style={({ pressed }) => [st.corridorClose, { top: topPad + rs(10), opacity: pressed ? 0.6 : 1 }]}
         accessibilityRole="button"
         accessibilityLabel={pickLang(lang, { ru: "Выйти", en: "Exit", kk: "Шығу" })}
       >
-        <Ionicons name="close" size={22} color={theme.text} />
+        <Ionicons name="close" size={rs(22)} color={theme.text} />
       </Pressable>
     </View>
   );
@@ -916,7 +917,7 @@ function MiniScore({ analysis, lang }: { analysis: SpeechAnalysis; lang: Lang })
         <Text style={[st.miniVerdict, { color: tone, fontFamily: "Geologica_800ExtraBold" }]}>{verdict}</Text>
         <View style={st.starsRow}>
           {[1, 2, 3].map((i) => (
-            <RoundStar key={i} size={14} filled={i <= stars} color={brand.gold} />
+            <RoundStar key={i} size={rs(14)} filled={i <= stars} color={brand.gold} />
           ))}
         </View>
       </View>
@@ -1003,7 +1004,7 @@ function PlaybackBar({
         {playing ? (
           <View style={[st.pbStop, { backgroundColor: theme.accentText }]} />
         ) : (
-          <Ionicons name="play" size={16} color={theme.accentText} style={{ marginLeft: 2 }} />
+          <Ionicons name="play" size={rs(16)} color={theme.accentText} style={{ marginLeft: rs(2) }} />
         )}
       </Pressable>
       <View style={st.pbWave} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
@@ -1013,14 +1014,14 @@ function PlaybackBar({
             style={[
               st.pbWaveBar,
               {
-                height: 6 + v * 28,
+                height: rs(6 + v * 28),
                 backgroundColor: (i + 0.5) / bars.length <= played ? theme.text : dim,
               },
             ]}
           />
         ))}
         {showHead && w > 0 ? (
-          <View pointerEvents="none" style={[st.pbHead, { left: Math.max(0, Math.min(w - 2, progress * w)) - 2.5 }]}>
+          <View pointerEvents="none" style={[st.pbHead, { left: Math.max(0, Math.min(w - rs(2), progress * w)) - rs(2.5) }]}>
             <View style={[st.pbHeadDot, { backgroundColor: theme.accent }]} />
             <View style={[st.pbHeadLine, { backgroundColor: theme.accent }]} />
           </View>
@@ -1106,14 +1107,14 @@ function DevReport({
   return (
     <View style={[st.devRoot, { backgroundColor: theme.bg }]}>
       <ScrollView
-        contentContainerStyle={{ paddingTop: topPad + 55, paddingBottom: bottomPad + 40, paddingHorizontal: 20 }}
+        contentContainerStyle={{ paddingTop: topPad + rs(55), paddingBottom: bottomPad + rs(40), paddingHorizontal: rs(20) }}
         showsVerticalScrollIndicator={false}
       >
         <Text style={[st.devTitle, { color: theme.text }]}>
           {isTongue ? (pickLang(lang, { ru: "Разбор\nскороговорок", en: "Tongue-twister\nreview", kk: "Тіл бұрауыштар\nталдауы" })) : pickLang(lang, { ru: "Разбор ответов", en: "Answer breakdown", kk: "Жауаптар талдауы" })}
         </Text>
 
-        <View style={{ marginTop: 28, gap: 4 }}>
+        <View style={{ marginTop: rs(28), gap: rs(4) }}>
           <Text style={[st.devLabel, { color: labelColor }]}>{pickLang(lang, { ru: "ОЦЕНКА", en: "SCORE", kk: "БАҒА" })}</Text>
           <View style={st.devScoreRow}>
             <Text style={[st.devScore, { color: theme.accentInk }]}>{fmtScore(avg)}</Text>
@@ -1123,7 +1124,7 @@ function DevReport({
 
         {/* Summary — tip + notes */}
         {tip || notes.length || (!isTongue && aiUsed === 0) ? (
-          <View style={[st.devCard, cardStyle, { marginTop: 28, gap: 16 }]}>
+          <View style={[st.devCard, cardStyle, { marginTop: rs(28), gap: rs(16) }]}>
             {tip ? (
               <>
                 <Text style={[st.devLabel, { color: theme.accentInk }]}>{pickLang(lang, { ru: "СОВЕТ", en: "TIP", kk: "КЕҢЕС" })}</Text>
@@ -1134,7 +1135,7 @@ function DevReport({
             {notes.length ? (
               <>
                 <Text style={[st.devLabel, { color: labelColor }]}>{pickLang(lang, { ru: "ЗАМЕЧАНИЯ", en: "NOTES", kk: "ЕСКЕРТПЕЛЕР" })}</Text>
-                <View style={{ gap: 10 }}>
+                <View style={{ gap: rs(10) }}>
                   {notes.map((n, k) => (
                     <View key={k} style={st.devNoteRow}>
                       <View style={[st.devNoteDot, { backgroundColor: theme.accent }]} />
@@ -1152,11 +1153,11 @@ function DevReport({
           </View>
         ) : null}
 
-        <Text style={[st.devLabel, { color: labelColor, marginTop: 36, marginBottom: 12 }]}>
+        <Text style={[st.devLabel, { color: labelColor, marginTop: rs(36), marginBottom: rs(12) }]}>
           {isTongue ? (pickLang(lang, { ru: "СКОРОГОВОРКИ", en: "TONGUE TWISTERS", kk: "ТІЛ БҰРАУЫШТАР" })) : pickLang(lang, { ru: "ОТВЕТЫ", en: "ANSWERS", kk: "ЖАУАПТАР" })}
         </Text>
 
-        <View style={{ gap: 12 }}>
+        <View style={{ gap: rs(12) }}>
           {rows.map((r, i) => {
             const a = r.analysis;
             const wordCount = r.transcript.trim().split(/\s+/).filter(Boolean).length;
@@ -1173,7 +1174,7 @@ function DevReport({
               { label: pickLang(lang, { ru: "Громкость", en: "Volume", kk: "Дауыс қаттылығы" }), value: Number(a.score.volume ?? 0) },
             ];
             return (
-              <View key={i} style={[st.devCard, cardStyle, { gap: 14 }]}>
+              <View key={i} style={[st.devCard, cardStyle, { gap: rs(14) }]}>
                 <View style={st.devRowHead}>
                   <Text style={[st.devLabel, { color: labelColor }]}>
                     {(isTongue ? (pickLang(lang, { ru: "СКОРОГОВОРКА ", en: "TWISTER ", kk: "ТІЛ БҰРАУЫШ " })) : pickLang(lang, { ru: "ВОПРОС ", en: "QUESTION ", kk: "СҰРАҚ " })) +
@@ -1208,13 +1209,13 @@ function DevReport({
                     {pickLang(lang, { ru: "Характеристики", en: "Breakdown", kk: "Сипаттамалар" })}
                   </Text>
                   <View style={[st.devChevron, { backgroundColor: isDark ? "rgba(240,238,233,0.08)" : "rgba(38,38,40,0.06)" }]}>
-                    <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={16} color={theme.text} />
+                    <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={rs(16)} color={theme.text} />
                   </View>
                 </Pressable>
 
                 {expanded ? (
-                  <View style={{ gap: 16 }}>
-                    <View style={{ gap: 6 }}>
+                  <View style={{ gap: rs(16) }}>
+                    <View style={{ gap: rs(6) }}>
                       <Text style={[st.devSubLabel, { color: isDark ? "rgba(240,238,233,0.4)" : theme.textMuted }]}>
                         {pickLang(lang, { ru: `ТРАНСКРИБАЦИЯ · ${wordCount} сл.`, en: `TRANSCRIPTION · ${wordCount} w.`, kk: `ТРАНСКРИПЦИЯ · ${wordCount} сөз` })}
                       </Text>
@@ -1226,7 +1227,7 @@ function DevReport({
                             : pickLang(lang, { ru: "Речь не распознана - нет связи с сервером", en: "Speech not recognized - no connection to the server", kk: "Сөз танылмады - сервермен байланыс жоқ" })}
                       </Text>
                     </View>
-                    <View style={{ gap: 12 }}>
+                    <View style={{ gap: rs(12) }}>
                       {metrics.map((m) => (
                         <MetricRow key={m.label} label={m.label} value={m.value} isDark={isDark} />
                       ))}

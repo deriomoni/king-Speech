@@ -20,6 +20,7 @@ import PitchTrackSkia, {
   passDurationSec,
 } from "@/components/warmup/PitchTrackSkia";
 import { activeSegmentIndexAt } from "@/components/warmup/pitchTrackGeometry";
+import { rs } from "@/lib/responsive";
 import { usePitchDetection } from "@/hooks/usePitchDetection";
 import type { NormalizedWarmup } from "@/constants/contentLoader";
 import { targetHz } from "@/services/warmupPitch";
@@ -295,7 +296,7 @@ export default function PitchGameView({
             <Ionicons
               key={i}
               name={i < hearts ? "heart" : "heart-outline"}
-              size={22}
+              size={rs(22)}
               color={i < hearts ? warmupTheme.gold : "#555"}
             />
           ))}
@@ -326,7 +327,7 @@ export default function PitchGameView({
 
           {session.comboMax > 0 && session.combo >= 3 && (
             <Animated.View style={[styles.comboPill, comboStyle]}>
-              <Ionicons name="flame" size={14} color={warmupTheme.gold} />
+              <Ionicons name="flame" size={rs(14)} color={warmupTheme.gold} />
               <Text style={styles.comboText}>{pickLang(lang, { ru: "Комбо", en: "Combo", kk: "Комбо" })} ×{session.combo}</Text>
             </Animated.View>
           )}

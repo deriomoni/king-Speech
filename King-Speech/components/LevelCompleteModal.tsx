@@ -24,6 +24,7 @@ import Trophy3D from "@/components/Trophy3D";
 import CoinIcon from "@/components/CoinIcon";
 import NextChevron from "@/components/NextChevron";
 import { useGame } from "@/context/GameContext";
+import { rs } from "@/lib/responsive";
 import { pickLang, type Lang } from "@/context/LangContext";
 import {
   RAYS_SVG,
@@ -354,14 +355,14 @@ function VictoryScreen({ bestScore, durationSec, xpEarned, onNext, onMap, t, lan
 
       {/* Confetti burst (Rive) — under the title */}
       <View
-        style={{ position: "absolute", top: 0, left: 0, right: 0, height: Math.max(210, insets.top + 180), overflow: "hidden" }}
+        style={{ position: "absolute", top: 0, left: 0, right: 0, height: Math.max(rs(210), insets.top + rs(180)), overflow: "hidden" }}
         pointerEvents="none"
       >
         <RiveAnim
           source={CONFETTI_RIVE}
           autoplay
           fit="cover"
-          style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 360, backgroundColor: "transparent", transform: [{ scale: 1.19 }] }}
+          style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: rs(360), backgroundColor: "transparent", transform: [{ scale: 1.19 }] }}
         />
       </View>
 

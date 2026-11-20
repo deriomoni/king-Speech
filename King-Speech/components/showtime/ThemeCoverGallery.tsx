@@ -10,6 +10,7 @@
 // the vector paths of 371:1128…371:1133. While swiping, every card's edges are
 // interpolated between those rest keyframes, so the resting state is 1:1 with
 // Figma and the motion stays continuous. Same pan/snap logic as before.
+import { UI_SCALE, createUnscaledStyles } from "@/lib/responsive";
 import React, { useEffect, useMemo } from "react";
 import { View, Image, StyleSheet, useWindowDimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -27,8 +28,10 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import type { SpeechTheme } from "@/app/showtime-stage";
 import { showtimeCover } from "@/constants/showtimeCovers";
 
-// Everything is 1.45× the Figma frame (covers were enlarged by 45 %).
-const SIZE_K = 1.45;
+// Everything is 1.45× the Figma frame (covers were enlarged by 45 %), times the
+// tablet scale — every size below derives from SIZE_K, so the stylesheet is
+// created unscaled.
+const SIZE_K = 1.45 * UI_SCALE;
 const STAGE_H = Math.round(180 * SIZE_K);
 const CARD = Math.round(140 * SIZE_K);
 const CY = Math.round(84 * SIZE_K); // card mid-height inside the 180 pt frame (Figma y 14 + 70)
@@ -61,7 +64,7 @@ function clamp(v: number, lo: number, hi: number) {
 
 export function ThemeCoverGallery({ themes, selectedIdx, onSelect }: Props) {
   const { width: winW } = useWindowDimensions();
-  const stageW = Math.min(winW, 480);
+  const stageW = Math.min(winW, 480 * UI_SCALE);
   const cx = stageW / 2;
   // One swipe step ≈ distance between neighbouring outer edges.
   const stride = 60 * SIZE_K;
@@ -223,7 +226,7 @@ function Card({ idx, target, theme, cx }: CardProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createUnscaledStyles({
   stage: { alignSelf: "center", position: "relative", overflow: "hidden" },
   card: {
     position: "absolute",

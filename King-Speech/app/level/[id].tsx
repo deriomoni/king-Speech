@@ -74,6 +74,8 @@ import { analyzeSpeech, analyzeSpeechPro, generateTips, FILLERS, type SpeechAnal
 import { getApiUrl } from "@/lib/query-client";
 import { fetch as expoFetch } from "expo/fetch";
 import { ActivityIndicator } from "react-native";
+// `rs` is already this file's results stylesheet — import the scaler as `rsz`.
+import { rs as rsz } from "@/lib/responsive";
 
 // ---- Results screen (premium gaming look) ----
 // Brand-aligned evaluation palette: King Speech royal gold + violet on a
@@ -201,7 +203,7 @@ const TranscriptBlock = React.memo(function TranscriptBlock({
       testID="transcript-block"
     >
       <View style={rs.transcriptHeader}>
-        <Ionicons name="ear-outline" size={16} color={fgMuted} />
+        <Ionicons name="ear-outline" size={rsz(16)} color={fgMuted} />
         <Text style={[rs.feedbackTitle, { color: fgText, fontFamily: "Geologica_600SemiBold" }]}>
           {pickLang(lang, { ru: "Что мы услышали", en: "What we heard", kk: "Не естідік" })}
         </Text>
@@ -248,7 +250,7 @@ const TranscriptBlock = React.memo(function TranscriptBlock({
             </Text>
             <Ionicons
               name={expanded ? "chevron-up" : "chevron-down"}
-              size={14}
+              size={rsz(14)}
               color={fgMuted}
             />
           </View>
@@ -348,8 +350,8 @@ export function FlowerResultWindow({
   onRetry?: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 28 : insets.top + 8;
-  const bottomPad = Platform.OS === "web" ? 28 : insets.bottom + 10;
+  const topPad = Platform.OS === "web" ? rsz(28) : insets.top + rsz(8);
+  const bottomPad = Platform.OS === "web" ? rsz(28) : insets.bottom + rsz(10);
 
   const { theme } = useTheme();
   // Figma (37:5981 / 37:6190): the score + tier are always the gold accent
@@ -389,12 +391,12 @@ export function FlowerResultWindow({
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[rs.content, { paddingTop: topPad + 28, paddingBottom: bottomPad + 8 }]}
+        contentContainerStyle={[rs.content, { paddingTop: topPad + rsz(28), paddingBottom: bottomPad + rsz(8) }]}
       >
         {/* Oscar leads the screen — big, centered, no card around him */}
         <Animated.View entering={FadeIn.duration(450)} style={rs.oscarSection}>
           {oscarEmotion === "thumbup" ? (
-            <OscarMascot emotion="thumbup" size={312} />
+            <OscarMascot emotion="thumbup" size={rsz(312)} />
           ) : (
             <ExpoImage
               source={oscarEmotion === "happy" ? OSCAR_SCORE_HAPPY : OSCAR_SCORE_SAD}
@@ -482,7 +484,7 @@ export function FlowerResultWindow({
             ]}
           >
             <Text style={[rs.nextBtnText, { fontFamily: "Geologica_700Bold", color: theme.accentText }]}>{primaryLabel}</Text>
-            <NextChevron size={16} color={theme.accentText} />
+            <NextChevron size={rsz(16)} color={theme.accentText} />
           </Pressable>
         </Animated.View>
       </ScrollView>
@@ -517,9 +519,9 @@ function EmptyRecordingSheet({
       <View style={ers.overlay}>
         <View style={[ers.card, { backgroundColor: cardBg }]}>
           {/* Oscar is puzzled — we didn't hear anything */}
-          <OscarMascot emotion="notsure" size={110} />
+          <OscarMascot emotion="notsure" size={rsz(110)} />
           <View style={[ers.micBadge, { backgroundColor: accent + "1A" }]}>
-            <Ionicons name="mic-off-outline" size={18} color={accent} />
+            <Ionicons name="mic-off-outline" size={rsz(18)} color={accent} />
           </View>
           <Text style={[ers.title, { color: fg, fontFamily: "Geologica_700Bold" }]}>
             {pickLang(lang, { ru: "Кажется, мы тебя не услышали", en: "We didn't quite hear you", kk: "Сізді естімей қалған сияқтымыз" })}
@@ -769,7 +771,7 @@ export default function LevelScreen() {
           // @ts-ignore — RN typings allow ScrollView as a relative node
           scroller,
           (_x: number, y: number) => {
-            const offset = Math.max(0, y - 12);
+            const offset = Math.max(0, y - rsz(12));
             scroller.scrollTo({ y: offset, animated: true });
           },
           () => {},
@@ -1304,10 +1306,10 @@ export default function LevelScreen() {
           accessibilityLabel={pickLang(lang, { ru: "Выйти из чтения", en: "Leave the reading", kk: "Оқудан шығу" })}
           style={({ pressed }) => [
             styles.closeBtnAbs,
-            { top: topPad + 8, opacity: pressed ? 0.6 : 1, backgroundColor: "transparent" },
+            { top: topPad + rsz(8), opacity: pressed ? 0.6 : 1, backgroundColor: "transparent" },
           ]}
         >
-          <Ionicons name="close" size={24} color={colors.text} />
+          <Ionicons name="close" size={rsz(24)} color={colors.text} />
         </Pressable>
         )}
 

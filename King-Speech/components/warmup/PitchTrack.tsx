@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
-import { View, Text, StyleSheet, Dimensions, Platform } from "react-native";
+import { View, Text, Dimensions, Platform } from "react-native";
+import { createUnscaledStyles } from "@/lib/responsive";
 import Animated, {
   useAnimatedStyle,
   type SharedValue,
@@ -10,6 +11,7 @@ import { GlowSphere } from "@/components/ds";
 import { warmupFonts, warmupTheme } from "@/components/warmup/warmupTheme";
 import type { HitZone } from "@/services/warmupScoring";
 import {
+  K,
   BALL_R,
   BALL_X_RATIO,
   PLATFORM_BASE_Y,
@@ -30,13 +32,15 @@ import {
 export { buildTrackSegments, passDurationSec };
 export type { TrackSegment };
 
-const TRACK_W = Dimensions.get("window").width - 40;
+// All lengths are phone-design × K (tablet scale) — the stylesheet below is
+// unscaled so it stays consistent with the shared geometry.
+const TRACK_W = Dimensions.get("window").width - 40 * K;
 const BALL_X = TRACK_W * BALL_X_RATIO;
-const AURA_R = 26;
-const TRAIL_W = 48;
-const SPOT = 210;
+const AURA_R = 26 * K;
+const TRAIL_W = 48 * K;
+const SPOT = 210 * K;
 const SPARK_ANGLES = [0, 60, 120, 180, 240, 300];
-const SPARK_RADIUS = 30;
+const SPARK_RADIUS = 30 * K;
 
 interface Props {
   segments: TrackSegment[];
@@ -88,7 +92,7 @@ const NoteCopy = React.memo(function NoteCopy({
         return (
           <Text
             key={seg.index}
-            style={[styles.noteLabel, { left: x, top: apexY - 17, width: w }]}
+            style={[styles.noteLabel, { left: x, top: apexY - 17 * K, width: w }]}
           >
             {seg.noteLabel}
           </Text>
@@ -141,15 +145,15 @@ export default function PitchTrack({
   return (
     <View style={styles.wrap}>
       <GlowSphere
-        size={200}
-        top={10}
-        left={-40}
+        size={200 * K}
+        top={10 * K}
+        left={-40 * K}
         color="rgba(148,104,251,0.30)"
       />
       <GlowSphere
-        size={220}
-        bottom={-30}
-        right={-50}
+        size={220 * K}
+        bottom={-30 * K}
+        right={-50 * K}
         color="rgba(148,104,251,0.22)"
       />
 
@@ -159,7 +163,7 @@ export default function PitchTrack({
       />
 
       {[0.28, 0.5, 0.72].map((f) => (
-        <View key={f} style={[styles.line, { top: 20 + f * (TRACK_HEIGHT - 60) }]} />
+        <View key={f} style={[styles.line, { top: 20 * K + f * (TRACK_HEIGHT - 60 * K) }]} />
       ))}
 
       <Animated.View style={[styles.world, worldStyle]} pointerEvents="none">
@@ -194,7 +198,7 @@ export default function PitchTrack({
                   styles.fillBar,
                   {
                     left: segX(active),
-                    top: PLATFORM_BASE_Y - 5,
+                    top: PLATFORM_BASE_Y - 5 * K,
                     width: Math.max(0, segW(active) * activeFill01),
                     backgroundColor: warmupTheme.cleanMint,
                   },
@@ -246,14 +250,14 @@ export default function PitchTrack({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createUnscaledStyles({
   wrap: {
     width: TRACK_W,
     height: TRACK_HEIGHT,
     alignSelf: "center",
     position: "relative",
     overflow: "hidden",
-    borderRadius: 24,
+    borderRadius: 24 * K,
   },
   spotlight: {
     position: "absolute",
@@ -282,14 +286,14 @@ const styles = StyleSheet.create({
   noteLabel: {
     position: "absolute",
     textAlign: "center",
-    fontSize: 10,
+    fontSize: 10 * K,
     color: "#cfc9dd",
     fontFamily: warmupFonts.body,
   },
   fillBar: {
     position: "absolute",
-    height: 5,
-    borderRadius: 3,
+    height: 5 * K,
+    borderRadius: 3 * K,
   },
   ballRig: {
     position: "absolute",
@@ -300,9 +304,9 @@ const styles = StyleSheet.create({
   trail: {
     position: "absolute",
     left: -TRAIL_W,
-    top: -BALL_R + 2,
+    top: -BALL_R + 2 * K,
     width: TRAIL_W,
-    height: (BALL_R - 2) * 2,
+    height: (BALL_R - 2 * K) * 2,
     borderRadius: BALL_R,
   },
   aura: {
@@ -322,11 +326,11 @@ const styles = StyleSheet.create({
   },
   spark: {
     position: "absolute",
-    left: -2.5,
-    top: -2.5,
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+    left: -2.5 * K,
+    top: -2.5 * K,
+    width: 5 * K,
+    height: 5 * K,
+    borderRadius: 2.5 * K,
     backgroundColor: warmupTheme.gold,
   },
   ball: {
@@ -339,7 +343,7 @@ const styles = StyleSheet.create({
     backgroundColor: warmupTheme.gold,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.9,
-    shadowRadius: 12,
+    shadowRadius: 12 * K,
     elevation: 8,
   },
 });

@@ -18,6 +18,7 @@ import { useLang, pickLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth, Gender } from "@/context/AuthContext";
 import { KingSpeechLogo, PillButton, useInk } from "@/components/auth/AuthUI";
+import { rs } from "@/lib/responsive";
 
 // Figma "Регистрация · профиль (пусто / заполнено)" — 65:41 / 65:77.
 export default function ProfileSetupScreen() {
@@ -55,7 +56,7 @@ export default function ProfileSetupScreen() {
     >
       <StatusBar barStyle={theme.mode === "dark" ? "light-content" : "dark-content"} />
       <ScrollView
-        contentContainerStyle={[s.scroll, { paddingTop: topPad + 12, paddingBottom: bottomPad + 10 }]}
+        contentContainerStyle={[s.scroll, { paddingTop: topPad + rs(12), paddingBottom: bottomPad + rs(10) }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -115,8 +116,8 @@ export default function ProfileSetupScreen() {
                 fontFamily: name.length > 0 ? "Geologica_800ExtraBold" : "Geologica_600SemiBold",
               },
               focused || name.length > 0
-                ? { borderWidth: 4, borderColor: theme.accent, paddingHorizontal: 20 }
-                : { borderWidth: 2, borderColor: stroke, paddingHorizontal: 22 },
+                ? { borderWidth: 4, borderColor: theme.accent, paddingHorizontal: rs(20) }
+                : { borderWidth: 2, borderColor: stroke, paddingHorizontal: rs(22) },
             ]}
             autoFocus
             returnKeyType="done"
@@ -150,7 +151,7 @@ export default function ProfileSetupScreen() {
                   <Text style={[s.tileSmall, { color: on ? "rgba(38,38,40,0.75)" : ink(0.55) }]}>{g.small}</Text>
                   {on && (
                     <Animated.View entering={ZoomIn} style={[s.check, { backgroundColor: theme.accentText }]}>
-                      <Ionicons name="checkmark-sharp" size={19} color={theme.accent} />
+                      <Ionicons name="checkmark-sharp" size={rs(19)} color={theme.accent} />
                     </Animated.View>
                   )}
                 </Pressable>

@@ -9,6 +9,7 @@ import type { Lang } from "@/context/LangContext";
 import { pickLang } from "@/context/LangContext";
 import { lt, speakerName, type RoleScenario } from "@/constants/roleScenarios";
 import { Avatar, SCENE, TypingDots } from "./common";
+import { rs } from "@/lib/responsive";
 
 export function ScriptPrompter({
   scenario: s,
@@ -36,7 +37,7 @@ export function ScriptPrompter({
   return (
     <View style={[styles.card, { maxHeight }]}>
       <View style={styles.head}>
-        <Ionicons name="document-text" size={12} color={SCENE.muted} />
+        <Ionicons name="document-text" size={rs(12)} color={SCENE.muted} />
         <Text style={styles.headText}>
           {pickLang(lang, { ru: "СЦЕНАРИЙ", en: "SCRIPT", kk: "СЦЕНАРИЙ" })} · {Math.min(shownStep, total)}/{total}
         </Text>
@@ -46,7 +47,7 @@ export function ScriptPrompter({
         <Text style={styles.done}>{pickLang(lang, { ru: "Сцена сыграна — жми стоп ■", en: "Scene complete — tap stop ■", kk: "Көрініс ойналды — тоқтатуды басыңыз ■" })}</Text>
       ) : typing ? (
         <View style={styles.oppRow}>
-          <Avatar emoji={s.persona.avatar} size={22} />
+          <Avatar emoji={s.persona.avatar} size={rs(22)} />
           <TypingDots />
         </View>
       ) : (
@@ -54,7 +55,7 @@ export function ScriptPrompter({
           <Animated.View key={`p${prompt}`} entering={FadeIn.duration(220)}>
             {beat && !awaitingOpening && (
               <View style={styles.oppRow}>
-                <Avatar emoji={beat.from?.avatar ?? s.persona.avatar} size={22} />
+                <Avatar emoji={beat.from?.avatar ?? s.persona.avatar} size={rs(22)} />
                 <Text style={styles.oppText}>
                   <Text style={styles.oppName}>{speakerName(beat.from, s, lang)}: </Text>
                   {lt(beat.line, lang)}

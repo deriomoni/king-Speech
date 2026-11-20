@@ -37,6 +37,7 @@ import { RankBackground } from "@/components/path/RankBackground";
 import { useAudioWaveform } from "@/hooks/useAudioWaveform";
 import { colors as brandColors } from "@/theme/tokens";
 import { useTheme } from "@/context/ThemeContext";
+import { rs } from "@/lib/responsive";
 
 function rankNameFor(rankIndex: number, lang: Lang): string {
   const ru = ["Новичок", "Любитель", "Уверенный", "Мастер", "Профи"];
@@ -123,7 +124,7 @@ export default function WorldDetailRoute() {
     <View style={{ flex: 1, backgroundColor: theme.bgColors[0] }}>
       <RankBackground theme={theme} themeMode={themeMode} />
 
-      <View style={[detailStyles.headerWrap, { paddingTop: topPad + 6 }]}>
+      <View style={[detailStyles.headerWrap, { paddingTop: topPad + rs(6) }]}>
         <Pressable
           onPress={handleClose}
           accessibilityRole="button"
@@ -139,14 +140,14 @@ export default function WorldDetailRoute() {
           testID="world-back"
           hitSlop={10}
         >
-          <Ionicons name="chevron-back" size={22} color={theme.textPrimary} />
+          <Ionicons name="chevron-back" size={rs(22)} color={theme.textPrimary} />
         </Pressable>
       </View>
 
       <ScrollView
         contentContainerStyle={[
           detailStyles.scroll,
-          { paddingTop: topPad + 56, paddingBottom: bottomPad + 32 },
+          { paddingTop: topPad + rs(56), paddingBottom: bottomPad + rs(32) },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -388,7 +389,7 @@ function RecordingsBlock({
       ]}
     >
       <View style={detailStyles.cardHeader}>
-        <Ionicons name="mic" size={16} color={theme.accent} />
+        <Ionicons name="mic" size={rs(16)} color={theme.accent} />
         <Text
           style={[
             detailStyles.cardTitle,
@@ -409,7 +410,7 @@ function RecordingsBlock({
           : pickLang(lang, { ru: `${recordings.length} записей из твоего пути. Удерживай, чтобы переименовать, поделиться или удалить.`, en: `${recordings.length} ${recordings.length === 1 ? "recording" : "recordings"} from your journey. Long-press to rename, share, or delete.`, kk: `Жолыңыздан ${recordings.length} жазба. Атын өзгерту, бөлісу не жою үшін басып тұрыңыз.` })}
       </Text>
       {recordings.length > 0 && (
-        <View style={{ gap: 8, marginTop: 8 }}>
+        <View style={{ gap: rs(8), marginTop: rs(8) }}>
           {recordings.map((rec, i) => (
             <RecordingItem
               key={`${rec.uri}-${i}`}
@@ -473,7 +474,7 @@ function ActionSheetModal({
   onDelete: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const bottomPad = Platform.OS === "web" ? 34 : Math.max(insets.bottom, 12);
+  const bottomPad = Platform.OS === "web" ? 34 : Math.max(insets.bottom, rs(12));
   return (
     <Modal
       visible={visible}
@@ -489,7 +490,7 @@ function ActionSheetModal({
             {
               backgroundColor: theme.cardBg,
               borderColor: theme.borderColor,
-              paddingBottom: bottomPad + 8,
+              paddingBottom: bottomPad + rs(8),
             },
           ]}
           testID="recording-actions-sheet"
@@ -579,7 +580,7 @@ function SheetAction({
       ]}
       testID={testID}
     >
-      <Ionicons name={icon} size={20} color={accent} />
+      <Ionicons name={icon} size={rs(20)} color={accent} />
       <Text
         style={[
           detailStyles.sheetRowText,
@@ -961,7 +962,7 @@ function RecordingItem({
         hitSlop={6}
         testID={`world-recording-play-${index}`}
       >
-        <Ionicons name={playing ? "pause" : "play"} size={14} color={brandColors.onGold} />
+        <Ionicons name={playing ? "pause" : "play"} size={rs(14)} color={brandColors.onGold} />
       </Pressable>
 
       <View style={detailStyles.recBody}>
@@ -997,13 +998,13 @@ function RecordingItem({
           disabled={duration <= 0}
           style={detailStyles.recWaveTrack}
           testID={`world-recording-bar-${index}`}
-          hitSlop={{ top: 8, bottom: 8 }}
+          hitSlop={{ top: rs(8), bottom: rs(8) }}
         >
           {waveformSamples ? (
             (() => {
               const playIdx = Math.round(progress * waveformSamples.length);
               return waveformSamples.map((v, i) => {
-                const h = Math.max(2, Math.round(v * 22));
+                const h = Math.max(rs(2), Math.round(v * rs(22)));
                 const isPast = i < playIdx;
                 return (
                   <View
@@ -1063,7 +1064,7 @@ function RecordingItem({
       >
         <Ionicons
           name={muted ? "volume-mute" : "volume-high"}
-          size={14}
+          size={rs(14)}
           color={theme.accentDark}
         />
       </Pressable>
@@ -1095,7 +1096,7 @@ function RecordingItem({
         hitSlop={8}
         testID={`world-recording-more-${index}`}
       >
-        <Ionicons name="ellipsis-horizontal" size={14} color={theme.accentDark} />
+        <Ionicons name="ellipsis-horizontal" size={rs(14)} color={theme.accentDark} />
       </Pressable>
     </Pressable>
   );
@@ -1135,11 +1136,11 @@ function MementoBlock({
           colors={theme.portalGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[StyleSheet.absoluteFill, { borderRadius: 26 }]}
+          style={[StyleSheet.absoluteFill, { borderRadius: rs(26) }]}
         />
-        <Ionicons name={theme.portalIcon} size={22} color="#fff" />
+        <Ionicons name={theme.portalIcon} size={rs(22)} color="#fff" />
       </View>
-      <View style={{ flex: 1, gap: 2 }}>
+      <View style={{ flex: 1, gap: rs(2) }}>
         <Text
           style={[
             detailStyles.cardTitle,
@@ -1160,7 +1161,7 @@ function MementoBlock({
         </Text>
       </View>
       {available && (
-        <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+        <Ionicons name="chevron-forward" size={rs(20)} color={theme.textSecondary} />
       )}
     </Pressable>
   );
@@ -1188,7 +1189,7 @@ function ModulesBlock({
       ]}
     >
       <View style={detailStyles.cardHeader}>
-        <Ionicons name="layers" size={16} color={theme.accent} />
+        <Ionicons name="layers" size={rs(16)} color={theme.accent} />
         <Text
           style={[
             detailStyles.cardTitle,
@@ -1206,7 +1207,7 @@ function ModulesBlock({
       >
         {pickLang(lang, { ru: "Нажми на модуль, чтобы вернуться к нему. Прогресс сохраняется.", en: "Tap any module to revisit it. Your progress here is preserved.", kk: "Модульге оралу үшін оны басыңыз. Прогресс сақталады." })}
       </Text>
-      <View style={{ marginTop: 4 }}>
+      <View style={{ marginTop: rs(4) }}>
         {sorted.map((l) => {
           const mc = MODULE_COLORS[l.module] ?? { color: theme.accent, colorDark: theme.accentDark };
           const tasksDone = l.tasks.filter((t) => t.status === "completed").length;
@@ -1255,7 +1256,7 @@ function ModulesBlock({
               <View style={detailStyles.modMeta}>
                 {l.completed ? (
                   <View style={[detailStyles.modCheckCircle, { backgroundColor: mc.color }]}>
-                    <Ionicons name="checkmark" size={12} color="#fff" />
+                    <Ionicons name="checkmark" size={rs(12)} color="#fff" />
                   </View>
                 ) : (
                   <Text
@@ -1267,7 +1268,7 @@ function ModulesBlock({
                     {tasksDone}/{l.tasks.length}
                   </Text>
                 )}
-                <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+                <Ionicons name="chevron-forward" size={rs(16)} color={theme.textMuted} />
               </View>
             </Pressable>
           );

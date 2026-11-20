@@ -28,6 +28,7 @@ type BottomTabBarProps = {
 };
 import { useLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
+import { rs } from "@/lib/responsive";
 import {
   IconHome,
   IconCheatSheet,
@@ -99,7 +100,7 @@ function SonicTabBar({ state, emitter, navigateToTab, descriptors }: BottomTabBa
     (focusedOptions?.tabBarStyle as { display?: string } | undefined)?.display ===
     "none";
   const isWeb = Platform.OS === "web";
-  const bottomInset = isWeb ? 18 : Math.max(insets.bottom, 12);
+  const bottomInset = isWeb ? rs(18) : Math.max(insets.bottom, rs(12));
 
   const focusedRoute = state.routes[state.index]?.name;
   const focusedIndex = SLOTS.findIndex((s) => s.routeName === focusedRoute);
@@ -212,11 +213,11 @@ function TabSlot({
       accessibilityRole="button"
       accessibilityState={isFocused ? { selected: true } : {}}
       style={styles.tabBtn}
-      hitSlop={8}
+      hitSlop={rs(8)}
     >
       <Animated.View style={aStyle}>
         <Icon
-          size={ICON_SIZE}
+          size={rs(ICON_SIZE)}
           color={isFocused ? activeColor : inactiveColor}
         />
       </Animated.View>

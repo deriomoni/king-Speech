@@ -16,6 +16,7 @@ import CelebrationBurst from "@/components/warmup/CelebrationBurst";
 import { usePitchDetection } from "@/hooks/usePitchDetection";
 import { warmupFonts, warmupSpring, warmupTheme } from "@/components/warmup/warmupTheme";
 import type { VoiceRange } from "@/services/warmupPitch";
+import { rs } from "@/lib/responsive";
 
 type Step = "intro" | "low" | "high" | "done";
 
@@ -26,6 +27,8 @@ interface Props {
 }
 
 const STEP_SEC = 3;
+// Orb travel (pt) for the full pitch range — computed outside the worklet.
+const ORB_TRAVEL = rs(40);
 
 export default function WarmupCalibrationView({ topPad, onComplete, onBack }: Props) {
   const pitch = usePitchDetection();
@@ -39,7 +42,7 @@ export default function WarmupCalibrationView({ topPad, onComplete, onBack }: Pr
   const orbStyle = useAnimatedStyle(() => ({
     transform: [
       { scale: orbScale.value },
-      { translateY: (0.5 - pitch.position01) * 40 },
+      { translateY: (0.5 - pitch.position01) * ORB_TRAVEL },
     ],
   }));
 
@@ -106,7 +109,7 @@ export default function WarmupCalibrationView({ topPad, onComplete, onBack }: Pr
   }, [step, runCapture]);
 
   return (
-    <View style={[styles.root, { paddingTop: topPad + 12 }]}>
+    <View style={[styles.root, { paddingTop: topPad + rs(12) }]}>
       <LinearGradient
         colors={[warmupTheme.bg, "#141018", warmupTheme.bg]}
         style={StyleSheet.absoluteFill}
@@ -128,7 +131,7 @@ export default function WarmupCalibrationView({ topPad, onComplete, onBack }: Pr
           })}
         </Text>
 
-        <OreoMascot size={140} shouldPlay={step !== "intro"} />
+        <OreoMascot size={rs(140)} shouldPlay={step !== "intro"} />
 
         {step === "intro" && (
           <Animated.View entering={FadeInDown.duration(300)}>

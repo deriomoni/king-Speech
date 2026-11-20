@@ -1,4 +1,5 @@
 import React, { useEffect, useId } from "react";
+import { rs } from "@/lib/responsive";
 import { View } from "react-native";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import Animated, {
@@ -21,7 +22,7 @@ const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 //   • completed — no gradient: the same thin edge as locked (black at 9%),
 //                 laid over a stroke in the brick's own colour
 
-const STROKE = 4;
+const STROKE = rs(4); // grows with the brick on tablets
 const REVOLUTION_MS = 1440; // one full lap of the shine (Figma: 8 × 0.18s)
 
 export function lightenHex(hex: string, t: number): string {

@@ -10,6 +10,7 @@ import type { Lang } from "@/context/LangContext";
 import { lt, type RoleScenario } from "@/constants/roleScenarios";
 import type { GoalState } from "@/hooks/useRoleScenario";
 import { SCENE } from "./common";
+import { rs } from "@/lib/responsive";
 
 export function GoalTracker({ scenario, goals, lang }: { scenario: RoleScenario; goals: Record<string, GoalState>; lang: Lang }) {
   const [open, setOpen] = useState(false);
@@ -42,7 +43,7 @@ export function GoalTracker({ scenario, goals, lang }: { scenario: RoleScenario;
             const ok = goals[g.id] === "done";
             return (
               <View key={g.id} style={styles.row}>
-                <Ionicons name={ok ? "checkmark-circle" : "ellipse-outline"} size={16} color={ok ? SCENE.green : SCENE.muted} />
+                <Ionicons name={ok ? "checkmark-circle" : "ellipse-outline"} size={rs(16)} color={ok ? SCENE.green : SCENE.muted} />
                 <Text style={[styles.rowText, ok && { color: SCENE.text }]}>{lt(g.text, lang)}</Text>
               </View>
             );
@@ -51,12 +52,12 @@ export function GoalTracker({ scenario, goals, lang }: { scenario: RoleScenario;
       )}
       {flashGoal && !open && (
         <Animated.View entering={ZoomIn.duration(220)} exiting={FadeOut.duration(200)} style={styles.toast}>
-          <Ionicons name="checkmark-circle" size={14} color="#06210F" />
+          <Ionicons name="checkmark-circle" size={rs(14)} color="#06210F" />
           <Text style={styles.toastText} numberOfLines={1}>{lt(flashGoal.text, lang)}</Text>
         </Animated.View>
       )}
       <Pressable onPress={() => setOpen((o) => !o)} hitSlop={8} style={styles.pill}>
-        <Text style={{ fontSize: 12 }}>🎯</Text>
+        <Text style={{ fontSize: rs(12) }}>🎯</Text>
         {scenario.goals.map((g) => (
           <View key={g.id} style={[styles.dot, goals[g.id] === "done" && styles.dotOn]} />
         ))}

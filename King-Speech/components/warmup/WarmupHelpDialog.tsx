@@ -6,6 +6,7 @@ import Svg, { Defs, RadialGradient, Rect, Stop, LinearGradient } from "react-nat
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
 import { useLang, pickLang } from "@/context/LangContext";
+import { rs } from "@/lib/responsive";
 
 /**
  * "Как выполнять?" pop-ups of the Разогрев level (Figma 37:5023 breathing,
@@ -74,7 +75,7 @@ function Shell({
             cardStyle,
           ]}
         >
-          <GlassBackground radius={28} />
+          <GlassBackground radius={rs(28)} />
           {children}
         </Animated.View>
       </View>
@@ -87,9 +88,9 @@ export function BreathingHelpDialog({ visible, onClose }: { visible: boolean; on
   const { theme } = useTheme();
   const { lang } = useLang();
   return (
-    <Shell visible={visible} onClose={onClose} width={346} cardStyle={styles.breathCard}>
+    <Shell visible={visible} onClose={onClose} width={rs(346)} cardStyle={styles.breathCard}>
       <Pressable onPress={onClose} hitSlop={12} style={styles.close}>
-        <Ionicons name="close" size={22} color={theme.textSecondary} />
+        <Ionicons name="close" size={rs(22)} color={theme.textSecondary} />
       </Pressable>
       <Text style={[styles.bTitle, { color: theme.text }]}>{pickLang(lang, { ru: "Как выполнять?", en: "How to do it?", kk: "Қалай орындау керек?" })}</Text>
       <Text style={[styles.bText, { color: theme.textSecondary }]}>
@@ -130,7 +131,7 @@ export function MouthHelpDialog({ visible, onClose }: { visible: boolean; onClos
   const { theme } = useTheme();
   const { lang } = useLang();
   return (
-    <Shell visible={visible} onClose={onClose} width={330} cardStyle={styles.mouthCard}>
+    <Shell visible={visible} onClose={onClose} width={rs(330)} cardStyle={styles.mouthCard}>
       <Text style={[styles.mTitle, { color: theme.text }]}>{pickLang(lang, { ru: "Как выполнять?", en: "How to do it?", kk: "Қалай орындау керек?" })}</Text>
       <Text style={[styles.mText, { color: theme.textSecondary }]}>
         {pickLang(lang, {

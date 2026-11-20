@@ -37,6 +37,7 @@ import StageGlassDialog from "@/components/showtime/StageGlassDialog";
 import { aspectsFromMetrics5 } from "@/components/ScoreFlower";
 import { headphonesXml } from "@/assets/figma/showtime-stage/svgs";
 import RoundStar from "@/components/RoundStar";
+import { rs } from "@/lib/responsive";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -175,18 +176,18 @@ function AudioPlayer({ uri, waveform, onPlaybackComplete }: { uri: string; wavef
         {isPlaying ? (
           <View style={[ap.pause, { backgroundColor: "#FFFFFF" }]} />
         ) : (
-          <Ionicons name="play" size={16} color="#FFFFFF" style={{ marginLeft: 2 }} />
+          <Ionicons name="play" size={rs(16)} color="#FFFFFF" style={{ marginLeft: rs(2) }} />
         )}
       </Pressable>
       <View style={ap.wave} onLayout={(e) => setWaveW(e.nativeEvent.layout.width)}>
         {bars.map((v, i) => (
           <View
             key={i}
-            style={[ap.waveBar, { height: 6 + v * 28, backgroundColor: (i + 0.5) / bars.length <= played ? theme.text : dim }]}
+            style={[ap.waveBar, { height: rs(6 + v * 28), backgroundColor: (i + 0.5) / bars.length <= played ? theme.text : dim }]}
           />
         ))}
         {showHead && waveW > 0 ? (
-          <View pointerEvents="none" style={[ap.head, { left: Math.max(0, Math.min(waveW - 2, progress * waveW)) - 2.5 }]}>
+          <View pointerEvents="none" style={[ap.head, { left: Math.max(0, Math.min(waveW - rs(2), progress * waveW)) - rs(2.5) }]}>
             <View style={[ap.headDot, { backgroundColor: theme.accent }]} />
             <View style={[ap.headLine, { backgroundColor: theme.accent }]} />
           </View>
@@ -369,7 +370,7 @@ export default function ShowtimePlaybackScreen() {
   }, [hasListenedFully, recordingUri, navigation]);
 
   const headerOpacity = useSharedValue(0);
-  const contentY = useSharedValue(40);
+  const contentY = useSharedValue(rs(40));
   const contentOpacity = useSharedValue(0);
 
   useEffect(() => {
@@ -611,7 +612,7 @@ export default function ShowtimePlaybackScreen() {
   return (
     <View style={[pb.container, { backgroundColor: theme.bg }]}>
       <ScrollView
-        contentContainerStyle={[pb.scroll, { paddingTop: topPad + 55, paddingBottom: bottomPad + 40 }]}
+        contentContainerStyle={[pb.scroll, { paddingTop: topPad + rs(55), paddingBottom: bottomPad + rs(40) }]}
         showsVerticalScrollIndicator={false}
       >
         <Animated.Text style={[pb.title, { color: theme.text }, headerStyle]}>
@@ -634,7 +635,7 @@ export default function ShowtimePlaybackScreen() {
                   {[1, 2, 3].map((n) => (
                     <Animated.View key={n} entering={ZoomIn.delay(300 + n * 150).duration(300)}>
                       <RoundStar
-                        size={30}
+                        size={rs(30)}
                         filled={n <= sum.finalStars}
                         emptyColor={isDark ? "#F0EEE9" : "#262628"}
                         emptyOpacity={0.12}
@@ -654,7 +655,7 @@ export default function ShowtimePlaybackScreen() {
 
           {/* Didn't read the text → not counted */}
           {isSilent ? (
-            <Animated.View entering={FadeInUp.delay(100).duration(500)} style={[pb.card, cardStyle, { marginTop: 28, gap: 12 }]}>
+            <Animated.View entering={FadeInUp.delay(100).duration(500)} style={[pb.card, cardStyle, { marginTop: rs(28), gap: rs(12) }]}>
               <Text style={[pb.label, { color: theme.accentInk }]}>{t("notCounted").toUpperCase()}</Text>
               <Text style={[pb.tip, { color: theme.text }]}>
                 {pickLang(lang, {
@@ -668,7 +669,7 @@ export default function ShowtimePlaybackScreen() {
 
           {/* Coaching tip — surfaced from /api/analyze-speech.tip */}
           {sum && tip ? (
-            <Animated.View entering={FadeIn.delay(600).duration(400)} style={[pb.card, cardStyle, { marginTop: 28, gap: 16 }]}>
+            <Animated.View entering={FadeIn.delay(600).duration(400)} style={[pb.card, cardStyle, { marginTop: rs(28), gap: rs(16) }]}>
               <Text style={[pb.label, { color: theme.accentInk }]}>{pickLang(lang, { ru: "СОВЕТ", en: "TIP", kk: "КЕҢЕС" })}</Text>
               <Text style={[pb.tip, { color: theme.text }]}>{tip}</Text>
             </Animated.View>
@@ -676,7 +677,7 @@ export default function ShowtimePlaybackScreen() {
 
           {/* Before the result: what to listen for while it's being analysed. */}
           {!analysisResult && !showOscar ? (
-            <View style={[pb.card, cardStyle, { marginTop: 28, gap: 10 }]}>
+            <View style={[pb.card, cardStyle, { marginTop: rs(28), gap: rs(10) }]}>
               <Text style={[pb.label, { color: theme.accentInk }]}>{t("whatToEvaluate").toUpperCase()}</Text>
               {[t("evalQ1"), t("evalQ2"), t("evalQ3"), t("evalQ4"), t("evalQ5")].map((q, i) => (
                 <Animated.View key={i} entering={FadeInDown.delay(600 + i * 80).duration(350)} style={pb.evalRow}>
@@ -688,18 +689,18 @@ export default function ShowtimePlaybackScreen() {
           ) : null}
 
           {showOscar ? (
-            <View style={[pb.card, cardStyle, { marginTop: 28, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12 }]}>
+            <View style={[pb.card, cardStyle, { marginTop: rs(28), flexDirection: "row", alignItems: "center", justifyContent: "center", gap: rs(12) }]}>
               <ActivityIndicator color={theme.accent} size="small" />
               <Text style={[pb.evalText, { color: theme.textSecondary }]}>{t("aiAnalyzing")}</Text>
             </View>
           ) : null}
 
-          <Text style={[pb.label, { color: labelColor, marginTop: 36, marginBottom: 12 }]}>
+          <Text style={[pb.label, { color: labelColor, marginTop: rs(36), marginBottom: rs(12) }]}>
             {pickLang(lang, { ru: "ВЫСТУПЛЕНИЕ", en: "PERFORMANCE", kk: "СӨЗ СӨЙЛЕУ" })}
           </Text>
 
           {/* Performance card: theme, replay, characteristics */}
-          <View style={[pb.card, cardStyle, { gap: 14 }]}>
+          <View style={[pb.card, cardStyle, { gap: rs(14) }]}>
             <View style={pb.cardHead}>
               <Text style={[pb.label, { color: labelColor }]}>{pickLang(lang, { ru: "ТЕМА", en: "TOPIC", kk: "ТАҚЫРЫП" })}</Text>
               {sum ? (
@@ -732,11 +733,11 @@ export default function ShowtimePlaybackScreen() {
                     {pickLang(lang, { ru: "Характеристики", en: "Breakdown", kk: "Көрсеткіштер" })}
                   </Text>
                   <View style={[pb.chevron, { backgroundColor: isDark ? "rgba(240,238,233,0.08)" : "rgba(38,38,40,0.06)" }]}>
-                    <Ionicons name={detailsOpen ? "chevron-up" : "chevron-down"} size={16} color={theme.text} />
+                    <Ionicons name={detailsOpen ? "chevron-up" : "chevron-down"} size={rs(16)} color={theme.text} />
                   </View>
                 </Pressable>
                 {detailsOpen ? (
-                  <View style={{ gap: 12 }}>
+                  <View style={{ gap: rs(12) }}>
                     {metricRows.map((a) => (
                       <MetricRow key={a.key} label={a.label} value={a.score} />
                     ))}
@@ -746,7 +747,7 @@ export default function ShowtimePlaybackScreen() {
             ) : null}
           </View>
 
-          <View style={{ flexGrow: 1, minHeight: 44 }} />
+          <View style={{ flexGrow: 1, minHeight: rs(44) }} />
 
           {/* Actions */}
           <View style={pb.actions}>
@@ -783,7 +784,7 @@ export default function ShowtimePlaybackScreen() {
                 <ActivityIndicator size="small" color={theme.accentText} />
               ) : isSilent ? (
                 <>
-                  <Ionicons name="book-outline" size={16} color={theme.textMuted} />
+                  <Ionicons name="book-outline" size={rs(16)} color={theme.textMuted} />
                   <Text style={[pb.btnTextPrimary, { color: theme.textMuted }]}>
                     {pickLang(lang, { ru: "Прочитай текст", en: "Read the text", kk: "Мәтінді оқу" })}
                   </Text>
@@ -791,7 +792,7 @@ export default function ShowtimePlaybackScreen() {
               ) : (
                 <>
                   <Text style={[pb.btnTextPrimary, { color: theme.accentText }]} numberOfLines={1}>{t("forward")}</Text>
-                  <NextChevron color={theme.accentText} size={14} />
+                  <NextChevron color={theme.accentText} size={rs(14)} />
                 </>
               )}
             </Pressable>
@@ -804,7 +805,7 @@ export default function ShowtimePlaybackScreen() {
       {/* Figma 36:1228 "Show Time · Послушай себя (modal)" */}
       <StageGlassDialog
         visible={showListenPrompt}
-        icon={<SvgXml xml={headphonesXml} width={38} height={38} />}
+        icon={<SvgXml xml={headphonesXml} width={rs(38)} height={rs(38)} />}
         title={pickLang(lang, { ru: "Послушай себя", en: "Listen to yourself", kk: "Өзіңізді тыңдаңыз" })}
         message={
           pickLang(lang, {
@@ -826,7 +827,8 @@ export default function ShowtimePlaybackScreen() {
 
 const pb = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { flexGrow: 1, paddingHorizontal: 20 },
+  // maxWidth only bites on tablets (480 × UI_SCALE): a centred results column
+  scroll: { flexGrow: 1, paddingHorizontal: 20, width: "100%", maxWidth: 480, alignSelf: "center" },
   title: { fontFamily: "Geologica_900Black", fontSize: 28, lineHeight: 34, letterSpacing: -0.28 },
   label: { fontFamily: "Geologica_600SemiBold", fontSize: 12, letterSpacing: 0.6 },
   scoreBlock: { marginTop: 28, gap: 4 },

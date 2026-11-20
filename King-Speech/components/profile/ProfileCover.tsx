@@ -3,6 +3,7 @@ import { View, type LayoutChangeEvent } from "react-native";
 import Svg, { ClipPath, Defs, G, Image as SvgImage, LinearGradient, Stop, Path } from "react-native-svg";
 import { coverPatternById } from "./coverPatterns";
 import { CROWN_PATH } from "@/components/roles/RoleTarotCard";
+import { UI_SCALE } from "@/lib/responsive";
 
 // Figma "Cover photo" (vector 377:1127) — neutral card banner with a circular
 // notch cut around the avatar (bottom-left). Where the notch meets the bottom
@@ -11,6 +12,9 @@ import { CROWN_PATH } from "@/components/roles/RoleTarotCard";
 // parametrised so the banner stretches with the screen width while the avatar
 // notch keeps its exact shape.
 
+// Phone-design height (raw: used in profile's auto-scaled StyleSheet). The
+// banner is drawn in design units and scaled by UI_SCALE on tablets so the
+// notch stays aligned with the (scaled) avatar.
 export const COVER_HEIGHT = 124;
 
 function coverPath(w: number) {
@@ -92,15 +96,17 @@ export default function ProfileCover({
     const w = Math.round(e.nativeEvent.layout.width);
     if (w > 0 && w !== width) setWidth(w);
   };
-  const svgW = width + 2;
+  // svgW is in design units (layout width Г· UI_SCALE); the Svg element itself
+  // is drawn at UI_SCALE so the whole plate (notch, radii, stroke) grows.
+  const svgW = width / UI_SCALE + 2;
   const d = coverPath(svgW);
   return (
-    <View style={{ height: COVER_HEIGHT }} onLayout={onLayout}>
+    <View style={{ height: COVER_HEIGHT * UI_SCALE }} onLayout={onLayout}>
       <Svg
-        width={svgW}
-        height={COVER_HEIGHT + 2}
+        width={svgW * UI_SCALE}
+        height={(COVER_HEIGHT + 2) * UI_SCALE}
         viewBox={`0 0 ${svgW} ${COVER_HEIGHT + 2}`}
-        style={{ position: "absolute", left: -1, top: -1 }}
+        style={{ position: "absolute", left: -UI_SCALE, top: -UI_SCALE }}
       >
         <Defs>
           <LinearGradient

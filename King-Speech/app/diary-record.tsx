@@ -43,6 +43,7 @@ import Cassette, { labelTextStyle, useDiaryFonts } from "@/components/diary/Cass
 import { EMOTIONS, MoodFace, type PickableEmotion } from "@/components/diary/emotions";
 import { addDiaryEntry, discardDiaryAudio, fmtClock, persistDiaryAudio } from "@/lib/diaryStorage";
 import RecButton from "@/components/RecButton";
+import { rs } from "@/lib/responsive";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -50,6 +51,7 @@ if (Platform.OS !== "web") {
 }
 
 const MAX_SEC = 10 * 60; // auto-stop after 10 minutes
+// Phone-design lengths; scaled with rs() where used inline / as props.
 const BIG_CASSETTE = 236;
 const TITLE_MAX = 18;
 const TOP_ROW = 44; // room for the corner back / close button
@@ -119,8 +121,9 @@ export default function DiaryRecordScreen() {
   const level = useSharedValue(0);
   const hasMeter = useSharedValue(0);
 
-  const topPad = Platform.OS === "web" ? 54 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
+  const topPad = Platform.OS === "web" ? rs(54) : insets.top;
+  const bottomPad = Platform.OS === "web" ? rs(34) : insets.bottom;
+  const bigCassette = rs(BIG_CASSETTE);
 
   // ── start recording when the player taps play ──────────────────────────────
   const startRecording = useCallback(() => {
@@ -321,7 +324,7 @@ export default function DiaryRecordScreen() {
     <View style={[s.container, { backgroundColor: c.bg }]}>
       {phase === "sign" ? (
         <ScrollView
-          contentContainerStyle={[s.signScroll, { paddingTop: topPad + 10 + TOP_ROW, paddingBottom: bottomPad + 40 }]}
+          contentContainerStyle={[s.signScroll, { paddingTop: topPad + rs(10 + TOP_ROW), paddingBottom: bottomPad + rs(40) }]}
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets
           showsVerticalScrollIndicator={false}
@@ -329,7 +332,7 @@ export default function DiaryRecordScreen() {
         >
           <Animated.View entering={FadeIn.duration(260)} style={s.signCassette}>
             <Cassette
-              width={BIG_CASSETTE}
+              width={bigCassette}
               emotion={emotion ?? "neutral"}
               lively={blinkKey > 0}
               blinkKey={blinkKey}
@@ -346,7 +349,7 @@ export default function DiaryRecordScreen() {
                   returnKeyType="done"
                   submitBehavior="blurAndSubmit"
                   autoCorrect={false}
-                  style={[labelTextStyle(BIG_CASSETTE), s.labelInput]}
+                  style={[labelTextStyle(bigCassette), s.labelInput]}
                   accessibilityLabel={tr("Название кассеты", "Cassette title", "Кассета атауы")}
                 />
               }
@@ -382,7 +385,7 @@ export default function DiaryRecordScreen() {
             </View>
           </View>
 
-          <View style={{ flex: 1, minHeight: 40 }} />
+          <View style={{ flex: 1, minHeight: rs(40) }} />
           <Pressable
             onPress={save}
             disabled={saving}
@@ -393,14 +396,14 @@ export default function DiaryRecordScreen() {
           </Pressable>
         </ScrollView>
       ) : (
-        <View style={[s.recWrap, { paddingTop: topPad + 10 + TOP_ROW, paddingBottom: bottomPad + 60 }]}>
+        <View style={[s.recWrap, { paddingTop: topPad + rs(10 + TOP_ROW), paddingBottom: bottomPad + rs(60) }]}>
 
           <View style={s.recCassette}>
-            <Cassette width={BIG_CASSETTE} state={phase === "recording" ? "recording" : "idle"} />
+            <Cassette width={bigCassette} state={phase === "recording" ? "recording" : "idle"} />
           </View>
 
           {phase === "denied" ? (
-            <View style={[s.question, { backgroundColor: cardBg, flexDirection: "column", gap: 12 }]}>
+            <View style={[s.question, { backgroundColor: cardBg, flexDirection: "column", gap: rs(12) }]}>
               <Text style={[s.questionText, { color: c.text, textAlign: "center" }]}>
                 {tr(
                   "Чтобы записать дневник, King Speech нужен микрофон. Разреши доступ в настройках.",
@@ -424,7 +427,7 @@ export default function DiaryRecordScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={tr("Другой вопрос", "Another question", "Басқа сұрақ")}
               >
-                <Ionicons name="shuffle" size={18} color={c.text} />
+                <Ionicons name="shuffle" size={rs(18)} color={c.text} />
               </Pressable>
             </View>
           )}
@@ -461,21 +464,21 @@ export default function DiaryRecordScreen() {
         <Pressable
           onPress={requestExit}
           hitSlop={12}
-          style={[s.iconBtn, s.cornerRight, { top: topPad + 10 }]}
+          style={[s.iconBtn, s.cornerRight, { top: topPad + rs(10) }]}
           accessibilityRole="button"
           accessibilityLabel={tr("Удалить запись", "Discard", "Жазбаны жою")}
         >
-          <Ionicons name="close" size={26} color={c.text} />
+          <Ionicons name="close" size={rs(26)} color={c.text} />
         </Pressable>
       ) : (
         <Pressable
           onPress={requestExit}
           hitSlop={12}
-          style={[s.iconBtn, s.cornerLeft, { top: topPad + 10 }]}
+          style={[s.iconBtn, s.cornerLeft, { top: topPad + rs(10) }]}
           accessibilityRole="button"
           accessibilityLabel={tr("Назад", "Back", "Артқа")}
         >
-          <Ionicons name="chevron-back" size={26} color={c.text} />
+          <Ionicons name="chevron-back" size={rs(26)} color={c.text} />
         </Pressable>
       )}
 
@@ -534,11 +537,13 @@ function LiveBar({
   hasMeter: SharedValue<number>;
   color: string;
 }) {
+  const minH = rs(12); // computed outside the worklet
+  const maxH = rs(h);
   const st = useAnimatedStyle(() => {
     const wobble = Math.abs(Math.sin(2 * Math.PI * (t.value + i * 0.13)));
     // Real mic level when metering is available, otherwise a calm "breathing".
     const amp = hasMeter.value ? level.value * (0.7 + 0.3 * wobble) : 0.25 + 0.35 * wobble;
-    return { height: 12 + (h - 12) * Math.max(0.08, Math.min(1, amp)) };
+    return { height: minH + (maxH - minH) * Math.max(0.08, Math.min(1, amp)) };
   });
   return <Animated.View style={[s.bar, { backgroundColor: color }, st]} />;
 }

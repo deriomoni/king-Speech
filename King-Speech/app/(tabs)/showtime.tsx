@@ -1,4 +1,5 @@
 // Show Time tab — Figma "Screen / 03b · Show Time — full" (17:660 dark, 17:759 light).
+import { rs } from "@/lib/responsive";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
@@ -111,8 +112,8 @@ export default function ShowTimeScreen() {
   const showAll = expanded || !canCollapse;
   const visibleTiles = showAll ? catalogKeys : catalogKeys.slice(0, COLLAPSED_TILES);
 
-  const cardW = Math.min(winW, 480) - 40;
-  const tileSize = Math.floor((cardW - 4 - 34 - 16) / 3);
+  const cardW = Math.min(winW, rs(480)) - rs(40); // matches the scaled scroll column
+  const tileSize = Math.floor((cardW - rs(4 + 34 + 16)) / 3);
 
   const haptic = () => {
     if (Platform.OS !== "web") Haptics.selectionAsync();
@@ -186,7 +187,7 @@ export default function ShowTimeScreen() {
       : pickLang(lang, { ru: "1-2 мин выступления", en: "1-2 min speech", kk: "1-2 мин сөз сөйлеу" });
 
   return (
-    <EdgeScaleProvider scrollY={edgeScrollY} topEdge={topPad + 8} bottomEdge={bottomPad + 84}>
+    <EdgeScaleProvider scrollY={edgeScrollY} topEdge={topPad + rs(8)} bottomEdge={bottomPad + rs(84)}>
     <View style={[st.container, { backgroundColor: c.backingTop }]}>
       <Animated.ScrollView
         ref={scrollRef as any}
@@ -207,10 +208,10 @@ export default function ShowTimeScreen() {
             end={{ x: 1, y: 1 }}
             pointerEvents="none"
           />
-        <View style={[st.scroll, { paddingTop: topPad + 5, paddingBottom: 20 }]}>
+        <View style={[st.scroll, { paddingTop: topPad + rs(5), paddingBottom: rs(20) }]}>
         {/* Header: logo + search */}
         <EdgeScale entering={FadeIn.duration(400)} style={st.headerRow}>
-          <ShowTimeLogo width={83} color={isLight ? c.text : c.accent} />
+          <ShowTimeLogo width={rs(83)} color={isLight ? c.text : c.accent} />
           <View style={[st.search, { backgroundColor: c.cardBorder, borderColor: stroke }]}>
             <TextInput
               value={query}
@@ -218,7 +219,7 @@ export default function ShowTimeScreen() {
                 setQuery(v);
                 setExpanded(false);
               }}
-              onSubmitEditing={() => scrollRef.current?.scrollTo({ y: catalogY.current - 12, animated: true })}
+              onSubmitEditing={() => scrollRef.current?.scrollTo({ y: catalogY.current - rs(12), animated: true })}
               placeholder={pickLang(lang, { ru: "Найти тему", en: "Find a topic", kk: "Тақырып іздеу" })}
               placeholderTextColor={c.textMuted}
               returnKeyType="search"
@@ -280,7 +281,7 @@ export default function ShowTimeScreen() {
                 : pickLang(lang, { ru: "Каталог тем", en: "Topic catalog", kk: "Тақырыптар каталогы" })}
             </Text>
             {/* ↗ opens the full catalog screen (Figma 399:1177). */}
-            <Pressable hitSlop={10} onPress={() => router.push("/theme-catalog")} accessibilityRole="button">
+            <Pressable hitSlop={rs(10)} onPress={() => router.push("/theme-catalog")} accessibilityRole="button">
               <OpenCatalogIcon color={c.text} />
             </Pressable>
           </View>
@@ -340,8 +341,8 @@ export default function ShowTimeScreen() {
                         width: tileSize,
                         height: tileSize,
                         backgroundColor: "transparent",
-                        paddingLeft: 11,
-                        paddingBottom: 12,
+                        paddingLeft: rs(11),
+                        paddingBottom: rs(12),
                         opacity: pressed ? 0.85 : 1,
                       },
                     ]}
@@ -368,14 +369,14 @@ export default function ShowTimeScreen() {
           )}
 
           {canCollapse && !showAll && (
-            <View pointerEvents="box-none" style={[st.veilWrap, { top: 17 + 22 + 14 + 27 + 18 + tileSize + 1 }]}>
+            <View pointerEvents="box-none" style={[st.veilWrap, { top: rs(17 + 22 + 14 + 27 + 18 + 1) + tileSize }]}>
               <LinearGradient
                 pointerEvents="none"
                 colors={[withAlpha(c.card, 0.2), withAlpha(c.card, 0.85), c.card]}
                 locations={[0, 0.45, 1]}
                 style={StyleSheet.absoluteFill}
               />
-              <Pressable onPress={() => router.push("/theme-catalog")} style={st.seeAll} hitSlop={6}>
+              <Pressable onPress={() => router.push("/theme-catalog")} style={st.seeAll} hitSlop={rs(6)}>
                 <Text style={[st.seeAllText, { color: c.text }]}>
                   {pickLang(lang, { ru: "Смотреть все темы", en: "See all topics", kk: "Барлық тақырыптар" })}
                 </Text>
@@ -393,7 +394,7 @@ export default function ShowTimeScreen() {
         </View>
 
         {/* Backing (Figma 402:1303) under the plate: black in dark, #CFCECA→#FFFFFF in light. */}
-        <View style={[st.backingWrap, { paddingBottom: bottomPad + 120 }]}>
+        <View style={[st.backingWrap, { paddingBottom: bottomPad + rs(120) }]}>
           <LinearGradient
             colors={[c.backingTop, c.backingMid, c.backingBottom]}
             locations={[0, 0.65, 1]}
@@ -419,7 +420,7 @@ export default function ShowTimeScreen() {
           key={flight.levelId + flight.dir}
           source={showtimeCover(flight.levelId)}
           cover={flight.cover}
-          coverRadius={16 * 1.45}
+          coverRadius={rs(16 * 1.45)}
           preview={previewRect(winW, stagePad)}
           direction={flight.dir}
           delay={flight.dir === "back" ? 320 : 0}

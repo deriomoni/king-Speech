@@ -22,6 +22,7 @@ import { useTheme } from "@/context/ThemeContext";
 import RecordingPlayer from "@/components/RecordingPlayer";
 import AppDialog from "@/components/AppDialog";
 import { getLiterature, getLiteratureFullText } from "@/constants/literatureLoader";
+import { rs } from "@/lib/responsive";
 
 type Filter = "all" | "showtime" | "interview" | "reading" | "tonguetwister";
 
@@ -125,7 +126,7 @@ function RecordRow({
           accessibilityLabel={pickLang(lang, { ru: "Слушать запись", en: "Play recording", kk: "Жазбаны тыңдау" })}
           style={({ pressed }) => [row.pill, row.playPill, { backgroundColor: ink(0.08), opacity: pressed ? 0.7 : 1 }]}
         >
-          <Ionicons name={expanded ? "pause" : "play"} size={12} color={theme.text} />
+          <Ionicons name={expanded ? "pause" : "play"} size={rs(12)} color={theme.text} />
           <Text style={[row.pillText, { color: theme.text }]}>{fmtDuration(rec.durationSec)}</Text>
         </Pressable>
         {score ? (
@@ -135,12 +136,12 @@ function RecordRow({
         ) : null}
         <View style={{ flex: 1 }} />
         <Pressable onPress={onMore} hitSlop={12} accessibilityLabel={pickLang(lang, { ru: "Ещё", en: "More", kk: "Тағы" })} style={row.more}>
-          <Ionicons name="ellipsis-horizontal" size={22} color={ink(0.5)} />
+          <Ionicons name="ellipsis-horizontal" size={rs(22)} color={ink(0.5)} />
         </Pressable>
       </View>
 
       {expanded ? (
-        <Animated.View entering={FadeIn.duration(220)} style={{ marginTop: 14 }}>
+        <Animated.View entering={FadeIn.duration(220)} style={{ marginTop: rs(14) }}>
           <RecordingPlayer
             uri={rec.uri}
             waveform={rec.waveform}
@@ -165,8 +166,8 @@ export default function ReadingLibraryScreen() {
   const [filter, setFilter] = useState<Filter>("all");
   const [pendingDelete, setPendingDelete] = useState<ReadingRecording | null>(null);
 
-  const topPad = Platform.OS === "web" ? 54 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
+  const topPad = Platform.OS === "web" ? rs(54) : insets.top;
+  const bottomPad = Platform.OS === "web" ? rs(34) : insets.bottom;
   const ink = (a: number) => (isDark ? `rgba(240,238,233,${a})` : `rgba(38,38,40,${a})`);
 
   const list = useMemo(() => {
@@ -190,7 +191,7 @@ export default function ReadingLibraryScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <ScrollView
-        contentContainerStyle={{ paddingTop: topPad, paddingBottom: bottomPad + 40 }}
+        contentContainerStyle={{ paddingTop: topPad, paddingBottom: bottomPad + rs(40) }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -200,13 +201,13 @@ export default function ReadingLibraryScreen() {
           style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
           accessibilityLabel={pickLang(lang, { ru: "Назад", en: "Back", kk: "Артқа" })}
         >
-          <Ionicons name="chevron-back" size={24} color={theme.text} />
+          <Ionicons name="chevron-back" size={rs(24)} color={theme.text} />
         </Pressable>
         <Text style={[styles.title, { color: theme.text }]}>{t("myLibrary")}</Text>
 
         {/* Search */}
         <View style={[styles.search, { backgroundColor: ink(0.08) }]}>
-          <Ionicons name="search" size={18} color={ink(0.5)} />
+          <Ionicons name="search" size={rs(18)} color={ink(0.5)} />
           <TextInput
             value={query}
             onChangeText={setQuery}
@@ -221,7 +222,7 @@ export default function ReadingLibraryScreen() {
               // TODO(design): voice search.
             }}
           >
-            <Ionicons name="mic" size={18} color={ink(0.5)} />
+            <Ionicons name="mic" size={rs(18)} color={ink(0.5)} />
           </Pressable>
         </View>
 
@@ -231,7 +232,7 @@ export default function ReadingLibraryScreen() {
           showsHorizontalScrollIndicator={false}
           alwaysBounceHorizontal={false}
           contentContainerStyle={styles.chips}
-          style={{ marginTop: 14, flexGrow: 0 }}
+          style={{ marginTop: rs(14), flexGrow: 0 }}
         >
           {FILTERS.map((f) => {
             const on = filter === f.key;
@@ -255,7 +256,7 @@ export default function ReadingLibraryScreen() {
         {empty || list.length === 0 ? (
           <View style={styles.empty}>
             <View style={[styles.emptyIcon, { backgroundColor: theme.accentDim }]}>
-              <Ionicons name="mic-outline" size={36} color={theme.accentInk} />
+              <Ionicons name="mic-outline" size={rs(36)} color={theme.accentInk} />
             </View>
             <Text style={[styles.emptyTitle, { color: theme.text }]}>
               {empty ? t("libraryEmptyTitle") : pickLang(lang, { ru: "Ничего не найдено", en: "Nothing found", kk: "Ештеңе табылмады" })}
@@ -271,7 +272,7 @@ export default function ReadingLibraryScreen() {
             </Text>
           </View>
         ) : (
-          <View style={{ marginTop: 6 }}>
+          <View style={{ marginTop: rs(6) }}>
             {list.map((rec, i) => (
               <RecordRow
                 key={rec.uri}

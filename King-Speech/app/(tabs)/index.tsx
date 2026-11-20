@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useCallback, useState } from "react";
+import { rs } from "@/lib/responsive";
 import {
   View,
   Text,
@@ -87,15 +88,15 @@ const SHEEN_W = 46;
 const SHEEN_SKEW = 22; // degrees of slant
 const SHEEN_OFF = SHEEN_W + 24; // start/end fully outside the brick despite the slant
 function BrickSheen() {
-  const x = useSharedValue(-SHEEN_OFF);
+  const x = useSharedValue(-rs(SHEEN_OFF));
   const focused = useIsFocused();
   useEffect(() => {
     if (!focused) return;
-    x.value = -SHEEN_OFF;
+    x.value = -rs(SHEEN_OFF);
     x.value = withRepeat(
       withSequence(
-        withTiming(STEP_W + SHEEN_OFF, { duration: 1100, easing: Easing.inOut(Easing.quad) }),
-        withDelay(1900, withTiming(-SHEEN_OFF, { duration: 0 })),
+        withTiming(rs(STEP_W + SHEEN_OFF), { duration: 1100, easing: Easing.inOut(Easing.quad) }),
+        withDelay(1900, withTiming(-rs(SHEEN_OFF), { duration: 0 })),
       ),
       -1,
       false,
@@ -106,7 +107,7 @@ function BrickSheen() {
   return (
     <Animated.View
       pointerEvents="none"
-      style={[{ position: "absolute", top: 0, bottom: 0, left: 0, width: SHEEN_W }, s]}
+      style={[{ position: "absolute", top: 0, bottom: 0, left: 0, width: rs(SHEEN_W) }, s]}
     >
       <ExpoLinearGradient
         colors={["rgba(255,255,255,0)", "rgba(255,255,255,0.38)", "rgba(255,255,255,0)"]}
@@ -144,7 +145,7 @@ function GlowRing({ color, radius }: { color: string; radius: number }) {
         {
           borderRadius: radius,
           backgroundColor: color,
-          boxShadow: `0px 0px 22px 5px ${color}`,
+          boxShadow: `0px 0px ${rs(22)}px ${rs(5)}px ${color}`,
         },
       ]}
     />
@@ -260,14 +261,14 @@ function SnakeConnectorBase({
   color: string;
 }) {
   const [w, setW] = useState(0);
-  const H = 30;
+  const H = rs(30);
   // The thread runs THREAD_OVER pt straight into the bricks above and below
   // and is drawn under them (bricks sit at zIndex 1). So when a brick is
   // pressed and its face sinks — or tilts in 3D — the thread is still seen
   // passing behind it instead of ending in a gap.
-  const O = THREAD_OVER;
+  const O = rs(THREAD_OVER);
   const pos = (s: "left" | "right" | "center") =>
-    s === "right" ? w - STEP_W / 2 : s === "left" ? STEP_W / 2 : w / 2;
+    s === "right" ? w - rs(STEP_W) / 2 : s === "left" ? rs(STEP_W) / 2 : w / 2;
   const sx = pos(fromSide);
   const ex = pos(toSide);
   const d = `M ${sx} 0 L ${sx} ${O} C ${sx} ${O + H * 0.55}, ${ex} ${O + H * 0.45}, ${ex} ${O + H} L ${ex} ${H + 2 * O}`;
@@ -281,7 +282,7 @@ function SnakeConnectorBase({
           <Path
             d={d}
             stroke={color}
-            strokeWidth={3}
+            strokeWidth={rs(3)}
             strokeLinecap="round"
             fill="none"
           />
@@ -309,7 +310,7 @@ function StepBlockBase({
   themeMode: import("@/context/ThemeContext").ThemeMode;
 }) {
   const { isOpenTestingEnabled } = useDevTools();
-  const shapeR = shapeRadius(rankTheme.stepShape);
+  const shapeR = rs(shapeRadius(rankTheme.stepShape));
   const effectiveStatus =
     isOpenTestingEnabled && item.status === "locked"
       ? "available"
@@ -383,7 +384,8 @@ function StepBlockBase({
   const tiltY = useSharedValue(0);
   const native = Platform.OS !== "web";
 
-  const faceSinkStyle = useAnimatedStyle(() => ({ top: press.value * DEPTH * 0.8 }));
+  const sinkDepth = rs(DEPTH) * 0.8;
+  const faceSinkStyle = useAnimatedStyle(() => ({ top: press.value * sinkDepth }));
   const tumbleStyle = useAnimatedStyle(() =>
     native
       ? {
@@ -489,7 +491,7 @@ function StepBlockBase({
             mixHex(sideBottom, "#000000", EDGE_DARKEN),
           ]}
           locations={[0, (STEP_H - DEPTH) / STEP_H, 1]}
-          style={[styles.stepSideEdge, { borderRadius: shapeR + STROKE_OUT }]}
+          style={[styles.stepSideEdge, { borderRadius: shapeR + rs(STROKE_OUT) }]}
         />
         <ExpoLinearGradient
           pointerEvents="none"
@@ -497,7 +499,7 @@ function StepBlockBase({
           // Only the bottom DEPTH pt peeks out under the face, so the fade has
           // to start exactly there.
           locations={[0, (STEP_H - DEPTH) / STEP_H, 1]}
-          style={[styles.stepSide, { borderRadius: Math.max(0, shapeR - STROKE_OUT) }]}
+          style={[styles.stepSide, { borderRadius: Math.max(0, shapeR - rs(STROKE_OUT)) }]}
         />
         <Animated.View style={[styles.stepFaceWrap, faceSinkStyle]}>
         <View style={[styles.stepFace, { borderRadius: shapeR }]}>
@@ -517,11 +519,11 @@ function StepBlockBase({
               // used to show a padlock). Cut-outs take the face colour.
               <LevelIcon levelId={item.id} color={iconColor} hole={faceColor} />
             ) : isDone ? (
-              <Ionicons name="checkmark" size={22} color={iconColor} />
+              <Ionicons name="checkmark" size={rs(22)} color={iconColor} />
             ) : isLocked ? (
-              <Ionicons name="lock-closed" size={20} color={iconColor} />
+              <Ionicons name="lock-closed" size={rs(20)} color={iconColor} />
             ) : (
-              <Ionicons name={item.icon as any} size={22} color={iconColor} />
+              <Ionicons name={item.icon as any} size={rs(22)} color={iconColor} />
             )}
           </View>
 
@@ -554,8 +556,8 @@ function StepBlockBase({
           </View>
         </View>
         <BrickStroke
-          width={STEP_W}
-          height={STEP_H}
+          width={rs(STEP_W)}
+          height={rs(STEP_H)}
           radius={shapeR}
           brick={levelColor}
           variant={isLocked ? "locked" : isAvail && showGlow ? "active" : "completed"}
@@ -645,7 +647,7 @@ function ModuleDividerBase({
           style={{
             color: colors.text,
             fontFamily: "Geologica_700Bold",
-            fontSize: 16,
+            fontSize: rs(16),
             textAlign: "center",
           }}
         >
@@ -708,7 +710,7 @@ export default function PathScreen() {
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
-  const scrollTopInset = topPad + 12;
+  const scrollTopInset = topPad + rs(12);
 
   // Filter the path to the user's CURRENT rank — each rank is its own world.
   const rankBounds = RANKS_MODULAR[Math.max(0, Math.min(4, currentRank - 1))];
@@ -893,7 +895,7 @@ export default function PathScreen() {
   const fabAnim = useSharedValue(0);
 
   const firstStepModule = stepsTopToBottom[0]?.module ?? 1;
-  const probeY = scrollY + scrollTopInset + 24;
+  const probeY = scrollY + scrollTopInset + rs(24);
   let visibleSectionNum = firstStepModule;
   for (let i = 0; i < renderItems.length; i++) {
     const ri = renderItems[i];
@@ -912,7 +914,7 @@ export default function PathScreen() {
   // (vocabulary, top of the module group visually) is still on screen,
   // the tint stays locked. The color only starts transitioning once the
   // whole module has scrolled off the bottom of the viewport.
-  const STEP_ROW_APPROX = 96;
+  const STEP_ROW_APPROX = rs(96);
   let tintAnchorModule: number | null = null;
   if (viewportH > 0) {
     const visibleTop = scrollY + scrollTopInset;
@@ -991,7 +993,7 @@ export default function PathScreen() {
     });
   }, [activeY, scrollTopInset, isOpenTestingEnabled]);
 
-  const ROW_H = 80;
+  const ROW_H = rs(80);
   let direction: "up" | "down" | null = null;
   if (
     !isOpenTestingEnabled &&
@@ -1000,7 +1002,7 @@ export default function PathScreen() {
     viewportH > 0
   ) {
     const topVisible = scrollY + scrollTopInset;
-    const bottomVisible = scrollY + viewportH - 120;
+    const bottomVisible = scrollY + viewportH - rs(120);
     if (activeY + ROW_H < topVisible) direction = "up";
     else if (activeY > bottomVisible) direction = "down";
   }
@@ -1086,7 +1088,7 @@ export default function PathScreen() {
         <View
           style={[
             styles.devRankSwitcher,
-            { top: topPad + 4, backgroundColor: rankTheme.accent + "E6" },
+            { top: topPad + rs(4), backgroundColor: rankTheme.accent + "E6" },
           ]}
           pointerEvents="box-none"
         >
@@ -1100,10 +1102,10 @@ export default function PathScreen() {
             accessibilityRole="button"
             accessibilityLabel="Previous rank"
             testID="dev-rank-prev"
-            hitSlop={8}
+            hitSlop={rs(8)}
             style={[styles.devRankBtn, { opacity: currentRank <= 1 ? 0.35 : 1 }]}
           >
-            <Ionicons name="chevron-back" size={16} color="#fff" />
+            <Ionicons name="chevron-back" size={rs(16)} color="#fff" />
           </Pressable>
           <View style={styles.devRankLabelCol}>
             <Text style={[styles.devRankKicker, { fontFamily: "Geologica_600SemiBold" }]}>
@@ -1124,10 +1126,10 @@ export default function PathScreen() {
             accessibilityRole="button"
             accessibilityLabel="Next rank"
             testID="dev-rank-next"
-            hitSlop={8}
+            hitSlop={rs(8)}
             style={[styles.devRankBtn, { opacity: currentRank >= 5 ? 0.35 : 1 }]}
           >
-            <Ionicons name="chevron-forward" size={16} color="#fff" />
+            <Ionicons name="chevron-forward" size={rs(16)} color="#fff" />
           </Pressable>
         </View>
         {/* Background preview readout — in Open Testing the background follows
@@ -1136,7 +1138,7 @@ export default function PathScreen() {
         <View
           style={[
             styles.devBgReadout,
-            { top: topPad + 50 },
+            { top: topPad + rs(50) },
           ]}
           pointerEvents="none"
         >
@@ -1188,7 +1190,7 @@ export default function PathScreen() {
         onLayout={onSvLayout}
         contentContainerStyle={[
           styles.scroll,
-          { paddingTop: scrollTopInset, paddingBottom: bottomPad + 110 },
+          { paddingTop: scrollTopInset, paddingBottom: bottomPad + rs(110) },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -1288,7 +1290,7 @@ export default function PathScreen() {
         <View style={styles.bottomHint}>
           <Ionicons
             name="arrow-up-outline"
-            size={14}
+            size={rs(14)}
             color={colors.textMuted}
           />
           <Text
@@ -1307,7 +1309,7 @@ export default function PathScreen() {
         style={[
           styles.fab,
           {
-            bottom: bottomPad + 90,
+            bottom: bottomPad + rs(90),
             backgroundColor:
               colorScheme === "dark"
                 ? "rgba(255,255,255,0.10)"
@@ -1324,7 +1326,7 @@ export default function PathScreen() {
         >
           <Ionicons
             name={direction === "up" ? "chevron-up" : "chevron-down"}
-            size={16}
+            size={rs(16)}
             color="#FFFFFF"
           />
         </Pressable>
@@ -1479,7 +1481,7 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOpacity: 0.18,
     shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: rs(4) },
     elevation: 6,
   },
   fabPress: {
@@ -1502,7 +1504,7 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOpacity: 0.25,
     shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: rs(4) },
     elevation: 8,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.25)",

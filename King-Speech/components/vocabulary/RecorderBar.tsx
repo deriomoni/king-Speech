@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
+import { rs } from "@/lib/responsive";
 import { type WaveBar, WAVEFORM_BAR_MIN, WAVEFORM_BAR_MAX } from "@/hooks/useWaveformBars";
 
 /**
@@ -27,7 +28,7 @@ export default function RecorderBar({ bars, dim = false }: { bars: WaveBar[]; di
           return (
             <View
               key={b.id}
-              style={[styles.bar, { height: 6 + t * (BAR_MAX_H - 6), backgroundColor: theme.text }]}
+              style={[styles.bar, { height: rs(6 + t * (BAR_MAX_H - 6)), backgroundColor: theme.text }]}
             />
           );
         })}

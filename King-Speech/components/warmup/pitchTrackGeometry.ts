@@ -5,7 +5,15 @@
  * tracks stay pixel-consistent. Keep this file free of any rendering imports.
  */
 import { warmupTheme } from "@/components/warmup/warmupTheme";
+import { UI_SCALE } from "@/lib/responsive";
 import type { HitZone } from "@/services/warmupScoring";
+
+/**
+ * Tablet scale. Every length below is phone-design × K, so the whole scene
+ * (and both renderers, which use createUnscaledStyles) grows consistently.
+ * K = 1 on phones.
+ */
+export const K = UI_SCALE;
 
 export interface TrackSegment {
   index: number;
@@ -17,20 +25,20 @@ export interface TrackSegment {
 }
 
 /** Horizontal scroll speed of the note world (px per second of song time). */
-export const PX_PER_SEC = 88;
+export const PX_PER_SEC = 88 * K;
 /** Ball is pinned at this fraction of the track width; the world scrolls under it. */
 export const BALL_X_RATIO = 0.28;
 /** Minimum platform width so very short notes stay visible. */
-export const MIN_NOTE_W = 44;
+export const MIN_NOTE_W = 44 * K;
 /** Track drawing height. */
-export const TRACK_HEIGHT = 220;
+export const TRACK_HEIGHT = 220 * K;
 /** Ball radius. */
-export const BALL_R = 13;
+export const BALL_R = 13 * K;
 
-const Y_TOP = 34;
-const Y_BOTTOM_INSET = 52;
+const Y_TOP = 34 * K;
+const Y_BOTTOM_INSET = 52 * K;
 /** Flat base of every platform (near the bottom of the track). */
-export const PLATFORM_BASE_Y = TRACK_HEIGHT - 22;
+export const PLATFORM_BASE_Y = TRACK_HEIGHT - 22 * K;
 
 export function buildTrackSegments(
   syllables: string[],
@@ -124,10 +132,10 @@ export function toothPathCmds(
   baseY: number,
 ): PathCmd[] {
   const cx = x + w / 2;
-  const plateau = Math.max(0, w - 52);
+  const plateau = Math.max(0, w - 52 * K);
   const lx = cx - plateau / 2;
   const rx = cx + plateau / 2;
-  const r = 11;
+  const r = 11 * K;
   return [
     { t: "M", x, y: baseY },
     { t: "L", x: lx - r * 0.7, y: apexY + r },

@@ -10,6 +10,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, RadialGradient, Stop, Circle } from "react-native-svg";
 import * as Haptics from "@/lib/haptics";
 import { RolesMaskIcon } from "./ShowTimeIcons";
+import { rs } from "@/lib/responsive";
 import { pickLang, type Lang } from "@/context/LangContext";
 
 type Mode = "dark" | "light";
@@ -81,7 +82,7 @@ function ModeTile({
       : {
           shadowColor: "#000",
           shadowOpacity: look.shadow.opacity,
-          shadowRadius: look.shadow.blur / 2,
+          shadowRadius: rs(look.shadow.blur / 2),
           shadowOffset: { width: 0, height: look.shadow.y },
           elevation: mode === "dark" ? 6 : 2,
         };
@@ -104,9 +105,9 @@ function ModeTile({
         <LinearGradient colors={look.fill} locations={look.fillLoc} style={styles.fill}>
           <Svg
             pointerEvents="none"
-            width={SPOT}
-            height={SPOT}
-            style={{ position: "absolute", left: spotX - 1, top: -41, opacity: look.spotOpacity }}
+            width={rs(SPOT)}
+            height={rs(SPOT)}
+            style={{ position: "absolute", left: rs(spotX - 1), top: rs(-41), opacity: look.spotOpacity }}
           >
             <Defs>
               <RadialGradient id={gradId} cx="50%" cy="50%" r="50%">
@@ -114,7 +115,7 @@ function ModeTile({
                 <Stop offset={1} stopColor="#FFFFFF" stopOpacity={0} />
               </RadialGradient>
             </Defs>
-            <Circle cx={SPOT / 2} cy={SPOT / 2} r={SPOT / 2} fill={`url(#${gradId})`} />
+            <Circle cx={rs(SPOT) / 2} cy={rs(SPOT) / 2} r={rs(SPOT) / 2} fill={`url(#${gradId})`} />
           </Svg>
           {children}
           <Text numberOfLines={1} style={[styles.title, { color: look.ink }]}>
@@ -135,10 +136,10 @@ function ModeTile({
 function placed(x: number, y: number, w: number, h: number, figmaRot: number) {
   return {
     position: "absolute" as const,
-    left: x - 1,
-    top: y - 1,
-    width: w,
-    height: h,
+    left: rs(x - 1),
+    top: rs(y - 1),
+    width: rs(w),
+    height: rs(h),
     transformOrigin: "top left",
     transform: [{ rotate: `${-figmaRot}deg` }],
   };
@@ -154,14 +155,14 @@ function RolesArt({ look }: { look: Look }) {
       <View pointerEvents="none" style={placed(64, 36, MASK_W, MASK_H, 9)}>
         <RolesMaskIcon
           color={look.maskEcho}
-          width={MASK_W}
-          height={MASK_H}
-          outline={{ color: look.maskEcho, width: 1.5 }}
+          width={rs(MASK_W)}
+          height={rs(MASK_H)}
+          outline={{ color: look.maskEcho, width: rs(1.5) }}
         />
       </View>
       {/* Solid mask (382:1145) */}
       <View pointerEvents="none" style={placed(44, 44, MASK_W, MASK_H, -6)}>
-        <RolesMaskIcon color={look.mask} width={MASK_W} height={MASK_H} />
+        <RolesMaskIcon color={look.mask} width={rs(MASK_W)} height={rs(MASK_H)} />
       </View>
     </>
   );
@@ -183,7 +184,7 @@ function HintsArt({ look }: { look: Look }) {
   const line = ([x, y, w]: [number, number, number], i: number) => (
     <View
       key={`${x}-${y}-${i}`}
-      style={[styles.bar, { left: x, top: y, width: w, backgroundColor: look.line }]}
+      style={[styles.bar, { left: rs(x), top: rs(y), width: rs(w), backgroundColor: look.line }]}
     />
   );
   return (
@@ -198,16 +199,16 @@ function HintsArt({ look }: { look: Look }) {
         {LINES_TOP.map(line)}
         {/* Highlighted cue line — two dark dashes, no word (382:1161) */}
         <View style={styles.hint}>
-          <View style={[styles.dash, { left: 9, width: 30 }]} />
-          <View style={[styles.dash, { left: 44, width: 20 }]} />
+          <View style={[styles.dash, { left: rs(9), width: rs(30) }]} />
+          <View style={[styles.dash, { left: rs(44), width: rs(20) }]} />
         </View>
         {LINES_BOTTOM.map(line)}
       </View>
       {/* Whisper badge with 3 sound bars (382:1166) */}
       <View pointerEvents="none" style={[styles.whisper, { backgroundColor: look.whisper }]}>
-        <View style={[styles.wbar, { left: 11, top: 14.5, height: 7, backgroundColor: look.whisperBar }]} />
-        <View style={[styles.wbar, { left: 17, top: 11.5, height: 13, backgroundColor: look.whisperBar }]} />
-        <View style={[styles.wbar, { left: 23, top: 14.5, height: 7, backgroundColor: look.whisperBar }]} />
+        <View style={[styles.wbar, { left: rs(11), top: rs(14.5), height: rs(7), backgroundColor: look.whisperBar }]} />
+        <View style={[styles.wbar, { left: rs(17), top: rs(11.5), height: rs(13), backgroundColor: look.whisperBar }]} />
+        <View style={[styles.wbar, { left: rs(23), top: rs(14.5), height: rs(7), backgroundColor: look.whisperBar }]} />
       </View>
     </>
   );

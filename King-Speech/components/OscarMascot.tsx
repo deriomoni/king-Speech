@@ -1,6 +1,7 @@
 import React from "react";
 import { View, ViewStyle } from "react-native";
 import RiveAnim from "@/components/RiveAnim";
+import { rs } from "@/lib/responsive";
 
 // ---------------------------------------------------------------------------
 // OscarMascot — the game's face. A thin wrapper around RiveAnim that plays a
@@ -72,7 +73,7 @@ interface Props {
   style?: ViewStyle;
 }
 
-export default function OscarMascot({ emotion = "idle", size = 150, style }: Props) {
+export default function OscarMascot({ emotion = "idle", size = rs(150), style }: Props) {
   const S = Math.round(size * SIZE_BOOST);
   return (
     <View

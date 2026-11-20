@@ -8,6 +8,7 @@ import { useLang, pickLang } from "@/context/LangContext";
 import { useAppColors } from "@/hooks/useAppColors";
 import { useTheme } from "@/context/ThemeContext";
 import { fonts } from "@/constants/colors";
+import { rs } from "@/lib/responsive";
 import { ROUTES, type CheatRoute } from "@/constants/cheatsheetData";
 import CheatSheetRunner from "@/components/cheatsheet/CheatSheetRunner";
 import CheatSheetWheel from "@/components/cheatsheet/CheatSheetWheel";
@@ -120,20 +121,20 @@ export default function CheatSheetScreen() {
       <View
         style={{
           flex: 1,
-          paddingHorizontal: 22,
-          paddingTop: insets.top + 22,
-          paddingBottom: insets.bottom + 14,
+          paddingHorizontal: rs(22),
+          paddingTop: insets.top + rs(22),
+          paddingBottom: insets.bottom + rs(14),
         }}
       >
         {/* Hero */}
-        <Animated.View entering={FadeIn.duration(400)} style={{ gap: 10 }}>
+        <Animated.View entering={FadeIn.duration(400)} style={{ gap: rs(10) }}>
           {lang === "kk" ? (
             // The "Get Ready" wordmark is a Latin SVG; Kazakh gets a text title.
-            <Text style={[styles.hero, { color: colors.text, fontSize: 44, lineHeight: 48 }]}>
+            <Text style={[styles.hero, { color: colors.text, fontSize: rs(44), lineHeight: rs(48) }]}>
               {"Жылдам\nдайындық"}
             </Text>
           ) : (
-            <GetReadyLogo width={210} color={colors.text} />
+            <GetReadyLogo width={rs(210)} color={colors.text} />
           )}
           <Text style={[styles.heroSub, { color: colors.textSecondary }]}>
             {dailyText}

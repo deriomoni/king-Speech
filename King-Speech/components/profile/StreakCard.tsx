@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import type { Theme } from "@/context/ThemeContext";
 import { pickLang, type Lang } from "@/context/LangContext";
+import { rs } from "@/lib/responsive";
 
 // Figma "Card · В ударе" (node 117:1091): "N дня подряд в ударе" + a Mon..Sun
 // row of day rings. Activity = finished path tasks and Show Time runs
@@ -93,7 +94,7 @@ function DayRing({
   color: string;
 }) {
   return (
-    <Svg width={RING} height={RING} viewBox={`0 0 ${RING} ${RING}`}>
+    <Svg width={rs(RING)} height={rs(RING)} viewBox={`0 0 ${RING} ${RING}`}>
       {progress >= 1 ? (
         // soft mint glow around a completed day
         <>

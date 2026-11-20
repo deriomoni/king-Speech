@@ -14,6 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
 import GoldCoin from "@/components/GoldCoin";
+import { rs } from "@/lib/responsive";
 import DailyRewards from "@/components/DailyRewards";
 import { useGame } from "@/context/GameContext";
 import { useLang, pickLang, type Lang } from "@/context/LangContext";
@@ -45,9 +46,9 @@ function CoinPile({ count }: { count: 1 | 2 | 3 }) {
             { x: 12, y: 4 },
           ];
   return (
-    <View style={{ width: 44, height: 40 }}>
+    <View style={{ width: rs(44), height: rs(40) }}>
       {spots.map((p, i) => (
-        <View key={i} style={{ position: "absolute", left: p.x, top: p.y }}>
+        <View key={i} style={{ position: "absolute", left: rs(p.x), top: rs(p.y) }}>
           <Coin />
         </View>
       ))}
@@ -116,8 +117,8 @@ export default function CoinsScreen() {
 
   const topPad = Platform.OS === "web" ? 54 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
-  const contentW = Math.min(winW, 480) - 48;
-  const packW = Math.floor((contentW - 12) / 2);
+  const contentW = Math.min(winW, rs(480)) - rs(48);
+  const packW = Math.floor((contentW - rs(12)) / 2);
   const darkPill = mode === "dark" ? "rgba(240,238,233,0.10)" : "rgba(38,38,40,0.08)";
 
   const goBack = () => {
@@ -140,9 +141,9 @@ export default function CoinsScreen() {
       <ScrollView contentContainerStyle={s.scrollOuter} showsVerticalScrollIndicator={false}>
         <OverscrollFill top={c.bg} bottom={c.backingBottom} />
         {/* Top plate (Figma "Top panel" 450:2334) */}
-        <View style={[s.plate, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingTop: topPad + 10 }]}>
-          <Pressable onPress={goBack} hitSlop={12} style={[s.back, { top: topPad + 10 }]} accessibilityRole="button">
-            <Ionicons name="chevron-back" size={26} color={c.text} />
+        <View style={[s.plate, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingTop: topPad + rs(10) }]}>
+          <Pressable onPress={goBack} hitSlop={12} style={[s.back, { top: topPad + rs(10) }]} accessibilityRole="button">
+            <Ionicons name="chevron-back" size={rs(26)} color={c.text} />
           </Pressable>
           <Animated.View entering={FadeInDown.delay(60).duration(420)} style={s.hero}>
             <Pressable onPress={tapOscar} accessibilityRole="button" accessibilityLabel="Oscar">
@@ -159,7 +160,7 @@ export default function CoinsScreen() {
                 pointerEvents="none"
               >
                 <View>
-                  <Coin size={22} />
+                  <Coin size={rs(22)} />
                 </View>
                 <Text style={s.plusText}>+{OSCAR_BONUS}</Text>
               </Animated.View>
@@ -171,14 +172,14 @@ export default function CoinsScreen() {
             <View style={s.balanceRow}>
               <Text style={[s.balance, { color: c.text }]}>{coins}</Text>
               <View>
-                <Coin size={30} />
+                <Coin size={rs(30)} />
               </View>
             </View>
           </Animated.View>
         </View>
 
         {/* Backing (Figma 450:2333) */}
-        <View style={[s.body, { paddingBottom: bottomPad + 40 }]}>
+        <View style={[s.body, { paddingBottom: bottomPad + rs(40) }]}>
           <LinearGradient
             colors={[c.backingTop, c.backingMid, c.backingBottom]}
             locations={[0, 0.65, 1]}
@@ -191,7 +192,7 @@ export default function CoinsScreen() {
             <DailyRewards width={contentW} onClaim={addCoins} />
           </Animated.View>
 
-          <Text style={[s.section, { color: c.text, marginTop: 28 }]}>{pickLang(lang, { ru: "Пополнить", en: "Top up", kk: "Толтыру" })}</Text>
+          <Text style={[s.section, { color: c.text, marginTop: rs(28) }]}>{pickLang(lang, { ru: "Пополнить", en: "Top up", kk: "Толтыру" })}</Text>
           <View style={s.packs}>
             {PACKS.map((p, i) => {
               const popular = p.badge?.kind === "popular";
@@ -239,7 +240,7 @@ export default function CoinsScreen() {
           >
             <LinearGradient colors={[c.tileTop, c.tileBottom]} style={s.fill} pointerEvents="none" />
             <View style={[s.freePlay, { backgroundColor: mode === "dark" ? "#18181A" : c.text }]}>
-              <Ionicons name="play" size={16} color="#F0EEE9" style={{ marginLeft: 2 }} />
+              <Ionicons name="play" size={rs(16)} color="#F0EEE9" style={{ marginLeft: rs(2) }} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[s.freeTitle, { color: c.text }]}>{pickLang(lang, { ru: "Бесплатные монеты", en: "Free coins", kk: "Тегін монеталар" })}</Text>

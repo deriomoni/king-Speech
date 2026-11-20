@@ -13,6 +13,7 @@ import { useLang, pickLang } from "@/context/LangContext";
 import WaveformRecorder from "@/components/WaveformRecorder";
 import { useWaveformBars, WAVEFORM_BAR_MIN, WAVEFORM_BAR_MAX } from "@/hooks/useWaveformBars";
 import { RecDot } from "@/components/RecButton";
+import { rs } from "@/lib/responsive";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -448,7 +449,7 @@ export default function WaveformVoiceRecorder({
             },
           ]}
         >
-          <RecDot size={15} />
+          <RecDot size={rs(15)} />
           <Text style={[styles.startPillText, { color: theme.accentText }]}>{label}</Text>
         </Pressable>
       </View>

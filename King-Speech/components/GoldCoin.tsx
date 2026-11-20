@@ -1,10 +1,11 @@
 // Full-colour gold coin with the crown mark (used on the «Монеты» screen).
 import React from "react";
 import Svg, { Circle, Path } from "react-native-svg";
+import { rs } from "@/lib/responsive";
 
 export const COIN_GOLD = "#FFD857";
 
-export default function GoldCoin({ size = 28 }: { size?: number }) {
+export default function GoldCoin({ size = rs(28) }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 28 28">
       <Circle cx={14} cy={14} r={13.1} fill={COIN_GOLD} stroke="#E3A92B" strokeWidth={1.8} />

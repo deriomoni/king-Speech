@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { pickLang, useLang } from "@/context/LangContext";
 import * as Haptics from "@/lib/haptics";
 import { useAudioWaveform } from "@/hooks/useAudioWaveform";
+import { rs } from "@/lib/responsive";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -236,9 +237,9 @@ export default function RecordingPlayer({
         >
           <Ionicons
             name={isPlaying ? "pause" : "play"}
-            size={22}
+            size={rs(22)}
             color={accentColor}
-            style={{ marginLeft: isPlaying ? 0 : 3 }}
+            style={{ marginLeft: isPlaying ? 0 : rs(3) }}
           />
         </Pressable>
 
@@ -248,7 +249,7 @@ export default function RecordingPlayer({
             return (
               <View
                 key={i}
-                style={{ width: 3, borderRadius: 2, height: h, backgroundColor: filled ? accentColor : trackColor }}
+                style={{ width: rs(3), borderRadius: rs(2), height: rs(h), backgroundColor: filled ? accentColor : trackColor }}
               />
             );
           })}

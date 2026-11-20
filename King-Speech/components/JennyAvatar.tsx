@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Image, StyleSheet, Dimensions } from "react-native";
+import { View, Image, Dimensions } from "react-native";
 import { Asset } from "expo-asset";
 import Animated, {
   useSharedValue,
@@ -10,6 +10,7 @@ import Animated, {
   Easing,
   cancelAnimation,
 } from "react-native-reanimated";
+import { rs, createUnscaledStyles } from "@/lib/responsive";
 
 const jennyDefault = require("@/assets/jenny/jenny_default.png");
 const jennySmiling = require("@/assets/jenny/jenny_smiling.png");
@@ -140,10 +141,12 @@ export default function JennyAvatar({ state }: { state: AvatarState }) {
   );
 }
 
-const imgW = Math.min(SCREEN_W * 0.78, 340);
+// Sizes are already device-sized (window width / rs()), so this stylesheet is
+// created without the automatic tablet scaling.
+const imgW = Math.min(SCREEN_W * 0.78, rs(340));
 const imgH = imgW * IMG_ASPECT;
 
-const styles = StyleSheet.create({
+const styles = createUnscaledStyles({
   container: {
     flex: 1,
     alignItems: "center",

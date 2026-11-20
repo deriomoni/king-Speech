@@ -2,6 +2,7 @@ import React from "react";
 import { View } from "react-native";
 import { Image } from "expo-image";
 import { ROLE_ART, ROLE_FACE } from "@/constants/roleArt";
+import { rs } from "@/lib/responsive";
 
 /** True when a role has a supplied graphic (others are hidden for now). */
 export function hasRoleArt(id: string): boolean {
@@ -11,12 +12,12 @@ export function hasRoleArt(id: string): boolean {
 /**
  * Renders a role's illustration in a square `size` box. The art is drawn on
  * pure white, so the box is white too — it reads as the illustration's paper.
- * `face` crops into the character's head (hand-tuned per role in ROLE_FACE)
+ * `size`/`radius` are device-sized (callers pass rs(n)). `face` crops into the character's head (hand-tuned per role in ROLE_FACE)
  * for small avatars where the full scene would be unreadable.
  */
 export default function RoleArt({
   id,
-  size = 84,
+  size = rs(84),
   radius = 0,
   face = false,
 }: {

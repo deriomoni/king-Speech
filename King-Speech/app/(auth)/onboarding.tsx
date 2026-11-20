@@ -20,6 +20,7 @@ import { useAuth } from "@/context/AuthContext";
 import OscarMascot from "@/components/OscarMascot";
 import { KingSpeechLogo, PillButton, useInk } from "@/components/auth/AuthUI";
 import { ICON_MIC_SVG, ICON_PATH_SVG, ICON_STAR_SVG } from "@/assets/figma/auth/svgs";
+import { rs } from "@/lib/responsive";
 
 const { width: SW } = Dimensions.get("window");
 
@@ -123,7 +124,7 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <View style={[s.root, { backgroundColor: theme.bg, paddingTop: topPad + 10, paddingBottom: bottomPad + 10 }]}>
+    <View style={[s.root, { backgroundColor: theme.bg, paddingTop: topPad + rs(10), paddingBottom: bottomPad + rs(10) }]}>
       <StatusBar barStyle={theme.mode === "dark" ? "light-content" : "dark-content"} />
 
       {/* Logo + skip */}
@@ -197,12 +198,12 @@ function OnboardingSlide({ slide, lang, userName }: { slide: SlideData; lang: La
 
         {slide.visual.kind === "oscarHi" && (
           <View style={s.oscarHi}>
-            <OscarMascot emotion="hi" size={230} />
+            <OscarMascot emotion="hi" size={rs(230)} />
           </View>
         )}
         {slide.visual.kind === "icon" && (
           <View style={s.icon}>
-            <SvgXml xml={slide.visual.xml} width={slide.visual.w} height={slide.visual.h} />
+            <SvgXml xml={slide.visual.xml} width={rs(slide.visual.w)} height={rs(slide.visual.h)} />
           </View>
         )}
         {slide.visual.kind === "oscarTux" && (

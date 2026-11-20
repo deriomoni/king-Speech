@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
+import { rs } from "@/lib/responsive";
 
 export type ErrorFallbackProps = {
   error: Error;
@@ -67,13 +68,13 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
           style={({ pressed }) => [
             styles.topButton,
             {
-              top: insets.top + 16,
+              top: insets.top + rs(16),
               backgroundColor: theme.backgroundSecondary,
               opacity: pressed ? 0.8 : 1,
             },
           ]}
         >
-          <Feather name="alert-circle" size={20} color={theme.text} />
+          <Feather name="alert-circle" size={rs(20)} color={theme.text} />
         </Pressable>
       ) : null}
 
@@ -139,7 +140,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
                     { opacity: pressed ? 0.6 : 1 },
                   ]}
                 >
-                  <Feather name="x" size={24} color={theme.text} />
+                  <Feather name="x" size={rs(24)} color={theme.text} />
                 </Pressable>
               </View>
 
@@ -147,7 +148,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
                 style={styles.modalScrollView}
                 contentContainerStyle={[
                   styles.modalScrollContent,
-                  { paddingBottom: insets.bottom + 16 },
+                  { paddingBottom: insets.bottom + rs(16) },
                 ]}
                 showsVerticalScrollIndicator
               >

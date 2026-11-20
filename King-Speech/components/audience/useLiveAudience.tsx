@@ -6,6 +6,7 @@ import { Text, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { Cairo, type Backend } from "./cairo";
 import type { Lang } from "@/context/LangContext";
+import { rs } from "@/lib/responsive";
 import { Audience, HALL, loadCast, setBackgroundSprites, setSpriteMeta, type BgSprite, type Person } from "./scene";
 
 export type AudiencePhase = "idle" | "live" | "done";
@@ -189,14 +190,14 @@ export function useLiveAudience<H>(props: LiveAudienceProps, backend: Backend<H>
           entering={FadeIn.duration(220)}
           exiting={FadeOut.duration(320)}
           style={{
-            position: "absolute", top: b.y - 22, ...(b.side > 0 ? { left: b.x } : { right: width - b.x }),
+            position: "absolute", top: b.y - rs(22), ...(b.side > 0 ? { left: b.x } : { right: width - b.x }),
             opacity: 0.9 - silOf(dim) * 0.35,
           }}
         >
-          <View style={{ backgroundColor: "rgba(255,255,255,0.94)", borderRadius: 9, paddingHorizontal: 7, paddingVertical: 3, borderWidth: 1, borderColor: "rgba(13,10,10,0.85)" }}>
-            <Text style={{ color: "#141012", fontSize: 10, fontFamily: "Geologica_500Medium" }}>{b.text}</Text>
+          <View style={{ backgroundColor: "rgba(255,255,255,0.94)", borderRadius: rs(9), paddingHorizontal: rs(7), paddingVertical: rs(3), borderWidth: 1, borderColor: "rgba(13,10,10,0.85)" }}>
+            <Text style={{ color: "#141012", fontSize: rs(10), fontFamily: "Geologica_500Medium" }}>{b.text}</Text>
           </View>
-          <View style={{ position: "absolute", bottom: -3, [b.side > 0 ? "left" : "right"]: 5, width: 7, height: 7, backgroundColor: "rgba(255,255,255,0.94)", borderColor: "rgba(13,10,10,0.85)", borderLeftWidth: 1, borderBottomWidth: 1, transform: [{ rotate: b.side > 0 ? "-45deg" : "45deg" }] } as any} />
+          <View style={{ position: "absolute", bottom: rs(-3), [b.side > 0 ? "left" : "right"]: rs(5), width: rs(7), height: rs(7), backgroundColor: "rgba(255,255,255,0.94)", borderColor: "rgba(13,10,10,0.85)", borderLeftWidth: 1, borderBottomWidth: 1, transform: [{ rotate: b.side > 0 ? "-45deg" : "45deg" }] } as any} />
         </Animated.View>
       ))}
     </View>

@@ -40,6 +40,7 @@ import RoleArt from "@/components/roles/RoleArt";
 import { takeRolePerformance, type RolePerformance } from "@/lib/rolePerformance";
 import { getApiUrl } from "@/lib/query-client";
 import RoundStar from "@/components/RoundStar";
+import { rs } from "@/lib/responsive";
 
 let AudioMod: any = null;
 if (Platform.OS !== "web") {
@@ -68,7 +69,7 @@ const ON_GOLD = "#3A2C00";
 const VIOLET = "#7C4DFF";
 const ON_VIOLET = "#F1EBFF";
 
-const CARD_RADIUS = 24;
+const CARD_RADIUS = 24; // raw in StyleSheet (auto-scaled); rs() for inline/worklet use
 const EXPAND_MS = 300;
 const COLLAPSE_MS = 260;
 
@@ -354,6 +355,7 @@ export default function RoleResultScreen() {
   const expand = useSharedValue(0);
   const rect = useSharedValue({ x: 0, y: 0, w: 0, h: 0 });
 
+  const cardRadius = rs(CARD_RADIUS); // computed outside the worklet
   const boxStyle = useAnimatedStyle(() => {
     const r = rect.value;
     const t = expand.value;
@@ -362,7 +364,7 @@ export default function RoleResultScreen() {
       top: r.y + (0 - r.y) * t,
       width: r.w + (screenW - r.w) * t,
       height: r.h + (screenH - r.h) * t,
-      borderRadius: CARD_RADIUS * (1 - t),
+      borderRadius: cardRadius * (1 - t),
     };
   });
   const backdropStyle = useAnimatedStyle(() => ({ opacity: expand.value }));
@@ -511,19 +513,19 @@ export default function RoleResultScreen() {
     );
   }
 
-  const topPad = (Platform.OS === "web" ? 20 : insets.top) + 8;
-  const bottomPad = (Platform.OS === "web" ? 20 : insets.bottom) + 20;
+  const topPad = (Platform.OS === "web" ? rs(20) : insets.top) + rs(8);
+  const bottomPad = (Platform.OS === "web" ? rs(20) : insets.bottom) + rs(20);
 
   return (
     <View style={styles.root}>
       <LinearGradient colors={[BG2, BG]} style={StyleSheet.absoluteFill} />
       <ScrollView
-        contentContainerStyle={{ padding: 20, paddingTop: topPad, paddingBottom: bottomPad }}
+        contentContainerStyle={{ padding: rs(20), paddingTop: topPad, paddingBottom: bottomPad }}
         showsVerticalScrollIndicator={false}
         scrollEnabled={!fullscreen}
       >
         <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/roles"))} hitSlop={12} style={styles.closeBtn}>
-          <Ionicons name="close" size={24} color={TEXT} />
+          <Ionicons name="close" size={rs(24)} color={TEXT} />
         </Pressable>
 
         {/* The take: video plus the separately recorded audio. */}
@@ -539,7 +541,7 @@ export default function RoleResultScreen() {
           ) : (
             <>
               <LinearGradient colors={[role.accent + "55", "transparent"]} style={StyleSheet.absoluteFill} />
-              <RoleArt id={role.id} size={220} radius={22} />
+              <RoleArt id={role.id} size={rs(220)} radius={rs(22)} />
             </>
           )}
 
@@ -548,14 +550,14 @@ export default function RoleResultScreen() {
               <Pressable onPress={togglePlay} style={styles.tapLayer}>
                 {!playing && position === 0 && (
                   <View style={styles.bigPlay}>
-                    <Ionicons name="play" size={30} color={ON_GOLD} style={{ marginLeft: 3 }} />
+                    <Ionicons name="play" size={rs(30)} color={ON_GOLD} style={{ marginLeft: rs(3) }} />
                   </View>
                 )}
               </Pressable>
 
               {hasVideo && (
                 <Pressable onPress={openFullscreen} hitSlop={10} style={styles.glassBtn}>
-                  <Ionicons name="expand" size={17} color="#fff" />
+                  <Ionicons name="expand" size={rs(17)} color="#fff" />
                 </Pressable>
               )}
 
@@ -578,7 +580,7 @@ export default function RoleResultScreen() {
             <View style={styles.starsRow}>
               {[1, 2, 3, 4, 5].map((n) => (
                 <Pressable key={n} onPress={() => { haptic(); setSelfStars(n); }} hitSlop={6}>
-                  <RoundStar size={40} filled={n <= selfStars} color={GOLD} emptyColor="#8C7BC0" emptyOpacity={0.35} />
+                  <RoundStar size={rs(40)} filled={n <= selfStars} color={GOLD} emptyColor="#8C7BC0" emptyOpacity={0.35} />
                 </Pressable>
               ))}
             </View>
@@ -588,7 +590,7 @@ export default function RoleResultScreen() {
               style={({ pressed }) => [styles.primaryBtn, { opacity: selfStars === 0 ? 0.4 : 1, transform: [{ scale: pressed && selfStars > 0 ? 0.98 : 1 }] }]}
             >
               <LinearGradient colors={[GOLD_SOFT, GOLD]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={StyleSheet.absoluteFill} />
-              <Ionicons name="sparkles" size={20} color={ON_GOLD} />
+              <Ionicons name="sparkles" size={rs(20)} color={ON_GOLD} />
               <Text style={styles.primaryBtnText}>{pickLang(lang, { ru: "Оценить", en: "Get feedback", kk: "Бағалау" })}</Text>
             </Pressable>
           </Animated.View>
@@ -596,12 +598,12 @@ export default function RoleResultScreen() {
 
         {/* ---- Scanning ---- */}
         {stage === "scanning" && (
-          <Animated.View entering={FadeIn} style={[styles.block, { alignItems: "center", paddingVertical: 40 }]}>
+          <Animated.View entering={FadeIn} style={[styles.block, { alignItems: "center", paddingVertical: rs(40) }]}>
             <Animated.View style={[styles.scanner, scanStyle]}>
               <LinearGradient colors={[VIOLET, "transparent"]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
             </Animated.View>
-            <Ionicons name="scan" size={40} color={VIOLET} style={{ position: "absolute", top: 40 }} />
-            <Text style={[styles.blockTitle, { marginTop: 20, textAlign: "center" }]}>
+            <Ionicons name="scan" size={rs(40)} color={VIOLET} style={{ position: "absolute", top: rs(40) }} />
+            <Text style={[styles.blockTitle, { marginTop: rs(20), textAlign: "center" }]}>
               {pickLang(lang, { ru: "Анализируем твою игру...", en: "Analysing your performance...", kk: "Ойыныңызды талдап жатырмыз..." })}
             </Text>
           </Animated.View>
@@ -613,7 +615,7 @@ export default function RoleResultScreen() {
             {isNew && (
               <Animated.View entering={ZoomIn.duration(420)} style={styles.unlockBanner}>
                 <LinearGradient colors={["#FFDE5C33", "transparent"]} style={StyleSheet.absoluteFill} />
-                <Ionicons name="trophy" size={20} color={GOLD} />
+                <Ionicons name="trophy" size={rs(20)} color={GOLD} />
                 <Text style={styles.unlockText}>{pickLang(lang, { ru: "Новая роль в твоей коллекции!", en: "New role added to your collection!", kk: "Коллекцияңызға жаңа рөл қосылды!" })}</Text>
               </Animated.View>
             )}
@@ -622,7 +624,7 @@ export default function RoleResultScreen() {
             <View style={styles.overallStars}>
               {[1, 2, 3].map((n) => (
                 <Animated.View key={n} entering={ZoomIn.delay(n * 120)}>
-                  <RoundStar size={44} filled={n <= score.stars} color={GOLD} emptyColor="#8C7BC0" emptyOpacity={0.35} />
+                  <RoundStar size={rs(44)} filled={n <= score.stars} color={GOLD} emptyColor="#8C7BC0" emptyOpacity={0.35} />
                 </Animated.View>
               ))}
             </View>
@@ -630,7 +632,7 @@ export default function RoleResultScreen() {
             {/* Self-rating recap — reflect the user's own assessment back so the
                 input they gave before analysis isn't silently discarded. */}
             {selfStars > 0 && (
-              <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, textAlign: "center", marginTop: 4 }}>
+              <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: rs(13), textAlign: "center", marginTop: rs(4) }}>
                 {pickLang(lang, { ru: `Твоя самооценка: ${selfStars}/5`, en: `Your self-rating: ${selfStars}/5`, kk: `Өз бағаңыз: ${selfStars}/5` })}
               </Text>
             )}
@@ -650,7 +652,7 @@ export default function RoleResultScreen() {
                 <Text style={styles.goalsTitle}>{pickLang(lang, { ru: "Цели сцены", en: "Scene goals", kk: "Көрініс мақсаттары" })}</Text>
                 {run.outcome !== "open" && run.dialogue.length > 0 && (
                   <View style={[styles.endingRow, run.outcome === "win" ? styles.endingWin : styles.endingLose]}>
-                    <Text style={{ fontSize: 22 }}>{scenario.persona.avatar}</Text>
+                    <Text style={{ fontSize: rs(22) }}>{scenario.persona.avatar}</Text>
                     <Text style={styles.endingText}>«{run.dialogue[run.dialogue.length - 1].text}»</Text>
                   </View>
                 )}
@@ -662,7 +664,7 @@ export default function RoleResultScreen() {
                 {(score.goals ?? run.goals.map((g) => ({ id: g.id, text: g.text, hit: g.live === "done", note: undefined as string | undefined }))).map((g, i) => (
                   <Animated.View key={g.id} entering={FadeInDown.delay(i * 90)} style={styles.goalRow}>
                     <View style={[styles.goalIcon, { backgroundColor: g.hit ? "#34C75933" : "#FFFFFF14" }]}>
-                      <Ionicons name={g.hit ? "checkmark" : "close"} size={16} color={g.hit ? "#34C759" : MUTED} />
+                      <Ionicons name={g.hit ? "checkmark" : "close"} size={rs(16)} color={g.hit ? "#34C759" : MUTED} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.goalText, !g.hit && { color: MUTED }]}>{g.text}</Text>
@@ -678,7 +680,7 @@ export default function RoleResultScreen() {
               <Text style={styles.feedbackText}>{score.feedback}</Text>
               {score.tip && (
                 <View style={styles.tipRow}>
-                  <Ionicons name="bulb" size={16} color={GOLD} />
+                  <Ionicons name="bulb" size={rs(16)} color={GOLD} />
                   <Text style={styles.tipText}>{score.tip}</Text>
                 </View>
               )}
@@ -723,7 +725,7 @@ export default function RoleResultScreen() {
                 {!playing && (
                   <View style={styles.fsCenter}>
                     <View style={styles.bigPlay}>
-                      <Ionicons name="play" size={34} color={ON_GOLD} style={{ marginLeft: 3 }} />
+                      <Ionicons name="play" size={rs(34)} color={ON_GOLD} style={{ marginLeft: rs(3) }} />
                     </View>
                   </View>
                 )}
@@ -731,9 +733,9 @@ export default function RoleResultScreen() {
               <Pressable
                 onPress={closeFullscreen}
                 hitSlop={12}
-                style={[styles.glassBtn, { top: (Platform.OS === "web" ? 20 : insets.top) + 10, right: 16 }]}
+                style={[styles.glassBtn, { top: (Platform.OS === "web" ? rs(20) : insets.top) + rs(10), right: rs(16) }]}
               >
-                <Ionicons name="contract" size={17} color="#fff" />
+                <Ionicons name="contract" size={rs(17)} color="#fff" />
               </Pressable>
               <PlayerBar
                 playing={playing}
@@ -741,7 +743,7 @@ export default function RoleResultScreen() {
                 duration={duration}
                 onToggle={togglePlay}
                 onSeek={seekTo}
-                bottomInset={(Platform.OS === "web" ? 16 : insets.bottom) + 10}
+                bottomInset={(Platform.OS === "web" ? rs(16) : insets.bottom) + rs(10)}
               />
             </Animated.View>
           )}
@@ -793,22 +795,22 @@ function PlayerBar({
   const pct = duration > 0 ? Math.max(0, Math.min(1, position / duration)) : 0;
 
   return (
-    <View style={[styles.barWrap, { paddingBottom: 12 + bottomInset }]} pointerEvents="box-none">
+    <View style={[styles.barWrap, { paddingBottom: rs(12) + bottomInset }]} pointerEvents="box-none">
       <LinearGradient colors={["transparent", "rgba(0,0,0,0.75)"]} style={StyleSheet.absoluteFill} pointerEvents="none" />
       <View style={styles.barRow}>
         <Pressable onPress={onToggle} hitSlop={10} style={styles.barPlay}>
-          <Ionicons name={playing ? "pause" : "play"} size={17} color={ON_GOLD} style={{ marginLeft: playing ? 0 : 2 }} />
+          <Ionicons name={playing ? "pause" : "play"} size={rs(17)} color={ON_GOLD} style={{ marginLeft: playing ? 0 : rs(2) }} />
         </Pressable>
         <Text style={styles.barTime}>{clock(position)}</Text>
         <View
           style={styles.track}
           onLayout={(e) => setTrackW(e.nativeEvent.layout.width)}
-          hitSlop={{ top: 14, bottom: 14 }}
+          hitSlop={{ top: rs(14), bottom: rs(14) }}
           {...pan.panHandlers}
         >
           <View style={styles.trackBase} />
           <View style={[styles.trackFill, { width: `${pct * 100}%` }]} />
-          <View style={[styles.knob, { left: Math.max(0, pct * trackW - 6) }]} />
+          <View style={[styles.knob, { left: Math.max(0, pct * trackW - rs(6)) }]} />
         </View>
         <Text style={styles.barTime}>{clock(duration)}</Text>
       </View>
@@ -827,7 +829,7 @@ function MetricBar({ label, icon, value, delay }: { label: string; icon: keyof t
   return (
     <View style={styles.metricRow}>
       <View style={styles.metricHead}>
-        <Ionicons name={icon} size={15} color={MUTED} />
+        <Ionicons name={icon} size={rs(15)} color={MUTED} />
         <Text style={styles.metricLabel}>{label}</Text>
         <Text style={[styles.metricVal, { color }]}>{value}/5</Text>
       </View>

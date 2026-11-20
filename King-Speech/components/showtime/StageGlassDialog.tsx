@@ -4,6 +4,7 @@ import Animated, { FadeIn } from "react-native-reanimated";
 import Svg, { Defs, RadialGradient, Stop, Rect, LinearGradient as SvgLinear } from "react-native-svg";
 import { BlurView } from "expo-blur";
 import { useTheme } from "@/context/ThemeContext";
+import { rs } from "@/lib/responsive";
 
 /**
  * Show Time pop-ups (Figma "Dialog / Liquid Glass": 37:3800 «Вы уверены?»,
@@ -115,7 +116,7 @@ export default function StageGlassDialog({
             </Svg>
             </View>
 
-            {icon ? <View style={{ marginBottom: 2 }}>{icon}</View> : null}
+            {icon ? <View style={{ marginBottom: rs(2) }}>{icon}</View> : null}
             <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
             {message ? <Text style={[styles.message, { color: msgColor }]}>{message}</Text> : null}
             {children}

@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
+import { rs } from "@/lib/responsive";
 import * as ImagePicker from "expo-image-picker";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useTheme } from "@/context/ThemeContext";
@@ -161,18 +162,18 @@ export default function AccountScreen() {
       ],
     });
 
-  const Chevron = () => <Ionicons name="chevron-forward" size={17} color={ink(0.5)} />;
+  const Chevron = () => <Ionicons name="chevron-forward" size={rs(17)} color={ink(0.5)} />;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <ScrollView
-        contentContainerStyle={{ paddingTop: topPad, paddingBottom: bottomPad + 24 }}
+        contentContainerStyle={{ paddingTop: topPad, paddingBottom: bottomPad + rs(24) }}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
         <View style={styles.header}>
           <Pressable onPress={back} hitSlop={12} style={styles.backBtn} accessibilityLabel={pickLang(lang, { ru: "Назад", en: "Back", kk: "Артқа" })}>
-            <Ionicons name="chevron-back" size={24} color={theme.text} />
+            <Ionicons name="chevron-back" size={rs(24)} color={theme.text} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: theme.text }]}>{pickLang(lang, { ru: "Аккаунт", en: "Account", kk: "Аккаунт" })}</Text>
         </View>
@@ -237,13 +238,13 @@ export default function AccountScreen() {
         </View>
 
         {/* Session */}
-        <View style={[styles.card, { backgroundColor: theme.card, borderColor: stroke, marginTop: 20 }]}>
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: stroke, marginTop: rs(20) }]}>
           <Pressable
             onPress={confirmSignOut}
             style={({ pressed }) => [styles.row, styles.rowIcon, pressed && { backgroundColor: theme.rowPressed }]}
           >
-            <Ionicons name="log-out-outline" size={22} color={theme.accentInk} />
-            <Text style={[styles.rowLabel, { color: theme.accentInk, flex: 1, marginLeft: 12 }]}>
+            <Ionicons name="log-out-outline" size={rs(22)} color={theme.accentInk} />
+            <Text style={[styles.rowLabel, { color: theme.accentInk, flex: 1, marginLeft: rs(12) }]}>
               {pickLang(lang, { ru: "Выйти из аккаунта", en: "Sign out", kk: "Аккаунттан шығу" })}
             </Text>
           </Pressable>
@@ -252,8 +253,8 @@ export default function AccountScreen() {
             onPress={confirmReset}
             style={({ pressed }) => [styles.row, styles.rowIcon, pressed && { backgroundColor: theme.rowPressed }]}
           >
-            <Ionicons name="refresh" size={21} color={theme.text} style={{ transform: [{ scaleX: -1 }] }} />
-            <Text style={[styles.rowLabel, { color: theme.text, flex: 1, marginLeft: 12 }]}>
+            <Ionicons name="refresh" size={rs(21)} color={theme.text} style={{ transform: [{ scaleX: -1 }] }} />
+            <Text style={[styles.rowLabel, { color: theme.text, flex: 1, marginLeft: rs(12) }]}>
               {pickLang(lang, { ru: "Сбросить прогресс", en: "Reset progress", kk: "Прогресті тастау" })}
             </Text>
             <Chevron />

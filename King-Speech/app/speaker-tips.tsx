@@ -14,6 +14,7 @@ import * as Haptics from "@/lib/haptics";
 import { router } from "expo-router";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useLang, pickLang } from "@/context/LangContext";
+import { rs } from "@/lib/responsive";
 
 const GOLD = "#F5A623";
 const BG = "#070D1A";
@@ -109,8 +110,8 @@ const SECTIONS: Section[] = [
 export default function SpeakerTipsScreen() {
   const insets = useSafeAreaInsets();
   const { t, lang } = useLang();
-  const topPad = Platform.OS === "web" ? 24 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
+  const topPad = Platform.OS === "web" ? rs(24) : insets.top;
+  const bottomPad = Platform.OS === "web" ? rs(34) : insets.bottom;
 
   const goBack = () => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -132,16 +133,16 @@ export default function SpeakerTipsScreen() {
         end={{ x: 1, y: 1 }}
       />
 
-      <View style={[st.header, { paddingTop: topPad + 8 }]}>
+      <View style={[st.header, { paddingTop: topPad + rs(8) }]}>
         <Pressable onPress={goBack} style={({ pressed }) => [st.backBtn, { opacity: pressed ? 0.7 : 1 }]} accessibilityRole="button">
-          <Ionicons name="chevron-back" size={22} color={TEXT} />
+          <Ionicons name="chevron-back" size={rs(22)} color={TEXT} />
         </Pressable>
         <Text style={[st.headerTitle, { fontFamily: "Geologica_700Bold" }]} numberOfLines={1}>{t("speakerTips")}</Text>
         <View style={st.backBtn} />
       </View>
 
       <ScrollView
-        contentContainerStyle={[st.scroll, { paddingBottom: bottomPad + 32 }]}
+        contentContainerStyle={[st.scroll, { paddingBottom: bottomPad + rs(32) }]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={[st.lead, { fontFamily: "Geologica_400Regular" }]}>
@@ -155,7 +156,7 @@ export default function SpeakerTipsScreen() {
         {SECTIONS.map((section, si) => (
           <Animated.View key={si} entering={FadeInDown.delay(100 + si * 80).duration(350)} style={st.section}>
             <View style={st.sectionHeader}>
-              <Ionicons name={section.icon} size={15} color={GOLD} />
+              <Ionicons name={section.icon} size={rs(15)} color={GOLD} />
               <Text style={[st.sectionTitle, { fontFamily: "Geologica_600SemiBold" }]}>
                 {pickLang(lang, section).toUpperCase()}
               </Text>

@@ -12,6 +12,7 @@ import * as Haptics from "@/lib/haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { StepStatus } from "@/context/GameContext";
 import Colors from "@/constants/colors";
+import { rs } from "@/lib/responsive";
 
 interface StepBlockProps {
   stepNumber: number;
@@ -68,9 +69,9 @@ export function StepBlock({ stepNumber, title, status, onPress, colorScheme }: S
     onPress();
   };
 
-  const BLOCK_W = 130;
-  const BLOCK_H = 52;
-  const SIDE_H = 18;
+  const BLOCK_W = rs(130);
+  const BLOCK_H = rs(52);
+  const SIDE_H = rs(18);
   const SKEW = -14;
 
   return (
@@ -86,11 +87,11 @@ export function StepBlock({ stepNumber, title, status, onPress, colorScheme }: S
             glowStyle,
             {
               position: "absolute",
-              top: -8,
-              left: -8,
-              right: -8,
-              bottom: -8,
-              borderRadius: 18,
+              top: rs(-8),
+              left: rs(-8),
+              right: rs(-8),
+              bottom: rs(-8),
+              borderRadius: rs(18),
               backgroundColor: topColor,
               opacity: 0.25,
             },
@@ -103,12 +104,12 @@ export function StepBlock({ stepNumber, title, status, onPress, colorScheme }: S
             width: BLOCK_W,
             height: SIDE_H,
             backgroundColor: sideColor,
-            borderBottomLeftRadius: 10,
-            borderBottomRightRadius: 10,
+            borderBottomLeftRadius: rs(10),
+            borderBottomRightRadius: rs(10),
             transform: [{ skewX: `${SKEW}deg` }],
             position: "absolute",
-            top: BLOCK_H - 6,
-            left: 6,
+            top: BLOCK_H - rs(6),
+            left: rs(6),
           }}
         />
 
@@ -118,29 +119,29 @@ export function StepBlock({ stepNumber, title, status, onPress, colorScheme }: S
             width: BLOCK_W,
             height: BLOCK_H,
             backgroundColor: topColor,
-            borderRadius: 14,
+            borderRadius: rs(14),
             justifyContent: "center",
             alignItems: "center",
             shadowColor: sideColor,
-            shadowOffset: { width: 0, height: 6 },
+            shadowOffset: { width: 0, height: rs(6) },
             shadowOpacity: 0.5,
-            shadowRadius: 8,
+            shadowRadius: rs(8),
             elevation: 6,
           }}
         >
           {status === "completed" ? (
-            <Ionicons name="checkmark" size={26} color="#fff" />
+            <Ionicons name="checkmark" size={rs(26)} color="#fff" />
           ) : status === "locked" ? (
-            <Ionicons name="lock-closed" size={20} color={colorScheme === "dark" ? "#4A5568" : "#A8A5B5"} />
+            <Ionicons name="lock-closed" size={rs(20)} color={colorScheme === "dark" ? "#4A5568" : "#A8A5B5"} />
           ) : (
-            <View style={{ alignItems: "center", gap: 2 }}>
+            <View style={{ alignItems: "center", gap: rs(2) }}>
               <Text
                 style={{
                   fontFamily: "Geologica_700Bold",
-                  fontSize: 11,
+                  fontSize: rs(11),
                   color: colorScheme === "dark" ? "#1A1A2E" : "#1A1A2E",
                   opacity: 0.7,
-                  letterSpacing: 0.5,
+                  letterSpacing: rs(0.5),
                 }}
                 numberOfLines={1}
               >
@@ -149,10 +150,10 @@ export function StepBlock({ stepNumber, title, status, onPress, colorScheme }: S
               <Text
                 style={{
                   fontFamily: "Geologica_600SemiBold",
-                  fontSize: 12,
+                  fontSize: rs(12),
                   color: "#1A1A2E",
                   textAlign: "center",
-                  paddingHorizontal: 8,
+                  paddingHorizontal: rs(8),
                 }}
                 numberOfLines={1}
               >

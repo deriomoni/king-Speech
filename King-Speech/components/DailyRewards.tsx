@@ -10,6 +10,7 @@ import * as Haptics from "@/lib/haptics";
 import { useTheme } from "@/context/ThemeContext";
 import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import GoldCoin from "@/components/GoldCoin";
+import { rs } from "@/lib/responsive";
 
 const KEY = "@kingspeech_daily_streak_v1"; // { last: "YYYY-MM-DD" }
 export const DAILY_BONUS = 20;
@@ -86,13 +87,13 @@ export default function DailyRewards({
           <LinearGradient colors={["#FFE680", "#FFC23A"]} style={StyleSheet.absoluteFill} pointerEvents="none" />
           <Text style={s.ctaText}>{pickLang(lang, { ru: "Забрать", en: "Claim", kk: "Алу" })}</Text>
           <View>
-            <GoldCoin size={20} />
+            <GoldCoin size={rs(20)} />
           </View>
           <Text style={s.ctaText}>+{DAILY_BONUS}</Text>
         </Pressable>
       ) : (
         <View style={[s.cta, { backgroundColor: dark ? "rgba(240,238,233,0.08)" : "rgba(38,38,40,0.06)" }]}>
-          <Ionicons name="time-outline" size={16} color={c.textMuted} />
+          <Ionicons name="time-outline" size={rs(16)} color={c.textMuted} />
           <Text style={[s.waitText, { color: c.textMuted }]}>
             {loaded ? pickLang(lang, {
                   ru: `Следующая награда через ${untilMidnight(lang)}`,

@@ -23,6 +23,7 @@ import Animated, {
 } from "react-native-reanimated";
 import * as Haptics from "@/lib/haptics";
 import Door3D, { DOOR_FLOOR_Y, DOOR_VB_H, DOOR_VB_W, DOORWAY_GAP_CENTER, doorPaletteForRank } from "./Door3D";
+import { UI_SCALE, rs } from "@/lib/responsive";
 
 // ── timeline (ms) ────────────────────────────────────────────────────────────
 // Unhurried on purpose: the door gets a moment on screen before the pull.
@@ -100,20 +101,23 @@ const MOTE_BASE = 100;
 function Mote({ m, t, px, py, diag, color }: { m: (typeof MOTES)[number]; t: SharedValue<number>; px: number; py: number; diag: number; color: string }) {
   const cx = Math.cos(m.angle);
   const cy = Math.sin(m.angle);
+  // Tablet: the streaks grow with the UI (UI_SCALE is 1 on phones).
+  const base = MOTE_BASE * UI_SCALE;
+  const mw = m.w * UI_SCALE;
   const style = useAnimatedStyle(() => {
     const q = seg(t.value, m.at, m.dur);
     if (q <= 0 || q >= 1) return { opacity: 0 };
     const e = easeInQuart(q);
     const r = diag * m.dist * (1 - e);
-    const tail = 10 + 70 * e;
+    const tail = (10 + 70 * e) * UI_SCALE;
     const mid = r + tail / 2;
     return {
       opacity: Math.sin(Math.PI * q) * 0.9,
       transform: [
-        { translateX: px + cx * mid - MOTE_BASE / 2 },
-        { translateY: py + cy * mid - m.w / 2 },
+        { translateX: px + cx * mid - base / 2 },
+        { translateY: py + cy * mid - mw / 2 },
         { rotate: `${m.angle}rad` },
-        { scaleX: tail / MOTE_BASE },
+        { scaleX: tail / base },
         { scaleY: 1 - e * 0.6 },
       ],
     };
@@ -121,7 +125,7 @@ function Mote({ m, t, px, py, diag, color }: { m: (typeof MOTES)[number]; t: Sha
   return (
     <Animated.View
       style={[
-        { position: "absolute", left: 0, top: 0, width: MOTE_BASE, height: m.w, borderRadius: m.w / 2, backgroundColor: color },
+        { position: "absolute", left: 0, top: 0, width: base, height: mw, borderRadius: mw / 2, backgroundColor: color },
         style,
       ]}
     />
@@ -194,7 +198,9 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
   );
 
   // ── layout ──
-  const doorW = Math.min(W * 0.78, 330);
+  const doorW = Math.min(W * 0.78, rs(330));
+  const shakeAmp = rs(2.2);
+  const headingRise = rs(14);
   const doorH = (doorW * DOOR_VB_H) / DOOR_VB_W;
   const doorLeft = (W - doorW) / 2;
   const doorTop = H * 0.56 - doorH * 0.5;
@@ -211,7 +217,7 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
     // a short breath back before the rush in
     const brace = Math.sin(seg(tt, PULL_AT - 500, 500) * Math.PI * 0.5) * (1 - seg(tt, PULL_AT, 400));
     const s = (1 - 0.05 * brace) * (1 + pull * 11);
-    const shake = tt > PULL_AT && tt < FLASH_AT ? Math.sin(tt / 23) * 2.2 * pull : 0;
+    const shake = tt > PULL_AT && tt < FLASH_AT ? Math.sin(tt / 23) * shakeAmp * pull : 0;
     return {
       opacity: easeOutCubic(seg(tt, 0, FADE_IN)),
       transform: [
@@ -244,7 +250,7 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
     const sceneIn = easeOutCubic(seg(t.value, 0, FADE_IN));
     return {
       opacity: sceneIn * (1 - seg(t.value, PULL_AT - 300, 450)),
-      transform: [{ translateY: (1 - sceneIn) * 14 }],
+      transform: [{ translateY: (1 - sceneIn) * headingRise }],
     };
   });
   const flashStyle = useAnimatedStyle(() => ({

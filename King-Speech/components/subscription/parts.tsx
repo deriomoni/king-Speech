@@ -9,6 +9,7 @@ import {
   CHECK_EMPEROR_SVG,
 } from "@/assets/figma/new/svgs";
 import RoundStar from "@/components/RoundStar";
+import { rs } from "@/lib/responsive";
 
 export const INK = "#262628";
 export const GOLD = "#FFD857";
@@ -36,12 +37,12 @@ export function Checklist({
   trailing?: React.ReactNode;
 }) {
   return (
-    <View style={{ gap: 10.5 }}>
+    <View style={{ gap: rs(10.5) }}>
       {items.map((it, i) => (
         <View key={it} style={s.checkRow}>
           {/* Figma check is 11×7.8 with 1.1pt stroke padding → 13.2×10 */}
           <View style={s.checkBox}>
-            <SvgXml xml={CHECK_XML[tone]} width={13.2} height={10} />
+            <SvgXml xml={CHECK_XML[tone]} width={rs(13.2)} height={rs(10)} />
           </View>
           <Text style={[s.checkText, { color }]}>{it}</Text>
           {trailing && i === items.length - 1 ? trailing : null}
@@ -65,8 +66,8 @@ export function Badge({
   star?: boolean;
 }) {
   return (
-    <View style={[s.badge, { backgroundColor: bg }, style, star && { flexDirection: "row", alignItems: "center", gap: 4 }]}>
-      {star ? <RoundStar size={11} color={color} /> : null}
+    <View style={[s.badge, { backgroundColor: bg }, style, star && { flexDirection: "row", alignItems: "center", gap: rs(4) }]}>
+      {star ? <RoundStar size={rs(11)} color={color} /> : null}
       <Text style={[s.badgeText, { color }]}>{label}</Text>
     </View>
   );
@@ -106,8 +107,8 @@ export function PriceTile({
     priceColor = selected ? INK : CREAM;
   }
   const thick = (box.borderWidth as number) === 4;
-  const top = thick ? 10 : 11;
-  const left = thick ? 12 : 13;
+  const top = rs(thick ? 10 : 11);
+  const left = rs(thick ? 12 : 13);
   return (
     <Pressable
       onPress={onPress}
@@ -118,7 +119,7 @@ export function PriceTile({
       <Text style={[s.priceLabel, { color: labelColor, top, left }]}>
         {label}
       </Text>
-      <Text style={[s.priceValue, { color: priceColor, top: top + 18, left }]}>
+      <Text style={[s.priceValue, { color: priceColor, top: top + rs(18), left }]}>
         {price}
       </Text>
       {save ? (
@@ -126,7 +127,7 @@ export function PriceTile({
           label={save}
           bg={GOLD}
           color={INK}
-          style={{ position: "absolute", left: 102, top: 10, paddingHorizontal: 7, paddingVertical: 2 }}
+          style={{ position: "absolute", left: rs(102), top: rs(10), paddingHorizontal: rs(7), paddingVertical: rs(2) }}
         />
       ) : null}
     </Pressable>
@@ -157,16 +158,16 @@ export function PlanWithTray({
   disabled?: boolean;
 }) {
   return (
-    <View style={{ paddingBottom: 58 }}>
+    <View style={{ paddingBottom: rs(58) }}>
       <Pressable
         onPress={onTrayPress}
         disabled={disabled}
         accessibilityRole="button"
         style={({ pressed }) => [s.tray, trayStyle, { opacity: pressed ? 0.85 : 1 }]}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: rs(8) }}>
           <Text style={[s.trayText, { color: trayLabelColor }]}>{trayLabel}</Text>
-          {trayChevron ? <NextChevron color={trayLabelColor} size={15} /> : null}
+          {trayChevron ? <NextChevron color={trayLabelColor} size={rs(15)} /> : null}
         </View>
       </Pressable>
       <View style={{ zIndex: 1 }}>{card}</View>

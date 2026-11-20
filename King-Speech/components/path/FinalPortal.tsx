@@ -17,6 +17,7 @@ import { useIsFocused } from "expo-router";
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from "react-native-svg";
 import Door3D, { DOOR_VB_H, DOOR_VB_W, DOORWAY_CENTER, doorPaletteForRank } from "./Door3D";
 import { useAppColors } from "@/hooks/useAppColors";
+import { rs } from "@/lib/responsive";
 
 interface Props {
   theme: RankTheme;
@@ -43,6 +44,11 @@ export default function FinalPortal({ theme, status, onPress, testID, devPreview
   const isLocked = status === "locked" && !devPreview;
   const isDone = status === "completed";
   const glowing = status === "available";
+  // Layout constants stay raw for the stylesheet; inline uses are scaled.
+  const doorW = rs(DOOR_W);
+  const doorH = rs(DOOR_H);
+  const glowW = rs(GLOW_W);
+  const glowH = rs(GLOW_H);
   const press = useSharedValue(1);
   const pulse = useSharedValue(0);
 
@@ -82,19 +88,19 @@ export default function FinalPortal({ theme, status, onPress, testID, devPreview
         accessibilityLabel={pickLocalized(theme.portalLabel, lang)}
         testID={testID ?? "final-portal"}
       >
-        <Animated.View style={[pressStyle, { width: DOOR_W, height: DOOR_H }]}>
+        <Animated.View style={[pressStyle, { width: doorW, height: doorH }]}>
           <Animated.View
             pointerEvents="none"
             style={[
               styles.glow,
               glowStyle,
               {
-                left: DOOR_W * DOORWAY_CENTER.x - GLOW_W / 2,
-                top: DOOR_H * DOORWAY_CENTER.y - GLOW_H / 2,
+                left: doorW * DOORWAY_CENTER.x - glowW / 2,
+                top: doorH * DOORWAY_CENTER.y - glowH / 2,
               },
             ]}
           >
-            <Svg width={GLOW_W} height={GLOW_H}>
+            <Svg width={glowW} height={glowH}>
               <Defs>
                 <RadialGradient id="fpGlow" cx="50%" cy="50%" r="50%">
                   <Stop offset="0" stopColor="#FFD45C" stopOpacity={0.9} />
@@ -102,12 +108,12 @@ export default function FinalPortal({ theme, status, onPress, testID, devPreview
                   <Stop offset="1" stopColor="#FFD45C" stopOpacity={0} />
                 </RadialGradient>
               </Defs>
-              <Ellipse cx={GLOW_W / 2} cy={GLOW_H / 2} rx={GLOW_W / 2} ry={GLOW_H / 2} fill="url(#fpGlow)" />
+              <Ellipse cx={glowW / 2} cy={glowH / 2} rx={glowW / 2} ry={glowH / 2} fill="url(#fpGlow)" />
             </Svg>
           </Animated.View>
           <View style={{ opacity: 1 }}>
             <Door3D
-              width={DOOR_W}
+              width={doorW}
               open={isDone ? 0.42 : glowing ? 0.22 : 0}
               light={isDone ? 0.9 : glowing ? 0.95 : 0}
               palette={doorPaletteForRank(theme.index)}

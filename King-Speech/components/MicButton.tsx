@@ -19,6 +19,7 @@ import Animated, {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
+import { rs } from "@/lib/responsive";
 
 export type MicPhase = "idle" | "recording" | "done";
 
@@ -107,7 +108,7 @@ function Ring({
 export default function MicButton({
   phase,
   onPress,
-  size = 96,
+  size = rs(96),
   disabled = false,
   accentColor = "#F5A623",
   recordingColor = "#0EA5E9",
@@ -330,7 +331,7 @@ const styles = StyleSheet.create({
         shadowColor: "#000",
         shadowOpacity: 0.18,
         shadowRadius: 12,
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: { width: 0, height: rs(4) },
       },
       android: {
         elevation: 6,

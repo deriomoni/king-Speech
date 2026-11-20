@@ -31,6 +31,7 @@ import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useGame, type MetricTrend } from "@/context/GameContext";
 import OscarMascot from "@/components/OscarMascot";
 import RankDoorTransition from "./RankDoorTransition";
+import { rs } from "@/lib/responsive";
 
 interface Props {
   fromRank: number;
@@ -145,7 +146,7 @@ function HeroBlock({ theme, lang, memento = false }: { theme: RankTheme; lang: L
             colors={display.portalGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={[StyleSheet.absoluteFill, { borderRadius: 90 }]}
+            style={[StyleSheet.absoluteFill, { borderRadius: rs(90) }]}
           />
           {memento ? (
             <Animated.View
@@ -168,7 +169,7 @@ function HeroBlock({ theme, lang, memento = false }: { theme: RankTheme; lang: L
           ) : null}
           <Ionicons
             name={display.portalIcon}
-            size={56}
+            size={rs(56)}
             color="#fff"
           />
         </Animated.View>
@@ -227,7 +228,7 @@ const heroStyles = StyleSheet.create({
     shadowColor: "#000",
     shadowOpacity: 0.25,
     shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: rs(8) },
     elevation: 8,
   },
   lead: {
@@ -313,7 +314,7 @@ function ShowtimeRecording({ uri, theme, lang }: { uri?: string; theme: RankThem
         >
           <Ionicons
             name={playing ? "pause" : "play"}
-            size={22}
+            size={rs(22)}
             color={theme.accent}
           />
           <Text style={[blockStyles.playText, { color: theme.accent, fontFamily: theme.fontFamilyTitle }]}>
@@ -324,7 +325,7 @@ function ShowtimeRecording({ uri, theme, lang }: { uri?: string; theme: RankThem
         </Pressable>
       ) : (
         <View style={[blockStyles.empty, { borderColor: theme.borderColor }]}>
-          <Ionicons name="mic-outline" size={20} color={theme.textMuted} />
+          <Ionicons name="mic-outline" size={rs(20)} color={theme.textMuted} />
           <Text style={[blockStyles.emptyText, { color: theme.textMuted, fontFamily: theme.fontFamily }]}>
             {pickLang(lang, { ru: "Ранней записи Show Time пока нет — твой будущий ты её услышит.", en: "No early Show Time recording yet — your future self will hear it.", kk: "Ерте Сахна уақыты жазбасы әзірге жоқ — болашақтағы сіз оны міндетті түрде естисіз." })}
           </Text>
@@ -386,7 +387,7 @@ function TrendChip({
       <Text style={[blockStyles.trendNumber, { color, fontFamily: theme.fontFamilyTitle }]}>
         {fmt(trend.before)}
       </Text>
-      <Ionicons name={icon} size={12} color={color} />
+      <Ionicons name={icon} size={rs(12)} color={color} />
       <Text style={[blockStyles.trendNumber, { color, fontFamily: theme.fontFamilyTitle }]}>
         {fmt(trend.now)}
       </Text>
@@ -612,7 +613,7 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
       <ScrollView
         contentContainerStyle={[
           rankUpStyles.scroll,
-          { paddingTop: topPad + 16, paddingBottom: bottomPad + 110 },
+          { paddingTop: topPad + rs(16), paddingBottom: bottomPad + rs(110) },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -652,9 +653,9 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
         {/* Oscar celebrates the new rank — cool & confident */}
         <Animated.View
           entering={FadeIn.duration(450).delay(520)}
-          style={{ alignItems: "center", marginTop: 4 }}
+          style={{ alignItems: "center", marginTop: rs(4) }}
         >
-          <OscarMascot emotion="cool" size={128} />
+          <OscarMascot emotion="cool" size={rs(128)} />
         </Animated.View>
       </ScrollView>
       )}
@@ -664,7 +665,7 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
         // In memento mode the close affordance fades in a beat after mount so
         // the keepsake feels intentional, not a re-used celebration screen.
         entering={memento ? FadeIn.duration(420).delay(420) : FadeIn.duration(500).delay(300)}
-        style={[rankUpStyles.ctaWrap, { paddingBottom: bottomPad + 16 }]}
+        style={[rankUpStyles.ctaWrap, { paddingBottom: bottomPad + rs(16) }]}
       >
         <Pressable
           onPress={handleStart}
@@ -684,7 +685,7 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
             colors={memento ? theme.portalGradient : next.portalGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={[StyleSheet.absoluteFill, { borderRadius: 28 }]}
+            style={[StyleSheet.absoluteFill, { borderRadius: rs(28) }]}
           />
           <Text style={[rankUpStyles.ctaText, { fontFamily: (memento ? theme : next).fontFamilyTitle }]}>
             {memento
@@ -693,7 +694,7 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
               ? pickLang(lang, { ru: "Вернуться на главный", en: "Return home", kk: "Басты бетке оралу" })
               : pickLang(lang, { ru: "Начать новый ранг", en: "Start the new rank", kk: "Жаңа дәрежені бастау" })}
           </Text>
-          {memento ? <Ionicons name="close" size={20} color="#fff" /> : <NextChevron size={16} color="#fff" />}
+          {memento ? <Ionicons name="close" size={rs(20)} color="#fff" /> : <NextChevron size={rs(16)} color="#fff" />}
         </Pressable>
       </Animated.View>
       )}
@@ -755,7 +756,7 @@ const rankUpStyles = StyleSheet.create({
     shadowColor: "#000",
     shadowOpacity: 0.22,
     shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: rs(6) },
     elevation: 6,
   },
   ctaText: { fontSize: 17, color: "#fff", letterSpacing: 0.4 },

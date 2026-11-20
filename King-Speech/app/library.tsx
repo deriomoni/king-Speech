@@ -36,6 +36,7 @@ import { useLang, pickLang, LANG_LOCALE, type Lang } from "@/context/LangContext
 import { useTheme } from "@/context/ThemeContext";
 import AppDialog from "@/components/AppDialog";
 import { deleteRecordingFile } from "@/lib/recordingFiles";
+import { rs } from "@/lib/responsive";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -232,17 +233,23 @@ function LiftRow({
     }
     return () => cancelAnimation(wig);
   }, [lifted, lift, wig]);
+  // Fixed lengths for the worklet, computed on the JS side.
+  const liftY = rs(4);
+  const shR0 = rs(4);
+  const shR1 = rs(10);
+  const shY0 = rs(2);
+  const shY1 = rs(8);
   const st = useAnimatedStyle(() => ({
     transform: [
-      { translateY: -4 * lift.value },
+      { translateY: -liftY * lift.value },
       { scale: 1 + 0.03 * lift.value },
       // A wide row reads as a big swing at the cassettes' 2°: keep it subtle.
       { rotate: `${0.7 * wig.value}deg` },
     ],
     shadowColor: "#000",
     shadowOpacity: 0.28 * lift.value,
-    shadowRadius: 4 + 10 * lift.value,
-    shadowOffset: { width: 0, height: 2 + 8 * lift.value },
+    shadowRadius: shR0 + shR1 * lift.value,
+    shadowOffset: { width: 0, height: shY0 + shY1 * lift.value },
   }));
   return (
     <Animated.View style={st}>
@@ -264,7 +271,7 @@ function LiftRow({
 function Vinyl({ playing }: { playing: boolean }) {
   return (
     <View style={s.vinyl}>
-      <Svg width={54} height={54} viewBox="0 0 54 54">
+      <Svg width={rs(54)} height={rs(54)} viewBox="0 0 54 54">
         <Circle cx={27} cy={27} r={27} fill="#111113" />
         <Circle cx={27} cy={27} r={26.25} stroke="rgba(255,255,255,0.10)" strokeWidth={1.5} fill="none" />
         {[22, 19, 16].map((r) => (
@@ -334,8 +341,8 @@ export default function LibraryScreen() {
     await deleteRecordingFile(it.uri);
   };
 
-  const topPad = Platform.OS === "web" ? 54 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
+  const topPad = Platform.OS === "web" ? rs(54) : insets.top;
+  const bottomPad = Platform.OS === "web" ? rs(34) : insets.bottom;
 
   const items = useMemo<Item[]>(() => {
     const out: Item[] = [];
@@ -420,9 +427,9 @@ export default function LibraryScreen() {
       <ScrollView contentContainerStyle={s.scrollOuter} showsVerticalScrollIndicator={false}>
         <OverscrollFill top={c.bg} bottom={c.backingBottom} />
         {/* Top plate (Figma "Top panel" 427:1780) */}
-        <View style={[s.plate, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingTop: topPad + 10 }]}>
-          <Pressable onPress={goBack} hitSlop={12} style={[s.back, { top: topPad + 10 }]} accessibilityRole="button">
-            <Ionicons name="chevron-back" size={26} color={c.text} />
+        <View style={[s.plate, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingTop: topPad + rs(10) }]}>
+          <Pressable onPress={goBack} hitSlop={12} style={[s.back, { top: topPad + rs(10) }]} accessibilityRole="button">
+            <Ionicons name="chevron-back" size={rs(26)} color={c.text} />
           </Pressable>
           <Text style={[s.title, { color: c.text }]}>{tr("Моя библиотека", "My library", "Менің кітапханам")}</Text>
           <Text style={[s.subtitle, { color: c.textMuted }]}>
@@ -459,7 +466,7 @@ export default function LibraryScreen() {
         </View>
 
         {/* Backing (Figma 427:1779) */}
-        <View style={[s.body, { paddingBottom: bottomPad + 40 }]}>
+        <View style={[s.body, { paddingBottom: bottomPad + rs(40) }]}>
           <LinearGradient
             colors={[c.backingTop, c.backingMid, c.backingBottom]}
             locations={[0, 0.65, 1]}
@@ -493,7 +500,7 @@ export default function LibraryScreen() {
               )}
               {earlier.length > 0 && (
                 <>
-                  <Text style={[s.section, { color: c.text, marginTop: thisWeek.length ? 26 : 0 }]}>
+                  <Text style={[s.section, { color: c.text, marginTop: thisWeek.length ? rs(26) : 0 }]}>
                     {thisWeek.length ? tr("Раньше", "Earlier", "Бұрынырақ") : tr("Записи", "Recordings", "Жазбалар")}
                   </Text>
                   <View style={s.list}>{earlier.map((it, i) => renderRow(it, i + thisWeek.length))}</View>

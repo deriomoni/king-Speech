@@ -11,6 +11,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { ThemedSvg } from "@/components/settings/SettingsParts";
 import { useTheme } from "@/context/ThemeContext";
+import { rs } from "@/lib/responsive";
 import {
   LOGO_CROWN,
   LOGO_H,
@@ -46,7 +47,7 @@ export function BrandSplash({ ready, onFinish }: { ready: boolean; onFinish: () 
   const { width: screenW } = useWindowDimensions();
 
   // Geometry (logo units × k)
-  const logoW = Math.min(screenW * 0.64, 290);
+  const logoW = Math.min(screenW * 0.64, rs(290));
   const k = logoW / LOGO_FULL_W;
   const h = LOGO_H * k;
   const crownW = LOGO_CROWN.w * k;

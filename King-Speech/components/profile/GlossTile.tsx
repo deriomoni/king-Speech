@@ -4,11 +4,15 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, RadialGradient, Stop, Circle } from "react-native-svg";
 import * as Haptics from "@/lib/haptics";
 import type { ThemeMode } from "@/context/ThemeContext";
+import { rs } from "@/lib/responsive";
 
 // Figma "Row · …" / "Button · …" tiles on Screen / 04 · Profile (e.g. 391:1169).
 // Dark: black glossy vertical gradient, 1pt gradient hairline, soft white
 // spotlight at 10% in the top-right. Light: warm white tile, 7% ink hairline,
 // bright spotlight. Text is white / #1F1F1F with the subtitle at 55%.
+//
+// All geometry props (height, text box, spot) are phone-design numbers; they
+// are scaled with rs() here, so callers pass raw Figma values.
 
 const RADIUS = 26;
 
@@ -73,7 +77,7 @@ export default function GlossTile({
   const look = LOOK[mode];
   const shadow =
     Platform.OS === "web"
-      ? ({ boxShadow: `0px ${look.shadow.y}px ${look.shadow.blur}px ${look.shadow.color}` } as any)
+      ? ({ boxShadow: `0px ${rs(look.shadow.y)}px ${rs(look.shadow.blur)}px ${look.shadow.color}` } as any)
       : {
           // Opaque fill under the gradients: lets iOS build the shadow from the
           // rounded bounds instead of re-rendering every tile offscreen to find
@@ -81,8 +85,8 @@ export default function GlossTile({
           backgroundColor: look.fill[2],
           shadowColor: "#000",
           shadowOpacity: look.shadow.opacity,
-          shadowRadius: look.shadow.blur / 2,
-          shadowOffset: { width: 0, height: look.shadow.y },
+          shadowRadius: rs(look.shadow.blur / 2),
+          shadowOffset: { width: 0, height: rs(look.shadow.y) },
           elevation: mode === "dark" ? 6 : 2,
         };
   const gradId = `glossSpot_${idSuffix}`;
@@ -95,7 +99,7 @@ export default function GlossTile({
       }}
       style={({ pressed }) => [
         styles.outer,
-        { height },
+        { height: rs(height) },
         shadow,
         pressed && { opacity: 0.88, transform: [{ scale: 0.99 }] },
         style,
@@ -105,9 +109,10 @@ export default function GlossTile({
         <LinearGradient colors={look.fill} locations={look.fillLoc} style={styles.fill}>
           <Svg
             pointerEvents="none"
-            width={spot.size}
-            height={spot.size}
-            style={{ position: "absolute", left: spot.x - 1, top: spot.y - 1, opacity: look.spotOpacity }}
+            width={rs(spot.size)}
+            height={rs(spot.size)}
+            viewBox={`0 0 ${spot.size} ${spot.size}`}
+            style={{ position: "absolute", left: rs(spot.x - 1), top: rs(spot.y - 1), opacity: look.spotOpacity }}
           >
             <Defs>
               <RadialGradient id={gradId} cx="50%" cy="50%" r="50%">
@@ -122,7 +127,7 @@ export default function GlossTile({
             numberOfLines={1}
             style={[
               styles.title,
-              { color: look.ink, left: text.x - 1, top: text.y - 1, fontSize: text.titleSize },
+              { color: look.ink, left: rs(text.x - 1), top: rs(text.y - 1), fontSize: rs(text.titleSize) },
             ]}
           >
             {text.title}
@@ -133,9 +138,9 @@ export default function GlossTile({
               styles.sub,
               {
                 color: look.ink,
-                left: text.x - 1,
-                top: text.y - 1 + text.subOffset,
-                fontSize: text.subSize,
+                left: rs(text.x - 1),
+                top: rs(text.y - 1 + text.subOffset),
+                fontSize: rs(text.subSize),
               },
             ]}
           >

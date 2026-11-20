@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet, Platform, type ViewStyle } from "react-native";
 import { VinylCover } from "./VinylCovers";
+import { rs } from "@/lib/responsive";
 
 type ShadowStyle = ViewStyle & { boxShadow?: string };
 
@@ -18,7 +19,7 @@ function VinylRecordBase({ size, accentColor, designIndex, isCenter }: Props) {
         {
           width: size,
           height: size,
-          borderRadius: 6,
+          borderRadius: rs(6),
           overflow: "hidden",
         },
         isCenter ? styles.coverShadow : styles.coverShadowSide,

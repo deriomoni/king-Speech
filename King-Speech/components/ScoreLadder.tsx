@@ -12,6 +12,7 @@ import Animated, {
 import { Ionicons } from "@expo/vector-icons";
 import { ASPECT_META, type FlowerAspect } from "@/components/ScoreFlower";
 import { pickLang, type Lang } from "@/context/LangContext";
+import { rs } from "@/lib/responsive";
 
 // ───────────────────────────────────────────────────────────────────────────
 // ScoreLadder — the readable replacement for the flower. Overall + every
@@ -76,7 +77,7 @@ interface Props {
   lang?: Lang;
 }
 
-export default function ScoreLadder({ overall, aspects, width = 380, lang = "ru" }: Props) {
+export default function ScoreLadder({ overall, aspects, width = rs(380), lang = "ru" }: Props) {
   // Strengths on top, weaknesses at the bottom → the bars form a staircase.
   const sorted = [...aspects].sort((a, b) => b.score - a.score);
   return (
@@ -125,7 +126,7 @@ function LadderNode({
   const delay = 120 + index * 130;
 
   const op = useSharedValue(0);
-  const ty = useSharedValue(16);
+  const ty = useSharedValue(rs(16));
   const sc = useSharedValue(0.97);
   const fill = useSharedValue(0);
   const pulse = useSharedValue(0);
@@ -151,27 +152,27 @@ function LadderNode({
   const haloStyle = useAnimatedStyle(() => ({ opacity: 0.22 + pulse.value * 0.24 }));
 
   return (
-    <View style={[st.nodeWrap, { marginBottom: last ? 0 : 12 }]}>
+    <View style={[st.nodeWrap, { marginBottom: last ? 0 : rs(12) }]}>
       {/* Soft scattered halo behind the card (depth + glow) */}
       <Animated.View
         pointerEvents="none"
         style={[
           st.halo,
           { backgroundColor: tier.glow },
-          glowStyle(tier.glow, overall ? 44 : 28),
+          glowStyle(tier.glow, rs(overall ? 44 : 28)),
           haloStyle,
         ]}
       />
 
       <Animated.View style={[st.card, overall && st.cardOverall, { borderColor: tier.solid + "40" }, cardStyle]}>
         {/* Left accent rail — the "rung" of the ladder */}
-        <View style={[st.accent, glowStyle(tier.glow, overall ? 14 : 10)]}>
+        <View style={[st.accent, glowStyle(tier.glow, rs(overall ? 14 : 10))]}>
           <LinearGradient colors={tier.grad as any} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={StyleSheet.absoluteFill} />
         </View>
 
-        <View style={{ flex: 1, gap: overall ? 10 : 7, paddingLeft: 16 }}>
+        <View style={{ flex: 1, gap: rs(overall ? 10 : 7), paddingLeft: rs(16) }}>
           <View style={st.rowTop}>
-            <Ionicons name={icon} size={overall ? 18 : 15} color={tier.solid} />
+            <Ionicons name={icon} size={rs(overall ? 18 : 15)} color={tier.solid} />
             <Text
               numberOfLines={1}
               style={[st.label, overall && st.labelOverall, { color: overall ? "#F5F1FF" : "rgba(242,238,251,0.9)" }]}
@@ -186,7 +187,7 @@ function LadderNode({
                 {
                   color: tier.solid,
                   textShadowColor: tier.glow,
-                  textShadowRadius: overall ? 18 : 12,
+                  textShadowRadius: rs(overall ? 18 : 12),
                   textShadowOffset: { width: 0, height: 0 },
                 },
               ]}
@@ -195,8 +196,8 @@ function LadderNode({
             </Text>
           </View>
 
-          <View style={[st.track, { height: overall ? 14 : 10 }]}>
-            <Animated.View style={[st.fill, fillStyle, glowStyle(tier.glow, overall ? 18 : 12)]}>
+          <View style={[st.track, { height: rs(overall ? 14 : 10) }]}>
+            <Animated.View style={[st.fill, fillStyle, glowStyle(tier.glow, rs(overall ? 18 : 12))]}>
               <LinearGradient colors={tier.grad as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
             </Animated.View>
           </View>

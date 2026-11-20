@@ -15,6 +15,7 @@ import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, RadialGradient, Rect, Stop, SvgXml } from "react-native-svg";
 import * as Haptics from "@/lib/haptics";
+import { rs } from "@/lib/responsive";
 import { useTheme } from "@/context/ThemeContext";
 import { useLang, pickLang } from "@/context/LangContext";
 import AppDialog from "@/components/AppDialog";
@@ -248,7 +249,7 @@ export default function SubscriptionScreen() {
         isDark
           ? { backgroundColor: "#343435", borderColor: "rgba(240,238,233,0.12)" }
           : { backgroundColor: theme.cardElevated, borderColor: theme.cardBorder },
-        { padding: 19, paddingBottom: 19.5 },
+        { padding: rs(19), paddingBottom: rs(19.5) },
       ]}
     >
       <View style={styles.cardHead}>
@@ -257,14 +258,14 @@ export default function SubscriptionScreen() {
           label={tr(STR.current)}
           bg={isDark ? "#4F4F4F" : "rgba(38,38,40,0.10)"}
           color={theme.text}
-          style={{ marginTop: 4 }}
+          style={{ marginTop: rs(4) }}
         />
       </View>
       <View style={styles.priceRow}>
         <Text style={[styles.bigPrice, { color: theme.text }]}>$0</Text>
         <Text style={[styles.priceNote, { color: ink(0.55) }]}>{tr(STR.forever)}</Text>
       </View>
-      <View style={{ marginTop: 19 }}>
+      <View style={{ marginTop: rs(19) }}>
         <Checklist
           tone="free"
           color={ink(0.9)}
@@ -287,16 +288,16 @@ export default function SubscriptionScreen() {
       />
       {/* Crown watermark, top-right, rotated 12.77° */}
       <View pointerEvents="none" style={styles.watermark}>
-        <SvgXml xml={CROWN_WATERMARK_SVG} width={157.703} height={104.122} />
+        <SvgXml xml={CROWN_WATERMARK_SVG} width={rs(157.703)} height={rs(104.122)} />
       </View>
       {/* inset top highlight */}
-      <View pointerEvents="none" style={[styles.innerHighlight, { backgroundColor: "rgba(255,255,255,0.7)", height: 2 }]} />
-      <View style={{ padding: 19, paddingTop: 21, paddingBottom: 27.5 }}>
+      <View pointerEvents="none" style={[styles.innerHighlight, { backgroundColor: "rgba(255,255,255,0.7)", height: rs(2) }]} />
+      <View style={{ padding: rs(19), paddingTop: rs(21), paddingBottom: rs(27.5) }}>
         <View style={styles.cardHead}>
           <Text style={[styles.planTitle, { color: INK }]}>{tr(STR.royal)}</Text>
-          <Badge label={tr(STR.popular)} star bg={INK} color={GOLD} style={{ marginTop: 4 }} />
+          <Badge label={tr(STR.popular)} star bg={INK} color={GOLD} style={{ marginTop: rs(4) }} />
         </View>
-        <Text style={[styles.planSub, { color: "rgba(38,38,40,0.65)", marginTop: 6 }]}>
+        <Text style={[styles.planSub, { color: "rgba(38,38,40,0.65)", marginTop: rs(6) }]}>
           {tr(STR.royalSub)}
         </Text>
         <View style={styles.priceTiles}>
@@ -317,7 +318,7 @@ export default function SubscriptionScreen() {
           />
         </View>
         <Text style={[styles.perMonth, { color: "rgba(38,38,40,0.6)" }]}>{tr(STR.royalPerMonth)}</Text>
-        <View style={{ marginTop: 13 }}>
+        <View style={{ marginTop: rs(13) }}>
           <Checklist
             tone="royal"
             color="rgba(38,38,40,0.9)"
@@ -353,22 +354,22 @@ export default function SubscriptionScreen() {
         colors={["rgba(240,238,233,0.1)", "rgba(240,238,233,0)"]}
         style={styles.sheen}
       />
-      <View pointerEvents="none" style={[styles.innerHighlight, { backgroundColor: "rgba(240,238,233,0.2)", height: 1.5 }]} />
-      <View pointerEvents="none" style={{ position: "absolute", left: 4, top: 4 }}>
-        <SvgXml xml={EMPEROR_CROWN_SVG} width={54} height={41.9964} />
+      <View pointerEvents="none" style={[styles.innerHighlight, { backgroundColor: "rgba(240,238,233,0.2)", height: rs(1.5) }]} />
+      <View pointerEvents="none" style={{ position: "absolute", left: rs(4), top: rs(4) }}>
+        <SvgXml xml={EMPEROR_CROWN_SVG} width={rs(54)} height={rs(41.9964)} />
       </View>
-      <View pointerEvents="none" style={{ position: "absolute", left: 286, top: 56 }}>
-        <SvgXml xml={SPARKLE4_SVG} width={26} height={26} />
+      <View pointerEvents="none" style={{ position: "absolute", left: rs(286), top: rs(56) }}>
+        <SvgXml xml={SPARKLE4_SVG} width={rs(26)} height={rs(26)} />
       </View>
-      <View pointerEvents="none" style={{ position: "absolute", left: 320, top: 136 }}>
-        <SvgXml xml={SPARKLE3_SVG} width={23} height={23} />
+      <View pointerEvents="none" style={{ position: "absolute", left: rs(320), top: rs(136) }}>
+        <SvgXml xml={SPARKLE3_SVG} width={rs(23)} height={rs(23)} />
       </View>
-      <View style={{ paddingHorizontal: 18, paddingTop: 18, paddingBottom: 24.5 }}>
+      <View style={{ paddingHorizontal: rs(18), paddingTop: rs(18), paddingBottom: rs(24.5) }}>
         <View style={styles.cardHead}>
-          <Text style={[styles.planTitle, { color: GOLD, marginLeft: 42 }]}>{tr(STR.emperor)}</Text>
-          <Badge label={tr(STR.maximum)} bg={GOLD} color={INK} style={{ marginTop: 6 }} />
+          <Text style={[styles.planTitle, { color: GOLD, marginLeft: rs(42) }]}>{tr(STR.emperor)}</Text>
+          <Badge label={tr(STR.maximum)} bg={GOLD} color={INK} style={{ marginTop: rs(6) }} />
         </View>
-        <Text style={[styles.planSub, { color: "rgba(240,238,233,0.65)", marginTop: 7 }]}>
+        <Text style={[styles.planSub, { color: "rgba(240,238,233,0.65)", marginTop: rs(7) }]}>
           {tr(STR.emperorSub)}
         </Text>
         <View style={styles.priceTiles}>
@@ -389,12 +390,12 @@ export default function SubscriptionScreen() {
           />
         </View>
         <Text style={[styles.perMonth, { color: "rgba(240,238,233,0.5)" }]}>{tr(STR.emperorPerMonth)}</Text>
-        <View style={{ marginTop: 13 }}>
+        <View style={{ marginTop: rs(13) }}>
           <Checklist
             tone="emperor"
             color="rgba(240,238,233,0.9)"
             items={tr(STR.emperorItems)}
-            trailing={<CoinIcon size={17} color={GOLD} style={{ marginLeft: 6 }} />}
+            trailing={<CoinIcon size={rs(17)} color={GOLD} style={{ marginLeft: rs(6) }} />}
           />
         </View>
       </View>
@@ -404,7 +405,7 @@ export default function SubscriptionScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <ScrollView
-        contentContainerStyle={{ paddingTop: topPad, paddingBottom: bottomPad + 24 }}
+        contentContainerStyle={{ paddingTop: topPad, paddingBottom: bottomPad + rs(24) }}
         showsVerticalScrollIndicator={false}
       >
         {/* Page glow — radial gold centred behind the hero/plans */}
@@ -412,7 +413,7 @@ export default function SubscriptionScreen() {
           pointerEvents="none"
           style={styles.pageGlow}
           width="100%"
-          height={1100}
+          height={rs(1100)}
           viewBox="0 0 402 1100"
           preserveAspectRatio="none"
         >
@@ -428,7 +429,7 @@ export default function SubscriptionScreen() {
         {/* Top bar: close ✕ + restore purchases */}
         <View style={styles.topBar}>
           <Pressable onPress={close} hitSlop={8} accessibilityLabel={tr(STR.close)} style={styles.closeBtn}>
-            <SvgXml xml={isDark ? CLOSE_SVG : CLOSE_SVG.replace("#F0EEE9", "#262628")} width={40} height={40} />
+            <SvgXml xml={isDark ? CLOSE_SVG : CLOSE_SVG.replace("#F0EEE9", "#262628")} width={rs(40)} height={rs(40)} />
           </Pressable>
           <Pressable
             hitSlop={8}
@@ -442,23 +443,23 @@ export default function SubscriptionScreen() {
 
         {/* Hero crown + sparkles (positions relative to the screen centre) */}
         <View style={styles.hero} pointerEvents="none">
-          <View style={[styles.heroAbs, { marginLeft: -105, top: -11 }]}>
-            <SvgXml xml={CROWN_GLOW_SVG} width={210} height={188.213} />
+          <View style={[styles.heroAbs, { marginLeft: rs(-105), top: rs(-11) }]}>
+            <SvgXml xml={CROWN_GLOW_SVG} width={rs(210)} height={rs(188.213)} />
           </View>
-          <View style={[styles.heroAbs, { marginLeft: -92, top: 15 }]}>
-            <SvgXml xml={CROWN_SVG} width={184} height={163.666} />
+          <View style={[styles.heroAbs, { marginLeft: rs(-92), top: rs(15) }]}>
+            <SvgXml xml={CROWN_SVG} width={rs(184)} height={rs(163.666)} />
           </View>
-          <View style={[styles.heroAbs, { marginLeft: -97, top: 0 }]}>
-            <SvgXml xml={SPARKLE0_SVG} width={32} height={32} />
+          <View style={[styles.heroAbs, { marginLeft: rs(-97), top: 0 }]}>
+            <SvgXml xml={SPARKLE0_SVG} width={rs(32)} height={rs(32)} />
           </View>
-          <View style={[styles.heroAbs, { marginLeft: 73, top: -8 }]}>
-            <SvgXml xml={SPARKLE1_SVG} width={27} height={27} />
+          <View style={[styles.heroAbs, { marginLeft: rs(73), top: rs(-8) }]}>
+            <SvgXml xml={SPARKLE1_SVG} width={rs(27)} height={rs(27)} />
           </View>
-          <View style={[styles.heroAbs, { marginLeft: 91, top: 88 }]}>
-            <SvgXml xml={SPARKLE2_SVG} width={25} height={25} />
+          <View style={[styles.heroAbs, { marginLeft: rs(91), top: rs(88) }]}>
+            <SvgXml xml={SPARKLE2_SVG} width={rs(25)} height={rs(25)} />
           </View>
-          <View style={[styles.heroAbs, { marginLeft: -113, top: 102 }]}>
-            <SvgXml xml={SPARKLE3_SVG} width={23} height={23} />
+          <View style={[styles.heroAbs, { marginLeft: rs(-113), top: rs(102) }]}>
+            <SvgXml xml={SPARKLE3_SVG} width={rs(23)} height={rs(23)} />
           </View>
         </View>
 
@@ -477,8 +478,8 @@ export default function SubscriptionScreen() {
               backgroundColor: theme.btnSecondary,
               shadowColor: "#000",
               shadowOpacity: 0.25,
-              shadowRadius: 4,
-              shadowOffset: { width: 0, height: 4 },
+              shadowRadius: rs(4),
+              shadowOffset: { width: 0, height: rs(4) },
             }}
           />
           <PlanWithTray
@@ -495,12 +496,12 @@ export default function SubscriptionScreen() {
             trayChevron
             trayLabelColor={INK}
             onTrayPress={() => showSoon()}
-            trayStyle={{ backgroundColor: GOLD, borderWidth: 4, borderColor: theme.ctaStroke, paddingBottom: 19 }}
+            trayStyle={{ backgroundColor: GOLD, borderWidth: 4, borderColor: theme.ctaStroke, paddingBottom: rs(19) }}
           />
         </View>
 
         {/* Promo code */}
-        <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 26 }]}>{tr(STR.promoTitle)}</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text, marginTop: rs(26) }]}>{tr(STR.promoTitle)}</Text>
         <View style={[styles.promo, { backgroundColor: ink(0.05), borderColor: ink(0.12) }]}>
           <TextInput
             value={promo}
@@ -520,7 +521,7 @@ export default function SubscriptionScreen() {
         </View>
 
         {/* FAQ accordion */}
-        <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 32 }]}>{tr(STR.faqTitle)}</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text, marginTop: rs(32) }]}>{tr(STR.faqTitle)}</Text>
         <View style={[styles.faq, { backgroundColor: ink(0.05), borderColor: ink(0.12) }]}>
           {FAQ.map((f, i) => {
             const open = openFaq === i;
@@ -531,12 +532,12 @@ export default function SubscriptionScreen() {
                 style={[
                   styles.faqRow,
                   i < FAQ.length - 1 && { borderBottomWidth: 1, borderBottomColor: ink(0.08) },
-                  open && { paddingBottom: 21 },
+                  open && { paddingBottom: rs(21) },
                 ]}
               >
                 <View style={styles.faqHead}>
                   <Text style={[styles.faqQ, { color: theme.text }]}>{tr(f.q)}</Text>
-                  <View style={{ marginTop: 5 }}>
+                  <View style={{ marginTop: rs(5) }}>
                     <SvgXml
                       xml={
                         open
@@ -547,8 +548,8 @@ export default function SubscriptionScreen() {
                             ? CHEVRON_DOWN_SVG
                             : CHEVRON_DOWN_SVG.replace("#F0EEE9", "#262628")
                       }
-                      width={14}
-                      height={8}
+                      width={rs(14)}
+                      height={rs(8)}
                     />
                   </View>
                 </View>
@@ -562,10 +563,10 @@ export default function SubscriptionScreen() {
         <View style={[styles.support, { backgroundColor: ink(0.05), borderColor: ink(0.12) }]}>
           <SvgXml
             xml={isDark ? ICON_PLATE_SVG : ICON_PLATE_SVG.split("#FFD857").join("#B88A00")}
-            width={48}
-            height={48}
+            width={rs(48)}
+            height={rs(48)}
           />
-          <View style={{ flex: 1, marginLeft: 14, marginRight: 8 }}>
+          <View style={{ flex: 1, marginLeft: rs(14), marginRight: rs(8) }}>
             <Text style={[styles.supportTitle, { color: theme.text }]}>{tr(STR.supportTitle)}</Text>
             <Text style={[styles.supportSub, { color: ink(0.6) }]}>{tr(STR.supportSub)}</Text>
           </View>
@@ -636,7 +637,7 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOpacity: 0.55,
     shadowRadius: 12,
-    shadowOffset: { width: 0, height: 14 },
+    shadowOffset: { width: 0, height: rs(14) },
     elevation: 10,
   },
   cardHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },

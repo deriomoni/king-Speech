@@ -91,7 +91,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     backgroundColor: "#0B1426",
   },
   ios: {
-    supportsTablet: false,
+    supportsTablet: true,
+    // Portrait-only on iPad needs full-screen (no Split View) for App Store review.
+    requireFullScreen: true,
     bundleIdentifier: "com.oratopath",
     usesAppleSignIn: true,
     buildNumber: "1",

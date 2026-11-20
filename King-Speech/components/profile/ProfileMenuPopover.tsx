@@ -11,6 +11,7 @@ import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { SvgXml } from "react-native-svg";
 import type { Theme } from "@/context/ThemeContext";
+import { rs } from "@/lib/responsive";
 import {
   CAMERA_SVG,
   IMAGE_SVG,
@@ -85,11 +86,11 @@ export default function ProfileMenuPopover({
 
   const isDark = theme.mode === "dark";
   const ink = isDark ? "#F0EEE9" : "#262628";
-  const a = anchor ?? { x: 0, y: 0, width: BTN, height: BTN };
+  const a = anchor ?? { x: 0, y: 0, width: rs(BTN), height: rs(BTN) };
   const btnRight = a.x + a.width;
   // Popover right edge aligns with the button's right edge, 12pt below it.
-  const popLeft = Math.max(16, btnRight - POPOVER_W);
-  const popTop = a.y + a.height + 12;
+  const popLeft = Math.max(rs(16), btnRight - rs(POPOVER_W));
+  const popTop = a.y + a.height + rs(12);
 
   const iconXml = (icon: MenuOption["icon"], danger?: boolean) => {
     const base =
@@ -171,7 +172,7 @@ export default function ProfileMenuPopover({
                     { backgroundColor: isDark ? "rgba(240,238,233,0.08)" : "rgba(38,38,40,0.06)" },
                   ]}
                 >
-                  <SvgXml xml={iconXml(o.icon, o.danger)} width={22} height={22} />
+                  <SvgXml xml={iconXml(o.icon, o.danger)} width={rs(22)} height={rs(22)} />
                 </View>
                 <Text
                   style={[styles.label, { color: o.danger ? "#E5484D" : ink }]}
@@ -190,7 +191,7 @@ export default function ProfileMenuPopover({
       {/* The "+" button's glyph, rotated 45° into a "×" while open. */}
       <Pressable
         onPress={onClose}
-        hitSlop={8}
+        hitSlop={rs(8)}
         disabled={!visible}
         accessibilityRole="button"
         accessibilityLabel="Close"
@@ -236,12 +237,12 @@ const styles = StyleSheet.create({
     width: POPOVER_W,
     borderRadius: 22,
     ...(Platform.OS === "web"
-      ? ({ boxShadow: "0px 18px 40px rgba(0,0,0,0.55)" } as any)
+      ? ({ boxShadow: `0px ${rs(18)}px ${rs(40)}px rgba(0,0,0,0.55)` } as any)
       : {
           shadowColor: "#000",
           shadowOpacity: 0.55,
           shadowRadius: 20,
-          shadowOffset: { width: 0, height: 18 },
+          shadowOffset: { width: 0, height: rs(18) },
           elevation: 16,
         }),
   },

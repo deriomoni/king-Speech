@@ -13,6 +13,7 @@ import { useIsFocused } from "expo-router";
 import type { RankTheme } from "./rankTheme";
 import type { ThemeMode } from "@/context/ThemeContext";
 import { MeshGradientBackground } from "./MeshGradientBackground";
+import { rs } from "@/lib/responsive";
 
 // ──────────────────────────────────────────────────────────────────────
 // Color helpers (small, local — kept inside this file on purpose)
@@ -306,10 +307,10 @@ function NoiseOverlay({ isDark }: { isDark: boolean }) {
           key={i}
           style={{
             position: "absolute",
-            top: (i * 53) % 1200,
-            left: (i * 89) % 360,
-            width: 2,
-            height: 2,
+            top: rs((i * 53) % 1200),
+            left: rs((i * 89) % 360),
+            width: rs(2),
+            height: rs(2),
             borderRadius: 1,
             backgroundColor: dotColor,
           }}
@@ -444,7 +445,7 @@ function Rank1MinimalBackground({
         ]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 0.12 }}
-        style={[StyleSheet.absoluteFill, { height: 120 }]}
+        style={[StyleSheet.absoluteFill, { height: rs(120) }]}
       />
 
       {/* Subtle noise overlay */}
@@ -461,11 +462,11 @@ function NoviceSketchPattern({ theme }: { theme: RankTheme }) {
           key={`r${i}`}
           style={{
             position: "absolute",
-            top: 80 + i * 86,
-            left: i % 2 === 0 ? 24 : undefined,
-            right: i % 2 === 0 ? undefined : 24,
-            width: 60 + (i % 3) * 14,
-            height: 60 + (i % 3) * 14,
+            top: rs(80 + i * 86),
+            left: i % 2 === 0 ? rs(24) : undefined,
+            right: i % 2 === 0 ? undefined : rs(24),
+            width: rs(60 + (i % 3) * 14),
+            height: rs(60 + (i % 3) * 14),
             borderRadius: 999,
             borderWidth: 2,
             borderColor: theme.accent + "33",
@@ -479,9 +480,9 @@ function NoviceSketchPattern({ theme }: { theme: RankTheme }) {
           key={`l${i}`}
           style={{
             position: "absolute",
-            top: 140 + i * 120,
-            left: 60 + (i % 2) * 100,
-            width: 90,
+            top: rs(140 + i * 120),
+            left: rs(60 + (i % 2) * 100),
+            width: rs(90),
             height: 1.5,
             backgroundColor: theme.accent + "55",
             transform: [{ rotate: `${(i % 2 === 0 ? -8 : 6)}deg` }],
@@ -504,14 +505,14 @@ function AmateurPopArtPattern({ theme }: { theme: RankTheme }) {
             key={`hex${i}`}
             style={{
               position: "absolute",
-              top: 80 + row * 110,
-              left: col === 0 ? 18 : undefined,
-              right: col === 1 ? 18 : undefined,
-              width: 70,
-              height: 80,
+              top: rs(80 + row * 110),
+              left: col === 0 ? rs(18) : undefined,
+              right: col === 1 ? rs(18) : undefined,
+              width: rs(70),
+              height: rs(80),
               backgroundColor: row % 2 === 0 ? theme.accent + "22" : "#7C3AED22",
               transform: [{ rotate: "30deg" }],
-              borderRadius: 8,
+              borderRadius: rs(8),
             }}
           />
         );
@@ -521,11 +522,11 @@ function AmateurPopArtPattern({ theme }: { theme: RankTheme }) {
           key={`d${i}`}
           style={{
             position: "absolute",
-            top: 60 + (i * 47) % 900,
-            left: 30 + (i * 73) % 320,
-            width: 6,
-            height: 6,
-            borderRadius: 3,
+            top: rs(60 + (i * 47) % 900),
+            left: rs(30 + (i * 73) % 320),
+            width: rs(6),
+            height: rs(6),
+            borderRadius: rs(3),
             backgroundColor: theme.accentDark + "55",
           }}
         />
@@ -552,7 +553,7 @@ function ConfidentTechGrid({ theme }: { theme: RankTheme }) {
           key={`h${i}`}
           style={{
             position: "absolute",
-            top: i * 64,
+            top: rs(i * 64),
             left: 0,
             right: 0,
             height: 1,
@@ -568,7 +569,7 @@ function ConfidentTechGrid({ theme }: { theme: RankTheme }) {
             position: "absolute",
             top: 0,
             bottom: 0,
-            left: i * 48,
+            left: rs(i * 48),
             width: 1,
             backgroundColor: theme.accent + "12",
           }}
@@ -588,11 +589,11 @@ function ConfidentTechGrid({ theme }: { theme: RankTheme }) {
           key={`d${i}`}
           style={{
             position: "absolute",
-            top: 100 + (i * 67) % 900,
-            left: 20 + (i * 53) % 320,
-            width: 3,
-            height: 3,
-            borderRadius: 2,
+            top: rs(100 + (i * 67) % 900),
+            left: rs(20 + (i * 53) % 320),
+            width: rs(3),
+            height: rs(3),
+            borderRadius: rs(2),
             backgroundColor: theme.accent + "88",
           }}
         />
@@ -606,20 +607,20 @@ function MasterArtDeco({ theme }: { theme: RankTheme }) {
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       {/* concentric octagonal frames */}
       {Array.from({ length: 5 }).map((_, i) => {
-        const size = 280 + i * 60;
+        const size = rs(280 + i * 60);
         return (
           <View
             key={`o${i}`}
             style={{
               position: "absolute",
-              top: 220 + i * 180,
-              left: -size / 2 + 180,
+              top: rs(220 + i * 180),
+              left: -size / 2 + rs(180),
               width: size,
               height: size,
               borderWidth: 1,
               borderColor: theme.accent + "20",
               transform: [{ rotate: "22.5deg" }],
-              borderRadius: 12,
+              borderRadius: rs(12),
             }}
           />
         );
@@ -630,11 +631,11 @@ function MasterArtDeco({ theme }: { theme: RankTheme }) {
           key={`s${i}`}
           style={{
             position: "absolute",
-            top: 100 + i * 130,
-            left: i % 2 === 0 ? 20 : undefined,
-            right: i % 2 === 0 ? undefined : 20,
-            width: 60,
-            height: 2,
+            top: rs(100 + i * 130),
+            left: i % 2 === 0 ? rs(20) : undefined,
+            right: i % 2 === 0 ? undefined : rs(20),
+            width: rs(60),
+            height: rs(2),
             backgroundColor: theme.accent + "55",
           }}
         />
@@ -658,14 +659,14 @@ function ProCosmos({ theme }: { theme: RankTheme }) {
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       {/* stars */}
       {Array.from({ length: 60 }).map((_, i) => {
-        const size = 1 + (i % 4);
+        const size = rs(1 + (i % 4));
         return (
           <View
             key={`star${i}`}
             style={{
               position: "absolute",
-              top: 40 + (i * 53) % 1200,
-              left: 10 + (i * 31) % 360,
+              top: rs(40 + (i * 53) % 1200),
+              left: rs(10 + (i * 31) % 360),
               width: size,
               height: size,
               borderRadius: size,
@@ -681,10 +682,10 @@ function ProCosmos({ theme }: { theme: RankTheme }) {
           orbitStyle,
           {
             position: "absolute",
-            top: 240,
-            left: -120,
-            right: -120,
-            height: 380,
+            top: rs(240),
+            left: rs(-120),
+            right: rs(-120),
+            height: rs(380),
             borderWidth: 1,
             borderColor: theme.accent + "22",
             borderRadius: 999,
@@ -696,10 +697,10 @@ function ProCosmos({ theme }: { theme: RankTheme }) {
           orbitStyle,
           {
             position: "absolute",
-            top: 540,
-            left: -60,
-            right: -60,
-            height: 280,
+            top: rs(540),
+            left: rs(-60),
+            right: rs(-60),
+            height: rs(280),
             borderWidth: 1,
             borderColor: theme.accent + "33",
             borderRadius: 999,

@@ -5,6 +5,7 @@ import { SvgXml } from "react-native-svg";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import * as Haptics from "@/lib/haptics";
 import type { Theme } from "@/context/ThemeContext";
+import { rs } from "@/lib/responsive";
 
 /** Figma "stroke/shape" — the 2px hairline around cards. */
 export function shapeStroke(themeMode: "light" | "dark") {
@@ -45,7 +46,7 @@ export function PressScale({
   children,
   pressedScale = 0.92,
   accessibilityRole,
-  hitSlop = 6,
+  hitSlop = rs(6),
 }: {
   onPress: () => void;
   style?: StyleProp<ViewStyle>;
@@ -89,9 +90,9 @@ export function GoldSwitch({
   theme: Theme;
   themeMode: "light" | "dark";
 }) {
-  const x = useSharedValue(value ? 22 : 2);
+  const x = useSharedValue(value ? rs(22) : rs(2));
   useEffect(() => {
-    x.value = withTiming(value ? 22 : 2, { duration: 180 });
+    x.value = withTiming(value ? rs(22) : rs(2), { duration: 180 });
   }, [value]);
   const thumbStyle = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
 
@@ -99,7 +100,7 @@ export function GoldSwitch({
     <Pressable
       accessibilityRole="switch"
       accessibilityState={{ checked: value }}
-      hitSlop={8}
+      hitSlop={rs(8)}
       onPress={() => {
         tapHaptic();
         onValueChange(!value);
@@ -197,7 +198,7 @@ export function ListRow({
 }
 
 export function Chevron({ theme }: { theme: Theme }) {
-  return <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />;
+  return <Ionicons name="chevron-forward" size={rs(16)} color={theme.textMuted} />;
 }
 
 const styles = StyleSheet.create({

@@ -17,6 +17,7 @@ import { useGame } from "@/context/GameContext";
 import CoinIcon from "@/components/CoinIcon";
 import StageGlassDialog from "@/components/showtime/StageGlassDialog";
 import { PlayTriangleIcon } from "@/components/showtime/ShowTimeIcons";
+import { rs } from "@/lib/responsive";
 
 export const SHOW_TIME_COST = 50;
 
@@ -100,7 +101,7 @@ export function useShowTimeEntry() {
               <Text style={[st.payTrailText, { color: canPay ? c.accentText : c.text }]}>
                 {SHOW_TIME_COST}
               </Text>
-              <CoinIcon size={20} color={canPay ? c.accentText : c.text} />
+              <CoinIcon size={rs(20)} color={canPay ? c.accentText : c.text} />
             </View>
           ),
         },
@@ -113,7 +114,7 @@ export function useShowTimeEntry() {
         <Text style={[st.payCostValue, { color: isLight ? "rgba(38,38,40,0.9)" : "rgba(240,238,233,0.9)" }]}>
           {SHOW_TIME_COST}
         </Text>
-        <CoinIcon size={16} color={c.accent} />
+        <CoinIcon size={rs(16)} color={c.accent} />
       </View>
     </StageGlassDialog>
   );
@@ -140,7 +141,7 @@ export function ShowTimeStartButton({
       {free ? null : (
         <View style={st.startBtnCost}>
           <Text style={st.startBtnCostText}>{SHOW_TIME_COST}</Text>
-          <CoinIcon size={16} color="#3A3A3B" />
+          <CoinIcon size={rs(16)} color="#3A3A3B" />
         </View>
       )}
     </Pressable>

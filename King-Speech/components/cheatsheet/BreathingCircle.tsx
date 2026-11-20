@@ -14,6 +14,7 @@ import { fonts } from "@/constants/colors";
 import { useAppColors } from "@/hooks/useAppColors";
 import { tx, type BreathingStep, type PhaseType } from "@/constants/cheatsheetData";
 import { pickLang, type Lang } from "@/context/LangContext";
+import { rs } from "@/lib/responsive";
 
 // Distinct colour per phase so it's instantly obvious where you are.
 const C_INHALE = "#FFD857";
@@ -128,12 +129,12 @@ export default function BreathingCircle({
           entering={FadeIn.duration(260)}
           style={[styles.cue, { backgroundColor: color + "1A", borderColor: color + "4D" }]}
         >
-          <Ionicons name={phaseIcon(phase.type)} size={18} color={color} />
+          <Ionicons name={phaseIcon(phase.type)} size={rs(18)} color={color} />
           <Text style={[styles.cueText, { color }]}>{tx(phase.cue, lang)}</Text>
         </Animated.View>
       ) : (
         <View style={[styles.cue, { backgroundColor: C_EXHALE + "1A", borderColor: C_EXHALE + "4D" }]}>
-          <Ionicons name="checkmark" size={18} color={C_EXHALE} />
+          <Ionicons name="checkmark" size={rs(18)} color={C_EXHALE} />
           <Text style={[styles.cueText, { color: C_EXHALE }]}>
             {pickLang(lang, { ru: "Нажми «Вперёд», когда готов", en: "Tap Forward when ready", kk: "Дайын болғанда «Алға» түймесін басыңыз" })}
           </Text>
@@ -151,7 +152,7 @@ export default function BreathingCircle({
               <Text style={[styles.phaseCount, { color: colors.text }]}>{count}</Text>
             </>
           ) : (
-            <Ionicons name="leaf-outline" size={52} color={C_INHALE} />
+            <Ionicons name="leaf-outline" size={rs(52)} color={C_INHALE} />
           )}
         </Animated.View>
       </View>

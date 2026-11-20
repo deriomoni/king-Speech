@@ -27,6 +27,7 @@ import {
 } from "@/hooks/useWaveformBars";
 import RecButton, { RecGlyph } from "@/components/RecButton";
 import { pickLang, type Lang } from "@/context/LangContext";
+import { rs } from "@/lib/responsive";
 
 // Figma "Recorder bar" (151:1584, state Active): a 354x72 pill with a 4pt
 // translucent-ink outline, 3pt bars growing left to right, a gold playhead
@@ -94,7 +95,7 @@ function Bar({ bar, isNewest, color }: { bar: WaveBar; isNewest: boolean; color:
     0,
     Math.min(1, (bar.height - WAVEFORM_BAR_MIN) / (WAVEFORM_BAR_MAX - WAVEFORM_BAR_MIN)),
   );
-  const h = 6 + t * (BAR_MAX_H - 6);
+  const h = rs(6 + t * (BAR_MAX_H - 6));
   return <Animated.View style={[styles.bar, { height: h, backgroundColor: color }, style]} />;
 }
 
@@ -197,13 +198,13 @@ export default function WaveformRecorder({
           ]}
           testID="waveform-stop"
         >
-          <RecGlyph kind="stop" size={40} />
+          <RecGlyph kind="stop" size={rs(40)} />
           <Text style={[styles.stopPillText, { color: theme.accentText }]}>{stopLabel}</Text>
         </Pressable>
 
         <RecButton
           kind={isPaused ? "record" : "pause"}
-          size={50}
+          size={rs(50)}
           onPress={handlePauseToggle}
           accessibilityLabel={
             isPaused

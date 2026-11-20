@@ -45,15 +45,18 @@ import {
   ROLES_BG,
 } from "@/components/roles/RoleTarotCard";
 import { RolesMaskIcon } from "@/components/showtime/ShowTimeIcons";
+import { rs } from "@/lib/responsive";
 
 const { width: SW, height: SH } = Dimensions.get("window");
+// CARD_GAP / H_PAD are also used raw inside StyleSheet.create (auto-scaled on
+// tablets) — layout math below uses rs() so the two stay in step.
 const CARD_GAP = 12;
 const H_PAD = 16;
-const CONTENT_W = Math.min(SW, 520);
-const CARD_W = Math.floor((CONTENT_W - H_PAD * 2 - CARD_GAP) / 2);
-const DECK_W = Math.round(Math.min(CONTENT_W * 0.36, 170)); // centre card
+const CONTENT_W = Math.min(SW, rs(520));
+const CARD_W = Math.floor((CONTENT_W - rs(H_PAD) * 2 - rs(CARD_GAP)) / 2);
+const DECK_W = Math.round(Math.min(CONTENT_W * 0.36, rs(170))); // centre card (already tablet-sized)
 const SIDE_W = Math.round(DECK_W * 0.9);
-const SPIN_W = Math.round(Math.min(SW * 0.6, 260));
+const SPIN_W = Math.round(Math.min(SW * 0.6, rs(260)));
 
 const TEXT = "#FFFFFF";
 const MUTED = "rgba(255,255,255,0.55)";
@@ -165,8 +168,8 @@ export default function RolesScreen() {
     return { transform: [{ translateY: -m }] };
   });
 
-  const topPad = Platform.OS === "web" ? 20 : insets.top + 4;
-  const bottomPad = (Platform.OS === "web" ? 24 : insets.bottom) + 32;
+  const topPad = Platform.OS === "web" ? rs(20) : insets.top + rs(4);
+  const bottomPad = (Platform.OS === "web" ? rs(24) : insets.bottom) + rs(32);
 
   const visibleRoles = category === "all" ? ART_ROLES : ART_ROLES.filter((r) => r.category === category);
 
@@ -180,7 +183,7 @@ export default function RolesScreen() {
   return (
     <View style={styles.root}>
       {/* Ornament follows the scroll (see ornamentStyle) */}
-      <Animated.View pointerEvents="none" style={[styles.ornament, ornamentStyle]}>
+      <Animated.View pointerEvents="none" style={[styles.ornament, { width: SW, height: SH + CROWN_PATTERN_PERIOD }, ornamentStyle]}>
         <CrownPattern width={SW} height={SH + CROWN_PATTERN_PERIOD} />
       </Animated.View>
       <Animated.ScrollView
@@ -193,12 +196,12 @@ export default function RolesScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.iconBtn}>
-            <Ionicons name="chevron-back" size={26} color={TEXT} />
+            <Ionicons name="chevron-back" size={rs(26)} color={TEXT} />
           </Pressable>
         </View>
         <Animated.View entering={FadeInDown.duration(400)} style={styles.titleWrap}>
           <View style={styles.titleRow}>
-            <RolesMaskIcon color={TEXT} width={22} height={30} />
+            <RolesMaskIcon color={TEXT} width={rs(22)} height={rs(30)} />
             <Text style={styles.title}>{pickLang(lang, { ru: "Роли", en: "Roles", kk: "Рөлдер" })}</Text>
           </View>
           <Text style={styles.subtitle}>
@@ -208,14 +211,14 @@ export default function RolesScreen() {
 
         {/* Spin deck */}
         <Animated.View entering={FadeInDown.delay(80)}>
-          <Pressable onPress={startSpin} style={styles.deck}>
-            <View style={[styles.deckSide, { transform: [{ translateX: -DECK_W * 0.78 }, { translateY: 14 }, { rotate: "-12deg" }] }]}>
+          <Pressable onPress={startSpin} style={[styles.deck, { height: Math.round(DECK_W * 1.5) + rs(24) }]}>
+            <View style={[styles.deckSide, { transform: [{ translateX: -DECK_W * 0.78 }, { translateY: rs(14) }, { rotate: "-12deg" }] }]}>
               <RoleTarotCard role={DECK_SIDES[0]} width={SIDE_W} lang={lang} />
             </View>
-            <View style={[styles.deckSide, { transform: [{ translateX: DECK_W * 0.78 }, { translateY: 14 }, { rotate: "12deg" }] }]}>
+            <View style={[styles.deckSide, { transform: [{ translateX: DECK_W * 0.78 }, { translateY: rs(14) }, { rotate: "12deg" }] }]}>
               <RoleTarotCard role={DECK_SIDES[1]} width={SIDE_W} lang={lang} />
             </View>
-            <View style={styles.deckCentre}>
+            <View style={[styles.deckCentre, { borderRadius: Math.round(DECK_W * 0.075) }]}>
               <RolePlayCard width={DECK_W} />
             </View>
           </Pressable>
@@ -278,7 +281,8 @@ function CategoryChip({ active, label, onPress }: { active: boolean; label: stri
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: ROLES_BG },
-  ornament: { position: "absolute", top: 0, left: 0, width: SW, height: SH + CROWN_PATTERN_PERIOD },
+  // width/height (window + pattern period, both already device-sized) are inline.
+  ornament: { position: "absolute", top: 0, left: 0 },
   header: { paddingHorizontal: H_PAD - 4, paddingBottom: 4 },
   iconBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   titleWrap: { alignItems: "center", paddingHorizontal: H_PAD },
@@ -286,10 +290,10 @@ const styles = StyleSheet.create({
   title: { color: TEXT, fontFamily: "Geologica_800ExtraBold", fontSize: 30, letterSpacing: -0.3 },
   subtitle: { color: MUTED, fontFamily: "Geologica_400Regular", fontSize: 13, marginTop: 8, textAlign: "center" },
 
-  deck: { height: Math.round(DECK_W * 1.5) + 24, alignItems: "center", justifyContent: "center", marginTop: 22 },
+  // height is inline (derived from DECK_W, already device-sized).
+  deck: { alignItems: "center", justifyContent: "center", marginTop: 22 },
   deckSide: { position: "absolute" },
   deckCentre: {
-    borderRadius: Math.round(DECK_W * 0.075),
     backgroundColor: "#7A3BF0",
     ...Platform.select({
       ios: { shadowColor: "#7A3BF0", shadowOpacity: 0.55, shadowRadius: 24, shadowOffset: { width: 0, height: 10 } },

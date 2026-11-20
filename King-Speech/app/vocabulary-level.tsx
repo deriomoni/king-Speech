@@ -33,6 +33,7 @@ import { VOCAB_WORDS_KK } from "@/constants/vocabularyDataKk";
 import { useGame, MODULE_COLORS, RANKS_MODULAR } from "@/context/GameContext";
 import { useModuleTransition } from "@/context/ModuleTransitionContext";
 import { useTheme } from "@/context/ThemeContext";
+import { rs } from "@/lib/responsive";
 import { useLang, pickLang, LANG_LOCALE } from "@/context/LangContext";
 import { useWaveformBars } from "@/hooks/useWaveformBars";
 import VocabPlayView, {
@@ -67,8 +68,8 @@ function usePads() {
   const insets = useSafeAreaInsets();
   const web = Platform.OS === "web";
   return {
-    top: web ? 54 : insets.top,
-    bottom: web ? 28 : Math.max(16, insets.bottom - 6),
+    top: web ? rs(54) : insets.top,
+    bottom: web ? rs(28) : Math.max(rs(16), insets.bottom - 6),
     insetBottom: web ? 0 : insets.bottom,
   };
 }
@@ -92,7 +93,7 @@ function CloseButton({ onPress }: { onPress: () => void }) {
       accessibilityLabel={pickLang(lang, { ru: "Закрыть", en: "Close", kk: "Жабу" })}
       style={({ pressed }) => [styles.close, { opacity: pressed ? 0.6 : 1 }]}
     >
-      <Ionicons name="close" size={26} color={theme.text} />
+      <Ionicons name="close" size={rs(26)} color={theme.text} />
     </Pressable>
   );
 }
@@ -312,7 +313,7 @@ function TutorialPhase({
     <View
       style={[
         styles.tutorialRoot,
-        { paddingTop: pads.top + 8, paddingBottom: Platform.OS === "web" ? 48 : pads.insetBottom + 14 },
+        { paddingTop: pads.top + rs(8), paddingBottom: Platform.OS === "web" ? rs(48) : pads.insetBottom + rs(14) },
       ]}
     >
       <View style={styles.topBar}>
@@ -378,7 +379,11 @@ const REEL_LEN = 72; // long enough to keep sweeping for the full auto-stop wind
 const SETTLE_COLS = 3; // slots to glide past after STOP for a natural landing
 const SPIN_SPEED = 4.2; // words per second while spinning
 const DRUM_STEP = 0.42; // radians between neighbouring words on the drum
-const DRUM_R = 80 / Math.sin(DRUM_STEP); // drum radius → ~80pt between centre and neighbour
+// ROW_H / CENTER_OFFSET are auto-scaled in the stylesheet; the drum geometry
+// used inside the worklet is scaled here with rs() so the reel stays consistent.
+const DRUM_R = rs(80) / Math.sin(DRUM_STEP); // drum radius → ~80pt between centre and neighbour
+const DRUM_PERSPECTIVE = rs(700);
+const HINT_RISE = rs(6);
 const HINT_AFTER_MS = 5000; // "tap to stop" shows only if the player hasn't stopped by then
 const AUTO_STOP_MS = HINT_AFTER_MS + 5000; // …and if they still ignore it, the reel stops itself
 
@@ -407,7 +412,7 @@ function ReelRow({
     return {
       opacity,
       transform: [
-        { perspective: 700 },
+        { perspective: DRUM_PERSPECTIVE },
         { translateY: DRUM_R * Math.sin(a) },
         { rotateX: `${-a}rad` },
         { scale },
@@ -564,14 +569,14 @@ function SpinPhase({
   }, [isSpinning]);
   const hintStyle = useAnimatedStyle(() => ({
     opacity: hintOp.value,
-    transform: [{ translateY: (1 - hintOp.value) * 6 }],
+    transform: [{ translateY: (1 - hintOp.value) * HINT_RISE }],
   }));
 
   const fadeFrom = theme.bg;
   const fadeTo = isDark ? "rgba(38,38,40,0)" : "rgba(250,249,246,0)";
 
   return (
-    <View style={[styles.spinRoot, { backgroundColor: theme.bg, paddingTop: pads.top + 8 }]}>
+    <View style={[styles.spinRoot, { backgroundColor: theme.bg, paddingTop: pads.top + rs(8) }]}>
       <View style={styles.topBar}>
         <CloseButton onPress={onClose} />
       </View>
@@ -604,7 +609,7 @@ function SpinPhase({
         <LinearGradient pointerEvents="none" colors={[fadeTo, fadeFrom]} style={styles.fadeBottom} />
       </View>
 
-      <View style={[styles.stopWrap, { paddingBottom: Platform.OS === "web" ? 58 : pads.insetBottom + 24 }]}>
+      <View style={[styles.stopWrap, { paddingBottom: Platform.OS === "web" ? rs(58) : pads.insetBottom + rs(24) }]}>
         <Pressable
           onPress={() => stop()}
           disabled={!isSpinning}

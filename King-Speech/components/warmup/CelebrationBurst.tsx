@@ -11,6 +11,7 @@ import Animated, {
 } from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
 import { warmupSpring, warmupTheme } from "@/components/warmup/warmupTheme";
+import { rs } from "@/lib/responsive";
 
 /**
  * Celebratory қошқар-мүйіз (ram's-horn) ornament sparkles.
@@ -32,7 +33,7 @@ interface Particle {
   color: string;
 }
 
-const PARTICLES: Particle[] = [
+const PARTICLES_BASE: Particle[] = [
   { dx: 0, dy: -70, size: 34, rot: 0, delay: 0, color: warmupTheme.gold },
   { dx: -88, dy: -34, size: 26, rot: -18, delay: 70, color: warmupTheme.cleanMint },
   { dx: 88, dy: -34, size: 26, rot: 18, delay: 70, color: warmupTheme.cleanMint },
@@ -41,6 +42,14 @@ const PARTICLES: Particle[] = [
   { dx: -54, dy: 96, size: 20, rot: -12, delay: 220, color: warmupTheme.touchLavender },
   { dx: 54, dy: 96, size: 20, rot: 12, delay: 220, color: warmupTheme.touchLavender },
 ];
+// Offsets/sizes are phone-design pt — scaled for tablets.
+const PARTICLES: Particle[] = PARTICLES_BASE.map((p) => ({
+  ...p,
+  dx: rs(p.dx),
+  dy: rs(p.dy),
+  size: rs(p.size),
+}));
+const DRIFT = rs(-24);
 
 function Ornament({ dx, dy, size, rot, delay, color }: Particle) {
   const scale = useSharedValue(0);
@@ -58,7 +67,7 @@ function Ornament({ dx, dy, size, rot, delay, color }: Particle) {
     );
     drift.value = withDelay(
       delay,
-      withTiming(-24, { duration: 1100, easing: Easing.out(Easing.quad) }),
+      withTiming(DRIFT, { duration: 1100, easing: Easing.out(Easing.quad) }),
     );
   }, [delay, drift, opacity, scale]);
 

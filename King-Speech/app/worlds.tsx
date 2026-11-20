@@ -23,6 +23,7 @@ import {
   pickLocalized,
   type IoniconName,
 } from "@/components/path/rankTheme";
+import { rs } from "@/lib/responsive";
 
 type RankStatus = "locked" | "current" | "completed";
 
@@ -89,7 +90,7 @@ export default function WorldsMapRoute() {
   );
 
   return (
-    <View style={[styles.root, { paddingTop: topPad + 8, backgroundColor: appTheme.bg }]}>
+    <View style={[styles.root, { paddingTop: topPad + rs(8), backgroundColor: appTheme.bg }]}>
       <LinearGradient
         colors={screenGradient as readonly [ColorValue, ColorValue, ...ColorValue[]]}
         start={{ x: 0, y: 0 }}
@@ -105,7 +106,7 @@ export default function WorldsMapRoute() {
           testID="worlds-close"
           hitSlop={12}
         >
-          <Ionicons name="chevron-back" size={26} color={appTheme.text} />
+          <Ionicons name="chevron-back" size={rs(26)} color={appTheme.text} />
         </Pressable>
         <View style={styles.titleCol}>
           <Text
@@ -126,7 +127,7 @@ export default function WorldsMapRoute() {
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingBottom: bottomPad + 32 },
+          { paddingBottom: bottomPad + rs(32) },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -177,7 +178,7 @@ export default function WorldsMapRoute() {
         })}
 
         <View style={styles.footerHint}>
-          <Ionicons name="information-circle-outline" size={14} color={appTheme.textMuted} />
+          <Ionicons name="information-circle-outline" size={rs(14)} color={appTheme.textMuted} />
           <Text
             style={[
               styles.footerHintText,
@@ -320,7 +321,7 @@ function RankCard({
           )}
           <Ionicons
             name={isLocked ? "lock-closed" : portalIcon}
-            size={28}
+            size={rs(28)}
             color="#fff"
           />
         </View>
@@ -356,7 +357,7 @@ function RankCard({
               ]}
             >
               {isCompleted && (
-                <Ionicons name="checkmark" size={10} color="#5EEAD4" style={{ marginRight: 3 }} />
+                <Ionicons name="checkmark" size={rs(10)} color="#5EEAD4" style={{ marginRight: rs(3) }} />
               )}
               <Text
                 style={[
@@ -392,7 +393,7 @@ function RankCard({
 
           <View style={cardStyles.metaRow}>
             <View style={cardStyles.metaItem}>
-              <Ionicons name="layers-outline" size={12} color={metaIcon} />
+              <Ionicons name="layers-outline" size={rs(12)} color={metaIcon} />
               <Text style={[cardStyles.metaText, { color: metaFg, fontFamily: "Geologica_500Medium" }]}>
                 {completedInRank}/{totalInRank}{" "}
                 {pickLang(lang, { ru: "модулей", en: "modules", kk: "модуль" })}
@@ -400,7 +401,7 @@ function RankCard({
             </View>
             {!isLocked && (
               <View style={cardStyles.metaItem}>
-                <Ionicons name="mic-outline" size={12} color={metaIcon} />
+                <Ionicons name="mic-outline" size={rs(12)} color={metaIcon} />
                 <Text style={[cardStyles.metaText, { color: metaFg, fontFamily: "Geologica_500Medium" }]}>
                   {recordingsCount}{" "}
                   {pickLang(lang, {
@@ -415,7 +416,7 @@ function RankCard({
         </View>
 
         {!isLocked && (
-          <Ionicons name="chevron-forward" size={20} color={appTheme.textMuted} />
+          <Ionicons name="chevron-forward" size={rs(20)} color={appTheme.textMuted} />
         )}
       </View>
       </View>

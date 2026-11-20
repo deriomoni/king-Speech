@@ -3,6 +3,7 @@
 import React from "react";
 import Svg, { Circle, G, Path } from "react-native-svg";
 import type { DiaryEmotion } from "@/lib/diaryStorage";
+import { rs } from "@/lib/responsive";
 
 export type PickableEmotion = Exclude<DiaryEmotion, "neutral">;
 
@@ -52,7 +53,7 @@ export const CASSETTE_LIDS: Partial<Record<DiaryEmotion, [string, string]>> = {
 };
 
 /** Pastel circle face (40×40) used in the mood picker. */
-export function MoodFace({ emotion, size = 40 }: { emotion: PickableEmotion; size?: number }) {
+export function MoodFace({ emotion, size = rs(40) }: { emotion: PickableEmotion; size?: number }) {
   const bg = EMOTIONS.find((e) => e.key === emotion)?.color ?? "#E4E0DA";
   const st = { stroke: INK, strokeLinecap: "round" as const, fill: "none" };
   let face: React.ReactNode = null;

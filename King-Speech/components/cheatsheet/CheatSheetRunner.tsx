@@ -24,6 +24,7 @@ import Animated, {
 import { fonts } from "@/constants/colors";
 import { useAppColors } from "@/hooks/useAppColors";
 import { pickLang, type Lang } from "@/context/LangContext";
+import { rs } from "@/lib/responsive";
 import {
   tx,
   DIFFICULTY_LABEL,
@@ -148,7 +149,7 @@ function ActionView({ step, lang, c, isDark }: { step: ActionStep; lang: Lang; c
             </View>
           ) : (
             <Pressable onPress={start} style={({ pressed }) => [styles.timerBtn, pressed && { opacity: 0.85 }]}>
-              <Ionicons name="play" size={18} color="#41310A" />
+              <Ionicons name="play" size={rs(18)} color="#41310A" />
               <Text style={styles.timerBtnTxt}>
                 {remaining === 0
                   ? pickLang(lang, { ru: "Ещё раз", en: "Repeat", kk: "Тағы бір рет" })
@@ -237,7 +238,7 @@ function TwisterView({ step, lang, c, isDark }: { step: TwisterStep; lang: Lang;
     <View style={styles.twWrap}>
       <View style={styles.twTags}>
         <View style={styles.soundChip}>
-          <Ionicons name="volume-high-outline" size={13} color={PURPLE} />
+          <Ionicons name="volume-high-outline" size={rs(13)} color={PURPLE} />
           <Text style={styles.soundChipTxt}>{tx(tw.sound, lang)}</Text>
         </View>
         <View style={[styles.diffChip, { backgroundColor: ink(isDark, 0.06), borderColor: ink(isDark, 0.1) }]}>
@@ -253,7 +254,7 @@ function TwisterView({ step, lang, c, isDark }: { step: TwisterStep; lang: Lang;
 
       {/* Speed pill — updates each pass: slow → tempo → fast. */}
       <View style={[styles.speedPill, { backgroundColor: speed.color + "1F", borderColor: speed.color + "55" }]}>
-        <Ionicons name="speedometer-outline" size={14} color={speed.color} />
+        <Ionicons name="speedometer-outline" size={rs(14)} color={speed.color} />
         <Text style={[styles.speedTxt, { color: speed.color }]}>{pickLang(lang, speed)}</Text>
       </View>
 
@@ -282,7 +283,7 @@ function TwisterView({ step, lang, c, isDark }: { step: TwisterStep; lang: Lang;
         accessibilityRole="button"
         accessibilityLabel={pickLang(lang, { ru: "Замена", en: "Replace", kk: "Ауыстыру" })}
       >
-        <Ionicons name="shuffle" size={16} color={c.text} />
+        <Ionicons name="shuffle" size={rs(16)} color={c.text} />
         <Text style={[styles.twReplaceTxt, { color: c.text }]}>{pickLang(lang, { ru: "Замена", en: "Replace", kk: "Ауыстыру" })}</Text>
       </Pressable>
     </View>
@@ -296,7 +297,7 @@ function TipView({ step, lang, c }: { step: TipStep; lang: Lang; c: AppColors })
   return (
     <View style={styles.tipWrap}>
       <View style={[styles.tipIconWrap, { backgroundColor: accent + "1F", borderColor: accent + "44" }]}>
-        <Ionicons name={step.icon} size={30} color={accent} />
+        <Ionicons name={step.icon} size={rs(30)} color={accent} />
       </View>
       <Text style={[styles.tipKicker, { color: accent }]}>
         {isFix
@@ -314,13 +315,13 @@ function FinalView({ step, lang, onDone, c }: { step: FinalStep; lang: Lang; onD
   return (
     <View style={styles.finalWrap}>
       <View style={styles.finalBadge}>
-        <Ionicons name="sparkles" size={34} color={GOLD} />
+        <Ionicons name="sparkles" size={rs(34)} color={GOLD} />
       </View>
       <Text style={[styles.finalTitle, { color: c.text }]}>{tx(step.title, lang)}</Text>
       <View style={styles.finalLines}>
         {step.lines.map((l, k) => (
           <View key={k} style={styles.finalLineRow}>
-            <Ionicons name="checkmark-circle" size={18} color="#5FD3C4" />
+            <Ionicons name="checkmark-circle" size={rs(18)} color="#5FD3C4" />
             <Text style={[styles.finalLine, { color: c.textSecondary }]}>{tx(l, lang)}</Text>
           </View>
         ))}
@@ -394,10 +395,10 @@ export default function CheatSheetRunner({
     <View style={[styles.root, { backgroundColor: c.background }]}>
       {/* Top bar — single close (top-right). A back chevron only appears once
           you're past the first step; no second cross. */}
-      <View style={[styles.topBar, { paddingTop: insets.top + 10 }]}>
+      <View style={[styles.topBar, { paddingTop: insets.top + rs(10) }]}>
         {idx > 0 ? (
           <Pressable onPress={back} hitSlop={10} style={[styles.iconBtn, { backgroundColor: ink(isDark, 0.08) }]}>
-            <Ionicons name="chevron-back" size={22} color={c.text} />
+            <Ionicons name="chevron-back" size={rs(22)} color={c.text} />
           </Pressable>
         ) : (
           <View style={styles.iconSpacer} />
@@ -411,7 +412,7 @@ export default function CheatSheetRunner({
               {pickLang(lang, { ru: `Шаг ${idx + 1} из ${total}`, en: `Step ${idx + 1} of ${total}`, kk: `${total} қадамның ${idx + 1}-і` })}
             </Text>
             <View style={styles.timerChip}>
-              <Ionicons name="time-outline" size={13} color={route.accent} />
+              <Ionicons name="time-outline" size={rs(13)} color={route.accent} />
               <Text style={[styles.timerTxt, { color: c.text }]}>
                 {mmss(elapsed)} / {mmss(targetSec)}
               </Text>
@@ -419,7 +420,7 @@ export default function CheatSheetRunner({
           </View>
         </View>
         <Pressable onPress={onExit} hitSlop={10} style={[styles.iconBtn, { backgroundColor: ink(isDark, 0.08) }]}>
-          <Ionicons name="close" size={22} color={c.text} />
+          <Ionicons name="close" size={rs(22)} color={c.text} />
         </Pressable>
       </View>
 
@@ -484,7 +485,7 @@ export default function CheatSheetRunner({
         // Raise the buttons off the very bottom edge: some devices report
         // insets.bottom ~0 in Expo Go, which left them under the home gesture
         // area and hard/impossible to tap. Floor the clearance.
-        <View style={[styles.footer, styles.footerRow, { paddingBottom: Math.max(insets.bottom, 22) + 18 }]}>
+        <View style={[styles.footer, styles.footerRow, { paddingBottom: Math.max(insets.bottom, rs(22)) + rs(18) }]}>
           <Pressable
             onPress={back}
             disabled={idx <= 0}
@@ -496,13 +497,13 @@ export default function CheatSheetRunner({
             accessibilityRole="button"
             accessibilityLabel={pickLang(lang, { ru: "Назад", en: "Back", kk: "Артқа" })}
           >
-            <Ionicons name="arrow-back" size={18} color={c.text} />
+            <Ionicons name="arrow-back" size={rs(18)} color={c.text} />
             <Text style={[styles.backTxt, { color: c.text }]}>{pickLang(lang, { ru: "Назад", en: "Back", kk: "Артқа" })}</Text>
           </Pressable>
           <Pressable onPress={next} hitSlop={10} style={({ pressed }) => [styles.nextBtn, styles.nextBtnFlex, pressed && { opacity: 0.9 }]}>
             <LinearGradient colors={[GOLD, "#E6B82E"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
             <Text style={styles.nextTxt}>{pickLang(lang, { ru: "Вперёд", en: "Forward", kk: "Алға" })}</Text>
-            <NextChevron size={16} color="#41310A" />
+            <NextChevron size={rs(16)} color="#41310A" />
           </Pressable>
         </View>
       )}

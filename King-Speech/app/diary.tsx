@@ -34,6 +34,7 @@ import { useTheme } from "@/context/ThemeContext";
 import AppDialog from "@/components/AppDialog";
 import Cassette, { useDiaryFonts } from "@/components/diary/Cassette";
 import { type DiaryEntry, loadDiary, deleteDiaryEntry, fmtClock } from "@/lib/diaryStorage";
+import { rs } from "@/lib/responsive";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -87,16 +88,22 @@ function CassetteTile({
     return () => cancelAnimation(wig);
   }, [lifted, lift, wig]);
   const tilt = entry.tilt ?? 0;
+  // Fixed lengths for the worklet, computed on the JS side.
+  const liftY = rs(4);
+  const shR0 = rs(4);
+  const shR1 = rs(10);
+  const shY0 = rs(2);
+  const shY1 = rs(8);
   const st = useAnimatedStyle(() => ({
     transform: [
-      { translateY: -4 * lift.value },
+      { translateY: -liftY * lift.value },
       { scale: 1 + 0.06 * lift.value },
       { rotate: `${tilt + 2 * wig.value}deg` },
     ],
     // No shadow at rest (it would cost an offscreen pass per cassette).
     shadowOpacity: 0.3 * lift.value,
-    shadowRadius: 4 + 10 * lift.value,
-    shadowOffset: { width: 0, height: 2 + 8 * lift.value },
+    shadowRadius: shR0 + shR1 * lift.value,
+    shadowOffset: { width: 0, height: shY0 + shY1 * lift.value },
   }));
   return (
     <Pressable
@@ -215,9 +222,9 @@ export default function DiaryScreen() {
   }, []);
   const { playingId, toggle, stop } = useDiaryPlayer();
 
-  const topPad = Platform.OS === "web" ? 54 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
-  const colW = Math.min(190, Math.floor((Math.min(screenW, 520) - 48 - 6) / 2));
+  const topPad = Platform.OS === "web" ? rs(54) : insets.top;
+  const bottomPad = Platform.OS === "web" ? rs(34) : insets.bottom;
+  const colW = Math.min(rs(190), Math.floor((Math.min(screenW, rs(520)) - rs(48) - rs(6)) / 2));
 
   // Reload when coming back from the record flow; stop playback when leaving.
   useFocusEffect(
@@ -271,14 +278,14 @@ export default function DiaryScreen() {
       <ScrollView contentContainerStyle={s.scrollOuter} showsVerticalScrollIndicator={false}>
         <OverscrollFill top={c.bg} bottom={c.backingBottom} />
         {/* Top plate */}
-        <View style={[s.plate, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingTop: topPad + 16 }]}>
-          <Pressable onPress={goBack} hitSlop={12} style={[s.back, { top: topPad + 10 }]} accessibilityRole="button">
-            <Ionicons name="chevron-back" size={26} color={c.text} />
+        <View style={[s.plate, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingTop: topPad + rs(16) }]}>
+          <Pressable onPress={goBack} hitSlop={12} style={[s.back, { top: topPad + rs(10) }]} accessibilityRole="button">
+            <Ionicons name="chevron-back" size={rs(26)} color={c.text} />
           </Pressable>
           <Pressable
             onPress={() => setInfoOpen(true)}
             hitSlop={12}
-            style={[s.infoBtn, { top: topPad + 16, borderColor: c.text }]}
+            style={[s.infoBtn, { top: topPad + rs(16), borderColor: c.text }]}
             accessibilityRole="button"
             accessibilityLabel={tr("О дневнике", "About the diary", "Күнделік туралы")}
           >
@@ -296,7 +303,7 @@ export default function DiaryScreen() {
         </View>
 
         {/* Backing */}
-        <View style={[s.body, { paddingBottom: bottomPad + 40 }]}>
+        <View style={[s.body, { paddingBottom: bottomPad + rs(40) }]}>
           <LinearGradient
             colors={[c.backingTop, c.backingMid, c.backingBottom]}
             locations={[0, 0.65, 1]}
@@ -346,7 +353,7 @@ export default function DiaryScreen() {
           <Pressable style={s.fill} onPress={() => setInfoOpen(false)} />
           <Animated.View
             entering={SlideInDown.duration(280)}
-            style={[s.sheet, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingBottom: bottomPad + 22 + SHEET_TUCK }]}
+            style={[s.sheet, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingBottom: bottomPad + rs(22) + rs(SHEET_TUCK) }]}
           >
             <View style={[s.handle, { backgroundColor: c.textMuted }]} />
             <Text style={[s.sheetTitle, { color: c.text }]}>{tr("Твой личный дневник", "Your private diary", "Сіздің жеке күнделігіңіз")}</Text>
@@ -388,7 +395,7 @@ export default function DiaryScreen() {
   );
 }
 
-const SHEET_TUCK = 40;
+const SHEET_TUCK = 40; // raw in StyleSheet (auto-scaled); rs() inline
 
 const s = StyleSheet.create({
   container: { flex: 1 },

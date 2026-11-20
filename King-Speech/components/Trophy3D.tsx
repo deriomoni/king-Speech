@@ -4,6 +4,7 @@ import { GLView, type ExpoWebGLRenderingContext } from "expo-gl";
 import { Asset } from "expo-asset";
 import * as THREE from "three";
 import { coinGeometry, coinMaterial } from "./coin3d";
+import { UI_SCALE } from "@/lib/responsive";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The victory trophy as a real 3D model (assets/models/trophy.glb, exported from
@@ -129,6 +130,9 @@ const MAX_TILT = 0.32; // radians the player can tip it up/down
 const RETURN_AFTER_MS = 2000;
 const COIN_FLY_SEC = 1.25;
 const COIN_GAP_SEC = 0.08;
+// finger → rotation (radians per point); the trophy is drawn UI_SCALE× bigger on tablets
+const DRAG_SPIN = 0.012 / UI_SCALE;
+const DRAG_TILT = 0.006 / UI_SCALE;
 
 const easeOutCubic = (x: number) => 1 - (1 - x) ** 3;
 const easeOutBack = (x: number) => { const c = 1.6; return 1 + (c + 1) * (x - 1) ** 3 + c * (x - 1) ** 2; };
@@ -206,12 +210,12 @@ export default function Trophy3D({
       },
       onPanResponderMove: (_, g) => {
         const d = drag.current; const now = Date.now();
-        d.angle = d.startAngle + g.dx * 0.012;
+        d.angle = d.startAngle + g.dx * DRAG_SPIN;
         // up/down only a little, with a soft stop
-        const raw = d.startTilt + g.dy * 0.006;
+        const raw = d.startTilt + g.dy * DRAG_TILT;
         d.tilt = Math.sign(raw) * MAX_TILT * Math.tanh(Math.abs(raw) / MAX_TILT);
         const dtm = Math.max(1, now - d.lastT);
-        d.vel = ((g.dx - d.lastX) * 0.012) / (dtm / 1000);
+        d.vel = ((g.dx - d.lastX) * DRAG_SPIN) / (dtm / 1000);
         d.lastX = g.dx; d.lastT = now;
       },
       onPanResponderRelease: () => { const d = drag.current; d.active = false; d.vel = Math.max(-14, Math.min(14, d.vel)); d.releasedAt = Date.now(); },

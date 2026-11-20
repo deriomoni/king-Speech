@@ -29,6 +29,7 @@ import CoinIcon from "@/components/CoinIcon";
 import { useAuth } from "@/context/AuthContext";
 import { useLang, pickLang } from "@/context/LangContext";
 import { storage as fbStorage, auth as fbAuth, firebaseConfigured } from "@/lib/firebase";
+import { rs } from "@/lib/responsive";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme, type Theme } from "@/context/ThemeContext";
@@ -63,15 +64,15 @@ const strokeShape = (theme: Theme) =>
 function LayersIcon({ color }: { color: string }) {
   // Figma icon/layers (72:22): outlined square behind a filled one.
   return (
-    <View style={{ width: 22, height: 22 }}>
+    <View style={{ width: rs(22), height: rs(22) }}>
       <View
         style={{
           position: "absolute",
-          left: 6,
-          top: 1,
-          width: 15,
-          height: 15,
-          borderRadius: 4,
+          left: rs(6),
+          top: rs(1),
+          width: rs(15),
+          height: rs(15),
+          borderRadius: rs(4),
           borderWidth: 1.8,
           borderColor: color,
         }}
@@ -79,11 +80,11 @@ function LayersIcon({ color }: { color: string }) {
       <View
         style={{
           position: "absolute",
-          left: 1,
-          top: 6,
-          width: 15,
-          height: 15,
-          borderRadius: 4,
+          left: rs(1),
+          top: rs(6),
+          width: rs(15),
+          height: rs(15),
+          borderRadius: rs(4),
           backgroundColor: color,
         }}
       />
@@ -370,15 +371,15 @@ export default function ProfileScreen() {
   const art = (xml: string, x: number, y: number, w: number, h: number) => (
     <SvgXml
       xml={xml}
-      width={w}
-      height={h}
+      width={rs(w)}
+      height={rs(h)}
       pointerEvents="none"
-      style={{ position: "absolute", left: x - 1, top: y - 1 }}
+      style={{ position: "absolute", left: rs(x - 1), top: rs(y - 1) }}
     />
   );
 
   return (
-    <EdgeScaleProvider scrollY={edgeScrollY} topEdge={topPad + 8} bottomEdge={bottomPad + 84}>
+    <EdgeScaleProvider scrollY={edgeScrollY} topEdge={topPad + rs(8)} bottomEdge={bottomPad + rs(84)}>
     <View style={[styles.container, { backgroundColor: theme.backingTop }]}>
       <Animated.ScrollView
         contentContainerStyle={styles.scrollOuter}
@@ -395,7 +396,7 @@ export default function ProfileScreen() {
             {
               backgroundColor: theme.bg,
               borderColor: theme.panelStroke,
-              paddingTop: topPad + 3,
+              paddingTop: topPad + rs(3),
             },
           ]}
         >
@@ -413,7 +414,7 @@ export default function ProfileScreen() {
               ref={plusRef}
               onPress={openPhotoMenu}
               disabled={uploadingAvatar}
-              hitSlop={8}
+              hitSlop={rs(8)}
               style={[
                 styles.plusBtn,
                 { backgroundColor: theme.bg, borderColor: strokeShape(theme) },
@@ -460,7 +461,7 @@ export default function ProfileScreen() {
               theme={theme}
               value={`${currentRank}`}
               label={pickLang(lang, { ru: "Ранг", en: "Rank", kk: "Дәреже" })}
-              left={<SvgXml xml={themedSvg(RANK_SHIELD, mode)} width={22} height={22} />}
+              left={<SvgXml xml={themedSvg(RANK_SHIELD, mode)} width={rs(22)} height={rs(22)} />}
             />
             <Stat
               theme={theme}
@@ -472,7 +473,7 @@ export default function ProfileScreen() {
               theme={theme}
               value={`${coins}`}
               label={pickLang(lang, { ru: "Монеты", en: "Coins", kk: "Монеталар" })}
-              right={<CoinIcon size={22} color={theme.text} />}
+              right={<CoinIcon size={rs(22)} color={theme.text} />}
             />
           </EdgeScale>
 
@@ -482,7 +483,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Backing (Figma 402:1301): vertical gradient behind the tile list. */}
-        <View style={[styles.tiles, { paddingBottom: bottomPad + 110 }]}>
+        <View style={[styles.tiles, { paddingBottom: bottomPad + rs(110) }]}>
           <LinearGradient
             colors={[theme.backingTop, theme.backingMid, theme.backingBottom]}
             locations={[0, 0.65, 1]}
@@ -512,7 +513,7 @@ export default function ProfileScreen() {
 
           <EdgeScale
             entering={FadeInDown.delay(280).duration(400)}
-            style={[styles.tilesRow, { marginTop: 16 }]}
+            style={[styles.tilesRow, { marginTop: rs(16) }]}
           >
             <GlossTile
               mode={mode}
@@ -554,7 +555,7 @@ export default function ProfileScreen() {
             />
           </EdgeScale>
 
-          <EdgeScale entering={FadeInDown.delay(340).duration(400)} style={{ marginTop: 14 }}>
+          <EdgeScale entering={FadeInDown.delay(340).duration(400)} style={{ marginTop: rs(14) }}>
             <GlossTile
               mode={mode}
               idSuffix="library"
@@ -574,7 +575,7 @@ export default function ProfileScreen() {
             />
           </EdgeScale>
 
-          <EdgeScale entering={FadeInDown.delay(400).duration(400)} style={{ marginTop: 14 }}>
+          <EdgeScale entering={FadeInDown.delay(400).duration(400)} style={{ marginTop: rs(14) }}>
             <GlossTile
               mode={mode}
               idSuffix="coins"
@@ -675,14 +676,14 @@ export default function ProfileScreen() {
             <Text style={[styles.sheetTitle, { color: theme.text }]}>
               {pickLang(lang, { ru: "Фон таблички", en: "Plate background", kk: "Тақтайша фоны" })}
             </Text>
-            <ScrollView style={{ maxHeight: 520 }} showsVerticalScrollIndicator={false}>
+            <ScrollView style={{ maxHeight: rs(520) }} showsVerticalScrollIndicator={false}>
             <View style={styles.coverGrid}>
               {[null, ...COVER_PATTERNS].map((p) => {
                 const id = p?.id ?? null;
                 const selected = coverPattern === id;
                 return (
                   <View key={id ?? "plain"} style={styles.coverCell}>
-                  <PressScale onPress={() => pickCover(id)} style={{ gap: 6 }}>
+                  <PressScale onPress={() => pickCover(id)} style={{ gap: rs(6) }}>
                     <View
                       style={[
                         styles.coverThumb,
@@ -700,7 +701,7 @@ export default function ProfileScreen() {
                       )}
                       {selected && (
                         <View style={[styles.coverCheck, { backgroundColor: theme.text }]}>
-                          <Ionicons name="checkmark" size={14} color={theme.bg} />
+                          <Ionicons name="checkmark" size={rs(14)} color={theme.bg} />
                         </View>
                       )}
                     </View>

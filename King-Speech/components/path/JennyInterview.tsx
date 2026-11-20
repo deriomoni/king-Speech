@@ -21,6 +21,7 @@ import { router } from "expo-router";
 import VoiceRecorder from "@/components/VoiceRecorder";
 import JennyAvatar from "@/components/JennyAvatar";
 import { RankBackground } from "./RankBackground";
+import { rs } from "@/lib/responsive";
 import { useTheme } from "@/context/ThemeContext";
 import { buildJennyTopics, getRankTheme, pickLocalized, type RankTopic } from "./rankTheme";
 import { useLang, pickLang } from "@/context/LangContext";
@@ -92,7 +93,7 @@ export default function JennyInterview({ rankIndex, onFinished }: Props) {
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingTop: topPad + 12, paddingBottom: bottomPad + 24 },
+          { paddingTop: topPad + rs(12), paddingBottom: bottomPad + rs(24) },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -103,10 +104,10 @@ export default function JennyInterview({ rankIndex, onFinished }: Props) {
             accessibilityRole="button"
             accessibilityLabel={pickLang(lang, { ru: "Назад", en: "Back", kk: "Артқа" })}
           >
-            <Ionicons name="chevron-back" size={20} color={theme.textPrimary} />
+            <Ionicons name="chevron-back" size={rs(20)} color={theme.textPrimary} />
           </Pressable>
           <View style={[styles.captionBox, { borderColor: theme.borderColor, backgroundColor: theme.cardBg }]}>
-            <Ionicons name="sparkles" size={12} color={accentTextColor} />
+            <Ionicons name="sparkles" size={rs(12)} color={accentTextColor} />
             <Text
               style={[
                 styles.captionText,
@@ -116,7 +117,7 @@ export default function JennyInterview({ rankIndex, onFinished }: Props) {
               {pickLocalized(theme.portalCaption, lang)}
             </Text>
           </View>
-          <View style={{ width: 40 }} />
+          <View style={{ width: rs(40) }} />
         </View>
 
         <Animated.View entering={FadeIn.duration(400)} style={styles.heroBlock}>
@@ -140,7 +141,7 @@ export default function JennyInterview({ rankIndex, onFinished }: Props) {
                 {
                   backgroundColor:
                     done[i] ? theme.accent : i === step ? theme.accent + "55" : theme.borderColor,
-                  width: i === step ? 28 : 10,
+                  width: rs(i === step ? 28 : 10),
                 },
               ]}
             />
@@ -176,7 +177,7 @@ export default function JennyInterview({ rankIndex, onFinished }: Props) {
         ) : (
           <View style={styles.recordedRow}>
             <View style={[styles.recordedPill, { backgroundColor: theme.accentSoft, borderColor: theme.accent }]}>
-              <Ionicons name="checkmark-circle" size={16} color={accentTextColor} />
+              <Ionicons name="checkmark-circle" size={rs(16)} color={accentTextColor} />
               <Text style={[styles.recordedText, { color: accentTextColor, fontFamily: theme.fontFamilyTitle }]}>
                 {pickLang(lang, { ru: "Ответ сохранён", en: "Answer saved", kk: "Жауап сақталды" })}
               </Text>
@@ -195,14 +196,14 @@ export default function JennyInterview({ rankIndex, onFinished }: Props) {
                 colors={theme.portalGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                style={[StyleSheet.absoluteFill, { borderRadius: rs(16) }]}
               />
               <Text style={[styles.nextText, { fontFamily: theme.fontFamilyTitle }]}>
                 {step < topics.length - 1
                   ? pickLang(lang, { ru: "Следующий вопрос", en: "Next question", kk: "Келесі сұрақ" })
                   : pickLang(lang, { ru: "Открыть портал", en: "Open the portal", kk: "Порталды ашу" })}
               </Text>
-              <NextChevron size={16} color="#fff" />
+              <NextChevron size={rs(16)} color="#fff" />
             </Pressable>
           </View>
         )}
@@ -318,7 +319,7 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOpacity: 0.18,
     shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: rs(6) },
     elevation: 4,
   },
   nextText: { fontSize: 16, color: "#fff" },

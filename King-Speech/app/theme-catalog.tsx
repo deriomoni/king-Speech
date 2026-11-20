@@ -32,6 +32,7 @@ import { showtimeCover } from "@/constants/showtimeCovers";
 import { CoverFlight, previewRect, type CoverRect } from "@/components/showtime/CoverFlight";
 import { markFlightLaunch, subscribeFlightReturn } from "@/components/showtime/coverFlightStore";
 import { THEME_CATEGORIES, categoryOf, type ThemeCategoryId } from "@/components/showtime/themeCategories";
+import { rs } from "@/lib/responsive";
 
 const POPULAR_COUNT = 10;
 
@@ -67,8 +68,8 @@ export default function ThemeCatalogScreen() {
   const { width: winW } = useWindowDimensions();
 
   const stroke = isLight ? "rgba(38,38,40,0.08)" : "rgba(240,238,233,0.06)";
-  const topPad = Platform.OS === "web" ? 54 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
+  const topPad = Platform.OS === "web" ? rs(54) : insets.top;
+  const bottomPad = Platform.OS === "web" ? rs(34) : insets.bottom;
 
   const speechThemes = getSpeechThemes(lang);
   const ALL_KEYS = useMemo(() => Object.keys(speechThemes), [speechThemes]);
@@ -85,8 +86,10 @@ export default function ThemeCatalogScreen() {
     return ALL_KEYS.filter((k) => categoryOf(k) === activeCat);
   }, [q, activeCat, ALL_KEYS, speechThemes]);
 
-  const contentW = Math.min(winW, 480) - 40;
-  const cardW = Math.floor((contentW - 12) / 2);
+  // Mirrors s.content (maxWidth 480, paddingHorizontal 20) and s.grid gap 12,
+  // which StyleSheet auto-scales on tablets.
+  const contentW = Math.min(winW, rs(480)) - rs(40);
+  const cardW = Math.floor((contentW - rs(12)) / 2);
 
   const goBack = () => {
     if (router.canGoBack()) router.back();
@@ -99,7 +102,7 @@ export default function ThemeCatalogScreen() {
   const [flight, setFlight] = useState<
     { levelId: string; cover: CoverRect; radius: number; dir: "out" | "back" } | null
   >(null);
-  const stagePad = Platform.OS === "web" ? 67 : insets.top; // the stage screen's top inset
+  const stagePad = Platform.OS === "web" ? rs(67) : insets.top; // the stage screen's top inset
   useFocusEffect(
     React.useCallback(() => {
       setFlight((f) => (f?.dir === "back" ? f : null));
@@ -120,7 +123,7 @@ export default function ThemeCatalogScreen() {
       }),
     [],
   );
-  const pick = (key: string, ref: string = key, radius = 16) => {
+  const pick = (key: string, ref: string = key, radius = rs(16)) => { // radius matches s.cover (auto-scaled)
     const t = speechThemes[key];
     if (!t || flight) return;
     lastTap.current = { ref, radius };
@@ -143,14 +146,14 @@ export default function ThemeCatalogScreen() {
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[s.content, { paddingTop: topPad + 8, paddingBottom: bottomPad + 40 }]}
+        contentContainerStyle={[s.content, { paddingTop: topPad + rs(8), paddingBottom: bottomPad + rs(40) }]}
       >
         {/* Back chevron (no circle) + Show Time logo */}
         <View style={s.topRow}>
           <Pressable onPress={goBack} hitSlop={12} style={s.back} accessibilityRole="button">
-            <Ionicons name="chevron-back" size={26} color={c.text} />
+            <Ionicons name="chevron-back" size={rs(26)} color={c.text} />
           </Pressable>
-          <ShowTimeLogo width={83} color={isLight ? c.text : c.accent} />
+          <ShowTimeLogo width={rs(83)} color={isLight ? c.text : c.accent} />
         </View>
 
         <Text style={[s.title, { color: c.text }]}>{tr("Каталог тем", "Topic catalog", "Тақырыптар каталогы")}</Text>
@@ -210,7 +213,7 @@ export default function ThemeCatalogScreen() {
               ref={(n) => {
                 coverRefs.current["featured"] = n as unknown as View | null;
               }}
-              onPress={() => pick(featuredKey, "featured", 24)}
+              onPress={() => pick(featuredKey, "featured", rs(24))}
               style={s.featured}
             >
               <Image source={showtimeCover(featuredKey)} style={s.photo} resizeMode="cover" />

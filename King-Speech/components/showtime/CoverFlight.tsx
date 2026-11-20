@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { rs } from "@/lib/responsive";
 import { Image, StyleSheet, type ImageSourcePropType } from "react-native";
 import Animated, {
   Easing,
@@ -22,10 +23,11 @@ import Animated, {
 export type CoverRect = { x: number; y: number; w: number; h: number };
 
 // Must match the preview layout in app/showtime-stage.tsx (pvScroll / pvArt).
-const PV_SIDE = 28;
-const PV_TOP = 43;
+// (scaled like the preview's stylesheet on tablets)
+const PV_SIDE = rs(28);
+const PV_TOP = rs(43);
 const PV_RATIO = 1.35;
-export const PREVIEW_RADIUS = 22;
+export const PREVIEW_RADIUS = rs(22);
 
 /** Where the photo sits on the theme preview. */
 export function previewRect(winW: number, topPad: number): CoverRect {

@@ -13,6 +13,7 @@ import Animated, {
 import type { Lang } from "@/context/LangContext";
 import type { RoleScenario } from "@/constants/roleScenarios";
 import { lt } from "@/constants/roleScenarios";
+import { rs } from "@/lib/responsive";
 import type { ScenarioMsg } from "@/hooks/useRoleScenario";
 
 export const SCENE = {
@@ -48,7 +49,7 @@ export interface SceneProps {
 /** «…» typing indicator — loops only while mounted (i.e. while the opponent is typing). */
 export function TypingDots({ color = "#FFFFFF" }: { color?: string }) {
   return (
-    <View style={{ flexDirection: "row", gap: 4, paddingVertical: 4 }}>
+    <View style={{ flexDirection: "row", gap: rs(4), paddingVertical: rs(4) }}>
       {[0, 1, 2].map((i) => (
         <Dot key={i} delay={i * 140} color={color} />
       ))}
@@ -62,11 +63,13 @@ function Dot({ delay, color }: { delay: number; color: string }) {
     o.value = withDelay(delay, withRepeat(withSequence(withTiming(1, { duration: 320 }), withTiming(0.3, { duration: 320 })), -1));
     return () => cancelAnimation(o);
   }, [delay, o]);
-  const st = useAnimatedStyle(() => ({ opacity: o.value, transform: [{ translateY: (1 - o.value) * 2 }] }));
-  return <Animated.View style={[{ width: 6, height: 6, borderRadius: 3, backgroundColor: color }, st]} />;
+  const lift = rs(2); // computed outside the worklet
+  const st = useAnimatedStyle(() => ({ opacity: o.value, transform: [{ translateY: (1 - o.value) * lift }] }));
+  return <Animated.View style={[{ width: rs(6), height: rs(6), borderRadius: rs(3), backgroundColor: color }, st]} />;
 }
 
-export function Avatar({ emoji, size = 30, ring }: { emoji: string; size?: number; ring?: string }) {
+/** `size` is device-sized: callers pass rs(n). */
+export function Avatar({ emoji, size = rs(30), ring }: { emoji: string; size?: number; ring?: string }) {
   return (
     <View
       style={{
@@ -86,7 +89,8 @@ export function Avatar({ emoji, size = 30, ring }: { emoji: string; size?: numbe
 }
 
 /** Horizontal meter 0..100 with a red→yellow→green fill and a face. */
-export function MoodMeter({ value, label, width = 120 }: { value: number; label?: string; width?: number }) {
+/** `width` is device-sized: callers pass rs(n). */
+export function MoodMeter({ value, label, width = rs(120) }: { value: number; label?: string; width?: number }) {
   const v = Math.max(0, Math.min(100, value));
   const color = v < 34 ? "#FF6B5E" : v < 62 ? SCENE.yellow : SCENE.green;
   const face = v < 20 ? "😠" : v < 40 ? "😕" : v < 60 ? "😐" : v < 80 ? "🙂" : "🤩";
@@ -96,13 +100,13 @@ export function MoodMeter({ value, label, width = 120 }: { value: number; label?
   }, [v, w]);
   const fill = useAnimatedStyle(() => ({ width: `${w.value}%` }));
   return (
-    <View style={{ gap: 3 }}>
+    <View style={{ gap: rs(3) }}>
       {label ? <Text style={styles.meterLabel} numberOfLines={1}>{label}</Text> : null}
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: rs(6) }}>
         <View style={[styles.meterTrack, { width }]}>
           <Animated.View style={[styles.meterFill, { backgroundColor: color }, fill]} />
         </View>
-        <Text style={{ fontSize: 14 }}>{face}</Text>
+        <Text style={{ fontSize: rs(14) }}>{face}</Text>
       </View>
     </View>
   );

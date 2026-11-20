@@ -15,6 +15,7 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
 import type { SpeechTheme } from "@/app/showtime-stage";
 import { VinylRecord } from "./VinylRecord";
+import { rs } from "@/lib/responsive";
 import { useLang, pickLang } from "@/context/LangContext";
 
 const SECTION_HEIGHT = 230;
@@ -38,8 +39,8 @@ export function VinylGallery({ themes, selectedIdx, onSelect, isLight }: Props) 
   const { lang } = useLang();
 
   // Sizing — center 180×180; sides reach ~120 via scale 0.65.
-  const containerWidth = Math.max(280, winW - 40);
-  const centerSize = CENTER_SIZE;
+  const containerWidth = Math.max(rs(280), winW - rs(40));
+  const centerSize = rs(CENTER_SIZE);
   const stride = Math.round(centerSize * 0.6);
 
   const target = useSharedValue(selectedIdx);
@@ -114,7 +115,7 @@ export function VinylGallery({ themes, selectedIdx, onSelect, isLight }: Props) 
   const canNext = selectedIdx < maxIdx;
 
   return (
-    <View style={[styles.section, { height: SECTION_HEIGHT, width: containerWidth }]}>
+    <View style={[styles.section, { height: rs(SECTION_HEIGHT), width: containerWidth }]}>
       <GestureDetector gesture={pan}>
         <View style={styles.stage} collapsable={false}>
           {windowIndices.map((idx) => (
@@ -141,7 +142,7 @@ export function VinylGallery({ themes, selectedIdx, onSelect, isLight }: Props) 
         hitSlop={10}
         style={[styles.arrow, styles.arrowLeft, { opacity: canPrev ? 1 : 0.3 }]}
       >
-        <Ionicons name="caret-back" size={28} color={centerTheme.accentColor} />
+        <Ionicons name="caret-back" size={rs(28)} color={centerTheme.accentColor} />
       </Pressable>
 
       {/* Right arrow */}
@@ -153,7 +154,7 @@ export function VinylGallery({ themes, selectedIdx, onSelect, isLight }: Props) 
         hitSlop={10}
         style={[styles.arrow, styles.arrowRight, { opacity: canNext ? 1 : 0.3 }]}
       >
-        <Ionicons name="caret-forward" size={28} color={centerTheme.accentColor} />
+        <Ionicons name="caret-forward" size={rs(28)} color={centerTheme.accentColor} />
       </Pressable>
 
       {/* Title under center */}

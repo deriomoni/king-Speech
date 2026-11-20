@@ -17,6 +17,7 @@ import { warmupFonts, warmupSpring, warmupTheme } from "@/components/warmup/warm
 import type { WarmupScoreResult } from "@/services/warmupScoring";
 import RoundStar from "@/components/RoundStar";
 import { useLang, pickLang } from "@/context/LangContext";
+import { rs } from "@/lib/responsive";
 
 interface Props {
   result: WarmupScoreResult;
@@ -63,7 +64,7 @@ export default function WarmupTask1Results({ result, onNext }: Props) {
       />
       <CelebrationBurst play={result.stars >= 2} />
       <Animated.View entering={FadeIn.duration(400)} style={styles.body}>
-        <OreoMascot size={120} shouldPlay />
+        <OreoMascot size={rs(120)} shouldPlay />
         <Text style={styles.cheer}>
           {result.stars >= 3
             ? pickLang(lang, { ru: "Блестяще! Голос разогрет.", en: "Brilliant! Your voice is warmed up.", kk: "Тамаша! Дауысыңыз қызды." })
@@ -75,7 +76,7 @@ export default function WarmupTask1Results({ result, onNext }: Props) {
         <View style={styles.starsRow}>
           {[0, 1, 2].map((i) => (
             <Animated.View key={i} style={starStyles[i]}>
-              <RoundStar size={40} filled={i < result.stars} color={warmupTheme.gold} />
+              <RoundStar size={rs(40)} filled={i < result.stars} color={warmupTheme.gold} />
             </Animated.View>
           ))}
         </View>

@@ -8,28 +8,29 @@ import Animated, { FadeInDown, FadeOut, LinearTransition } from "react-native-re
 import { Ionicons } from "@expo/vector-icons";
 import { lt } from "@/constants/roleScenarios";
 import { Avatar, GoalTag, MoodMeter, SCENE, TypingDots, type SceneProps } from "./common";
+import { rs } from "@/lib/responsive";
 
 export function ChatDialogue(p: SceneProps) {
   const { scenario: s, lang, scripted } = p;
   const lines = p.messages.filter((m) => m.kind !== "ambient");
   const visible = scripted ? [] : lines.slice(-3);
   // Bubbles get whatever is left under maxHeight; older ones clip off the top.
-  const listMax = Math.max(90, p.maxHeight - (s.chips?.length ? 96 : 64));
+  const listMax = Math.max(rs(90), p.maxHeight - rs(s.chips?.length ? 96 : 64));
 
   return (
-    <View style={{ gap: 8, maxHeight: p.maxHeight, justifyContent: "flex-end" }}>
+    <View style={{ gap: rs(8), maxHeight: p.maxHeight, justifyContent: "flex-end" }}>
       {/* Persona strip */}
       <View style={styles.persona}>
-        <Avatar emoji={s.persona.avatar} size={34} ring={p.typing ? SCENE.yellow : undefined} />
+        <Avatar emoji={s.persona.avatar} size={rs(34)} ring={p.typing ? SCENE.yellow : undefined} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.name} numberOfLines={1}>{lt(s.persona.name, lang)}</Text>
           <Text style={styles.moodText} numberOfLines={1}>{lt(s.persona.mood, lang)}</Text>
         </View>
-        <MoodMeter value={p.mood} label={lt(s.meterLabel, lang)} width={86} />
+        <MoodMeter value={p.mood} label={lt(s.meterLabel, lang)} width={rs(86)} />
       </View>
 
       {!!s.chips?.length && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }} style={{ flexGrow: 0 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rs(6) }} style={{ flexGrow: 0 }}>
           {s.chips.map((c, i) => (
             <View key={i} style={styles.chip}>
               <Text style={styles.chipIcon}>{c.icon}</Text>
@@ -41,12 +42,12 @@ export function ChatDialogue(p: SceneProps) {
 
       {p.awaitingOpening && !scripted && (
         <Animated.View entering={FadeInDown} style={styles.hint}>
-          <Ionicons name="mic" size={13} color={SCENE.onYellow} />
+          <Ionicons name="mic" size={rs(13)} color={SCENE.onYellow} />
           <Text style={styles.hintText}>{pickLang(lang, { ru: "Ты начинаешь", en: "You start", kk: "Сіз бастайсыз" })}: {lt(s.openingHint, lang)}</Text>
         </Animated.View>
       )}
 
-      <View style={{ maxHeight: listMax, overflow: "hidden", justifyContent: "flex-end", gap: 8 }}>
+      <View style={{ maxHeight: listMax, overflow: "hidden", justifyContent: "flex-end", gap: rs(8) }}>
       {visible.map((m) =>
         m.kind === "you" ? (
           <Animated.View key={m.key} entering={FadeInDown.duration(220)} exiting={FadeOut.duration(160)} layout={LinearTransition.duration(200)} style={styles.youRow}>
@@ -54,8 +55,8 @@ export function ChatDialogue(p: SceneProps) {
               {m.text ? (
                 <Text style={styles.youText} numberOfLines={2}>{m.text}</Text>
               ) : (
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  <Ionicons name="mic" size={13} color={SCENE.onYellow} />
+                <View style={{ flexDirection: "row", alignItems: "center", gap: rs(6) }}>
+                  <Ionicons name="mic" size={rs(13)} color={SCENE.onYellow} />
                   <Text style={styles.youMeta}>{pickLang(lang, { ru: "Ты", en: "You", kk: "Сіз" })} · {Math.floor((m.seconds ?? 1) / 60)}:{String((m.seconds ?? 1) % 60).padStart(2, "0")}</Text>
                 </View>
               )}
@@ -63,7 +64,7 @@ export function ChatDialogue(p: SceneProps) {
           </Animated.View>
         ) : (
           <Animated.View key={m.key} entering={FadeInDown.duration(260)} exiting={FadeOut.duration(160)} layout={LinearTransition.duration(200)} style={styles.oppRow}>
-            <Avatar emoji={m.avatar} size={26} />
+            <Avatar emoji={m.avatar} size={rs(26)} />
             <View style={[styles.oppBubble, m.kind === "nudge" && styles.nudge, m.kind === "ending" && styles.ending]}>
               {m.tone !== "persona" && <Text style={styles.speaker}>{m.name}</Text>}
               <Text style={styles.oppText}>{m.text}</Text>
@@ -75,8 +76,8 @@ export function ChatDialogue(p: SceneProps) {
 
       {p.typing && !scripted && (
         <Animated.View entering={FadeInDown.duration(180)} style={styles.oppRow}>
-          <Avatar emoji={s.persona.avatar} size={26} />
-          <View style={[styles.oppBubble, { paddingVertical: 10 }]}>
+          <Avatar emoji={s.persona.avatar} size={rs(26)} />
+          <View style={[styles.oppBubble, { paddingVertical: rs(10) }]}>
             <TypingDots />
           </View>
         </Animated.View>

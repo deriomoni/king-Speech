@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet, type ViewStyle, type StyleProp } from "react-native";
 import { BlurView } from "expo-blur";
+import { rs } from "@/lib/responsive";
 import Svg, { Defs, RadialGradient, Stop, Rect, LinearGradient as SvgLinear } from "react-native-svg";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -168,7 +169,7 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOpacity: 0.6,
     shadowRadius: 30,
-    shadowOffset: { width: 0, height: 24 },
+    shadowOffset: { width: 0, height: rs(24) }, // shadowOffset is not auto-scaled
     elevation: 16,
   },
   card: { borderRadius: 32, borderWidth: 4, overflow: "hidden" },

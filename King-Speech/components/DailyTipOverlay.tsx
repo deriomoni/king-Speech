@@ -9,6 +9,7 @@ import React from "react";
 import { View, Text, StyleSheet, Pressable, Modal, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
+import { rs } from "@/lib/responsive";
 import Animated, { FadeIn, ZoomIn } from "react-native-reanimated";
 import { SvgXml } from "react-native-svg";
 import {
@@ -207,7 +208,7 @@ function Title({ tip }: { tip: DailyTip }) {
   const firstLine = (italic + rest).trim().length;
   const size = firstLine <= 14 ? 30 : Math.max(22, Math.floor((30 * 14) / firstLine));
   return (
-    <Text style={[styles.title, { fontSize: size, lineHeight: Math.round(size * 1.1) }]}>
+    <Text style={[styles.title, { fontSize: rs(size), lineHeight: rs(Math.round(size * 1.1)) }]}>
       {italic ? <Text style={styles.titleItalic}>{italic}</Text> : null}
       {rest.trimEnd()}
       {bold ? <Text style={styles.titleBold}>{"\n" + bold}</Text> : null}
@@ -256,29 +257,29 @@ export default function DailyTipOverlay({
           onPress={onClose}
           hitSlop={14}
           accessibilityLabel={closeLabel}
-          style={[styles.close, { top: topPad + 16 }]}
+          style={[styles.close, { top: topPad + rs(16) }]}
         >
-          <SvgXml xml={TIP_CLOSE_SVG} width={15.2} height={15.2} />
+          <SvgXml xml={TIP_CLOSE_SVG} width={rs(15.2)} height={rs(15.2)} />
         </Pressable>
 
         <View style={styles.center} pointerEvents="box-none">
           <Animated.View entering={ZoomIn.duration(260)}>
             <View style={styles.stage}>
               {/* fanned sheets behind */}
-              <View style={[styles.sheetBehind, { left: -3.4, top: -25.6, transform: [{ rotate: "-7deg" }] }]}>
-                <SvgXml xml={SHEET_YELLOW_SVG} width={300} height={340} />
+              <View style={[styles.sheetBehind, { left: rs(-3.4), top: rs(-25.6), transform: [{ rotate: "-7deg" }] }]}>
+                <SvgXml xml={SHEET_YELLOW_SVG} width={rs(300)} height={rs(340)} />
               </View>
-              <View style={[styles.sheetBehind, { left: 7.6, top: -5.6, transform: [{ rotate: "5deg" }] }]}>
-                <SvgXml xml={SHEET_DARK_SVG} width={300} height={340} />
+              <View style={[styles.sheetBehind, { left: rs(7.6), top: rs(-5.6), transform: [{ rotate: "5deg" }] }]}>
+                <SvgXml xml={SHEET_DARK_SVG} width={rs(300)} height={rs(340)} />
               </View>
               {/* main punched paper */}
               <View style={styles.paper}>
-                <SvgXml xml={PAPER_PUNCHED_SVG} width={300} height={350} />
+                <SvgXml xml={PAPER_PUNCHED_SVG} width={rs(300)} height={rs(350)} />
               </View>
               <View style={styles.content}>
                 <Text style={styles.label}>{pickLang(lang, { ru: "СОВЕТ ДНЯ", en: "TIP OF THE DAY", kk: "КҮН КЕҢЕСІ" })}</Text>
                 <Title tip={tip} />
-                <View style={{ marginTop: 16 }}>
+                <View style={{ marginTop: rs(16) }}>
                   <Body tip={tip} long={long} />
                 </View>
                 {tip.action ? <Text style={[styles.action, long && styles.textLong]}>{tip.action}</Text> : null}
@@ -314,7 +315,7 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOpacity: 0.35,
     shadowRadius: 12,
-    shadowOffset: { width: 0, height: 12 },
+    shadowOffset: { width: 0, height: rs(12) },
   },
   sheetBehind: { position: "absolute", width: 300, height: 340 },
   paper: { position: "absolute", top: 0, left: 0 },

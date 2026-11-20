@@ -1,4 +1,5 @@
 import React from "react";
+import { rs } from "@/lib/responsive";
 import { View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 
@@ -124,14 +125,15 @@ export default function LevelIcon({
   hole: string;
 }) {
   const kind = levelIconKind(levelId);
-  if (!kind) return <View style={{ width: LEVEL_ICON_BOX, height: LEVEL_ICON_BOX }} />;
+  const box = rs(LEVEL_ICON_BOX); // grows with the screen on tablets
+  if (!kind) return <View style={{ width: box, height: box }} />;
   const [w, h] = SIZE[kind];
-  const s = LEVEL_ICON_BOX / Math.max(w, h);
+  const s = box / Math.max(w, h);
   return (
     <View
       style={{
-        width: LEVEL_ICON_BOX,
-        height: LEVEL_ICON_BOX,
+        width: box,
+        height: box,
         alignItems: "center",
         justifyContent: "center",
       }}

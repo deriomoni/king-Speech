@@ -16,6 +16,7 @@ const LANG_SHORT: Record<Lang, string> = { ru: "RU", kk: "ҚАЗ", en: "EN" };
 import { useTheme } from "@/context/ThemeContext";
 import OscarMascot from "@/components/OscarMascot";
 import { PillButton } from "@/components/auth/AuthUI";
+import { rs } from "@/lib/responsive";
 
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
@@ -27,7 +28,7 @@ export default function WelcomeScreen() {
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   return (
-    <View style={[s.root, { backgroundColor: theme.bg, paddingTop: topPad, paddingBottom: bottomPad + 16 }]}>
+    <View style={[s.root, { backgroundColor: theme.bg, paddingTop: topPad, paddingBottom: bottomPad + rs(16) }]}>
       <StatusBar barStyle={theme.mode === "dark" ? "light-content" : "dark-content"} />
 
       {/* Lang toggle — top right */}
@@ -48,7 +49,7 @@ export default function WelcomeScreen() {
 
       {/* Oscar waves hello to the player */}
       <Animated.View entering={FadeIn.delay(100)} style={s.videoWrap}>
-        <OscarMascot emotion="hi" size={240} />
+        <OscarMascot emotion="hi" size={rs(240)} />
       </Animated.View>
 
       {/* Title + subtitle */}

@@ -1,5 +1,6 @@
 import React from "react";
 import Svg, { Path } from "react-native-svg";
+import { rs } from "@/lib/responsive";
 
 // "Get Ready" wordmark (from Get Ready.svg, 378×115). Rendered theme-aware:
 // the glyph fill follows the passed color; counters use even-odd so the holes
@@ -16,7 +17,7 @@ const GLYPHS = [
 ];
 
 export default function GetReadyLogo({
-  width = 220,
+  width = rs(220),
   color = "#0E0E16",
 }: {
   width?: number;

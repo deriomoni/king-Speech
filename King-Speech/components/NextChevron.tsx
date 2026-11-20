@@ -1,14 +1,15 @@
 import React from "react";
 import Svg, { Path } from "react-native-svg";
+import { rs } from "@/lib/responsive";
 
 /**
  * «>» for «Дальше / Next» buttons: two rounded strokes instead of an arrow.
  * The stroke is weighted to sit with Geologica Bold/ExtraBold labels at 15–17pt
  * (≈ the stem width of the letters), so icon and text read as one line.
  */
-export default function NextChevron({ color, size = 14 }: { color: string; size?: number }) {
+export default function NextChevron({ color, size = rs(14) }: { color: string; size?: number }) {
   const w = (size * 9) / 14;
-  const stroke = Math.max(2, (size * 2.3) / 14);
+  const stroke = Math.max(rs(2), (size * 2.3) / 14);
   return (
     <Svg width={w} height={size} viewBox="0 0 9 14">
       <Path

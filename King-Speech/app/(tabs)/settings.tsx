@@ -33,6 +33,7 @@ import {
 import { kingSpeechLogoXml } from "@/assets/figma/settings/logo";
 import { bekWaveLogoXml } from "@/assets/figma/settings/bekwave";
 import RoundStar from "@/components/RoundStar";
+import { rs } from "@/lib/responsive";
 
 // Figma "icon/crown-outline" (405:1310); __FG__ is swapped for theme.text.
 const CROWN_OUTLINE_XML = `<svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -78,7 +79,7 @@ function ThemeSegment({
           >
             <Ionicons
               name={mode === "dark" ? "moon-outline" : "sunny-outline"}
-              size={15}
+              size={rs(15)}
               color={selected ? theme.text : theme.textMuted}
             />
             <Text style={[styles.segLabel, { color: selected ? theme.text : theme.textMuted }]}>
@@ -113,15 +114,15 @@ export default function SettingsScreen() {
   const authLabel =
     user?.authMethod === "google" ? "Google" : user?.authMethod === "apple" ? "Apple" : "Email";
   const icon = (name: keyof typeof Ionicons.glyphMap) => (
-    <Ionicons name={name} size={20} color={theme.text} />
+    <Ionicons name={name} size={rs(20)} color={theme.text} />
   );
   const sw = (value: boolean, onChange: (v: boolean) => void) => (
     <GoldSwitch value={value} onValueChange={onChange} theme={theme} themeMode={themeMode} />
   );
 
   const { scrollY, onScroll } = useEdgeScroll();
-  const TOP_EDGE = topPad + 8;
-  const BOTTOM_EDGE = bottomPad + 84; // floating tab bar
+  const TOP_EDGE = topPad + rs(8);
+  const BOTTOM_EDGE = bottomPad + rs(84); // floating tab bar
 
   return (
     <EdgeScaleProvider scrollY={scrollY} topEdge={TOP_EDGE} bottomEdge={BOTTOM_EDGE}>
@@ -138,11 +139,11 @@ export default function SettingsScreen() {
         <View
           style={[
             styles.headerPanel,
-            { backgroundColor: theme.bg, borderColor: theme.panelStroke, paddingTop: topPad + 20 },
+            { backgroundColor: theme.bg, borderColor: theme.panelStroke, paddingTop: topPad + rs(20) },
           ]}
         >
           <EdgeScale entering={FadeInUp.duration(400)} minOpacity={0.8} minScale={0.86}>
-            <ThemedSvg xml={kingSpeechLogoXml} width={159} height={53} fg={theme.text} />
+            <ThemedSvg xml={kingSpeechLogoXml} width={rs(159)} height={rs(53)} fg={theme.text} />
           </EdgeScale>
         </View>
         <View
@@ -152,7 +153,7 @@ export default function SettingsScreen() {
             {
               backgroundColor: theme.bg,
               borderColor: theme.panelStroke,
-              paddingBottom: bottomPad + 120,
+              paddingBottom: bottomPad + rs(120),
             },
           ]}
         >
@@ -174,7 +175,7 @@ export default function SettingsScreen() {
                 <View style={[styles.avatar, { backgroundColor: theme.accent }]}>
                   <Text style={[styles.avatarInitial, { color: theme.accentText }]}>{initial}</Text>
                 </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
+                <View style={{ flex: 1, marginLeft: rs(12) }}>
                   <Text style={[styles.accountName, { color: theme.text }]} numberOfLines={1}>
                     {userName}
                   </Text>
@@ -185,12 +186,12 @@ export default function SettingsScreen() {
                 <Chevron theme={theme} />
                 <View
                   pointerEvents="none"
-                  style={[styles.inset, { left: 16, backgroundColor: theme.divider }]}
+                  style={[styles.inset, { left: rs(16), backgroundColor: theme.divider }]}
                 />
               </Pressable>
               <ListRow
                 theme={theme}
-                icon={<ThemedSvg xml={CROWN_OUTLINE_XML} width={22} height={22} fg={theme.text} />}
+                icon={<ThemedSvg xml={CROWN_OUTLINE_XML} width={rs(22)} height={rs(22)} fg={theme.text} />}
                 label={pickLang(appLang, { ru: "Бесплатный план", en: "Free plan", kk: "Тегін жоспар" })}
                 // Only the «Улучшить» pill opens the paywall — the row itself is inert.
                 right={
@@ -272,7 +273,7 @@ export default function SettingsScreen() {
                 right={
                   <Ionicons
                     name={showLangs ? "chevron-down" : "chevron-forward"}
-                    size={16}
+                    size={rs(16)}
                     color={theme.textMuted}
                   />
                 }
@@ -291,7 +292,7 @@ export default function SettingsScreen() {
                     }}
                     right={
                       appLang === code ? (
-                        <Ionicons name="checkmark" size={18} color={theme.text} />
+                        <Ionicons name="checkmark" size={rs(18)} color={theme.text} />
                       ) : (
                         <View />
                       )
@@ -316,7 +317,7 @@ export default function SettingsScreen() {
               />
               <ListRow
                 theme={theme}
-                icon={<RoundStar size={21} color={theme.text} />}
+                icon={<RoundStar size={rs(21)} color={theme.text} />}
                 label={pickLang(appLang, { ru: "Оценить приложение", en: "Rate the app", kk: "Қосымшаны бағалау" })}
                 divider
                 onPress={() => {
@@ -365,7 +366,7 @@ export default function SettingsScreen() {
               {pickLang(appLang, { ru: "ПРИЛОЖЕНИЕ СОЗДАНО", en: "APP CREATED BY", kk: "ҚОСЫМША ӘЗІРЛЕНДІ" })}
             </Text>
             <View style={{ opacity: 0.7 }}>
-              <ThemedSvg xml={bekWaveLogoXml} width={150} height={20} fg={theme.text} />
+              <ThemedSvg xml={bekWaveLogoXml} width={rs(150)} height={rs(20)} fg={theme.text} />
             </View>
             <Text style={[styles.version, { color: theme.textMuted }]}>
               {pickLang(appLang, { ru: "Версия 1.0.0", en: "Version 1.0.0", kk: "Нұсқа 1.0.0" })}

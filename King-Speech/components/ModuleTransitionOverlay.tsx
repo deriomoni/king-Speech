@@ -41,6 +41,7 @@ import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useGame, getModuleQuote } from "@/context/GameContext";
 import GoldCoin from "@/components/GoldCoin";
+import { rs } from "@/lib/responsive";
 import { MT_SPARKLE_SVG } from "@/assets/figma/endings/moduleTransitionSvgs";
 
 /**
@@ -287,8 +288,8 @@ function FlyingCoin({
 }) {
   const p = useSharedValue(0);
   // a fan of slightly different arcs so the coins don't stack
-  const spread = (i - (COIN_N - 1) / 2) * 16;
-  const lift = 120 + (i % 3) * 26;
+  const spread = (i - (COIN_N - 1) / 2) * rs(16);
+  const lift = rs(120 + (i % 3) * 26);
   useEffect(() => {
     p.value = withDelay(
       i * 85,
@@ -365,19 +366,19 @@ export default function ModuleTransitionOverlay({
   const t = useClock(END_AT + 50);
   const pressT = usePressWave(END_AT + 600);
 
-  const podW = Math.min(W - 56, 320);
+  const podW = Math.min(W - rs(56), rs(320));
   const dx = Math.round(podW * 0.09);
   const dy = Math.round(podW * 0.07);
   const sw = (podW - dx) / 3;
   const sceneH = stage ? stage.height : 0;
-  const unit = Math.min(sw * 0.58, (sceneH - dy * 3 - 8) / 6.9);
+  const unit = Math.min(sw * 0.58, (sceneH - dy * 3 - rs(8)) / 6.9);
   const rel = [1.15, 2.0, 2.9];
   const heights = rel.map((r) => unit * r);
-  const floorY = sceneH - 4;
+  const floorY = sceneH - rs(4);
   const x0 = (W - podW) / 2;
   const stone = dark ? STONE_DARK : STONE_LIGHT;
   const labels = [to - 2, to - 1, to].map((n) => (n >= 1 ? String(n) : ""));
-  const numSize = Math.min(Math.round(sw * 0.42), 44);
+  const numSize = Math.min(Math.round(sw * 0.42), rs(44));
 
   // the next floors of a switchback staircase, set back behind the front row
   // (smaller, in the haze): floor 2 climbs on from above the gold step towards
@@ -467,35 +468,39 @@ export default function ModuleTransitionOverlay({
   const shownBalance = Math.max(0, balance - (rewarded ? MODULE_REWARD_COINS : 0)) +
     Math.round((MODULE_REWARD_COINS * landed) / COIN_N);
 
+  // Tablet: animation distances resolved on the JS side (rs isn't a worklet).
+  const headRise = rs(18);
+  const tailRise = rs(16);
+  const pillDrop = rs(-14);
   const rootStyle = useAnimatedStyle(() => ({ opacity: root.value }));
   const headStyle = useAnimatedStyle(() => ({
     opacity: head.value,
-    transform: [{ translateY: interpolate(head.value, [0, 1], [18, 0]) }],
+    transform: [{ translateY: interpolate(head.value, [0, 1], [headRise, 0]) }],
   }));
   const glowStyle = useAnimatedStyle(() => ({ opacity: glow.value }));
   const tailStyle = useAnimatedStyle(() => ({
     opacity: tail.value,
-    transform: [{ translateY: interpolate(tail.value, [0, 1], [16, 0]) }],
+    transform: [{ translateY: interpolate(tail.value, [0, 1], [tailRise, 0]) }],
   }));
   const pillShow = useAnimatedStyle(() => ({
     opacity: pillVis.value,
-    transform: [{ translateY: (1 - pillVis.value) * -14 }, { scale: 1 + bump.value * 0.06 }],
+    transform: [{ translateY: (1 - pillVis.value) * pillDrop }, { scale: 1 + bump.value * 0.06 }],
   }));
   const pillGlow = useAnimatedStyle(() => ({ opacity: bump.value }));
 
-  const pillTop = Math.max(insets.top, 20) + 8;
-  const PILL_W = 104;
-  const coinTo: [number, number] = [W - 16 - PILL_W + 22, pillTop + 18];
-  const coinFrom: [number, number] = stage ? [stage.x + goldCx, stage.y + goldTop + dy / 2] : [W / 2, 400];
+  const pillTop = Math.max(insets.top, rs(20)) + rs(8);
+  const PILL_W = rs(104);
+  const coinTo: [number, number] = [W - rs(16) - PILL_W + rs(22), pillTop + rs(18)];
+  const coinFrom: [number, number] = stage ? [stage.x + goldCx, stage.y + goldTop + dy / 2] : [W / 2, rs(400)];
 
   return (
     <Animated.View style={[styles.root, { backgroundColor: theme.bg }, rootStyle]}>
       <View
         style={{
           flex: 1,
-          paddingTop: Math.max(insets.top, 54) + 22,
-          paddingBottom: insets.bottom + 24,
-          paddingHorizontal: 28,
+          paddingTop: Math.max(insets.top, rs(54)) + rs(22),
+          paddingBottom: insets.bottom + rs(24),
+          paddingHorizontal: rs(28),
         }}
       >
         {/* Heading */}
@@ -516,9 +521,9 @@ export default function ModuleTransitionOverlay({
             <>
               <Animated.View
                 pointerEvents="none"
-                style={[{ position: "absolute", left: goldCx - 160, top: goldTop - 120, width: 320, height: 320 }, glowStyle]}
+                style={[{ position: "absolute", left: goldCx - rs(160), top: goldTop - rs(120), width: rs(320), height: rs(320) }, glowStyle]}
               >
-                <Svg width={320} height={320}>
+                <Svg width={rs(320)} height={rs(320)} viewBox="0 0 320 320">
                   <Defs>
                     <RadialGradient id="mtGold" cx="50%" cy="50%" r="50%">
                       <Stop offset="0" stopColor="#FFD857" stopOpacity={dark ? 0.3 : 0.4} />
@@ -547,7 +552,7 @@ export default function ModuleTransitionOverlay({
 
                 {/* far rows first, each dissolving into a haze at its base */}
                 {[...backRows].reverse().map((r) => {
-                  const rs = sw * r.s;
+                  const rsw = sw * r.s;
                   const rdx = dx * r.s;
                   const rdy = dy * r.s;
                   const tallest = unit * r.rel[2] * r.s;
@@ -571,16 +576,16 @@ export default function ModuleTransitionOverlay({
                           <Block
                             key={i}
                             id={gid}
-                            x={r.left + rs * col}
+                            x={r.left + rsw * col}
                             baseY={r.base}
-                            w={rs}
+                            w={rsw}
                             h={unit * r.rel[i] * r.s * easeGrow(clamp01((t - r.at - i * BACK_GAP) / BLOCK_DUR))}
                             dx={rdx}
                             dy={rdy}
                             faces={hz}
                           />
                         ))}
-                      <Rect x={r.left - 6} y={r.base - fogH} width={rs * 3 + rdx + 12} height={fogH + 3} fill="url(#gFog)" />
+                      <Rect x={r.left - rs(6)} y={r.base - fogH} width={rsw * 3 + rdx + rs(12)} height={fogH + rs(3)} fill="url(#gFog)" />
                     </G>
                   );
                 })}
@@ -611,9 +616,9 @@ export default function ModuleTransitionOverlay({
               </Svg>
 
               <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, tailStyle]}>
-                <Sparkle x={goldCx + sw * 0.55} y={goldTop - 6} s={28} delay={0} />
-                <Sparkle x={goldCx - sw * 0.5} y={goldTop - 34} s={19} delay={350} />
-                <Sparkle x={goldCx + sw * 0.12} y={goldTop - 60} s={13} delay={700} />
+                <Sparkle x={goldCx + sw * 0.55} y={goldTop - rs(6)} s={rs(28)} delay={0} />
+                <Sparkle x={goldCx - sw * 0.5} y={goldTop - rs(34)} s={rs(19)} delay={350} />
+                <Sparkle x={goldCx + sw * 0.12} y={goldTop - rs(60)} s={rs(13)} delay={700} />
               </Animated.View>
             </>
           )}
@@ -645,7 +650,7 @@ export default function ModuleTransitionOverlay({
               <Text style={[styles.ctaText, { color: theme.accentText }]}>
                 {pickLang(lang, { ru: `К модулю ${to}`, en: `To module ${to}`, kk: `${to}-модульге` })}
               </Text>
-              <NextChevron color={theme.accentText} size={17} />
+              <NextChevron color={theme.accentText} size={rs(17)} />
             </View>
           </Pressable>
         </Animated.View>
@@ -654,11 +659,11 @@ export default function ModuleTransitionOverlay({
       {/* Balance pill — the coins fly in here and the number ticks up */}
       <Animated.View
         pointerEvents="none"
-        style={[{ position: "absolute", top: pillTop, right: 16, width: PILL_W, height: 36 }, pillShow]}
+        style={[{ position: "absolute", top: pillTop, right: rs(16), width: PILL_W, height: rs(36) }, pillShow]}
       >
         <Animated.View
           style={[
-            { position: "absolute", left: -6, right: -6, top: -6, bottom: -6, borderRadius: 24, backgroundColor: "rgba(255,216,87,0.3)" },
+            { position: "absolute", left: -rs(6), right: -rs(6), top: -rs(6), bottom: -rs(6), borderRadius: rs(24), backgroundColor: "rgba(255,216,87,0.3)" },
             pillGlow,
           ]}
         />
@@ -668,7 +673,7 @@ export default function ModuleTransitionOverlay({
             { backgroundColor: dark ? "rgba(255,255,255,0.08)" : "#FFFFFF", borderColor: "rgba(255,216,87,0.6)" },
           ]}
         >
-          <GoldCoin size={24} />
+          <GoldCoin size={rs(24)} />
           <Text style={[styles.pillText, { color: theme.text }]} numberOfLines={1}>
             {shownBalance}
           </Text>
@@ -677,7 +682,7 @@ export default function ModuleTransitionOverlay({
 
       {flying &&
         Array.from({ length: COIN_N }, (_, i) => (
-          <FlyingCoin key={i} i={i} from={coinFrom} to={coinTo} size={26} onArrive={onCoin} />
+          <FlyingCoin key={i} i={i} from={coinFrom} to={coinTo} size={rs(26)} onArrive={onCoin} />
         ))}
     </Animated.View>
   );

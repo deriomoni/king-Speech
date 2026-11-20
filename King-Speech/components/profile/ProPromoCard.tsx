@@ -5,6 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { SvgXml } from "react-native-svg";
 import type { Theme } from "@/context/ThemeContext";
 import { pickLang, type Lang } from "@/context/LangContext";
+import { rs } from "@/lib/responsive";
 import {
   CROWN_SVG,
   SPARKLE_SVG,
@@ -35,12 +36,12 @@ export default function ProPromoCard({
       {/* Crown — 14° tilt; frame 71.5×57.6, svg overhangs for its drop shadow */}
       <View style={styles.crownFrame} pointerEvents="none">
         <View style={styles.crownBox}>
-          <SvgXml xml={CROWN_SVG} width={99.5318} height={85.59} style={styles.crownSvg} />
+          <SvgXml xml={CROWN_SVG} width={rs(99.5318)} height={rs(85.59)} style={styles.crownSvg} />
         </View>
       </View>
-      <SvgXml xml={SPARKLE_SVG} width={24} height={24} style={[styles.abs, { top: 12, right: 122 }]} />
-      <SvgXml xml={SPARKLE1_SVG} width={21} height={21} style={[styles.abs, { top: 68, right: 5 }]} />
-      <SvgXml xml={SPARKLE2_SVG} width={18} height={18} style={[styles.abs, { top: 58, right: 142 }]} />
+      <SvgXml xml={SPARKLE_SVG} width={rs(24)} height={rs(24)} style={[styles.abs, { top: rs(12), right: rs(122) }]} />
+      <SvgXml xml={SPARKLE1_SVG} width={rs(21)} height={rs(21)} style={[styles.abs, { top: rs(68), right: rs(5) }]} />
+      <SvgXml xml={SPARKLE2_SVG} width={rs(18)} height={rs(18)} style={[styles.abs, { top: rs(58), right: rs(142) }]} />
 
       <Text style={styles.title}>
         {pickLang(lang, { ru: "Стань королём\nсцены", en: "Become the king\nof the stage", kk: "Сахнаның\nпатшасы болыңыз" })}
@@ -58,7 +59,7 @@ export default function ProPromoCard({
         ]}
       >
         <Text style={styles.btnTxt}>{pickLang(lang, { ru: "Улучшить", en: "Upgrade", kk: "Жаңарту" })}</Text>
-        <NextChevron color="#262628" size={14} />
+        <NextChevron color="#262628" size={rs(14)} />
       </Pressable>
 
       <View style={styles.innerHighlight} pointerEvents="none" />

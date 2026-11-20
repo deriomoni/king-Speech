@@ -54,6 +54,7 @@ import { clearFlightLaunch, isFlightLanding, requestFlightReturn } from "@/compo
 import { LiveAudience, HALL_RATIO } from "@/components/audience/LiveAudience";
 import { OVATION_SEC } from "@/components/audience/scene";
 import { RecDot as RecMark } from "@/components/RecButton";
+import { rs, UI_SCALE } from "@/lib/responsive";
 
 // Audience halls (first-person, speaker POV). Used as the variable stage
 // backdrop — the speech text sits on a white sheet at the bottom that blurs up
@@ -94,6 +95,16 @@ if (Platform.OS !== "web") {
 }
 
 const { width: SW, height: SH } = Dimensions.get("window");
+
+// The hall backdrop. Phones: full width (unchanged). Tablets: the hall keeps
+// the share of the screen height it has in the 390×844 phone design and sits
+// centred — at full iPad width it would grow taller than the reading area
+// starts, and the lamp rig at its top would come out oversized.
+const HALL_W = UI_SCALE === 1 ? SW : Math.min(SW, (SH * 390) / 844);
+const HALL_X = (SW - HALL_W) / 2;
+// Reading column: on wide screens the speech, progress bar and arrows are
+// capped and centred instead of running edge to edge (0 on phones).
+const READ_INSET = Math.max(0, (SW - rs(560)) / 2);
 
 export interface SpeechTheme {
   levelId: string;
@@ -4290,7 +4301,7 @@ function AudiencePerson({ person }: { person: PersonDef }) {
   return (
     <Animated.View style={[style, { position: "absolute", left: person.x, top: person.y, alignItems: "center" }]}>
       <View style={{ width: person.headR * 2, height: person.headR * 2, borderRadius: person.headR, backgroundColor: tone }} />
-      <View style={{ width: person.bodyW, height: person.bodyH, backgroundColor: tone, borderTopLeftRadius: person.bodyW * 0.35, borderTopRightRadius: person.bodyW * 0.35, marginTop: 2 }} />
+      <View style={{ width: person.bodyW, height: person.bodyH, backgroundColor: tone, borderTopLeftRadius: person.bodyW * 0.35, borderTopRightRadius: person.bodyW * 0.35, marginTop: rs(2) }} />
     </Animated.View>
   );
 }
@@ -4309,12 +4320,12 @@ function NoiseBubbleView({ bubble }: { bubble: NoiseBubble }) {
       withTiming(0.55, { duration: 800 }),
       withTiming(0, { duration: 600 }),
     );
-    translateY.value = withTiming(-14, { duration: 1820 });
+    translateY.value = withTiming(rs(-14), { duration: 1820 });
   }, []);
   const style = useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ translateY: translateY.value }] }));
   return (
-    <Animated.View style={[style, { position: "absolute", left: bubble.x, top: bubble.y, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 9, paddingHorizontal: 7, paddingVertical: 3 }]}>
-      <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 10, fontFamily: "Geologica_400Regular" }}>{bubble.text}</Text>
+    <Animated.View style={[style, { position: "absolute", left: bubble.x, top: bubble.y, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: rs(9), paddingHorizontal: rs(7), paddingVertical: rs(3) }]}>
+      <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: rs(10), fontFamily: "Geologica_400Regular" }}>{bubble.text}</Text>
     </Animated.View>
   );
 }
@@ -4346,9 +4357,9 @@ function PhoneLight({ x, y }: { x: number; y: number }) {
       pointerEvents="none"
       style={[style, { position: "absolute", left: x, top: y, alignItems: "center", justifyContent: "center" }]}
     >
-      <View style={{ position: "absolute", width: 26, height: 26, borderRadius: 13, backgroundColor: "rgba(173,205,255,0.09)" }} />
-      <View style={{ position: "absolute", width: 14, height: 14, borderRadius: 7, backgroundColor: "rgba(198,220,255,0.14)" }} />
-      <View style={{ width: 5, height: 7, borderRadius: 1.5, backgroundColor: "rgba(214,232,255,0.5)" }} />
+      <View style={{ position: "absolute", width: rs(26), height: rs(26), borderRadius: rs(13), backgroundColor: "rgba(173,205,255,0.09)" }} />
+      <View style={{ position: "absolute", width: rs(14), height: rs(14), borderRadius: rs(7), backgroundColor: "rgba(198,220,255,0.14)" }} />
+      <View style={{ width: rs(5), height: rs(7), borderRadius: rs(1.5), backgroundColor: "rgba(214,232,255,0.5)" }} />
     </Animated.View>
   );
 }
@@ -4394,9 +4405,9 @@ function Spotlight({ accentColor }: { accentColor?: string }) {
           style={{ position: "absolute", top: 0, left: SW * 0.2, right: SW * 0.2, height: SH * 0.62 }}
           start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }}
         />
-        <View style={{ position: "absolute", top: SH * 0.38, left: SW * 0.5 - 60, width: 120, height: 40, borderRadius: 60, backgroundColor: hexToRgba(color, 0.22) }} />
+        <View style={{ position: "absolute", top: SH * 0.38, left: SW * 0.5 - rs(60), width: rs(120), height: rs(40), borderRadius: rs(60), backgroundColor: hexToRgba(color, 0.22) }} />
       </Animated.View>
-      <Animated.View style={[flashStyle, { position: "absolute", top: 0, left: SW * 0.15, right: SW * 0.15, height: 80, borderRadius: 40, pointerEvents: "none" } as any]}>
+      <Animated.View style={[flashStyle, { position: "absolute", top: 0, left: SW * 0.15, right: SW * 0.15, height: rs(80), borderRadius: rs(40), pointerEvents: "none" } as any]}>
         <LinearGradient colors={[hexToRgba(color, 0.9), "transparent"]} style={StyleSheet.absoluteFill} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} />
       </Animated.View>
     </>
@@ -4430,7 +4441,7 @@ function generateAudience(): PersonDef[] {
 function generatePhoneLights(photoH: number) {
   return Array.from({ length: 8 }, (_, i) => ({
     id: i,
-    x: 16 + Math.random() * Math.max(40, SW - 44),
+    x: HALL_X + rs(16) + Math.random() * Math.max(rs(40), HALL_W - rs(44)),
     y: photoH * (DARK_ROWS_TOP + Math.random() * (DARK_ROWS_BOTTOM - DARK_ROWS_TOP)),
   }));
 }
@@ -4445,14 +4456,19 @@ function RecDot() {
   }, []);
   const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-      <Animated.View style={[style, { width: 8, height: 8, borderRadius: 4, backgroundColor: "#0EA5E9" }]} />
-      <Text style={{ color: "#0EA5E9", fontSize: 11, fontFamily: "Geologica_700Bold", letterSpacing: 1 }}>REC</Text>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: rs(5) }}>
+      <Animated.View style={[style, { width: rs(8), height: rs(8), borderRadius: rs(4), backgroundColor: "#0EA5E9" }]} />
+      <Text style={{ color: "#0EA5E9", fontSize: rs(11), fontFamily: "Geologica_700Bold", letterSpacing: rs(1) }}>REC</Text>
     </View>
   );
 }
 
 // ── SPEECH LINE ────────────────────────────────────────────────────────────────
+// Type sizes of a line (resting → active), scaled here because the worklet
+// below cannot call rs().
+const LINE_FS = rs(14);
+const LINE_LH = rs(23);
+const LINE_GROW = rs(3);
 function SpeechLine({ text, isActive, isDone }: { text: string; isActive: boolean; isDone: boolean }) {
   // The current sentence grows into its size instead of snapping to it (it
   // used to jump from 14 to 17 the instant it became active). The type itself
@@ -4464,8 +4480,8 @@ function SpeechLine({ text, isActive, isDone }: { text: string; isActive: boolea
     return () => cancelAnimation(grow);
   }, [isActive]);
   const growStyle = useAnimatedStyle(() => ({
-    fontSize: 14 + grow.value * 3,
-    lineHeight: 23 + grow.value * 3,
+    fontSize: LINE_FS + grow.value * LINE_GROW,
+    lineHeight: LINE_LH + grow.value * LINE_GROW,
   }));
   return (
     <Animated.Text style={[sl.line, isActive && sl.lineActive, isDone && sl.lineDone, growStyle]}>
@@ -4513,7 +4529,7 @@ function StartButton({ accentColor, onPress, label }: { accentColor: string; onP
   // button is pressed instead of sliding out from underneath it.
   const shadowAnim = useAnimatedStyle(() => ({
     opacity: 0.5 - pressY.value * 0.06,
-    transform: [{ translateY: 10 - pressY.value * 0.8 }, { scaleX: 0.86 - pressY.value * 0.01 }],
+    transform: [{ translateY: 10 * UI_SCALE - pressY.value * 0.8 }, { scaleX: 0.86 - pressY.value * 0.01 }],
   }));
 
   const sideColor = darkenHex(accentColor, 18);
@@ -4540,7 +4556,7 @@ function StartButton({ accentColor, onPress, label }: { accentColor: string; onP
           colors={[accentColor + "00", accentColor + "66", accentColor + "00"]}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
-          style={[StyleSheet.absoluteFill, { borderRadius: 28 }]}
+          style={[StyleSheet.absoluteFill, { borderRadius: rs(28) }]}
         />
       </Animated.View>
       <Animated.View
@@ -4558,7 +4574,7 @@ function StartButton({ accentColor, onPress, label }: { accentColor: string; onP
           colors={[lightenHex(accentColor, 20), accentColor]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
-          style={[StyleSheet.absoluteFill, { borderRadius: 28 }]}
+          style={[StyleSheet.absoluteFill, { borderRadius: rs(28) }]}
         />
         <View style={sb.highlight} />
         <View style={sb.rim} />
@@ -4568,7 +4584,7 @@ function StartButton({ accentColor, onPress, label }: { accentColor: string; onP
           end={{ x: 0.5, y: 1 }}
           style={sb.shadowOverlay}
         />
-        <Ionicons name="mic" size={22} color="#1A1A2E" />
+        <Ionicons name="mic" size={rs(22)} color="#1A1A2E" />
         <Text style={[sb.label, { fontFamily: "Geologica_700Bold" }]}>{label}</Text>
       </Animated.View>
     </Pressable>
@@ -4691,14 +4707,14 @@ function TextEdgeBlur({ edge }: { edge: "top" | "bottom" }) {
     ? ["rgba(38,38,40,0.72)", "rgba(38,38,40,0)"]
     : ["rgba(38,38,40,0)", "rgba(38,38,40,0.82)"];
   return (
-    <View pointerEvents="none" style={[teb.wrap, anchor, { height: strips[0].h }]}>
+    <View pointerEvents="none" style={[teb.wrap, anchor, { height: rs(strips[0].h) }]}>
       {strips.map((strip, i) => (
         <BlurView
           key={i}
           intensity={strip.i}
           tint="dark"
           experimentalBlurMethod="dimezisBlurView"
-          style={[teb.strip, anchor, { height: strip.h }]}
+          style={[teb.strip, anchor, { height: rs(strip.h) }]}
         />
       ))}
       {/* Guarantees the falloff even where the blur is unavailable. */}
@@ -4715,7 +4731,8 @@ const teb = StyleSheet.create({
 // Thin vertical slider that drops under the sun button: top of the track is the
 // room as shot, the bottom is near dark. It only takes the width it needs so it
 // never covers the speech.
-const DIM_TRACK_H = 132;
+const DIM_TRACK_H = rs(132);
+const KNOB = rs(14); // ds.knob size (auto-scaled there)
 function DimSlider({ value, onChange, onCommit, color }: { value: number; onChange: (v: number) => void; onCommit: (v: number) => void; color: string }) {
   const live = useRef({ onChange, onCommit });
   live.current = { onChange, onCommit };
@@ -4743,11 +4760,11 @@ function DimSlider({ value, onChange, onCommit, color }: { value: number; onChan
     }),
   ).current;
   const fillStyle = useAnimatedStyle(() => ({ height: v.value * DIM_TRACK_H }));
-  const knobStyle = useAnimatedStyle(() => ({ top: Math.max(0, Math.min(DIM_TRACK_H - 14, v.value * DIM_TRACK_H - 7)) }));
+  const knobStyle = useAnimatedStyle(() => ({ top: Math.max(0, Math.min(DIM_TRACK_H - KNOB, v.value * DIM_TRACK_H - KNOB / 2)) }));
 
   return (
     <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(180)} style={ds.wrap}>
-      <View style={[ds.track, { height: DIM_TRACK_H }]} hitSlop={{ left: 16, right: 16 }} {...pan.panHandlers}>
+      <View style={[ds.track, { height: DIM_TRACK_H }]} hitSlop={{ left: rs(16), right: rs(16) }} {...pan.panHandlers}>
         <View pointerEvents="none" style={ds.base} />
         <Animated.View pointerEvents="none" style={[ds.fill, { backgroundColor: color }, fillStyle]} />
         <Animated.View pointerEvents="none" style={[ds.knob, { borderColor: color }, knobStyle]} />
@@ -4905,7 +4922,7 @@ export default function ShowtimeStageScreen() {
   });
 
   // Phone screens waking up in the dark rows — placed once per run.
-  const [phoneLights] = useState(() => generatePhoneLights(SW * bgPhotoRatio));
+  const [phoneLights] = useState(() => generatePhoneLights(HALL_W * bgPhotoRatio));
 
   // House lights: the sun button opens a slider that takes the hall down. The
   // dim is a black sheet over the backdrop only — the speech, the murmurs and
@@ -5028,7 +5045,7 @@ export default function ShowtimeStageScreen() {
 
   const curtainOpacity = useSharedValue(1);
   const audienceReveal = useSharedValue(0);
-  const speechPanelY = useSharedValue(60);
+  const speechPanelY = useSharedValue(rs(60));
   const speechPanelOpacity = useSharedValue(0);
   // Title intro card: grows + darkens, then shrinks + lightens and vanishes;
   // the main text only appears once the title is fully gone.
@@ -5065,11 +5082,11 @@ export default function ShowtimeStageScreen() {
     const effects = NOISE_EFFECTS[lang];
     const effect = effects[Math.floor(Math.random() * effects.length)];
     const id = ++bubbleIdRef.current;
-    const photoH = SW * bgPhotoRatio;
+    const photoH = HALL_W * bgPhotoRatio;
     const bubble: NoiseBubble = {
       id,
       text: effect.text,
-      x: 14 + Math.random() * Math.max(40, SW - 120),
+      x: HALL_X + rs(14) + Math.random() * Math.max(rs(40), HALL_W - rs(120)),
       y: photoH * (DARK_ROWS_TOP + Math.random() * (DARK_ROWS_BOTTOM - DARK_ROWS_TOP)),
     };
     setNoiseBubbles((p) => [...p, bubble]);
@@ -5318,9 +5335,9 @@ export default function ShowtimeStageScreen() {
         // The whole house from the top of the screen down to the edge of the
         // stage the speaker stands on. The hall claps once the title intro is
         // over (the speaker is "on"), and again at the end.
-        <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, width: SW, height: SW * HALL_RATIO }}>
+        <View pointerEvents="none" style={{ position: "absolute", top: 0, left: HALL_X, width: HALL_W, height: HALL_W * HALL_RATIO }}>
           <LiveAudience
-            width={SW}
+            width={HALL_W}
             phase={finished ? "done" : started && introDone ? "live" : "idle"}
             dim={dim}
             dimRef={dimRef}
@@ -5332,14 +5349,14 @@ export default function ShowtimeStageScreen() {
       ) : (
       <Image
         source={scene.still}
-        style={{ position: "absolute", top: 0, left: 0, width: SW, height: SW * bgPhotoRatio }}
+        style={{ position: "absolute", top: 0, left: HALL_X, width: HALL_W, height: HALL_W * bgPhotoRatio }}
         resizeMode="cover"
       />
       )}
       {!LiveAudience && hasClip && (
         <VideoView
           player={audiencePlayer}
-          style={{ position: "absolute", top: 0, left: 0, width: SW, height: SW * bgPhotoRatio }}
+          style={{ position: "absolute", top: 0, left: HALL_X, width: HALL_W, height: HALL_W * bgPhotoRatio }}
           contentFit="cover"
           surfaceType="textureView"
           nativeControls={false}
@@ -5352,7 +5369,7 @@ export default function ShowtimeStageScreen() {
         <VideoView
           player={audienceIntroPlayer}
           style={{
-            position: "absolute", top: 0, left: 0, width: SW, height: SW * bgPhotoRatio,
+            position: "absolute", top: 0, left: HALL_X, width: HALL_W, height: HALL_W * bgPhotoRatio,
             opacity: audienceIntroDone ? 0 : 1,
           }}
           contentFit="cover"
@@ -5360,6 +5377,26 @@ export default function ShowtimeStageScreen() {
           nativeControls={false}
           pointerEvents="none"
         />
+      )}
+      {/* Tablets: the centred hall melts into the dark at its sides instead of
+          ending on a hard edge (no gutters on phones). */}
+      {HALL_X > 0 && (
+        <>
+          <LinearGradient
+            pointerEvents="none"
+            colors={["#18181A", "rgba(24,24,26,0)"]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={{ position: "absolute", top: 0, left: HALL_X - 1, width: rs(56), height: HALL_W * bgPhotoRatio }}
+          />
+          <LinearGradient
+            pointerEvents="none"
+            colors={["rgba(24,24,26,0)", "#18181A"]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={{ position: "absolute", top: 0, left: HALL_X + HALL_W - rs(56) + 1, width: rs(56), height: HALL_W * bgPhotoRatio }}
+          />
+        </>
       )}
 
       {/* Light overall tint on the photo + a long, smooth ramp into the solid
@@ -5416,7 +5453,7 @@ export default function ShowtimeStageScreen() {
         <Animated.View style={[StyleSheet.absoluteFill, curtainStyle, { backgroundColor: ui.bg, zIndex: 20 }]}>
           <ScrollView
             style={StyleSheet.absoluteFill}
-            contentContainerStyle={[s.pvScroll, { paddingTop: topPad + 43, paddingBottom: bottomPad + 52 }]}
+            contentContainerStyle={[s.pvScroll, { paddingTop: topPad + rs(43), paddingBottom: bottomPad + rs(52) }]}
             showsVerticalScrollIndicator={false}
             bounces={false}
           >
@@ -5451,7 +5488,7 @@ export default function ShowtimeStageScreen() {
               })}
             </Text>
             {theme.timerSeconds !== null && (
-              <Text style={[s.pvMeta, { color: isDarkUi ? "rgba(240,238,233,0.5)" : "rgba(38,38,40,0.5)", marginTop: 8 }]}>
+              <Text style={[s.pvMeta, { color: isDarkUi ? "rgba(240,238,233,0.5)" : "rgba(38,38,40,0.5)", marginTop: rs(8) }]}>
                 {t("timerLabel")}: {theme.timerSeconds} {t("sec")}
               </Text>
             )}
@@ -5477,7 +5514,7 @@ export default function ShowtimeStageScreen() {
             </View>
             </Animated.View>
 
-            <View style={{ flexGrow: 1, minHeight: 36 }} />
+            <View style={{ flexGrow: 1, minHeight: rs(36) }} />
 
             {/* Scroll mode — segmented control */}
             <Animated.View entering={pvIn(3)}>
@@ -5506,12 +5543,12 @@ export default function ShowtimeStageScreen() {
               onPress={() => (paidEntry ? showTimeEntry.begin(() => void handleStart()) : void handleStart())}
               style={({ pressed }) => [s.pvCta, { backgroundColor: ui.accent, borderColor: ui.ctaStroke, opacity: pressed ? 0.88 : 1 }]}
             >
-              <RecMark size={16} />
+              <RecMark size={rs(16)} />
               <Text style={[s.pvCtaText, { color: ui.accentText }]}>{t("goOnStage")}</Text>
               {entryCost ? (
                 <View style={s.pvCtaCost}>
                   <Text style={[s.pvCtaText, { color: ui.accentText }]}>{SHOW_TIME_COST}</Text>
-                  <CoinIcon size={18} color={ui.accentText} />
+                  <CoinIcon size={rs(18)} color={ui.accentText} />
                 </View>
               ) : null}
             </Pressable>
@@ -5537,23 +5574,23 @@ export default function ShowtimeStageScreen() {
         hitSlop={12}
         style={({ pressed }) => ({
           position: "absolute",
-          top: topPad + 8,
-          right: 16,
-          width: 40,
-          height: 40,
+          top: topPad + rs(8),
+          right: rs(16),
+          width: rs(40),
+          height: rs(40),
           alignItems: "center",
           justifyContent: "center",
           zIndex: 100,
           opacity: pressed ? 0.6 : 1,
         })}
       >
-        <Ionicons name="close" size={26} color={started ? "#F0EEE9" : ui.text} />
+        <Ionicons name="close" size={rs(26)} color={started ? "#F0EEE9" : ui.text} />
       </Pressable>
 
       {/* Header — no back arrow and no LIVE tag. Top-left carries the house
           lights and, under them, the auto-scroll speed; the empty centre keeps
           the side columns where they were. */}
-      <View style={[s.header, { paddingTop: topPad + 8 }]}>
+      <View style={[s.header, { paddingTop: topPad + rs(8) }]}>
         <View style={[s.headerSide, { alignItems: "flex-start" }]}>
           {started && !finished && (
             <>
@@ -5568,7 +5605,7 @@ export default function ShowtimeStageScreen() {
                   },
                 ]}
               >
-                <Ionicons name={dim > 0.5 ? "eye-off-outline" : "eye-outline"} size={22} color={dim > 0.5 ? ui.accent : "#F0EEE9"} />
+                <Ionicons name={dim > 0.5 ? "eye-off-outline" : "eye-outline"} size={rs(22)} color={dim > 0.5 ? ui.accent : "#F0EEE9"} />
               </Pressable>
             </>
           )}
@@ -5629,7 +5666,7 @@ export default function ShowtimeStageScreen() {
 
       {/* Speech panel */}
       {started && !finished && (
-        <Animated.View style={[s.speechPanel, speechStyle, pumpStyle, { paddingBottom: bottomPad + 14 }]}>
+        <Animated.View style={[s.speechPanel, speechStyle, pumpStyle, { top: SH * 0.5, left: READ_INSET, right: READ_INSET, paddingBottom: bottomPad + rs(14) }]}>
           {/* Lines — scrollable so the full speech is readable from the top.
               The wrapper exists so the edge blur hugs the text area and not the
               controls under it. */}
@@ -5677,7 +5714,7 @@ export default function ShowtimeStageScreen() {
               hitSlop={12}
               style={({ pressed }) => [s.navBtn, { opacity: currentLine === 0 ? 0.25 : pressed ? 0.55 : 1 }]}
             >
-              <Ionicons name="chevron-back" size={30} color="#FFFFFF" />
+              <Ionicons name="chevron-back" size={rs(30)} color="#FFFFFF" />
             </Pressable>
 
             <Pressable
@@ -5687,7 +5724,7 @@ export default function ShowtimeStageScreen() {
             >
               <Ionicons
                 name={currentLine === speech.lines.length - 1 ? "checkmark" : "chevron-forward"}
-                size={30}
+                size={rs(30)}
                 color="#FFFFFF"
               />
             </Pressable>
@@ -5731,7 +5768,8 @@ const s = StyleSheet.create({
   timerText: { fontSize: 12 },
   lineCounter: { fontSize: 13, color: "rgba(17,17,20,0.5)" },
   // Theme preview (Figma 310:4346)
-  pvScroll: { flexGrow: 1, paddingHorizontal: 28 },
+  // maxWidth only bites on tablets (480 × UI_SCALE), keeping the preview a centred column
+  pvScroll: { flexGrow: 1, paddingHorizontal: 28, width: "100%", maxWidth: 480, alignSelf: "center" },
   pvArt: { width: "100%", aspectRatio: 1.35, borderRadius: 22, overflow: "hidden", marginBottom: 20 },
   pvPhoto: { position: "absolute", left: 0, top: 0, right: 0, bottom: 0, width: "100%", height: "100%" },
   pvCategory: { fontFamily: "Geologica_500Medium", fontSize: 14 },
@@ -5777,7 +5815,9 @@ const s = StyleSheet.create({
   // runs to the safe-area bottom. A fixed top boundary stops long speeches
   // from spilling up into the audience; the text area flexes inside it so
   // short speeches sit vertically centered and long ones scroll within bounds.
-  speechPanel: { position: "absolute", top: SH * 0.5, bottom: 0, left: 0, right: 0, paddingTop: 14, paddingHorizontal: 18, gap: 12 },
+  // top (SH * 0.5) and the side insets are set inline: window-derived values
+  // must not go through the auto-scaled StyleSheet.
+  speechPanel: { position: "absolute", bottom: 0, left: 0, right: 0, paddingTop: 14, paddingHorizontal: 18, gap: 12 },
   linesWrap: { flex: 1, width: "100%", overflow: "hidden" },
   linesScroll: { flex: 1, width: "100%" },
   linesContainer: { flexGrow: 1, justifyContent: "center", alignItems: "center", gap: 0, paddingVertical: 4 },

@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useTheme } from "@/context/ThemeContext";
 import { useLang, pickLang } from "@/context/LangContext";
+import { rs } from "@/lib/responsive";
 import type { VocabWord } from "@/constants/vocabularyData";
 
 /**
@@ -60,7 +61,7 @@ export default function VocabResultView({
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.bg }}
-      contentContainerStyle={[styles.content, { paddingTop: topPad + 24, paddingBottom: bottomPad + 40 }]}
+      contentContainerStyle={[styles.content, { paddingTop: topPad + rs(24), paddingBottom: bottomPad + rs(40) }]}
       showsVerticalScrollIndicator={false}
     >
       <Text style={[styles.title, { color: theme.text }]}>{pickLang(lang, { ru: "Время вышло!", en: "Time's up!", kk: "Уақыт бітті!" })}</Text>

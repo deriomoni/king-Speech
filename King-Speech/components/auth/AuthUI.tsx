@@ -12,6 +12,7 @@ import {
 import { SvgXml } from "react-native-svg";
 import { useTheme } from "@/context/ThemeContext";
 import { LOGO_SVG } from "@/assets/figma/auth/svgs";
+import { rs } from "@/lib/responsive";
 
 // Shared bits of the Figma "01 · Вход и регистрация" flow (section 34:975).
 
@@ -21,7 +22,8 @@ const LOGO_H = 53;
 /** King Speech wordmark (crown + "King Speech"). Native size 159×53. */
 export function KingSpeechLogo({ width = LOGO_W, color }: { width?: number; color: string }) {
   const xml = React.useMemo(() => LOGO_SVG.replace(/#262628/g, color), [color]);
-  return <SvgXml xml={xml} width={width} height={(width * LOGO_H) / LOGO_W} />;
+  const w = rs(width);
+  return <SvgXml xml={xml} width={w} height={(w * LOGO_H) / LOGO_W} />;
 }
 
 /** Text colour helper: Figma uses ink-with-alpha (light ink on dark, dark ink on light). */
@@ -74,7 +76,7 @@ export function PillButton({ label, onPress, variant = "primary", disabled, busy
     >
       {left}
       <Text style={[s.pillTxt, { color }]}>{label}</Text>
-      {chevron ? <NextChevron color={color} size={15} /> : null}
+      {chevron ? <NextChevron color={color} size={rs(15)} /> : null}
       {busy ? (
         <View style={s.busy}>
           <ActivityIndicator size="small" color={color} />

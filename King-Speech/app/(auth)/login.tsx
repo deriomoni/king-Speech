@@ -18,6 +18,7 @@ import { useLang, pickLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { KingSpeechLogo, PillButton } from "@/components/auth/AuthUI";
+import { rs } from "@/lib/responsive";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
@@ -104,7 +105,7 @@ export default function LoginScreen() {
   const INK = theme.accentText;
 
   return (
-    <View style={[s.root, { backgroundColor: theme.accent, paddingTop: topPad + 32, paddingBottom: bottomPad + 89 }]}>
+    <View style={[s.root, { backgroundColor: theme.accent, paddingTop: topPad + rs(32), paddingBottom: bottomPad + rs(89) }]}>
       <StatusBar barStyle="dark-content" />
 
       <Animated.View entering={FadeIn} style={s.logoWrap}>
@@ -126,7 +127,7 @@ export default function LoginScreen() {
 
       {!configured && (
         <View style={s.notConfiguredBanner}>
-          <Ionicons name="warning-outline" size={16} color={INK} />
+          <Ionicons name="warning-outline" size={rs(16)} color={INK} />
           <Text style={[s.notConfiguredTxt, { color: "rgba(38,38,40,0.75)" }]}>
             {pickLang(lang, { ru: "Облачная авторизация не настроена. Доступен только режим без входа.", en: "Cloud sign-in isn't configured. Only offline mode is available.", kk: "Бұлттық авторизация бапталмаған. Тек кірусіз режим қолжетімді." })}
           </Text>
@@ -154,7 +155,7 @@ export default function LoginScreen() {
             onPress={handleApple}
             disabled={busy !== null}
           >
-            <Ionicons name="logo-apple" size={20} color={theme.accent} />
+            <Ionicons name="logo-apple" size={rs(20)} color={theme.accent} />
             <Text style={[s.appleTxt, { color: "#FFFFFF" }]}>{t("continueApple")}</Text>
             {busy === "apple" ? (
               <View style={s.busy}>
@@ -182,11 +183,11 @@ export default function LoginScreen() {
         disabled={busy !== null}
         hitSlop={10}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: rs(8) }}>
           <Text style={[s.skipBtnTxt, { color: "#333234" }]}>
             {pickLang(lang, { ru: "Продолжить без входа", en: "Continue without signing in", kk: "Кірмей жалғастыру" })}
           </Text>
-          <NextChevron color="#333234" size={13} />
+          <NextChevron color="#333234" size={rs(13)} />
         </View>
       </Pressable>
     </View>

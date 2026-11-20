@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { lt } from "@/constants/roleScenarios";
 import { MONO } from "@/components/roles/RoleTarotCard";
 import { Avatar, GoalTag, SCENE, TypingDots, type SceneProps } from "./common";
+import { rs } from "@/lib/responsive";
 
 export function formatViewers(n: number): string {
   if (n >= 10000) return `${Math.round(n / 1000)}K`;
@@ -27,13 +28,13 @@ export function formatViewers(n: number): string {
 
 export function LiveTopBadge({ viewers, time }: { viewers: number; time: string }) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: rs(6) }}>
       <View style={styles.livePill}>
         <Text style={styles.liveText}>LIVE</Text>
         <Text style={styles.liveTime}>{time}</Text>
       </View>
       <View style={styles.viewersPill}>
-        <Ionicons name="eye" size={13} color="#fff" />
+        <Ionicons name="eye" size={rs(13)} color="#fff" />
         <Text style={styles.viewersText}>{formatViewers(viewers)}</Text>
       </View>
     </View>
@@ -56,7 +57,7 @@ export function LiveOverlay({ hearts, bottom }: { hearts: number; bottom: number
     const fresh = Array.from({ length: Math.min(added, 4) }, (_, i) => ({
       id: hearts * 10 + i,
       color: HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)],
-      dx: Math.random() * 30 - 15,
+      dx: rs(Math.random() * 30 - 15),
     }));
     setItems((cur) => [...cur, ...fresh].slice(-10));
   }, [hearts]);
@@ -83,17 +84,18 @@ function FloatingHeart({ color, dx, delay, onDone }: { color: string; dx: number
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  const rise = rs(230); // computed outside the worklet
   const st = useAnimatedStyle(() => ({
     opacity: t.value < 0.1 ? t.value * 10 : 1 - Math.max(0, (t.value - 0.55) / 0.45),
     transform: [
-      { translateY: -230 * t.value },
+      { translateY: -rise * t.value },
       { translateX: dx * Math.sin(t.value * 6) },
       { scale: 0.6 + Math.min(1, t.value * 4) * 0.5 },
     ],
   }));
   return (
     <Animated.View style={[styles.heart, st]}>
-      <Ionicons name="heart" size={26} color={color} />
+      <Ionicons name="heart" size={rs(26)} color={color} />
     </Animated.View>
   );
 }
@@ -104,11 +106,11 @@ export function LiveFeed(p: SceneProps) {
   const stream = p.messages.slice(scripted ? -3 : -5);
 
   return (
-    <View style={{ gap: 8, maxHeight: p.maxHeight, justifyContent: "flex-end" }}>
+    <View style={{ gap: rs(8), maxHeight: p.maxHeight, justifyContent: "flex-end" }}>
       {pinned && !scripted && (
         <Animated.View key={pinned.key} entering={FadeInDown.duration(260)} style={styles.pinned}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 3 }}>
-            <Ionicons name="pin" size={12} color={SCENE.yellow} />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: rs(6), marginBottom: rs(3) }}>
+            <Ionicons name="pin" size={rs(12)} color={SCENE.yellow} />
             <Text style={styles.pinnedLabel}>{pickLang(lang, { ru: "Закреплённый вопрос", en: "Pinned question", kk: "Бекітілген сұрақ" })}</Text>
           </View>
           <Text style={styles.pinnedText} numberOfLines={2}>
@@ -120,12 +122,12 @@ export function LiveFeed(p: SceneProps) {
 
       {p.awaitingOpening && !scripted && (
         <Animated.View entering={FadeInDown} style={styles.hint}>
-          <Ionicons name="radio" size={13} color={SCENE.onYellow} />
+          <Ionicons name="radio" size={rs(13)} color={SCENE.onYellow} />
           <Text style={styles.hintText}>{pickLang(lang, { ru: "Ты в эфире! ", en: "You're live! ", kk: "Сіз эфирдесіз! " })}{lt(s.openingHint, lang)}</Text>
         </Animated.View>
       )}
 
-      <View style={{ maxHeight: Math.max(80, p.maxHeight - (pinned && !scripted ? 120 : 52)), overflow: "hidden", justifyContent: "flex-end", gap: 6 }}>
+      <View style={{ maxHeight: Math.max(rs(80), p.maxHeight - rs(pinned && !scripted ? 120 : 52)), overflow: "hidden", justifyContent: "flex-end", gap: rs(6) }}>
       {stream.map((m) => {
         if (m.kind === "you") return null;
         const troll = m.tone === "troll";
@@ -138,7 +140,7 @@ export function LiveFeed(p: SceneProps) {
             layout={LinearTransition.duration(200)}
             style={[styles.comment, important && styles.commentImportant, troll && styles.commentTroll]}
           >
-            <Avatar emoji={m.avatar} size={24} />
+            <Avatar emoji={m.avatar} size={rs(24)} />
             <View style={{ flexShrink: 1 }}>
               <Text style={styles.commentText}>
                 <Text style={styles.nick}>{m.name} </Text>
@@ -152,7 +154,7 @@ export function LiveFeed(p: SceneProps) {
 
       {p.typing && !scripted && (
         <View style={[styles.comment, { opacity: 0.8 }]}>
-          <Avatar emoji="💬" size={24} />
+          <Avatar emoji="💬" size={rs(24)} />
           <TypingDots />
         </View>
       )}
@@ -163,8 +165,8 @@ export function LiveFeed(p: SceneProps) {
         <View style={styles.input}>
           <Text style={styles.inputText}>{pickLang(lang, { ru: "Комментарий…", en: "Add a comment…", kk: "Пікір жазу…" })}</Text>
         </View>
-        <Ionicons name="heart-outline" size={22} color="#fff" />
-        <Ionicons name="paper-plane-outline" size={21} color="#fff" />
+        <Ionicons name="heart-outline" size={rs(22)} color="#fff" />
+        <Ionicons name="paper-plane-outline" size={rs(21)} color="#fff" />
       </View>
     </View>
   );

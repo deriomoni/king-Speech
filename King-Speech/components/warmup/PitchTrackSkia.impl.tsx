@@ -16,6 +16,7 @@ import type { SharedValue } from "react-native-reanimated";
 import { warmupTheme } from "@/components/warmup/warmupTheme";
 import type { HitZone } from "@/services/warmupScoring";
 import {
+  K,
   BALL_R,
   BALL_X_RATIO,
   PLATFORM_BASE_Y,
@@ -30,13 +31,14 @@ import {
   type TrackSegment,
 } from "@/components/warmup/pitchTrackGeometry";
 
-const TRACK_W = Dimensions.get("window").width - 40;
+// Lengths are phone-design × K (tablet scale), matching pitchTrackGeometry.
+const TRACK_W = Dimensions.get("window").width - 40 * K;
 const BALL_X = TRACK_W * BALL_X_RATIO;
-const AURA_R = 26;
-const TRAIL_W = 48;
-const SPOT_R = 105;
+const AURA_R = 26 * K;
+const TRAIL_W = 48 * K;
+const SPOT_R = 105 * K;
 const SPARK_ANGLES = [0, 60, 120, 180, 240, 300];
-const SPARK_RADIUS = 30;
+const SPARK_RADIUS = 30 * K;
 
 interface Props {
   segments: TrackSegment[];
@@ -119,7 +121,7 @@ export default function PitchTrackSkiaImpl({
           color={warmupTheme.gold}
           opacity={spotOpacity}
         >
-          <BlurMask blur={45} style="normal" />
+          <BlurMask blur={45 * K} style="normal" />
         </Circle>
 
         {/* Faint staff lines. */}
@@ -127,7 +129,7 @@ export default function PitchTrackSkiaImpl({
           <Rect
             key={f}
             x={0}
-            y={20 + f * (TRACK_HEIGHT - 60)}
+            y={20 * K + f * (TRACK_HEIGHT - 60 * K)}
             width={TRACK_W}
             height={1}
             color="#ffffff14"
@@ -163,9 +165,9 @@ export default function PitchTrackSkiaImpl({
           {held && active && (
             <Rect
               x={segX(active)}
-              y={PLATFORM_BASE_Y - 5}
+              y={PLATFORM_BASE_Y - 5 * K}
               width={Math.max(0, segW(active) * activeFill01)}
-              height={5}
+              height={5 * K}
               color={warmupTheme.cleanMint}
             />
           )}
@@ -175,9 +177,9 @@ export default function PitchTrackSkiaImpl({
         <Group transform={ballTransform}>
           <Rect
             x={-TRAIL_W}
-            y={-(BALL_R - 2)}
+            y={-(BALL_R - 2 * K)}
             width={TRAIL_W}
-            height={(BALL_R - 2) * 2}
+            height={(BALL_R - 2 * K) * 2}
           >
             <LinearGradient
               start={vec(-TRAIL_W, 0)}
@@ -187,7 +189,7 @@ export default function PitchTrackSkiaImpl({
           </Rect>
 
           <Circle cx={0} cy={0} r={auraR} color={aura} opacity={auraOpacity}>
-            <BlurMask blur={10} style="normal" />
+            <BlurMask blur={10 * K} style="normal" />
           </Circle>
 
           <Group opacity={burst01}>
@@ -198,15 +200,15 @@ export default function PitchTrackSkiaImpl({
                   key={i}
                   cx={Math.cos(rad) * SPARK_RADIUS}
                   cy={Math.sin(rad) * SPARK_RADIUS}
-                  r={2.5}
+                  r={2.5 * K}
                   color={warmupTheme.gold}
                 />
               );
             })}
           </Group>
 
-          <Circle cx={0} cy={0} r={BALL_R + 3} color={warmupTheme.gold} opacity={0.5}>
-            <BlurMask blur={8} style="normal" />
+          <Circle cx={0} cy={0} r={BALL_R + 3 * K} color={warmupTheme.gold} opacity={0.5}>
+            <BlurMask blur={8 * K} style="normal" />
           </Circle>
           <Circle cx={0} cy={0} r={BALL_R} color={warmupTheme.gold} />
         </Group>

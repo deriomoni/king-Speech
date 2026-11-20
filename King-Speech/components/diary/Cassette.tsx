@@ -27,6 +27,7 @@ import { useFonts, Caveat_400Regular } from "@expo-google-fonts/caveat";
 import { useTheme } from "@/context/ThemeContext";
 import type { DiaryEmotion } from "@/lib/diaryStorage";
 import { CASSETTE_LIDS, CASSETTE_MOUTH, HEART, HEART_COLOR } from "./emotions";
+import { rs } from "@/lib/responsive";
 
 export const HANDWRITING = "Caveat_400Regular";
 
@@ -146,11 +147,14 @@ export default function Cassette({
     t.value = withRepeat(withTiming(1, { duration: 3200, easing: Easing.linear }), -1, false);
     return () => cancelAnimation(t);
   }, [lively, t, amp]);
+  // Geometry derives from `width` (callers pass a device-sized width); only the
+  // bob distance is a fixed phone length — computed outside the worklet.
+  const bob = rs(2);
   const swaySt = useAnimatedStyle(() => {
     const a = 2 * Math.PI * t.value;
     return {
       transform: [
-        { translateY: -2 * amp.value * Math.sin(a) },
+        { translateY: -bob * amp.value * Math.sin(a) },
         { rotate: `${1.2 * amp.value * Math.sin(a + Math.PI / 3)}deg` },
       ],
     };

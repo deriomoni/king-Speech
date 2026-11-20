@@ -30,6 +30,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { PlayTriangleIcon } from "@/components/showtime/ShowTimeIcons";
 import { AUTHOR_READ_RESULT_KEY, type AuthorReadResult } from "@/lib/authorStage";
+import { rs } from "@/lib/responsive";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -109,8 +110,8 @@ export default function AuthorScreen() {
   draftIdRef.current = draftId;
 
   const stroke = isDark ? "rgba(240,238,233,0.06)" : "rgba(38,38,40,0.08)";
-  const topPad = Platform.OS === "web" ? 54 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
+  const topPad = Platform.OS === "web" ? rs(54) : insets.top;
+  const bottomPad = Platform.OS === "web" ? rs(34) : insets.bottom;
 
   const words = useMemo(() => countWords(text), [text]);
   const seconds = Math.round(words / 1.7);
@@ -325,11 +326,11 @@ export default function AuthorScreen() {
         <ScrollView
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[s.content, { paddingTop: topPad + 8, paddingBottom: bottomPad + 40 }]}
+          contentContainerStyle={[s.content, { paddingTop: topPad + rs(8), paddingBottom: bottomPad + rs(40) }]}
         >
           <View style={s.topRow}>
             <Pressable onPress={goBack} hitSlop={12} style={s.back} accessibilityRole="button">
-              <Ionicons name="chevron-back" size={26} color={c.text} />
+              <Ionicons name="chevron-back" size={rs(26)} color={c.text} />
             </Pressable>
             <Pressable onPress={openDrafts} hitSlop={10}>
               <Text style={[s.drafts, { color: c.textMuted }]}>{tr("Черновики", "Drafts", "Жобалар")}</Text>
@@ -393,7 +394,7 @@ export default function AuthorScreen() {
             />
             <View style={s.statsRow}>
               <Text style={[s.stat, { color: c.textMuted }]}>{wordsLabel(words, lang)}</Text>
-              <Text style={[s.stat, { color: c.textMuted, marginLeft: 12 }]}>{fmtApprox(seconds, lang)}</Text>
+              <Text style={[s.stat, { color: c.textMuted, marginLeft: rs(12) }]}>{fmtApprox(seconds, lang)}</Text>
               <Text style={[s.stat, s.tip, { color: c.textMuted }]} numberOfLines={1}>
                 {tr("Совет: 1–2 минуты — идеально", "Tip: 1–2 minutes is ideal", "Кеңес: 1–2 минут — тамаша")}
               </Text>
@@ -419,7 +420,7 @@ export default function AuthorScreen() {
         <Pressable style={s.dim} onPress={() => setSheetOpen(false)}>
           <Pressable
             onPress={(e) => e.stopPropagation()}
-            style={[s.sheet, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingBottom: bottomPad + 20 + SHEET_TUCK }]}
+            style={[s.sheet, { backgroundColor: c.bg, borderColor: c.panelStroke, paddingBottom: bottomPad + rs(20) + rs(SHEET_TUCK) }]}
           >
             <View style={[s.grabber, { backgroundColor: c.textMuted }]} />
             <Text style={[s.sheetTitle, { color: c.text }]}>{tr("Отлично прочитано!", "Nicely read!", "Керемет оқыдыңыз!")}</Text>
@@ -460,7 +461,7 @@ export default function AuthorScreen() {
                 hitSlop={8}
                 style={({ pressed }) => [s.listenBtn, { borderColor: stroke, opacity: pressed ? 0.8 : 1 }]}
               >
-                <Ionicons name={playing ? "stop" : "play"} size={16} color={c.text} />
+                <Ionicons name={playing ? "stop" : "play"} size={rs(16)} color={c.text} />
                 <Text style={[s.listenText, { color: c.text }]}>
                   {playing ? tr("Остановить", "Stop", "Тоқтату") : tr("Послушать своё чтение", "Listen to your reading", "Өз оқуыңызды тыңдау")}
                 </Text>
@@ -475,7 +476,7 @@ export default function AuthorScreen() {
                 { backgroundColor: c.card, borderColor: c.textMuted, opacity: pressed ? 0.85 : 1 },
               ]}
             >
-              <Ionicons name="image-outline" size={22} color={c.text} />
+              <Ionicons name="image-outline" size={rs(22)} color={c.text} />
               <View style={{ flex: 1 }}>
                 <Text style={[s.uploadTitle, { color: c.text }]}>
                   {coverUri ? tr("Сменить фото", "Change photo", "Фотоны ауыстыру") : tr("Загрузить фото", "Upload photo", "Фото жүктеу")}
@@ -499,7 +500,7 @@ export default function AuthorScreen() {
   );
 }
 
-const SHEET_TUCK = 40;
+const SHEET_TUCK = 40; // raw in StyleSheet (auto-scaled); rs() inline
 
 const s = StyleSheet.create({
   container: { flex: 1 },

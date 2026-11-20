@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import Animated, { ZoomIn } from "react-native-reanimated";
 import { useTheme } from "@/context/ThemeContext";
 import { useLang, pickLang } from "@/context/LangContext";
+import { rs } from "@/lib/responsive";
 
 /**
  * A synonym "sticker" (Figma «Word · найдено» / «Word · не разгадано»):
@@ -12,10 +13,27 @@ import { useLang, pickLang } from "@/context/LangContext";
  */
 export type StickerSize = "large" | "compact" | "hint";
 
-const SIZE: Record<StickerSize, { h: number; word: number; pts: number; padX: number; badge: number; badgeFont: number }> = {
+type StickerMetrics = { h: number; word: number; pts: number; padX: number; badge: number; badgeFont: number };
+
+const SIZE_BASE: Record<StickerSize, StickerMetrics> = {
   large: { h: 72, word: 24, pts: 11, padX: 17, badge: 28, badgeFont: 13 },
   compact: { h: 58, word: 19, pts: 10, padX: 15, badge: 24, badgeFont: 12 },
   hint: { h: 52, word: 18, pts: 10, padX: 15, badge: 24, badgeFont: 12 },
+};
+
+// Used only inline → scaled once here for tablets (identity on phones).
+const scaleMetrics = (m: StickerMetrics): StickerMetrics => ({
+  h: rs(m.h),
+  word: rs(m.word),
+  pts: rs(m.pts),
+  padX: rs(m.padX),
+  badge: rs(m.badge),
+  badgeFont: rs(m.badgeFont),
+});
+const SIZE: Record<StickerSize, StickerMetrics> = {
+  large: scaleMetrics(SIZE_BASE.large),
+  compact: scaleMetrics(SIZE_BASE.compact),
+  hint: scaleMetrics(SIZE_BASE.hint),
 };
 
 export default function WordSticker({
@@ -47,8 +65,8 @@ export default function WordSticker({
   const isDark = themeMode === "dark";
   const s = SIZE[size];
   const [w, setW] = useState(0);
-  const h = found ? s.h : s.h - 2;
-  const left = w ? Math.max(8, Math.min(boxW - w - 16, cx - w / 2)) : cx;
+  const h = found ? s.h : s.h - rs(2);
+  const left = w ? Math.max(rs(8), Math.min(boxW - w - rs(16), cx - w / 2)) : cx;
 
   const card = found
     ? {
@@ -95,8 +113,8 @@ export default function WordSticker({
                   width: s.badge,
                   height: s.badge,
                   borderRadius: s.badge / 2,
-                  top: -(s.badge / 2) + 1,
-                  right: -(s.badge / 2) + 3,
+                  top: -(s.badge / 2) + rs(1),
+                  right: -(s.badge / 2) + rs(3),
                 },
               ]}
             >

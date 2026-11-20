@@ -10,6 +10,7 @@ import { useGame, MODULE_COLORS, RANKS_MODULAR } from "@/context/GameContext";
 import { useModuleTransition } from "@/context/ModuleTransitionContext";
 import { useLang } from "@/context/LangContext";
 import { getLevelsData } from "@/constants/gameContent";
+import { rs } from "@/lib/responsive";
 
 /**
  * DEV-ONLY floating "Skip" button for level screens. When the dev "Skip" toggle
@@ -86,10 +87,10 @@ export default function DevSkipButton({
   return (
     <Pressable
       onPress={onSkip}
-      style={[styles.btn, { bottom: insets.bottom + 16 }]}
+      style={[styles.btn, { bottom: insets.bottom + rs(16) }]}
       accessibilityLabel="Dev: skip level"
     >
-      <Ionicons name="play-skip-forward" size={16} color="#fff" />
+      <Ionicons name="play-skip-forward" size={rs(16)} color="#fff" />
       <Text style={styles.txt}>Skip (dev)</Text>
     </Pressable>
   );

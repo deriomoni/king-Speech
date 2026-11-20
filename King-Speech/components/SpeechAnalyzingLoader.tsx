@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import OscarMascot from "@/components/OscarMascot";
 import { useTheme } from "@/context/ThemeContext";
 import { pickLang, type Lang } from "@/context/LangContext";
+import { rs } from "@/lib/responsive";
 
 
 const PHRASES_RU = [
@@ -156,7 +157,7 @@ export default function SpeechAnalyzingLoader({ visible, lang }: Props) {
     >
       <View style={styles.center}>
         {/* Oscar "thinks" over the recording while the AI analyzes it */}
-        <OscarMascot emotion="notsure" size={RIVE_SIZE} />
+        <OscarMascot emotion="notsure" size={rs(RIVE_SIZE)} />
 
         <RotatingPhrase phrases={phrases} />
 

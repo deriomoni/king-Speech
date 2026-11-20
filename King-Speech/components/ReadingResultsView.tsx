@@ -32,6 +32,7 @@ import type { SpeechAnalysis } from "@/services/speechAnalysis";
 import RoundStar from "@/components/RoundStar";
 import NextChevron from "@/components/NextChevron";
 import { pickLang, type Lang } from "@/context/LangContext";
+import { rs } from "@/lib/responsive";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -256,7 +257,7 @@ function SelfStar({
     y.value = withDelay(
       delay,
       withSequence(
-        withTiming(-12, { duration: 150, easing: Easing.out(Easing.quad) }),
+        withTiming(rs(-12), { duration: 150, easing: Easing.out(Easing.quad) }),
         withSpring(0, { damping: 9, stiffness: 260, mass: 0.6 }),
       ),
     );
@@ -285,7 +286,7 @@ function SelfStar({
       style={({ pressed }) => ({ opacity: pressed && !locked ? 0.7 : 1 })}
     >
       <Animated.View style={anim}>
-        <RoundStar size={44} filled={active} color={color} emptyColor={color} emptyOpacity={0.35} />
+        <RoundStar size={rs(44)} filled={active} color={color} emptyColor={color} emptyOpacity={0.35} />
       </Animated.View>
     </Pressable>
   );
@@ -420,7 +421,7 @@ export default function ReadingResultsView({
     <View style={[st.container, { backgroundColor: theme.bg }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[st.scroll, { paddingTop: topPad + 23, paddingBottom: bottomPad + 36 }]}
+        contentContainerStyle={[st.scroll, { paddingTop: topPad + rs(23), paddingBottom: bottomPad + rs(36) }]}
       >
         {/* Hero — work + author */}
         <Animated.View entering={FadeInDown.duration(500)} style={st.hero}>
@@ -587,9 +588,9 @@ function RecorderBar({
       >
         <Ionicons
           name={playing ? "pause" : "play"}
-          size={17}
+          size={rs(17)}
           color="#FFFFFF"
-          style={{ marginLeft: playing ? 0 : 2 }}
+          style={{ marginLeft: playing ? 0 : rs(2) }}
         />
       </Pressable>
       <View style={st.rbWave} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
@@ -599,7 +600,7 @@ function RecorderBar({
             style={[
               st.rbWaveBar,
               {
-                height: 9 + v * 27,
+                height: rs(9 + v * 27),
                 backgroundColor: (i + 0.5) / wave.length <= played ? theme.text : dim,
               },
             ]}
@@ -608,7 +609,7 @@ function RecorderBar({
         {showHead && w > 0 ? (
           <View
             pointerEvents="none"
-            style={[st.rbHead, { left: Math.max(0, Math.min(w - 3, progress * w)) - 2.75 }]}
+            style={[st.rbHead, { left: Math.max(0, Math.min(w - rs(3), progress * w)) - rs(2.75) }]}
           >
             <View style={[st.rbHeadDot, { backgroundColor: theme.accent }]} />
             <View style={[st.rbHeadLine, { backgroundColor: theme.accent }]} />
@@ -701,7 +702,7 @@ function ListenStage({
 
   return (
     <Animated.View entering={FadeIn.duration(260)} style={[st.container, { backgroundColor: bg }]}>
-      <View style={[st.lsHeader, { paddingTop: topPad + 14 }]}>
+      <View style={[st.lsHeader, { paddingTop: topPad + rs(14) }]}>
         <Text style={[st.lsKicker, { color: tint }]}>
           {(pickLang(lang, { ru: "Твоя запись", en: "Your recording", kk: "Сіздің жазбаңыз" })).toUpperCase()}
         </Text>
@@ -713,7 +714,7 @@ function ListenStage({
             accessibilityLabel={pickLang(lang, { ru: "Выйти из чтения", en: "Leave the reading", kk: "Оқудан шығу" })}
             style={({ pressed }) => [st.lsClose, { opacity: pressed ? 0.6 : 1 }]}
           >
-            <Ionicons name="close" size={24} color={ink} />
+            <Ionicons name="close" size={rs(24)} color={ink} />
           </Pressable>
         ) : null}
       </View>
@@ -728,7 +729,7 @@ function ListenStage({
         }}
       >
         {srcLines.map((ln, i) => {
-          if (!ln.trim()) return <View key={i} style={{ height: 22 }} />;
+          if (!ln.trim()) return <View key={i} style={{ height: rs(22) }} />;
           const isActive = i === activeSrc;
           const color = isActive
             ? tint
@@ -770,7 +771,7 @@ function ListenStage({
           </View>
           <View
             pointerEvents="none"
-            style={[st.lsKnob, { left: Math.max(0, Math.min(trackW - 12, progress * trackW - 6)), backgroundColor: ink }]}
+            style={[st.lsKnob, { left: Math.max(0, Math.min(trackW - rs(12), progress * trackW - rs(6))), backgroundColor: ink }]}
           />
         </View>
         <View style={st.lsTimes}>
@@ -795,7 +796,7 @@ function ListenStage({
                 <View style={[st.lsPauseBar, { backgroundColor: bg }]} />
               </View>
             ) : (
-              <Ionicons name="play" size={26} color={bg} style={{ marginLeft: 4 }} />
+              <Ionicons name="play" size={rs(26)} color={bg} style={{ marginLeft: rs(4) }} />
             )}
           </Pressable>
           <Pressable onPress={player.cycleSpeed} hitSlop={10} style={st.lsSpeed}>
@@ -907,10 +908,15 @@ const st = StyleSheet.create({
     paddingLeft: 30,
     paddingRight: 24,
     minHeight: 24,
+    width: "100%",
+    maxWidth: 660,
+    alignSelf: "center",
   },
   lsKicker: { fontFamily: "Geologica_600SemiBold", fontSize: 11, letterSpacing: 0.55 },
   lsClose: { width: 26, height: 26, alignItems: "center", justifyContent: "center", marginTop: -8 },
-  lsText: { paddingHorizontal: 30, paddingTop: 30, paddingBottom: 24 },
+  // Reading column capped + centred on wide screens (660 = 600 text + 2x30
+  // padding; wider than any phone, so phones are unchanged).
+  lsText: { paddingHorizontal: 30, paddingTop: 30, paddingBottom: 24, width: "100%", maxWidth: 660, alignSelf: "center" },
   lsLine: { alignSelf: "flex-start", marginBottom: 7 },
   lsLineActive: {
     borderRadius: 8,
@@ -921,7 +927,7 @@ const st = StyleSheet.create({
     marginBottom: 3,
   },
   lsLineText: { fontSize: 21, lineHeight: 31 },
-  lsBottom: { paddingHorizontal: 30, paddingTop: 12 },
+  lsBottom: { paddingHorizontal: 30, paddingTop: 12, width: "100%", maxWidth: 660, alignSelf: "center" },
   lsScrubHit: { height: 16, justifyContent: "center" },
   lsTrack: { height: 4, borderRadius: 2, overflow: "hidden" },
   lsFill: { height: 4, borderRadius: 2 },

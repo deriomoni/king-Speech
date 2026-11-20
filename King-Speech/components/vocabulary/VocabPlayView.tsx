@@ -4,6 +4,7 @@ import Animated, { FadeIn, FadeInDown, FadeOut } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Circle, Rect } from "react-native-svg";
 import { useTheme } from "@/context/ThemeContext";
+import { rs } from "@/lib/responsive";
 import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import CoinIcon from "@/components/CoinIcon";
 import StageGlassDialog from "@/components/showtime/StageGlassDialog";
@@ -96,7 +97,7 @@ const SLOTS_HINT: [number, number, number][] = [
 
 function Bulb({ color }: { color: string }) {
   return (
-    <Svg width={18} height={18} viewBox="0 0 18 18">
+    <Svg width={rs(18)} height={rs(18)} viewBox="0 0 18 18">
       <Circle cx={9} cy={7} r={6} fill={color} />
       <Rect x={6} y={13.5} width={6} height={4} rx={1.5} fill={color} />
     </Svg>
@@ -106,7 +107,7 @@ function Bulb({ color }: { color: string }) {
 function PlayBadge({ color, bg }: { color: string; bg: string }) {
   return (
     <View style={[styles.playBadge, { backgroundColor: bg }]}>
-      <Ionicons name="play" size={10} color={color} style={{ marginLeft: 1 }} />
+      <Ionicons name="play" size={rs(10)} color={color} style={{ marginLeft: rs(1) }} />
     </View>
   );
 }
@@ -162,7 +163,7 @@ function ActionButton({
       {affordable ? (
         <>
           <Text style={[styles.actionText, { color: ink }]}>{cost}</Text>
-          <CoinIcon size={16} color={coinColor} />
+          <CoinIcon size={rs(16)} color={coinColor} />
         </>
       ) : (
         <PlayBadge
@@ -263,7 +264,7 @@ export default function VocabPlayView({
   const foundSlots = foundSize === "large" ? SLOTS_LARGE : SLOTS_COMPACT;
 
   return (
-    <View style={[styles.root, { paddingTop: topPad + 8, paddingBottom: bottomPad }]}>
+    <View style={[styles.root, { paddingTop: topPad + rs(8), paddingBottom: bottomPad }]}>
       {/* ── Top bar: close · timer · boost ×2 ───────────────────────────── */}
       <View style={styles.topBar}>
         <Pressable
@@ -273,7 +274,7 @@ export default function VocabPlayView({
           accessibilityLabel={pickLang(lang, { ru: "Закрыть", en: "Close", kk: "Жабу" })}
           style={({ pressed }) => [styles.close, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <Ionicons name="close" size={26} color={theme.text} />
+          <Ionicons name="close" size={rs(26)} color={theme.text} />
         </Pressable>
         <View pointerEvents="none" style={styles.timerSlot}>
           <Timer seconds={timeLeft} total={timeTotal} state={timerState} />
@@ -291,11 +292,11 @@ export default function VocabPlayView({
           >
             <Text style={[styles.boostText, { color: theme.text }]}>×2</Text>
             {extraTimeUsed ? (
-              <Ionicons name="checkmark" size={16} color={theme.text} />
+              <Ionicons name="checkmark" size={rs(16)} color={theme.text} />
             ) : canTime ? (
               <>
                 <Text style={[styles.boostText, { color: theme.text }]}>{EXTRA_TIME_COST}</Text>
-                <CoinIcon size={16} color={isDark ? theme.accent : theme.accentDeep} />
+                <CoinIcon size={rs(16)} color={isDark ? theme.accent : theme.accentDeep} />
               </>
             ) : (
               <PlayBadge color={theme.text} bg={ink(0.12)} />
@@ -305,7 +306,7 @@ export default function VocabPlayView({
       </View>
 
       {/* ── Word + characteristics ──────────────────────────────────────── */}
-      <View style={[styles.wordBlock, { marginTop: isActive ? 26 : 34 }]}>
+      <View style={[styles.wordBlock, { marginTop: isActive ? rs(26) : rs(34) }]}>
         <Text style={[styles.word, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>
           {word.word.toUpperCase()}
         </Text>
@@ -327,7 +328,7 @@ export default function VocabPlayView({
             style={[
               styles.countdownNum,
               { color: theme.text },
-              countdown === 0 && { fontSize: 64, lineHeight: 120, letterSpacing: -1.3 },
+              countdown === 0 && { fontSize: rs(64), lineHeight: rs(120), letterSpacing: rs(-1.3) },
             ]}
           >
             {countdown === 0 ? pickLang(lang, { ru: "СТАРТ", en: "START", kk: "СТАРТ" }) : countdown}
@@ -352,7 +353,7 @@ export default function VocabPlayView({
             ))}
           </View>
 
-          <View style={{ marginTop: 18 }}>
+          <View style={{ marginTop: rs(18) }}>
             <RecorderBar bars={bars} dim={paused} />
           </View>
 
@@ -382,7 +383,7 @@ export default function VocabPlayView({
                     { backgroundColor: theme.accent, opacity: pressed ? 0.8 : 1 },
                   ]}
                 >
-                  <Ionicons name="arrow-up" size={20} color={theme.accentText} />
+                  <Ionicons name="arrow-up" size={rs(20)} color={theme.accentText} />
                 </Pressable>
               </View>
             </View>
@@ -492,7 +493,7 @@ export default function VocabPlayView({
           </View>
 
           {/* ── Bottom actions ─────────────────────────────────────────── */}
-          <View style={[styles.actions, { marginTop: hintRevealed ? 37 : 44 }]}>
+          <View style={[styles.actions, { marginTop: hintRevealed ? rs(37) : rs(44) }]}>
             <ActionButton
               label={pickLang(lang, { ru: "Заменить", en: "Replace", kk: "Ауыстыру" })}
               cost={REPLACE_COST}
@@ -531,7 +532,7 @@ export default function VocabPlayView({
                 trailing: (
                   <>
                     <Text style={[styles.dlgCost, { color: theme.accentText }]}>{REPLACE_COST}</Text>
-                    <CoinIcon size={20} color={theme.accentText} />
+                    <CoinIcon size={rs(20)} color={theme.accentText} />
                   </>
                 ),
               }
@@ -542,7 +543,7 @@ export default function VocabPlayView({
                 trailing: (
                   <>
                     <Text style={[styles.dlgCost, { color: ink(0.6) }]}>{REPLACE_COST}</Text>
-                    <CoinIcon size={20} color={ink(0.6)} />
+                    <CoinIcon size={rs(20)} color={ink(0.6)} />
                   </>
                 ),
               },
@@ -551,7 +552,7 @@ export default function VocabPlayView({
         <View style={styles.costRow}>
           <Text style={[styles.costLabel, { color: ink(0.6) }]}>{pickLang(lang, { ru: "Замена стоит", en: "Replacing costs", kk: "Ауыстыру бағасы" })}</Text>
           <Text style={[styles.costNum, { color: ink(0.9) }]}>{REPLACE_COST}</Text>
-          <CoinIcon size={16} color={isDark ? theme.accent : theme.accentDeep} />
+          <CoinIcon size={rs(16)} color={isDark ? theme.accent : theme.accentDeep} />
         </View>
       </StageGlassDialog>
 

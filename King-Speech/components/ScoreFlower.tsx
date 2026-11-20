@@ -13,6 +13,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { pickLang, type Lang } from "@/context/LangContext";
+import { rs } from "@/lib/responsive";
 
 // ───────────────────────────────────────────────────────────────────────────
 // Canonical speech aspects. Every AI-analysis surface (reading, Show Time,
@@ -105,7 +106,7 @@ interface Props {
   size?: number;
 }
 
-export default function ScoreFlower({ overall, aspects, size = 320 }: Props) {
+export default function ScoreFlower({ overall, aspects, size = rs(320) }: Props) {
   const cx = size / 2;
   const cy = size / 2;
   const n = aspects.length;
@@ -302,7 +303,7 @@ function AspectLabel({
       pointerEvents="none"
       style={[st.labelBox, { width: box, left: x - box / 2, top: y - box * 0.42 }, style]}
     >
-      <Ionicons name={icon} size={13} color={tone} style={{ marginBottom: 1 }} />
+      <Ionicons name={icon} size={rs(13)} color={tone} style={{ marginBottom: rs(1) }} />
       <Text numberOfLines={2} style={st.labelText}>
         {label}
       </Text>

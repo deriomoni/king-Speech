@@ -20,9 +20,10 @@ import {
 } from "@/components/roles/RoleTarotCard";
 import { PlayTriangleIcon } from "@/components/showtime/ShowTimeIcons";
 import { getRoleScenario, lt } from "@/constants/roleScenarios";
+import { rs } from "@/lib/responsive";
 
 const { width: SW, height: SH } = Dimensions.get("window");
-const CARD_W = Math.round(Math.min(SW * 0.55, 240));
+const CARD_W = Math.round(Math.min(SW * 0.55, rs(240)));
 const PANEL = "#1C1C20";
 const PANEL_LINE = "rgba(255,255,255,0.08)";
 const TEXT = "#FFFFFF";
@@ -40,8 +41,8 @@ export default function RoleBriefScreen() {
   const [withCamera, setWithCamera] = useState(true);
   const [mode, setMode] = useState<RoleMode>("improv");
 
-  const topPad = Platform.OS === "web" ? 16 : insets.top + 4;
-  const bottomPad = (Platform.OS === "web" ? 16 : insets.bottom) + 10;
+  const topPad = Platform.OS === "web" ? rs(16) : insets.top + rs(4);
+  const bottomPad = (Platform.OS === "web" ? rs(16) : insets.bottom) + rs(10);
 
   if (!role) {
     return (
@@ -79,10 +80,10 @@ export default function RoleBriefScreen() {
 
       {/* Top bar */}
       <View style={[styles.topBar, { paddingTop: topPad }]}>
-        <View style={{ width: 40 }} />
+        <View style={{ width: rs(40) }} />
         <Text style={styles.kicker}>{pickLang(lang, { ru: "ТВОЯ РОЛЬ", en: "YOUR ROLE", kk: "СІЗДІҢ РӨЛІҢІЗ" })}</Text>
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.closeBtn}>
-          <Ionicons name="close" size={26} color={TEXT} />
+          <Ionicons name="close" size={rs(26)} color={TEXT} />
         </Pressable>
       </View>
 
@@ -102,7 +103,7 @@ export default function RoleBriefScreen() {
               <Text style={styles.panelLabel}>{pickLang(lang, { ru: "С КЕМ ТЫ ГОВОРИШЬ", en: "YOU'LL BE TALKING TO", kk: "КІММЕН СӨЙЛЕСЕСІЗ" })}</Text>
               <View style={styles.personaRow}>
                 <View style={styles.personaAvatar}>
-                  <Text style={{ fontSize: 24 }}>{scenario.persona.avatar}</Text>
+                  <Text style={{ fontSize: rs(24) }}>{scenario.persona.avatar}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.personaName}>{lt(scenario.persona.name, lang)}</Text>
@@ -203,7 +204,7 @@ function SegmentOption({
   const color = active ? ROLES_BG : "rgba(255,255,255,0.6)";
   return (
     <Pressable onPress={onPress} style={[styles.segOpt, active && styles.segOptOn]}>
-      <Ionicons name={icon} size={18} color={color} />
+      <Ionicons name={icon} size={rs(18)} color={color} />
       <Text style={[styles.segText, { color }]} numberOfLines={1}>{label}</Text>
     </Pressable>
   );
@@ -222,7 +223,7 @@ function ModePill({
 }) {
   return (
     <Pressable onPress={onPress} style={[styles.modePill, active && styles.modePillOn]}>
-      <Ionicons name={icon} size={13} color={active ? TEXT : MUTED} />
+      <Ionicons name={icon} size={rs(13)} color={active ? TEXT : MUTED} />
       <Text style={[styles.modeText, { color: active ? TEXT : MUTED }]}>{label}</Text>
     </Pressable>
   );

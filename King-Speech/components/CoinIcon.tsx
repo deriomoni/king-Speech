@@ -1,5 +1,6 @@
 import React from "react";
 import Svg, { Path } from "react-native-svg";
+import { rs } from "@/lib/responsive";
 
 /**
  * The King Speech coin — a filled disc with a cut-out emblem (even-odd path).
@@ -7,7 +8,7 @@ import Svg, { Path } from "react-native-svg";
  * whole mark so it adapts to light/dark surfaces.
  */
 export default function CoinIcon({
-  size = 16,
+  size = rs(16),
   color = "#000000",
   style,
 }: {

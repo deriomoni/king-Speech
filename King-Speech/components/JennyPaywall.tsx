@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 import RoundStar from "@/components/RoundStar";
+import { rs } from "@/lib/responsive";
 import type { Lang } from "@/context/LangContext";
 
 const jennyHero = require("@/assets/jenny/jenny_smiling.png");
@@ -97,23 +98,23 @@ export default function JennyPaywall({
       {onClose ? (
         <Pressable
           onPress={onClose}
-          style={[styles.closeBtn, { top: insets.top + 8 }]}
+          style={[styles.closeBtn, { top: insets.top + rs(8) }]}
           hitSlop={12}
           accessibilityRole="button"
         >
-          <Ionicons name="close" size={22} color="rgba(255,255,255,0.7)" />
+          <Ionicons name="close" size={rs(22)} color="rgba(255,255,255,0.7)" />
         </Pressable>
       ) : null}
 
-      <View style={[styles.content, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 20 }]}>
+      <View style={[styles.content, { paddingTop: insets.top + rs(24), paddingBottom: insets.bottom + rs(20) }]}>
         {/* Hero */}
-        <Animated.View entering={FadeIn.duration(400)} style={styles.heroWrap}>
+        <Animated.View entering={FadeIn.duration(400)} style={[styles.heroWrap, { height: SH * 0.26 }]}>
           <View style={styles.heroGlow} />
           <Image source={jennyHero} style={styles.hero} resizeMode="contain" />
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(80).duration(360)} style={styles.badge}>
-          <RoundStar size={13} color="#3A2A00" />
+          <RoundStar size={rs(13)} color="#3A2A00" />
           <Text style={styles.badgeText}>{c.badge}</Text>
         </Animated.View>
 
@@ -133,7 +134,7 @@ export default function JennyPaywall({
               style={styles.benefitRow}
             >
               <View style={styles.benefitIcon}>
-                <Ionicons name={b.icon} size={20} color={GOLD} />
+                <Ionicons name={b.icon} size={rs(20)} color={GOLD} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.benefitTitle}>{b.title}</Text>
@@ -180,7 +181,7 @@ const styles = StyleSheet.create({
   content: { flex: 1, paddingHorizontal: 24, alignItems: "center" },
   heroWrap: {
     width: "100%",
-    height: SH * 0.26,
+    // height is inline (window-derived — must not be auto-scaled again).
     alignItems: "center",
     justifyContent: "flex-end",
     marginBottom: 4,
