@@ -162,7 +162,8 @@ export default function ProfileSetupScreen() {
         {/* Continue button */}
         <Animated.View entering={FadeInDown.delay(320).duration(500)} style={s.btnWrap}>
           <PillButton
-            label={pickLang(lang, { ru: "Продолжить  →", en: "Continue  →", kk: "Жалғастыру  →" })}
+            label={pickLang(lang, { ru: "Продолжить", en: "Continue", kk: "Жалғастыру" })}
+            chevron
             variant={canContinue ? "primary" : "secondary"}
             onPress={handleContinue}
             disabled={!canContinue}

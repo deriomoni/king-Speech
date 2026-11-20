@@ -188,8 +188,8 @@ const STR = {
     kk: "King Speech-тің барлық сахнасын, тақырыбы мен талдауын ашыңыз",
   },
   currentPlan: { ru: "Текущий план", en: "Current plan", kk: "Қазіргі жоспар" },
-  goRoyal: { ru: "Стать Королём →", en: "Go Royal →", kk: "Патша болу →" },
-  goEmperor: { ru: "Стать Императором →", en: "Go Emperor →", kk: "Император болу →" },
+  goRoyal: { ru: "Стать Королём", en: "Go Royal", kk: "Патша болу" },
+  goEmperor: { ru: "Стать Императором", en: "Go Emperor", kk: "Император болу" },
   promoTitle: { ru: "Есть промокод?", en: "Have a promo code?", kk: "Промокодыңыз бар ма?" },
   promoPlaceholder: { ru: "Введите промокод", en: "Enter promo code", kk: "Промокодты енгізіңіз" },
   apply: { ru: "Применить", en: "Apply", kk: "Қолдану" },
@@ -484,6 +484,7 @@ export default function SubscriptionScreen() {
           <PlanWithTray
             card={royalCard}
             trayLabel={tr(STR.goRoyal)}
+            trayChevron
             trayLabelColor={GOLD}
             onTrayPress={() => showSoon()}
             trayStyle={{ backgroundColor: "#262628", borderWidth: 2, borderColor: "#666666" }}
@@ -491,6 +492,7 @@ export default function SubscriptionScreen() {
           <PlanWithTray
             card={emperorCard}
             trayLabel={tr(STR.goEmperor)}
+            trayChevron
             trayLabelColor={INK}
             onTrayPress={() => showSoon()}
             trayStyle={{ backgroundColor: GOLD, borderWidth: 4, borderColor: theme.ctaStroke, paddingBottom: 19 }}

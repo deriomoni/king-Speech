@@ -1,4 +1,5 @@
 // Building blocks of the «Подписка · планы» screen (Figma 132:167).
+import NextChevron from "@/components/NextChevron";
 import React from "react";
 import { View, Text, StyleSheet, Pressable, type ViewStyle } from "react-native";
 import { SvgXml } from "react-native-svg";
@@ -142,6 +143,7 @@ export function PlanWithTray({
   trayStyle,
   trayLabel,
   trayLabelColor,
+  trayChevron,
   onTrayPress,
   disabled,
 }: {
@@ -149,6 +151,8 @@ export function PlanWithTray({
   trayStyle: ViewStyle;
   trayLabel: string;
   trayLabelColor: string;
+  /** Trailing «>» after the tray label (upgrade CTAs). */
+  trayChevron?: boolean;
   onTrayPress?: () => void;
   disabled?: boolean;
 }) {
@@ -160,7 +164,10 @@ export function PlanWithTray({
         accessibilityRole="button"
         style={({ pressed }) => [s.tray, trayStyle, { opacity: pressed ? 0.85 : 1 }]}
       >
-        <Text style={[s.trayText, { color: trayLabelColor }]}>{trayLabel}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <Text style={[s.trayText, { color: trayLabelColor }]}>{trayLabel}</Text>
+          {trayChevron ? <NextChevron color={trayLabelColor} size={15} /> : null}
+        </View>
       </Pressable>
       <View style={{ zIndex: 1 }}>{card}</View>
     </View>

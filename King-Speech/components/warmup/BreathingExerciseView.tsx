@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import NextChevron from "@/components/NextChevron";
 import { View, Text, Pressable, StyleSheet, Platform, Dimensions } from "react-native";
 import Animated, {
   useSharedValue,
@@ -299,7 +300,7 @@ export default function BreathingExerciseView({
           </Pressable>
         ) : (
           <Pressable onPress={onComplete} hitSlop={8} style={styles.skip}>
-            <Text style={[styles.skipText, { color: colors.textMuted }]}>{pickLang(lang, { ru: "Пропустить →", en: "Skip →", kk: "Өткізіп жіберу →" })}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Text style={[styles.skipText, { color: colors.textMuted }]}>{pickLang(lang, { ru: "Пропустить", en: "Skip", kk: "Өткізіп жіберу" })}</Text><NextChevron color={colors.textMuted} size={12} /></View>
           </Pressable>
         )}
       </View>

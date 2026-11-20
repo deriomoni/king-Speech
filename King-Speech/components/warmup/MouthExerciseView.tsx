@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import NextChevron from "@/components/NextChevron";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import Animated, {
   FadeIn,
@@ -410,7 +411,7 @@ export default function MouthExerciseView({
           {/* Skip */}
           <View style={styles.footer}>
             <Pressable onPress={startIllustrated} hitSlop={8} style={styles.skip}>
-              <Text style={[styles.skipText, { color: colors.textMuted }]}>{pickLang(lang, { ru: "Пропустить →", en: "Skip →", kk: "Өткізіп жіберу →" })}</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Text style={[styles.skipText, { color: colors.textMuted }]}>{pickLang(lang, { ru: "Пропустить", en: "Skip", kk: "Өткізіп жіберу" })}</Text><NextChevron color={colors.textMuted} size={12} /></View>
             </Pressable>
           </View>
         </>

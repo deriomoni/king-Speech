@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import NextChevron from "@/components/NextChevron";
 import {
   BackHandler,
   Platform,
@@ -620,13 +621,14 @@ export default function ModuleTransitionOverlay({
 
         {/* Reward + CTA */}
         <Animated.View style={tailStyle}>
-          <View style={[styles.reward, { backgroundColor: `rgba(${ink},0.05)`, borderColor: `rgba(${ink},0.12)` }]}>
-            <GoldCoin size={26} />
-            <Text style={[styles.rewardValue, { color: theme.text }]}>+{MODULE_REWARD_COINS}</Text>
-            <Text style={[styles.rewardLabel, { color: `rgba(${ink},0.6)` }]}>
-              {pickLang(lang, { ru: "монет за модуль", en: "coins for the module", kk: "модуль үшін монета" })}
-            </Text>
-          </View>
+          <RewardNote
+            text={pickLang(lang, {
+              ru: `+${MODULE_REWARD_COINS} монет`,
+              en: `+${MODULE_REWARD_COINS} coins`,
+              kk: `+${MODULE_REWARD_COINS} монета`,
+            })}
+            color={theme.text}
+          />
 
           <Pressable
             onPress={proceed}
@@ -639,9 +641,12 @@ export default function ModuleTransitionOverlay({
               },
             ]}
           >
-            <Text style={[styles.ctaText, { color: theme.accentText }]}>
-              {pickLang(lang, { ru: `К модулю ${to} →`, en: `To module ${to} →`, kk: `${to}-модульге →` })}
-            </Text>
+            <View style={styles.ctaRow}>
+              <Text style={[styles.ctaText, { color: theme.accentText }]}>
+                {pickLang(lang, { ru: `К модулю ${to}`, en: `To module ${to}`, kk: `${to}-модульге` })}
+              </Text>
+              <NextChevron color={theme.accentText} size={17} />
+            </View>
           </Pressable>
         </Animated.View>
       </View>
@@ -678,6 +683,22 @@ export default function ModuleTransitionOverlay({
   );
 }
 
+/** Plain «+50 монет» line (no box) that fades out after 5 s; keeps its height
+ *  so the CTA below doesn't jump. */
+function RewardNote({ text, color }: { text: string; color: string }) {
+  const op = useSharedValue(1);
+  useEffect(() => {
+    op.value = withDelay(5000, withTiming(0, { duration: 700 }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const st = useAnimatedStyle(() => ({ opacity: op.value }));
+  return (
+    <View style={styles.reward}>
+      <Animated.Text style={[styles.rewardValue, { color }, st]}>{text}</Animated.Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, elevation: 30 },
   title: {
@@ -698,12 +719,8 @@ const styles = StyleSheet.create({
   stage: { flex: 1, marginHorizontal: -28, marginTop: 8, marginBottom: 40 },
   reward: {
     height: 58,
-    borderRadius: 22,
-    borderWidth: 1.5,
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
   },
   rewardValue: { fontFamily: "Geologica_900Black", fontSize: 20, letterSpacing: -0.1 },
   rewardLabel: { fontFamily: "Geologica_700Bold", fontSize: 14 },
@@ -716,6 +733,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   ctaText: { fontFamily: "Geologica_900Black", fontSize: 18, letterSpacing: -0.09 },
+  ctaRow: { flexDirection: "row", alignItems: "center", gap: 9, paddingHorizontal: 24 },
   pill: {
     flex: 1,
     flexDirection: "row",

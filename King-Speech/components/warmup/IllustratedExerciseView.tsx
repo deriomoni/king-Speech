@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import NextChevron from "@/components/NextChevron";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { SvgXml } from "react-native-svg";
@@ -193,7 +194,7 @@ export default function IllustratedExerciseView({ exercise, topPad, onDone, onSk
 
       <View style={styles.footer}>
         <Pressable onPress={onSkip} hitSlop={8} style={styles.skip}>
-          <Text style={[styles.skipText, { color: theme.textMuted }]}>{pickLang(lang, { ru: "Пропустить →", en: "Skip →", kk: "Өткізіп жіберу →" })}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Text style={[styles.skipText, { color: theme.textMuted }]}>{pickLang(lang, { ru: "Пропустить", en: "Skip", kk: "Өткізіп жіберу" })}</Text><NextChevron color={theme.textMuted} size={12} /></View>
         </Pressable>
       </View>
     </View>

@@ -1,4 +1,5 @@
 import React from "react";
+import NextChevron from "@/components/NextChevron";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SvgXml } from "react-native-svg";
@@ -57,7 +58,7 @@ export default function ProPromoCard({
         ]}
       >
         <Text style={styles.btnTxt}>{pickLang(lang, { ru: "Улучшить", en: "Upgrade", kk: "Жаңарту" })}</Text>
-        <Text style={styles.btnTxt}>→</Text>
+        <NextChevron color="#262628" size={14} />
       </Pressable>
 
       <View style={styles.innerHighlight} pointerEvents="none" />
@@ -124,8 +125,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 20,
     top: 86,
-    width: 132,
+    minWidth: 132,
     height: 44,
+    paddingHorizontal: 18,
     borderRadius: 32,
     borderWidth: 4,
     flexDirection: "row",

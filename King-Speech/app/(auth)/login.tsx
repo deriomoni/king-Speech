@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import NextChevron from "@/components/NextChevron";
 import {
   View,
   Text,
@@ -181,9 +182,12 @@ export default function LoginScreen() {
         disabled={busy !== null}
         hitSlop={10}
       >
-        <Text style={[s.skipBtnTxt, { color: "#333234" }]}>
-          {pickLang(lang, { ru: "Продолжить без входа  →", en: "Continue without signing in  →", kk: "Кірмей жалғастыру  →" })}
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Text style={[s.skipBtnTxt, { color: "#333234" }]}>
+            {pickLang(lang, { ru: "Продолжить без входа", en: "Continue without signing in", kk: "Кірмей жалғастыру" })}
+          </Text>
+          <NextChevron color="#333234" size={13} />
+        </View>
       </Pressable>
     </View>
   );

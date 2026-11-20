@@ -162,7 +162,8 @@ export default function OnboardingScreen() {
       {/* Navigation */}
       <Animated.View entering={FadeIn.delay(200)} style={s.nav}>
         <PillButton
-          label={isLast ? pickLang(lang, { ru: "Погнали!", en: "Let's go!", kk: "Кеттік!" }) : pickLang(lang, { ru: "Далее  →", en: "Next  →", kk: "Келесі  →" })}
+          label={isLast ? pickLang(lang, { ru: "Погнали!", en: "Let's go!", kk: "Кеттік!" }) : pickLang(lang, { ru: "Далее", en: "Next", kk: "Келесі" })}
+          chevron={!isLast}
           onPress={goNext}
         />
       </Animated.View>

@@ -1,4 +1,5 @@
 import React from "react";
+import NextChevron from "@/components/NextChevron";
 import {
   ActivityIndicator,
   Pressable,
@@ -43,11 +44,13 @@ interface PillProps {
   disabled?: boolean;
   busy?: boolean;
   left?: React.ReactNode;
+  /** Trailing «>» (NextChevron) in the label colour. */
+  chevron?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
 /** 60pt pill button: gold primary with the 4px CTA stroke, or the muted "button/secondary". */
-export function PillButton({ label, onPress, variant = "primary", disabled, busy, left, style }: PillProps) {
+export function PillButton({ label, onPress, variant = "primary", disabled, busy, left, chevron, style }: PillProps) {
   const { theme } = useTheme();
   const dark = theme.mode === "dark";
   let box: ViewStyle;
@@ -71,6 +74,7 @@ export function PillButton({ label, onPress, variant = "primary", disabled, busy
     >
       {left}
       <Text style={[s.pillTxt, { color }]}>{label}</Text>
+      {chevron ? <NextChevron color={color} size={15} /> : null}
       {busy ? (
         <View style={s.busy}>
           <ActivityIndicator size="small" color={color} />

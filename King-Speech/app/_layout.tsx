@@ -34,6 +34,7 @@ import Animated, {
   FadeIn,
 } from "react-native-reanimated";
 import { BrandSplash } from "@/components/BrandSplash";
+import { IS_TABLET, PHONE_FRAME_W } from "@/lib/tabletFrame";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
 import { GameProvider, useGame } from "@/context/GameContext";
@@ -64,6 +65,10 @@ function useBlockHardwareBack() {
 /** Levels and other full-screen exercises enter AND leave with a soft cross-fade
  *  (owner: no abrupt slides when leaving a level for any other screen). */
 const SOFT_FADE = { animation: "fade" as const, animationDuration: 380 };
+/** On tablets the app lives in a phone-width column (lib/tabletFrame); a native
+ *  full-screen modal would escape it and stretch to the whole iPad, so there
+ *  the same screens are presented contained in the column. */
+const FULL_MODAL = IS_TABLET ? ("containedModal" as const) : ("fullScreenModal" as const);
 
 function RootLayoutNav() {
   const { themeMode, theme } = useTheme();
@@ -91,27 +96,27 @@ function RootLayoutNav() {
       <Stack.Screen name="level/[id]" options={{ headerShown: false, ...SOFT_FADE }} />
       <Stack.Screen
         name="vocabulary-level"
-        options={{ headerShown: false, presentation: "fullScreenModal", ...SOFT_FADE }}
+        options={{ headerShown: false, presentation: FULL_MODAL, ...SOFT_FADE }}
       />
       <Stack.Screen
         name="showtime-stage"
-        options={{ headerShown: false, presentation: "fullScreenModal", ...SOFT_FADE }}
+        options={{ headerShown: false, presentation: FULL_MODAL, ...SOFT_FADE }}
       />
       <Stack.Screen
         name="showtime-playback"
-        options={{ headerShown: false, presentation: "fullScreenModal", ...SOFT_FADE }}
+        options={{ headerShown: false, presentation: FULL_MODAL, ...SOFT_FADE }}
       />
       <Stack.Screen
         name="portal-interview"
-        options={{ headerShown: false, presentation: "fullScreenModal", ...SOFT_FADE }}
+        options={{ headerShown: false, presentation: FULL_MODAL, ...SOFT_FADE }}
       />
       <Stack.Screen
         name="rank-up"
-        options={{ headerShown: false, presentation: "fullScreenModal", gestureEnabled: false, ...SOFT_FADE }}
+        options={{ headerShown: false, presentation: FULL_MODAL, gestureEnabled: false, ...SOFT_FADE }}
       />
       <Stack.Screen
         name="worlds"
-        options={{ headerShown: false, presentation: "fullScreenModal" }}
+        options={{ headerShown: false, presentation: FULL_MODAL }}
       />
       <Stack.Screen
         name="world/[id]"
@@ -135,17 +140,17 @@ function RootLayoutNav() {
       />
       <Stack.Screen
         name="diary-record"
-        options={{ headerShown: false, presentation: "fullScreenModal", gestureEnabled: false, ...SOFT_FADE }}
+        options={{ headerShown: false, presentation: FULL_MODAL, gestureEnabled: false, ...SOFT_FADE }}
       />
       <Stack.Screen
         name="role-stage"
-        options={{ headerShown: false, presentation: "fullScreenModal", ...SOFT_FADE }}
+        options={{ headerShown: false, presentation: FULL_MODAL, ...SOFT_FADE }}
       />
       <Stack.Screen
         name="role-result"
         options={{
           headerShown: false,
-          presentation: "fullScreenModal",
+          presentation: FULL_MODAL,
           // The stage replaces itself with this screen. With the default modal
           // transition that means "dismiss, show the level underneath, present
           // again" — a jarring bounce back to the level. A cross-fade keeps the
@@ -238,7 +243,20 @@ function ReadinessGate({
 /** Gesture root painted with the theme background (no white behind screens). */
 function ThemedRoot({ children }: { children: React.ReactNode }) {
   const { theme } = useTheme();
-  return <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.bg }}>{children}</GestureHandlerRootView>;
+  return (
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.bg }}>
+      {IS_TABLET ? (
+        // Tablet: the whole app in a centred phone-width column (lib/tabletFrame).
+        <View style={{ flex: 1, alignItems: "center", backgroundColor: theme.bg }}>
+          <View style={{ flex: 1, width: PHONE_FRAME_W, overflow: "hidden", backgroundColor: theme.bg }}>
+            {children}
+          </View>
+        </View>
+      ) : (
+        children
+      )}
+    </GestureHandlerRootView>
+  );
 }
 
 export default function RootLayout() {
