@@ -154,11 +154,7 @@ function ActionButton({
         styles.action,
         gold
           ? { backgroundColor: theme.accent, borderColor: theme.ctaStroke, borderWidth: 4 }
-          : {
-              backgroundColor: "rgba(113,98,80,0.13)",
-              borderColor: isDark ? "#312C24" : "rgba(49,44,36,0.16)",
-              borderWidth: 2,
-            },
+          : { backgroundColor: theme.btnSecondary },
         { opacity: pressed ? 0.8 : 1 },
       ]}
     >

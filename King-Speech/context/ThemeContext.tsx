@@ -37,6 +37,9 @@ export const DARK = {
   // The thick amber rim around gold buttons was removed (user: too harsh). Kept as a
   // transparent border so button sizes don't shift.
   ctaStroke: "transparent",
+  // Secondary button: neutral graphite (was the Figma brown #716250 — owner: looked bad).
+  btnSecondary: "#3A3A3E",
+  btnSecondaryText: "#F0EEE9",
   cta: brandColors.gold,
   ctaText: brandColors.onGold,
   yellow: brandColors.gold,
@@ -91,6 +94,8 @@ export const LIGHT = {
   accentDim: "rgba(255,216,87,0.30)",
   accentGlow: "rgba(255,216,87,0.30)",
   ctaStroke: "transparent",
+  btnSecondary: "rgba(38,38,40,0.08)",
+  btnSecondaryText: "#262628",
   cta: brandColors.gold,
   ctaText: brandColors.onGold,
   yellow: brandColors.gold,

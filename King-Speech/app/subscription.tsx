@@ -472,11 +472,9 @@ export default function SubscriptionScreen() {
             card={freeCard}
             disabled
             trayLabel={tr(STR.currentPlan)}
-            trayLabelColor="#FFFFFF"
+            trayLabelColor={theme.btnSecondaryText}
             trayStyle={{
-              backgroundColor: isDark ? "rgba(208,187,159,0.62)" : "#8F8272",
-              borderWidth: 2,
-              borderColor: "#312C24",
+              backgroundColor: theme.btnSecondary,
               shadowColor: "#000",
               shadowOpacity: 0.25,
               shadowRadius: 4,
@@ -513,9 +511,9 @@ export default function SubscriptionScreen() {
           />
           <Pressable
             onPress={() => showSoon(tr(STR.soonTitle), tr(STR.soonPromo))}
-            style={({ pressed }) => [styles.applyBtn, { opacity: pressed ? 0.85 : 1 }]}
+            style={({ pressed }) => [styles.applyBtn, { backgroundColor: theme.btnSecondary, opacity: pressed ? 0.85 : 1 }]}
           >
-            <Text style={styles.applyText}>{tr(STR.apply)}</Text>
+            <Text style={[styles.applyText, { color: theme.btnSecondaryText }]}>{tr(STR.apply)}</Text>
           </Pressable>
         </View>
 
@@ -574,9 +572,9 @@ export default function SubscriptionScreen() {
               // TODO(design): open the support chat / mail once a support channel exists.
               showSoon(tr(STR.soonTitle), tr(STR.soonSupport));
             }}
-            style={({ pressed }) => [styles.writeBtn, { opacity: pressed ? 0.85 : 1 }]}
+            style={({ pressed }) => [styles.writeBtn, { backgroundColor: theme.btnSecondary, opacity: pressed ? 0.85 : 1 }]}
           >
-            <Text style={styles.writeText}>{tr(STR.write)}</Text>
+            <Text style={[styles.writeText, { color: theme.btnSecondaryText }]}>{tr(STR.write)}</Text>
           </Pressable>
         </View>
 
@@ -678,9 +676,6 @@ const styles = StyleSheet.create({
     width: 116,
     height: 44,
     borderRadius: 32,
-    backgroundColor: "#716250",
-    borderWidth: 2,
-    borderColor: "#312C24",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -707,9 +702,6 @@ const styles = StyleSheet.create({
     height: 40,
     paddingHorizontal: 14,
     borderRadius: 32,
-    backgroundColor: "#716250",
-    borderWidth: 2,
-    borderColor: "#312C24",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 1,

@@ -75,7 +75,6 @@ interface Props {
 
 const SPEEDS = [1, 1.25, 1.5, 0.75] as const;
 const SPEED_LABELS = ["1×", "1.25×", "1.5×", "0.75×"] as const;
-const SKIP_SEC = 5;
 
 // ── One player for the take (web: HTMLAudioElement, native: expo-av) ─────────
 function useTakePlayer(uri: string, fallbackDur: number, onEnded: () => void) {
@@ -222,37 +221,6 @@ function fmtClock(sec: number, pad = false): string {
   const s = Math.max(0, Math.round(sec));
   const m = Math.floor(s / 60);
   return `${pad ? String(m).padStart(2, "0") : m}:${String(s % 60).padStart(2, "0")}`;
-}
-
-// Figma 312:4527 controls — the two circular skip arrows (24pt, 2.4 stroke).
-function SkipIcon({ dir, color }: { dir: "back" | "fwd"; color: string }) {
-  return (
-    <Svg width={26} height={32} viewBox={dir === "back" ? "39 13 26 33" : "195 13 26 33"}>
-      {dir === "back" ? (
-        <>
-          <Path
-            d="M58 22C55.6971 20.6723 53.0184 20.1469 50.3846 20.5062C47.7507 20.8655 45.3107 22.0892 43.4475 23.9852C41.5844 25.8811 40.4034 28.3421 40.0902 30.9818C39.7769 33.6216 40.349 36.2906 41.7166 38.57C43.0843 40.8495 45.1701 42.6102 47.6467 43.576C50.1233 44.5418 52.8505 44.658 55.4002 43.9062C57.9499 43.1544 60.1779 41.5773 61.7343 39.4224C63.2908 37.2675 64.0877 34.6568 64 32"
-            stroke={color}
-            strokeWidth={2.4}
-            strokeLinecap="round"
-            fill="none"
-          />
-          <Path d="M58 15V23H50" stroke={color} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-        </>
-      ) : (
-        <>
-          <Path
-            d="M202 22C204.303 20.6723 206.982 20.1469 209.615 20.5062C212.249 20.8655 214.689 22.0892 216.552 23.9852C218.416 25.8811 219.597 28.3421 219.91 30.9818C220.223 33.6216 219.651 36.2906 218.283 38.57C216.916 40.8495 214.83 42.6102 212.353 43.576C209.877 44.5418 207.15 44.658 204.6 43.9062C202.05 43.1544 199.822 41.5773 198.266 39.4224C196.709 37.2675 195.912 34.6568 196 32"
-            stroke={color}
-            strokeWidth={2.4}
-            strokeLinecap="round"
-            fill="none"
-          />
-          <Path d="M202 15V23H210" stroke={color} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-        </>
-      )}
-    </Svg>
-  );
 }
 
 function SelfStar({
@@ -522,15 +490,15 @@ export default function ReadingResultsView({
               <Pressable
                 onPress={() => canSave && onSave(selfRating, true)}
                 disabled={!canSave}
-                style={({ pressed }) => [st.secondaryBtn, st.yesNoBtn, { opacity: !canSave ? 0.5 : pressed ? 0.85 : 1 }]}
+                style={({ pressed }) => [st.secondaryBtn, st.yesNoBtn, { backgroundColor: theme.btnSecondary }, { opacity: !canSave ? 0.5 : pressed ? 0.85 : 1 }]}
               >
-                <Text style={st.yesNoText}>{pickLang(lang, { ru: "Да", en: "Yes", kk: "Иә" })}</Text>
+                <Text style={[st.yesNoText, { color: theme.btnSecondaryText }]}>{pickLang(lang, { ru: "Да", en: "Yes", kk: "Иә" })}</Text>
               </Pressable>
               <Pressable
                 onPress={() => setShowSavePrompt(false)}
-                style={({ pressed }) => [st.secondaryBtn, st.yesNoBtn, { opacity: pressed ? 0.85 : 1 }]}
+                style={({ pressed }) => [st.secondaryBtn, st.yesNoBtn, { backgroundColor: theme.btnSecondary }, { opacity: pressed ? 0.85 : 1 }]}
               >
-                <Text style={st.yesNoText}>{pickLang(lang, { ru: "Нет", en: "No", kk: "Жоқ" })}</Text>
+                <Text style={[st.yesNoText, { color: theme.btnSecondaryText }]}>{pickLang(lang, { ru: "Нет", en: "No", kk: "Жоқ" })}</Text>
               </Pressable>
             </View>
           </Animated.View>
@@ -541,10 +509,10 @@ export default function ReadingResultsView({
           <Pressable
             onPress={onRetry}
             disabled={saving}
-            style={({ pressed }) => [st.secondaryBtn, st.retryBtn, { opacity: pressed ? 0.85 : 1 }]}
+            style={({ pressed }) => [st.secondaryBtn, st.retryBtn, { backgroundColor: theme.btnSecondary }, { opacity: pressed ? 0.85 : 1 }]}
           >
-            <Ionicons name="refresh" size={16} color="#FFFFFF" />
-            <Text style={st.retryText}>{t("replay")}</Text>
+            <Ionicons name="refresh" size={16} color={theme.btnSecondaryText} />
+            <Text style={[st.retryText, { color: theme.btnSecondaryText }]}>{t("replay")}</Text>
           </Pressable>
           <Pressable
             onPress={() => canSave && onSave(selfRating, false)}
@@ -810,16 +778,6 @@ function ListenStage({
 
         <View style={st.lsControls}>
           <Pressable
-            onPress={() => player.seek(player.pos - SKIP_SEC)}
-            disabled={!hasAudio}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel={pickLang(lang, { ru: "Назад на 5 секунд", en: "Back 5 seconds", kk: "5 секунд артқа" })}
-            style={({ pressed }) => ({ opacity: !hasAudio ? 0.4 : pressed ? 0.6 : 1 })}
-          >
-            <SkipIcon dir="back" color={ink} />
-          </Pressable>
-          <Pressable
             onPress={player.toggle}
             disabled={!hasAudio}
             accessibilityRole="button"
@@ -837,16 +795,6 @@ function ListenStage({
             ) : (
               <Ionicons name="play" size={26} color={bg} style={{ marginLeft: 4 }} />
             )}
-          </Pressable>
-          <Pressable
-            onPress={() => player.seek(player.pos + SKIP_SEC)}
-            disabled={!hasAudio}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel={pickLang(lang, { ru: "Вперёд на 5 секунд", en: "Forward 5 seconds", kk: "5 секунд алға" })}
-            style={({ pressed }) => ({ opacity: !hasAudio ? 0.4 : pressed ? 0.6 : 1 })}
-          >
-            <SkipIcon dir="fwd" color={ink} />
           </Pressable>
           <Pressable onPress={player.cycleSpeed} hitSlop={10} style={st.lsSpeed}>
             <Text style={[st.lsSpeedText, { color: readingInk(dark, 0.6) }]}>{player.speedLabel}</Text>
@@ -869,8 +817,6 @@ function ListenStage({
   );
 }
 
-const SECONDARY_BG = "#716250"; // Figma button/secondary
-const SECONDARY_STROKE = "#312C24"; // Figma button/stroke
 
 const st = StyleSheet.create({
   container: { flex: 1 },
@@ -908,7 +854,7 @@ const st = StyleSheet.create({
   savePrompt: { marginTop: 18, paddingTop: 16, paddingBottom: 16, gap: 14, alignItems: "center" },
   savePromptText: { fontFamily: "Geologica_600SemiBold", fontSize: 15.5, textAlign: "center" },
   savePromptBtns: { flexDirection: "row", gap: 12, justifyContent: "center" },
-  secondaryBtn: { backgroundColor: SECONDARY_BG, borderColor: SECONDARY_STROKE, borderWidth: 2 },
+  secondaryBtn: {},
   yesNoBtn: { width: 100, height: 42, borderRadius: 32, alignItems: "center", justifyContent: "center" },
   yesNoText: { fontFamily: "Geologica_600SemiBold", fontSize: 15, color: "#FFFFFF" },
   actions: { flexDirection: "row", gap: 12, marginTop: 20 },

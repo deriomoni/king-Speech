@@ -56,9 +56,9 @@ export function PillButton({ label, onPress, variant = "primary", disabled, busy
     box = { backgroundColor: theme.accent, borderWidth: 4, borderColor: theme.ctaStroke };
     color = theme.accentText;
   } else if (variant === "secondaryOnGold" || dark) {
-    // Figma button/secondary (#716250 @ ~12%) with button/stroke #312C24, white ink.
-    box = { backgroundColor: "rgba(113,98,80,0.12)", borderWidth: 2, borderColor: "#312C24" };
-    color = "#FFFFFF";
+    // Secondary: neutral graphite (replaced the Figma brown #716250).
+    box = { backgroundColor: theme.btnSecondary };
+    color = theme.btnSecondaryText;
   } else {
     box = { backgroundColor: "rgba(38,38,40,0.05)", borderWidth: 2, borderColor: "rgba(38,38,40,0.14)" };
     color = "rgba(38,38,40,0.45)";
