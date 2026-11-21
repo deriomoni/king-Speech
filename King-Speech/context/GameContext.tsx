@@ -13,6 +13,7 @@ import { useLang, type Lang } from "@/context/LangContext";
 import { useDevTools } from "@/context/DevToolsContext";
 import { auth as fbAuth, db as fbDb, firebaseConfigured } from "@/lib/firebase";
 import { registerGameResetter } from "@/lib/gameResetRegistry";
+import { resetMannersProgress } from "@/lib/mannersProgress";
 import { colors as brandColors, LEVEL_PALETTE_ORDER, darkenHex } from "@/theme/tokens";
 
 export type LevelType = string;
@@ -924,6 +925,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setPortalCompleted({});
       setReadingRecordings([]);
       setActivityLog([]);
+      resetMannersProgress();
       try {
         await Promise.all([
           AsyncStorage.setItem(ACTIVITY_KEY, JSON.stringify([])),

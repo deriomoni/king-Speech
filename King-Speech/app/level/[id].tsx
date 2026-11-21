@@ -13,7 +13,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
 import { leaveTo } from "@/lib/nav";
-import { ROLES, tx as roleTx } from "@/constants/rolesData";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -642,23 +641,6 @@ export default function LevelScreen() {
   const hasNext = !!nextLevel;
   const bestScore = scores.length > 0 ? Math.max(...scores) : 0;
 
-  // Bonus role — deterministically surfaced on a subset of «Путь» levels to add
-  // variety. Same level always maps to the same role/mode; ~1 in 3 levels show one.
-  const roleBonus = React.useMemo(() => {
-    let h = 0;
-    for (let i = 0; i < levelId.length; i++) h = (h * 31 + levelId.charCodeAt(i)) >>> 0;
-    if (h % 3 !== 0) return null;
-    const role = ROLES[h % ROLES.length];
-    const mode = h % 2 === 0 ? "scripted" : "improv";
-    return {
-      emoji: role.emoji,
-      title: roleTx(role.title, lang),
-      onPlay: () => {
-        setShowLevelComplete(false);
-        router.push({ pathname: "/role-stage", params: { roleId: role.id, mode } });
-      },
-    };
-  }, [levelId, lang]);
 
   const handleLevelCompleteNext = React.useCallback(() => {
     // Keep the opaque victory widget up until navigation swaps the screen —
@@ -1186,7 +1168,6 @@ export default function LevelScreen() {
           colors={colors}
           isDark={isDark}
           t={t}
-          roleBonus={roleBonus}
         />
         <AppDialog
           visible={allDoneOpen}
@@ -1287,7 +1268,6 @@ export default function LevelScreen() {
           colors={colors}
           isDark={isDark}
           t={t}
-          roleBonus={roleBonus}
         />
         <AppDialog
           visible={allDoneOpen}
@@ -1432,7 +1412,6 @@ export default function LevelScreen() {
         colors={colors}
         isDark={colorScheme === "dark"}
         t={t}
-        roleBonus={roleBonus}
       />
       <AppDialog
         visible={allDoneOpen}

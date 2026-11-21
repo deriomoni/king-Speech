@@ -101,28 +101,3 @@ export function PlayTriangleIcon({ color, scale = 1 }: IconProps & { scale?: num
   );
 }
 
-// Theatre-mask mark (the user's Roles logo, Figma icon/roles-mask), viewBox 0 0 226 307.
-export const ROLES_MASK_PATH =
-  "M139.222 0V307C101.166 306.825 60.5922 290.874 36.7222 262C36.7222 262 0.722253 226.418 0.222241 168.709C-0.277771 111 0.222203 0 0.222203 0H139.222ZM106.409 103.131H53.3152C53.3152 96.1586 54.6885 89.2546 57.3568 82.813C60.025 76.3714 63.9359 70.5184 68.8661 65.5882C73.7964 60.6581 79.6494 56.7473 86.0911 54.0792C92.5328 51.4111 99.4369 50.0379 106.409 50.038V103.131ZM139.222 166.869H53.3152C53.3152 189.653 62.3661 211.504 78.4768 227.614C94.5875 243.725 116.438 252.776 139.222 252.776V166.869ZM172.035 103.131H225.129C225.129 96.1586 223.756 89.2546 221.088 82.813C218.419 76.3714 214.509 70.5184 209.578 65.5882C204.648 60.6581 198.795 56.7473 192.353 54.0792C185.912 51.4111 179.008 50.0379 172.035 50.038V103.131ZM139.222 166.869H225.129C225.129 178.15 222.907 189.321 218.59 199.744C214.273 210.167 207.945 219.637 199.968 227.614C191.99 235.592 182.52 241.919 172.097 246.237C161.675 250.554 150.504 252.776 139.222 252.776V166.869Z";
-
-export function RolesMaskIcon({
-  color,
-  width = rs(27),
-  height = rs(36),
-  outline,
-}: IconProps & { width?: number; height?: number; outline?: { color: string; width: number } }) {
-  // An outlined copy keeps the stroke weight in screen points regardless of scale.
-  const k = 226 / width;
-  return (
-    <Svg width={width} height={height} viewBox="0 0 226 307">
-      <Path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d={ROLES_MASK_PATH}
-        fill={outline ? "none" : color}
-        stroke={outline ? outline.color : undefined}
-        strokeWidth={outline ? outline.width * k : undefined}
-      />
-    </Svg>
-  );
-}

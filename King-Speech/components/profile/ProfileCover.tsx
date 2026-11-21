@@ -2,7 +2,7 @@ import React, { useId, useState } from "react";
 import { View, type LayoutChangeEvent } from "react-native";
 import Svg, { ClipPath, Defs, G, Image as SvgImage, LinearGradient, Stop, Path } from "react-native-svg";
 import { coverPatternById } from "./coverPatterns";
-import { CROWN_PATH } from "@/components/roles/RoleTarotCard";
+import { CROWN_PATH } from "@/constants/crownPath";
 import { UI_SCALE } from "@/lib/responsive";
 
 // Figma "Cover photo" (vector 377:1127) — neutral card banner with a circular

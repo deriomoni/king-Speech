@@ -206,7 +206,6 @@ export interface LevelCompleteModalProps {
   isDark?: boolean;
   t: (key: any) => string;
   lang: Lang;
-  roleBonus?: { emoji: string; title: string; onPlay: () => void } | null;
 }
 
 export default function LevelCompleteModal(props: LevelCompleteModalProps) {

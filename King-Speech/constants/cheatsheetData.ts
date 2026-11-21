@@ -118,7 +118,15 @@ export interface FinalStep {
   mantra: Loc;
 }
 
+/** One «Королевские манеры» situation question (rule picked at run time). */
+export interface MannersStep {
+  kind: "manners";
+  id: string;
+  block: BlockKind;
+}
+
 export type CheatStep =
+  | MannersStep
   | BreathingStep
   | ActionStep
   | ArticulationStep
@@ -513,6 +521,8 @@ export interface CheatRoute {
   steps: CheatStep[];
 }
 
+const mannersStep: MannersStep = { kind: "manners", id: "manners", block: "tip" };
+
 export const ROUTES: CheatRoute[] = [
   {
     id: "warmup",
@@ -547,6 +557,7 @@ export const ROUTES: CheatRoute[] = [
       twSasha,
       fixVoice,
       twGreki, tipMistakesOk,
+      mannersStep,
       finalStep,
     ],
   },
@@ -575,6 +586,7 @@ export const ROUTES: CheatRoute[] = [
       twKlara,
       fixVoice,
       twKopyt, tipMistakesOk,
+      mannersStep,
       finalStep,
     ],
   },
@@ -614,6 +626,7 @@ export const ROUTES: CheatRoute[] = [
       twCherti, tipShine,
       fixVoice,
       twKolpak, tipMistakesOk,
+      mannersStep,
       finalStep,
     ],
   },

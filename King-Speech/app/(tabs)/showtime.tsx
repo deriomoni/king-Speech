@@ -401,13 +401,13 @@ export default function ShowTimeScreen() {
             style={st.backing}
             pointerEvents="none"
           />
-          {/* Modes · bento (380:1122): «Роли» + «Подсказки» */}
+          {/* Modes · bento (380:1122): «Королевские манеры» + «Подсказки» */}
           <View style={st.backingInner}>
             <EdgeScale>
             <ShowTimeModeTiles
               mode={isLight ? "light" : "dark"}
               lang={lang}
-              onRoles={() => router.push("/roles")}
+              onManners={() => router.push("/manners")}
               onHints={() => router.push("/speaker-tips")}
             />
             </EdgeScale>

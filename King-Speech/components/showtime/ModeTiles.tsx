@@ -1,5 +1,6 @@
 // Figma "Modes · bento" (380:1122) on Screen / 03b · Show Time — full:
-// two glossy tiles, «Роли» (382:1134) and «Подсказки» (382:1147), 236 pt tall,
+// two glossy tiles, «Королевские манеры» (was «Роли», 382:1134) and
+// «Подсказки» (382:1147), 236 pt tall,
 // radius 28, sitting on the dark backing under the top plate. Same glossy look
 // as the Profile tiles (components/profile/GlossTile.tsx): dark = black
 // vertical gradient + 1 pt gradient hairline + white spotlight at 10 %;
@@ -7,9 +8,9 @@
 import React from "react";
 import { View, Text, StyleSheet, Pressable, Platform } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Defs, RadialGradient, Stop, Circle } from "react-native-svg";
+import Svg, { Defs, RadialGradient, Stop, Circle, Path } from "react-native-svg";
 import * as Haptics from "@/lib/haptics";
-import { RolesMaskIcon } from "./ShowTimeIcons";
+import { CROWN_PATH } from "@/constants/crownPath";
 import { rs } from "@/lib/responsive";
 import { pickLang, type Lang } from "@/context/LangContext";
 
@@ -65,9 +66,12 @@ function ModeTile({
   idSuffix,
   onPress,
   children,
+  titleLines = 1,
 }: {
   mode: Mode;
   title: string;
+  /** Two-line titles sit one line higher so the subtitle keeps its place. */
+  titleLines?: 1 | 2;
   sub: string;
   /** Spotlight ellipse left edge in tile coords (Figma). */
   spotX: number;
@@ -118,7 +122,7 @@ function ModeTile({
             <Circle cx={rs(SPOT) / 2} cy={rs(SPOT) / 2} r={rs(SPOT) / 2} fill={`url(#${gradId})`} />
           </Svg>
           {children}
-          <Text numberOfLines={1} style={[styles.title, { color: look.ink }]}>
+          <Text numberOfLines={titleLines} style={[styles.title, { color: look.ink }, titleLines === 2 && { top: rs(142), right: rs(6), fontSize: rs(17), lineHeight: rs(22) }]}>
             {title}
           </Text>
           <Text numberOfLines={2} style={[styles.sub, { color: look.ink }]}>
@@ -145,24 +149,33 @@ function placed(x: number, y: number, w: number, h: number, figmaRot: number) {
   };
 }
 
-const MASK_W = 67.8;
-const MASK_H = 92.1;
+const CROWN_W = 92;
+const CROWN_H = (CROWN_W * 39) / 48.3;
 
-function RolesArt({ look }: { look: Look }) {
+function CrownMark({ color, outline }: { color: string; outline?: string }) {
+  const k = 48.3 / rs(CROWN_W);
+  return (
+    <Svg width={rs(CROWN_W)} height={rs(CROWN_H)} viewBox="-1 -1 50.3 41">
+      <Path
+        d={CROWN_PATH}
+        fill={outline ? "none" : color}
+        stroke={outline}
+        strokeWidth={outline ? rs(1.5) * k : undefined}
+      />
+    </Svg>
+  );
+}
+
+function MannersArt({ look }: { look: Look }) {
   return (
     <>
-      {/* Outlined echo behind (382:1143) */}
-      <View pointerEvents="none" style={placed(64, 36, MASK_W, MASK_H, 9)}>
-        <RolesMaskIcon
-          color={look.maskEcho}
-          width={rs(MASK_W)}
-          height={rs(MASK_H)}
-          outline={{ color: look.maskEcho, width: rs(1.5) }}
-        />
+      {/* Outlined echo behind */}
+      <View pointerEvents="none" style={placed(48, 26, CROWN_W, CROWN_H, 9)}>
+        <CrownMark color={look.maskEcho} outline={look.maskEcho} />
       </View>
-      {/* Solid mask (382:1145) */}
-      <View pointerEvents="none" style={placed(44, 44, MASK_W, MASK_H, -6)}>
-        <RolesMaskIcon color={look.mask} width={rs(MASK_W)} height={rs(MASK_H)} />
+      {/* Solid crown */}
+      <View pointerEvents="none" style={placed(26, 40, CROWN_W, CROWN_H, -6)}>
+        <CrownMark color={look.mask} />
       </View>
     </>
   );
@@ -217,12 +230,12 @@ function HintsArt({ look }: { look: Look }) {
 export function ShowTimeModeTiles({
   mode,
   lang,
-  onRoles,
+  onManners,
   onHints,
 }: {
   mode: Mode;
   lang: Lang;
-  onRoles: () => void;
+  onManners: () => void;
   onHints: () => void;
 }) {
   const look = LOOK[mode];
@@ -230,13 +243,14 @@ export function ShowTimeModeTiles({
     <View style={styles.row}>
       <ModeTile
         mode={mode}
-        idSuffix="roles"
+        idSuffix="manners"
         spotX={-10}
-        title={pickLang(lang, { ru: "Роли", en: "Roles", kk: "Рөлдер" })}
-        sub={pickLang(lang, { ru: "Играй персонажа", en: "Play a character", kk: "Кейіпкерді сомдаңыз" })}
-        onPress={onRoles}
+        titleLines={2}
+        title={pickLang(lang, { ru: "Королевские\nманеры", en: "Royal\nmanners", kk: "Корольдік\nәдеп" })}
+        sub={pickLang(lang, { ru: "Квиз об этикете", en: "An etiquette quiz", kk: "Әдеп туралы квиз" })}
+        onPress={onManners}
       >
-        <RolesArt look={look} />
+        <MannersArt look={look} />
       </ModeTile>
       <ModeTile
         mode={mode}

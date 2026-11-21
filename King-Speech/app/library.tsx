@@ -7,7 +7,7 @@
 // Data: GameContext.readingRecordings (dated, with duration) and
 // GameContext.showTimeRecordings (rank → takes; no date/duration stored, so
 // they sort into «Раньше» and the duration appears once the take is loaded).
-// Interview and Roles takes are not persisted anywhere yet → those filters show
+// Interview takes are not persisted anywhere yet → that filter shows
 // the empty state. TODO(library): add them once those modes save recordings.
 //
 // Long-press a row: it lifts and wiggles (like the diary cassettes), playback
@@ -43,7 +43,7 @@ if (Platform.OS !== "web") {
   Audio = require("@/lib/av").Audio;
 }
 
-type Mode = "showtime" | "reading" | "interview" | "roles";
+type Mode = "showtime" | "reading" | "interview";
 type Filter = "all" | Mode;
 
 const FILTERS: { key: Filter; ru: string; en: string; kk: string }[] = [
@@ -51,14 +51,12 @@ const FILTERS: { key: Filter; ru: string; en: string; kk: string }[] = [
   { key: "showtime", ru: "Show Time", en: "Show Time", kk: "Сахна уақыты" },
   { key: "reading", ru: "Чтение", en: "Reading", kk: "Оқу" },
   { key: "interview", ru: "Интервью", en: "Interview", kk: "Сұхбат" },
-  { key: "roles", ru: "Роли", en: "Roles", kk: "Рөлдер" },
 ];
 
 const MODE_LABEL: Record<Mode, { ru: string; en: string; kk: string }> = {
   showtime: { ru: "Show Time", en: "Show Time", kk: "Сахна уақыты" },
   reading: { ru: "Чтение", en: "Reading", kk: "Оқу" },
   interview: { ru: "Интервью", en: "Interview", kk: "Сұхбат" },
-  roles: { ru: "Роли", en: "Roles", kk: "Рөлдер" },
 };
 
 type Item = {
@@ -477,7 +475,7 @@ export default function LibraryScreen() {
             <View style={s.empty}>
               <Text style={[s.emptyTitle, { color: c.text }]}>{tr("Пока пусто", "Nothing here yet", "Әзірге бос")}</Text>
               <Text style={[s.emptySub, { color: c.textMuted }]}>
-                {filter === "interview" || filter === "roles"
+                {filter === "interview"
                   ? tr(
                       "Записи из этого режима скоро появятся здесь.",
                       "Recordings from this mode will appear here soon.",

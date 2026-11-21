@@ -43,7 +43,6 @@ import { DevToolsProvider, useDevTools } from "@/context/DevToolsContext";
 import { SettingsProvider } from "@/context/SettingsContext";
 import { ModuleTransitionProvider } from "@/context/ModuleTransitionContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
-import { RolesProvider } from "@/context/RolesContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -123,7 +122,7 @@ function RootLayoutNav() {
         options={{ headerShown: false, presentation: "card" }}
       />
       <Stack.Screen
-        name="roles"
+        name="manners"
         options={{ headerShown: false, presentation: "card" }}
       />
       <Stack.Screen
@@ -131,27 +130,8 @@ function RootLayoutNav() {
         options={{ headerShown: false, presentation: "card" }}
       />
       <Stack.Screen
-        name="role-brief"
-        options={{ headerShown: false, presentation: "card" }}
-      />
-      <Stack.Screen
         name="diary-record"
         options={{ headerShown: false, presentation: FULL_MODAL, gestureEnabled: false, ...SOFT_FADE }}
-      />
-      <Stack.Screen
-        name="role-stage"
-        options={{ headerShown: false, presentation: FULL_MODAL, ...SOFT_FADE }}
-      />
-      <Stack.Screen
-        name="role-result"
-        options={{
-          headerShown: false,
-          presentation: FULL_MODAL,
-          // The stage replaces itself with this screen. With the default modal
-          // transition that means "dismiss, show the level underneath, present
-          // again" — a jarring bounce back to the level. A cross-fade keeps the
-          // stage on screen until the result has taken over.
-          gestureEnabled: false, ...SOFT_FADE }}
       />
       </Stack>
     </NavThemeProvider>
@@ -272,13 +252,11 @@ export default function RootLayout() {
                   <DevToolsProvider>
                   <SettingsProvider>
                     <GameProvider>
-                      <RolesProvider>
-                        <ModuleTransitionProvider>
-                          <ReadinessGate fontsReady={fontsReady}>
-                            <RootLayoutNav />
-                          </ReadinessGate>
-                        </ModuleTransitionProvider>
-                      </RolesProvider>
+                      <ModuleTransitionProvider>
+                        <ReadinessGate fontsReady={fontsReady}>
+                          <RootLayoutNav />
+                        </ReadinessGate>
+                      </ModuleTransitionProvider>
                     </GameProvider>
                   </SettingsProvider>
                   </DevToolsProvider>

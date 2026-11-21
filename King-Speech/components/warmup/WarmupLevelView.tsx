@@ -1,5 +1,7 @@
 import React, { useCallback, useRef, useState } from "react";
 import { View, StyleSheet, Text } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, { Path } from "react-native-svg";
 import { router } from "expo-router";
 import BreathingExerciseView from "@/components/warmup/BreathingExerciseView";
 import MouthExerciseView from "@/components/warmup/MouthExerciseView";
@@ -10,6 +12,10 @@ import { getPathColors } from "@/constants/pathPalette";
 import { useAppColors } from "@/hooks/useAppColors";
 import { useTheme } from "@/context/ThemeContext";
 import { useLang, pickLang } from "@/context/LangContext";
+import MannersQuiz from "@/components/manners/MannersQuiz";
+import { mannersForModule } from "@/constants/mannersData";
+import { CROWN_PATH } from "@/constants/crownPath";
+import { rs } from "@/lib/responsive";
 
 export interface WarmupCompletePayload {
   scores: number[];
@@ -17,10 +23,12 @@ export interface WarmupCompletePayload {
   pitchResult: WarmupScoreResult | null;
 }
 
-// Two tasks: (1) breathing warm-up, (2) mouth/articulation exercise.
-// The old pitch game needed a native pitch-detection module (unavailable in
-// Expo Go and flaky in general), so it was replaced by the breathing drill.
-type Step = "breathing" | "transition" | "mouth";
+// Three tasks: (1) breathing warm-up, (2) mouth/articulation exercise,
+// (3) a «Королевские манеры» situation question (the etiquette mode woven into
+// the Path). The old pitch game needed a native pitch-detection module
+// (unavailable in Expo Go and flaky in general), so it was replaced by the
+// breathing drill.
+type Step = "breathing" | "transition" | "mouth" | "transition3" | "manners";
 
 interface Props {
   moduleId: number;
@@ -76,8 +84,13 @@ export default function WarmupLevelView({
 
   const handleMouthComplete = useCallback(() => {
     onTaskComplete(2, 10);
-    finishAll(10);
-  }, [onTaskComplete, finishAll]);
+    scoresRef.current = [...scoresRef.current, 10];
+    setStep("transition3");
+    setTimeout(() => setStep("manners"), 450);
+  }, [onTaskComplete]);
+
+  const insets = useSafeAreaInsets();
+  const mannersRules = React.useMemo(() => mannersForModule(moduleId, 1), [moduleId]);
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -92,7 +105,7 @@ export default function WarmupLevelView({
 
       {step === "transition" && (
         <View style={[styles.transition, { paddingTop: topPad, backgroundColor: colors.background }]}>
-          <Text style={[styles.transitionText, { color: theme.accentInk }]}>{pickLang(lang, { ru: "Задание 2 из 2", en: "Task 2 of 2", kk: "Тапсырма 2/2" })}</Text>
+          <Text style={[styles.transitionText, { color: theme.accentInk }]}>{pickLang(lang, { ru: "Задание 2 из 3", en: "Task 2 of 3", kk: "Тапсырма 2/3" })}</Text>
         </View>
       )}
 
@@ -104,6 +117,33 @@ export default function WarmupLevelView({
           onComplete={handleMouthComplete}
           onBack={() => setStep("breathing")}
         />
+      )}
+
+      {step === "transition3" && (
+        <View style={[styles.transition, { paddingTop: topPad, backgroundColor: colors.background }]}>
+          <Text style={[styles.transitionText, { color: theme.accentInk }]}>{pickLang(lang, { ru: "Задание 3 из 3", en: "Task 3 of 3", kk: "Тапсырма 3/3" })}</Text>
+        </View>
+      )}
+
+      {step === "manners" && (
+        <View style={{ flex: 1, paddingTop: topPad }}>
+          <View style={styles.mannersHead}>
+            <Svg width={rs(22)} height={rs(18)} viewBox="0 0 48.3 39">
+              <Path d={CROWN_PATH} fill={theme.accentInk} />
+            </Svg>
+            <Text style={[styles.mannersKicker, { color: theme.accentInk }]}>
+              {pickLang(lang, { ru: "Королевские манеры", en: "Royal manners", kk: "Корольдік әдеп" })}
+            </Text>
+          </View>
+          <MannersQuiz
+            embedded
+            rules={mannersRules}
+            lang={lang}
+            bottomPad={insets.bottom}
+            finishLabel={pickLang(lang, { ru: "Завершить уровень", en: "Finish the level", kk: "Деңгейді аяқтау" })}
+            onFinish={() => finishAll()}
+          />
+        </View>
       )}
     </View>
   );
@@ -117,6 +157,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  mannersHead: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 22, paddingTop: 14 },
+  mannersKicker: { fontFamily: warmupFonts.title, fontSize: 15 },
   transitionText: {
     fontFamily: warmupFonts.title,
     fontSize: 24,

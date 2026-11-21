@@ -26,6 +26,11 @@ import { fonts } from "@/constants/colors";
 import { useAppColors } from "@/hooks/useAppColors";
 import { pickLang, type Lang } from "@/context/LangContext";
 import { rs } from "@/lib/responsive";
+import Svg, { Path } from "react-native-svg";
+import { MannersQuestion } from "@/components/manners/MannersQuiz";
+import { pickMannersRound } from "@/constants/mannersData";
+import { useMannersProgress } from "@/lib/mannersProgress";
+import { CROWN_PATH } from "@/constants/crownPath";
 import {
   tx,
   DIFFICULTY_LABEL,
@@ -295,6 +300,26 @@ function TipView({ step, lang, c }: { step: TipStep; lang: Lang; c: AppColors })
   );
 }
 
+// ── «Королевские манеры» question ─────────────────────────────────────────────
+function MannersView({ lang, c }: { lang: Lang; c: AppColors }) {
+  const progress = useMannersProgress();
+  // One rule per visit, unseen ones first; fixed for the lifetime of the step.
+  const rule = React.useMemo(() => pickMannersRound(1, Object.keys(progress))[0], []); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <View style={styles.mannersWrap}>
+      <View style={styles.mannersHead}>
+        <Svg width={rs(22)} height={rs(18)} viewBox="0 0 48.3 39">
+          <Path d={CROWN_PATH} fill={GOLD} />
+        </Svg>
+        <Text style={[styles.mannersKicker, { color: c.text }]}>
+          {pickLang(lang, { ru: "Королевские манеры", en: "Royal manners", kk: "Корольдік әдеп" })}
+        </Text>
+      </View>
+      <MannersQuestion rule={rule} lang={lang} onAnswered={() => {}} />
+    </View>
+  );
+}
+
 // ── Final anchor ──────────────────────────────────────────────────────────────
 function FinalView({ step, lang, onDone, c }: { step: FinalStep; lang: Lang; onDone: () => void; c: AppColors }) {
   return (
@@ -456,6 +481,12 @@ export default function CheatSheetRunner({
           </ScrollView>
         )}
 
+        {step.kind === "manners" && (
+          <ScrollView contentContainerStyle={styles.scrollBody} showsVerticalScrollIndicator={false}>
+            <MannersView lang={lang} c={c} />
+          </ScrollView>
+        )}
+
         {step.kind === "final" && (
           <ScrollView contentContainerStyle={styles.scrollBody} showsVerticalScrollIndicator={false}>
             <FinalView step={step} lang={lang} onDone={onExit} c={c} />
@@ -538,6 +569,11 @@ const styles = StyleSheet.create({
   timerUnit: { fontSize: 13, fontFamily: fonts.body, marginTop: -4 },
   timerBtn: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: GOLD, paddingHorizontal: 22, paddingVertical: 13, borderRadius: 26 },
   timerBtnTxt: { color: "#41310A", fontSize: 15, fontFamily: fonts.bodyBold },
+
+  // manners
+  mannersWrap: { paddingTop: 4 },
+  mannersHead: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 },
+  mannersKicker: { fontSize: 15, fontFamily: fonts.bodyBold },
 
   // twister
   twWrap: { alignItems: "center", justifyContent: "center", gap: 20, paddingVertical: 12 },
