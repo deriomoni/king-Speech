@@ -1,161 +1,38 @@
-import React, { useEffect, useRef, useState } from "react";
+import React from "react";
 import NextChevron from "@/components/NextChevron";
-import { View, Text, StyleSheet, Pressable } from "react-native";
-import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
-import { SvgXml } from "react-native-svg";
+import { View, Text, StyleSheet, Pressable, useWindowDimensions } from "react-native";
+import Animated, { FadeIn } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "@/lib/haptics";
 import { useTheme } from "@/context/ThemeContext";
 import { useLang, pickLang } from "@/context/LangContext";
 import { warmupFonts } from "@/components/warmup/warmupTheme";
 import { rs } from "@/lib/responsive";
-import {
-  type WarmupArt,
-  chestArt,
-  chestArrowArt,
-  tubeLeftArt,
-  tubeRightArt,
-  arrowLeftArt,
-  arrowRightArt,
-  corkArt,
-  circle1Art,
-  circle2Art,
-  circle3Art,
-  circle4Art,
-} from "@/assets/figma/warmup/warmupIllustrations";
+import IllustratedDrill, { ILLUSTRATED_EXERCISES, type IllustratedExercise } from "@/components/warmup/IllustratedDrill";
 
-/**
- * Illustrated mouth/voice warm-up exercises (Figma 02 · Уровень 1 · Разогрев,
- * frames 269–276). Each exercise is a title + short description over a line-art
- * illustration; multi-frame exercises cycle through their frames (left/right,
- * tongue circling). They run after the module's own mouth exercise.
- */
-
-/** Per-language copy; `ru` is required, others fall back to it. */
-type LText = { ru: string; en?: string; kk?: string };
-
-interface ExerciseFrame {
-  art: WarmupArt;
-  /** Gold arrow drawn on top of the figure (chest sound). */
-  overlay?: WarmupArt;
-  /** Gold direction arrow under the figure. */
-  arrow?: WarmupArt;
-  /** Frame-specific description (overrides the exercise one). */
-  desc?: LText;
-}
-
-export interface IllustratedExercise {
-  key: string;
-  title: LText;
-  desc?: LText;
-  frames: ExerciseFrame[];
-  /** Seconds each frame stays on screen before switching to the next one. */
-  frameSec?: number;
-  /** Total exercise duration (s). */
-  totalSec: number;
-}
-
-export const ILLUSTRATED_EXERCISES: IllustratedExercise[] = [
-  {
-    key: "chest",
-    title: {
-      ru: "Звук должен выходить из груди",
-      en: "The sound should come from your chest",
-      kk: "Дыбыс кеудеден шығуы керек",
-    },
-    frames: [{ art: chestArt, overlay: chestArrowArt }],
-    totalSec: 15,
-  },
-  {
-    key: "tubeSide",
-    title: { ru: "Трубочка в сторону", en: "Lip tube to the side", kk: "Түтікше жанға" },
-    frames: [
-      { art: tubeLeftArt, arrow: arrowLeftArt, desc: {
-          ru: "Вытяни губы вперёд и уведи их влево",
-          en: "Push your lips forward and move them to the left",
-          kk: "Ерніңізді алға созып, солға бұрыңыз",
-        } },
-      { art: tubeRightArt, arrow: arrowRightArt, desc: {
-          ru: "Вытяни губы вперёд и уведи их вправо",
-          en: "Push your lips forward and move them to the right",
-          kk: "Ерніңізді алға созып, оңға бұрыңыз",
-        } },
-    ],
-    frameSec: 3,
-    totalSec: 24,
-  },
-  {
-    key: "cork",
-    title: { ru: "Речь с пробкой", en: "Speaking with a cork", kk: "Тығынмен сөйлеу" },
-    desc: {
-      ru: "Зажми пробку губами и говори чётко",
-      en: "Hold a cork between your lips and speak clearly",
-      kk: "Тығынды ерніңізбен қысып, анық сөйлеңіз",
-    },
-    frames: [{ art: corkArt }],
-    totalSec: 20,
-  },
-  {
-    key: "tongueCircle",
-    title: { ru: "Язык по кругу", en: "Tongue circles", kk: "Тілді айналдыру" },
-    desc: {
-      ru: "Губы сомкнуты. Води языком по кругу\nпо часовой стрелке",
-      en: "Lips closed. Circle your tongue\nclockwise",
-      kk: "Ерін жабық. Тіліңізді сағат тілі\nбағытымен айналдырыңыз",
-    },
-    frames: [{ art: circle1Art }, { art: circle2Art }, { art: circle3Art }, { art: circle4Art }],
-    frameSec: 1,
-    totalSec: 20,
-  },
-];
-
-// Figma: the chest arrow starts 46.8pt below the top of the figure frame.
-const CHEST_ARROW_TOP = 46.8;
+export { ILLUSTRATED_EXERCISES };
+export type { IllustratedExercise };
 
 interface Props {
   exercise: IllustratedExercise;
+  /** 0-based position and count, for the step segments at the top. */
+  index: number;
+  count: number;
   topPad: number;
   onDone: () => void;
   onSkip: () => void;
   onBack: () => void;
 }
 
-export default function IllustratedExerciseView({ exercise, topPad, onDone, onSkip, onBack }: Props) {
+/**
+ * One illustrated mouth warm-up exercise (Figma portraits): name, one how-to
+ * line, the animated portrait with the rhythm word, and «Пропустить».
+ */
+export default function IllustratedExerciseView({ exercise, index, count, topPad, onDone, onSkip, onBack }: Props) {
   const { theme } = useTheme();
   const { lang } = useLang();
-  const [frameIdx, setFrameIdx] = useState(0);
-  const onDoneRef = useRef(onDone);
-  useEffect(() => {
-    onDoneRef.current = onDone;
-  }, [onDone]);
-
-  useEffect(() => {
-    setFrameIdx(0);
-    Haptics.selectionAsync().catch(() => {});
-    let fi: ReturnType<typeof setInterval> | null = null;
-    if (exercise.frames.length > 1 && exercise.frameSec) {
-      fi = setInterval(
-        () => setFrameIdx((i) => (i + 1) % exercise.frames.length),
-        exercise.frameSec * 1000,
-      );
-    }
-    const to = setTimeout(() => onDoneRef.current(), exercise.totalSec * 1000);
-    return () => {
-      if (fi) clearInterval(fi);
-      clearTimeout(to);
-    };
-  }, [exercise]);
-
-  const frame = exercise.frames[frameIdx] ?? exercise.frames[0];
-  const descL = frame.desc ?? exercise.desc;
-  const desc = descL ? pickLang(lang, descL) : undefined;
-  // Reserve the arrow slot for every frame of an exercise that has one, so the
-  // figure never jumps when frames switch.
-  const hasArrow = exercise.frames.some((f) => !!f.arrow);
-  const art = frame.art;
-  // Figma art sizes are phone-design pt — scale for tablets.
-  const artW = rs(art.width);
-  const artH = rs(art.height);
+  const { height: winH } = useWindowDimensions();
+  // Portrait height: Figma draws them ~310pt tall; keep room for the texts.
+  const artH = Math.min(rs(300), winH * 0.4);
 
   return (
     <View style={[styles.root, { backgroundColor: theme.bg, paddingTop: topPad + rs(8) }]}>
@@ -163,42 +40,38 @@ export default function IllustratedExerciseView({ exercise, topPad, onDone, onSk
         <Pressable onPress={onBack} hitSlop={12} style={styles.iconBtn}>
           <Ionicons name="chevron-back" size={rs(24)} color={theme.textSecondary} />
         </Pressable>
-      </View>
-
-      <Animated.View key={exercise.key} entering={FadeIn.duration(300)} style={styles.texts}>
-        <Text style={[styles.title, { color: theme.text }]}>{pickLang(lang, exercise.title)}</Text>
-        {!!desc && <Text style={[styles.desc, { color: theme.textSecondary }]}>{desc}</Text>}
-      </Animated.View>
-
-      <View style={styles.center} pointerEvents="none">
-        <View style={{ width: artW, height: artH }}>
-          <SvgXml xml={art.xml} width={artW} height={artH} color={theme.text} />
-          {frame.overlay && (
+        <View style={styles.segs}>
+          {Array.from({ length: count }).map((_, k) => (
             <View
+              key={k}
               style={[
-                styles.overlay,
-                { top: rs(CHEST_ARROW_TOP), left: (artW - rs(frame.overlay.width)) / 2 },
+                styles.seg,
+                { backgroundColor: k < index ? theme.text : k === index ? theme.accent : theme.text + "1F" },
               ]}
-            >
-              <SvgXml xml={frame.overlay.xml} width={rs(frame.overlay.width)} height={rs(frame.overlay.height)} />
-            </View>
-          )}
+            />
+          ))}
         </View>
+        <Text style={[styles.count, { color: theme.textMuted }]}>
+          {index + 1} / {count}
+        </Text>
       </View>
 
-      {hasArrow && (
-        <View style={styles.arrowSlot} pointerEvents="none">
-          {frame.arrow && (
-            <Animated.View key={`arrow-${frameIdx}`} entering={FadeIn.duration(200)} exiting={FadeOut.duration(120)}>
-              <SvgXml xml={frame.arrow.xml} width={rs(frame.arrow.width)} height={rs(frame.arrow.height)} />
-            </Animated.View>
-          )}
-        </View>
-      )}
+      <View style={styles.center}>
+        <Animated.View key={exercise.key} entering={FadeIn.duration(320)} style={styles.texts}>
+          <Text style={[styles.title, { color: theme.text }]}>{pickLang(lang, exercise.title)}</Text>
+          <Text style={[styles.desc, { color: theme.textSecondary }]}>{pickLang(lang, exercise.desc)}</Text>
+        </Animated.View>
+        <IllustratedDrill key={`drill-${exercise.key}`}exercise={exercise} lang={lang} height={artH} onDone={onDone} />
+      </View>
 
       <View style={styles.footer}>
         <Pressable onPress={onSkip} hitSlop={8} style={styles.skip}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: rs(6) }}><Text style={[styles.skipText, { color: theme.textMuted }]}>{pickLang(lang, { ru: "Пропустить", en: "Skip", kk: "Өткізіп жіберу" })}</Text><NextChevron color={theme.textMuted} size={rs(12)} /></View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: rs(6) }}>
+            <Text style={[styles.skipText, { color: theme.textMuted }]}>
+              {pickLang(lang, { ru: "Пропустить", en: "Skip", kk: "Өткізіп жіберу" })}
+            </Text>
+            <NextChevron color={theme.textMuted} size={rs(12)} />
+          </View>
         </Pressable>
       </View>
     </View>
@@ -207,9 +80,13 @@ export default function IllustratedExerciseView({ exercise, topPad, onDone, onSk
 
 const styles = StyleSheet.create({
   root: { flex: 1, paddingHorizontal: 24 },
-  header: { flexDirection: "row", alignItems: "center" },
+  header: { flexDirection: "row", alignItems: "center", gap: 10 },
   iconBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
-  texts: { alignItems: "center", marginTop: 4 },
+  segs: { flex: 1, flexDirection: "row", gap: 6 },
+  seg: { flex: 1, height: 5, borderRadius: 3 },
+  count: { fontFamily: warmupFonts.body, fontSize: 13, minWidth: 34, textAlign: "right" },
+  center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  texts: { alignItems: "center", marginBottom: 22 },
   title: {
     fontFamily: warmupFonts.title,
     fontSize: 26,
@@ -220,14 +97,12 @@ const styles = StyleSheet.create({
   },
   desc: {
     fontFamily: warmupFonts.body,
-    fontSize: 14.5,
-    lineHeight: 20,
+    fontSize: 15,
+    lineHeight: 21,
     textAlign: "center",
-    marginTop: 6,
+    marginTop: 8,
+    maxWidth: 310,
   },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  overlay: { position: "absolute" },
-  arrowSlot: { height: 22, alignItems: "center", justifyContent: "center", marginBottom: 50 },
   footer: { paddingBottom: 24, alignItems: "center" },
   skip: { padding: 10 },
   skipText: { fontFamily: warmupFonts.body, fontSize: 14 },

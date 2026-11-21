@@ -59,14 +59,20 @@ export interface ActionStep {
   seconds?: number;
 }
 
-/** Mouth/jaw/tongue warm-up — auto-cycling moves. */
+/**
+ * Mouth warm-up with the illustrated warm-up portraits (components/warmup/
+ * IllustratedDrill): the drills play one after another, animated in rhythm.
+ */
 export interface ArticulationStep {
   kind: "articulation";
   id: string;
   block: BlockKind;
   title: Loc;
   intro: Loc;
-  moves: { emoji: string; label: Loc; secs: number }[];
+  /** Keys of ILLUSTRATED_EXERCISES («chest», «tubeSide», «cork», «tongueCircle»). */
+  drills: string[];
+  /** Seconds per drill. */
+  secs: number;
 }
 
 /** Vocal chant / распевка — syllables highlighted in rhythm. */
@@ -258,27 +264,19 @@ const articulation: ArticulationStep = {
   id: "articulation",
   block: "voice",
   title: { ru: "Разомни рот", en: "Warm up your mouth", kk: "Ауыз жаттығуы" },
-  intro: { ru: "Повторяй за подсказкой — по паре секунд на каждое движение.", en: "Follow the prompt — a couple of seconds each.", kk: "Нұсқауды қайталаңыз — әр қимылға бірер секундтан." },
-  moves: [
-    { emoji: "😗", label: { ru: "Губы: «трубочка» ↔ «улыбка»", en: "Lips: pucker ↔ smile", kk: "Ерін: «түтікше» ↔ «күлкі»" }, secs: 5 },
-    { emoji: "👅", label: { ru: "Язык: круги по губам", en: "Tongue: circle your lips", kk: "Тіл: ерінді айнала жүргізіңіз" }, secs: 5 },
-    { emoji: "😮", label: { ru: "Челюсть: медленно вниз-вверх", en: "Jaw: slowly down and up", kk: "Иек: баяу төмен-жоғары" }, secs: 5 },
-    { emoji: "😝", label: { ru: "«Пофыркай» губами: бррр", en: "Lip trill: brrr", kk: "Ерінмен «пырылдаңыз»: бррр" }, secs: 5 },
-  ],
+  intro: { ru: "Повторяй движения в такт с портретом.", en: "Repeat the moves in rhythm with the portrait.", kk: "Қимылдарды портретпен бірге ырғақпен қайталаңыз." },
+  drills: ["tubeSide", "tongueCircle"],
+  secs: 14,
 };
 
 const articulationTongue: ArticulationStep = {
   kind: "articulation",
   id: "articulation-tongue",
   block: "voice",
-  title: { ru: "Разбуди язык", en: "Wake up your tongue", kk: "Тілді ояту" },
-  intro: { ru: "Дикция живёт на кончике языка. Повторяй за подсказкой:", en: "Diction lives on the tip of your tongue. Follow the prompt:", kk: "Дикция тілдің ұшында. Нұсқауды қайталаңыз:" },
-  moves: [
-    { emoji: "👅", label: { ru: "«Цокай» языком, как копыта", en: "Click your tongue like hooves", kk: "Тұяқ дыбысындай тіліңізді тықылдатыңыз" }, secs: 5 },
-    { emoji: "🗣️", label: { ru: "Чётко: «та-да, та-да, та-да»", en: "Crisp: 'ta-da, ta-da, ta-da'", kk: "Анық: «та-да, та-да, та-да»" }, secs: 5 },
-    { emoji: "😬", label: { ru: "Упри язык: «ла-ла-ла»", en: "Press the tongue: 'la-la-la'", kk: "Тіліңізді тіреңіз: «ла-ла-ла»" }, secs: 5 },
-    { emoji: "💨", label: { ru: "Взрывные: «па-та-ка»", en: "Plosives: 'pa-ta-ka'", kk: "Жарылыс дыбыстары: «па-та-ка»" }, secs: 5 },
-  ],
+  title: { ru: "Голос и дикция", en: "Voice and diction", kk: "Дауыс пен дикция" },
+  intro: { ru: "Повторяй в такт с портретом.", en: "Repeat in rhythm with the portrait.", kk: "Портретпен бірге ырғақпен қайталаңыз." },
+  drills: ["chest", "cork"],
+  secs: 14,
 };
 
 const chant: ChantStep = {

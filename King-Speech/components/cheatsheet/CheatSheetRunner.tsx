@@ -6,6 +6,7 @@ import {
   Pressable,
   Platform,
   ScrollView,
+  useWindowDimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -38,6 +39,7 @@ import {
   type FinalStep,
 } from "@/constants/cheatsheetData";
 import BreathingCircle from "@/components/cheatsheet/BreathingCircle";
+import IllustratedDrill, { getIllustrated } from "@/components/warmup/IllustratedDrill";
 import ChantView from "@/components/cheatsheet/ChantView";
 
 type AppColors = import("@/constants/colors").AppColors;
@@ -58,40 +60,23 @@ function haptic(style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle
 const mmss = (s: number) =>
   `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
-// ── Articulation (auto-cycling mouth warm-up) ────────────────────────────────
+// ── Articulation (illustrated warm-up portraits, animated in rhythm) ───────────
 function ArticulationView({ step, lang, c, isDark }: { step: ArticulationStep; lang: Lang; c: AppColors; isDark: boolean }) {
   const [i, setI] = useState(0);
-  const prog = useSharedValue(0);
-  const move = step.moves[i];
-
-  useEffect(() => {
-    if (!step.moves.length) return;
-    const secs = step.moves[i]?.secs ?? 5;
-    prog.value = 0;
-    prog.value = withTiming(1, { duration: secs * 1000, easing: Easing.linear });
-    haptic();
-    const to = setTimeout(() => setI((v) => (v + 1) % step.moves.length), secs * 1000);
-    return () => clearTimeout(to);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [i, step]);
-
-  useEffect(() => () => cancelAnimation(prog), [prog]);
-
-  const barStyle = useAnimatedStyle(() => ({ width: `${prog.value * 100}%` as any }));
+  const { height: winH } = useWindowDimensions();
+  const ex = getIllustrated(step.drills[i] ?? step.drills[0]);
+  // The drills loop while the step is on screen.
+  const next = useCallback(() => setI((v) => (v + 1) % step.drills.length), [step.drills.length]);
 
   return (
     <View style={styles.artWrap}>
-      <Animated.Text key={`emoji-${i}`} entering={FadeIn.duration(240)} style={styles.artEmoji}>
-        {move?.emoji}
-      </Animated.Text>
-      <Animated.Text key={`label-${i}`} entering={FadeIn.duration(240)} style={[styles.artLabel, { color: c.text }]}>
-        {tx(move?.label, lang)}
-      </Animated.Text>
-      <View style={[styles.artTrack, { backgroundColor: ink(isDark, 0.12) }]}>
-        <Animated.View style={[styles.artFill, barStyle]} />
-      </View>
+      <Animated.View key={`t-${i}`} entering={FadeIn.duration(260)} style={{ alignItems: "center" }}>
+        <Text style={[styles.artLabel, { color: c.text }]}>{pickLang(lang, ex.title)}</Text>
+        <Text style={[styles.artDesc, { color: c.textSecondary }]}>{pickLang(lang, ex.desc)}</Text>
+      </Animated.View>
+      <IllustratedDrill key={`d-${i}`} exercise={ex} lang={lang} height={Math.min(rs(240), winH * 0.3)} seconds={step.secs} onDone={next} />
       <View style={styles.artDots}>
-        {step.moves.map((_, k) => (
+        {step.drills.map((_, k) => (
           <View key={k} style={[styles.artDot, { backgroundColor: ink(isDark, 0.18) }, k === i && styles.artDotActive]} />
         ))}
       </View>
@@ -445,7 +430,6 @@ export default function CheatSheetRunner({
           <View style={{ flex: 1, width: "100%" }}>
             <View style={styles.exHeader}>
               <Text style={[styles.stepTitle, { color: c.text }]}>{tx(step.title, lang)}</Text>
-              <Text style={[styles.stepIntro, { color: c.textSecondary }]}>{tx(step.intro, lang)}</Text>
             </View>
             <ArticulationView step={step} lang={lang} c={c} isDark={isDark} />
           </View>
@@ -533,10 +517,8 @@ const styles = StyleSheet.create({
 
   // articulation
   artWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 22, width: "100%" },
-  artEmoji: { fontSize: 96 },
-  artLabel: { fontSize: 22, fontFamily: fonts.bodyBold, textAlign: "center", paddingHorizontal: 10 },
-  artTrack: { width: "70%", height: 6, borderRadius: 3, overflow: "hidden" },
-  artFill: { height: 6, borderRadius: 3, backgroundColor: GOLD },
+  artLabel: { fontSize: 20, fontFamily: fonts.bodyBold, textAlign: "center", paddingHorizontal: 10 },
+  artDesc: { fontSize: 14, lineHeight: 20, fontFamily: fonts.body, textAlign: "center", marginTop: 4, paddingHorizontal: 16 },
   artDots: { flexDirection: "row", gap: 8 },
   artDot: { width: 8, height: 8, borderRadius: 4 },
   artDotActive: { backgroundColor: GOLD, width: 22 },
