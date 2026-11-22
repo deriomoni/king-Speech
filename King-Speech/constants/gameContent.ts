@@ -5275,15 +5275,15 @@ export function getLevelsData(lang: Lang): LevelData[] {
     };
     // Reading titles for RU are derived from the actual literature JSON
     // (the single source of truth) so the map card, the level header, and
-    // the displayed text always agree. EN keeps its legacy hardcoded meta.
+    // the displayed text always agree (ru / kk / en each have a collection).
     // KK: Kazakh work when present (assets/content/kk/literature_kk.json),
     // otherwise the Russian collection.
-    if ((lang === "ru" || lang === "kk") && level.id.startsWith("reading")) {
+    if (level.id.startsWith("reading")) {
       const lit = getLiterature(getModuleFromReadingId(level.id), lang);
       if (lit) {
         // Title stays a plain "Чтение"; the work + abbreviated author go on
         // the step-card subtitle (which auto-shrinks so it never truncates).
-        level.title = lang === "kk" ? "Оқу" : "Чтение";
+        level.title = lang === "kk" ? "Оқу" : lang === "en" ? "Reading" : "Чтение";
         level.subtitle = `${lit.work} · ${abbrevAuthor(lit.author)}`;
       }
     }

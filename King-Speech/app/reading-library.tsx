@@ -40,7 +40,7 @@ function excerptFor(title: string): string {
   if (!EXCERPTS) {
     EXCERPTS = new Map();
     for (let i = 1; i <= 67; i++) {
-      for (const lit of [getLiterature(i), getLiterature(i, "kk")]) {
+      for (const lit of [getLiterature(i), getLiterature(i, "kk"), getLiterature(i, "en")]) {
         if (lit) EXCERPTS.set(lit.work, getLiteratureFullText(lit).replace(/\s*\n+\s*/g, " "));
       }
     }

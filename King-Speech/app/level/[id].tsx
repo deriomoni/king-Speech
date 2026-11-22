@@ -557,7 +557,7 @@ export default function LevelScreen() {
   const readingMeta = (() => {
     if (!isReadingLevel || !level) return null;
     // KK: Kazakh work when present, otherwise the Russian collection.
-    const lit = lang !== "en" ? getLiterature(getModuleFromReadingId(levelId), lang) : null;
+    const lit = getLiterature(getModuleFromReadingId(levelId), lang);
     const legacyText = level.tasks
       .map((tk) => tk.content)
       .filter((c) => !!c)
