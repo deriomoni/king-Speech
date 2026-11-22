@@ -25,6 +25,8 @@ const HEART_BOX = { x: 1366, y: 495, w: 311, h: 282 };
 
 const MAX_W = rs(156);
 const MAX_H = rs(156);
+// Rive envelope width relative to the vector box (body-size match).
+const RIVE_BODY = 1.4;
 
 /** A looping 0→1→0 value (sine-eased). */
 function useFloat(periodMs: number) {
@@ -109,7 +111,12 @@ function Pose({ pose }: { pose: keyof typeof OSCAR_POSES }) {
 
 export default function TipMascot({ mascot }: { mascot?: TipMascotSpec }) {
   if (!mascot) return null;
-  if ("rive" in mascot) return <OscarMascot emotion={mascot.rive} size={rs(150)} />;
+  if ("rive" in mascot) {
+    // `tight` + RIVE_BODY: the Rive envelope includes his arm swings and
+    // jumps, so his body inside it is ~1.4× smaller than in the vector poses.
+    // Scaling the envelope matches the BODY size; every frame still fits.
+    return <OscarMascot emotion={mascot.rive} size={Math.round(MAX_W * RIVE_BODY)} tight />;
+  }
   return <Pose pose={mascot.pose} />;
 }
 

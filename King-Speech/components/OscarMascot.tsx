@@ -42,22 +42,6 @@ const EMOTION_ANIMATION: Record<OscarEmotion, string> = {
   shiny: "Shiny",
 };
 
-// Static poses (Figma exports) shown while the .riv loads and wherever Rive
-// can't run (Expo Go without network for the web runtime, missing native
-// module) — Oscar is never a blank square.
-const OSCAR_HAPPY_PNG = require("@/assets/figma/levels/oscar-happy.png");
-const OSCAR_SAD_PNG = require("@/assets/figma/levels/oscar-sad.png");
-const EMOTION_FALLBACK: Record<OscarEmotion, number> = {
-  idle: OSCAR_HAPPY_PNG,
-  hi: OSCAR_HAPPY_PNG,
-  thumbup: OSCAR_HAPPY_PNG,
-  happy: OSCAR_HAPPY_PNG,
-  cool: OSCAR_HAPPY_PNG,
-  shiny: OSCAR_HAPPY_PNG,
-  notsure: OSCAR_SAD_PNG,
-  sad: OSCAR_SAD_PNG,
-  upset: OSCAR_SAD_PNG,
-};
 const OSCAR_RIV = require("@/assets/rive/oscar.riv");
 
 // The mascot is rendered 30% bigger than the requested `size`, inside a FULL
@@ -66,14 +50,55 @@ const OSCAR_RIV = require("@/assets/rive/oscar.riv");
 // character margin on every side.
 const SIZE_BOOST = 1.3;
 
+// Measured on the artboard (contain-fit into a 300×300 canvas): across every
+// frame of all 9 emotions Oscar never leaves x 43–261, y 16–199 — he only
+// fills ~73% × 61% of the canvas, which is why he looked small next to the
+// vector poses. `tight` maps this envelope (+4 px margin) onto the box, so he
+// is as big as the vector art and still never clipped: the extra canvas is
+// transparent and simply overflows the (smaller) layout box.
+const ENV = { x0: 39, y0: 12, x1: 265, y1: 203, canvas: 300 };
+const ENV_W = ENV.x1 - ENV.x0;
+const ENV_H = ENV.y1 - ENV.y0;
+
 interface Props {
   emotion?: OscarEmotion;
   /** Square canvas size in px. Keep between ~96 and ~240 so Oscar never dominates. */
   size?: number;
+  /**
+   * Fill the box with Oscar himself (not the padded artboard): the layout box
+   * is `size` wide and `size·ENV_H/ENV_W` tall, and every frame of every
+   * emotion fits inside it.
+   */
+  tight?: boolean;
   style?: ViewStyle;
 }
 
-export default function OscarMascot({ emotion = "idle", size = rs(150), style }: Props) {
+export default function OscarMascot({ emotion = "idle", size = rs(150), tight = false, style }: Props) {
+  if (tight) {
+    const W = Math.round(size);
+    const H = Math.round((size * ENV_H) / ENV_W);
+    const C = (W * ENV.canvas) / ENV_W;
+    return (
+      <View style={[{ width: W, height: H, overflow: "visible" }, style]} pointerEvents="none">
+        <RiveAnim
+          key={`oscar-${emotion}`}
+          source={OSCAR_RIV}
+          style={{
+            position: "absolute",
+            left: -(ENV.x0 / ENV.canvas) * C,
+            top: -(ENV.y0 / ENV.canvas) * C,
+            width: C,
+            height: C,
+            backgroundColor: "transparent",
+          }}
+          fit="contain"
+          alignment="center"
+          autoplay
+          animation={EMOTION_ANIMATION[emotion]}
+        />
+      </View>
+    );
+  }
   const S = Math.round(size * SIZE_BOOST);
   return (
     <View
@@ -97,7 +122,6 @@ export default function OscarMascot({ emotion = "idle", size = rs(150), style }:
         alignment="center"
         autoplay
         animation={EMOTION_ANIMATION[emotion]}
-        fallback={EMOTION_FALLBACK[emotion]}
       />
     </View>
   );

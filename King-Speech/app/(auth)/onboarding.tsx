@@ -12,7 +12,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import Animated, { FadeIn } from "react-native-reanimated";
-import { Image } from "expo-image";
 import { SvgXml } from "react-native-svg";
 import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -81,7 +80,6 @@ const SLIDES: SlideData[] = [
   },
 ];
 
-const OSCAR_TUX = require("@/assets/figma/auth/oscar-tux-laugh.png");
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
@@ -208,7 +206,7 @@ function OnboardingSlide({ slide, lang, userName }: { slide: SlideData; lang: La
         )}
         {slide.visual.kind === "oscarTux" && (
           <View style={s.tuxWrap}>
-            <Image source={OSCAR_TUX} style={s.tux} contentFit="cover" />
+            <OscarMascot emotion="hi" size={240} tight />
           </View>
         )}
       </View>
@@ -315,11 +313,6 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingTop: 24,
-  },
-  tux: {
-    width: 270,
-    height: 270,
-    borderRadius: 135,
   },
   slideTitle: {
     marginTop: 26,

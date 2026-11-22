@@ -95,6 +95,9 @@ async function run(inp, out, o = {}) {
   const fill = (s) => { const st = [s]; while (st.length) { const p = st.pop(); if (bg[p] || !isWhite(p)) continue; bg[p] = 1; const x = p % W; if (x > 0) st.push(p-1); if (x < W-1) st.push(p+1); if (p >= W) st.push(p-W); if (p < W*(H-1)) st.push(p+W); } };
   for (let x = 0; x < W; x++) { fill(x); fill((H-1)*W + x); }
   for (let y = 0; y < H; y++) { fill(y*W); fill(y*W + W - 1); }
+  // poses with no white features (no eye whites): every enclosed white gap
+  // (e.g. the OK-sign finger rings of the lotus) is background too
+  if (o.whiteIsBg) for (let p = 0; p < W * H; p++) if (isWhite(p)) fill(p);
   for (const [x, y] of o.bg ?? []) {
     const cx = Math.round(x * k), cy = Math.round(y * k);
     for (let dy = -18; dy <= 18; dy += 2) for (let dx = -18; dx <= 18; dx += 2) { const p = (cy + dy) * W + cx + dx; if (isWhite(p)) fill(p); }

@@ -44,12 +44,8 @@ import { READING_BG_DARK } from "@/components/reading/readingTheme";
 import StageGlassDialog from "@/components/showtime/StageGlassDialog";
 import { aspectsFromScore10, ASPECT_META } from "@/components/ScoreFlower";
 import OscarMascot from "@/components/OscarMascot";
-import { Image as ExpoImage } from "expo-image";
 import { useTheme } from "@/context/ThemeContext";
 
-// Figma "Оскар · все позы" exports for the level score screen, keyed to alpha.
-const OSCAR_SCORE_HAPPY = require("@/assets/figma/levels/oscar-happy.png");
-const OSCAR_SCORE_SAD = require("@/assets/figma/levels/oscar-sad.png");
 import TaskFlowView from "@/components/TaskFlowView";
 import { aggregateAnalyses } from "@/services/analyzeGenericTask";
 import WarmupLevelView from "@/components/warmup/WarmupLevelView";
@@ -394,15 +390,7 @@ export function FlowerResultWindow({
       >
         {/* Oscar leads the screen — big, centered, no card around him */}
         <Animated.View entering={FadeIn.duration(450)} style={rs.oscarSection}>
-          {oscarEmotion === "thumbup" ? (
-            <OscarMascot emotion="thumbup" size={rsz(312)} />
-          ) : (
-            <ExpoImage
-              source={oscarEmotion === "happy" ? OSCAR_SCORE_HAPPY : OSCAR_SCORE_SAD}
-              style={rs.oscarPose}
-              contentFit="contain"
-            />
-          )}
+          <OscarMascot emotion={oscarEmotion} size={rsz(312)} />
         </Animated.View>
 
         {/* Overall score right under the mascot — plain number, no circle */}
@@ -1566,7 +1554,6 @@ const rs = StyleSheet.create({
 
   // Flower result window (Figma 37:5981 "Оценка уровня")
   heroSection: { alignItems: "center", gap: 4, marginTop: -14 },
-  oscarPose: { width: 406, height: 406 },
   flowerNextBtn: { height: 48, paddingVertical: 0, borderRadius: 32, borderWidth: 4 },
   scoreRow: {
     flexDirection: "row",

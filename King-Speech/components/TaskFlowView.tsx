@@ -28,16 +28,10 @@ import { readableText } from "@/constants/pathPalette";
 import { useTheme } from "@/context/ThemeContext";
 import { pickLang, type Lang } from "@/context/LangContext";
 import { aggregateAnalyses } from "@/services/analyzeGenericTask";
-import { Image } from "expo-image";
 import RoundStar from "@/components/RoundStar";
+import OscarMascot from "@/components/OscarMascot";
 import { rs } from "@/lib/responsive";
 
-// Figma "Оскар · все позы" exports (04/05): the corridor illustration. Keyed to
-// transparent so they sit on the dark illustration well in both themes.
-const CORRIDOR_ART = {
-  interview: require("@/assets/figma/levels/oscar-corridor-interview.png"),
-  tongue: require("@/assets/figma/levels/oscar-corridor-tongue.png"),
-};
 
 // ───────────────────────────────────────────────────────────────────────────
 // One-task-per-screen flow for generic "speak this" levels (tongue twisters,
@@ -875,11 +869,8 @@ function LevelCorridor({
 
         <Animated.View exiting={FadeOut.duration(420)} style={st.corridorCard}>
           <View style={st.corridorArt}>
-            <Image
-              source={isTongue ? CORRIDOR_ART.tongue : CORRIDOR_ART.interview}
-              style={{ width: "100%", height: "100%" }}
-              contentFit="cover"
-            />
+            {/* Rive Oscar (was a static PNG copy of these poses) */}
+            <OscarMascot emotion={isTongue ? "happy" : "hi"} size={rs(220)} tight />
           </View>
           <Text style={st.corridorQuote}>{quote}</Text>
           <Text style={st.corridorAuthor}>{`- ${author}`}</Text>
@@ -1378,7 +1369,7 @@ const st = StyleSheet.create({
     padding: 15,
     paddingBottom: 24,
   },
-  corridorArt: { width: 288, height: 288, borderRadius: 22, overflow: "hidden", backgroundColor: "#262628" },
+  corridorArt: { width: 288, height: 288, borderRadius: 22, backgroundColor: "#262628", alignItems: "center", justifyContent: "center" },
   corridorQuote: {
     fontFamily: "Geologica_900Black",
     fontSize: 24,
