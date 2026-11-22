@@ -13,6 +13,9 @@ import { ROUTES, type CheatRoute } from "@/constants/cheatsheetData";
 import CheatSheetRunner from "@/components/cheatsheet/CheatSheetRunner";
 import CheatSheetWheel from "@/components/cheatsheet/CheatSheetWheel";
 
+// Vertical stretch of the hero title (King Speech logo letters are tall).
+const HERO_STRETCH = 1.15;
+
 // Encouraging one-liners shown under the title; rotates once per day so the
 // screen feels fresh. Source: тексты для Шпаргалки.docx (updates daily).
 const DAILY_TEXTS = [
@@ -127,13 +130,14 @@ export default function CheatSheetScreen() {
       >
         {/* Hero */}
         <Animated.View entering={FadeIn.duration(400)} style={{ gap: rs(10) }}>
-          {/* Set like the King Speech logo: Geologica ExtraBold, tight tracking. */}
+          {/* Set like the King Speech logo: Geologica Bold, tight tracking,
+              stretched a little in height (scaleY; the margin makes room). */}
           {lang === "kk" ? (
-            <Text style={[styles.hero, { color: colors.text, fontSize: rs(44), lineHeight: rs(48), letterSpacing: -rs(1.8) }]}>
+            <Text style={[styles.hero, styles.heroTall, { color: colors.text, fontSize: rs(44), lineHeight: rs(48), letterSpacing: -rs(1.8), marginBottom: rs(48) * 2 * (HERO_STRETCH - 1) }]}>
               {"Жылдам\nдайындық"}
             </Text>
           ) : (
-            <Text style={[styles.hero, { color: colors.text, fontSize: rs(43), lineHeight: rs(50), letterSpacing: -rs(1.7) }]}>
+            <Text style={[styles.hero, styles.heroTall, { color: colors.text, fontSize: rs(43), lineHeight: rs(50), letterSpacing: -rs(1.7), marginBottom: rs(50) * (HERO_STRETCH - 1) }]}>
               Get Ready
             </Text>
           )}
@@ -184,7 +188,8 @@ export default function CheatSheetScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   // Handwritten title (Caveat Bold — already loaded in _layout).
-  hero: { fontSize: 58, fontFamily: "Geologica_800ExtraBold", lineHeight: 62, marginTop: -4 },
+  hero: { fontSize: 58, fontFamily: "Geologica_700Bold", lineHeight: 62, marginTop: -4 },
+  heroTall: { transform: [{ scaleY: HERO_STRETCH }], transformOrigin: "left top" },
   heroSub: { fontSize: 16, lineHeight: 23, fontFamily: fonts.body },
 
   countdown: {
