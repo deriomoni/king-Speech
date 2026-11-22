@@ -642,7 +642,7 @@ function ModuleDividerBase({
         {moduleNum}
       </Text>
       {/* Module names exist in RU and KK (Show Time content); EN skips the title. */}
-      {lang !== "en" && getModuleName(moduleNum, lang) ? (
+      {getModuleName(moduleNum, lang) ? (
         <Text
           style={{
             color: colors.text,

@@ -10,7 +10,7 @@ export interface VocabWord {
   partOfSpeech: PartOfSpeech;
   synonyms: string[];
   timerSeconds: number;
-  lang: 'ru' | 'kk';
+  lang: 'ru' | 'kk' | 'en';
   difficulty: 1 | 2 | 3;
 }
 
@@ -1021,7 +1021,13 @@ export function checkSynonymAdvanced(
     let isMatch = false;
     if (normInput === normSyn) isMatch = true;
     else if (stemInput === stemSyn && stemInput.length >= 4) isMatch = true;
-    else if (normInput.includes(normSyn) && normSyn.length >= 4) isMatch = true;
+    else if (
+      normInput.includes(normSyn) &&
+      normSyn.length >= 4 &&
+      // a negating prefix flips the meaning: «unhappy» ≠ «happy», «неумный» ≠ «умный»
+      !new RegExp(`(^|\\s)(un|dis|non|in|im|не|без|бес)-?${normSyn}`).test(normInput)
+    )
+      isMatch = true;
     else if (normSyn.length >= 6 && levenshtein(normInput, normSyn) === 1)
       isMatch = true;
     else if (stemSyn.length >= 4 && levenshtein(stemInput, stemSyn) <= 1)

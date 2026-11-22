@@ -1,0 +1,296 @@
+{
+  "daily": [
+    {
+      "text": "Peter Piper picked a peck of pickled peppers. A peck of pickled peppers Peter Piper picked. If Peter Piper picked a peck of pickled peppers, where's the peck of pickled peppers Peter Piper picked?",
+      "focus": "p / k",
+      "src": "traditional"
+    },
+    {
+      "text": "She sells seashells by the seashore. The shells she sells are surely seashells. So if she sells shells on the seashore, I'm sure she sells seashore shells.",
+      "focus": "s / sh",
+      "src": "traditional"
+    },
+    {
+      "text": "Red lorry, yellow lorry.",
+      "focus": "r / l",
+      "src": "traditional"
+    },
+    {
+      "text": "Unique New York.",
+      "focus": "y / vowels",
+      "src": "traditional"
+    },
+    {
+      "text": "Irish wristwatch, Swiss wristwatch.",
+      "focus": "r / sh / s",
+      "src": "traditional"
+    },
+    {
+      "text": "How much wood would a woodchuck chuck if a woodchuck could chuck wood?",
+      "focus": "w / ch",
+      "src": "traditional"
+    },
+    {
+      "text": "Betty Botter bought some butter, but she said the butter's bitter. If I put it in my batter, it will make my batter bitter. But a bit of better butter will make my batter better.",
+      "focus": "b / t",
+      "src": "traditional"
+    },
+    {
+      "text": "I thought a thought. But the thought I thought wasn't the thought I thought I thought.",
+      "focus": "th",
+      "src": "traditional"
+    },
+    {
+      "text": "How can a clam cram in a clean cream can?",
+      "focus": "k / l / r",
+      "src": "traditional"
+    },
+    {
+      "text": "Toy boat. Toy boat. Toy boat.",
+      "focus": "t / b / oy",
+      "src": "traditional"
+    },
+    {
+      "text": "The sixth sick sheikh's sixth sheep's sick.",
+      "focus": "s / sh / ks",
+      "src": "traditional"
+    },
+    {
+      "text": "Which witch is which?",
+      "focus": "w / ch",
+      "src": "traditional"
+    },
+    {
+      "text": "A big black bug bit a big black bear and made the big black bear bleed blood.",
+      "focus": "b / l / g",
+      "src": "traditional"
+    },
+    {
+      "text": "Lesser leather never weathered wetter weather better.",
+      "focus": "l / th / w",
+      "src": "traditional"
+    },
+    {
+      "text": "Three grey geese in the green grass grazing. Grey were the geese and green was the grass.",
+      "focus": "g / r",
+      "src": "traditional"
+    },
+    {
+      "text": "Fresh fried fish, fish fresh fried, fried fish fresh, fish fried fresh.",
+      "focus": "f / sh / r",
+      "src": "traditional"
+    },
+    {
+      "text": "Rubber baby buggy bumpers.",
+      "focus": "b / r",
+      "src": "traditional"
+    },
+    {
+      "text": "Six slippery snails slid slowly seaward.",
+      "focus": "s / l",
+      "src": "traditional"
+    }
+  ],
+  "groups": [
+    {
+      "sound": "S / SH / CH — hissing and hushing sounds",
+      "note": "S: tongue tip just behind the teeth, lips relaxed, a thin sharp stream of air. SH: lips rounded and pushed forward, tongue pulled slightly back — a wider, softer stream. CH is SH with a quick T in front. Keep each sound crisp and never let S and SH blur into each other.",
+      "items": [
+        "She sells seashells by the seashore. The shells she sells are surely seashells. So if she sells shells on the seashore, I'm sure she sells seashore shells.",
+        "Six slippery snails slid slowly seaward.",
+        "Sixty-six sickly chicks.",
+        "Silly Sally swiftly shooed seven silly sheep.",
+        "Sheena leads, Sheila needs.",
+        "Susie works in a shoeshine shop. Where she shines she sits, and where she sits she shines.",
+        "Sure the ship's shipshape, sir.",
+        "Selfish shellfish.",
+        "Shredded Swiss cheese.",
+        "Sister Susie's sewing shirts for soldiers.",
+        "Mrs Smith's fish sauce shop.",
+        "Stupid superstition.",
+        "Pre-shrunk silk shirts.",
+        "Sheep should sleep in a shed.",
+        "We surely shall see the sun shine soon.",
+        "Chester Cheetah chews a chunk of cheap cheddar cheese.",
+        "Cheap ship trip.",
+        "She sees cheese.",
+        "Cheryl's cheap chip shop sells cheap chips.",
+        "Scissors sizzle, thistles sizzle."
+      ]
+    },
+    {
+      "sound": "TH — the tongue between the teeth",
+      "note": "Place the tip of the tongue lightly between the upper and lower teeth and let air pass over it. In “think” and “three” it is voiceless (just air); in “this” and “that” the voice is on. Don't replace TH with S, F, T or D.",
+      "items": [
+        "Thirty-three thousand people think that Thursday is their thirtieth birthday.",
+        "The thirty-three thieves thought that they thrilled the throne throughout Thursday.",
+        "I thought a thought. But the thought I thought wasn't the thought I thought I thought.",
+        "Three free throws.",
+        "Three thin thinkers thinking thick thoughtful thoughts.",
+        "Six thick thistle sticks. Six thick thistles stick.",
+        "Thin sticks, thick bricks.",
+        "Thieves seize skis.",
+        "Tom threw Tim three thumbtacks.",
+        "This thistle seems like that thistle.",
+        "These thousand tricky tongue twisters trip thrillingly off the tongue.",
+        "The seething sea ceaseth and thus the seething sea sufficeth us.",
+        "Through three cheese trees three free fleas flew.",
+        "Three tree turtles took turns talking tongue twisters.",
+        "Thank the other three brothers of their father's mother's brother's side."
+      ]
+    },
+    {
+      "sound": "R / L — the tongue lifts and curls",
+      "note": "L: the tongue tip presses on the ridge behind the upper teeth and air flows around its sides. English R: the tongue tip does not touch anything — it curls slightly back, the lips round a little. Switch between them cleanly without slurring.",
+      "items": [
+        "Red lorry, yellow lorry.",
+        "Red leather, yellow leather.",
+        "Lesser leather never weathered wetter weather better.",
+        "Truly rural.",
+        "Rural ruler.",
+        "Really leery, rarely Larry.",
+        "A loyal warrior will rarely worry why we rule.",
+        "Round and round the rugged rock the ragged rascal ran.",
+        "Rory the warrior and Roger the worrier were reared wrongly in a rural brewery.",
+        "Lily ladles little Letty's lentil soup.",
+        "Larry sent the latter a letter later.",
+        "Roberta ran rings around the Roman ruins.",
+        "Eleven benevolent elephants.",
+        "Lovely lemon liniment.",
+        "Rolling red wagons.",
+        "A lump of red leather, a red leather lump.",
+        "Eleven owls licked eleven little liquorice lollipops.",
+        "Clowns grow glowing crowns."
+      ]
+    },
+    {
+      "sound": "P / B / M — lip sounds",
+      "note": "Close the lips firmly. P is a puff of air with no voice; B is the same closure with the voice on; M keeps the lips closed and hums through the nose. Let the lips work actively — no lazy, half-closed mouth.",
+      "items": [
+        "Peter Piper picked a peck of pickled peppers. A peck of pickled peppers Peter Piper picked. If Peter Piper picked a peck of pickled peppers, where's the peck of pickled peppers Peter Piper picked?",
+        "Betty Botter bought some butter, but she said the butter's bitter. If I put it in my batter, it will make my batter bitter. But a bit of better butter will make my batter better.",
+        "A big black bug bit a big black bear and made the big black bear bleed blood.",
+        "Black background, brown background.",
+        "Rubber baby buggy bumpers.",
+        "Peggy Babcock, Peggy Babcock, Peggy Babcock.",
+        "A proper copper coffee pot.",
+        "Plain bun, plum bun, bun without plum.",
+        "Purple paper people.",
+        "Pick a partner and practise passing, for if you pass proficiently, perhaps you'll play professionally.",
+        "Pirates' private property.",
+        "Bad money, mad bunny.",
+        "Many mumbling mice are making merry music in the moonlight. Mighty nice!",
+        "Mummies munch much mush.",
+        "Mixed biscuits.",
+        "A bloke's back brake block broke.",
+        "Blue bluebird.",
+        "Bobby Bippy bought a bat. Bobby Bippy bought a ball.",
+        "Bake big batches of brown blueberry bread.",
+        "Brisk brave brigadiers brandished broad bright blades, blunderbusses and bludgeons, balancing them badly."
+      ]
+    },
+    {
+      "sound": "T / D — tongue-tip sounds",
+      "note": "The tongue tip taps the ridge just behind the upper teeth and releases quickly. T is voiceless with a small puff of air; D is the same tap with the voice on. Keep the taps light and precise, especially at the ends of words.",
+      "items": [
+        "Toy boat. Toy boat. Toy boat.",
+        "Tie twine to three tree twigs.",
+        "Two tried and true tridents.",
+        "A tutor who tooted the flute tried to tutor two tooters to toot. Said the two to the tutor, “Is it harder to toot or to tutor two tooters to toot?”",
+        "Don't trouble trouble till trouble troubles you.",
+        "Double bubble gum, bubbles double.",
+        "Do drop in at the Dewdrop Inn.",
+        "Daddy draws doors.",
+        "Two toads, totally tired, trying to trot to Tilbury.",
+        "Twelve twins twirled twelve twigs.",
+        "Tim, the thin twin tinsmith.",
+        "A tree toad loved a she-toad who lived up in a tree.",
+        "Tragedy strategy.",
+        "Good blood, bad blood.",
+        "Fred fed Ted bread, and Ted fed Fred bread."
+      ]
+    },
+    {
+      "sound": "K / G — back-of-the-tongue sounds",
+      "note": "The back of the tongue rises to the soft palate, blocks the air and releases it sharply. K is voiceless with a puff of air; G is the same with the voice on. Keep the jaw relaxed and the release clean.",
+      "items": [
+        "How can a clam cram in a clean cream can?",
+        "Can you can a can as a canner can can a can?",
+        "Crisp crusts crackle crunchily.",
+        "Greek grapes.",
+        "Green glass globes glow greenly.",
+        "Kitty caught the kitten in the kitchen.",
+        "Quick kiss. Quicker kiss. Quickest kiss.",
+        "Cooks cook cupcakes quickly.",
+        "Three grey geese in the green grass grazing. Grey were the geese and green was the grass.",
+        "Gig whip.",
+        "Girl gargoyle, guy gargoyle.",
+        "Gobbling gargoyles gobbled gobbling goblins.",
+        "Kris Kringle carefully crunched on candy canes.",
+        "A cupcake cook in a cupcake cook's cap cooks cupcakes.",
+        "Good cookies could be cooked by a good cook if a good cook could cook good cookies.",
+        "Black back bat.",
+        "Gertie's great-grandma grew aghast at Gertie's grammar.",
+        "The great Greek grape growers grow great Greek grapes."
+      ]
+    },
+    {
+      "sound": "W / V / F — lips and teeth",
+      "note": "W: round the lips into a small circle, then open them quickly — the teeth don't touch the lip. V and F: the upper teeth rest lightly on the lower lip; F is just air, V adds the voice. Don't swap W and V.",
+      "items": [
+        "How much wood would a woodchuck chuck if a woodchuck could chuck wood?",
+        "Which witch is which?",
+        "If two witches were watching two watches, which witch would watch which watch?",
+        "Whether the weather is warm, whether the weather is hot, we have to put up with the weather, whether we like it or not.",
+        "Swan swam over the sea. Swim, swan, swim! Swan swam back again. Well swum, swan!",
+        "Why do you cry, Willy? Why do you cry? Why, Willy? Why, Willy? Why, Willy? Why?",
+        "Willy's real rear wheel.",
+        "Wayne went to Wales to watch walruses.",
+        "Wishy-washy washerwoman.",
+        "Vincent vowed vengeance very vehemently.",
+        "Fuzzy Wuzzy was a bear. Fuzzy Wuzzy had no hair. Fuzzy Wuzzy wasn't fuzzy, was he?",
+        "Four furious friends fought for the phone.",
+        "Five frantic frogs fled from fifty fierce fishes.",
+        "Fresh fried fish, fish fresh fried, fried fish fresh, fish fried fresh.",
+        "Freshly fried flying fish.",
+        "A flea and a fly in a flue were imprisoned, so what could they do? Said the fly, “Let us flee!” “Let us fly!” said the flea. So they flew through a flaw in the flue.",
+        "Fat frogs flying past fast."
+      ]
+    },
+    {
+      "sound": "Vowels, Y and H — open, clear sounds",
+      "note": "Open the mouth fully and give every vowel its own clear shape — round the lips for “oo” and “ow”, spread them for “ee”. Y glides into the vowel; H is a gentle breath, never swallowed. Don't let unstressed vowels turn into mumbling.",
+      "items": [
+        "Unique New York.",
+        "You know New York, you need New York, you know you need unique New York.",
+        "How now, brown cow?",
+        "The rain in Spain stays mainly in the plain.",
+        "In Hartford, Hereford and Hampshire, hurricanes hardly ever happen.",
+        "Each Easter Eddie eats eighty Easter eggs.",
+        "Eddie edited it.",
+        "An ape hates grape cakes.",
+        "Yellow yo-yos.",
+        "Many an anemone sees an enemy anemone."
+      ]
+    },
+    {
+      "sound": "Complex — for masters",
+      "note": "Long, tightly packed twisters that switch between several sounds at once. Start slowly and say every sound fully, then speed up only as long as the diction stays clean.",
+      "items": [
+        "Irish wristwatch, Swiss wristwatch.",
+        "I wish to wash my Irish wristwatch.",
+        "Which wristwatches are Swiss wristwatches?",
+        "The sixth sick sheikh's sixth sheep's sick.",
+        "Pad kid poured curd pulled cod.",
+        "Six sick hicks nick six slick bricks with picks and sticks.",
+        "Theophilus Thistle, the successful thistle sifter, sifted a sieve full of unsifted thistles.",
+        "Imagine an imaginary menagerie manager managing an imaginary menagerie.",
+        "Coy knows pseudonoise codes.",
+        "Cinnamon aluminium linoleum.",
+        "Fresh French fried fly fritters.",
+        "Six Czech cricket critics.",
+        "Specific Pacific."
+      ]
+    }
+  ]
+}

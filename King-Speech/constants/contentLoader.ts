@@ -4,6 +4,7 @@ import type { TaskData } from "@/constants/gameContent";
 import warmupData from "@/assets/content/king_speech_warmup_content.json";
 import interviewData from "@/assets/content/king_speech_interview_content.json";
 import warmupKkData from "@/assets/content/kk/warmup_kk.json";
+import warmupEnData from "@/assets/content/en/warmup_en.json";
 
 export interface WarmupChant {
   sound: string;
@@ -137,16 +138,38 @@ interface WarmupKk {
 const WARMUP_KK = new Map<number, WarmupKk>(
   (warmupKkData as WarmupKk[]).map((m) => [m.module, m]),
 );
+const WARMUP_EN = new Map<number, WarmupKk>(
+  (warmupEnData as WarmupKk[]).map((m) => [m.module, m]),
+);
+
+// English chant labels: the syllables and solfège in Latin letters. Applied to
+// the normalized module (after the pitch offsets were computed from the
+// Russian note names), so only what's displayed changes.
+const LAT: Record<string, string> = {
+  а: "a", э: "e", и: "i", о: "o", у: "u", м: "m", н: "n", л: "l", д: "d", р: "r",
+  в: "v", б: "b", г: "g", з: "z", к: "k", т: "t", ф: "f", с: "s", ь: "", я: "ya", е: "e",
+};
+const SOLFEGE_EN: Record<string, string> = { до: "do", ре: "re", ми: "mi", фа: "fa", соль: "sol", ля: "la", си: "ti" };
+function latinSyllable(s: string): string {
+  const out = [...s.toLowerCase()].map((ch) => LAT[ch] ?? ch).join("");
+  return s[0] && s[0] !== s[0].toLowerCase() ? out.charAt(0).toUpperCase() + out.slice(1) : out;
+}
+function latinNote(n: string): string {
+  const m = /^([а-яё]+)(\d*)$/i.exec(n.trim());
+  if (!m) return n;
+  return (SOLFEGE_EN[m[1].toLowerCase()] ?? latinSyllable(m[1])) + m[2];
+}
 
 /**
- * Warm-up module with its texts localized. Chant syllables/notes are shared;
- * Kazakh replaces the title, tempo and mouth-exercise texts (falls back to RU
- * per field when a translation is missing).
+ * Warm-up module with its texts localized. Kazakh and English replace the
+ * title, tempo and mouth-exercise texts (falling back to RU per field when a
+ * translation is missing); English chant labels are latinized in
+ * getNormalizedWarmup.
  */
 export function getLocalizedWarmup(moduleId: number, lang: Lang = "ru"): WarmupModule | null {
   const mod = getWarmup(moduleId);
-  if (!mod || lang !== "kk") return mod;
-  const kk = WARMUP_KK.get(moduleId);
+  if (!mod || lang === "ru") return mod;
+  const kk = (lang === "en" ? WARMUP_EN : WARMUP_KK).get(moduleId);
   if (!kk) return mod;
   return {
     ...mod,
@@ -167,7 +190,15 @@ export function getLocalizedWarmup(moduleId: number, lang: Lang = "ru"): WarmupM
 
 export function getNormalizedWarmup(moduleId: number, lang: Lang = "ru"): NormalizedWarmup | null {
   const mod = getLocalizedWarmup(moduleId, lang);
-  return mod ? normalizeWarmupModule(mod) : null;
+  if (!mod) return null;
+  const norm = normalizeWarmupModule(mod);
+  if (lang !== "en") return norm;
+  return {
+    ...norm,
+    sound: norm.sound ? latinSyllable(norm.sound).toUpperCase() : norm.sound,
+    syllables: norm.syllables.map(latinSyllable),
+    notes: norm.notes.map(latinNote),
+  };
 }
 
 // ===================== Interview ("Путь") =====================

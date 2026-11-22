@@ -30,6 +30,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { VOCAB_WORDS_RU, VocabWord, checkSynonymAdvanced } from "@/constants/vocabularyData";
 import { VOCAB_WORDS_KK } from "@/constants/vocabularyDataKk";
+import { VOCAB_WORDS_EN } from "@/constants/vocabularyDataEn";
 import { useGame, MODULE_COLORS, RANKS_MODULAR } from "@/context/GameContext";
 import { useModuleTransition } from "@/context/ModuleTransitionContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -513,7 +514,7 @@ function SpinPhase({
   // word — which changes excludeIds — can never reshuffle it mid-spin, so the
   // word you land on is exactly the word you play.
   const [reel] = useState<VocabWord[]>(() => {
-    const words = lang === "kk" ? VOCAB_WORDS_KK : VOCAB_WORDS_RU;
+    const words = lang === "kk" ? VOCAB_WORDS_KK : lang === "en" ? VOCAB_WORDS_EN : VOCAB_WORDS_RU;
     const available = words.filter((w) => !excludeIds.includes(w.id));
     const base = available.length > 0 ? available : words;
     const shuffled = [...base].sort(() => Math.random() - 0.5);
@@ -695,7 +696,7 @@ function PlayPhase({
   const pads = usePads();
   const { lang } = useLang();
   // Recognizer language follows the word list (KK list for kk, RU otherwise).
-  const srLocale = lang === "kk" ? LANG_LOCALE.kk : LANG_LOCALE.ru;
+  const srLocale = LANG_LOCALE[lang] ?? LANG_LOCALE.ru;
   // Read inside long-lived recognition callbacks without re-creating them.
   const langRef = useRef(lang);
   langRef.current = lang;
@@ -971,7 +972,7 @@ function PlayPhase({
         // Auto-restart so recognition keeps streaming for the whole round.
         try {
           sr.start({
-            lang: srLocale, // word list is RU or KK; EN plays the RU list
+            lang: srLocale, // speech recognition in the word list's language
             interimResults: true,
             continuous: true,
             maxAlternatives: 3,

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import tongueTwisterRaw from "@/assets/content/king_speech_tonguetwisters_content.json";
 import tongueTwisterKkRaw from "@/assets/content/kk/tonguetwisters_kk.json";
+import tongueTwisterEnRaw from "@/assets/content/en/tonguetwisters_en.json";
 import type { Lang } from "@/context/LangContext";
 
 /**
@@ -66,6 +67,8 @@ function buildPool(raw: unknown, tag: string): string[] {
 const POOL: string[] = buildPool(tongueTwisterRaw, "RU");
 /** Kazakh жаңылтпаштар — a separate pool (twisters can't be translated). */
 const POOL_KK: string[] = buildPool(tongueTwisterKkRaw, "KK");
+/** English twisters — a separate pool of real English tongue twisters. */
+const POOL_EN: string[] = buildPool(tongueTwisterEnRaw, "EN");
 
 /**
  * Short twisters are over too fast to drill — say them twice. We return the
@@ -95,7 +98,8 @@ export function getTongueTwistersForModule(
   count: number,
   lang: Lang = "ru",
 ): string[] {
-  const pool = lang === "kk" && POOL_KK.length > 0 ? POOL_KK : POOL;
+  const pool =
+    lang === "kk" && POOL_KK.length > 0 ? POOL_KK : lang === "en" && POOL_EN.length > 0 ? POOL_EN : POOL;
   if (pool.length === 0 || count <= 0) return [];
   const start = ((moduleId - 1) * count) % pool.length;
   const out: string[] = [];

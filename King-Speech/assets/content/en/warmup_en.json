@@ -1,0 +1,672 @@
+[
+  {
+    "module": 1,
+    "title": "First Step",
+    "tempo": "slow, smooth",
+    "mouth": {
+      "name": "Pucker — Smile",
+      "instruction": "Push your lips forward into a pucker, hold for 2 seconds, then break into a wide smile. Repeat.",
+      "gesture": "Spread your arms on the smile, bring them in to your chest on the pucker."
+    }
+  },
+  {
+    "module": 2,
+    "title": "Thinking Out Loud",
+    "tempo": "slow, smooth",
+    "mouth": {
+      "name": "Tick-Tock",
+      "instruction": "Open your mouth slightly and reach with your tongue to the left corner of your lips, then to the right — like a pendulum.",
+      "gesture": "Turn your head left and right, following your tongue."
+    }
+  },
+  {
+    "module": 3,
+    "title": "The Language of Life",
+    "tempo": "slow, smooth",
+    "mouth": {
+      "name": "Pony",
+      "instruction": "Click your tongue like clopping hooves, speeding up from slow to fast.",
+      "gesture": "Flick your wrists lightly to the rhythm of the clopping."
+    }
+  },
+  {
+    "module": 4,
+    "title": "The Voice Within",
+    "tempo": "slow, smooth",
+    "mouth": {
+      "name": "Needle",
+      "instruction": "Stick out a narrow, pointed tongue and hold it tense. Relax and repeat.",
+      "gesture": "Reach one arm forward together with your tongue."
+    }
+  },
+  {
+    "module": 5,
+    "title": "Little Joys",
+    "tempo": "slow, smooth",
+    "mouth": {
+      "name": "Spatula",
+      "instruction": "Rest a wide, relaxed tongue on your lower lip and keep it flat and still.",
+      "gesture": "Keep your open palms resting calmly in front of you."
+    }
+  },
+  {
+    "module": 6,
+    "title": "Invisible Power",
+    "tempo": "slow, smooth",
+    "mouth": {
+      "name": "Seesaw",
+      "instruction": "With the tip of your tongue, reach up toward your nose, then down toward your chin, taking turns.",
+      "gesture": "Gently rock your body up and down in time."
+    }
+  },
+  {
+    "module": 7,
+    "title": "The Power of a Kind Word",
+    "tempo": "slow, smooth",
+    "mouth": {
+      "name": "Puff — Deflate Cheeks",
+      "instruction": "Take a breath, puff out both cheeks, hold for 2 seconds, then slowly let the air out.",
+      "gesture": "Open your arms as you breathe in, bring them together as you breathe out."
+    }
+  },
+  {
+    "module": 8,
+    "title": "The Gift of Listening",
+    "tempo": "slow, smooth",
+    "mouth": {
+      "name": "Brushing Teeth",
+      "instruction": "Run the tip of your tongue in a circle along the inside of your teeth — in both directions.",
+      "gesture": "Draw circles in the air with your hand in time with your tongue."
+    }
+  },
+  {
+    "module": 9,
+    "title": "The Power of Words",
+    "tempo": "slow, smooth",
+    "mouth": {
+      "name": "Tasty Jam",
+      "instruction": "With a wide tongue, lick your upper lip from top to bottom, as if tasting jam.",
+      "gesture": "Raise an open palm to your lips, then lower it."
+    }
+  },
+  {
+    "module": 10,
+    "title": "A Smile",
+    "tempo": "slow, smooth",
+    "mouth": {
+      "name": "Pendulum",
+      "instruction": "Open your mouth and move your lower jaw left and right, smoothly and evenly.",
+      "gesture": "Swing your lowered arms like a pendulum."
+    }
+  },
+  {
+    "module": 11,
+    "title": "Good and Evil",
+    "tempo": "slow, smooth",
+    "mouth": {
+      "name": "Picket Fence",
+      "instruction": "Close your teeth and stretch your lips wide to show your “picket fence”. Hold, then relax.",
+      "gesture": "Spread your arms out to the sides, holding the tension."
+    }
+  },
+  {
+    "module": 12,
+    "title": "Stars Above Us",
+    "tempo": "slow, smooth",
+    "mouth": {
+      "name": "Little Drum",
+      "instruction": "Tap the tip of your tongue just behind your upper teeth: “d-d-d”, getting faster.",
+      "gesture": "Lightly tap your fingers on the table to the rhythm."
+    }
+  },
+  {
+    "module": 13,
+    "title": "The Echo of My Voice",
+    "tempo": "slow, smooth",
+    "mouth": {
+      "name": "Pucker — Smile",
+      "instruction": "Push your lips forward into a pucker, hold for 2 seconds, then break into a wide smile. Repeat.",
+      "gesture": "Spread your arms on the smile, bring them in to your chest on the pucker."
+    }
+  },
+  {
+    "module": 14,
+    "title": "The Road Is Conquered by Those Who Walk It",
+    "tempo": "slow, smooth",
+    "mouth": {
+      "name": "Tick-Tock",
+      "instruction": "Open your mouth slightly and reach with your tongue to the left corner of your lips, then to the right — like a pendulum.",
+      "gesture": "Turn your head left and right, following your tongue."
+    }
+  },
+  {
+    "module": 15,
+    "title": "Why Is That?",
+    "tempo": "calm",
+    "mouth": {
+      "name": "Pony",
+      "instruction": "Click your tongue like clopping hooves, speeding up from slow to fast.",
+      "gesture": "Flick your wrists lightly to the rhythm of the clopping."
+    }
+  },
+  {
+    "module": 16,
+    "title": "The Beginning of Everything",
+    "tempo": "calm",
+    "mouth": {
+      "name": "Needle",
+      "instruction": "Stick out a narrow, pointed tongue and hold it tense. Relax and repeat.",
+      "gesture": "Reach one arm forward together with your tongue."
+    }
+  },
+  {
+    "module": 17,
+    "title": "The Magic of Numbers",
+    "tempo": "calm",
+    "mouth": {
+      "name": "Spatula",
+      "instruction": "Rest a wide, relaxed tongue on your lower lip and keep it flat and still.",
+      "gesture": "Keep your open palms resting calmly in front of you."
+    }
+  },
+  {
+    "module": 18,
+    "title": "Science and the World",
+    "tempo": "calm",
+    "mouth": {
+      "name": "Seesaw",
+      "instruction": "With the tip of your tongue, reach up toward your nose, then down toward your chin, taking turns.",
+      "gesture": "Gently rock your body up and down in time."
+    }
+  },
+  {
+    "module": 19,
+    "title": "Art",
+    "tempo": "calm",
+    "mouth": {
+      "name": "Puff — Deflate Cheeks",
+      "instruction": "Take a breath, puff out both cheeks, hold for 2 seconds, then slowly let the air out.",
+      "gesture": "Open your arms as you breathe in, bring them together as you breathe out."
+    }
+  },
+  {
+    "module": 20,
+    "title": "Beauty Is in the Eye of the Beholder",
+    "tempo": "calm",
+    "mouth": {
+      "name": "Brushing Teeth",
+      "instruction": "Run the tip of your tongue in a circle along the inside of your teeth — in both directions.",
+      "gesture": "Draw circles in the air with your hand in time with your tongue."
+    }
+  },
+  {
+    "module": 21,
+    "title": "The World Before and After",
+    "tempo": "calm",
+    "mouth": {
+      "name": "Tasty Jam",
+      "instruction": "With a wide tongue, lick your upper lip from top to bottom, as if tasting jam.",
+      "gesture": "Raise an open palm to your lips, then lower it."
+    }
+  },
+  {
+    "module": 22,
+    "title": "The Whale",
+    "tempo": "calm",
+    "mouth": {
+      "name": "Pendulum",
+      "instruction": "Open your mouth and move your lower jaw left and right, smoothly and evenly.",
+      "gesture": "Swing your lowered arms like a pendulum."
+    }
+  },
+  {
+    "module": 23,
+    "title": "The 21st Century",
+    "tempo": "calm",
+    "mouth": {
+      "name": "Picket Fence",
+      "instruction": "Close your teeth and stretch your lips wide to show your “picket fence”. Hold, then relax.",
+      "gesture": "Spread your arms out to the sides, holding the tension."
+    }
+  },
+  {
+    "module": 24,
+    "title": "Time",
+    "tempo": "calm",
+    "mouth": {
+      "name": "Little Drum",
+      "instruction": "Tap the tip of your tongue just behind your upper teeth: “d-d-d”, getting faster.",
+      "gesture": "Lightly tap your fingers on the table to the rhythm."
+    }
+  },
+  {
+    "module": 25,
+    "title": "Mysteries of the Brain",
+    "tempo": "calm",
+    "mouth": {
+      "name": "Pucker — Smile",
+      "instruction": "Push your lips forward into a pucker, hold for 2 seconds, then break into a wide smile. Repeat.",
+      "gesture": "Spread your arms on the smile, bring them in to your chest on the pucker."
+    }
+  },
+  {
+    "module": 26,
+    "title": "Why We Dream",
+    "tempo": "calm",
+    "mouth": {
+      "name": "Tick-Tock",
+      "instruction": "Open your mouth slightly and reach with your tongue to the left corner of your lips, then to the right — like a pendulum.",
+      "gesture": "Turn your head left and right, following your tongue."
+    }
+  },
+  {
+    "module": 27,
+    "title": "Is the Earth Round?",
+    "tempo": "calm",
+    "mouth": {
+      "name": "Pony",
+      "instruction": "Click your tongue like clopping hooves, speeding up from slow to fast.",
+      "gesture": "Flick your wrists lightly to the rhythm of the clopping."
+    }
+  },
+  {
+    "module": 28,
+    "title": "Outer Space",
+    "tempo": "calm",
+    "mouth": {
+      "name": "Needle",
+      "instruction": "Stick out a narrow, pointed tongue and hold it tense. Relax and repeat.",
+      "gesture": "Reach one arm forward together with your tongue."
+    }
+  },
+  {
+    "module": 29,
+    "title": "The First Human",
+    "tempo": "moderate",
+    "mouth": {
+      "name": "Spatula",
+      "instruction": "Rest a wide, relaxed tongue on your lower lip and keep it flat and still.",
+      "gesture": "Keep your open palms resting calmly in front of you."
+    }
+  },
+  {
+    "module": 30,
+    "title": "The Birth of Fire",
+    "tempo": "moderate",
+    "mouth": {
+      "name": "Seesaw",
+      "instruction": "With the tip of your tongue, reach up toward your nose, then down toward your chin, taking turns.",
+      "gesture": "Gently rock your body up and down in time."
+    }
+  },
+  {
+    "module": 31,
+    "title": "The First Speech",
+    "tempo": "moderate",
+    "mouth": {
+      "name": "Puff — Deflate Cheeks",
+      "instruction": "Take a breath, puff out both cheeks, hold for 2 seconds, then slowly let the air out.",
+      "gesture": "Open your arms as you breathe in, bring them together as you breathe out."
+    }
+  },
+  {
+    "module": 32,
+    "title": "Body Language",
+    "tempo": "moderate",
+    "mouth": {
+      "name": "Brushing Teeth",
+      "instruction": "Run the tip of your tongue in a circle along the inside of your teeth — in both directions.",
+      "gesture": "Draw circles in the air with your hand in time with your tongue."
+    }
+  },
+  {
+    "module": 33,
+    "title": "Work Made Man out of Ape",
+    "tempo": "moderate",
+    "mouth": {
+      "name": "Tasty Jam",
+      "instruction": "With a wide tongue, lick your upper lip from top to bottom, as if tasting jam.",
+      "gesture": "Raise an open palm to your lips, then lower it."
+    }
+  },
+  {
+    "module": 34,
+    "title": "Food of the Nations",
+    "tempo": "moderate",
+    "mouth": {
+      "name": "Pendulum",
+      "instruction": "Open your mouth and move your lower jaw left and right, smoothly and evenly.",
+      "gesture": "Swing your lowered arms like a pendulum."
+    }
+  },
+  {
+    "module": 35,
+    "title": "Fathers and Sons",
+    "tempo": "moderate",
+    "mouth": {
+      "name": "Picket Fence",
+      "instruction": "Close your teeth and stretch your lips wide to show your “picket fence”. Hold, then relax.",
+      "gesture": "Spread your arms out to the sides, holding the tension."
+    }
+  },
+  {
+    "module": 36,
+    "title": "My Music",
+    "tempo": "moderate",
+    "mouth": {
+      "name": "Little Drum",
+      "instruction": "Tap the tip of your tongue just behind your upper teeth: “d-d-d”, getting faster.",
+      "gesture": "Lightly tap your fingers on the table to the rhythm."
+    }
+  },
+  {
+    "module": 37,
+    "title": "My Favorite Film",
+    "tempo": "moderate",
+    "mouth": {
+      "name": "Pucker — Smile",
+      "instruction": "Push your lips forward into a pucker, hold for 2 seconds, then break into a wide smile. Repeat.",
+      "gesture": "Spread your arms on the smile, bring them in to your chest on the pucker."
+    }
+  },
+  {
+    "module": 38,
+    "title": "Wi-Fi",
+    "tempo": "moderate",
+    "mouth": {
+      "name": "Tick-Tock",
+      "instruction": "Open your mouth slightly and reach with your tongue to the left corner of your lips, then to the right — like a pendulum.",
+      "gesture": "Turn your head left and right, following your tongue."
+    }
+  },
+  {
+    "module": 39,
+    "title": "The Bond Between Generations",
+    "tempo": "moderate",
+    "mouth": {
+      "name": "Pony",
+      "instruction": "Click your tongue like clopping hooves, speeding up from slow to fast.",
+      "gesture": "Flick your wrists lightly to the rhythm of the clopping."
+    }
+  },
+  {
+    "module": 40,
+    "title": "AI",
+    "tempo": "moderate",
+    "mouth": {
+      "name": "Needle",
+      "instruction": "Stick out a narrow, pointed tongue and hold it tense. Relax and repeat.",
+      "gesture": "Reach one arm forward together with your tongue."
+    }
+  },
+  {
+    "module": 41,
+    "title": "Connection",
+    "tempo": "moderate",
+    "mouth": {
+      "name": "Spatula",
+      "instruction": "Rest a wide, relaxed tongue on your lower lip and keep it flat and still.",
+      "gesture": "Keep your open palms resting calmly in front of you."
+    }
+  },
+  {
+    "module": 42,
+    "title": "Contemplation",
+    "tempo": "lively",
+    "mouth": {
+      "name": "Seesaw",
+      "instruction": "With the tip of your tongue, reach up toward your nose, then down toward your chin, taking turns.",
+      "gesture": "Gently rock your body up and down in time."
+    }
+  },
+  {
+    "module": 43,
+    "title": "The Idea",
+    "tempo": "lively",
+    "mouth": {
+      "name": "Puff — Deflate Cheeks",
+      "instruction": "Take a breath, puff out both cheeks, hold for 2 seconds, then slowly let the air out.",
+      "gesture": "Open your arms as you breathe in, bring them together as you breathe out."
+    }
+  },
+  {
+    "module": 44,
+    "title": "A Clean Slate",
+    "tempo": "lively",
+    "mouth": {
+      "name": "Brushing Teeth",
+      "instruction": "Run the tip of your tongue in a circle along the inside of your teeth — in both directions.",
+      "gesture": "Draw circles in the air with your hand in time with your tongue."
+    }
+  },
+  {
+    "module": 45,
+    "title": "The Artist and the Creation",
+    "tempo": "lively",
+    "mouth": {
+      "name": "Tasty Jam",
+      "instruction": "With a wide tongue, lick your upper lip from top to bottom, as if tasting jam.",
+      "gesture": "Raise an open palm to your lips, then lower it."
+    }
+  },
+  {
+    "module": 46,
+    "title": "Technologies of the Future",
+    "tempo": "lively",
+    "mouth": {
+      "name": "Pendulum",
+      "instruction": "Open your mouth and move your lower jaw left and right, smoothly and evenly.",
+      "gesture": "Swing your lowered arms like a pendulum."
+    }
+  },
+  {
+    "module": 47,
+    "title": "Freedom of Speech",
+    "tempo": "lively",
+    "mouth": {
+      "name": "Picket Fence",
+      "instruction": "Close your teeth and stretch your lips wide to show your “picket fence”. Hold, then relax.",
+      "gesture": "Spread your arms out to the sides, holding the tension."
+    }
+  },
+  {
+    "module": 48,
+    "title": "What Is Marketing",
+    "tempo": "lively",
+    "mouth": {
+      "name": "Little Drum",
+      "instruction": "Tap the tip of your tongue just behind your upper teeth: “d-d-d”, getting faster.",
+      "gesture": "Lightly tap your fingers on the table to the rhythm."
+    }
+  },
+  {
+    "module": 49,
+    "title": "Humor Is the Best Medicine",
+    "tempo": "lively",
+    "mouth": {
+      "name": "Pucker — Smile",
+      "instruction": "Push your lips forward into a pucker, hold for 2 seconds, then break into a wide smile. Repeat.",
+      "gesture": "Spread your arms on the smile, bring them in to your chest on the pucker."
+    }
+  },
+  {
+    "module": 50,
+    "title": "Learning Is Light",
+    "tempo": "lively",
+    "mouth": {
+      "name": "Tick-Tock",
+      "instruction": "Open your mouth slightly and reach with your tongue to the left corner of your lips, then to the right — like a pendulum.",
+      "gesture": "Turn your head left and right, following your tongue."
+    }
+  },
+  {
+    "module": 51,
+    "title": "Talk About Your Dream",
+    "tempo": "lively",
+    "mouth": {
+      "name": "Pony",
+      "instruction": "Click your tongue like clopping hooves, speeding up from slow to fast.",
+      "gesture": "Flick your wrists lightly to the rhythm of the clopping."
+    }
+  },
+  {
+    "module": 52,
+    "title": "Movement",
+    "tempo": "lively",
+    "mouth": {
+      "name": "Needle",
+      "instruction": "Stick out a narrow, pointed tongue and hold it tense. Relax and repeat.",
+      "gesture": "Reach one arm forward together with your tongue."
+    }
+  },
+  {
+    "module": 53,
+    "title": "Sport Is Life",
+    "tempo": "lively",
+    "mouth": {
+      "name": "Spatula",
+      "instruction": "Rest a wide, relaxed tongue on your lower lip and keep it flat and still.",
+      "gesture": "Keep your open palms resting calmly in front of you."
+    }
+  },
+  {
+    "module": 54,
+    "title": "Creativity Is Irreplaceable",
+    "tempo": "lively",
+    "mouth": {
+      "name": "Seesaw",
+      "instruction": "With the tip of your tongue, reach up toward your nose, then down toward your chin, taking turns.",
+      "gesture": "Gently rock your body up and down in time."
+    }
+  },
+  {
+    "module": 55,
+    "title": "The Vast World Around Us",
+    "tempo": "free, wider range",
+    "mouth": {
+      "name": "Puff — Deflate Cheeks",
+      "instruction": "Take a breath, puff out both cheeks, hold for 2 seconds, then slowly let the air out.",
+      "gesture": "Open your arms as you breathe in, bring them together as you breathe out."
+    }
+  },
+  {
+    "module": 56,
+    "title": "The Power of Love",
+    "tempo": "free, wider range",
+    "mouth": {
+      "name": "Brushing Teeth",
+      "instruction": "Run the tip of your tongue in a circle along the inside of your teeth — in both directions.",
+      "gesture": "Draw circles in the air with your hand in time with your tongue."
+    }
+  },
+  {
+    "module": 57,
+    "title": "Back to the Future",
+    "tempo": "free, wider range",
+    "mouth": {
+      "name": "Tasty Jam",
+      "instruction": "With a wide tongue, lick your upper lip from top to bottom, as if tasting jam.",
+      "gesture": "Raise an open palm to your lips, then lower it."
+    }
+  },
+  {
+    "module": 58,
+    "title": "A Hero of Our Time",
+    "tempo": "free, wider range",
+    "mouth": {
+      "name": "Pendulum",
+      "instruction": "Open your mouth and move your lower jaw left and right, smoothly and evenly.",
+      "gesture": "Swing your lowered arms like a pendulum."
+    }
+  },
+  {
+    "module": 59,
+    "title": "A Rising Star",
+    "tempo": "free, wider range",
+    "mouth": {
+      "name": "Picket Fence",
+      "instruction": "Close your teeth and stretch your lips wide to show your “picket fence”. Hold, then relax.",
+      "gesture": "Spread your arms out to the sides, holding the tension."
+    }
+  },
+  {
+    "module": 60,
+    "title": "My Choice",
+    "tempo": "free, wider range",
+    "mouth": {
+      "name": "Little Drum",
+      "instruction": "Tap the tip of your tongue just behind your upper teeth: “d-d-d”, getting faster.",
+      "gesture": "Lightly tap your fingers on the table to the rhythm."
+    }
+  },
+  {
+    "module": 61,
+    "title": "The Power of the Word",
+    "tempo": "free, wider range",
+    "mouth": {
+      "name": "Pucker — Smile",
+      "instruction": "Push your lips forward into a pucker, hold for 2 seconds, then break into a wide smile. Repeat.",
+      "gesture": "Spread your arms on the smile, bring them in to your chest on the pucker."
+    }
+  },
+  {
+    "module": 62,
+    "title": "Millennials",
+    "tempo": "free, wider range",
+    "mouth": {
+      "name": "Tick-Tock",
+      "instruction": "Open your mouth slightly and reach with your tongue to the left corner of your lips, then to the right — like a pendulum.",
+      "gesture": "Turn your head left and right, following your tongue."
+    }
+  },
+  {
+    "module": 63,
+    "title": "Life's Work",
+    "tempo": "free, wider range",
+    "mouth": {
+      "name": "Pony",
+      "instruction": "Click your tongue like clopping hooves, speeding up from slow to fast.",
+      "gesture": "Flick your wrists lightly to the rhythm of the clopping."
+    }
+  },
+  {
+    "module": 64,
+    "title": "Legacy and Art",
+    "tempo": "free, wider range",
+    "mouth": {
+      "name": "Needle",
+      "instruction": "Stick out a narrow, pointed tongue and hold it tense. Relax and repeat.",
+      "gesture": "Reach one arm forward together with your tongue."
+    }
+  },
+  {
+    "module": 65,
+    "title": "The Path of Humanity",
+    "tempo": "free, wider range",
+    "mouth": {
+      "name": "Spatula",
+      "instruction": "Rest a wide, relaxed tongue on your lower lip and keep it flat and still.",
+      "gesture": "Keep your open palms resting calmly in front of you."
+    }
+  },
+  {
+    "module": 66,
+    "title": "Tomorrow",
+    "tempo": "free, wider range",
+    "mouth": {
+      "name": "Seesaw",
+      "instruction": "With the tip of your tongue, reach up toward your nose, then down toward your chin, taking turns.",
+      "gesture": "Gently rock your body up and down in time."
+    }
+  },
+  {
+    "module": 67,
+    "title": "In the Spotlight",
+    "tempo": "free, wider range",
+    "mouth": {
+      "name": "Puff — Deflate Cheeks",
+      "instruction": "Take a breath, puff out both cheeks, hold for 2 seconds, then slowly let the air out.",
+      "gesture": "Open your arms as you breathe in, bring them together as you breathe out."
+    }
+  }
+]

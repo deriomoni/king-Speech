@@ -4155,9 +4155,11 @@ const SPEECH_THEMES_EN: Record<string, SpeechTheme> = {
 // are replaced). Computed once and cached. English keeps the legacy themes.
 let RU_MERGED_THEMES: Record<string, SpeechTheme> | null = null;
 let KK_MERGED_THEMES: Record<string, SpeechTheme> | null = null;
-function getRuMergedThemes(lang: "ru" | "kk" = "ru"): Record<string, SpeechTheme> {
+let EN_MERGED_THEMES: Record<string, SpeechTheme> | null = null;
+function getRuMergedThemes(lang: Lang = "ru"): Record<string, SpeechTheme> {
   if (lang === "ru" && RU_MERGED_THEMES) return RU_MERGED_THEMES;
   if (lang === "kk" && KK_MERGED_THEMES) return KK_MERGED_THEMES;
+  if (lang === "en" && EN_MERGED_THEMES) return EN_MERGED_THEMES;
   const out: Record<string, SpeechTheme> = {};
   for (const [id, theme] of Object.entries(SPEECH_THEMES)) {
     const mod = getShowtimeModule(getModuleFromShowtimeId(id), lang);
@@ -4171,6 +4173,7 @@ function getRuMergedThemes(lang: "ru" | "kk" = "ru"): Record<string, SpeechTheme
         : theme;
   }
   if (lang === "kk") KK_MERGED_THEMES = out;
+  else if (lang === "en") EN_MERGED_THEMES = out;
   else RU_MERGED_THEMES = out;
   return out;
 }
@@ -4202,8 +4205,11 @@ function buildShowEnvelope(samples: number[], n: number): number[] | null {
 }
 
 export function getSpeechThemes(lang: Lang): Record<string, SpeechTheme> {
-  if (lang === "en") return SPEECH_THEMES_EN;
-  return getRuMergedThemes(lang === "kk" ? "kk" : "ru");
+  // Same module topics in every language (content JSON per language); the
+  // legacy SPEECH_THEMES_EN is only a fallback if the English JSON is broken.
+  const merged = getRuMergedThemes(lang);
+  if (lang === "en" && !getShowtimeModule(1, "en")) return SPEECH_THEMES_EN;
+  return merged;
 }
 
 // ── NOISE EFFECTS ─────────────────────────────────────────────────────────────

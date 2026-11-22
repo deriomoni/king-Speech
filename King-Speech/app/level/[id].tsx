@@ -337,7 +337,7 @@ export default function LevelScreen() {
   const baseLevel = getLevelById(levelId);
   // KK uses its own жаңылтпаш pool (same task count, text swapped).
   const level =
-    baseLevel && (lang === "ru" || lang === "kk") && levelId.startsWith("tonguetwister")
+    baseLevel && levelId.startsWith("tonguetwister")
       ? {
           ...baseLevel,
           tasks: (() => {
