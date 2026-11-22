@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import NextChevron from "@/components/NextChevron";
 import * as Haptics from "@/lib/haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -368,23 +369,28 @@ function MannersView({ lang, c }: { lang: Lang; c: AppColors }) {
 function FinalView({ step, lang, onDone, c }: { step: FinalStep; lang: Lang; onDone: () => void; c: AppColors }) {
   return (
     <View style={styles.finalWrap}>
-      {/* Oscar, confident (pose №5) */}
-      <Animated.View entering={FadeIn.duration(420)}>
-        <TipMascot mascot={{ rive: "cool" }} />
+      {/* hero: the verdict first, then the line under it, then Oscar (pose №5) */}
+      <View style={styles.finalTop}>
+        <Animated.View entering={FadeInDown.duration(380)} style={styles.finalHead}>
+          <Text style={[styles.finalTitle, { color: c.text }]}>{tx(step.title, lang)}</Text>
+          <Text style={[styles.finalQuote, { color: c.textSecondary }]}>{tx(step.mantra, lang)}</Text>
+        </Animated.View>
+        <Animated.View entering={FadeIn.duration(420).delay(120)}>
+          <TipMascot mascot={{ rive: "cool" }} />
+        </Animated.View>
+      </View>
+      {/* checklist + button sit low, near the thumb */}
+      <Animated.View entering={FadeInDown.duration(380).delay(220)} style={styles.finalBottom}>
+        <View style={styles.finalLines}>
+          {step.lines.map((l, k) => (
+            <View key={k} style={styles.finalLineRow}>
+              <View style={styles.finalDot} />
+              <Text style={[styles.finalLine, { color: c.text }]}>{tx(l, lang)}</Text>
+            </View>
+          ))}
+        </View>
+        <ReadyButton3D label={pickLang(lang, { ru: "Я готов", en: "I'm ready", kk: "Мен дайынмын" })} onPress={onDone} />
       </Animated.View>
-      <Animated.View entering={FadeInDown.duration(380).delay(120)} style={styles.finalHead}>
-        <Text style={[styles.finalTitle, { color: c.text }]}>{tx(step.title, lang)}</Text>
-        <Text style={[styles.finalQuote, { color: c.textSecondary }]}>{tx(step.mantra, lang)}</Text>
-      </Animated.View>
-      <Animated.View entering={FadeInDown.duration(380).delay(220)} style={styles.finalLines}>
-        {step.lines.map((l, k) => (
-          <View key={k} style={styles.finalLineRow}>
-            <View style={styles.finalDot} />
-            <Text style={[styles.finalLine, { color: c.text }]}>{tx(l, lang)}</Text>
-          </View>
-        ))}
-      </Animated.View>
-      <ReadyButton3D label={pickLang(lang, { ru: "Я готов", en: "I'm ready", kk: "Мен дайынмын" })} onPress={onDone} />
     </View>
   );
 }
@@ -415,8 +421,14 @@ function ReadyButton3D({ label, onPress }: { label: string; onPress: () => void 
     >
       <View style={styles.ready3dBase} />
       <Animated.View style={[styles.ready3dFace, faceStyle]}>
-        {/* soft top glint */}
-        <View style={styles.ready3dGlint} />
+        {/* soft top glint — fades out, no hard edge */}
+        <LinearGradient
+          pointerEvents="none"
+          colors={["rgba(255,255,255,0.38)", "rgba(255,255,255,0)"]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.ready3dGlint}
+        />
         <Text style={styles.readyTxt}>{label}</Text>
       </Animated.View>
     </Pressable>
@@ -580,7 +592,12 @@ export default function CheatSheetRunner({
         )}
 
         {step.kind === "final" && (
-          <ScrollView contentContainerStyle={styles.scrollBody} showsVerticalScrollIndicator={false}>
+          // fills the screen so the checklist + button sit where the footer
+          // buttons usually are (same bottom clearance)
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1, paddingBottom: Math.max(insets.bottom, rs(22)) + rs(18) }}
+            showsVerticalScrollIndicator={false}
+          >
             <FinalView step={step} lang={lang} onDone={onExit} c={c} />
           </ScrollView>
         )}
@@ -704,8 +721,10 @@ const styles = StyleSheet.create({
   tipText: { fontSize: 17, lineHeight: 26, fontFamily: fonts.body, textAlign: "center" },
 
   // final
-  finalWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 22 },
-  finalHead: { alignItems: "center", gap: 8 },
+  finalWrap: { flex: 1, alignItems: "center", paddingBottom: 6 },
+  finalTop: { flex: 1, alignItems: "center", justifyContent: "center", gap: 20 },
+  finalHead: { alignItems: "center", gap: 14 },
+  finalBottom: { alignSelf: "stretch", alignItems: "center", gap: 22 },
   finalTitle: { fontSize: 32, fontFamily: fonts.display, textAlign: "center" },
   finalQuote: { fontSize: 17, lineHeight: 24, fontFamily: fonts.body, textAlign: "center", maxWidth: 240 },
   finalLines: { gap: 10, alignSelf: "center" },
@@ -715,7 +734,7 @@ const styles = StyleSheet.create({
   ready3d: { alignSelf: "stretch", height: 58 + READY_DEPTH, marginTop: 4 },
   ready3dBase: { position: "absolute", left: 0, right: 0, bottom: 0, height: 58, borderRadius: 29, backgroundColor: "#D99A1E" },
   ready3dFace: { height: 58, borderRadius: 29, backgroundColor: GOLD, alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  ready3dGlint: { position: "absolute", top: 5, left: 22, right: 22, height: 14, borderRadius: 7, backgroundColor: "rgba(255,255,255,0.32)" },
+  ready3dGlint: { position: "absolute", top: 0, left: 0, right: 0, height: 30 },
   readyTxt: { color: "#41310A", fontSize: 18, fontFamily: fonts.bodyBold, letterSpacing: 0.2 },
 
   // footer

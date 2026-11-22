@@ -553,13 +553,13 @@ const finalStep: FinalStep = {
   kind: "final",
   id: "final",
   block: "final",
-  title: { ru: "Ты готов", en: "You're ready", kk: "Сіз дайынсыз" },
+  title: { ru: "Ты готов!", en: "You're ready!", kk: "Сіз дайынсыз!" },
   lines: [
     { ru: "Плечи вниз, макушка вверх.", en: "Shoulders down, crown up.", kk: "Иық төмен, төбе жоғары." },
     { ru: "Один спокойный вдох.", en: "One calm breath.", kk: "Бір тыныш дем." },
     { ru: "Первую фразу — уверенно и не спеша.", en: "Deliver your first line with calm confidence.", kk: "Алғашқы сөйлемді — сенімді әрі асықпай." },
   ],
-  mantra: { ru: "Зал уже на твоей стороне. Просто начни.", en: "The room is already on your side. Just begin.", kk: "Зал сіздің жағыңызда. Жай ғана бастаңыз." },
+  mantra: { ru: "Голос разогрет, дыхание ровное. Сцена твоя.", en: "Voice warmed up, breath steady. The stage is yours.", kk: "Дауыс қызды, тыныс бірқалыпты. Сахна сіздікі." },
 };
 
 // Full tongue-twister pool (easy → hellish) — used by the karaoke twister view's
