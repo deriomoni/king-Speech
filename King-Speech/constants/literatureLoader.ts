@@ -79,6 +79,8 @@ export function getModuleFromReadingId(levelId: string): number {
 export function literatureCategory(kind: string): ReadingCategory {
   const k = kind.toLowerCase();
   if (k.includes("басн") || k.includes("мысал")) return "fable";
+  if (k.includes("мақал") || k.includes("пословиц")) return "proverbs";
+  if (k.includes("аңыз") || k.includes("предани") || k.includes("легенд")) return "legend";
   if (
     k.includes("проз") || // "Стихотворение в прозе"
     k.includes("әңгіме") ||

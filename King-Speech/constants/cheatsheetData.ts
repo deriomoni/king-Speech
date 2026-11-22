@@ -343,8 +343,9 @@ const chantBro: ChantStep = {
 };
 
 // Tongue twisters, grouped conceptually by target sound, with difficulty 1..4.
-// TODO(kk-content): kk shows the Russian twister text/sound as-is; consider
-// adding native Kazakh жаңылтпаштар (would need their own sound labels).
+// Each language gets a native twister of matching difficulty (kk from the
+// жаңылтпаш collection in assets/content/kk/tonguetwisters_kk.json, en classic
+// English twisters) — not a translation or a transliteration of the ru one.
 const twSasha: TwisterStep = {
   kind: "twister",
   id: "tw-sasha",
@@ -352,7 +353,7 @@ const twSasha: TwisterStep = {
   title: { ru: "Шипящие", en: "Hissing sounds", kk: "Ысқырық дыбыстар" },
   sound: { ru: "Ш · С", en: "SH · S", kk: "Ш · С" },
   difficulty: 1,
-  text: { ru: "Шла Саша по шоссе и сосала сушку.", en: "Shla Sasha po shosse i sosala sushku.", kk: "Шла Саша по шоссе и сосала сушку." },
+  text: { ru: "Шла Саша по шоссе и сосала сушку.", en: "She sells seashells by the seashore.", kk: "Шеше, шеше, неше кесе сынды кеше?" },
 };
 
 const twTrava: TwisterStep = {
@@ -360,19 +361,19 @@ const twTrava: TwisterStep = {
   id: "tw-trava",
   block: "twister",
   title: { ru: "Звук «Р»", en: "The 'R' sound", kk: "«Р» дыбысы" },
-  sound: { ru: "Р · В", en: "R · V", kk: "Р · В" },
+  sound: { ru: "Р · В", en: "R · L", kk: "Р · Л" },
   difficulty: 2,
-  text: { ru: "На дворе трава, на траве дрова.", en: "Na dvore trava, na trave drova.", kk: "На дворе трава, на траве дрова." },
+  text: { ru: "На дворе трава, на траве дрова.", en: "Red lorry, yellow lorry, red lorry, yellow lorry.", kk: "Тарпаң тайлар қай қорада? Тарпаң тайлар тар қорада." },
 };
 
 const twKopyt: TwisterStep = {
   kind: "twister",
   id: "tw-kopyt",
   block: "twister",
-  title: { ru: "Взрывные «п/т/к»", en: "Plosives 'p/t/k'", kk: "«п/т/к» жарылыс дыбыстары" },
-  sound: { ru: "П · Т · К", en: "P · T · K", kk: "П · Т · К" },
+  title: { ru: "Взрывные «п/т/к»", en: "Plosives 'p/t/k'", kk: "«п/т/қ» жарылыс дыбыстары" },
+  sound: { ru: "П · Т · К", en: "P · T · K", kk: "П · Т · Қ" },
   difficulty: 3,
-  text: { ru: "От топота копыт пыль по полю летит.", en: "Ot topota kopyt pyl po polyu letit.", kk: "От топота копыт пыль по полю летит." },
+  text: { ru: "От топота копыт пыль по полю летит.", en: "Peter Piper picked a peck of pickled peppers.", kk: "Қапыда ит қапты, қатты қапты, қапты қатты." },
 };
 
 const twKolpak: TwisterStep = {
@@ -380,12 +381,12 @@ const twKolpak: TwisterStep = {
   id: "tw-kolpak",
   block: "twister",
   title: { ru: "Адская", en: "Hellish", kk: "Тозақ деңгейі" },
-  sound: { ru: "К · Л · П", en: "K · L · P", kk: "К · Л · П" },
+  sound: { ru: "К · Л · П", en: "P · K · D", kk: "Т · Б · Қ" },
   difficulty: 4,
   text: {
     ru: "Колпак под колпаком, а под колпаком колпак.",
-    en: "Kolpak pod kolpakom, a pod kolpakom kolpak.",
-    kk: "Колпак под колпаком, а под колпаком колпак.",
+    en: "Pad kid poured curd pulled cod.",
+    kk: "Тоғыз ақ баспақ тана, тоғыз ақ баспақ тана ішінде жалғыз тарғыл тайпақбас баспақ қана.",
   },
 };
 
@@ -393,13 +394,13 @@ const twGreki: TwisterStep = {
   kind: "twister",
   id: "tw-greki",
   block: "twister",
-  title: { ru: "Грека и рак", en: "Greka and the crab", kk: "Грека мен шаян" },
-  sound: { ru: "Р · К", en: "R · K", kk: "Р · К" },
+  title: { ru: "Грека и рак", en: "The big black bug", kk: "Қырық құлып" },
+  sound: { ru: "Р · К", en: "B · G", kk: "Қ · Р" },
   difficulty: 2,
   text: {
     ru: "Ехал Грека через реку, видит Грека — в реке рак.",
-    en: "Ekhal Greka cherez reku, vidit Greka — v reke rak.",
-    kk: "Ехал Грека через реку, видит Грека — в реке рак.",
+    en: "A big black bug bit a big black bear.",
+    kk: "Қырық құлып, қырық құрық. Құлып та қырық, құрық та қырық.",
   },
 };
 
@@ -407,13 +408,13 @@ const twOsip: TwisterStep = {
   kind: "twister",
   id: "tw-osip",
   block: "twister",
-  title: { ru: "Осип и Архип", en: "Osip and Arkhip", kk: "Осип пен Архип" },
-  sound: { ru: "С · Х · П", en: "S · KH · P", kk: "С · Х · П" },
+  title: { ru: "Осип и Архип", en: "Six slim saplings", kk: "Сегіз семіз серке" },
+  sound: { ru: "С · Х · П", en: "S · L", kk: "С · З" },
   difficulty: 2,
   text: {
     ru: "Осип охрип, а Архип осип.",
-    en: "Osip okhrip, a Arkhip osip.",
-    kk: "Осип охрип, а Архип осип.",
+    en: "Six slim slick saplings.",
+    kk: "Сегіз семіз серке, семіз сегіз ерке. Сегізі де егіз, семізі де сегіз.",
   },
 };
 
@@ -421,13 +422,13 @@ const twKlara: TwisterStep = {
   kind: "twister",
   id: "tw-klara",
   block: "twister",
-  title: { ru: "Карл и Клара", en: "Karl and Klara", kk: "Карл мен Клара" },
-  sound: { ru: "Р · К · Л", en: "R · K · L", kk: "Р · К · Л" },
+  title: { ru: "Карл и Клара", en: "Rory and Roger", kk: "Алты арқар" },
+  sound: { ru: "Р · К · Л", en: "R · W", kk: "Р · Қ" },
   difficulty: 3,
   text: {
     ru: "Карл у Клары украл кораллы, а Клара у Карла украла кларнет.",
-    en: "Karl u Klary ukral korally, a Klara u Karla ukrala klarnet.",
-    kk: "Карл у Клары украл кораллы, а Клара у Карла украла кларнет.",
+    en: "Rory the warrior and Roger the worrier were reared wrongly in a rural brewery.",
+    kk: "Арқада алты арқар бар, қырқада қырық арқар бар. Қырық арқарда ақ арқар бар, алты арқарда марқа арқар бар.",
   },
 };
 
@@ -435,13 +436,13 @@ const twByk: TwisterStep = {
   kind: "twister",
   id: "tw-byk",
   block: "twister",
-  title: { ru: "Тупогубый бычок", en: "The blunt-lipped bull", kk: "Доғал ерінді бұқашық" },
-  sound: { ru: "Б · Г", en: "B · G", kk: "Б · Г" },
+  title: { ru: "Тупогубый бычок", en: "Betty Botter", kk: "Бес мысық" },
+  sound: { ru: "Б · Г", en: "B · T", kk: "П · Б · С" },
   difficulty: 3,
   text: {
     ru: "Бык тупогуб, тупогубенький бычок, у быка бела губа была тупа.",
-    en: "Byk tupogub, tupogubenkiy bychok, u byka bela guba byla tupa.",
-    kk: "Бык тупогуб, тупогубенький бычок, у быка бела губа была тупа.",
+    en: "Betty Botter bought some butter, but she said the butter's bitter.",
+    kk: "Пеш үстінде бес мысық — бес күзетші, бес пысық.",
   },
 };
 
@@ -449,13 +450,13 @@ const twCherti: TwisterStep = {
   kind: "twister",
   id: "tw-cherti",
   block: "twister",
-  title: { ru: "Чертёнок", en: "Little devils", kk: "Кішкентай шайтандар" },
-  sound: { ru: "Ч · Р", en: "CH · R", kk: "Ч · Р" },
+  title: { ru: "Чертёнок", en: "Which witch", kk: "Арша мен шырша" },
+  sound: { ru: "Ч · Р", en: "W · CH", kk: "Ш · Р" },
   difficulty: 4,
   text: {
     ru: "Четыре чёрненьких чумазеньких чертёнка чертили чёрными чернилами чертёж.",
-    en: "Chetyre chyornenkikh chumazenkikh chertyonka chertili chyornymi chernilami chertyozh.",
-    kk: "Четыре чёрненьких чумазеньких чертёнка чертили чёрными чернилами чертёж.",
+    en: "Which witch wished which wicked wish?",
+    kk: "Аршабек арша деп шыршаны, Шыршабек шырша деп аршаны. Шатасты күлдіріп баршаны, шырша деп, арша деп шаршады.",
   },
 };
 

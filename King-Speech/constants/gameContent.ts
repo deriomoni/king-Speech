@@ -26,7 +26,7 @@ export interface TaskData {
   tips: string[];
 }
 
-export type ReadingCategory = "prose" | "poetry" | "fable";
+export type ReadingCategory = "prose" | "poetry" | "fable" | "proverbs" | "legend";
 export interface ReadingMeta {
   authorRu: string;
   titleRu: string;
@@ -5259,6 +5259,8 @@ function abbrevAuthor(full: string): string {
   // Kazakh titles/epithets aren't surnames: «Ақан сері», «Төле би», «Бұқар
   // жырау», «Халық ауыз әдебиеті» stay in full.
   if (/^(сері|би|жырау|әдебиеті)$/i.test(parts[parts.length - 1])) return full.trim();
+  // Kazakh classics known by their first name: «Абай», «Шәкәрім», «Мағжан».
+  if (/^(Абай|Шәкәрім|Мағжан|Махамбет|Ыбырай|Сәкен|Ілияс)$/.test(parts[0])) return parts[0];
   const surname = parts[parts.length - 1];
   const first = parts[0];
   return `${first[0]}. ${surname}`;

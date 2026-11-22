@@ -48,7 +48,7 @@ const BODY_SIZE = 20;
 const BODY_LINE = 34;
 const IDLE_BODY_SCALE = 16.56 / 20;
 
-type ReadingCategory = "prose" | "poetry" | "fable";
+type ReadingCategory = "prose" | "poetry" | "fable" | "proverbs" | "legend";
 
 interface Props {
   fullText: string;
@@ -143,10 +143,14 @@ export default function ReadingLevelView({
 
   const genre =
     category === "poetry"
-      ? pickLang(lang, { ru: "Поэзия", en: "Poetry", kk: "Поэзия" })
+      ? pickLang(lang, { ru: "Поэзия", en: "Poetry", kk: "Өлең" })
       : category === "fable"
         ? pickLang(lang, { ru: "Басня", en: "Fable", kk: "Мысал" })
-        : pickLang(lang, { ru: "Проза", en: "Prose", kk: "Проза" });
+        : category === "proverbs"
+          ? pickLang(lang, { ru: "Пословицы", en: "Proverbs", kk: "Мақал-мәтелдер" })
+          : category === "legend"
+            ? pickLang(lang, { ru: "Предание", en: "Legend", kk: "Аңыз" })
+            : pickLang(lang, { ru: "Проза", en: "Prose", kk: "Қара сөз" });
   const kicker = [author, genre].filter(Boolean).join(" · ");
 
   const { tokens } = useMemo(() => tokenizeReading(fullText), [fullText]);
