@@ -525,7 +525,6 @@ export default function CheatSheetRunner({
               {pickLang(lang, { ru: `Шаг ${idx + 1} из ${total}`, en: `Step ${idx + 1} of ${total}`, kk: `${total} қадамның ${idx + 1}-і` })}
             </Text>
             <View style={styles.timerChip}>
-              <Ionicons name="time-outline" size={rs(13)} color={route.accent} />
               <Text style={[styles.timerTxt, { color: c.text }]}>
                 {mmss(elapsed)} / {mmss(targetSec)}
               </Text>
