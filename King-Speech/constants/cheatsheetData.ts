@@ -427,7 +427,7 @@ const twCherti: TwisterStep = {
 // Tips (советы)
 const tipExcitement: TipStep = {
   kind: "tip", id: "tip-excite", block: "tip", variant: "tip", icon: "flash-outline",
-  title: { ru: "Волнение — это топливo", en: "Nerves are fuel", kk: "Толқу — бұл отын" },
+  title: { ru: "Волнение — это топливо", en: "Nerves are fuel", kk: "Толқу — бұл отын" },
   text: { ru: "Не гаси волнение — направь его в первую фразу. Это энергия, а не враг.", en: "Don't fight the nerves — pour them into your opening line. It's energy, not an enemy.", kk: "Толқуды басуға тырыспаңыз — оны алғашқы сөйлеміңізге бағыттаңыз. Бұл — жау емес, қуат." },
 };
 const tipTempo: TipStep = {
