@@ -1,4 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
+import type { OscarEmotion } from "@/components/OscarMascot";
+import type { OscarPose } from "@/constants/oscarPoses";
 import { pickLang, type Lang } from "@/context/LangContext";
 
 /**
@@ -98,6 +100,9 @@ export interface TwisterStep {
 }
 
 /** Short advice ("tip") or emergency micro-fix ("fix") card. */
+/** Oscar on a tip card: a Rive emotion (animated) or a vector pose. */
+export type TipMascot = { rive: OscarEmotion } | { pose: OscarPose };
+
 export interface TipStep {
   kind: "tip";
   id: string;
@@ -106,6 +111,7 @@ export interface TipStep {
   icon: IconName;
   title: Loc;
   text: Loc;
+  mascot?: TipMascot;
 }
 
 /** Final anchor screen — posture + one mantra + "Я готов". */
@@ -426,66 +432,66 @@ const twCherti: TwisterStep = {
 
 // Tips (советы)
 const tipExcitement: TipStep = {
-  kind: "tip", id: "tip-excite", block: "tip", variant: "tip", icon: "flash-outline",
+  kind: "tip", id: "tip-excite", block: "tip", variant: "tip", icon: "flash-outline", mascot: { rive: "cool" },
   title: { ru: "Волнение — это топливо", en: "Nerves are fuel", kk: "Толқу — бұл отын" },
   text: { ru: "Не гаси волнение — направь его в первую фразу. Это энергия, а не враг.", en: "Don't fight the nerves — pour them into your opening line. It's energy, not an enemy.", kk: "Толқуды басуға тырыспаңыз — оны алғашқы сөйлеміңізге бағыттаңыз. Бұл — жау емес, қуат." },
 };
 const tipTempo: TipStep = {
-  kind: "tip", id: "tip-tempo", block: "tip", variant: "tip", icon: "speedometer-outline",
+  kind: "tip", id: "tip-tempo", block: "tip", variant: "tip", icon: "speedometer-outline", mascot: { rive: "idle" },
   title: { ru: "Чуть медленнее", en: "A touch slower", kk: "Сәл баяуырақ" },
   text: { ru: "Говори чуть медленнее, чем хочется. Спешка читается как волнение.", en: "Speak a little slower than feels natural. Rushing reads as anxiety.", kk: "Өзіңіз қалағаннан сәл баяуырақ сөйлеңіз. Асығыстық толқу сияқты көрінеді." },
 };
 const tipPauses: TipStep = {
-  kind: "tip", id: "tip-pauses", block: "tip", variant: "tip", icon: "pause-outline",
+  kind: "tip", id: "tip-pauses", block: "tip", variant: "tip", icon: "pause-outline", mascot: { rive: "notsure" },
   title: { ru: "Пауза весит больше", en: "A pause carries weight", kk: "Үзілістің салмағы зор" },
   text: { ru: "Пауза после важной мысли действует сильнее, чем громкость.", en: "A pause after a key point lands harder than volume ever will.", kk: "Маңызды ойдан кейінгі үзіліс дауыс қаттылығынан да күшті әсер етеді." },
 };
 const tipEyes: TipStep = {
-  kind: "tip", id: "tip-eyes", block: "tip", variant: "tip", icon: "eye-outline",
+  kind: "tip", id: "tip-eyes", block: "tip", variant: "tip", icon: "eye-outline", mascot: { pose: "wink" },
   title: { ru: "Найди дружелюбные глаза", en: "Find friendly eyes", kk: "Мейірімді көздерді табыңыз" },
   text: { ru: "Выбери 2–3 доброжелательных лица и говори им, а не в пустоту.", en: "Pick 2–3 friendly faces and talk to them, not to the void.", kk: "2–3 мейірімді жүзді таңдап, бос кеңістікке емес, соларға сөйлеңіз." },
 };
 const tipPosture: TipStep = {
-  kind: "tip", id: "tip-posture", block: "tip", variant: "tip", icon: "body-outline",
+  kind: "tip", id: "tip-posture", block: "tip", variant: "tip", icon: "body-outline", mascot: { pose: "lotus" },
   title: { ru: "Тело спокойно — голос спокоен", en: "Calm body, calm voice", kk: "Дене тыныш — дауыс тыныш" },
   text: { ru: "Встань устойчиво, вес на обе ноги, плечи вниз. Опора даёт уверенный звук.", en: "Stand grounded, weight on both feet, shoulders down. Stability steadies your voice.", kk: "Нық тұрыңыз, салмақты екі аяққа салыңыз, иықты түсіріңіз. Тірек дауысқа сенімділік береді." },
 };
 
 // Encouraging one-liners to slip between exercises — reassure and de-stress.
 const tipYouGotThis: TipStep = {
-  kind: "tip", id: "tip-yougot", block: "tip", variant: "tip", icon: "sunny-outline",
+  kind: "tip", id: "tip-yougot", block: "tip", variant: "tip", icon: "sunny-outline", mascot: { rive: "thumbup" },
   title: { ru: "У тебя получится", en: "You've got this", kk: "Сіздің қолыңыздан келеді" },
   text: { ru: "Ты уже здесь и готовишься — это половина успеха. Осталось просто начать.", en: "You're here and preparing — that's half the battle. Now just begin.", kk: "Сіз осындасыз және дайындалып жатырсыз — бұл табыстың жартысы. Енді тек бастау қалды." },
 };
 const tipSmile: TipStep = {
-  kind: "tip", id: "tip-smile", block: "tip", variant: "tip", icon: "happy-outline",
+  kind: "tip", id: "tip-smile", block: "tip", variant: "tip", icon: "happy-outline", mascot: { rive: "happy" },
   title: { ru: "Улыбнись", en: "Smile", kk: "Жымиыңыз" },
   text: { ru: "Лёгкая улыбка расслабляет лицо — и голос сразу звучит теплее и живее.", en: "A light smile relaxes your face — and your voice instantly sounds warmer.", kk: "Жеңіл жымиыс бетті босаңсытады — дауыс бірден жылырақ әрі жандырақ естіледі." },
 };
 const tipMistakesOk: TipStep = {
-  kind: "tip", id: "tip-mistakes", block: "tip", variant: "tip", icon: "shield-checkmark-outline",
+  kind: "tip", id: "tip-mistakes", block: "tip", variant: "tip", icon: "shield-checkmark-outline", mascot: { rive: "shiny" },
   title: { ru: "Ошибиться — это норм", en: "Slips are fine", kk: "Қателесу — қалыпты нәрсе" },
   text: { ru: "Даже опытные ораторы оговариваются. Не останавливайся — и никто не заметит.", en: "Even seasoned speakers stumble. Just keep going — no one will notice.", kk: "Тәжірибелі шешендер де жаңылысады. Тоқтамаңыз — ешкім байқамайды." },
 };
 const tipShine: TipStep = {
-  kind: "tip", id: "tip-shine", block: "tip", variant: "tip", icon: "sparkles-outline",
+  kind: "tip", id: "tip-shine", block: "tip", variant: "tip", icon: "sparkles-outline", mascot: { pose: "heart" },
   title: { ru: "Тебе есть что сказать", en: "You have something to say", kk: "Сіздің айтарыңыз бар" },
   text: { ru: "Люди пришли услышать именно тебя. Дыши ровно — и просто поделись.", en: "People came to hear you. Breathe steady — and simply share it.", kk: "Адамдар дәл сізді тыңдауға келді. Бірқалыпты дем алып, жай ғана бөлісіңіз." },
 };
 
 // Quick fixes (быстрые фиксы — аварии перед выходом)
 const fixVoice: TipStep = {
-  kind: "tip", id: "fix-voice", block: "fix", variant: "fix", icon: "mic-outline",
+  kind: "tip", id: "fix-voice", block: "fix", variant: "fix", icon: "mic-outline", mascot: { pose: "chin" },
   title: { ru: "Севший голос", en: "Voice cracked", kk: "Қарлыққан дауыс" },
   text: { ru: "Тихо помычи «ммм» и сделай пару спокойных зевков — связки мягко проснутся.", en: "Hum a soft 'mmm' and take a couple of calm yawns — your cords wake up gently.", kk: "Ақырын «ммм» деп ыңылдап, бірер рет асықпай есінеп алыңыз — дауыс байламдары жайлап оянады." },
 };
 const fixDry: TipStep = {
-  kind: "tip", id: "fix-dry", block: "fix", variant: "fix", icon: "water-outline",
+  kind: "tip", id: "fix-dry", block: "fix", variant: "fix", icon: "water-outline", mascot: { pose: "glass" },
   title: { ru: "Сухость во рту", en: "Dry mouth", kk: "Ауыздың құрғауы" },
   text: { ru: "Слегка прикуси кончик языка — вернётся слюна. Пей только тёплую воду, не ледяную.", en: "Lightly bite the tip of your tongue — saliva returns. Drink warm water only, never ice-cold.", kk: "Тіліңіздің ұшын сәл тістеп алыңыз — сілекей қайта келеді. Мұздай емес, тек жылы су ішіңіз." },
 };
 const fixWarm: TipStep = {
-  kind: "tip", id: "fix-warm", block: "fix", variant: "fix", icon: "flame-outline",
+  kind: "tip", id: "fix-warm", block: "fix", variant: "fix", icon: "flame-outline", mascot: { rive: "hi" },
   title: { ru: "Согреть связки", en: "Warm the cords", kk: "Дауыс байламдарын жылыту" },
   text: { ru: "Подыши на ладони тёплым воздухом, будто греешь их — то же тепло уйдёт в связки.", en: "Breathe warm air onto your palms as if warming them — that warmth reaches your cords.", kk: "Алақандарыңызды жылытқандай оларға жылы дем үрлеңіз — сол жылу дауыс байламдарына барады." },
 };

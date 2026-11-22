@@ -47,6 +47,7 @@ import {
   type FinalStep,
 } from "@/constants/cheatsheetData";
 import BreathingCircle from "@/components/cheatsheet/BreathingCircle";
+import TipMascot from "@/components/cheatsheet/TipMascot";
 import IllustratedDrill, { getIllustrated } from "@/components/warmup/IllustratedDrill";
 import ChantView from "@/components/cheatsheet/ChantView";
 
@@ -322,17 +323,17 @@ function TwisterView({ step, lang, c, isDark }: { step: TwisterStep; lang: Lang;
 // ── Tip / Fix card ────────────────────────────────────────────────────────────
 function TipView({ step, lang, c }: { step: TipStep; lang: Lang; c: AppColors }) {
   const isFix = step.variant === "fix";
-  const accent = isFix ? GOLD : PURPLE;
   return (
     <View style={styles.tipWrap}>
-      <View style={[styles.tipIconWrap, { backgroundColor: accent + "1F", borderColor: accent + "44" }]}>
-        <Ionicons name={step.icon} size={rs(30)} color={accent} />
-      </View>
-      <Text style={[styles.tipKicker, { color: accent }]}>
+      <Text style={[styles.tipKicker, { color: c.text }]}>
         {isFix
           ? pickLang(lang, { ru: "БЫСТРЫЙ ФИКС", en: "QUICK FIX", kk: "ЖЕДЕЛ КӨМЕК" })
           : pickLang(lang, { ru: "СОВЕТ", en: "TIP", kk: "КЕҢЕС" })}
       </Text>
+      {/* Oscar in a pose that fits the tip (Rive emotion or vector pose) */}
+      <Animated.View entering={FadeIn.duration(360).delay(80)} style={styles.tipMascot}>
+        <TipMascot mascot={step.mascot} />
+      </Animated.View>
       <Text style={[styles.tipTitle, { color: c.text }]}>{tx(step.title, lang)}</Text>
       <Text style={[styles.tipText, { color: c.textSecondary }]}>{tx(step.text, lang)}</Text>
     </View>
@@ -655,10 +656,10 @@ const styles = StyleSheet.create({
   twReplaceTxt: { fontSize: 14, fontFamily: fonts.bodyBold },
 
   // tip / fix
-  tipWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16, paddingHorizontal: 8 },
-  tipIconWrap: { width: 74, height: 74, borderRadius: 37, alignItems: "center", justifyContent: "center", borderWidth: 1 },
-  tipKicker: { fontSize: 12, fontFamily: fonts.bodyBold, letterSpacing: 2 },
-  tipTitle: { fontSize: 25, fontFamily: fonts.display, textAlign: "center" },
+  tipWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 8 },
+  tipMascot: { alignItems: "center", justifyContent: "center", marginVertical: 8 },
+  tipKicker: { fontSize: 15, fontFamily: fonts.bodyBold, letterSpacing: 2.4 },
+  tipTitle: { fontSize: 25, fontFamily: fonts.display, textAlign: "center", marginTop: 6 },
   tipText: { fontSize: 17, lineHeight: 26, fontFamily: fonts.body, textAlign: "center" },
 
   // final
