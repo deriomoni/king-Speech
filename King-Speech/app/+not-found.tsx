@@ -1,16 +1,22 @@
 // template
 import { Link, Stack } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
+import { useLang, pickLang } from "@/context/LangContext";
 
 export default function NotFoundScreen() {
+  const { lang } = useLang();
   return (
     <>
-      <Stack.Screen options={{ title: "Oops!" }} />
+      <Stack.Screen options={{ title: pickLang(lang, { ru: "Упс!", en: "Oops!", kk: "Ой!" }) }} />
       <View style={styles.container}>
-        <Text style={styles.title}>This screen doesn&apos;t exist.</Text>
+        <Text style={styles.title}>
+          {pickLang(lang, { ru: "Такого экрана нет.", en: "This screen doesn't exist.", kk: "Мұндай экран жоқ." })}
+        </Text>
 
         <Link href="/" style={styles.link}>
-          <Text style={styles.linkText}>Go to home screen!</Text>
+          <Text style={styles.linkText}>
+            {pickLang(lang, { ru: "На главный экран", en: "Go to home screen", kk: "Басты экранға" })}
+          </Text>
         </Link>
       </View>
     </>

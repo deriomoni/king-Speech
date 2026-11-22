@@ -296,7 +296,7 @@ function ShowtimeRecording({ uri, theme, lang }: { uri?: string; theme: RankThem
   return (
     <View style={[blockStyles.card, { borderColor: theme.borderColor, backgroundColor: theme.cardBg }]}>
       <Text style={[blockStyles.label, { color: theme.accent, fontFamily: theme.fontFamily }]}>
-        {pickLang(lang, { ru: "Блок 1 · Начало", en: "Block 1 · The beginning", kk: "1-блок · Бастауы" })}
+        {pickLang(lang, { ru: "Блок 1 · Начало", en: "Block 1 · The beginning", kk: "1-блок · Бастама" })}
       </Text>
       <Text style={[blockStyles.heading, { color: theme.textPrimary, fontFamily: theme.fontFamilyTitle }]}>
         {pickLang(lang, { ru: "Вот каким ты был в начале…", en: "This is who you were…", kk: "Басында сіз осындай едіңіз…" })}

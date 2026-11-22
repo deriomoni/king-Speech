@@ -351,7 +351,7 @@ function RecordingsBlock({
     if (!actionFor) return;
     const uri = actionFor.uri;
     setActionFor(null);
-    const title = pickLang(lang, { ru: "Удалить запись?", en: "Delete recording?", kk: "Жазбаны жою керек пе?" });
+    const title = pickLang(lang, { ru: "Удалить запись?", en: "Delete recording?", kk: "Жазбаны жоясыз ба?" });
     const msg =
       pickLang(lang, { ru: "Запись исчезнет из коллекции воспоминаний. Это нельзя отменить.", en: "This will remove it from your keepsake library. This can't be undone.", kk: "Жазба естеліктер жинағынан жойылады. Мұны қайтару мүмкін емес." });
     if (Platform.OS === "web") {

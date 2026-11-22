@@ -253,7 +253,7 @@ function Result({
       ? pickLang(lang, { ru: "Безупречно. Манеры короля.", en: "Flawless. Royal manners.", kk: "Мінсіз. Король әдебі." })
       : right >= total - 1
         ? pickLang(lang, { ru: "Почти безупречно.", en: "Nearly flawless.", kk: "Мінсіз дерлік." })
-        : pickLang(lang, { ru: "Хорошее начало — правила уже в «Моём опыте».", en: "Good start — the rules are in “My experience”.", kk: "Жақсы бастама — ережелер «Тәжірибемде»." });
+        : pickLang(lang, { ru: "Хорошее начало — правила уже в «Моём опыте».", en: "Good start — the rules are in “My experience”.", kk: "Жақсы бастама — ережелер «Тәжірибем» бөлімінде." });
   return (
     <View style={[styles.root, { backgroundColor: theme.bg }]}>
       <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: topPad + rs(48), paddingBottom: rs(24) }]} showsVerticalScrollIndicator={false}>

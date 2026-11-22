@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { reloadAppAsync } from "expo";
 import {
   StyleSheet,
@@ -19,7 +20,26 @@ export type ErrorFallbackProps = {
   resetError: () => void;
 };
 
+type UiLang = "ru" | "en" | "kk";
+const COPY = {
+  title: { ru: "Что-то пошло не так", en: "Something went wrong", kk: "Бірдеңе дұрыс болмады" },
+  body: { ru: "Перезапусти приложение, чтобы продолжить.", en: "Please reload the app to continue.", kk: "Жалғастыру үшін қосымшаны қайта іске қосыңыз." },
+  retry: { ru: "Попробовать снова", en: "Try Again", kk: "Қайталап көру" },
+  details: { ru: "Подробности ошибки", en: "Error Details", kk: "Қате туралы толығырақ" },
+  viewDetails: { ru: "Показать подробности ошибки", en: "View error details", kk: "Қате туралы толығырақ көру" },
+  closeDetails: { ru: "Закрыть подробности", en: "Close error details", kk: "Толығырақ жабу" },
+};
+
 export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
+  const [lang, setLang] = useState<UiLang>("ru");
+  useEffect(() => {
+    AsyncStorage.getItem("@kingspeech_lang")
+      .then((v) => {
+        if (v === "ru" || v === "en" || v === "kk") setLang(v);
+      })
+      .catch(() => {});
+  }, []);
+  const tx = (k: keyof typeof COPY) => COPY[k][lang];
   const { theme: appTheme, themeMode } = useTheme();
   const isDark = themeMode === "dark";
   const insets = useSafeAreaInsets();
@@ -63,7 +83,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
       {__DEV__ ? (
         <Pressable
           onPress={() => setIsModalVisible(true)}
-          accessibilityLabel="View error details"
+          accessibilityLabel={tx("viewDetails")}
           accessibilityRole="button"
           style={({ pressed }) => [
             styles.topButton,
@@ -80,11 +100,11 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
 
       <View style={styles.content}>
         <Text style={[styles.title, { color: theme.text }]}>
-          Something went wrong
+          {tx("title")}
         </Text>
 
         <Text style={[styles.message, { color: theme.textSecondary }]}>
-          Please reload the app to continue.
+          {tx("body")}
         </Text>
 
         <Pressable
@@ -99,7 +119,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
           ]}
         >
           <Text style={[styles.buttonText, { color: theme.buttonText }]}>
-            Try Again
+            {tx("retry")}
           </Text>
         </Pressable>
       </View>
@@ -129,11 +149,11 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
                 ]}
               >
                 <Text style={[styles.modalTitle, { color: theme.text }]}>
-                  Error Details
+                  {tx("details")}
                 </Text>
                 <Pressable
                   onPress={() => setIsModalVisible(false)}
-                  accessibilityLabel="Close error details"
+                  accessibilityLabel={tx("closeDetails")}
                   accessibilityRole="button"
                   style={({ pressed }) => [
                     styles.closeButton,

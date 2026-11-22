@@ -182,9 +182,9 @@ export default function ShowTimeScreen() {
       ? pickLang(lang, {
           ru: `${theme.timerSeconds} сек выступления`,
           en: `${theme.timerSeconds} sec speech`,
-          kk: `${theme.timerSeconds} сек сөз сөйлеу`,
+          kk: `${theme.timerSeconds} секундтық сөз`,
         })
-      : pickLang(lang, { ru: "1-2 мин выступления", en: "1-2 min speech", kk: "1-2 мин сөз сөйлеу" });
+      : pickLang(lang, { ru: "1-2 мин выступления", en: "1-2 min speech", kk: "1–2 минуттық сөз" });
 
   return (
     <EdgeScaleProvider scrollY={edgeScrollY} topEdge={topPad + rs(8)} bottomEdge={bottomPad + rs(84)}>

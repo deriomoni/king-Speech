@@ -491,7 +491,7 @@ export default function ProfileScreen() {
               idSuffix="diary"
               height={112}
               text={{
-                title: pickLang(lang, { ru: "Аудио-дневник", en: "Audio diary", kk: "Аудио-күнделік" }),
+                title: pickLang(lang, { ru: "Аудио-дневник", en: "Audio diary", kk: "Аудиокүнделік" }),
                 sub: pickLang(lang, { ru: "Расскажи, как прошёл день", en: "Tell how your day went", kk: "Күніңіз қалай өткенін айтып беріңіз" }),
                 x: 20,
                 y: 32,

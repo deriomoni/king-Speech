@@ -70,7 +70,7 @@ export default function CheatSheetScreen() {
   const dailyText = pickLang(lang, {
     ru: "Сначала разогрейся - слова придут сами.",
     en: "Your quick prep before you speak.",
-    kk: "Алдымен дауысыңызды қыздырыңыз — сөз өзі келеді.",
+    kk: "Алдымен дауысыңызды жаттықтырыңыз — сөз өзі келеді.",
   });
   const [activeRoute, setActiveRoute] = useState<CheatRoute | null>(null);
   // The warm-up chosen on the wheel, held during the 5-second countdown.

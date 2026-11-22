@@ -834,7 +834,7 @@ const translations = {
     readingPrepHint: "Жазуды бастамас бұрын мәтінді іштей оқып шығыңыз — ырғағы мен бейнелерін сезініңіз",
     memorizeWork: "Шығарма мен оның авторын есіңізге сақтаңыз",
     // Reading self-review screen
-    readingReviewTitle: "Сіздің оқуыңыз",
+    readingReviewTitle: "Сіздің оқығаныңыз",
     listenYourself: "Жазбаңызды тыңдаңыз",
     listenBackHint: "Жазбаны соңына дейін тыңдап, өзіңізді адал бағалаңыз",
     rateYourself: "Өзіңізді бағалаңыз",
@@ -946,11 +946,11 @@ const translations = {
     bravo: "Браво!",
     openingPlayback: "Жазбаны ашып жатырмыз...",
 
-    yourPerformance: "Сіздің өнеріңіз",
+    yourPerformance: "Сіздің сөзіңіз",
     youAreHere: "Сіз осындасыз",
     performanceRecording: "Өнер көрсету жазбасы",
     listenToEnd: "Жалғастыру үшін жазбаны соңына дейін тыңдаңыз",
-    aiAnalyzing: "Өнеріңізді талдап жатырмыз...",
+    aiAnalyzing: "Сөзіңізді талдап жатырмыз...",
     whatToEvaluate: "Өзіңізде нені бағалау керек",
     evalQ1: "Дауыс қаншалықты сенімді естіледі?",
     evalQ2: "Артық үзілістер немесе паразит сөздер бар ма?",

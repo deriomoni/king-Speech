@@ -107,7 +107,7 @@ export default function AccountScreen() {
 
   const confirmSignOut = () =>
     setDialog({
-      title: pickLang(lang, { ru: "Выйти из аккаунта?", en: "Sign out?", kk: "Аккаунттан шығу керек пе?" }),
+      title: pickLang(lang, { ru: "Выйти из аккаунта?", en: "Sign out?", kk: "Аккаунттан шығасыз ба?" }),
       message: pickLang(lang, { ru: "Вы сможете войти снова в любой момент.", en: "You can sign back in at any time.", kk: "Кез келген уақытта қайта кіре аласыз." }),
       buttons: [
         { label: pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" }), onPress: closeDialog },
@@ -125,7 +125,7 @@ export default function AccountScreen() {
 
   const confirmReset = () =>
     setDialog({
-      title: pickLang(lang, { ru: "Сбросить прогресс?", en: "Reset progress?", kk: "Прогресті тастау керек пе?" }),
+      title: pickLang(lang, { ru: "Сбросить прогресс?", en: "Reset progress?", kk: "Прогресті тастайсыз ба?" }),
       message: pickLang(lang, { ru: "Все уровни, опыт и монеты начнутся заново.", en: "All levels, XP and coins will start over.", kk: "Барлық деңгей, XP және монеталар басынан басталады." }),
       buttons: [
         { label: pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" }), onPress: closeDialog },
@@ -143,7 +143,7 @@ export default function AccountScreen() {
 
   const confirmDelete = () =>
     setDialog({
-      title: pickLang(lang, { ru: "Удалить аккаунт?", en: "Delete account?", kk: "Аккаунтты жою керек пе?" }),
+      title: pickLang(lang, { ru: "Удалить аккаунт?", en: "Delete account?", kk: "Аккаунтты жоясыз ба?" }),
       message: pickLang(lang, { ru: "Удалятся профиль, записи, прогресс и монеты. Восстановить их будет нельзя.", en: "Your profile, recordings, progress and coins will be deleted. This can't be undone.", kk: "Профиль, жазбалар, прогресс пен монеталар жойылады. Оларды қалпына келтіру мүмкін болмайды." }),
       buttons: [
         { label: pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" }), onPress: closeDialog },
