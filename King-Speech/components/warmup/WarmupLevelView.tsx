@@ -24,11 +24,13 @@ export interface WarmupCompletePayload {
 }
 
 // Three tasks: (1) breathing warm-up, (2) mouth/articulation exercise,
-// (3) a «Королевские манеры» situation question (the etiquette mode woven into
-// the Path). The old pitch game needed a native pitch-detection module
+// (3) «Королевские манеры» — MANNERS_PER_WARMUP etiquette situation questions
+// (the etiquette mode woven into the Path). The old pitch game needed a native pitch-detection module
 // (unavailable in Expo Go and flaky in general), so it was replaced by the
 // breathing drill.
 type Step = "breathing" | "transition" | "mouth" | "transition3" | "manners";
+
+const MANNERS_PER_WARMUP = 4;
 
 interface Props {
   moduleId: number;
@@ -90,7 +92,8 @@ export default function WarmupLevelView({
   }, [onTaskComplete]);
 
   const insets = useSafeAreaInsets();
-  const mannersRules = React.useMemo(() => mannersForModule(moduleId, 1), [moduleId]);
+  // Four etiquette situations per warm-up (fixed per module, all different).
+  const mannersRules = React.useMemo(() => mannersForModule(moduleId, MANNERS_PER_WARMUP), [moduleId]);
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>

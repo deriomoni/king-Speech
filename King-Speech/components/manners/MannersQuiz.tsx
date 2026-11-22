@@ -227,8 +227,9 @@ export default function MannersQuiz({
 
   return (
     <View style={styles.root}>
-      {!embedded && (
-        <View style={[styles.top, { paddingTop: topPad + rs(10) }]}>
+      {/* progress: always in the full quiz; embedded only when there's more than one question */}
+      {(!embedded || rules.length > 1) && (
+        <View style={[styles.top, { paddingTop: embedded ? rs(12) : topPad + rs(10) }]}>
           <View style={styles.segs}>
             {rules.map((r, i) => {
               const res = results[i];
