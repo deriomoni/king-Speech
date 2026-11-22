@@ -4,9 +4,11 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withRepeat,
   Easing,
   cancelAnimation,
   FadeIn,
+  FadeOut,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
@@ -15,6 +17,7 @@ import { useAppColors } from "@/hooks/useAppColors";
 import { tx, type BreathingStep, type PhaseType } from "@/constants/cheatsheetData";
 import { pickLang, type Lang } from "@/context/LangContext";
 import { rs } from "@/lib/responsive";
+import { NoseIcon, MouthIcon } from "@/components/warmup/BreathIcons";
 
 // Distinct colour per phase so it's instantly obvious where you are.
 const C_INHALE = "#FFD857";
@@ -22,6 +25,8 @@ const C_HOLD = "#B7A6FF";
 const C_EXHALE = "#5FD3C4";
 
 const MIN_SCALE = 0.62;
+const RING = rs(264);
+const ICON_BOX = rs(60);
 const MAX_SCALE = 1;
 
 function phaseColor(type: PhaseType): string {
@@ -66,6 +71,12 @@ export default function BreathingCircle({
   const [count, setCount] = useState(step.pattern[0]?.sec ?? 3);
   const [finished, setFinished] = useState(false);
   const scale = useSharedValue(MIN_SCALE);
+  // Nose (inhale) / mouth (exhale) cue above the circle, breathing with an
+  // opacity pulse over the phase — same as the Path warm-up.
+  const iconPulse = useSharedValue(1);
+  const iconPulseStyle = useAnimatedStyle(() => ({ opacity: iconPulse.value }));
+  const [centerH, setCenterH] = useState(0);
+  useEffect(() => () => cancelAnimation(iconPulse), [iconPulse]);
 
   const doneRef = React.useRef(onDone);
   useEffect(() => {
@@ -93,6 +104,14 @@ export default function BreathingCircle({
         duration: phase.sec * 1000,
         easing: Easing.inOut(Easing.ease),
       });
+    }
+    if (phase.type === "inhale" || phase.type === "exhale") {
+      iconPulse.value = 1;
+      iconPulse.value = withRepeat(
+        withTiming(0.4, { duration: (phase.sec / 2) * 1000, easing: Easing.inOut(Easing.ease) }),
+        2,
+        true,
+      );
     }
     const ci = setInterval(() => setCount((c) => Math.max(0, c - 1)), 1000);
     const to = setTimeout(() => setIdx((i) => i + 1), phase.sec * 1000);
@@ -141,7 +160,24 @@ export default function BreathingCircle({
         </View>
       )}
 
-      <View style={styles.center}>
+      <View style={styles.center} onLayout={(e) => setCenterH(e.nativeEvent.layout.height)}>
+        {phase && (phase.type === "inhale" || phase.type === "exhale") && centerH > 0 && (
+          <Animated.View
+            key={`breath-icon-${idx}`}
+            entering={FadeIn.duration(240)}
+            exiting={FadeOut.duration(160)}
+            pointerEvents="none"
+            style={[styles.breathIcon, { top: Math.max(0, (centerH - RING) / 4 - ICON_BOX / 2) }]}
+          >
+            <Animated.View style={iconPulseStyle}>
+              {phase.type === "inhale" ? (
+                <NoseIcon color={colors.text} size={rs(46)} />
+              ) : (
+                <MouthIcon color={colors.text} size={rs(54)} />
+              )}
+            </Animated.View>
+          </Animated.View>
+        )}
         <View style={[styles.ring, { borderColor: color + "2E" }]} />
         <Animated.View
           style={[styles.circle, circleStyle, { backgroundColor: color + "22", borderColor: color }]}
@@ -175,6 +211,7 @@ const styles = StyleSheet.create({
   },
   cueText: { fontSize: 15, fontFamily: fonts.bodySemibold },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  breathIcon: { position: "absolute", left: 0, right: 0, height: ICON_BOX, alignItems: "center", justifyContent: "center" },
   ring: { position: "absolute", width: 264, height: 264, borderRadius: 132, borderWidth: 1.5 },
   circle: {
     width: 208,

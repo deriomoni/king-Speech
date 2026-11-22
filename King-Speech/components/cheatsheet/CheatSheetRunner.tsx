@@ -16,6 +16,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   FadeIn,
   FadeInDown,
+  FadeOut,
+  ZoomIn,
   useSharedValue,
   useAnimatedStyle,
   withTiming,
@@ -44,6 +46,7 @@ import {
   type FinalStep,
 } from "@/constants/cheatsheetData";
 import BreathingCircle from "@/components/cheatsheet/BreathingCircle";
+import { MouthIcon } from "@/components/warmup/BreathIcons";
 import IllustratedDrill, { getIllustrated } from "@/components/warmup/IllustratedDrill";
 import ChantView from "@/components/cheatsheet/ChantView";
 
@@ -66,26 +69,55 @@ const mmss = (s: number) =>
   `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
 // ── Articulation (illustrated warm-up portraits, animated in rhythm) ───────────
+// Opens with a 3-second preview of the step name («Разомни рот»), then the
+// drill itself: its name takes the header's place, the portrait plays below.
+const ART_PREVIEW_MS = 3000;
+
 function ArticulationView({ step, lang, c, isDark }: { step: ArticulationStep; lang: Lang; c: AppColors; isDark: boolean }) {
   const [i, setI] = useState(0);
+  const [preview, setPreview] = useState(true);
   const { height: winH } = useWindowDimensions();
   const ex = getIllustrated(step.drills[i] ?? step.drills[0]);
   // The drills loop while the step is on screen.
   const next = useCallback(() => setI((v) => (v + 1) % step.drills.length), [step.drills.length]);
 
-  return (
-    <View style={styles.artWrap}>
-      <Animated.View key={`t-${i}`} entering={FadeIn.duration(260)} style={{ alignItems: "center" }}>
-        <Text style={[styles.artLabel, { color: c.text }]}>{pickLang(lang, ex.title)}</Text>
-        <Text style={[styles.artDesc, { color: c.textSecondary }]}>{pickLang(lang, ex.desc)}</Text>
+  useEffect(() => {
+    const t = setTimeout(() => setPreview(false), ART_PREVIEW_MS);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (preview) {
+    return (
+      <Animated.View exiting={FadeOut.duration(220)} style={styles.artPreview}>
+        <Animated.View entering={ZoomIn.springify().damping(13).stiffness(140)}>
+          <MouthIcon color={c.text} size={rs(72)} />
+        </Animated.View>
+        <Animated.Text entering={FadeInDown.duration(420).delay(160)} style={[styles.artPreviewTitle, { color: c.text }]}>
+          {tx(step.title, lang)}
+        </Animated.Text>
+        <Animated.Text entering={FadeInDown.duration(420).delay(320)} style={[styles.stepIntro, { color: c.textSecondary }]}>
+          {tx(step.intro, lang)}
+        </Animated.Text>
       </Animated.View>
-      <IllustratedDrill key={`d-${i}`} exercise={ex} lang={lang} height={Math.min(rs(240), winH * 0.3)} seconds={step.secs} onDone={next} />
+    );
+  }
+
+  return (
+    <Animated.View entering={FadeIn.duration(320)} style={styles.artWrap}>
+      {/* The drill's own name stands where «Разомни рот» was */}
+      <Animated.View key={`t-${i}`} entering={FadeInDown.duration(300)} style={styles.exHeader}>
+        <Text style={[styles.stepTitle, { color: c.text }]}>{pickLang(lang, ex.title)}</Text>
+        <Text style={[styles.stepIntro, { color: c.textSecondary }]}>{pickLang(lang, ex.desc)}</Text>
+      </Animated.View>
+      <View style={styles.artStage}>
+        <IllustratedDrill key={`d-${i}`} exercise={ex} lang={lang} height={Math.min(rs(240), winH * 0.3)} seconds={step.secs} onDone={next} />
+      </View>
       <View style={styles.artDots}>
         {step.drills.map((_, k) => (
           <View key={k} style={[styles.artDot, { backgroundColor: ink(isDark, 0.18) }, k === i && styles.artDotActive]} />
         ))}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -244,7 +276,6 @@ function TwisterView({ step, lang, c, isDark }: { step: TwisterStep; lang: Lang;
 
       {/* Speed pill — updates each pass: slow → tempo → fast. */}
       <View style={[styles.speedPill, { backgroundColor: speed.color + "1F", borderColor: speed.color + "55" }]}>
-        <Ionicons name="speedometer-outline" size={rs(14)} color={speed.color} />
         <Text style={[styles.speedTxt, { color: speed.color }]}>{pickLang(lang, speed)}</Text>
       </View>
 
@@ -380,6 +411,16 @@ export default function CheatSheetRunner({
   }, [idx, total, prog]);
   const progStyle = useAnimatedStyle(() => ({ width: `${prog.value * 100}%` as any }));
 
+  // On «Разомни рот» the drills loop forever — after 15 s, nudge the player
+  // that they can move on whenever they're ready.
+  const [readyHint, setReadyHint] = useState(false);
+  useEffect(() => {
+    setReadyHint(false);
+    if (step.kind !== "articulation") return;
+    const t = setTimeout(() => setReadyHint(true), 15000);
+    return () => clearTimeout(t);
+  }, [idx, step.kind]);
+
   const next = useCallback(() => {
     haptic();
     if (idx >= total - 1) {
@@ -453,9 +494,6 @@ export default function CheatSheetRunner({
 
         {step.kind === "articulation" && (
           <View style={{ flex: 1, width: "100%" }}>
-            <View style={styles.exHeader}>
-              <Text style={[styles.stepTitle, { color: c.text }]}>{tx(step.title, lang)}</Text>
-            </View>
             <ArticulationView step={step} lang={lang} c={c} isDark={isDark} />
           </View>
         )}
@@ -500,14 +538,20 @@ export default function CheatSheetRunner({
         // Raise the buttons off the very bottom edge: some devices report
         // insets.bottom ~0 in Expo Go, which left them under the home gesture
         // area and hard/impossible to tap. Floor the clearance.
-        <View style={[styles.footer, styles.footerRow, { paddingBottom: Math.max(insets.bottom, rs(22)) + rs(18) }]}>
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, rs(22)) + rs(18) }]}>
+          {readyHint && (
+            <Animated.Text entering={FadeInDown.duration(360)} style={[styles.readyHint, { color: c.textSecondary }]}>
+              {pickLang(lang, { ru: "Заверши, когда будешь готов", en: "Finish when you're ready", kk: "Дайын болғанда аяқтаңыз" })}
+            </Animated.Text>
+          )}
+          <View style={styles.footerRow}>
           <Pressable
             onPress={back}
             disabled={idx <= 0}
             hitSlop={10}
             style={({ pressed }) => [
               styles.backBtn,
-              { backgroundColor: ink(isDark, 0.07), borderColor: ink(isDark, 0.12), opacity: idx <= 0 ? 0.4 : pressed ? 0.8 : 1 },
+              { backgroundColor: ink(isDark, 0.07), opacity: idx <= 0 ? 0.4 : pressed ? 0.8 : 1 },
             ]}
             accessibilityRole="button"
             accessibilityLabel={pickLang(lang, { ru: "Назад", en: "Back", kk: "Артқа" })}
@@ -520,6 +564,7 @@ export default function CheatSheetRunner({
             <Text style={styles.nextTxt}>{pickLang(lang, { ru: "Вперёд", en: "Forward", kk: "Алға" })}</Text>
             <NextChevron size={rs(16)} color="#41310A" />
           </Pressable>
+          </View>
         </View>
       )}
     </View>
@@ -547,7 +592,10 @@ const styles = StyleSheet.create({
   stepIntro: { fontSize: 15, lineHeight: 22, fontFamily: fonts.body, textAlign: "center", paddingHorizontal: 6 },
 
   // articulation
-  artWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 22, width: "100%" },
+  artWrap: { flex: 1, alignItems: "center", gap: 18, width: "100%" },
+  artStage: { flex: 1, width: "100%", alignItems: "center", justifyContent: "center" },
+  artPreview: { flex: 1, alignItems: "center", justifyContent: "center", gap: 14, paddingBottom: 40 },
+  artPreviewTitle: { fontSize: 34, lineHeight: 40, fontFamily: fonts.display, textAlign: "center", marginTop: 8 },
   artLabel: { fontSize: 20, fontFamily: fonts.bodyBold, textAlign: "center", paddingHorizontal: 10 },
   artDesc: { fontSize: 14, lineHeight: 20, fontFamily: fonts.body, textAlign: "center", marginTop: 4, paddingHorizontal: 16 },
   artDots: { flexDirection: "row", gap: 8 },
@@ -620,12 +668,12 @@ const styles = StyleSheet.create({
     height: 56,
     paddingHorizontal: 20,
     borderRadius: 28,
-    borderWidth: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
   },
+  readyHint: { fontSize: 14, fontFamily: fonts.bodySemibold, textAlign: "center", marginBottom: 12 },
   backTxt: { fontSize: 16, fontFamily: fonts.bodyBold },
   nextBtn: { overflow: "hidden", minHeight: 56, paddingHorizontal: 24, borderRadius: 28, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   nextBtnFlex: { flex: 1 },
