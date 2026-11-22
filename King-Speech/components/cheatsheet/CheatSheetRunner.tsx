@@ -326,17 +326,20 @@ function TipView({ step, lang, c }: { step: TipStep; lang: Lang; c: AppColors })
   const isFix = step.variant === "fix";
   return (
     <View style={styles.tipWrap}>
-      <Text style={[styles.tipKicker, { color: c.text }]}>
-        {isFix
-          ? pickLang(lang, { ru: "БЫСТРЫЙ ФИКС", en: "QUICK FIX", kk: "ЖЕДЕЛ КӨМЕК" })
-          : pickLang(lang, { ru: "СОВЕТ", en: "TIP", kk: "КЕҢЕС" })}
-      </Text>
       {/* Oscar in a pose that fits the tip (Rive emotion or vector pose) */}
       <Animated.View entering={FadeIn.duration(360).delay(80)} style={styles.tipMascot}>
         <TipMascot mascot={step.mascot} />
       </Animated.View>
-      <Text style={[styles.tipTitle, { color: c.text }]}>{tx(step.title, lang)}</Text>
-      <Text style={[styles.tipText, { color: c.textSecondary }]}>{tx(step.text, lang)}</Text>
+      {/* kicker sits right on top of the tip it labels */}
+      <View style={styles.tipTextBlock}>
+        <Text style={[styles.tipKicker, { color: c.textMuted }]}>
+          {isFix
+            ? pickLang(lang, { ru: "БЫСТРЫЙ ФИКС", en: "QUICK FIX", kk: "ЖЕДЕЛ КӨМЕК" })
+            : pickLang(lang, { ru: "СОВЕТ", en: "TIP", kk: "КЕҢЕС" })}
+        </Text>
+        <Text style={[styles.tipTitle, { color: c.text }]}>{tx(step.title, lang)}</Text>
+        <Text style={[styles.tipText, { color: c.textSecondary }]}>{tx(step.text, lang)}</Text>
+      </View>
     </View>
   );
 }
@@ -365,21 +368,22 @@ function MannersView({ lang, c }: { lang: Lang; c: AppColors }) {
 function FinalView({ step, lang, onDone, c }: { step: FinalStep; lang: Lang; onDone: () => void; c: AppColors }) {
   return (
     <View style={styles.finalWrap}>
-      <View style={styles.finalBadge}>
-        <Ionicons name="sparkles" size={rs(34)} color={GOLD} />
-      </View>
-      <Text style={[styles.finalTitle, { color: c.text }]}>{tx(step.title, lang)}</Text>
-      <View style={styles.finalLines}>
+      {/* Oscar, confident (pose №5) */}
+      <Animated.View entering={FadeIn.duration(420)}>
+        <TipMascot mascot={{ rive: "cool" }} />
+      </Animated.View>
+      <Animated.View entering={FadeInDown.duration(380).delay(120)} style={styles.finalHead}>
+        <Text style={[styles.finalTitle, { color: c.text }]}>{tx(step.title, lang)}</Text>
+        <Text style={[styles.finalQuote, { color: c.textSecondary }]}>{tx(step.mantra, lang)}</Text>
+      </Animated.View>
+      <Animated.View entering={FadeInDown.duration(380).delay(220)} style={styles.finalLines}>
         {step.lines.map((l, k) => (
           <View key={k} style={styles.finalLineRow}>
-            <Ionicons name="checkmark-circle" size={rs(18)} color="#5FD3C4" />
-            <Text style={[styles.finalLine, { color: c.textSecondary }]}>{tx(l, lang)}</Text>
+            <View style={styles.finalDot} />
+            <Text style={[styles.finalLine, { color: c.text }]}>{tx(l, lang)}</Text>
           </View>
         ))}
-      </View>
-      <View style={styles.mantraCard}>
-        <Text style={[styles.mantraText, { color: c.text }]}>«{tx(step.mantra, lang)}»</Text>
-      </View>
+      </Animated.View>
       <Pressable onPress={onDone} style={({ pressed }) => [styles.readyBtn, pressed && { opacity: 0.9 }]}>
         <LinearGradient colors={[GOLD, "#E6B82E"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
         <Text style={styles.readyTxt}>{pickLang(lang, { ru: "Я готов", en: "I'm ready", kk: "Мен дайынмын" })}</Text>
@@ -664,20 +668,21 @@ const styles = StyleSheet.create({
   // tip / fix
   tipWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 8 },
   tipMascot: { alignItems: "center", justifyContent: "center", marginVertical: 8 },
-  tipKicker: { fontSize: 15, fontFamily: fonts.bodyBold, letterSpacing: 2.4 },
-  tipTitle: { fontSize: 25, fontFamily: fonts.display, textAlign: "center", marginTop: 6 },
+  tipTextBlock: { alignItems: "center", gap: 6 },
+  tipKicker: { fontSize: 13, fontFamily: fonts.bodyBold, letterSpacing: 2 },
+  tipTitle: { fontSize: 25, lineHeight: 31, fontFamily: fonts.display, textAlign: "center" },
   tipText: { fontSize: 17, lineHeight: 26, fontFamily: fonts.body, textAlign: "center" },
 
   // final
-  finalWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 18 },
-  finalBadge: { width: 84, height: 84, borderRadius: 42, backgroundColor: "rgba(255,207,52,0.14)", borderWidth: 1, borderColor: "rgba(255,207,52,0.4)", alignItems: "center", justifyContent: "center" },
-  finalTitle: { fontSize: 30, fontFamily: fonts.display },
-  finalLines: { gap: 12, alignSelf: "stretch", paddingHorizontal: 8 },
+  finalWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 22 },
+  finalHead: { alignItems: "center", gap: 8 },
+  finalTitle: { fontSize: 32, fontFamily: fonts.display, textAlign: "center" },
+  finalQuote: { fontSize: 17, lineHeight: 24, fontFamily: fonts.body, textAlign: "center", maxWidth: 240 },
+  finalLines: { gap: 10, alignSelf: "center" },
   finalLineRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  finalLine: { flex: 1, fontSize: 16, lineHeight: 23, fontFamily: fonts.body },
-  mantraCard: { alignSelf: "stretch", backgroundColor: "rgba(148,104,251,0.12)", borderWidth: 1, borderColor: "rgba(148,104,251,0.3)", borderRadius: 20, padding: 18 },
-  mantraText: { fontSize: 17, lineHeight: 25, fontFamily: fonts.serif, textAlign: "center", fontStyle: "italic" },
-  readyBtn: { overflow: "hidden", height: 58, alignSelf: "stretch", borderRadius: 29, alignItems: "center", justifyContent: "center", marginTop: 6 },
+  finalDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: GOLD },
+  finalLine: { fontSize: 15, lineHeight: 21, fontFamily: fonts.bodySemibold },
+  readyBtn: { overflow: "hidden", height: 58, alignSelf: "stretch", borderRadius: 29, alignItems: "center", justifyContent: "center", marginTop: 4 },
   readyTxt: { color: "#41310A", fontSize: 17, fontFamily: fonts.bodyBold },
 
   // footer
