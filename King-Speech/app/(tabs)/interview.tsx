@@ -137,7 +137,7 @@ export default function CheatSheetScreen() {
             adjustsFontSizeToFit
             style={[styles.hero, styles.heroTall, { color: colors.text, fontSize: rs(43), lineHeight: rs(50), letterSpacing: -rs(1.7), marginBottom: rs(50) * (HERO_STRETCH - 1) }]}
           >
-            {pickLang(lang, { ru: "Приготовься", en: "Get Ready", kk: "Дайындал" })}
+            {pickLang(lang, { ru: "Разогрев", en: "Get Ready", kk: "Дайын бол!" })}
           </Text>
           <Text style={[styles.heroSub, { color: colors.textSecondary }]}>
             {dailyText}
