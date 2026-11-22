@@ -49,7 +49,7 @@ export interface BreathingStep {
   cycles: number;
 }
 
-/** Guided physical action (yawn-sigh, shaking, humming, trill, siren) — optional timer. */
+/** Guided physical action (first line, shaking, humming, trill, siren) — optional timer. */
 export interface ActionStep {
   kind: "action";
   id: string;
@@ -198,25 +198,25 @@ const diaphragmatic: BreathingStep = {
   ],
 };
 
-// Yawn-sigh: the classic voice-teacher release — a yawn lowers the larynx and
-// opens the throat, the long sighed exhale calms the nerves at the same time.
-const yawnSigh: ActionStep = {
+// First line: the opening seconds are the scariest part of a talk — saying the
+// first sentence out loud beforehand takes the fear out of them.
+const firstLine: ActionStep = {
   kind: "action",
-  id: "yawn-sigh",
+  id: "first-line",
   block: "nerves",
-  emoji: "🥱",
-  title: { ru: "Зевок-вздох", en: "Yawn-sigh", kk: "Есінеп күрсіну" },
+  emoji: "🎤",
+  title: { ru: "Первая фраза", en: "Your first line", kk: "Алғашқы сөйлем" },
   intro: {
-    ru: "Снимает зажим в горле и успокаивает. Рот широко, звук мягкий.",
-    en: "Releases a tight throat and calms you down. Mouth wide, sound soft.",
-    kk: "Тамақтағы қысылуды басып, тыныштандырады. Ауыз кең, дыбыс жұмсақ.",
+    ru: "Начало — самый страшный момент выступления. Отрепетируй его вслух, и дальше пойдёт легче.",
+    en: "The opening is the scariest moment of a talk. Rehearse it out loud and the rest gets easier.",
+    kk: "Басталуы — сөйлеудің ең қорқынышты сәті. Оны дауыстап қайталаңыз, әрі қарай жеңілдейді.",
   },
-  seconds: 24,
-  moveSecs: [8, 8, 8],
+  seconds: 26,
+  moveSecs: [6, 10, 10],
   moves: [
-    { ru: "Широко зевни, вдох через рот", en: "Yawn wide, breathe in through the mouth", kk: "Кең есінеп, аузыңызбен дем алыңыз" },
-    { ru: "На выдохе мягкое «ха-а-а» сверху вниз", en: "Exhale a soft 'haaa', high to low", kk: "Дем шығарғанда жұмсақ «ха-а-а» — жоғарыдан төменге" },
-    { ru: "Ещё раз: зевок и долгий вздох", en: "Once more: yawn and a long sigh", kk: "Тағы бір рет: есінеп, ұзақ күрсініңіз" },
+    { ru: "Встань ровно, стопы на ширине плеч", en: "Stand tall, feet shoulder-width apart", kk: "Тік тұрыңыз, табан иық деңгейінде" },
+    { ru: "Скажи вслух первую фразу — медленно", en: "Say your first sentence out loud — slowly", kk: "Алғашқы сөйлемді дауыстап айтыңыз — баяу" },
+    { ru: "Ещё раз — громче, взгляд в одну точку", en: "Again — louder, eyes on one point", kk: "Тағы бір рет — қаттырақ, бір нүктеге қарап" },
   ],
 };
 
@@ -689,7 +689,7 @@ export const ROUTES: CheatRoute[] = [
     // a long twister ladder from easy to hellish.
     steps: [
       physiologicalSigh, tipExcitement,
-      yawnSigh, tipYouGotThis,
+      firstLine, tipYouGotThis,
       shaking, tipPosture,
       diaphragmatic,
       articulation,
@@ -729,7 +729,7 @@ export interface RefSection {
 }
 
 export const REFERENCE: RefSection[] = [
-  { block: "nerves", steps: [physiologicalSigh, yawnSigh, shaking] },
+  { block: "nerves", steps: [physiologicalSigh, firstLine, shaking] },
   { block: "breath", steps: [diaphragmatic] },
   { block: "voice", steps: [articulation, articulationTongue, chant, chantBro, resonators, lipTrill, sirena] },
   { block: "twister", steps: [twSasha, twGreki, twOsip, twTrava, twByk, twKlara, twKopyt, twCherti, twKolpak] },

@@ -131,7 +131,7 @@ function ArticulationView({ step, lang, c, isDark }: { step: ArticulationStep; l
   );
 }
 
-// ── Action (yawn-sigh / shaking / humming / trill / siren) ────────────────────
+// ── Action (first line / shaking / humming / trill / siren) ───────────────────
 // Three phases so the exercise is actually done, not skipped:
 //  1. intro — just the name, one line of what it is, and «Начать»;
 //  2. run   — one stage at a time: its instruction big, its own countdown,
@@ -572,16 +572,9 @@ export default function CheatSheetRunner({
 
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
-      {/* Top bar — single close (top-right). A back chevron only appears once
-          you're past the first step; no second cross. */}
+      {/* Top bar — progress and a single close (top-right). No back chevron:
+          the footer already has «Назад». */}
       <View style={[styles.topBar, { paddingTop: insets.top + rs(10) }]}>
-        {idx > 0 ? (
-          <Pressable onPress={back} hitSlop={10} style={[styles.iconBtn, { backgroundColor: ink(isDark, 0.08) }]}>
-            <Ionicons name="chevron-back" size={rs(22)} color={c.text} />
-          </Pressable>
-        ) : (
-          <View style={styles.iconSpacer} />
-        )}
         <View style={styles.progressWrap}>
           <View style={[styles.progressTrack, { backgroundColor: ink(isDark, 0.1) }]}>
             <Animated.View style={[styles.progressFill, progStyle, { backgroundColor: route.accent }]} />
@@ -709,9 +702,8 @@ export default function CheatSheetRunner({
 const styles = StyleSheet.create({
   root: { flex: 1 },
 
-  topBar: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 16 },
+  topBar: { flexDirection: "row", alignItems: "center", gap: 12, paddingLeft: 22, paddingRight: 16, paddingBottom: 16 },
   iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  iconSpacer: { width: 40, height: 40 },
   progressWrap: { flex: 1, gap: 8 },
   progressTrack: { height: 8, borderRadius: 4, overflow: "hidden" },
   progressFill: { height: 8, borderRadius: 4 },
