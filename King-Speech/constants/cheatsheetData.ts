@@ -59,6 +59,8 @@ export interface ActionStep {
   intro: Loc;
   moves: Loc[];
   seconds?: number;
+  /** per-stage seconds (one per move); default = seconds split evenly */
+  moveSecs?: number[];
 }
 
 /**
@@ -220,7 +222,8 @@ const shaking: ActionStep = {
   emoji: "🙆",
   title: { ru: "Стряхни зажим", en: "Shake off the tension", kk: "Қысылуды сілкіп тастаңыз" },
   intro: { ru: "Тело держит стресс. Разомни его — делай за мной:", en: "Your body holds stress. Loosen it — do it with me:", kk: "Дене күйзелісті ұстап қалады. Оны босатыңыз — менімен бірге жасаңыз:" },
-  seconds: 20,
+  seconds: 24,
+  moveSecs: [10, 7, 7],
   moves: [
     { ru: "Встряхни кисти рук 10 секунд", en: "Shake out your hands for 10 seconds", kk: "Қолдарыңызды 10 секунд сілкіңіз" },
     { ru: "Покрути плечами назад", en: "Roll your shoulders backwards", kk: "Иықтарыңызды артқа қарай айналдырыңыз" },
@@ -235,7 +238,8 @@ const resonators: ActionStep = {
   emoji: "🎵",
   title: { ru: "Разбуди резонаторы", en: "Wake up your resonators", kk: "Резонаторларды ояту" },
   intro: { ru: "Тихо помычи «ммм» с закрытым ртом. Почувствуй вибрацию:", en: "Hum a soft 'mmm' with your mouth closed. Feel the buzz:", kk: "Аузыңызды жауып, ақырын «ммм» деп ыңылдаңыз. Дірілді сезініңіз:" },
-  seconds: 20,
+  seconds: 24,
+  moveSecs: [8, 8, 8],
   moves: [
     { ru: "Вибрация в губах и носу", en: "Buzz in your lips and nose", kk: "Ерін мен мұрындағы діріл" },
     { ru: "Опусти звук ниже — в грудь", en: "Lower the tone into your chest", kk: "Дыбысты төмен — кеудеге түсіріңіз" },
@@ -250,7 +254,8 @@ const lipTrill: ActionStep = {
   emoji: "😛",
   title: { ru: "Губной вибрант «бррр»", en: "Lip trill 'brrr'", kk: "Ерін дірілі «бррр»" },
   intro: { ru: "Расслабь губы и пусти воздух — они завибрируют. Делай за мной:", en: "Relax your lips and push air — they'll flutter. Do it with me:", kk: "Еріндеріңізді босатып, ауа жіберіңіз — олар дірілдейді. Менімен бірге жасаңыз:" },
-  seconds: 20,
+  seconds: 24,
+  moveSecs: [8, 8, 8],
   moves: [
     { ru: "Ровное «бррр» на одном дыхании", en: "A steady 'brrr' on one breath", kk: "Бір демде бірқалыпты «бррр»" },
     { ru: "Веди звук вверх, как горка", en: "Glide the tone up like a slide", kk: "Дыбысты сырғанақтай жоғары көтеріңіз" },
@@ -265,7 +270,8 @@ const sirena: ActionStep = {
   emoji: "🚨",
   title: { ru: "Сирена", en: "Siren", kk: "Сирена" },
   intro: { ru: "Тяни «у-у-у» и катай голос от низа к верху и обратно:", en: "Sustain an 'oo' and roll your voice from low to high and back:", kk: "«у-у-у» деп созып, дауысыңызды төменнен жоғары және кері жүргізіңіз:" },
-  seconds: 20,
+  seconds: 24,
+  moveSecs: [8, 8, 8],
   moves: [
     { ru: "От самого низкого — плавно вверх", en: "From your lowest — smoothly up", kk: "Ең төменгісінен — біртіндеп жоғары" },
     { ru: "До самого высокого — и обратно", en: "To your highest — and back", kk: "Ең жоғарғысына дейін — және кері" },

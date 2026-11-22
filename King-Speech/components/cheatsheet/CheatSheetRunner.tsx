@@ -132,67 +132,151 @@ function ArticulationView({ step, lang, c, isDark }: { step: ArticulationStep; l
   );
 }
 
-// ── Action (grounding / shaking / resonators) with optional timer ────────────
+// ── Action (grounding / shaking / resonators / trill / siren) ────────────────
+// Three phases so the exercise is actually done, not skipped:
+//  1. intro — just the name, one line of what it is, and «Начать»;
+//  2. run   — one stage at a time: its instruction big, its own countdown,
+//             segmented progress, a peek at what comes next;
+//  3. done  — a check and «Ещё раз».
+const stageSecsOf = (step: ActionStep) =>
+  step.moveSecs ?? step.moves.map(() => Math.max(5, Math.ceil((step.seconds ?? 21) / step.moves.length)));
+
+function StageSegment({ state, secs, isDark }: { state: "done" | "now" | "next"; secs: number; isDark: boolean }) {
+  const w = useSharedValue(state === "done" ? 1 : 0);
+  useEffect(() => {
+    if (state === "now") {
+      w.value = 0;
+      w.value = withTiming(1, { duration: secs * 1000, easing: Easing.linear });
+    } else w.value = state === "done" ? 1 : 0;
+    return () => cancelAnimation(w);
+  }, [state, secs, w]);
+  const fill = useAnimatedStyle(() => ({ width: `${w.value * 100}%` as any }));
+  return (
+    <View style={[styles.segTrack, { backgroundColor: ink(isDark, 0.1) }]}>
+      <Animated.View style={[styles.segFill, fill]} />
+    </View>
+  );
+}
+
 function ActionView({ step, lang, c, isDark }: { step: ActionStep; lang: Lang; c: AppColors; isDark: boolean }) {
-  const [remaining, setRemaining] = useState<number | null>(step.seconds ?? null);
-  const [running, setRunning] = useState(false);
+  const secs = stageSecsOf(step);
+  const total = secs.reduce((a, b) => a + b, 0);
+  const [phase, setPhase] = useState<"intro" | "run" | "done">("intro");
+  const [stage, setStage] = useState(0);
+  const [left, setLeft] = useState(secs[0]);
 
   useEffect(() => {
-    if (!running || remaining === null) return;
-    if (remaining <= 0) {
-      setRunning(false);
-      haptic(Haptics.ImpactFeedbackStyle.Medium);
+    if (phase !== "run") return;
+    if (left <= 0) {
+      if (stage >= step.moves.length - 1) {
+        setPhase("done");
+        haptic(Haptics.ImpactFeedbackStyle.Heavy);
+      } else {
+        setStage(stage + 1);
+        setLeft(secs[stage + 1]);
+        haptic(Haptics.ImpactFeedbackStyle.Medium);
+      }
       return;
     }
-    const to = setTimeout(() => setRemaining((r) => (r === null ? null : r - 1)), 1000);
+    const to = setTimeout(() => setLeft((v) => v - 1), 1000);
     return () => clearTimeout(to);
-  }, [running, remaining]);
+  }, [phase, left, stage, step.moves.length, secs]);
 
   const start = () => {
-    setRemaining(step.seconds ?? null);
-    setRunning(true);
+    setStage(0);
+    setLeft(secs[0]);
+    setPhase("run");
     haptic();
   };
 
-  return (
-    <View style={styles.actionWrap}>
-      <View style={[styles.actionEmojiWrap, { backgroundColor: ink(isDark, 0.06), borderColor: ink(isDark, 0.1) }]}>
-        <Text style={styles.actionEmoji}>{step.emoji}</Text>
-      </View>
-      <Text style={[styles.stepTitle, { color: c.text }]}>{tx(step.title, lang)}</Text>
-      <Text style={[styles.stepIntro, { color: c.textSecondary }]}>{tx(step.intro, lang)}</Text>
+  const nStages = step.moves.length;
+  const stagesLbl = pickLang(lang, {
+    ru: `${nStages} ${nStages >= 5 ? "этапов" : "этапа"} · ${total} сек`,
+    en: `${nStages} stages · ${total} sec`,
+    kk: `${nStages} кезең · ${total} сек`,
+  });
 
-      <View style={[styles.movesCard, { backgroundColor: ink(isDark, 0.05), borderColor: ink(isDark, 0.08) }]}>
-        {step.moves.map((m, k) => (
-          <View key={k} style={styles.moveRow}>
-            <View style={styles.moveNum}>
-              <Text style={styles.moveNumTxt}>{k + 1}</Text>
-            </View>
-            <Text style={[styles.moveTxt, { color: c.textSecondary }]}>{tx(m, lang)}</Text>
-          </View>
+  if (phase === "intro") {
+    return (
+      <Animated.View key="intro" entering={FadeIn.duration(260)} style={styles.actIntro}>
+        <View style={styles.actIntroHead}>
+          <Animated.Text entering={ZoomIn.springify().damping(14).stiffness(150)} style={[styles.artPreviewTitle, { color: c.text }]}>
+            {tx(step.title, lang)}
+          </Animated.Text>
+          <Animated.Text entering={FadeInDown.duration(380).delay(200)} style={[styles.stepIntro, { color: c.textSecondary }]}>
+            {tx(step.intro, lang).replace(/[:：]\s*$/, ".")}
+          </Animated.Text>
+          <Animated.View entering={FadeInDown.duration(380).delay(320)} style={[styles.actMetaChip, { backgroundColor: ink(isDark, 0.06) }]}>
+            <Text style={[styles.actMetaTxt, { color: c.textMuted }]}>{stagesLbl}</Text>
+          </Animated.View>
+        </View>
+        <Animated.View entering={FadeInDown.duration(380).delay(440)}>
+          <Pressable onPress={start} style={({ pressed }) => [styles.actStartBtn, pressed && { transform: [{ scale: 0.97 }] }]}>
+            <Ionicons name="play" size={rs(20)} color="#41310A" />
+            <Text style={styles.actStartTxt}>{pickLang(lang, { ru: "Начать", en: "Start", kk: "Бастау" })}</Text>
+          </Pressable>
+        </Animated.View>
+      </Animated.View>
+    );
+  }
+
+  if (phase === "done") {
+    return (
+      <Animated.View key="done" entering={FadeIn.duration(260)} style={styles.actIntro}>
+        <View style={styles.actIntroHead}>
+          <Animated.View entering={ZoomIn.springify().damping(12).stiffness(160)} style={styles.actDoneBadge}>
+            <Ionicons name="checkmark" size={rs(46)} color="#41310A" />
+          </Animated.View>
+          <Animated.Text entering={FadeInDown.duration(360).delay(160)} style={[styles.artPreviewTitle, { color: c.text }]}>
+            {pickLang(lang, { ru: "Готово!", en: "Done!", kk: "Дайын!" })}
+          </Animated.Text>
+          <Animated.Text entering={FadeInDown.duration(360).delay(260)} style={[styles.stepIntro, { color: c.textSecondary }]}>
+            {tx(step.title, lang)}
+          </Animated.Text>
+        </View>
+        <Animated.View entering={FadeInDown.duration(360).delay(360)}>
+          <Pressable onPress={start} style={({ pressed }) => [styles.actAgainBtn, { backgroundColor: ink(isDark, 0.07) }, pressed && { opacity: 0.8 }]}>
+            <Ionicons name="refresh" size={rs(18)} color={c.text} />
+            <Text style={[styles.actAgainTxt, { color: c.text }]}>{pickLang(lang, { ru: "Ещё раз", en: "Again", kk: "Тағы бір рет" })}</Text>
+          </Pressable>
+        </Animated.View>
+      </Animated.View>
+    );
+  }
+
+  const nextMove = step.moves[stage + 1];
+  return (
+    <Animated.View key="run" entering={FadeIn.duration(260)} style={styles.actRun}>
+      <Text style={[styles.actRunTitle, { color: c.textMuted }]}>{tx(step.title, lang)}</Text>
+      <View style={styles.segRow}>
+        {step.moves.map((_, k) => (
+          <StageSegment key={k} state={k < stage ? "done" : k === stage ? "now" : "next"} secs={secs[k]} isDark={isDark} />
         ))}
       </View>
+      <Text style={styles.actStageLbl}>
+        {pickLang(lang, { ru: `Этап ${stage + 1} из ${nStages}`, en: `Stage ${stage + 1} of ${nStages}`, kk: `${nStages} кезеңнің ${stage + 1}-і` })}
+      </Text>
 
-      {step.seconds != null && (
-        <View style={styles.timerZone}>
-          {running && remaining !== null ? (
-            <View style={styles.timerCircle}>
-              <Text style={[styles.timerNum, { color: c.text }]}>{remaining}</Text>
-              <Text style={[styles.timerUnit, { color: c.textMuted }]}>{lang === "en" ? "sec" : "сек"}</Text>
-            </View>
-          ) : (
-            <Pressable onPress={start} style={({ pressed }) => [styles.timerBtn, pressed && { opacity: 0.85 }]}>
-              <Ionicons name="play" size={rs(18)} color="#41310A" />
-              <Text style={styles.timerBtnTxt}>
-                {remaining === 0
-                  ? pickLang(lang, { ru: "Ещё раз", en: "Repeat", kk: "Тағы бір рет" })
-                  : pickLang(lang, { ru: `Веди меня ${step.seconds}с`, en: `Guide me ${step.seconds}s`, kk: `Мені бағытта ${step.seconds}с` })}
-              </Text>
-            </Pressable>
-          )}
-        </View>
-      )}
-    </View>
+      <View style={styles.actRunCenter}>
+        <Text style={[styles.actCount, { color: c.text }]}>{left}</Text>
+        <Animated.Text key={`m-${stage}`} entering={FadeInDown.duration(320)} style={[styles.actMoveNow, { color: c.text }]}>
+          {tx(step.moves[stage], lang)}
+        </Animated.Text>
+      </View>
+
+      <View style={styles.actNextBox}>
+        {nextMove ? (
+          <Text style={[styles.actNextTxt, { color: c.textMuted }]} numberOfLines={2}>
+            {pickLang(lang, { ru: "Дальше: ", en: "Next: ", kk: "Келесі: " })}
+            {tx(nextMove, lang)}
+          </Text>
+        ) : (
+          <Text style={[styles.actNextTxt, { color: c.textMuted }]}>
+            {pickLang(lang, { ru: "Последний этап", en: "Last stage", kk: "Соңғы кезең" })}
+          </Text>
+        )}
+      </View>
+    </Animated.View>
   );
 }
 
@@ -565,7 +649,7 @@ export default function CheatSheetRunner({
 
         {step.kind === "action" && (
           <ScrollView
-            contentContainerStyle={styles.scrollBody}
+            contentContainerStyle={[styles.scrollBody, { flexGrow: 1 }]}
             showsVerticalScrollIndicator={false}
           >
             <ActionView step={step} lang={lang} c={c} isDark={isDark} />
@@ -672,20 +756,26 @@ const styles = StyleSheet.create({
   artDotActive: { backgroundColor: GOLD, width: 22 },
 
   // action
-  actionWrap: { alignItems: "center", gap: 14, paddingTop: 8 },
-  actionEmojiWrap: { width: 100, height: 100, borderRadius: 50, alignItems: "center", justifyContent: "center", borderWidth: 1 },
-  actionEmoji: { fontSize: 52 },
-  movesCard: { width: "100%", borderRadius: 20, borderWidth: 1, padding: 16, gap: 12, marginTop: 4 },
-  moveRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  moveNum: { width: 26, height: 26, borderRadius: 13, backgroundColor: "rgba(148,104,251,0.20)", borderWidth: 1, borderColor: "rgba(148,104,251,0.4)", alignItems: "center", justifyContent: "center" },
-  moveNumTxt: { color: PURPLE, fontSize: 13, fontFamily: fonts.bodyBold },
-  moveTxt: { flex: 1, fontSize: 15, lineHeight: 21, fontFamily: fonts.body },
-  timerZone: { marginTop: 8, alignItems: "center" },
-  timerCircle: { width: 110, height: 110, borderRadius: 55, borderWidth: 3, borderColor: GOLD, alignItems: "center", justifyContent: "center" },
-  timerNum: { fontSize: 44, fontFamily: fonts.display },
-  timerUnit: { fontSize: 13, fontFamily: fonts.body, marginTop: -4 },
-  timerBtn: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: GOLD, paddingHorizontal: 22, paddingVertical: 13, borderRadius: 26 },
-  timerBtnTxt: { color: "#41310A", fontSize: 15, fontFamily: fonts.bodyBold },
+  actIntro: { flex: 1, alignItems: "center", justifyContent: "center", gap: 40, paddingBottom: 40 },
+  actIntroHead: { alignItems: "center", gap: 14 },
+  actMetaChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 14, marginTop: 2 },
+  actMetaTxt: { fontSize: 13, fontFamily: fonts.bodyBold, letterSpacing: 0.3 },
+  actStartBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: GOLD, minWidth: 200, paddingHorizontal: 36, paddingVertical: 17, borderRadius: 32 },
+  actStartTxt: { color: "#41310A", fontSize: 18, fontFamily: fonts.bodyBold },
+  actDoneBadge: { width: 92, height: 92, borderRadius: 46, backgroundColor: GOLD, alignItems: "center", justifyContent: "center", marginBottom: 4 },
+  actAgainBtn: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 24, paddingVertical: 13, borderRadius: 26 },
+  actAgainTxt: { fontSize: 15, fontFamily: fonts.bodyBold },
+  actRun: { flex: 1, alignItems: "center", paddingTop: 4 },
+  actRunTitle: { fontSize: 15, fontFamily: fonts.bodyBold, textAlign: "center" },
+  segRow: { flexDirection: "row", gap: 6, alignSelf: "stretch", marginTop: 14 },
+  segTrack: { flex: 1, height: 6, borderRadius: 3, overflow: "hidden" },
+  segFill: { height: "100%", backgroundColor: GOLD, borderRadius: 3 },
+  actStageLbl: { color: PURPLE, fontSize: 13, fontFamily: fonts.bodyBold, letterSpacing: 0.6, textTransform: "uppercase", marginTop: 12 },
+  actRunCenter: { flex: 1, alignItems: "center", justifyContent: "center", gap: 18, paddingHorizontal: 6, paddingBottom: 20 },
+  actCount: { fontSize: 76, lineHeight: 84, fontFamily: fonts.display },
+  actMoveNow: { fontSize: 26, lineHeight: 33, fontFamily: fonts.display, textAlign: "center" },
+  actNextBox: { minHeight: 44, paddingBottom: 12, paddingHorizontal: 10 },
+  actNextTxt: { fontSize: 14, lineHeight: 20, fontFamily: fonts.body, textAlign: "center" },
 
   // manners
   mannersWrap: { paddingTop: 4 },
