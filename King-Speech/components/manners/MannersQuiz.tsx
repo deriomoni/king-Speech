@@ -57,7 +57,8 @@ function Option({
         disabled={disabled}
         onPress={onPress}
         onPressIn={() => (scale.value = withSpring(0.97, { damping: 18, stiffness: 340 }))}
-        onPressOut={() => (scale.value = withSpring(1, { damping: 16, stiffness: 300 }))}
+        // settle back to 1 without overshooting past full size
+        onPressOut={() => (scale.value = withSpring(1, { damping: 16, stiffness: 300, overshootClamping: true }))}
         style={[
           styles.option,
           { backgroundColor: bg, borderColor: tint ?? "transparent" },

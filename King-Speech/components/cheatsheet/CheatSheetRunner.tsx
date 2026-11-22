@@ -644,7 +644,13 @@ export default function CheatSheetRunner({
         )}
 
         {step.kind === "manners" && (
-          <ScrollView contentContainerStyle={styles.scrollBody} showsVerticalScrollIndicator={false}>
+          // the scroll reaches into the body's side padding, so an option card's
+          // press animation and its border are not clipped at the edges
+          <ScrollView
+            style={{ marginHorizontal: -22 }}
+            contentContainerStyle={[styles.scrollBody, { paddingHorizontal: 22 }]}
+            showsVerticalScrollIndicator={false}
+          >
             <MannersView lang={lang} c={c} />
           </ScrollView>
         )}
