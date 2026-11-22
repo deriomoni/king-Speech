@@ -665,7 +665,7 @@ export default function TaskFlowView({
             <WaveformVoiceRecorder
               onRecordingComplete={deferred ? handleInterviewRecorded : handleRecordingComplete}
               colors={colors}
-              stopOnly={isInterview}
+              stopOnly={isInterview || isTongue}
               startLabel={isInterview ? (pickLang(lang, { ru: "Ответить", en: "Answer", kk: "Жауап беру" })) : isTongue ? (pickLang(lang, { ru: "Начать", en: "Start", kk: "Бастау" })) : undefined}
             />
           </Animated.View>
