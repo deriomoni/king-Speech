@@ -101,7 +101,7 @@ export interface TwisterStep {
 
 /** Short advice ("tip") or emergency micro-fix ("fix") card. */
 /** Oscar on a tip card: a Rive emotion (animated) or a vector pose. */
-export type TipMascot = { rive: OscarEmotion } | { pose: OscarPose };
+export type TipMascot = { rive: OscarEmotion } | { pose: OscarPose } | { png: "bags" };
 
 export interface TipStep {
   kind: "tip";
@@ -432,17 +432,17 @@ const twCherti: TwisterStep = {
 
 // Tips (советы)
 const tipExcitement: TipStep = {
-  kind: "tip", id: "tip-excite", block: "tip", variant: "tip", icon: "flash-outline", mascot: { rive: "cool" },
+  kind: "tip", id: "tip-excite", block: "tip", variant: "tip", icon: "flash-outline", mascot: { pose: "heart" },
   title: { ru: "Волнение — это топливо", en: "Nerves are fuel", kk: "Толқу — бұл отын" },
   text: { ru: "Не гаси волнение — направь его в первую фразу. Это энергия, а не враг.", en: "Don't fight the nerves — pour them into your opening line. It's energy, not an enemy.", kk: "Толқуды басуға тырыспаңыз — оны алғашқы сөйлеміңізге бағыттаңыз. Бұл — жау емес, қуат." },
 };
 const tipTempo: TipStep = {
-  kind: "tip", id: "tip-tempo", block: "tip", variant: "tip", icon: "speedometer-outline", mascot: { rive: "idle" },
+  kind: "tip", id: "tip-tempo", block: "tip", variant: "tip", icon: "speedometer-outline", mascot: { rive: "shiny" },
   title: { ru: "Чуть медленнее", en: "A touch slower", kk: "Сәл баяуырақ" },
   text: { ru: "Говори чуть медленнее, чем хочется. Спешка читается как волнение.", en: "Speak a little slower than feels natural. Rushing reads as anxiety.", kk: "Өзіңіз қалағаннан сәл баяуырақ сөйлеңіз. Асығыстық толқу сияқты көрінеді." },
 };
 const tipPauses: TipStep = {
-  kind: "tip", id: "tip-pauses", block: "tip", variant: "tip", icon: "pause-outline", mascot: { rive: "notsure" },
+  kind: "tip", id: "tip-pauses", block: "tip", variant: "tip", icon: "pause-outline", mascot: { rive: "thumbup" },
   title: { ru: "Пауза весит больше", en: "A pause carries weight", kk: "Үзілістің салмағы зор" },
   text: { ru: "Пауза после важной мысли действует сильнее, чем громкость.", en: "A pause after a key point lands harder than volume ever will.", kk: "Маңызды ойдан кейінгі үзіліс дауыс қаттылығынан да күшті әсер етеді." },
 };
@@ -464,7 +464,7 @@ const tipYouGotThis: TipStep = {
   text: { ru: "Ты уже здесь и готовишься — это половина успеха. Осталось просто начать.", en: "You're here and preparing — that's half the battle. Now just begin.", kk: "Сіз осындасыз және дайындалып жатырсыз — бұл табыстың жартысы. Енді тек бастау қалды." },
 };
 const tipSmile: TipStep = {
-  kind: "tip", id: "tip-smile", block: "tip", variant: "tip", icon: "happy-outline", mascot: { rive: "happy" },
+  kind: "tip", id: "tip-smile", block: "tip", variant: "tip", icon: "happy-outline", mascot: { pose: "chin" },
   title: { ru: "Улыбнись", en: "Smile", kk: "Жымиыңыз" },
   text: { ru: "Лёгкая улыбка расслабляет лицо — и голос сразу звучит теплее и живее.", en: "A light smile relaxes your face — and your voice instantly sounds warmer.", kk: "Жеңіл жымиыс бетті босаңсытады — дауыс бірден жылырақ әрі жандырақ естіледі." },
 };
@@ -474,17 +474,12 @@ const tipMistakesOk: TipStep = {
   text: { ru: "Даже опытные ораторы оговариваются. Не останавливайся — и никто не заметит.", en: "Even seasoned speakers stumble. Just keep going — no one will notice.", kk: "Тәжірибелі шешендер де жаңылысады. Тоқтамаңыз — ешкім байқамайды." },
 };
 const tipShine: TipStep = {
-  kind: "tip", id: "tip-shine", block: "tip", variant: "tip", icon: "sparkles-outline", mascot: { pose: "heart" },
+  kind: "tip", id: "tip-shine", block: "tip", variant: "tip", icon: "sparkles-outline", mascot: { rive: "cool" },
   title: { ru: "Тебе есть что сказать", en: "You have something to say", kk: "Сіздің айтарыңыз бар" },
   text: { ru: "Люди пришли услышать именно тебя. Дыши ровно — и просто поделись.", en: "People came to hear you. Breathe steady — and simply share it.", kk: "Адамдар дәл сізді тыңдауға келді. Бірқалыпты дем алып, жай ғана бөлісіңіз." },
 };
 
 // Quick fixes (быстрые фиксы — аварии перед выходом)
-const fixVoice: TipStep = {
-  kind: "tip", id: "fix-voice", block: "fix", variant: "fix", icon: "mic-outline", mascot: { pose: "chin" },
-  title: { ru: "Севший голос", en: "Voice cracked", kk: "Қарлыққан дауыс" },
-  text: { ru: "Тихо помычи «ммм» и сделай пару спокойных зевков — связки мягко проснутся.", en: "Hum a soft 'mmm' and take a couple of calm yawns — your cords wake up gently.", kk: "Ақырын «ммм» деп ыңылдап, бірер рет асықпай есінеп алыңыз — дауыс байламдары жайлап оянады." },
-};
 const fixDry: TipStep = {
   kind: "tip", id: "fix-dry", block: "fix", variant: "fix", icon: "water-outline", mascot: { pose: "glass" },
   title: { ru: "Сухость во рту", en: "Dry mouth", kk: "Ауыздың құрғауы" },
@@ -495,6 +490,85 @@ const fixWarm: TipStep = {
   title: { ru: "Согреть связки", en: "Warm the cords", kk: "Дауыс байламдарын жылыту" },
   text: { ru: "Подыши на ладони тёплым воздухом, будто греешь их — то же тепло уйдёт в связки.", en: "Breathe warm air onto your palms as if warming them — that warmth reaches your cords.", kk: "Алақандарыңызды жылытқандай оларға жылы дем үрлеңіз — сол жылу дауыс байламдарына барады." },
 };
+
+// ── More tips — every pose has 2+ tips that fit it; Get Ready rotates them ──
+// (a tip slot in a route draws the least-recently-seen tip of its variant).
+const T = (id: string, variant: "tip" | "fix", mascot: TipMascot, title: Loc, text: Loc): TipStep => ({
+  kind: "tip", id, block: variant === "fix" ? "fix" : "tip", variant, icon: "bulb-outline", mascot, title, text,
+});
+
+const moreTips: TipStep[] = [
+  // №1 · спокойный
+  T("tip-silence-start", "tip", { rive: "idle" },
+    { ru: "Тишина перед стартом", en: "Silence before you start", kk: "Бастар алдындағы үнсіздік" },
+    { ru: "Вышел — встань, посмотри на зал и выдержи две секунды тишины. Только потом первое слово.", en: "Walk out, stand, look at the room and hold two seconds of silence. Then your first word.", kk: "Шықтыңыз ба — тұрып, залға қараңыз да, екі секунд үнсіз тұрыңыз. Содан кейін ғана алғашқы сөз." }),
+  T("tip-exhale-speak", "tip", { rive: "idle" },
+    { ru: "Говори на выдохе", en: "Speak on the exhale", kk: "Дем шығара сөйлеңіз" },
+    { ru: "Вдохни перед фразой и произноси её на выдохе. Не начинай говорить на пустых лёгких.", en: "Breathe in before a phrase and say it on the exhale. Never start on empty lungs.", kk: "Сөйлем алдында дем алып, оны дем шығарғанда айтыңыз. Бос өкпемен сөйлей бастамаңыз." }),
+  // №2 · машет рукой
+  T("tip-greet-smile", "tip", { rive: "hi" },
+    { ru: "Поздоровайся с залом", en: "Greet the room", kk: "Залмен амандасыңыз" },
+    { ru: "Поздоровайся и улыбнись до первого слова — зал ответит тем же, и станет спокойнее.", en: "Say hello and smile before your first word — the room smiles back and you relax.", kk: "Алғашқы сөзге дейін амандасып, жымиыңыз — зал да солай жауап береді, өзіңіз де тынышталасыз." }),
+  // №4 · радость
+  T("tip-enjoy", "tip", { rive: "happy" },
+    { ru: "Получай удовольствие", en: "Enjoy it", kk: "Ләззат алыңыз" },
+    { ru: "Выступление — не экзамен, а возможность. Радость в голосе слышна с первой фразы.", en: "A talk is not an exam, it is a chance. Joy in your voice is heard from the first line.", kk: "Сөз сөйлеу — емтихан емес, мүмкіндік. Дауыстағы қуаныш алғашқы сөйлемнен-ақ естіледі." }),
+  T("tip-small-win", "tip", { rive: "happy" },
+    { ru: "Ты уже победил", en: "You have already won", kk: "Сіз жеңіп те қойдыңыз" },
+    { ru: "Ты дошёл до сцены — это уже маленькая победа. Порадуйся ей перед выходом.", en: "You made it to the stage — that is a win already. Enjoy it before you go on.", kk: "Сахнаға дейін жеттіңіз — бұл кішкентай жеңіс. Шығар алдында соған қуаныңыз." }),
+  // №5 · уверенный
+  T("tip-power-pose", "tip", { rive: "cool" },
+    { ru: "Поза силы", en: "Power pose", kk: "Күш позасы" },
+    { ru: "Минуту постой: ноги на ширине плеч, руки на поясе, подбородок чуть вверх. Уверенность придёт из тела.", en: "Stand for a minute: feet shoulder-width apart, hands on hips, chin slightly up. Confidence follows the body.", kk: "Бір минут тұрыңыз: аяқ иық енінде, қол белде, иек сәл жоғары. Сенімділік денеден келеді." }),
+  // №6 · сомневается
+  T("fix-lost-thought", "fix", { rive: "notsure" },
+    { ru: "Забыл мысль", en: "Lost your thought", kk: "Ойыңыз ұмытылды" },
+    { ru: "Перескажи своими словами последнее, что сказал, — нить почти всегда возвращается.", en: "Restate your last point in your own words — the thread almost always comes back.", kk: "Соңғы айтқаныңызды өз сөзіңізбен қайталаңыз — ой жібі әдетте қайта оралады." }),
+  T("fix-hard-question", "fix", { rive: "notsure" },
+    { ru: "Сложный вопрос", en: "A tough question", kk: "Қиын сұрақ" },
+    { ru: "«Хороший вопрос, дайте подумать» — это нормально. Лучше пауза, чем сумбурный ответ.", en: "«Good question, let me think» is fine. A pause beats a muddled answer.", kk: "«Жақсы сұрақ, ойланып алайын» — бұл қалыпты. Шатасқан жауаптан гөрі үзіліс жақсы." }),
+  // №7 · грусть
+  T("tip-no-sorry", "tip", { rive: "sad" },
+    { ru: "Не извиняйся заранее", en: "Do not apologise up front", kk: "Алдын ала кешірім сұрамаңыз" },
+    { ru: "«Я не готовился», «я волнуюсь» — такие фразы сразу снижают доверие. Просто начни.", en: "«I did not prepare», «I am nervous» — these lines cost you trust. Just begin.", kk: "«Дайындалмадым», «толқып тұрмын» деген сөздер сенімді бірден азайтады. Жай ғана бастаңыз." }),
+  T("tip-not-failure", "tip", { rive: "sad" },
+    { ru: "Неудача — это опыт", en: "A flop is experience", kk: "Сәтсіздік — тәжірибе" },
+    { ru: "Если что-то пойдёт не так — это не провал, а материал для следующего раза.", en: "If something goes wrong, it is not failure — it is material for next time.", kk: "Бірдеңе ойдағыдай болмаса — бұл құлдырау емес, келесі жолға сабақ." }),
+  // №8 · расстроен
+  T("fix-shaky-voice", "fix", { rive: "upset" },
+    { ru: "Голос дрожит", en: "Shaky voice", kk: "Дауыс дірілдейді" },
+    { ru: "Дрожь слышна на быстрой речи. Говори медленнее и чуть ниже — и она уйдёт.", en: "Shakiness shows in fast speech. Slow down and speak a little lower — it fades.", kk: "Діріл жылдам сөйлегенде естіледі. Баяуырақ әрі сәл төменірек сөйлеңіз — ол басылады." }),
+  T("fix-slide-error", "fix", { rive: "upset" },
+    { ru: "Ошибка на слайде", en: "A slide mistake", kk: "Слайдтағы қате" },
+    { ru: "«Здесь опечатка, смысл такой…» — одна фраза, и идёшь дальше. Без оправданий.", en: "«There is a typo here, the point is…» — one line and move on. No excuses.", kk: "«Мұнда қате кетіпті, мағынасы мынадай…» — бір сөйлем де, әрі қарай. Ақталусыз." }),
+  // №10 · стакан воды
+  T("fix-water-early", "fix", { pose: "glass" },
+    { ru: "Вода — заранее", en: "Water — ahead of time", kk: "Су — алдын ала" },
+    { ru: "Сделай пару глотков тёплой воды минут за 10 до выхода, а не прямо перед ним.", en: "Take a few sips of warm water about 10 minutes before, not right before you go on.", kk: "Шығуға 10 минуттай қалғанда жылы судан бірер жұтым ішіңіз, дәл алдында емес." }),
+  // №11 · подмигивает
+  T("tip-eye-zones", "tip", { pose: "wink" },
+    { ru: "Взгляд по зонам", en: "Look by zones", kk: "Көзқарас аймақтар бойынша" },
+    { ru: "Раздели зал на три части и переводи взгляд между ними — каждый почувствует, что ты говоришь ему.", en: "Split the room into three zones and move your gaze between them — everyone feels you are talking to them.", kk: "Залды үш бөлікке бөліп, көзқарасыңызды солардың арасында ауыстырыңыз — әркім сіз оған сөйлеп тұрғаныңызды сезеді." }),
+  // №12 · палец у рта
+  T("tip-no-fillers", "tip", { pose: "chin" },
+    { ru: "Без «э-э» и «ну»", en: "No «um» or «like»", kk: "«Ә-ә» мен «енді»-сіз" },
+    { ru: "Хочется сказать «э-э» — просто помолчи секунду. Тишина звучит увереннее слов-паразитов.", en: "When an «um» comes, just pause for a second. Silence sounds more confident than fillers.", kk: "«Ә-ә» дегіңіз келсе — бір секунд үндемеңіз. Үнсіздік артық сөздерден сенімдірек естіледі." }),
+  // №13 · с сердцем
+  T("tip-love-topic", "tip", { pose: "heart" },
+    { ru: "Говори о том, что любишь", en: "Talk about what you love", kk: "Өзіңіз жақсы көретін нәрсе туралы айтыңыз" },
+    { ru: "Найди в теме то, что тебе по-настоящему близко. Искренность заразительна.", en: "Find the part of the topic you truly care about. Sincerity is contagious.", kk: "Тақырыптан өзіңізге шын жақын нәрсені табыңыз. Шынайылық жұқпалы." }),
+  // №14 · лотос
+  T("tip-three-exhales", "tip", { pose: "lotus" },
+    { ru: "Три долгих выдоха", en: "Three long exhales", kk: "Үш ұзақ дем шығару" },
+    { ru: "Сделай три выдоха длиннее вдоха — пульс замедлится, а голос станет ровнее.", en: "Take three exhales longer than the inhales — your pulse slows and your voice steadies.", kk: "Дем алудан ұзағырақ үш рет дем шығарыңыз — тамыр соғысы баяулап, дауыс бірқалыпты болады." }),
+  // №15 · с мешками монет
+  T("tip-your-capital", "tip", { png: "bags" },
+    { ru: "Твой опыт — твой капитал", en: "Your experience is your capital", kk: "Тәжірибеңіз — капиталыңыз" },
+    { ru: "Вспомни, сколько раз ты уже справлялся. Весь этот опыт сейчас с тобой.", en: "Remember how many times you have pulled it off. All that experience is with you now.", kk: "Қанша рет жеңіп шыққаныңызды еске түсіріңіз. Сол тәжірибенің бәрі қазір сізбен бірге." }),
+  T("tip-practice-pays", "tip", { png: "bags" },
+    { ru: "Подготовка окупается", en: "Prep pays off", kk: "Дайындық өзін ақтайды" },
+    { ru: "Каждая минута репетиции — вклад, который вернётся на сцене. Ты уже вложился.", en: "Every minute of rehearsal is an investment that pays back on stage. You have already invested.", kk: "Әр минуттық дайындық — сахнада қайтатын салым. Сіз салымды салып қойдыңыз." }),
+];
 
 const finalStep: FinalStep = {
   kind: "final",
@@ -561,7 +635,7 @@ export const ROUTES: CheatRoute[] = [
       chant, tipSmile,
       lipTrill,
       twSasha,
-      fixVoice,
+      fixWarm,
       twGreki, tipMistakesOk,
       mannersStep,
       finalStep,
@@ -590,7 +664,7 @@ export const ROUTES: CheatRoute[] = [
       tipPauses,
       sirena,
       twKlara,
-      fixVoice,
+      fixWarm,
       twKopyt, tipMistakesOk,
       mannersStep,
       finalStep,
@@ -630,7 +704,7 @@ export const ROUTES: CheatRoute[] = [
       tipEyes,
       twKlara,
       twCherti, tipShine,
-      fixVoice,
+      fixWarm,
       twKolpak, tipMistakesOk,
       mannersStep,
       finalStep,
@@ -651,7 +725,7 @@ export const REFERENCE: RefSection[] = [
   { block: "breath", steps: [diaphragmatic] },
   { block: "voice", steps: [articulation, articulationTongue, chant, chantBro, resonators, lipTrill, sirena] },
   { block: "twister", steps: [twSasha, twGreki, twOsip, twTrava, twByk, twKlara, twKopyt, twCherti, twKolpak] },
-  { block: "fix", steps: [fixVoice, fixDry, fixWarm] },
+  { block: "fix", steps: [fixDry, fixWarm] },
   { block: "tip", steps: [tipExcitement, tipTempo, tipPauses, tipEyes, tipPosture] },
   { block: "final", steps: [finalStep] },
 ];
@@ -662,3 +736,11 @@ export const DIFFICULTY_LABEL: Record<1 | 2 | 3 | 4, Loc> = {
   3: { ru: "Сложная", en: "Hard", kk: "Қиын" },
   4: { ru: "Адская", en: "Hellish", kk: "Өте қиын" },
 };
+
+/** Every tip, each bound to a pose that fits it. Tip slots in ROUTES are
+ * placeholders: the runner fills each with a pool tip of the same variant. */
+export const TIP_POOL: TipStep[] = [
+  tipYouGotThis, tipExcitement, tipSmile, tipMistakesOk, tipTempo, tipPauses,
+  tipPosture, tipEyes, tipShine, fixWarm, fixDry,
+  ...moreTips,
+];

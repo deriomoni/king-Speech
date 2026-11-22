@@ -48,6 +48,7 @@ import {
 } from "@/constants/cheatsheetData";
 import BreathingCircle from "@/components/cheatsheet/BreathingCircle";
 import TipMascot from "@/components/cheatsheet/TipMascot";
+import { markTipSeen, resolveTipSlots } from "@/lib/tipRotation";
 import IllustratedDrill, { getIllustrated } from "@/components/warmup/IllustratedDrill";
 import ChantView from "@/components/cheatsheet/ChantView";
 
@@ -400,8 +401,13 @@ export default function CheatSheetRunner({
   const insets = useSafeAreaInsets();
   const { colors: c, isDark } = useAppColors();
   const [idx, setIdx] = useState(0);
-  const total = route.steps.length;
-  const step: CheatStep = route.steps[idx];
+  // Tip slots get a fresh, least-recently-seen tip (with its own pose) per run.
+  const steps = React.useMemo(() => resolveTipSlots(route.steps), [route]);
+  const total = steps.length;
+  const step: CheatStep = steps[idx];
+  useEffect(() => {
+    if (step.kind === "tip") markTipSeen(step.id);
+  }, [step]);
   const isFinal = step.kind === "final";
 
   // Elapsed-time clock for the top bar. Counts up so the player sees how much

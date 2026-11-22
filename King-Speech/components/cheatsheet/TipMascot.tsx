@@ -3,7 +3,7 @@
 //   · heart — our own vector heart hovers above his open palm
 //   · lotus — he levitates; the floor shadow shrinks as he rises
 import React, { useEffect } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Image } from "react-native";
 import Svg, { Defs, Ellipse, Path, RadialGradient, Stop, SvgXml } from "react-native-svg";
 import Animated, {
   Easing,
@@ -18,6 +18,7 @@ import { OSCAR_POSES } from "@/constants/oscarPoses";
 import type { TipMascot as TipMascotSpec } from "@/constants/cheatsheetData";
 import { rs } from "@/lib/responsive";
 
+const BAGS = require("@/assets/figma/levels/oscar-bags.png");
 const INK = "#5A231F";
 const HEART_RED = "#E04A4A";
 // Where the illustrator's heart sat in the heart pose's viewBox (source px).
@@ -116,6 +117,10 @@ export default function TipMascot({ mascot }: { mascot?: TipMascotSpec }) {
     // jumps, so his body inside it is ~1.4× smaller than in the vector poses.
     // Scaling the envelope matches the BODY size; every frame still fits.
     return <OscarMascot emotion={mascot.rive} size={Math.round(MAX_W * RIVE_BODY)} tight />;
+  }
+  if ("png" in mascot) {
+    // №15 — the Figma PNG (Oscar with coin bags), in the same box as the vector poses
+    return <Image source={BAGS} style={{ width: MAX_W, height: MAX_H }} resizeMode="contain" />;
   }
   return <Pose pose={mascot.pose} />;
 }
