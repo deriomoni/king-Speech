@@ -60,12 +60,6 @@ const ENV = { x0: 39, y0: 12, x1: 265, y1: 203, canvas: 300 };
 const ENV_W = ENV.x1 - ENV.x0;
 const ENV_H = ENV.y1 - ENV.y0;
 
-// The vector poses carry a drawn ink outline (~0.75% of the figure's width);
-// Rive Oscar gets the same contour via RiveAnim's outline filter.
-const INK = "#5A231F";
-const INK_PER_ENV_W = 0.0075;
-const inkFor = (envWidthPx: number) => ({ color: INK, width: Math.max(1, Math.round(envWidthPx * INK_PER_ENV_W * 10) / 10) });
-
 interface Props {
   emotion?: OscarEmotion;
   /** Square canvas size in px. Keep between ~96 and ~240 so Oscar never dominates. */
@@ -101,7 +95,6 @@ export default function OscarMascot({ emotion = "idle", size = rs(150), tight = 
           alignment="center"
           autoplay
           animation={EMOTION_ANIMATION[emotion]}
-          outline={inkFor(W)}
         />
       </View>
     );
@@ -129,7 +122,6 @@ export default function OscarMascot({ emotion = "idle", size = rs(150), tight = 
         alignment="center"
         autoplay
         animation={EMOTION_ANIMATION[emotion]}
-        outline={inkFor((S * ENV_W) / ENV.canvas)}
       />
     </View>
   );
