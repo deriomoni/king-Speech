@@ -49,7 +49,7 @@ export interface BreathingStep {
   cycles: number;
 }
 
-/** Guided physical action (grounding, shaking, resonators) — optional timer. */
+/** Guided physical action (yawn-sigh, shaking, humming, trill, siren) — optional timer. */
 export interface ActionStep {
   kind: "action";
   id: string;
@@ -198,20 +198,25 @@ const diaphragmatic: BreathingStep = {
   ],
 };
 
-const grounding: ActionStep = {
+// Yawn-sigh: the classic voice-teacher release — a yawn lowers the larynx and
+// opens the throat, the long sighed exhale calms the nerves at the same time.
+const yawnSigh: ActionStep = {
   kind: "action",
-  id: "grounding",
+  id: "yawn-sigh",
   block: "nerves",
-  emoji: "🌿",
-  title: { ru: "Заземление 5-4-3-2-1", en: "Grounding 5-4-3-2-1", kk: "Жерге тірелу 5-4-3-2-1" },
-  intro: { ru: "Верни себя в «здесь и сейчас». Про себя назови:", en: "Bring yourself back to the here and now. Silently name:", kk: "Өзіңізді «осы жерге және осы сәтке» қайтарыңыз. Іштей атаңыз:" },
-  seconds: 40,
+  emoji: "🥱",
+  title: { ru: "Зевок-вздох", en: "Yawn-sigh", kk: "Есінеп күрсіну" },
+  intro: {
+    ru: "Снимает зажим в горле и успокаивает. Рот широко, звук мягкий.",
+    en: "Releases a tight throat and calms you down. Mouth wide, sound soft.",
+    kk: "Тамақтағы қысылуды басып, тыныштандырады. Ауыз кең, дыбыс жұмсақ.",
+  },
+  seconds: 24,
+  moveSecs: [8, 8, 8],
   moves: [
-    { ru: "5 вещей, которые видишь", en: "5 things you can see", kk: "Көріп тұрған 5 нәрсе" },
-    { ru: "4 звука, которые слышишь", en: "4 sounds you can hear", kk: "Естіп тұрған 4 дыбыс" },
-    { ru: "3 ощущения в теле", en: "3 sensations in your body", kk: "Денеңіздегі 3 сезім" },
-    { ru: "2 запаха вокруг", en: "2 smells around you", kk: "Айналаңыздағы 2 иіс" },
-    { ru: "1 медленный глубокий вдох", en: "1 slow deep breath", kk: "1 баяу әрі терең дем" },
+    { ru: "Широко зевни, вдох через рот", en: "Yawn wide, breathe in through the mouth", kk: "Кең есінеп, аузыңызбен дем алыңыз" },
+    { ru: "На выдохе мягкое «ха-а-а» сверху вниз", en: "Exhale a soft 'haaa', high to low", kk: "Дем шығарғанда жұмсақ «ха-а-а» — жоғарыдан төменге" },
+    { ru: "Ещё раз: зевок и долгий вздох", en: "Once more: yawn and a long sigh", kk: "Тағы бір рет: есінеп, ұзақ күрсініңіз" },
   ],
 };
 
@@ -220,30 +225,40 @@ const shaking: ActionStep = {
   id: "shaking",
   block: "nerves",
   emoji: "🙆",
-  title: { ru: "Стряхни зажим", en: "Shake off the tension", kk: "Қысылуды сілкіп тастаңыз" },
-  intro: { ru: "Тело держит стресс. Разомни его — делай за мной:", en: "Your body holds stress. Loosen it — do it with me:", kk: "Дене күйзелісті ұстап қалады. Оны босатыңыз — менімен бірге жасаңыз:" },
+  title: { ru: "Сбрось напряжение", en: "Drop the tension", kk: "Кернеуді түсіріңіз" },
+  intro: {
+    ru: "Стресс сидит в руках, плечах и челюсти. Расслабь их по очереди.",
+    en: "Stress sits in your hands, shoulders and jaw. Release them one by one.",
+    kk: "Күйзеліс қолда, иықта және иекте жиналады. Оларды кезекпен босатыңыз.",
+  },
   seconds: 24,
   moveSecs: [10, 7, 7],
   moves: [
-    { ru: "Встряхни кисти рук 10 секунд", en: "Shake out your hands for 10 seconds", kk: "Қолдарыңызды 10 секунд сілкіңіз" },
-    { ru: "Покрути плечами назад", en: "Roll your shoulders backwards", kk: "Иықтарыңызды артқа қарай айналдырыңыз" },
-    { ru: "Урони и расслабь челюсть", en: "Drop and relax your jaw", kk: "Иегіңізді түсіріп, босаңсытыңыз" },
+    { ru: "Тряси кистями, будто стряхиваешь воду", en: "Shake your hands as if flicking off water", kk: "Су сілкігендей қолдарыңызды сілкіңіз" },
+    { ru: "Плечи к ушам — задержи — резко брось", en: "Shoulders to ears — hold — drop them", kk: "Иықты құлаққа дейін көтеріп — ұстап — тастаңыз" },
+    { ru: "Челюсть вниз, рот приоткрыт, язык мягкий", en: "Jaw down, mouth slightly open, tongue loose", kk: "Иек төмен, ауыз сәл ашық, тіл жұмсақ" },
   ],
 };
 
+// Humming: lips closed, teeth apart — moves the voice forward into the mask,
+// then opens it onto a vowel so the placement carries into speech.
 const resonators: ActionStep = {
   kind: "action",
   id: "resonators",
   block: "voice",
   emoji: "🎵",
-  title: { ru: "Разбуди резонаторы", en: "Wake up your resonators", kk: "Резонаторларды ояту" },
-  intro: { ru: "Тихо помычи «ммм» с закрытым ртом. Почувствуй вибрацию:", en: "Hum a soft 'mmm' with your mouth closed. Feel the buzz:", kk: "Аузыңызды жауып, ақырын «ммм» деп ыңылдаңыз. Дірілді сезініңіз:" },
+  title: { ru: "Мычание", en: "Humming", kk: "Ыңылдау" },
+  intro: {
+    ru: "Губы сомкнуты, зубы разжаты. Тяни «ммм» на удобной ноте, как будто соглашаешься.",
+    en: "Lips closed, teeth apart. Hum 'mmm' on a comfortable note, like you're agreeing.",
+    kk: "Ерін жабық, тіс ашық. Келіскендей, ыңғайлы нотада «ммм» деп созыңыз.",
+  },
   seconds: 24,
   moveSecs: [8, 8, 8],
   moves: [
-    { ru: "Вибрация в губах и носу", en: "Buzz in your lips and nose", kk: "Ерін мен мұрындағы діріл" },
-    { ru: "Опусти звук ниже — в грудь", en: "Lower the tone into your chest", kk: "Дыбысты төмен — кеудеге түсіріңіз" },
-    { ru: "Голос звучит теплее и объёмнее", en: "Your voice grows warmer and fuller", kk: "Дауыс жылырақ әрі көлемдірек естіледі" },
+    { ru: "Тяни «ммм» — губы должны щекотать", en: "Hold 'mmm' — your lips should tickle", kk: "«ммм» деп созыңыз — ерін қытықталуы керек" },
+    { ru: "Не обрывая звук: «ммм-ма-а-а»", en: "Without breaking: 'mmm-maaa'", kk: "Дыбысты үзбей: «ммм-ма-а-а»" },
+    { ru: "Коротко и звонко: «мма — мме — ммо»", en: "Short and ringing: 'mma — mme — mmo'", kk: "Қысқа әрі жарқын: «мма — мме — ммо»" },
   ],
 };
 
@@ -252,14 +267,18 @@ const lipTrill: ActionStep = {
   id: "lip-trill",
   block: "voice",
   emoji: "😛",
-  title: { ru: "Губной вибрант «бррр»", en: "Lip trill 'brrr'", kk: "Ерін дірілі «бррр»" },
-  intro: { ru: "Расслабь губы и пусти воздух — они завибрируют. Делай за мной:", en: "Relax your lips and push air — they'll flutter. Do it with me:", kk: "Еріндеріңізді босатып, ауа жіберіңіз — олар дірілдейді. Менімен бірге жасаңыз:" },
+  title: { ru: "Губная трель «бррр»", en: "Lip trill 'brrr'", kk: "Ерін дірілі «бррр»" },
+  intro: {
+    ru: "Губы мягкие, дуешь ровно — они вибрируют. Не выходит — прижми пальцами щёки.",
+    en: "Soft lips, steady air — they flutter. Can't get it? Press your cheeks with your fingers.",
+    kk: "Ерін жұмсақ, ауаны бірқалыпты үрлеңіз — ол дірілдейді. Шықпаса, саусақпен бетіңізді басыңыз.",
+  },
   seconds: 24,
   moveSecs: [8, 8, 8],
   moves: [
-    { ru: "Ровное «бррр» на одном дыхании", en: "A steady 'brrr' on one breath", kk: "Бір демде бірқалыпты «бррр»" },
-    { ru: "Веди звук вверх, как горка", en: "Glide the tone up like a slide", kk: "Дыбысты сырғанақтай жоғары көтеріңіз" },
-    { ru: "И плавно опусти вниз", en: "Then slide it smoothly back down", kk: "Сосын баяу төмен түсіріңіз" },
+    { ru: "Ровное «бррр» на одной ноте", en: "A steady 'brrr' on one note", kk: "Бір нотада бірқалыпты «бррр»" },
+    { ru: "Не прерывая — голосом вверх", en: "Without stopping — slide your voice up", kk: "Үзбей — дауысты жоғары көтеріңіз" },
+    { ru: "И плавно вниз до самого низа", en: "Then glide all the way down", kk: "Сосын баяу ең төменге түсіріңіз" },
   ],
 };
 
@@ -269,13 +288,17 @@ const sirena: ActionStep = {
   block: "voice",
   emoji: "🚨",
   title: { ru: "Сирена", en: "Siren", kk: "Сирена" },
-  intro: { ru: "Тяни «у-у-у» и катай голос от низа к верху и обратно:", en: "Sustain an 'oo' and roll your voice from low to high and back:", kk: "«у-у-у» деп созып, дауысыңызды төменнен жоғары және кері жүргізіңіз:" },
+  intro: {
+    ru: "Звук «у» на одном выдохе: от низкой ноты до высокой и обратно.",
+    en: "An 'oo' on one breath: from a low note up to a high one and back.",
+    kk: "Бір демде «у» дыбысы: төменгі нотадан жоғарыға және кері.",
+  },
   seconds: 24,
   moveSecs: [8, 8, 8],
   moves: [
-    { ru: "От самого низкого — плавно вверх", en: "From your lowest — smoothly up", kk: "Ең төменгісінен — біртіндеп жоғары" },
-    { ru: "До самого высокого — и обратно", en: "To your highest — and back", kk: "Ең жоғарғысына дейін — және кері" },
-    { ru: "Без рывков, одной линией", en: "No jumps, one continuous line", kk: "Секірмей, бір сызықпен" },
+    { ru: "«У» на самой низкой удобной ноте", en: "'Oo' on your lowest comfortable note", kk: "Ең төменгі ыңғайлы нотада «у»" },
+    { ru: "Плавно вверх до самой высокой", en: "Glide up to your highest", kk: "Біртіндеп ең жоғарғысына дейін" },
+    { ru: "И обратно вниз — без скачков", en: "And back down — no jumps", kk: "Және кері төмен — секірмей" },
   ],
 };
 
@@ -666,7 +689,7 @@ export const ROUTES: CheatRoute[] = [
     // a long twister ladder from easy to hellish.
     steps: [
       physiologicalSigh, tipExcitement,
-      grounding, tipYouGotThis,
+      yawnSigh, tipYouGotThis,
       shaking, tipPosture,
       diaphragmatic,
       articulation,
@@ -706,7 +729,7 @@ export interface RefSection {
 }
 
 export const REFERENCE: RefSection[] = [
-  { block: "nerves", steps: [physiologicalSigh, grounding, shaking] },
+  { block: "nerves", steps: [physiologicalSigh, yawnSigh, shaking] },
   { block: "breath", steps: [diaphragmatic] },
   { block: "voice", steps: [articulation, articulationTongue, chant, chantBro, resonators, lipTrill, sirena] },
   { block: "twister", steps: [twSasha, twGreki, twOsip, twTrava, twByk, twKlara, twKopyt, twCherti, twKolpak] },

@@ -17,7 +17,6 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeOut,
-  ZoomIn,
   useSharedValue,
   useAnimatedStyle,
   withTiming,
@@ -103,7 +102,7 @@ function ArticulationView({ step, lang, c, isDark }: { step: ArticulationStep; l
   if (preview) {
     return (
       <Animated.View exiting={FadeOut.duration(220)} style={styles.artPreview}>
-        <Animated.Text entering={ZoomIn.springify().damping(14).stiffness(150)} style={[styles.artPreviewTitle, { color: c.text }]}>
+        <Animated.Text entering={FadeIn.duration(450)} style={[styles.artPreviewTitle, { color: c.text }]}>
           {tx(step.title, lang)}
         </Animated.Text>
         <Animated.Text entering={FadeInDown.duration(420).delay(320)} style={[styles.stepIntro, { color: c.textSecondary }]}>
@@ -132,12 +131,12 @@ function ArticulationView({ step, lang, c, isDark }: { step: ArticulationStep; l
   );
 }
 
-// ── Action (grounding / shaking / resonators / trill / siren) ────────────────
+// ── Action (yawn-sigh / shaking / humming / trill / siren) ────────────────────
 // Three phases so the exercise is actually done, not skipped:
 //  1. intro — just the name, one line of what it is, and «Начать»;
 //  2. run   — one stage at a time: its instruction big, its own countdown,
-//             segmented progress, a peek at what comes next;
-//  3. done  — a check and «Ещё раз».
+//             segmented progress;
+//  3. done  — «Готово!» and «Ещё раз».
 const stageSecsOf = (step: ActionStep) =>
   step.moveSecs ?? step.moves.map(() => Math.max(5, Math.ceil((step.seconds ?? 21) / step.moves.length)));
 
@@ -200,7 +199,7 @@ function ActionView({ step, lang, c, isDark }: { step: ActionStep; lang: Lang; c
     return (
       <Animated.View key="intro" entering={FadeIn.duration(260)} style={styles.actIntro}>
         <View style={styles.actIntroHead}>
-          <Animated.Text entering={ZoomIn.springify().damping(14).stiffness(150)} style={[styles.artPreviewTitle, { color: c.text }]}>
+          <Animated.Text entering={FadeIn.duration(450)} style={[styles.artPreviewTitle, { color: c.text }]}>
             {tx(step.title, lang)}
           </Animated.Text>
           <Animated.Text entering={FadeInDown.duration(380).delay(200)} style={[styles.stepIntro, { color: c.textSecondary }]}>
@@ -224,10 +223,7 @@ function ActionView({ step, lang, c, isDark }: { step: ActionStep; lang: Lang; c
     return (
       <Animated.View key="done" entering={FadeIn.duration(260)} style={styles.actIntro}>
         <View style={styles.actIntroHead}>
-          <Animated.View entering={ZoomIn.springify().damping(12).stiffness(160)} style={styles.actDoneBadge}>
-            <Ionicons name="checkmark" size={rs(46)} color="#41310A" />
-          </Animated.View>
-          <Animated.Text entering={FadeInDown.duration(360).delay(160)} style={[styles.artPreviewTitle, { color: c.text }]}>
+          <Animated.Text entering={FadeIn.duration(400)} style={[styles.artPreviewTitle, { color: c.text }]}>
             {pickLang(lang, { ru: "Готово!", en: "Done!", kk: "Дайын!" })}
           </Animated.Text>
           <Animated.Text entering={FadeInDown.duration(360).delay(260)} style={[styles.stepIntro, { color: c.textSecondary }]}>
@@ -244,7 +240,6 @@ function ActionView({ step, lang, c, isDark }: { step: ActionStep; lang: Lang; c
     );
   }
 
-  const nextMove = step.moves[stage + 1];
   return (
     <Animated.View key="run" entering={FadeIn.duration(260)} style={styles.actRun}>
       <Text style={[styles.actRunTitle, { color: c.textMuted }]}>{tx(step.title, lang)}</Text>
@@ -262,19 +257,6 @@ function ActionView({ step, lang, c, isDark }: { step: ActionStep; lang: Lang; c
         <Animated.Text key={`m-${stage}`} entering={FadeInDown.duration(320)} style={[styles.actMoveNow, { color: c.text }]}>
           {tx(step.moves[stage], lang)}
         </Animated.Text>
-      </View>
-
-      <View style={styles.actNextBox}>
-        {nextMove ? (
-          <Text style={[styles.actNextTxt, { color: c.textMuted }]} numberOfLines={2}>
-            {pickLang(lang, { ru: "Дальше: ", en: "Next: ", kk: "Келесі: " })}
-            {tx(nextMove, lang)}
-          </Text>
-        ) : (
-          <Text style={[styles.actNextTxt, { color: c.textMuted }]}>
-            {pickLang(lang, { ru: "Последний этап", en: "Last stage", kk: "Соңғы кезең" })}
-          </Text>
-        )}
       </View>
     </Animated.View>
   );
@@ -762,7 +744,6 @@ const styles = StyleSheet.create({
   actMetaTxt: { fontSize: 13, fontFamily: fonts.bodyBold, letterSpacing: 0.3 },
   actStartBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: GOLD, minWidth: 200, paddingHorizontal: 36, paddingVertical: 17, borderRadius: 32 },
   actStartTxt: { color: "#41310A", fontSize: 18, fontFamily: fonts.bodyBold },
-  actDoneBadge: { width: 92, height: 92, borderRadius: 46, backgroundColor: GOLD, alignItems: "center", justifyContent: "center", marginBottom: 4 },
   actAgainBtn: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 24, paddingVertical: 13, borderRadius: 26 },
   actAgainTxt: { fontSize: 15, fontFamily: fonts.bodyBold },
   actRun: { flex: 1, alignItems: "center", paddingTop: 4 },
@@ -774,8 +755,6 @@ const styles = StyleSheet.create({
   actRunCenter: { flex: 1, alignItems: "center", justifyContent: "center", gap: 18, paddingHorizontal: 6, paddingBottom: 20 },
   actCount: { fontSize: 76, lineHeight: 84, fontFamily: fonts.display },
   actMoveNow: { fontSize: 26, lineHeight: 33, fontFamily: fonts.display, textAlign: "center" },
-  actNextBox: { minHeight: 44, paddingBottom: 12, paddingHorizontal: 10 },
-  actNextTxt: { fontSize: 14, lineHeight: 20, fontFamily: fonts.body, textAlign: "center" },
 
   // manners
   mannersWrap: { paddingTop: 4 },
