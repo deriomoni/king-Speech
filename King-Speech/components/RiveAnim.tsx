@@ -49,7 +49,37 @@ type RiveAnimProps = {
    * so the screen never shows a blank hole or a debug placeholder.
    */
   fallback?: ImageSourcePropType;
+  /**
+   * Ink outline around the drawn silhouette (Oscar's vector poses carry a
+   * drawn outline; the Rive art has none). Applied as an SVG filter on the
+   * canvas: the alpha is dilated by `width` px, filled with `color`, and the
+   * art is drawn on top — so the contour follows every animated frame. Works
+   * on web and in the Expo Go WebView; the native rive-react-native view can't
+   * take a CSS filter and renders without it.
+   */
+  outline?: { color: string; width: number };
 };
+
+function outlineFilterId(o: { color: string; width: number }) {
+  return `riveInk_${o.color.replace(/[^0-9a-zA-Z]/g, "")}_${Math.round(o.width * 10)}`;
+}
+
+function outlineFilterSvg(o: { color: string; width: number }) {
+  const id = outlineFilterId(o);
+  return `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="${id}" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB"><feMorphology in="SourceAlpha" operator="dilate" radius="${o.width}" result="d"/><feFlood flood-color="${o.color}"/><feComposite in2="d" operator="in" result="ink"/><feMerge><feMergeNode in="ink"/><feMergeNode in="SourceGraphic"/></feMerge></filter></svg>`;
+}
+
+// Web: inject each distinct outline filter into the document once.
+function ensureWebOutlineFilter(o: { color: string; width: number }): string {
+  const id = outlineFilterId(o);
+  if (typeof document !== "undefined" && !document.getElementById(id)) {
+    const host = document.createElement("div");
+    host.innerHTML = outlineFilterSvg(o);
+    const svg = host.firstElementChild;
+    if (svg) document.body.appendChild(svg);
+  }
+  return id;
+}
 
 // Expo Go: the .riv bytes are read once per asset and shared by every
 // instance (Oscar is ~0.9 MB — re-reading + base64-encoding it per mount was
@@ -182,6 +212,7 @@ function WebRiveCanvas({
   autoplay = true,
   fit = "contain",
   alignment = "center",
+  outline,
 }: RiveAnimProps & { src: string }) {
   let layoutInstance: any = undefined;
   try {
@@ -205,9 +236,10 @@ function WebRiveCanvas({
     autoplay,
     ...(layoutInstance ? { layout: layoutInstance } : {}),
   });
+  const filterId = outline ? ensureWebOutlineFilter(outline) : null;
   return (
     <View style={[styles.box, style]}>
-      <RiveComponent />
+      <RiveComponent style={filterId ? { filter: `url(#${filterId})`, width: "100%", height: "100%" } : undefined} />
     </View>
   );
 }
@@ -240,6 +272,7 @@ function buildExpoGoHtml(
   artboard?: string,
   stateMachine?: string,
   animation?: string,
+  outline?: { color: string; width: number },
 ): string {
   const fitKey = FIT_MAP_WEB[fit] ?? "Contain";
   const alignKey = ALIGN_MAP_WEB[alignment] ?? "Center";
@@ -250,8 +283,9 @@ function buildExpoGoHtml(
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 <style>
 html,body{margin:0;padding:0;background:transparent;overflow:hidden;height:100%;}
-canvas{display:block;width:100vw;height:100vh;background:transparent;}
+canvas{display:block;width:100vw;height:100vh;background:transparent;${outline ? `filter:url(#${outlineFilterId(outline)});` : ""}}
 </style></head><body>
+${outline ? outlineFilterSvg(outline) : ""}
 <canvas id="c"></canvas>
 <script src="https://unpkg.com/@rive-app/canvas@2.37.6"></script>
 <script>
@@ -287,6 +321,7 @@ function ExpoGoRiveView({
   fit = "contain",
   alignment = "center",
   fallback,
+  outline,
 }: RiveAnimProps) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -326,7 +361,7 @@ function ExpoGoRiveView({
   }
 
   const html = dataUrl
-    ? buildExpoGoHtml(dataUrl, fit, alignment, autoplay, artboard, stateMachine, animation)
+    ? buildExpoGoHtml(dataUrl, fit, alignment, autoplay, artboard, stateMachine, animation, outline)
     : null;
   return (
     <View style={[styles.box, style]}>
