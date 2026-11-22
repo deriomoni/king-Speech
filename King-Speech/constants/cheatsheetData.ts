@@ -437,7 +437,7 @@ const tipExcitement: TipStep = {
   text: { ru: "Не гаси волнение — направь его в первую фразу. Это энергия, а не враг.", en: "Don't fight the nerves — pour them into your opening line. It's energy, not an enemy.", kk: "Толқуды басуға тырыспаңыз — оны алғашқы сөйлеміңізге бағыттаңыз. Бұл — жау емес, қуат." },
 };
 const tipTempo: TipStep = {
-  kind: "tip", id: "tip-tempo", block: "tip", variant: "tip", icon: "speedometer-outline", mascot: { rive: "shiny" },
+  kind: "tip", id: "tip-tempo", block: "tip", variant: "tip", icon: "speedometer-outline", mascot: { pose: "lotus" },
   title: { ru: "Чуть медленнее", en: "A touch slower", kk: "Сәл баяуырақ" },
   text: { ru: "Говори чуть медленнее, чем хочется. Спешка читается как волнение.", en: "Speak a little slower than feels natural. Rushing reads as anxiety.", kk: "Өзіңіз қалағаннан сәл баяуырақ сөйлеңіз. Асығыстық толқу сияқты көрінеді." },
 };
@@ -469,7 +469,7 @@ const tipSmile: TipStep = {
   text: { ru: "Лёгкая улыбка расслабляет лицо — и голос сразу звучит теплее и живее.", en: "A light smile relaxes your face — and your voice instantly sounds warmer.", kk: "Жеңіл жымиыс бетті босаңсытады — дауыс бірден жылырақ әрі жандырақ естіледі." },
 };
 const tipMistakesOk: TipStep = {
-  kind: "tip", id: "tip-mistakes", block: "tip", variant: "tip", icon: "shield-checkmark-outline", mascot: { rive: "shiny" },
+  kind: "tip", id: "tip-mistakes", block: "tip", variant: "tip", icon: "shield-checkmark-outline", mascot: { pose: "wink" },
   title: { ru: "Ошибиться — это норм", en: "Slips are fine", kk: "Қателесу — қалыпты нәрсе" },
   text: { ru: "Даже опытные ораторы оговариваются. Не останавливайся — и никто не заметит.", en: "Even seasoned speakers stumble. Just keep going — no one will notice.", kk: "Тәжірибелі шешендер де жаңылысады. Тоқтамаңыз — ешкім байқамайды." },
 };

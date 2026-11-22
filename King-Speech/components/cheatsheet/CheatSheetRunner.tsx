@@ -8,7 +8,6 @@ import {
   ScrollView,
   useWindowDimensions,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import NextChevron from "@/components/NextChevron";
 import * as Haptics from "@/lib/haptics";
@@ -22,6 +21,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withDelay,
+  withSpring,
   Easing,
   cancelAnimation,
 } from "react-native-reanimated";
@@ -384,11 +384,42 @@ function FinalView({ step, lang, onDone, c }: { step: FinalStep; lang: Lang; onD
           </View>
         ))}
       </Animated.View>
-      <Pressable onPress={onDone} style={({ pressed }) => [styles.readyBtn, pressed && { opacity: 0.9 }]}>
-        <LinearGradient colors={[GOLD, "#E6B82E"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-        <Text style={styles.readyTxt}>{pickLang(lang, { ru: "Я готов", en: "I'm ready", kk: "Мен дайынмын" })}</Text>
-      </Pressable>
+      <ReadyButton3D label={pickLang(lang, { ru: "Я готов", en: "I'm ready", kk: "Мен дайынмын" })} onPress={onDone} />
     </View>
+  );
+}
+
+// ── «Я готов» — a chunky 3D key: a gold face on a deeper amber base. Pressing
+// sinks the face into the base (spring), with a haptic tick on the way down
+// and a success buzz on release.
+const READY_DEPTH = 7;
+function ReadyButton3D({ label, onPress }: { label: string; onPress: () => void }) {
+  const down = useSharedValue(0);
+  const faceStyle = useAnimatedStyle(() => ({ transform: [{ translateY: down.value * READY_DEPTH }] }));
+  return (
+    <Pressable
+      onPress={() => {
+        if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        onPress();
+      }}
+      onPressIn={() => {
+        down.value = withTiming(1, { duration: 70 });
+        haptic(Haptics.ImpactFeedbackStyle.Medium);
+      }}
+      onPressOut={() => {
+        down.value = withSpring(0, { damping: 11, stiffness: 320, mass: 0.6 });
+      }}
+      style={styles.ready3d}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <View style={styles.ready3dBase} />
+      <Animated.View style={[styles.ready3dFace, faceStyle]}>
+        {/* soft top glint */}
+        <View style={styles.ready3dGlint} />
+        <Text style={styles.readyTxt}>{label}</Text>
+      </Animated.View>
+    </Pressable>
   );
 }
 
@@ -583,7 +614,6 @@ export default function CheatSheetRunner({
             <Text style={[styles.backTxt, { color: c.text }]}>{pickLang(lang, { ru: "Назад", en: "Back", kk: "Артқа" })}</Text>
           </Pressable>
           <Pressable onPress={next} hitSlop={10} style={({ pressed }) => [styles.nextBtn, styles.nextBtnFlex, pressed && { opacity: 0.9 }]}>
-            <LinearGradient colors={[GOLD, "#E6B82E"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
             <Text style={styles.nextTxt}>{pickLang(lang, { ru: "Вперёд", en: "Forward", kk: "Алға" })}</Text>
             <NextChevron size={rs(16)} color="#41310A" />
           </Pressable>
@@ -682,8 +712,11 @@ const styles = StyleSheet.create({
   finalLineRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   finalDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: GOLD },
   finalLine: { fontSize: 15, lineHeight: 21, fontFamily: fonts.bodySemibold },
-  readyBtn: { overflow: "hidden", height: 58, alignSelf: "stretch", borderRadius: 29, alignItems: "center", justifyContent: "center", marginTop: 4 },
-  readyTxt: { color: "#41310A", fontSize: 17, fontFamily: fonts.bodyBold },
+  ready3d: { alignSelf: "stretch", height: 58 + READY_DEPTH, marginTop: 4 },
+  ready3dBase: { position: "absolute", left: 0, right: 0, bottom: 0, height: 58, borderRadius: 29, backgroundColor: "#D99A1E" },
+  ready3dFace: { height: 58, borderRadius: 29, backgroundColor: GOLD, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  ready3dGlint: { position: "absolute", top: 5, left: 22, right: 22, height: 14, borderRadius: 7, backgroundColor: "rgba(255,255,255,0.32)" },
+  readyTxt: { color: "#41310A", fontSize: 18, fontFamily: fonts.bodyBold, letterSpacing: 0.2 },
 
   // footer
   footer: { paddingHorizontal: 22, paddingTop: 8 },
@@ -699,7 +732,7 @@ const styles = StyleSheet.create({
   },
   readyHint: { fontSize: 14, fontFamily: fonts.bodySemibold, textAlign: "center", marginBottom: 12 },
   backTxt: { fontSize: 16, fontFamily: fonts.bodyBold },
-  nextBtn: { overflow: "hidden", minHeight: 56, paddingHorizontal: 24, borderRadius: 28, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  nextBtn: { overflow: "hidden", backgroundColor: GOLD, minHeight: 56, paddingHorizontal: 24, borderRadius: 28, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   nextBtnFlex: { flex: 1 },
   nextTxt: { color: "#41310A", fontSize: 17, fontFamily: fonts.bodyBold },
 });
