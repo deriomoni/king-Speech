@@ -35,12 +35,6 @@ function phaseColor(type: PhaseType): string {
   return C_EXHALE;
 }
 
-function phaseIcon(type: PhaseType): keyof typeof Ionicons.glyphMap {
-  if (type === "inhale") return "arrow-down";
-  if (type === "hold") return "pause";
-  return "arrow-up";
-}
-
 function haptic() {
   if (Platform.OS !== "web") {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -132,33 +126,15 @@ export default function BreathingCircle({
 
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.cycle, { color: colors.textMuted }]}>
-        {finished
-          ? pickLang(lang, { ru: "Готово — отлично подышал", en: "Done — nicely breathed", kk: "Дайын — керемет тыныстадыңыз" })
-          : pickLang(lang, {
-              ru: `Цикл ${cycle} из ${step.cycles}`,
-              en: `Cycle ${cycle} of ${step.cycles}`,
-              kk: `${step.cycles} циклдің ${cycle}-і`,
-            })}
+      {/* Cycle counter only while breathing — the inhale/exhale pill and the
+          «Готово» line are gone (the nose/mouth icons do the guiding now). */}
+      <Text style={[styles.cycle, { color: colors.textMuted, opacity: finished ? 0 : 1 }]}>
+        {pickLang(lang, {
+          ru: `Цикл ${cycle} из ${step.cycles}`,
+          en: `Cycle ${cycle} of ${step.cycles}`,
+          kk: `${step.cycles} циклдің ${cycle}-і`,
+        })}
       </Text>
-
-      {phase ? (
-        <Animated.View
-          key={`cue-${idx}`}
-          entering={FadeIn.duration(260)}
-          style={[styles.cue, { backgroundColor: color + "1A", borderColor: color + "4D" }]}
-        >
-          <Ionicons name={phaseIcon(phase.type)} size={rs(18)} color={color} />
-          <Text style={[styles.cueText, { color }]}>{tx(phase.cue, lang)}</Text>
-        </Animated.View>
-      ) : (
-        <View style={[styles.cue, { backgroundColor: C_EXHALE + "1A", borderColor: C_EXHALE + "4D" }]}>
-          <Ionicons name="checkmark" size={rs(18)} color={C_EXHALE} />
-          <Text style={[styles.cueText, { color: C_EXHALE }]}>
-            {pickLang(lang, { ru: "Нажми «Вперёд», когда готов", en: "Tap Forward when ready", kk: "Дайын болғанда «Алға» түймесін басыңыз" })}
-          </Text>
-        </View>
-      )}
 
       <View style={styles.center} onLayout={(e) => setCenterH(e.nativeEvent.layout.height)}>
         {phase && (phase.type === "inhale" || phase.type === "exhale") && centerH > 0 && (
@@ -199,17 +175,6 @@ export default function BreathingCircle({
 const styles = StyleSheet.create({
   wrap: { flex: 1, alignItems: "center", justifyContent: "flex-start", width: "100%" },
   cycle: { color: "rgba(255,255,255,0.6)", fontSize: 14, fontFamily: fonts.bodySemibold, textAlign: "center", marginBottom: 6 },
-  cue: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    alignSelf: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 22,
-    borderWidth: 1,
-  },
-  cueText: { fontSize: 15, fontFamily: fonts.bodySemibold },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   breathIcon: { position: "absolute", left: 0, right: 0, height: ICON_BOX, alignItems: "center", justifyContent: "center" },
   ring: { position: "absolute", width: 264, height: 264, borderRadius: 132, borderWidth: 1.5 },

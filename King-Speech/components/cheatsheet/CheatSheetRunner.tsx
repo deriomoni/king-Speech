@@ -21,6 +21,7 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withDelay,
   Easing,
   cancelAnimation,
 } from "react-native-reanimated";
@@ -46,7 +47,6 @@ import {
   type FinalStep,
 } from "@/constants/cheatsheetData";
 import BreathingCircle from "@/components/cheatsheet/BreathingCircle";
-import { MouthIcon } from "@/components/warmup/BreathIcons";
 import IllustratedDrill, { getIllustrated } from "@/components/warmup/IllustratedDrill";
 import ChantView from "@/components/cheatsheet/ChantView";
 
@@ -67,6 +67,17 @@ function haptic(style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle
 // mm:ss for the elapsed-time clock.
 const mmss = (s: number) =>
   `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+// ── Intro line that fades away after a few seconds ────────────────────────────
+function FadingIntro({ text, color, afterMs = 5000 }: { text: string; color: string; afterMs?: number }) {
+  const op = useSharedValue(1);
+  useEffect(() => {
+    op.value = withDelay(afterMs, withTiming(0, { duration: 700, easing: Easing.out(Easing.quad) }));
+    return () => cancelAnimation(op);
+  }, [afterMs, op]);
+  const style = useAnimatedStyle(() => ({ opacity: op.value }));
+  return <Animated.Text style={[styles.stepIntro, { color }, style]}>{text}</Animated.Text>;
+}
 
 // ── Articulation (illustrated warm-up portraits, animated in rhythm) ───────────
 // Opens with a 3-second preview of the step name («Разомни рот»), then the
@@ -89,10 +100,7 @@ function ArticulationView({ step, lang, c, isDark }: { step: ArticulationStep; l
   if (preview) {
     return (
       <Animated.View exiting={FadeOut.duration(220)} style={styles.artPreview}>
-        <Animated.View entering={ZoomIn.springify().damping(13).stiffness(140)}>
-          <MouthIcon color={c.text} size={rs(72)} />
-        </Animated.View>
-        <Animated.Text entering={FadeInDown.duration(420).delay(160)} style={[styles.artPreviewTitle, { color: c.text }]}>
+        <Animated.Text entering={ZoomIn.springify().damping(14).stiffness(150)} style={[styles.artPreviewTitle, { color: c.text }]}>
           {tx(step.title, lang)}
         </Animated.Text>
         <Animated.Text entering={FadeInDown.duration(420).delay(320)} style={[styles.stepIntro, { color: c.textSecondary }]}>
@@ -480,9 +488,13 @@ export default function CheatSheetRunner({
         {showExerciseHeader && (
           <View style={styles.exHeader}>
             <Text style={[styles.stepTitle, { color: c.text }]}>{tx((step as any).title, lang)}</Text>
-            {"intro" in step && !!step.intro && (
-              <Text style={[styles.stepIntro, { color: c.textSecondary }]}>{tx((step as any).intro, lang)}</Text>
-            )}
+            {"intro" in step && !!step.intro &&
+              (step.kind === "breathing" ? (
+                // The breathing explainer gets out of the way after 5 s.
+                <FadingIntro text={tx(step.intro, lang)} color={c.textSecondary} />
+              ) : (
+                <Text style={[styles.stepIntro, { color: c.textSecondary }]}>{tx((step as any).intro, lang)}</Text>
+              ))}
           </View>
         )}
 

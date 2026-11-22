@@ -272,7 +272,7 @@ const articulation: ArticulationStep = {
   id: "articulation",
   block: "voice",
   title: { ru: "Разомни рот", en: "Warm up your mouth", kk: "Ауыз жаттығуы" },
-  intro: { ru: "Повторяй движения в такт с портретом.", en: "Repeat the moves in rhythm with the portrait.", kk: "Қимылдарды портретпен бірге ырғақпен қайталаңыз." },
+  intro: { ru: "Повторяй движение на экране", en: "Repeat the move on screen", kk: "Экрандағы қимылды қайталаңыз" },
   drills: ["tubeSide", "tongueCircle"],
   secs: 14,
 };
@@ -282,7 +282,7 @@ const articulationTongue: ArticulationStep = {
   id: "articulation-tongue",
   block: "voice",
   title: { ru: "Голос и дикция", en: "Voice and diction", kk: "Дауыс пен дикция" },
-  intro: { ru: "Повторяй в такт с портретом.", en: "Repeat in rhythm with the portrait.", kk: "Портретпен бірге ырғақпен қайталаңыз." },
+  intro: { ru: "Повторяй движение на экране", en: "Repeat the move on screen", kk: "Экрандағы қимылды қайталаңыз" },
   drills: ["chest", "cork"],
   secs: 14,
 };
