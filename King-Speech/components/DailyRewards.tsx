@@ -1,13 +1,12 @@
 // Daily bonus for the «Монеты» screen: a claim streak shown as a track of five
 // days (reward above each mark, day below). Claiming on consecutive days walks
 // along the track; after the 5th day the track turns over to the next five
-// (days 6–10, 11–15, …) and the rewards start again from the first. A missed
-// day starts the streak over from day 1.
+// (days 6–10, 11–15, …). A missed day starts the streak over from day 1.
+// Reward by weekday: 10 coins, 20 on Wednesdays, Fridays and Sundays.
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withSequence, withTiming } from "react-native-reanimated";
 import * as Haptics from "@/lib/haptics";
 import { useTheme } from "@/context/ThemeContext";
@@ -16,11 +15,17 @@ import GoldCoin from "@/components/GoldCoin";
 import { rs } from "@/lib/responsive";
 
 const KEY = "@kingspeech_daily_streak_v1"; // { last: "YYYY-MM-DD", day: streak day (1, 2, …) }
-/** Coins for the 1st..5th day of each five-day window. */
-export const DAILY_REWARDS = [10, 15, 20, 25, 30];
-const WINDOW = DAILY_REWARDS.length;
-/** @deprecated the reward now depends on the streak day — see DAILY_REWARDS. */
-export const DAILY_BONUS = DAILY_REWARDS[0];
+export const DAILY_BONUS = 10;
+export const DAILY_BONUS_BIG = 20;
+const BIG_DAYS = [0, 3, 5]; // Sunday, Wednesday, Friday (Date.getDay)
+const WINDOW = 5;
+/** Coins for the calendar day `offset` days from today. */
+function rewardFor(offset: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return BIG_DAYS.includes(d.getDay()) ? DAILY_BONUS_BIG : DAILY_BONUS;
+}
+const MARKS = Array.from({ length: WINDOW }, (_, i) => i);
 
 const INK = "#262628";
 const SIDE = rs(26); // track overhang before the first / after the last mark
@@ -29,7 +34,7 @@ const FILL = "#FFF1A8";
 const DOT = rs(8);
 const KNOB = rs(20);
 const LABEL_H = rs(24);
-const TICK_H = rs(7);
+const GAP_H = rs(5); // between the rewards and the track
 
 function dayStr(offset = 0) {
   const d = new Date();
@@ -89,7 +94,8 @@ export default function DailyRewards({
   const pos = today - first; // today's mark, 0..4
   const taken = claimedToday ? pos + 1 : pos; // marks already claimed in this window
   const ready = loaded && !claimedToday;
-  const reward = DAILY_REWARDS[pos];
+  const reward = rewardFor(0);
+  const rewards = MARKS.map((i) => rewardFor(i - pos));
 
   const step = (width - SIDE * 2) / (WINDOW - 1);
   const xOf = (i: number) => SIDE + step * i;
@@ -123,24 +129,19 @@ export default function DailyRewards({
       <View style={{ width }}>
         {/* rewards above each mark */}
         <View style={{ height: LABEL_H }}>
-          {DAILY_REWARDS.map((r, i) => (
+          {rewards.map((r, i) => (
             <View key={i} style={[s.reward, { left: xOf(i) - step / 2, width: step }]}>
               <Text style={[s.rewardText, { color: c.text, opacity: i < taken ? 0.45 : 1 }]}>{r}</Text>
               <GoldCoin size={rs(15)} />
             </View>
           ))}
         </View>
-        {/* ticks */}
-        <View style={{ height: TICK_H }}>
-          {DAILY_REWARDS.map((_, i) => (
-            <View key={i} style={[s.tick, { left: xOf(i) - 1, backgroundColor: ink }]} />
-          ))}
-        </View>
+        <View style={{ height: GAP_H }} />
         {/* track */}
         <View style={[s.track, { width, borderColor: ink }]}>
           <View style={[s.fill, { width: fillW, borderColor: ink }]} />
         </View>
-        {DAILY_REWARDS.map((_, i) =>
+        {MARKS.map((i) =>
           i === pos ? null : <View key={i} style={[s.dot, { left: xOf(i) - DOT / 2, backgroundColor: ink }]} />,
         )}
         <View
@@ -151,7 +152,7 @@ export default function DailyRewards({
         />
         {/* days below */}
         <View style={{ height: LABEL_H }}>
-          {DAILY_REWARDS.map((_, i) => (
+          {MARKS.map((i) => (
             <Text
               key={i}
               style={[s.day, { left: xOf(i) - step / 2, width: step, color: c.text, opacity: i === pos ? 1 : 0.55 }]}
@@ -174,7 +175,6 @@ export default function DailyRewards({
           </Pressable>
         ) : (
           <View style={[s.cta, { backgroundColor: dark ? "rgba(240,238,233,0.08)" : "rgba(38,38,40,0.06)" }]}>
-            <Ionicons name="time-outline" size={rs(16)} color={c.textMuted} />
             <Text style={[s.waitText, { color: c.textMuted }]}>
               {loaded
                 ? pickLang(lang, {
@@ -195,7 +195,6 @@ const s = StyleSheet.create({
   title: { fontSize: 17, letterSpacing: -0.2, fontFamily: "Geologica_800ExtraBold", marginLeft: 4, marginBottom: rs(10) },
   reward: { position: "absolute", top: 0, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: rs(3) },
   rewardText: { fontSize: rs(15), fontFamily: "Geologica_800ExtraBold", fontStyle: "italic" },
-  tick: { position: "absolute", top: 0, width: 2, height: TICK_H, borderRadius: 1 },
   track: { height: TRACK_H, borderRadius: TRACK_H / 2, borderWidth: 2, overflow: "hidden", marginBottom: rs(6) },
   fill: {
     height: "100%",
@@ -204,10 +203,10 @@ const s = StyleSheet.create({
     borderTopRightRadius: TRACK_H / 2,
     borderBottomRightRadius: TRACK_H / 2,
   },
-  dot: { position: "absolute", top: LABEL_H + TICK_H + TRACK_H / 2 - DOT / 2, width: DOT, height: DOT, borderRadius: DOT / 2 },
+  dot: { position: "absolute", top: LABEL_H + GAP_H + TRACK_H / 2 - DOT / 2, width: DOT, height: DOT, borderRadius: DOT / 2 },
   knob: {
     position: "absolute",
-    top: LABEL_H + TICK_H + TRACK_H / 2 - KNOB / 2,
+    top: LABEL_H + GAP_H + TRACK_H / 2 - KNOB / 2,
     width: KNOB,
     height: KNOB,
     borderRadius: KNOB / 2,
