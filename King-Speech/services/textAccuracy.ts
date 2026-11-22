@@ -1,26 +1,28 @@
 // Text-accuracy check for the tongue-twister level. The card shows a fixed text;
-// we transcribe the player's audio and verify how many of its words were said.
+// we transcribe the player's audio and verify how closely it was said.
 // Fully deterministic (no AI, no server) → scales infinitely.
 //
-// Matching is by UNIQUE-WORD COVERAGE, not positional sequence: each distinct
-// word of the twister counts as a hit if it appears ANYWHERE in the transcript.
-// This is deliberate — ASR is unreliable and often collapses a phrase the player
-// repeats (a twister with a slogan said twice comes back once), which under a
-// positional match would score 7/14 = 50% even though every word was spoken.
-// Unique coverage gives the fair result (every distinct word hit = 100%).
-// Equality is lenient by one edit (Levenshtein ≤ 1 for words ≥ 4 chars) so ASR
-// noise doesn't mark a correct word as missed.
+// Matching is a word-level ALIGNMENT of the whole twister against the
+// transcript (edit distance over words), so every slip counts:
+//   · a word said wrong (another word, a changed ending: «Греку» → «грека») — 1
+//   · a word skipped, including a skipped repeat («лавировали, лавировали») — 1
+//   · an extra word slipped in («через гречку реку») — ½
+// accuracy = 1 − errors / words in the twister.
+// ASR noise tolerance is kept small: only long words (≥ 6 letters) may differ
+// by one letter, so a mangled short word or ending isn't forgiven.
 
 export interface TextAccuracy {
   available: boolean;
   total: number; // expected words
-  matched: number; // words actually said (in order)
+  matched: number; // expected words said correctly
   missed: number; // total - matched
   accuracy: number; // 0..1
   score10: number; // 0..10
   expected: { w: string; hit: boolean }[];
   missedWords: string[];
 }
+
+const INSERT_COST = 0.5;
 
 function wordsOf(s: string): string[] {
   return (s || "")
@@ -56,16 +58,14 @@ function lev(a: string, b: string): number {
 
 function eq(a: string, b: string): boolean {
   if (a === b) return true;
-  if (Math.min(a.length, b.length) >= 4) return lev(a, b) <= 1;
+  if (Math.min(a.length, b.length) >= 6) return lev(a, b) <= 1;
   return false;
 }
 
 export function checkTextAccuracy(expectedText: string, transcript: string): TextAccuracy {
-  // Unique words of the twister (order preserved), so a repeated slogan counts
-  // once and its repeat can't drag the score down.
-  const expected = Array.from(new Set(wordsOf(expectedText)));
+  const exp = wordsOf(expectedText);
   const spoken = wordsOf(transcript);
-  const total = expected.length;
+  const total = exp.length;
   if (total === 0) {
     return { available: false, total: 0, matched: 0, missed: 0, accuracy: 0, score10: 0, expected: [], missedWords: [] };
   }
@@ -77,28 +77,55 @@ export function checkTextAccuracy(expectedText: string, transcript: string): Tex
       missed: total,
       accuracy: 0,
       score10: 0,
-      expected: expected.map((w) => ({ w, hit: false })),
-      missedWords: expected.slice(),
+      expected: exp.map((w) => ({ w, hit: false })),
+      missedWords: exp.slice(),
     };
   }
 
-  // Exact hits via a set (fast); fall back to a fuzzy scan (Levenshtein ≤ 1).
-  const spokenSet = new Set(spoken);
-  const hit = expected.map(
-    (w) => spokenSet.has(w) || spoken.some((s) => eq(w, s)),
-  );
+  // Weighted edit distance: substitution / deletion 1, insertion ½.
+  const n = exp.length;
+  const m = spoken.length;
+  const d: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+  for (let i = 1; i <= n; i++) d[i][0] = i;
+  for (let j = 1; j <= m; j++) d[0][j] = j * INSERT_COST;
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      d[i][j] = Math.min(
+        d[i - 1][j - 1] + (eq(exp[i - 1], spoken[j - 1]) ? 0 : 1),
+        d[i - 1][j] + 1,
+        d[i][j - 1] + INSERT_COST,
+      );
+    }
+  }
 
+  // Walk back to mark which expected words were said correctly.
+  const hit = new Array<boolean>(n).fill(false);
+  let i = n;
+  let j = m;
+  while (i > 0 && j > 0) {
+    const same = eq(exp[i - 1], spoken[j - 1]);
+    if (d[i][j] === d[i - 1][j - 1] + (same ? 0 : 1)) {
+      hit[i - 1] = same;
+      i--;
+      j--;
+    } else if (d[i][j] === d[i - 1][j] + 1) {
+      i--;
+    } else {
+      j--;
+    }
+  }
+
+  const errors = d[n][m];
+  const accuracy = Math.max(0, 1 - errors / total);
   const matched = hit.filter(Boolean).length;
-  const missed = total - matched;
-  const accuracy = matched / total;
   return {
     available: true,
     total,
     matched,
-    missed,
+    missed: total - matched,
     accuracy,
-    score10: accuracy * 10,
-    expected: expected.map((w, k) => ({ w, hit: hit[k] })),
-    missedWords: expected.filter((_, k) => !hit[k]),
+    score10: Math.round(accuracy * 100) / 10,
+    expected: exp.map((w, k) => ({ w, hit: hit[k] })),
+    missedWords: exp.filter((_, k) => !hit[k]),
   };
 }

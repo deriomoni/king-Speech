@@ -242,11 +242,10 @@ interface AnalysisResult {
   readOk?: boolean; // false = didn't actually read the text (skip / noise)
 }
 
-// Show Time is a PREPARED text read aloud — so the score comes from delivery
-// (diction, expressiveness, volume, confidence; tempo & pauses are dropped) and
-// matches the characteristics shown under it. Reading the script only keeps
-// that score; skipping it (hidden text-match) pulls it down — never up, so
-// a full read with weak delivery can't come out as 10/10.
+// The score is exactly the average of the four characteristics shown under it
+// (clarity, confidence, volume, expressiveness — each 1..5, shown ×2), so the
+// number and the breakdown always agree. A take where the text wasn't read is
+// handled separately (isSilent → "not counted").
 function summarize(result: AnalysisResult) {
   const { metrics, score } = result;
   const deliveryVals = metrics
@@ -255,10 +254,7 @@ function summarize(result: AnalysisResult) {
   const base10 = deliveryVals.length
     ? (deliveryVals.reduce((a, b) => a + b, 0) / deliveryVals.length) * 2
     : score;
-  const tm = result.textMatch;
-  // How much of the script was actually said: 0 at ≤25%, 1 at ≥85%.
-  const effort = tm != null ? Math.max(0, Math.min(1, (tm - 0.25) / (0.85 - 0.25))) : 1;
-  const overall10 = Math.round(Math.min(10, base10 * (0.6 + 0.4 * effort)) * 10) / 10;
+  const overall10 = Math.round(Math.min(10, base10) * 10) / 10;
   // Tier / XP all follow the SHOWN overall so nothing contradicts it.
   const finalStars = overall10 >= 8.5 ? 3 : overall10 >= 6 ? 2 : 1;
   const xp = finalStars === 3 ? 10 : finalStars === 2 ? 7 : 4;
@@ -602,6 +598,11 @@ export default function ShowtimePlaybackScreen() {
     ? METRIC_ORDER.map((k) => aspectsFromMetrics5(metrics, lang).find((a) => a.key === k)).filter(Boolean) as { key: string; label: string; score: number }[]
     : [];
   const tip = (analysisResult?.tip ?? "").trim();
+  const feedbackText = (analysisResult?.feedback ?? "").trim();
+  const improve = (analysisResult?.errors ?? [])
+    .map((e) => (typeof e === "string" ? e.trim() : ""))
+    .filter((e) => e && e.toLowerCase() !== tip.toLowerCase())
+    .slice(0, 3);
 
   const labelColor = isDark ? "rgba(240,238,233,0.5)" : theme.textSecondary;
   const dimColor = isDark ? "rgba(240,238,233,0.35)" : theme.textMuted;
@@ -674,6 +675,32 @@ export default function ShowtimePlaybackScreen() {
             <Animated.View entering={FadeIn.delay(600).duration(400)} style={[pb.card, cardStyle, { marginTop: rs(28), gap: rs(16) }]}>
               <Text style={[pb.label, { color: theme.accentInk }]}>{pickLang(lang, { ru: "СОВЕТ", en: "TIP", kk: "КЕҢЕС" })}</Text>
               <Text style={[pb.tip, { color: theme.text }]}>{tip}</Text>
+            </Animated.View>
+          ) : null}
+
+          {/* Feedback: what the jury heard + numbered points to improve. */}
+          {sum && (feedbackText || improve.length) ? (
+            <Animated.View entering={FadeIn.delay(700).duration(400)} style={[pb.card, cardStyle, { marginTop: rs(16), gap: rs(14) }]}>
+              {feedbackText ? (
+                <>
+                  <Text style={[pb.label, { color: labelColor }]}>{pickLang(lang, { ru: "РАЗБОР", en: "FEEDBACK", kk: "ТАЛДАУ" })}</Text>
+                  <Text style={[pb.feedback, { color: theme.text }]}>{feedbackText}</Text>
+                </>
+              ) : null}
+              {feedbackText && improve.length ? <View style={[pb.fbDivider, { backgroundColor: isDark ? "rgba(240,238,233,0.08)" : theme.cardBorder }]} /> : null}
+              {improve.length ? (
+                <>
+                  <Text style={[pb.label, { color: labelColor }]}>{pickLang(lang, { ru: "ЧТО УЛУЧШИТЬ", en: "TO IMPROVE", kk: "НЕНІ ЖАҚСАРТУ КЕРЕК" })}</Text>
+                  <View style={{ gap: rs(10) }}>
+                    {improve.map((e, k) => (
+                      <View key={k} style={pb.noteRow}>
+                        <Text style={[pb.noteNum, { color: theme.accentInk }]}>{k + 1}.</Text>
+                        <Text style={[pb.fbNote, { color: theme.text }]}>{e}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              ) : null}
             </Animated.View>
           ) : null}
 
@@ -834,6 +861,11 @@ const pb = StyleSheet.create({
   title: { fontFamily: "Geologica_900Black", fontSize: 28, lineHeight: 34, letterSpacing: -0.28 },
   label: { fontFamily: "Geologica_600SemiBold", fontSize: 12, letterSpacing: 0.6 },
   scoreBlock: { marginTop: 28, gap: 4 },
+  feedback: { fontFamily: "Geologica_500Medium", fontSize: 15, lineHeight: 21 },
+  fbDivider: { height: 1.5, borderRadius: 1 },
+  noteRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  noteNum: { minWidth: 16, fontFamily: "Geologica_800ExtraBold", fontSize: 15, lineHeight: 19 },
+  fbNote: { flex: 1, fontFamily: "Geologica_600SemiBold", fontSize: 15, lineHeight: 19 },
   scoreRow: { flexDirection: "row", alignItems: "baseline", gap: 6 },
   scoreNum: { fontFamily: "Geologica_900Black", fontSize: 96, lineHeight: 104, letterSpacing: -2.88 },
   scoreMax: { fontFamily: "Geologica_700Bold", fontSize: 30, letterSpacing: -0.3 },

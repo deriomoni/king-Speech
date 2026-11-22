@@ -3,7 +3,9 @@ import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from "react-n
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   FadeIn,
+  FadeOut,
   FadeInDown,
+  LinearTransition,
   useSharedValue,
   useAnimatedStyle,
   withSpring,
@@ -40,13 +42,11 @@ if (Platform.OS !== "web") {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Reading · after the take. Two stages on one screen:
-//   1) LISTEN  (Figma 312:4496 «Чтение · финал · слушаем твою запись»): the
-//      poem again, the line that is sounding lit in the module tint, a scrub
-//      bar, ⟲ ⏯ ⟳ controls, speed, and the gold «Оценить себя».
-//   2) RATE    (37:6383 / 37:6532 «Чтение · Самооценка»): recorder bar,
-//      5 stars, «Сохранить в библиотеку?», «Заново» / «Дальше».
-// Both stages share ONE audio player so the take keeps its position.
+// Reading · after the take, on ONE screen (Figma 312:4496): the poem again with
+// the sounding line lit, a scrub bar, «Заново» / play / speed, and the gold
+// «Оценить себя» — which morphs into a bar of 5 stars; once rated, a
+// «Сохранить в библиотеку?» prompt slides in under it (Да / Нет both move on).
+// The separate RATE stage below remains only for takes without the text.
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -147,6 +147,11 @@ function useTakePlayer(uri: string, fallbackDur: number, onEnded: () => void) {
         setPlaying(true);
         return;
       }
+      // After recording, iOS keeps the record route (quiet earpiece) and obeys
+      // the silent switch — play through the speaker regardless.
+      try {
+        await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true });
+      } catch {}
       const { sound } = await Audio.Sound.createAsync(
         { uri },
         { shouldPlay: true, rate, shouldCorrectPitch: true, progressUpdateIntervalMillis: 100 },
@@ -234,7 +239,9 @@ function SelfStar({
   trackColor,
   bounceKey,
   onPress,
+  size = rs(44),
 }: {
+  size?: number;
   index: number; // 0-based position in the row
   active: boolean;
   locked: boolean;
@@ -286,7 +293,7 @@ function SelfStar({
       style={({ pressed }) => ({ opacity: pressed && !locked ? 0.7 : 1 })}
     >
       <Animated.View style={anim}>
-        <RoundStar size={rs(44)} filled={active} color={color} emptyColor={color} emptyOpacity={0.35} />
+        <RoundStar size={size} filled={active} color={color} emptyColor={color} emptyOpacity={0.35} />
       </Animated.View>
     </Pressable>
   );
@@ -342,7 +349,7 @@ export default function ReadingResultsView({
   const [selfRating, setSelfRating] = useState(0);
   const [starBounce, setStarBounce] = useState(0);
   const [showSavePrompt, setShowSavePrompt] = useState(false);
-  const [stage, setStage] = useState<"listen" | "rate">(fullText ? "listen" : "rate");
+  const [stage] = useState<"listen" | "rate">(fullText ? "listen" : "rate");
 
   const player = useTakePlayer(audioUri, durationSec, () => {
     if (!listenedFully) {
@@ -401,11 +408,15 @@ export default function ReadingResultsView({
               }
             : undefined
         }
-        onRate={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+        onRetry={() => {
           player.pause();
-          setStage("rate");
+          onRetry();
         }}
+        onSave={(rating, toLibrary) => {
+          player.pause();
+          onSave(rating, toLibrary);
+        }}
+        saving={!!saving}
       />
     );
   }
@@ -633,7 +644,9 @@ function ListenStage({
   lang,
   hasAudio,
   onClose,
-  onRate,
+  onRetry,
+  onSave,
+  saving,
 }: {
   fullText: string;
   lineTimesMs?: number[];
@@ -645,11 +658,23 @@ function ListenStage({
   lang: Lang;
   hasAudio: boolean;
   onClose?: () => void;
-  onRate: () => void;
+  onRetry: () => void;
+  onSave: (rating: number, toLibrary: boolean) => void;
+  saving: boolean;
 }) {
   const { theme } = useTheme();
   const bg = dark ? READING_BG_DARK : theme.bg;
   const ink = theme.text;
+
+  // «Оценить себя» → stars → «Сохранить в библиотеку?»
+  const [rating, setRating] = useState<number | null>(null); // null = the button
+  const [bounce, setBounce] = useState(0);
+  const pick = (n: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    setRating(n);
+    setBounce((b) => b + 1);
+  };
+  const starTrack = dark ? "rgba(240,238,233,0.3)" : "rgba(38,38,40,0.25)";
 
   const srcLines = useMemo(() => fullText.split("\n"), [fullText]);
   const seq = useMemo(() => readingLines(tokenizeReading(fullText).tokens), [fullText]);
@@ -799,22 +824,99 @@ function ListenStage({
               <Ionicons name="play" size={rs(26)} color={bg} style={{ marginLeft: rs(4) }} />
             )}
           </Pressable>
+          <Pressable onPress={onRetry} disabled={saving} hitSlop={10} style={st.lsRetry}>
+            <Text style={[st.lsSpeedText, { color: readingInk(dark, 0.6) }]}>
+              {pickLang(lang, { ru: "Заново", en: "Again", kk: "Қайта" })}
+            </Text>
+          </Pressable>
           <Pressable onPress={player.cycleSpeed} hitSlop={10} style={st.lsSpeed}>
             <Text style={[st.lsSpeedText, { color: readingInk(dark, 0.6) }]}>{player.speedLabel}</Text>
           </Pressable>
         </View>
 
-        <Pressable
-          onPress={onRate}
-          style={({ pressed }) => [
-            st.lsRateBtn,
-            { backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.88 : 1 },
-          ]}
-        >
-          <Text style={[st.lsRateText, { color: theme.accentText }]}>
-            {pickLang(lang, { ru: "Оценить себя", en: "Rate yourself", kk: "Өзіңізді бағалау" })}
-          </Text>
-        </Pressable>
+        <Animated.View layout={LinearTransition.duration(320)}>
+          {rating === null ? (
+            <Animated.View key="btn" entering={FadeIn.duration(220)} exiting={FadeOut.duration(180)}>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+                  setRating(0);
+                }}
+                style={({ pressed }) => [
+                  st.lsRateBtn,
+                  { backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.88 : 1 },
+                ]}
+              >
+                <Text style={[st.lsRateText, { color: theme.accentText }]}>
+                  {pickLang(lang, { ru: "Оценить себя", en: "Rate yourself", kk: "Өзіңізді бағалау" })}
+                </Text>
+              </Pressable>
+            </Animated.View>
+          ) : (
+            <Animated.View
+              key="stars"
+              entering={FadeIn.duration(320)}
+              style={[
+                st.lsRateBtn,
+                st.lsStarsBar,
+                { borderColor: theme.accent, backgroundColor: withAlpha(theme.accent, dark ? 0.1 : 0.16) },
+              ]}
+            >
+              {[1, 2, 3, 4, 5].map((n) => (
+                <SelfStar
+                  key={n}
+                  index={n - 1}
+                  size={rs(34)}
+                  bounceKey={bounce}
+                  active={n <= rating}
+                  locked={saving}
+                  hint={rating === 0}
+                  accent={theme.accent}
+                  trackColor={starTrack}
+                  onPress={() => pick(n)}
+                />
+              ))}
+            </Animated.View>
+          )}
+
+          {rating ? (
+            <Animated.View entering={FadeInDown.duration(320)} style={st.lsSave}>
+              <Text style={[st.lsSaveText, { color: ink }]}>
+                {pickLang(lang, {
+                  ru: "Сохранить запись в библиотеку?",
+                  en: "Save the recording to your library?",
+                  kk: "Жазбаны кітапханаға сақтайсыз ба?",
+                })}
+              </Text>
+              <View style={st.lsSaveBtns}>
+                <Pressable
+                  onPress={() => onSave(rating, false)}
+                  disabled={saving}
+                  style={({ pressed }) => [
+                    st.lsSaveBtn,
+                    { backgroundColor: theme.btnSecondary, opacity: saving ? 0.5 : pressed ? 0.85 : 1 },
+                  ]}
+                >
+                  <Text style={[st.lsSaveBtnText, { color: theme.btnSecondaryText }]}>
+                    {pickLang(lang, { ru: "Нет", en: "No", kk: "Жоқ" })}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => onSave(rating, true)}
+                  disabled={saving}
+                  style={({ pressed }) => [
+                    st.lsSaveBtn,
+                    { backgroundColor: theme.accent, opacity: saving ? 0.5 : pressed ? 0.85 : 1 },
+                  ]}
+                >
+                  <Text style={[st.lsSaveBtnText, { color: theme.accentText }]}>
+                    {pickLang(lang, { ru: "Да", en: "Yes", kk: "Иә" })}
+                  </Text>
+                </Pressable>
+              </View>
+            </Animated.View>
+          ) : null}
+        </Animated.View>
       </View>
     </Animated.View>
   );
@@ -946,6 +1048,13 @@ const st = StyleSheet.create({
   lsPauseRow: { flexDirection: "row", gap: 6 },
   lsPauseBar: { width: 7, height: 24, borderRadius: 2 },
   lsSpeed: { position: "absolute", right: 0, top: 22 },
+  lsRetry: { position: "absolute", left: 0, top: 22 },
+  lsStarsBar: { flexDirection: "row", justifyContent: "space-evenly", borderWidth: 2 },
+  lsSave: { marginTop: 14, alignItems: "center", gap: 12 },
+  lsSaveText: { fontFamily: "Geologica_600SemiBold", fontSize: 15.5, textAlign: "center" },
+  lsSaveBtns: { flexDirection: "row", gap: 12, alignSelf: "stretch" },
+  lsSaveBtn: { flex: 1, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
+  lsSaveBtnText: { fontFamily: "Geologica_700Bold", fontSize: 15 },
   lsSpeedText: { fontFamily: "Geologica_700Bold", fontSize: 15 },
   lsRateBtn: {
     marginTop: 30,
