@@ -44,6 +44,7 @@ import VocabPlayView, {
   type VocabModal,
 } from "@/components/vocabulary/VocabPlayView";
 import VocabResultView from "@/components/vocabulary/VocabResultView";
+import LevelCompleteModal from "@/components/LevelCompleteModal";
 import type { TimerState } from "@/components/vocabulary/Timer";
 
 // Figma «07 · Уровень 6 · Словарный запас» (34:981): Как играть (148:397),
@@ -109,7 +110,10 @@ export default function VocabularyLevelScreen() {
   }>();
   const levelId = String(params.levelId ?? "vocabulary");
   const { theme } = useTheme();
-  const { addXP, markLevelComplete, getLevelById } = useGame();
+  const { addXP, markLevelComplete, getLevelById, claimLevelReward } = useGame();
+  const { t: tr, lang: uiLang } = useLang();
+  // First clear → trophy + coins, then the module transition.
+  const [victory, setVictory] = useState<{ coins: number; score: number } | null>(null);
   // coins and the module-passed celebration are for the first clear only
   const clearedBefore = React.useRef<boolean | null>(null);
   if (clearedBefore.current === null) clearedBefore.current = !!getLevelById(levelId as any)?.completed;
@@ -249,30 +253,59 @@ export default function VocabularyLevelScreen() {
           score={score}
           onNext={() => {
             const first = !clearedBefore.current;
+            if (victory) return;
             if (first) addXP(Math.min(50, foundSynonyms.length * 6));
             markLevelComplete(levelId);
-            // Module boundary: finishing vocabulary advances to the next module.
-            // Play the full-screen corridor (current → next), floor tinted to the
-            // next module's color, then return to the map (already auto-scrolled
-            // to the new module). Skipped at the final module.
-            const nextModule = moduleNum + 1;
-            // Last module of a rank → the rank-up door scene instead.
-            if (first && RANKS_MODULAR.some((r) => r.toSection === moduleNum)) {
-              router.replace("/rank-up?earned=1");
+            // First clear → trophy + coins (paid once, from found / total).
+            if (first) {
+              const total = selectedWord.synonyms.length || 1;
+              const score10 = Math.min(10, (foundSynonyms.length / total) * 10);
+              setVictory({ coins: claimLevelReward(levelId, score10), score: score10 });
               return;
             }
-            if (first && nextModule <= 67) {
-              const color = MODULE_COLORS[nextModule]?.color ?? "#9468FB";
-              triggerModuleTransition(moduleNum, nextModule, color);
-            }
-            leaveTo("/(tabs)");
+            continueAfterLevel(false);
           }}
         />
       )}
 
+      {victory ? (
+        <LevelCompleteModal
+          visible
+          levelTitle=""
+          xpEarned={victory.coins}
+          avgScore={victory.score}
+          bestScore={victory.score}
+          durationSec={0}
+          hasNext
+          onNext={() => continueAfterLevel(true)}
+          onMap={() => continueAfterLevel(true)}
+          onClose={() => continueAfterLevel(true)}
+          t={tr}
+          lang={uiLang}
+        />
+      ) : null}
+
       <DevSkipButton levelId={levelId} />
     </View>
   );
+
+  function continueAfterLevel(first: boolean) {
+    // Module boundary: finishing vocabulary advances to the next module.
+    // Play the full-screen corridor (current → next), floor tinted to the
+    // next module's color, then return to the map (already auto-scrolled
+    // to the new module). Skipped at the final module.
+    const nextModule = moduleNum + 1;
+    // Last module of a rank → the rank-up door scene instead.
+    if (first && RANKS_MODULAR.some((r) => r.toSection === moduleNum)) {
+      router.replace("/rank-up?earned=1");
+      return;
+    }
+    if (first && nextModule <= 67) {
+      const color = MODULE_COLORS[nextModule]?.color ?? "#9468FB";
+      triggerModuleTransition(moduleNum, nextModule, color);
+    }
+    leaveTo("/(tabs)");
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

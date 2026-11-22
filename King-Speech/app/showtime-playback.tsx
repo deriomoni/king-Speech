@@ -34,6 +34,7 @@ import { useAudioWaveform } from "@/hooks/useAudioWaveform";
 import { getLevelsData } from "@/constants/gameContent";
 import SpeechAnalyzingLoader from "@/components/SpeechAnalyzingLoader";
 import StageGlassDialog from "@/components/showtime/StageGlassDialog";
+import LevelCompleteModal from "@/components/LevelCompleteModal";
 import { aspectsFromMetrics5 } from "@/components/ScoreFlower";
 import { headphonesXml } from "@/assets/figma/showtime-stage/svgs";
 import RoundStar from "@/components/RoundStar";
@@ -327,7 +328,9 @@ export default function ShowtimePlaybackScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const { completeTask, getLevelById, addShowTimeRecording, recordMetricScores, logActivity } = useGame();
+  const { completeTask, getLevelById, addShowTimeRecording, recordMetricScores, logActivity, claimLevelReward } = useGame();
+  // First clear of a Path Show Time level → trophy + coins, then move on.
+  const [victory, setVictory] = useState<{ coins: number; score: number; dur: number } | null>(null);
   const { t, lang } = useLang();
   const { theme, themeMode } = useTheme();
   const isDark = themeMode === "dark";
@@ -508,8 +511,15 @@ export default function ShowtimePlaybackScreen() {
     // completeTask; any other run (trainer, own text, topics) is Show Time.
     if (!isDemo && (isTrainer || !getLevelById(levelId))) logActivity("other");
 
+    let firstClear: { coins: number; score: number; dur: number } | null = null;
     if (!isTrainer && !isDemo) {
-      const score = analysisResult?.score ?? 7;
+      // The level's score is the one shown on this screen.
+      const shown = analysisResult ? summarize(analysisResult).overall10 : null;
+      const score = shown ?? analysisResult?.score ?? 7;
+      const before = getLevelById(levelId);
+      if (before && !before.completed) {
+        firstClear = { coins: claimLevelReward(levelId, score), score, dur: analysisResult?.durationSec ?? 0 };
+      }
       completeTask(levelId as any, 1, score);
       completeTask(levelId as any, 2, score);
       completeTask(levelId as any, 3, score);
@@ -554,6 +564,10 @@ export default function ShowtimePlaybackScreen() {
       }
     }
 
+    if (firstClear) {
+      setVictory(firstClear);
+      return;
+    }
     goAfterShowTime();
   };
 
@@ -830,6 +844,23 @@ export default function ShowtimePlaybackScreen() {
       </ScrollView>
 
       <SpeechAnalyzingLoader visible={showOscar} lang={lang} />
+
+      {victory ? (
+        <LevelCompleteModal
+          visible
+          levelTitle=""
+          xpEarned={victory.coins}
+          avgScore={victory.score}
+          bestScore={victory.score}
+          durationSec={victory.dur}
+          hasNext
+          onNext={goAfterShowTime}
+          onMap={() => router.dismissAll()}
+          onClose={() => router.dismissAll()}
+          t={t}
+          lang={lang}
+        />
+      ) : null}
 
       {/* Figma 36:1228 "Show Time · Послушай себя (modal)" */}
       <StageGlassDialog

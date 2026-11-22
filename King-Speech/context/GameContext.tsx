@@ -194,6 +194,13 @@ const SHOWTIME_FREE_KEY = "@kingspeech_showtime_free_v1";
 // components/profile/StreakCard.tsx. Trimmed to the last ACTIVITY_DAYS days.
 // Older builds stored bare timestamps — those load as "other".
 const ACTIVITY_KEY = "@kingspeech_activity_v1";
+// Levels whose completion reward (coins) was already paid — once per level.
+const LEVEL_REWARDS_KEY = "@kingspeech_level_rewards_v1";
+/** Coins for finishing a level: straight from its score (0..10) → 0..30. */
+export function coinsForScore(score10: number): number {
+  const s = Number.isFinite(score10) ? Math.max(0, Math.min(10, score10)) : 0;
+  return Math.round(s * 3);
+}
 export type ActivityKind = "path" | "other";
 export type ActivityEntry = { t: number; k: ActivityKind };
 function parseActivity(v: unknown): ActivityEntry[] {
@@ -282,6 +289,13 @@ interface GameContextValue {
   totalXp: number;
   coins: number;
   addCoins: (amount: number) => void;
+  /**
+   * Pay a level's completion coins (coinsForScore) — only the first time for
+   * that level, never for warm-ups. Returns the coins paid (0 if none).
+   */
+  claimLevelReward: (levelId: string, score10: number) => number;
+  /** Has this level's completion reward already been paid? */
+  isLevelRewarded: (levelId: string) => boolean;
   /** Spend coins; returns false (and changes nothing) if the balance is short. */
   spendCoins: (amount: number) => boolean;
   /** True if the player still has today's one free Show Time entry available. */
@@ -585,7 +599,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
       AsyncStorage.setItem(XP_KEY, String(n));
       return n;
     });
-    addCoins(taskXp);
   };
 
   // For reading levels: complete every task in one shot, unlock the next
@@ -636,7 +649,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
       AsyncStorage.setItem(XP_KEY, String(n));
       return n;
     });
-    addCoins(taskXp);
   };
 
   // Generic XP add — used by free-form game modes (e.g. vocabulary) where
@@ -650,7 +662,28 @@ export function GameProvider({ children }: { children: ReactNode }) {
       AsyncStorage.setItem(XP_KEY, String(n));
       return n;
     });
-    addCoins(Math.floor(amount));
+  };
+
+  // ── Level completion rewards (once per level) ──────────────────────────────
+  const rewardedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    AsyncStorage.getItem(LEVEL_REWARDS_KEY)
+      .then((raw) => {
+        const v = raw ? JSON.parse(raw) : [];
+        if (Array.isArray(v)) v.forEach((id) => typeof id === "string" && rewardedRef.current.add(id));
+      })
+      .catch(() => {});
+  }, []);
+  const isLevelRewarded = (levelId: string) => rewardedRef.current.has(levelId);
+  const claimLevelReward = (levelId: string, score10: number): number => {
+    if (isOpenTestingEnabled) return 0;
+    if (!levelId || levelId.startsWith("warmup")) return 0;
+    if (rewardedRef.current.has(levelId)) return 0;
+    rewardedRef.current.add(levelId);
+    AsyncStorage.setItem(LEVEL_REWARDS_KEY, JSON.stringify([...rewardedRef.current])).catch(() => {});
+    const amount = coinsForScore(score10);
+    addCoins(amount);
+    return amount;
   };
 
   // ── Coins (soft currency, e.g. vocabulary hints) ────────────────────────────
@@ -742,6 +775,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setReadingRecordings([]);
     setActivityLog([]);
     AsyncStorage.setItem(ACTIVITY_KEY, JSON.stringify([]));
+    rewardedRef.current = new Set();
+    AsyncStorage.removeItem(LEVEL_REWARDS_KEY).catch(() => {});
     AsyncStorage.setItem(PROGRESS_KEY, JSON.stringify([]));
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(buildLevelsFromContent(lang, null)));
     AsyncStorage.setItem(XP_KEY, "0");
@@ -950,6 +985,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setPortalCompleted({});
       setReadingRecordings([]);
       setActivityLog([]);
+      rewardedRef.current = new Set();
+      AsyncStorage.removeItem(LEVEL_REWARDS_KEY).catch(() => {});
       resetMannersProgress();
       try {
         await Promise.all([
@@ -1312,6 +1349,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       totalXp,
       coins,
       addCoins,
+      claimLevelReward,
+      isLevelRewarded,
       spendCoins,
       showTimeFreeAvailable,
       consumeShowTimeFree,

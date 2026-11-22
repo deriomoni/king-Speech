@@ -17,7 +17,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
-import Svg, { Path } from "react-native-svg";
+import Svg, { Path, SvgXml } from "react-native-svg";
 import * as Haptics from "@/lib/haptics";
 import { useFonts, Literata_600SemiBold } from "@expo-google-fonts/literata";
 import { useTheme } from "@/context/ThemeContext";
@@ -34,6 +34,8 @@ import type { SpeechAnalysis } from "@/services/speechAnalysis";
 import RoundStar from "@/components/RoundStar";
 import NextChevron from "@/components/NextChevron";
 import { pickLang, type Lang } from "@/context/LangContext";
+import StageGlassDialog from "@/components/showtime/StageGlassDialog";
+import { headphonesXml } from "@/assets/figma/showtime-stage/svgs";
 import { rs } from "@/lib/responsive";
 
 let Audio: any = null;
@@ -63,7 +65,9 @@ interface Props {
   t: (key: any) => string;
   lang: Lang;
   onRetry: () => void;
-  onSave: (selfRating: number, saveToLibrary: boolean) => void;
+  onSave: (selfRating: number, saveToLibrary: boolean) => void | Promise<void>;
+  /** «Далее» after the save choice — leaves the review. */
+  onFinish: () => void;
   saving?: boolean;
   /** The text that was read — enables the karaoke listen-back stage. */
   fullText?: string;
@@ -260,19 +264,13 @@ function SelfStar({
 
   useEffect(() => {
     if (bounceKey === 0 || !active) return;
-    const delay = index * 85;
-    y.value = withDelay(
-      delay,
-      withSequence(
-        withTiming(rs(-12), { duration: 150, easing: Easing.out(Easing.quad) }),
-        withSpring(0, { damping: 9, stiffness: 260, mass: 0.6 }),
-      ),
-    );
+    // A soft in-place pulse, one star after another — stays inside the bar.
+    const delay = index * 70;
     scale.value = withDelay(
       delay,
       withSequence(
-        withTiming(1.22, { duration: 150, easing: Easing.out(Easing.quad) }),
-        withSpring(1, { damping: 7, stiffness: 220, mass: 0.6 }),
+        withTiming(1.14, { duration: 160, easing: Easing.out(Easing.quad) }),
+        withTiming(1, { duration: 220, easing: Easing.inOut(Easing.quad) }),
       ),
     );
     const t = setTimeout(() => Haptics.selectionAsync().catch(() => {}), delay);
@@ -324,6 +322,7 @@ export default function ReadingResultsView({
   lang,
   onRetry,
   onSave,
+  onFinish,
   saving,
   fullText,
   lineTimesMs,
@@ -350,8 +349,11 @@ export default function ReadingResultsView({
   const [starBounce, setStarBounce] = useState(0);
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const [stage] = useState<"listen" | "rate">(fullText ? "listen" : "rate");
+  // Heard the take to the end? (gates «Оценить себя» behind a gentle nudge)
+  const [heardAll, setHeardAll] = useState(!audioUri);
 
   const player = useTakePlayer(audioUri, durationSec, () => {
+    setHeardAll(true);
     if (!listenedFully) {
       setListenedFully(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -412,10 +414,13 @@ export default function ReadingResultsView({
           player.pause();
           onRetry();
         }}
-        onSave={(rating, toLibrary) => {
+        onSave={onSave}
+        onFinish={() => {
           player.pause();
-          onSave(rating, toLibrary);
+          onFinish();
         }}
+        heardAll={heardAll}
+        onSkipListening={() => setHeardAll(true)}
         saving={!!saving}
       />
     );
@@ -503,7 +508,7 @@ export default function ReadingResultsView({
             </Text>
             <View style={st.savePromptBtns}>
               <Pressable
-                onPress={() => canSave && onSave(selfRating, true)}
+                onPress={() => canSave && Promise.resolve(onSave(selfRating, true)).then(onFinish)}
                 disabled={!canSave}
                 style={({ pressed }) => [st.secondaryBtn, st.yesNoBtn, { backgroundColor: theme.btnSecondary }, { opacity: !canSave ? 0.5 : pressed ? 0.85 : 1 }]}
               >
@@ -529,7 +534,7 @@ export default function ReadingResultsView({
             <Text style={[st.retryText, { color: theme.btnSecondaryText }]}>{t("replay")}</Text>
           </Pressable>
           <Pressable
-            onPress={() => canSave && onSave(selfRating, false)}
+            onPress={() => canSave && Promise.resolve(onSave(selfRating, false)).then(onFinish)}
             disabled={!canSave}
             style={({ pressed }) => [
               st.saveBtn,
@@ -646,6 +651,9 @@ function ListenStage({
   onClose,
   onRetry,
   onSave,
+  onFinish,
+  heardAll,
+  onSkipListening,
   saving,
 }: {
   fullText: string;
@@ -659,7 +667,10 @@ function ListenStage({
   hasAudio: boolean;
   onClose?: () => void;
   onRetry: () => void;
-  onSave: (rating: number, toLibrary: boolean) => void;
+  onSave: (rating: number, toLibrary: boolean) => void | Promise<void>;
+  onFinish: () => void;
+  heardAll: boolean;
+  onSkipListening: () => void;
   saving: boolean;
 }) {
   const { theme } = useTheme();
@@ -669,6 +680,17 @@ function ListenStage({
   // «Оценить себя» → stars → «Сохранить в библиотеку?»
   const [rating, setRating] = useState<number | null>(null); // null = the button
   const [bounce, setBounce] = useState(0);
+  const [saved, setSaved] = useState(false); // «Да / Нет» answered → «Далее»
+  const [listenPrompt, setListenPrompt] = useState(false);
+  const openRating = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    setRating(0);
+  };
+  const answerSave = async (toLibrary: boolean) => {
+    if (!rating || saving || saved) return;
+    await onSave(rating, toLibrary);
+    setSaved(true);
+  };
   const pick = (n: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     setRating(n);
@@ -839,8 +861,12 @@ function ListenStage({
             <Animated.View key="btn" entering={FadeIn.duration(220)} exiting={FadeOut.duration(180)}>
               <Pressable
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-                  setRating(0);
+                  if (!heardAll && hasAudio) {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+                    setListenPrompt(true);
+                    return;
+                  }
+                  openRating();
                 }}
                 style={({ pressed }) => [
                   st.lsRateBtn,
@@ -869,7 +895,7 @@ function ListenStage({
                   size={rs(34)}
                   bounceKey={bounce}
                   active={n <= rating}
-                  locked={saving}
+                  locked={saving || saved}
                   hint={rating === 0}
                   accent={theme.accent}
                   trackColor={starTrack}
@@ -879,8 +905,24 @@ function ListenStage({
             </Animated.View>
           )}
 
-          {rating ? (
-            <Animated.View entering={FadeInDown.duration(320)} style={st.lsSave}>
+          {saved ? (
+            <Animated.View key="next" entering={FadeInDown.duration(320)} style={st.lsSave}>
+              <Pressable
+                onPress={onFinish}
+                style={({ pressed }) => [
+                  st.lsRateBtn,
+                  st.lsNextBtn,
+                  { alignSelf: "stretch", backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.88 : 1 },
+                ]}
+              >
+                <Text style={[st.lsRateText, { color: theme.accentText }]}>
+                  {pickLang(lang, { ru: "Далее", en: "Next", kk: "Келесі" })}
+                </Text>
+                <NextChevron color={theme.accentText} />
+              </Pressable>
+            </Animated.View>
+          ) : rating ? (
+            <Animated.View key="save" entering={FadeInDown.duration(320)} exiting={FadeOut.duration(180)} style={st.lsSave}>
               <Text style={[st.lsSaveText, { color: ink }]}>
                 {pickLang(lang, {
                   ru: "Сохранить запись в библиотеку?",
@@ -890,7 +932,7 @@ function ListenStage({
               </Text>
               <View style={st.lsSaveBtns}>
                 <Pressable
-                  onPress={() => onSave(rating, false)}
+                  onPress={() => answerSave(false)}
                   disabled={saving}
                   style={({ pressed }) => [
                     st.lsSaveBtn,
@@ -902,7 +944,7 @@ function ListenStage({
                   </Text>
                 </Pressable>
                 <Pressable
-                  onPress={() => onSave(rating, true)}
+                  onPress={() => answerSave(true)}
                   disabled={saving}
                   style={({ pressed }) => [
                     st.lsSaveBtn,
@@ -918,6 +960,39 @@ function ListenStage({
           ) : null}
         </Animated.View>
       </View>
+
+      {/* Same nudge as Show Time («Послушай себя», Figma 36:1228) */}
+      <StageGlassDialog
+        visible={listenPrompt}
+        icon={<SvgXml xml={headphonesXml} width={rs(38)} height={rs(38)} />}
+        title={pickLang(lang, { ru: "Послушай себя", en: "Listen to yourself", kk: "Өзіңізді тыңдаңыз" })}
+        message={pickLang(lang, {
+          ru: "Прослушай свою речь до конца - честный самоанализ это шаг к тому, чтобы стать лучше.",
+          en: "Listen to your speech to the end — honest self-reflection is a real step toward getting better.",
+          kk: "Сөзіңізді соңына дейін тыңдаңыз - өзіңізді шынайы талдау жақсаруға жасалған қадам.",
+        })}
+        stacked
+        onRequestClose={() => setListenPrompt(false)}
+        buttons={[
+          {
+            label: pickLang(lang, { ru: "Дослушать", en: "Listen", kk: "Тыңдау" }),
+            variant: "primary",
+            onPress: () => {
+              setListenPrompt(false);
+              if (!player.playing) player.play();
+            },
+          },
+          {
+            label: pickLang(lang, { ru: "Пропустить", en: "Skip", kk: "Өткізіп жіберу" }),
+            variant: "link",
+            onPress: () => {
+              setListenPrompt(false);
+              onSkipListening();
+              openRating();
+            },
+          },
+        ]}
+      />
     </Animated.View>
   );
 }
@@ -1049,6 +1124,7 @@ const st = StyleSheet.create({
   lsPauseBar: { width: 7, height: 24, borderRadius: 2 },
   lsSpeed: { position: "absolute", right: 0, top: 22 },
   lsRetry: { position: "absolute", left: 0, top: 22 },
+  lsNextBtn: { flexDirection: "row", gap: 8 },
   lsStarsBar: { flexDirection: "row", justifyContent: "space-evenly", borderWidth: 2 },
   lsSave: { marginTop: 14, alignItems: "center", gap: 12 },
   lsSaveText: { fontFamily: "Geologica_600SemiBold", fontSize: 15.5, textAlign: "center" },

@@ -34,7 +34,7 @@ import NextChevron from "@/components/NextChevron";
 import * as Haptics from "@/lib/haptics";
 import Colors from "@/constants/colors";
 import { useAppColors } from "@/hooks/useAppColors";
-import { useGame, LevelType, Task, getBaseType } from "@/context/GameContext";
+import { useGame, LevelType, Task, getBaseType, coinsForScore } from "@/context/GameContext";
 import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useDevTools } from "@/context/DevToolsContext";
 import VoiceRecorder from "@/components/WaveformVoiceRecorder";
@@ -327,7 +327,7 @@ export default function LevelScreen() {
   const levelId = id as LevelType;
   const { colors, colorScheme, isDark } = useAppColors();
   const insets = useSafeAreaInsets();
-  const { getLevelById, completeTask, completeAllTasksForLevel, addReadingRecording } = useGame();
+  const { getLevelById, completeTask, completeAllTasksForLevel, addReadingRecording, claimLevelReward } = useGame();
   const { t, lang } = useLang();
   const { isOpenTestingEnabled } = useDevTools();
 
@@ -373,6 +373,12 @@ export default function LevelScreen() {
   // last task (null = hidden). Its own dark canvas + bloom is the "screen
   // darkens → flower appears" moment.
   const [scores, setScores] = useState<number[]>([]);
+  // Level score = the average of its takes; it sets the completion coins
+  // (none for warm-ups), paid once — the first time the level is cleared, the
+  // same moment the trophy screen shows them flying into the wallet.
+  const levelScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+  const levelCoins = getBaseType(levelId) === "warmup" ? 0 : coinsForScore(levelScore);
+  const rewardPaidRef = React.useRef(false);
   const [readingResetSignal, setReadingResetSignal] = useState(0);
   const [readingRestartSignal, setReadingRestartSignal] = useState(0);
   const [readingExitConfirm, setReadingExitConfirm] = useState(false);
@@ -442,6 +448,14 @@ export default function LevelScreen() {
   useEffect(() => {
     if (showLevelComplete && clearedBefore.current) handleLevelCompleteMap();
   }, [showLevelComplete, handleLevelCompleteMap]);
+
+  // First clear: pay the level's coins as the victory screen opens.
+  useEffect(() => {
+    if (!showLevelComplete || clearedBefore.current || rewardPaidRef.current) return;
+    rewardPaidRef.current = true;
+    claimLevelReward(levelId, levelScore);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showLevelComplete]);
 
   // Snapshot duration when modal opens
   useEffect(() => {
@@ -790,9 +804,9 @@ export default function LevelScreen() {
     }
   };
 
-  // Save & continue from the reading self-review: persist the take to the
-  // private library (with the player's self-rating + the AI verdict), mark the
-  // level complete, then show the celebration.
+  // Reading self-review «Да / Нет»: persist the take to the private library
+  // (if asked) and mark the level complete — but stay on the screen, so the
+  // player can keep listening; «Далее» (handleReadingFinish) leaves.
   const handleReadingSave = async (selfRating: number, saveToLibrary: boolean = true) => {
     if (readingSaving) return;
     setReadingSaving(true);
@@ -825,11 +839,14 @@ export default function LevelScreen() {
 
     completeAllTasksForLevel(levelId, finalScore);
     setScores([finalScore, finalScore, finalScore]);
+    setReadingSaving(false);
+  };
+
+  const handleReadingFinish = () => {
     setShowReadingReview(false);
     setReadingAudioUri(null);
     setCurrentAnalysis(null);
     setActiveTaskIndex(null);
-    setReadingSaving(false);
     setTimeout(() => setShowLevelComplete(true), 400);
   };
 
@@ -917,9 +934,9 @@ export default function LevelScreen() {
         <LevelCompleteModal
           visible={showLevelComplete && !clearedBefore.current}
           levelTitle={level.title}
-          xpEarned={12 + scores.filter((s) => s >= 8).length * 2}
+          xpEarned={levelCoins}
           avgScore={avgScore}
-          bestScore={bestScore}
+          bestScore={avgScore}
           durationSec={levelDurationSec}
           hasNext={hasNext}
           onNext={handleLevelCompleteNext}
@@ -1001,6 +1018,7 @@ export default function LevelScreen() {
               lang={lang}
               onRetry={handleRetry}
               onSave={handleReadingSave}
+              onFinish={handleReadingFinish}
               saving={readingSaving}
             />
           </View>
@@ -1017,9 +1035,9 @@ export default function LevelScreen() {
         <LevelCompleteModal
           visible={showLevelComplete && !clearedBefore.current}
           levelTitle={level.title}
-          xpEarned={12 + (scores.filter((s) => s >= 8).length * 2)}
+          xpEarned={levelCoins}
           avgScore={avgScore}
-          bestScore={bestScore}
+          bestScore={avgScore}
           durationSec={levelDurationSec}
           hasNext={hasNext}
           onNext={handleLevelCompleteNext}
@@ -1136,9 +1154,9 @@ export default function LevelScreen() {
       <LevelCompleteModal
         visible={showLevelComplete && !clearedBefore.current}
         levelTitle={level.title}
-        xpEarned={12 + (scores.filter((s) => s >= 8).length * 2)}
+        xpEarned={levelCoins}
         avgScore={avgScore}
-        bestScore={bestScore}
+        bestScore={avgScore}
         durationSec={levelDurationSec}
         hasNext={hasNext}
         onNext={handleLevelCompleteNext}
