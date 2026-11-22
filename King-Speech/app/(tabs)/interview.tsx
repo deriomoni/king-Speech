@@ -12,7 +12,6 @@ import { rs } from "@/lib/responsive";
 import { ROUTES, type CheatRoute } from "@/constants/cheatsheetData";
 import CheatSheetRunner from "@/components/cheatsheet/CheatSheetRunner";
 import CheatSheetWheel from "@/components/cheatsheet/CheatSheetWheel";
-import GetReadyLogo from "@/components/cheatsheet/GetReadyLogo";
 
 // Encouraging one-liners shown under the title; rotates once per day so the
 // screen feels fresh. Source: тексты для Шпаргалки.docx (updates daily).
@@ -128,13 +127,15 @@ export default function CheatSheetScreen() {
       >
         {/* Hero */}
         <Animated.View entering={FadeIn.duration(400)} style={{ gap: rs(10) }}>
+          {/* Set like the King Speech logo: Geologica ExtraBold, tight tracking. */}
           {lang === "kk" ? (
-            // The "Get Ready" wordmark is a Latin SVG; Kazakh gets a text title.
-            <Text style={[styles.hero, { color: colors.text, fontSize: rs(44), lineHeight: rs(48) }]}>
+            <Text style={[styles.hero, { color: colors.text, fontSize: rs(44), lineHeight: rs(48), letterSpacing: -rs(1.8) }]}>
               {"Жылдам\nдайындық"}
             </Text>
           ) : (
-            <GetReadyLogo width={rs(210)} color={colors.text} />
+            <Text style={[styles.hero, { color: colors.text, fontSize: rs(43), lineHeight: rs(50), letterSpacing: -rs(1.7) }]}>
+              Get Ready
+            </Text>
           )}
           <Text style={[styles.heroSub, { color: colors.textSecondary }]}>
             {dailyText}
@@ -183,7 +184,7 @@ export default function CheatSheetScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   // Handwritten title (Caveat Bold — already loaded in _layout).
-  hero: { fontSize: 58, fontFamily: "Geologica_700Bold", lineHeight: 62, marginTop: -4 },
+  hero: { fontSize: 58, fontFamily: "Geologica_800ExtraBold", lineHeight: 62, marginTop: -4 },
   heroSub: { fontSize: 16, lineHeight: 23, fontFamily: fonts.body },
 
   countdown: {
