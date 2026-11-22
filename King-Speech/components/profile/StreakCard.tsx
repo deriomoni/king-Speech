@@ -4,14 +4,32 @@ import Svg, { Circle } from "react-native-svg";
 import type { Theme } from "@/context/ThemeContext";
 import { pickLang, type Lang } from "@/context/LangContext";
 import { rs } from "@/lib/responsive";
+import type { ActivityEntry } from "@/context/GameContext";
 
 // Figma "Card · В ударе" (node 117:1091): "N дня подряд в ударе" + a Mon..Sun
-// row of day rings. Activity = finished path tasks and Show Time runs
-// (GameContext.activityLog). A day's ring outline fills by how many happened
-// that day vs DAILY_GOAL: orange when low, yellow midway, glowing mint when full.
+// row of day rings, fed by GameContext.activityLog.
+//
+// A day is «в ударе» at DAILY_GOAL = 20 points, and only with a full Path
+// module in it:
+//   · Path level            — 2 points, counted up to PATH_LEVELS (6 = one module)
+//   · Show Time run outside the Path, «Королевские манеры» question,
+//     audio-diary entry     — 1 point, counted up to OTHER_POINTS (8)
+// 6 × 2 + 8 = 20. Each side is capped, so extra Path levels can't stand in for
+// the other practice (or the other way round): the ring stops just short of
+// full — and never turns mint — until both are done.
+// Ring colour: orange when low, yellow midway, glowing mint when the day counts.
 
-const DAILY_GOAL = 3;
+const PATH_LEVELS = 6;
+const PATH_POINTS_EACH = 2;
+const OTHER_POINTS = 8;
+const DAILY_GOAL = PATH_LEVELS * PATH_POINTS_EACH + OTHER_POINTS;
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+function dayProgress(c: { path: number; other: number } | undefined) {
+  if (!c) return 0;
+  const pts = Math.min(c.path, PATH_LEVELS) * PATH_POINTS_EACH + Math.min(c.other, OTHER_POINTS);
+  return pts / DAILY_GOAL;
+}
 
 const DAY_LABELS_RU = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const DAY_LABELS_EN = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
@@ -25,21 +43,24 @@ function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
-export function computeStreak(activityDates: number[], now = new Date()) {
-  const counts = new Map<string, number>();
-  for (const t of activityDates) {
-    if (!t || !Number.isFinite(t)) continue;
-    const k = dayKey(new Date(t));
-    counts.set(k, (counts.get(k) ?? 0) + 1);
+export function computeStreak(activity: ActivityEntry[], now = new Date()) {
+  const counts = new Map<string, { path: number; other: number }>();
+  for (const e of activity) {
+    if (!e.t || !Number.isFinite(e.t)) continue;
+    const k = dayKey(new Date(e.t));
+    const c = counts.get(k) ?? { path: 0, other: 0 };
+    c[e.k] += 1;
+    counts.set(k, c);
   }
+  const full = (d: Date) => dayProgress(counts.get(dayKey(d))) >= 1;
   const today = startOfDay(now);
 
-  // Consecutive active days ending today (or yesterday, if today has no
-  // activity yet — the streak isn't broken until the day is over).
+  // Consecutive full days ending today (or yesterday, if today isn't full
+  // yet — the streak isn't broken until the day is over).
   let streak = 0;
   let cursor = new Date(today);
-  if (!counts.has(dayKey(cursor))) cursor = new Date(cursor.getTime() - DAY_MS);
-  while (counts.has(dayKey(cursor))) {
+  if (!full(cursor)) cursor = new Date(cursor.getTime() - DAY_MS);
+  while (full(cursor)) {
     streak += 1;
     cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() - 1);
   }
@@ -49,11 +70,10 @@ export function computeStreak(activityDates: number[], now = new Date()) {
   const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - mondayOffset);
   const week = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
-    const n = counts.get(dayKey(d)) ?? 0;
     return {
       date: d,
       dayOfMonth: d.getDate(),
-      progress: Math.min(1, n / DAILY_GOAL),
+      progress: dayProgress(counts.get(dayKey(d))),
       isToday: i === mondayOffset,
       isFuture: i > mondayOffset,
     };
@@ -123,14 +143,14 @@ function DayRing({
 
 export default function StreakCard({
   theme,
-  activityDates,
+  activity,
   lang,
 }: {
   theme: Theme;
-  activityDates: number[];
+  activity: ActivityEntry[];
   lang: Lang;
 }) {
-  const { streak, week } = useMemo(() => computeStreak(activityDates), [activityDates]);
+  const { streak, week } = useMemo(() => computeStreak(activity), [activity]);
   const isDark = theme.mode === "dark";
   const labels = pickLang(lang, { ru: DAY_LABELS_RU, en: DAY_LABELS_EN, kk: DAY_LABELS_KK });
   const trackColor = isDark ? "rgba(240,238,233,0.10)" : "rgba(38,38,40,0.10)";

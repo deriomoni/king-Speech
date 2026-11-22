@@ -333,7 +333,7 @@ export default function ShowtimePlaybackScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const { completeTask, getLevelById, addShowTimeRecording, recordMetricScores } = useGame();
+  const { completeTask, getLevelById, addShowTimeRecording, recordMetricScores, logActivity } = useGame();
   const { t, lang } = useLang();
   const { theme, themeMode } = useTheme();
   const isDark = themeMode === "dark";
@@ -509,6 +509,10 @@ export default function ShowtimePlaybackScreen() {
     setCompleting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     playSfx("success").catch(() => {});
+
+    // «В ударе»: a Path Show Time level is credited as a Path level by
+    // completeTask; any other run (trainer, own text, topics) is Show Time.
+    if (!isDemo && (isTrainer || !getLevelById(levelId))) logActivity("other");
 
     if (!isTrainer && !isDemo) {
       const score = analysisResult?.score ?? 7;

@@ -14,6 +14,7 @@ import { pickLang, type Lang } from "@/context/LangContext";
 import { rs } from "@/lib/responsive";
 import { type MannersRule, tl } from "@/constants/mannersData";
 import { recordMannersAnswer } from "@/lib/mannersProgress";
+import { useGame } from "@/context/GameContext";
 
 export type MannersResult = { id: string; correct: boolean };
 
@@ -90,11 +91,15 @@ export function MannersQuestion({
   rule,
   lang,
   onAnswered,
+  countsForStreak = true,
 }: {
   rule: MannersRule;
   lang: Lang;
   onAnswered: (correct: boolean) => void;
+  /** One «В ударе» point per answer; off inside Path levels (the level counts). */
+  countsForStreak?: boolean;
 }) {
+  const { logActivity } = useGame();
   const { theme } = useAppColors();
   const order = useMemo(() => shuffledOrder(rule.options.length), [rule.id]);
   const [picked, setPicked] = useState<number | null>(null);
@@ -106,6 +111,7 @@ export function MannersQuestion({
     setPicked(i);
     const ok = i === rule.correct;
     recordMannersAnswer(rule.id, ok);
+    if (countsForStreak) logActivity("other");
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(ok ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error).catch(() => {});
     }
@@ -264,6 +270,7 @@ export default function MannersQuiz({
           <MannersQuestion
             rule={rule}
             lang={lang}
+            countsForStreak={!embedded}
             onAnswered={(ok) => {
               setAnswered(true);
               setResults((r) => {

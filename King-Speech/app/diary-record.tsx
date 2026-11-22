@@ -42,6 +42,7 @@ import AppDialog from "@/components/AppDialog";
 import Cassette, { labelTextStyle, useDiaryFonts } from "@/components/diary/Cassette";
 import { EMOTIONS, MoodFace, type PickableEmotion } from "@/components/diary/emotions";
 import { addDiaryEntry, discardDiaryAudio, fmtClock, persistDiaryAudio } from "@/lib/diaryStorage";
+import { useGame } from "@/context/GameContext";
 import RecButton from "@/components/RecButton";
 import { rs } from "@/lib/responsive";
 
@@ -94,6 +95,7 @@ export default function DiaryRecordScreen() {
   const { lang } = useLang();
   const tr = (ru: string, en: string, kk: string) => pickLang(lang, { ru, en, kk });
   const { theme: c } = useTheme();
+  const { logActivity } = useGame();
   useDiaryFonts();
   const dark = c.mode === "dark";
   const cardBg = dark ? "#323234" : c.card;
@@ -310,6 +312,7 @@ export default function DiaryRecordScreen() {
         durationSec: durationRef.current,
       });
       savedRef.current = true;
+      logActivity("other"); // «В ударе»: one point per diary entry
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       leave();
     } catch (e) {

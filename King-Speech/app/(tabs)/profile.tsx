@@ -123,7 +123,7 @@ export default function ProfileScreen() {
   const { theme } = useTheme();
   const { t, lang } = useLang();
   const insets = useSafeAreaInsets();
-  const { levels, coins, readingRecordings, activityLog, currentRank } = useGame();
+  const { levels, coins, activityLog, currentRank } = useGame();
   const { user, setPhotoURL, saveProfile } = useAuth();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
@@ -356,12 +356,6 @@ export default function ProfileScreen() {
   );
   const currentModule = activeLevel?.module ?? (maxCompletedModule || 1);
 
-  // Daily activity for the streak card: finished path tasks + Show Time runs
-  // (activityLog), plus dated recordings saved before the log existed.
-  const activityDates = useMemo(
-    () => [...activityLog, ...readingRecordings.map((r) => r.date).filter((d) => typeof d === "number")],
-    [activityLog, readingRecordings],
-  );
 
   const initials = (name || "?").split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 1);
 
@@ -478,7 +472,7 @@ export default function ProfileScreen() {
           </EdgeScale>
 
           <EdgeScale entering={FadeInDown.delay(160).duration(400)} style={styles.streak}>
-            <StreakCard theme={theme} activityDates={activityDates} lang={lang} />
+            <StreakCard theme={theme} activity={activityLog} lang={lang} />
           </EdgeScale>
         </View>
 
