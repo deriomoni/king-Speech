@@ -194,10 +194,19 @@ export function useLiveAudience<H>(props: LiveAudienceProps, backend: Backend<H>
             opacity: 0.9 - silOf(dim) * 0.35,
           }}
         >
-          <View style={{ backgroundColor: "rgba(255,255,255,0.94)", borderRadius: rs(9), paddingHorizontal: rs(7), paddingVertical: rs(3), borderWidth: 1, borderColor: "rgba(13,10,10,0.85)" }}>
-            <Text style={{ color: "#141012", fontSize: rs(10), fontFamily: "Geologica_500Medium" }}>{b.text}</Text>
-          </View>
-          <View style={{ position: "absolute", bottom: rs(-3), [b.side > 0 ? "left" : "right"]: rs(5), width: rs(7), height: rs(7), backgroundColor: "rgba(255,255,255,0.94)", borderColor: "rgba(13,10,10,0.85)", borderLeftWidth: 1, borderBottomWidth: 1, transform: [{ rotate: b.side > 0 ? "-45deg" : "45deg" }] } as any} />
+          {/* Plain, half-transparent murmur — no cloud, so it doesn't pull focus. */}
+          <Text
+            style={{
+              color: "rgba(255,255,255,0.55)",
+              fontSize: rs(10),
+              fontFamily: "Geologica_500Medium",
+              textShadowColor: "rgba(0,0,0,0.6)",
+              textShadowOffset: { width: 0, height: 1 },
+              textShadowRadius: 3,
+            }}
+          >
+            {b.text}
+          </Text>
         </Animated.View>
       ))}
     </View>

@@ -366,6 +366,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
       return next;
     });
   }, []);
+  // One Path level run = one "path" entry, even when a screen both completes
+  // its last task and then the whole level (interview / tongue-twister flow).
+  const lastPathLog = useRef<{ id: string; t: number } | null>(null);
+  const logPathLevel = (levelId: string) => {
+    const now = Date.now();
+    const prev = lastPathLog.current;
+    if (prev && prev.id === levelId && now - prev.t < 2 * 60 * 1000) return;
+    lastPathLog.current = { id: levelId, t: now };
+    logActivity("path");
+  };
 
   useEffect(() => {
     Promise.all([
@@ -507,7 +517,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const completeTask = (levelId: LevelType, taskNumber: number, score: number) => {
     // A Path level counts once per run — when its last task is done.
     const runLevel = levels.find((l) => l.id === levelId);
-    if (runLevel && taskNumber === Math.max(...runLevel.tasks.map((t) => t.taskNumber))) logActivity("path");
+    if (runLevel && taskNumber === Math.max(...runLevel.tasks.map((t) => t.taskNumber))) logPathLevel(levelId);
     // Open Testing is a pure runtime override: never persist progress while it
     // is enabled, so toggling it off restores the original lock state. The
     // task panel still advances visually because `effectiveStatus` in
@@ -581,7 +591,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // For reading levels: complete every task in one shot, unlock the next
   // level, and award XP only once.
   const completeAllTasksForLevel = (levelId: LevelType, score: number) => {
-    if (levels.some((l) => l.id === levelId)) logActivity("path");
+    if (levels.some((l) => l.id === levelId)) logPathLevel(levelId);
     if (isOpenTestingEnabled) return;
     const target = levels.find((l) => l.id === levelId);
     if (!target) return;
@@ -675,7 +685,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Mark a level as completed and unlock the next level in the path. Used
   // by vocabulary screens that don't fit the per-task scoring model.
   const markLevelComplete = (levelId: LevelType) => {
-    if (levels.some((l) => l.id === levelId)) logActivity("path");
+    if (levels.some((l) => l.id === levelId)) logPathLevel(levelId);
     if (isOpenTestingEnabled) return;
     const target = levels.find((l) => l.id === levelId);
     if (!target) return;

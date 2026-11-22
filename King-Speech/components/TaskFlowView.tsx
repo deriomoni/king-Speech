@@ -14,7 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import NextChevron from "@/components/NextChevron";
 import * as Haptics from "@/lib/haptics";
 import WaveformVoiceRecorder from "@/components/WaveformVoiceRecorder";
-import { toneFor } from "@/components/ScoreFlower";
+import { toneFor, aspectsFromScore10 } from "@/components/ScoreFlower";
 import { analyzeGenericTask, type TaskAnalysisResult } from "@/services/analyzeGenericTask";
 import { scoreLiteracy, type LiteracyResult } from "@/services/literacyScore";
 import { judgeAnswer, type AnswerJudge } from "@/services/answerJudge";
@@ -665,6 +665,7 @@ export default function TaskFlowView({
             <WaveformVoiceRecorder
               onRecordingComplete={deferred ? handleInterviewRecorded : handleRecordingComplete}
               colors={colors}
+              stopOnly={isInterview}
               startLabel={isInterview ? (pickLang(lang, { ru: "Ответить", en: "Answer", kk: "Жауап беру" })) : isTongue ? (pickLang(lang, { ru: "Начать", en: "Start", kk: "Бастау" })) : undefined}
             />
           </Animated.View>
@@ -1105,12 +1106,22 @@ function DevReport({
           {isTongue ? (pickLang(lang, { ru: "Разбор\nскороговорок", en: "Tongue-twister\nreview", kk: "Тіл бұрауыштар\nталдауы" })) : pickLang(lang, { ru: "Разбор ответов", en: "Answer breakdown", kk: "Жауаптар талдауы" })}
         </Text>
 
-        <View style={{ marginTop: rs(28), gap: rs(4) }}>
-          <Text style={[st.devLabel, { color: labelColor }]}>{pickLang(lang, { ru: "ОЦЕНКА", en: "SCORE", kk: "БАҒА" })}</Text>
+        <View style={{ marginTop: rs(28) }}>
+          <Text style={[st.devLabel, { color: labelColor, marginBottom: rs(14) }]}>{pickLang(lang, { ru: "ОЦЕНКА", en: "SCORE", kk: "БАҒА" })}</Text>
           <View style={st.devScoreRow}>
             <Text style={[st.devScore, { color: theme.accentInk }]}>{fmtScore(avg)}</Text>
             <Text style={[st.devScoreMax, { color: dimColor }]}>/10</Text>
           </View>
+        </View>
+
+        {/* Overall characteristics across all takes */}
+        <View style={[st.devMetrics, cardStyle, { marginTop: rs(20) }]}>
+          {aspectsFromScore10(agg.score, lang).map((a) => (
+            <View key={a.key} style={st.devMetricItem}>
+              <Text numberOfLines={1} style={[st.devMetricLabel, { color: labelColor }]}>{a.label}</Text>
+              <Text style={[st.devMetricValue, { color: theme.text }]}>{a.score.toFixed(1)}</Text>
+            </View>
+          ))}
         </View>
 
         {/* Summary — tip + notes */}
@@ -1129,7 +1140,7 @@ function DevReport({
                 <View style={{ gap: rs(10) }}>
                   {notes.map((n, k) => (
                     <View key={k} style={st.devNoteRow}>
-                      <View style={[st.devNoteDot, { backgroundColor: theme.accent }]} />
+                      <Text style={[st.devNoteNum, { color: theme.accentInk }]}>{k + 1}.</Text>
                       <Text style={[st.devNote, { color: isDark ? "rgba(240,238,233,0.9)" : theme.text }]}>{n}</Text>
                     </View>
                   ))}
@@ -1398,8 +1409,12 @@ const st = StyleSheet.create({
   devCard: { borderRadius: 22, borderWidth: 2, padding: 18 },
   devTip: { fontFamily: "Geologica_700Bold", fontSize: 16, lineHeight: 19.2 },
   devDivider: { height: 1, alignSelf: "stretch" },
-  devNoteRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  devNoteDot: { width: 6, height: 6, borderRadius: 3 },
+  devNoteRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  devNoteNum: { minWidth: 16, fontFamily: "Geologica_800ExtraBold", fontSize: 15, lineHeight: 19 },
+  devMetrics: { flexDirection: "row", flexWrap: "wrap", borderWidth: 2, borderRadius: 22, paddingHorizontal: 13, paddingVertical: 12, rowGap: 12 },
+  devMetricItem: { flexBasis: "50%", flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 4 },
+  devMetricLabel: { width: 108, fontFamily: "Geologica_500Medium", fontSize: 12.5 },
+  devMetricValue: { fontFamily: "Geologica_700Bold", fontSize: 14 },
   devNote: { flex: 1, fontFamily: "Geologica_600SemiBold", fontSize: 15, lineHeight: 19 },
   devAiNote: { fontFamily: "Geologica_400Regular", fontSize: 12.5, lineHeight: 17.5 },
   devRowHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 28 },

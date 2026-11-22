@@ -242,12 +242,11 @@ interface AnalysisResult {
   readOk?: boolean; // false = didn't actually read the text (skip / noise)
 }
 
-// Show Time is a PREPARED text read aloud — so the honest base score comes only
-// from delivery + volume (diction, expressiveness, volume, confidence); tempo &
-// pauses are dropped. Then the "Толерантность" layer supports a player who truly
-// read: the more of the script they actually spoke (hidden text-match), the more
-// the score is lifted toward 10. Skipping / noise doesn't lift it (text-match is
-// near zero). Padding the timer with silence can't help either — no words said.
+// Show Time is a PREPARED text read aloud — so the score comes from delivery
+// (diction, expressiveness, volume, confidence; tempo & pauses are dropped) and
+// matches the characteristics shown under it. Reading the script only keeps
+// that score; skipping it (hidden text-match) pulls it down — never up, so
+// a full read with weak delivery can't come out as 10/10.
 function summarize(result: AnalysisResult) {
   const { metrics, score } = result;
   const deliveryVals = metrics
@@ -257,10 +256,9 @@ function summarize(result: AnalysisResult) {
     ? (deliveryVals.reduce((a, b) => a + b, 0) / deliveryVals.length) * 2
     : score;
   const tm = result.textMatch;
-  // Genuine-reading effort from the hidden text-match: 0 at ≤25% of the script
-  // said, full (→ score 10) at ≥85%.
-  const effort = tm != null ? Math.max(0, Math.min(1, (tm - 0.25) / (0.85 - 0.25))) : 0;
-  const overall10 = Math.round(Math.min(10, base10 + (10 - base10) * effort) * 10) / 10;
+  // How much of the script was actually said: 0 at ≤25%, 1 at ≥85%.
+  const effort = tm != null ? Math.max(0, Math.min(1, (tm - 0.25) / (0.85 - 0.25))) : 1;
+  const overall10 = Math.round(Math.min(10, base10 * (0.6 + 0.4 * effort)) * 10) / 10;
   // Tier / XP all follow the SHOWN overall so nothing contradicts it.
   const finalStars = overall10 >= 8.5 ? 3 : overall10 >= 6 ? 2 : 1;
   const xp = finalStars === 3 ? 10 : finalStars === 2 ? 7 : 4;
@@ -627,7 +625,7 @@ export default function ShowtimePlaybackScreen() {
           {/* Overall score + verdict */}
           {sum ? (
             <Animated.View entering={FadeInUp.delay(100).duration(500)} style={pb.scoreBlock}>
-              <Text style={[pb.label, { color: labelColor }]}>{pickLang(lang, { ru: "ОЦЕНКА", en: "SCORE", kk: "БАҒА" })}</Text>
+              <Text style={[pb.label, { color: labelColor, marginBottom: 10 }]}>{pickLang(lang, { ru: "ОЦЕНКА", en: "SCORE", kk: "БАҒА" })}</Text>
               <Animated.View entering={ZoomIn.delay(250).duration(400)} style={pb.scoreRow}>
                 <Text style={[pb.scoreNum, { color: theme.accentInk }]}>{sum.overall10.toFixed(1)}</Text>
                 <Text style={[pb.scoreMax, { color: dimColor }]}>/10</Text>

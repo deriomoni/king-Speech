@@ -54,12 +54,15 @@ interface Props {
   colors: import("@/constants/colors").AppColors;
   /** Overrides the idle start-button label (default: "Начать запись"). */
   startLabel?: string;
+  /** Only a «Стоп» button while recording (no restart / pause). */
+  stopOnly?: boolean;
 }
 
 export default function WaveformVoiceRecorder({
   onRecordingComplete,
   colors: _colors,
   startLabel,
+  stopOnly,
 }: Props) {
   const { lang } = useLang();
   const { theme } = useTheme();
@@ -463,6 +466,7 @@ export default function WaveformVoiceRecorder({
         onResume={handleResume}
         onRestart={handleRestart}
         lang={lang}
+        stopOnly={stopOnly}
       />
     </View>
   );

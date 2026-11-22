@@ -4325,8 +4325,8 @@ function NoiseBubbleView({ bubble }: { bubble: NoiseBubble }) {
   }, []);
   const style = useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ translateY: translateY.value }] }));
   return (
-    <Animated.View style={[style, { position: "absolute", left: bubble.x, top: bubble.y, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: rs(9), paddingHorizontal: rs(7), paddingVertical: rs(3) }]}>
-      <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: rs(10), fontFamily: "Geologica_400Regular" }}>{bubble.text}</Text>
+    <Animated.View style={[style, { position: "absolute", left: bubble.x, top: bubble.y, }]}>
+      <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: rs(10), fontFamily: "Geologica_400Regular", textShadowColor: "rgba(0,0,0,0.6)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 }}>{bubble.text}</Text>
     </Animated.View>
   );
 }
@@ -5815,7 +5815,9 @@ const s = StyleSheet.create({
   speechPanel: { position: "absolute", bottom: 0, left: 0, right: 0, paddingTop: 14, paddingHorizontal: 18, gap: 12 },
   linesWrap: { flex: 1, width: "100%", overflow: "hidden" },
   linesScroll: { flex: 1, width: "100%" },
-  linesContainer: { flexGrow: 1, justifyContent: "center", alignItems: "center", gap: 0, paddingVertical: 4 },
+  // Bottom padding = the bottom edge blur, so the last lines can scroll up
+  // out from under it and stay readable.
+  linesContainer: { flexGrow: 1, justifyContent: "center", alignItems: "center", gap: 0, paddingTop: 4, paddingBottom: rs(80) },
   progressBg: { height: 3, borderRadius: 2, backgroundColor: "rgba(240,238,233,0.18)", overflow: "hidden" },
   progressFill: { height: 3, borderRadius: 2, backgroundColor: "#FFD166" },
   navRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },

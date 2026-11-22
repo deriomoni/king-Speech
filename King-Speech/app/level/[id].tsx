@@ -42,12 +42,10 @@ import ReadingLevelView from "@/components/ReadingLevelView";
 import ReadingResultsView from "@/components/ReadingResultsView";
 import { READING_BG_DARK } from "@/components/reading/readingTheme";
 import StageGlassDialog from "@/components/showtime/StageGlassDialog";
-import { aspectsFromScore10, ASPECT_META } from "@/components/ScoreFlower";
 import OscarMascot from "@/components/OscarMascot";
 import { useTheme } from "@/context/ThemeContext";
 
 import TaskFlowView from "@/components/TaskFlowView";
-import { aggregateAnalyses } from "@/services/analyzeGenericTask";
 import WarmupLevelView from "@/components/warmup/WarmupLevelView";
 import DevSkipButton from "@/components/DevSkipButton";
 import { getModuleFromLevelId, getInterviewVariantsForLevel } from "@/constants/contentLoader";
@@ -255,230 +253,6 @@ const TranscriptBlock = React.memo(function TranscriptBlock({
   );
 });
 
-function ResultsSheet({
-  visible,
-  analysis,
-  task,
-  analyzing,
-  onRetry,
-  onNext,
-  colors,
-  isDark,
-  t,
-  lang,
-}: {
-  visible: boolean;
-  analysis: SpeechAnalysis | null;
-  task: Task | null;
-  analyzing: boolean;
-  onRetry: () => void;
-  onNext: () => void;
-  colors: import("@/constants/colors").AppColors;
-  isDark: boolean;
-  t: (key: any) => string;
-  lang: Lang;
-}) {
-  if (!task) return null;
-
-  // Loading state is now owned by the full-screen `SpeechAnalyzingLoader`
-  // (rendered next to this sheet by the parent screen). Returning null
-  // here while `analyzing === true` — or while the analysis result hasn't
-  // arrived yet — prevents the old modal "Analyzing your recording…"
-  // sheet from sitting on top of (and hiding) the new animated loader.
-  if (!analysis || analyzing) {
-    return null;
-  }
-
-  return (
-    <Modal visible={visible} animationType="slide" transparent={false} presentationStyle="fullScreen">
-      <FlowerResultWindow
-        overall={analysis.score.overall}
-        aspects={aspectsFromScore10(analysis.score, lang)}
-        summary={analysis.summary}
-        tip={analysis.tip}
-        growth={analysis.recommendations}
-        strengths={analysis.strengths}
-        isDark={isDark}
-        colors={colors}
-        t={t}
-        lang={lang}
-        primaryLabel={t("forward")}
-        onPrimary={onNext}
-        onRetry={onRetry}
-      />
-    </Modal>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────────
-// Shared full-screen "score window": dark-neon flower + a single combined
-// "what to improve" message (tip + growth points merged). Reused by the
-// generic level results sheet; the reading self-review embeds its own variant.
-// ───────────────────────────────────────────────────────────────────────────
-export function FlowerResultWindow({
-  overall,
-  aspects,
-  summary,
-  tip,
-  growth,
-  strengths,
-  isDark,
-  colors,
-  t,
-  lang,
-  primaryLabel,
-  onPrimary,
-  onRetry,
-}: {
-  overall: number;
-  aspects: ReturnType<typeof aspectsFromScore10>;
-  summary?: string;
-  tip?: string;
-  growth?: string[];
-  strengths?: string[];
-  isDark: boolean;
-  colors: import("@/constants/colors").AppColors;
-  t: (key: any) => string;
-  lang: Lang;
-  primaryLabel: string;
-  onPrimary: () => void;
-  onRetry?: () => void;
-}) {
-  const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? rsz(28) : insets.top + rsz(8);
-  const bottomPad = Platform.OS === "web" ? rsz(28) : insets.bottom + rsz(10);
-
-  const { theme } = useTheme();
-  // Figma (37:5981 / 37:6190): the score + tier are always the gold accent
-  // (ink on the light theme), regardless of tier.
-  const scoreColor = theme.accentInk;
-
-  // Oscar reacts to the result: thumbs-up for excellent (Rive), joy for good
-  // and sadness for a weak take — the latter two use the Figma pose exports
-  // ("Oscar 02 · Радуется", "Oscar 03 · Грустит").
-  const oscarEmotion: "thumbup" | "happy" | "sad" =
-    overall >= 8 ? "thumbup" : overall >= 6 ? "happy" : "sad";
-  const tierLabel =
-    overall >= 8
-      ? pickLang(lang, { ru: "Отлично!", en: "Excellent!", kk: "Керемет!" })
-      : overall >= 6
-        ? pickLang(lang, { ru: "Хорошо", en: "Good", kk: "Жақсы" })
-        : overall >= 4
-          ? pickLang(lang, { ru: "Неплохо", en: "Not bad", kk: "Жаман емес" })
-          : pickLang(lang, { ru: "Есть над чем поработать", en: "Room to grow", kk: "Әлі де жұмыс істеу керек" });
-
-  const fgText = theme.text;
-  const fgMuted = isDark ? "rgba(240,238,233,0.62)" : theme.textSecondary;
-  const cardBg = isDark ? "rgba(255,216,87,0.07)" : "rgba(255,216,87,0.14)";
-  const cardBorder = isDark ? "rgba(240,238,233,0.06)" : "rgba(38,38,40,0.08)"; // stroke/shape
-  const retryBg = isDark ? "rgba(240,238,233,0.06)" : "rgba(38,38,40,0.04)";
-  const retryBorder = isDark ? "rgba(240,238,233,0.10)" : "rgba(38,38,40,0.08)";
-
-  // Merge the coaching tip + growth points into ONE message (tip leads, the
-  // remaining growth points become supporting lines).
-  const tipText = (tip ?? "").trim();
-  const growthLines = (growth ?? [])
-    .map((g) => g.trim())
-    .filter((g) => g && g.toLowerCase() !== tipText.toLowerCase());
-  const hasAdvice = !!tipText || growthLines.length > 0;
-
-  return (
-    <View style={{ flex: 1, backgroundColor: theme.bg }}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[rs.content, { paddingTop: topPad + rsz(28), paddingBottom: bottomPad + rsz(8) }]}
-      >
-        {/* Oscar leads the screen — big, centered, no card around him */}
-        <Animated.View entering={FadeIn.duration(450)} style={rs.oscarSection}>
-          <OscarMascot emotion={oscarEmotion} size={rsz(312)} />
-        </Animated.View>
-
-        {/* Overall score right under the mascot — plain number, no circle */}
-        <Animated.View entering={FadeIn.delay(80).duration(350)} style={rs.heroSection}>
-          <View style={rs.scoreRow}>
-            <Text style={[rs.scoreHeroNum, { color: scoreColor, fontFamily: "Geologica_700Bold" }]}>
-              {overall.toFixed(1)}
-            </Text>
-            <Text style={[rs.scoreHeroDenom, { color: fgMuted, fontFamily: "Geologica_600SemiBold" }]}>
-              /10
-            </Text>
-          </View>
-          <Text style={[rs.tierLabel, { color: scoreColor, fontFamily: "Geologica_600SemiBold" }]}>
-            {tierLabel}
-          </Text>
-        </Animated.View>
-
-        {/* All six criteria in ONE compact widget: name + score, no bars.
-            High scores (>=8) glow green. */}
-        <Animated.View
-          entering={FadeInDown.delay(160).duration(350)}
-          style={[rs.metricsCard, { backgroundColor: cardBg, borderColor: cardBorder }]}
-        >
-          {aspects.map((a) => (
-            <View key={a.key} style={rs.metricItem}>
-              <Text
-                numberOfLines={1}
-                style={[rs.metricLabel, { color: fgMuted, fontFamily: "Geologica_500Medium" }]}
-              >
-                {a.label}
-              </Text>
-              <Text style={[rs.metricValue, { color: fgText, fontFamily: "Geologica_700Bold" }]}>
-                {a.score.toFixed(1)}
-              </Text>
-            </View>
-          ))}
-        </Animated.View>
-
-        {/* One combined "what to improve" message (tip + growth merged) */}
-        {hasAdvice ? (
-          <Animated.View
-            entering={FadeInDown.delay(220).duration(400)}
-            style={[rs.adviceCard, { backgroundColor: cardBg, borderColor: cardBorder }]}
-          >
-            <View style={rs.adviceHead}>
-              <Text style={[rs.adviceTitle, { color: scoreColor, fontFamily: "Geologica_600SemiBold" }]}>
-                {pickLang(lang, { ru: "Над чем поработать", en: "What to work on", kk: "Неге көңіл бөлу керек" })}
-              </Text>
-            </View>
-            {tipText ? (
-              <Text style={[rs.adviceLead, { color: fgText, fontFamily: "Geologica_700Bold" }]}>{tipText}</Text>
-            ) : null}
-            {growthLines.map((g, i) => (
-              <Text key={i} style={[rs.adviceText, { color: fgMuted, fontFamily: "Geologica_400Regular" }]}>{g}</Text>
-            ))}
-          </Animated.View>
-        ) : null}
-
-        {/* Buttons */}
-        <Animated.View entering={FadeInDown.delay(380).duration(400)} style={rs.btnRow}>
-          {onRetry ? (
-            <Pressable
-              onPress={onRetry}
-              style={({ pressed }) => [
-                rs.retryBtn,
-                { backgroundColor: retryBg, borderColor: retryBorder, opacity: pressed ? 0.7 : 1 },
-              ]}
-            >
-              <Text style={[rs.retryBtnText, { color: fgMuted, fontFamily: "Geologica_600SemiBold" }]}>{t("again")}</Text>
-            </Pressable>
-          ) : null}
-          <Pressable
-            onPress={onPrimary}
-            style={({ pressed }) => [
-              rs.nextBtn,
-              rs.flowerNextBtn,
-              { backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
-            ]}
-          >
-            <Text style={[rs.nextBtnText, { fontFamily: "Geologica_700Bold", color: theme.accentText }]}>{primaryLabel}</Text>
-            <NextChevron size={rsz(16)} color={theme.accentText} />
-          </Pressable>
-        </Animated.View>
-      </ScrollView>
-    </View>
-  );
-}
-
 // ---- Empty recording (player stayed silent) ----
 // Shown instead of the results sheet when speech-to-text heard nothing. The
 // take is NOT scored or counted — the only action is a gentle re-record.
@@ -598,7 +372,6 @@ export default function LevelScreen() {
   // New one-task-per-screen flow: the aggregate level flower shown after the
   // last task (null = hidden). Its own dark canvas + bloom is the "screen
   // darkens → flower appears" moment.
-  const [levelFlower, setLevelFlower] = useState<SpeechAnalysis | null>(null);
   const [scores, setScores] = useState<number[]>([]);
   const [readingResetSignal, setReadingResetSignal] = useState(0);
   const [readingRestartSignal, setReadingRestartSignal] = useState(0);
@@ -1071,8 +844,7 @@ export default function LevelScreen() {
       setReadingDurationSec(0);
       setShowReadingReview(true);
     } else {
-      // New flow preview: bloom the aggregate level flower directly.
-      setLevelFlower(DEMO_ANALYSIS);
+      setShowLevelComplete(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReadingLevel]);
@@ -1106,13 +878,13 @@ export default function LevelScreen() {
   );
 
   // New one-task-per-screen flow (tongue twisters / interview levels): the
-  // player finished the last task. Aggregate every per-task take into one
-  // level flower; continuing from it opens the LevelComplete celebration.
+  // player finished the last task (after the in-flow «Разбор ответов»), so
+  // go straight to the LevelComplete celebration.
   const handleFlowFinished = React.useCallback(
     (payload: { scores: number[]; analyses: SpeechAnalysis[]; durationSec: number }) => {
       setScores(payload.scores);
       setLevelDurationSec(payload.durationSec);
-      setLevelFlower(aggregateAnalyses(payload.analyses, lang));
+      setShowLevelComplete(true);
       // Mark the whole level complete + unlock the next one in a single atomic
       // update. (Completing tasks one-by-one in a synchronous loop read stale
       // state and lost all but the last task, so the level looked unfinished
@@ -1130,10 +902,6 @@ export default function LevelScreen() {
     },
     [completeTask, levelId],
   );
-  const handleFlowerContinue = React.useCallback(() => {
-    setLevelFlower(null);
-    setShowLevelComplete(true);
-  }, []);
 
   // Warm-up: Pitch Game + mouth exercise (2 tasks from JSON).
   if (isWarmupLevel) {
@@ -1363,31 +1131,6 @@ export default function LevelScreen() {
         onAllComplete={handleFlowFinished}
         onExit={handleExitPress}
       />
-
-      {/* Aggregate level flower — its dark canvas + bloom IS the "screen
-          darkens → flower appears" moment after the last task. Rendered as an
-          in-tree full-screen overlay (NOT a RN <Modal>): on the New
-          Architecture a Modal can fail to unmount on state change/navigation,
-          leaving the mascot ghosted over the next level. An overlay unmounts
-          cleanly the moment `levelFlower` is cleared. */}
-      {levelFlower ? (
-        <View style={StyleSheet.absoluteFill}>
-          <FlowerResultWindow
-            overall={levelFlower.score.overall}
-            aspects={aspectsFromScore10(levelFlower.score, lang)}
-            summary={levelFlower.summary}
-            tip={levelFlower.tip}
-            growth={levelFlower.recommendations}
-            strengths={levelFlower.strengths}
-            isDark={isDark}
-            colors={colors}
-            t={t}
-            lang={lang}
-            primaryLabel={t("forward")}
-            onPrimary={handleFlowerContinue}
-          />
-        </View>
-      ) : null}
 
       {/* Level Complete Modal */}
       <LevelCompleteModal

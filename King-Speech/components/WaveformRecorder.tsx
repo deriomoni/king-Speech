@@ -50,6 +50,8 @@ interface Props {
   onResume: () => void;
   onRestart: () => void;
   lang: Lang;
+  /** Only the «Стоп» pill — no «Заново», no pause (interview answers). */
+  stopOnly?: boolean;
 }
 
 function formatTime(seconds: number): string {
@@ -109,6 +111,7 @@ export default function WaveformRecorder({
   onResume,
   onRestart,
   lang,
+  stopOnly = false,
 }: Props) {
   const { theme, themeMode } = useTheme();
   const isDark = themeMode === "dark";
@@ -174,8 +177,8 @@ export default function WaveformRecorder({
         </View>
       </View>
 
-      <View style={styles.controls}>
-        <Pressable
+      <View style={[styles.controls, stopOnly && { justifyContent: "center" }]}>
+        {!stopOnly && <Pressable
           onPress={handleRestartPress}
           accessibilityRole="button"
           accessibilityLabel={restartLabel}
@@ -186,7 +189,7 @@ export default function WaveformRecorder({
           <Text numberOfLines={1} style={[styles.restartText, { color: theme.accentInk }]}>
             {pickLang(lang, { ru: "Заново", en: "Again", kk: "Қайталау" })}
           </Text>
-        </Pressable>
+        </Pressable>}
 
         <Pressable
           onPress={handleStop}
@@ -202,7 +205,7 @@ export default function WaveformRecorder({
           <Text style={[styles.stopPillText, { color: theme.accentText }]}>{stopLabel}</Text>
         </Pressable>
 
-        <RecButton
+        {!stopOnly && <RecButton
           kind={isPaused ? "record" : "pause"}
           size={rs(50)}
           onPress={handlePauseToggle}
@@ -212,7 +215,7 @@ export default function WaveformRecorder({
               : pickLang(lang, { ru: "Пауза", en: "Pause", kk: "Кідірту" })
           }
           testID="waveform-pause"
-        />
+        />}
       </View>
     </View>
   );
