@@ -40,6 +40,25 @@ export interface ChatOptions {
   /** When true, instruct Claude to emit only a raw JSON object and strip fences. */
   json?: boolean;
   model?: string;
+  /**
+   * Reasoning effort (output_config.effort). Only sent when set; calls that
+   * don't pass it behave exactly as before.
+   */
+  effort?: "low" | "medium" | "high";
+}
+
+/**
+ * Thinking switched off for the fast models these short JSON scoring calls
+ * may run on — the default model already runs without it. With thinking on,
+ * its tokens would also count against the small max_tokens and could cut the
+ * JSON short. Haiku 5.5 takes `disabled` (at effort high or below); Sonnet 5.5
+ * rejects `disabled` and uses `between_tools` instead. Other models: the
+ * parameter is left out (unchanged behaviour).
+ */
+function thinkingOffFor(model: string): Record<string, unknown> | undefined {
+  if (model.startsWith("claude-haiku-5")) return { type: "disabled" };
+  if (model.startsWith("claude-sonnet-5-5")) return { type: "between_tools" };
+  return undefined;
 }
 
 /** Strip ```json … ``` / ``` … ``` fences a model may wrap JSON in. */
@@ -63,11 +82,15 @@ export async function chatComplete(opts: ChatOptions): Promise<string> {
     ? "\n\nOutput ONLY the raw JSON object — no markdown, no code fences, no commentary before or after."
     : "\n\nRespond with only the final answer — no preamble, no explanation of your reasoning.";
 
+  const model = opts.model ?? CLAUDE_MODEL;
+  const thinking = thinkingOffFor(model);
   const resp = await getAnthropic().messages.create({
-    model: opts.model ?? CLAUDE_MODEL,
+    model,
     max_tokens: opts.maxTokens,
     system: opts.system + guard,
     messages: [{ role: "user", content: opts.user }],
+    ...(thinking ? { thinking: thinking as any } : {}),
+    ...(opts.effort ? { output_config: { effort: opts.effort } } : {}),
   });
 
   const text = resp.content

@@ -14,6 +14,7 @@ import WaveformRecorder from "@/components/WaveformRecorder";
 import { useWaveformBars, WAVEFORM_BAR_MIN, WAVEFORM_BAR_MAX } from "@/hooks/useWaveformBars";
 import { RecDot } from "@/components/RecButton";
 import { rs } from "@/lib/responsive";
+import { speechRecordingOptions } from "@/lib/speechRecording";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -222,14 +223,8 @@ export default function WaveformVoiceRecorder({
           allowsRecordingIOS: true,
           playsInSilentModeIOS: true,
         });
-        const baseOpts = Audio.RecordingOptionsPresets.HIGH_QUALITY;
-        const meteringOpts = {
-          ...baseOpts,
-          isMeteringEnabled: true,
-          ios: { ...(baseOpts.ios ?? {}), meteringEnabled: true },
-          android: { ...(baseOpts.android ?? {}) },
-          web: { ...(baseOpts.web ?? {}) },
-        };
+        // Speech preset (mono, 22 kHz, 48 kbps) — a smaller upload, same analysis.
+        const meteringOpts = speechRecordingOptions(Audio.RecordingOptionsPresets.HIGH_QUALITY);
         const { recording } = await Audio.Recording.createAsync(meteringOpts);
         recordingRef.current = recording;
         setNativeRecording(recording);

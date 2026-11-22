@@ -258,6 +258,29 @@ interface InterviewExtras {
   tip?: string;
 }
 
+/**
+ * Read the `interview` field /api/transcribe returns when asked with
+ * `{ interview: true }` — the same judgement as /api/analyze-interview, but
+ * in the transcription request itself (one round trip instead of two).
+ * `undefined` → the server didn't include it (older server); `null` → it
+ * tried and failed.
+ */
+/** Interview levels have their answer judged for logic/eloquence. */
+export function isInterviewLevel(levelType: string): boolean {
+  return getBaseType(levelType) === "interview";
+}
+
+export function readInterviewExtras(data: any): InterviewExtras | null | undefined {
+  if (!data || !("interview" in data)) return undefined;
+  const v = data.interview;
+  if (!v || typeof v.logic !== "number" || typeof v.eloquence !== "number") return null;
+  return {
+    logic: clamp01to10(v.logic),
+    eloquence: clamp01to10(v.eloquence),
+    tip: typeof v.tip === "string" ? v.tip : undefined,
+  };
+}
+
 async function fetchInterviewAnalysis(transcript: string, lang: Lang): Promise<InterviewExtras | null> {
   if (!transcript || transcript.trim().length < 4) return null;
   try {
@@ -295,6 +318,12 @@ export interface AnalyzeSpeechParams {
    * score; when omitted we fall back to a duration heuristic.
    */
   audioRms?: number;
+  /**
+   * Interview judgement already returned by /api/transcribe ({interview:true}).
+   * Provided (even null) → used as is, no extra request; undefined → fetched
+   * from /api/analyze-interview as before.
+   */
+  interviewExtras?: InterviewExtras | null;
 }
 
 export async function analyzeSpeech(params: AnalyzeSpeechParams): Promise<SpeechAnalysis> {
@@ -305,6 +334,7 @@ export async function analyzeSpeech(params: AnalyzeSpeechParams): Promise<Speech
     levelType,
     lang = "ru",
     audioRms,
+    interviewExtras,
   } = params;
 
   const transcript = (rawTranscript ?? "").trim();
@@ -330,7 +360,13 @@ export async function analyzeSpeech(params: AnalyzeSpeechParams): Promise<Speech
   const tipScores: Record<string, number> = { clarity, volume, confidence };
 
   if (isInterview) {
-    const extras = await fetchInterviewAnalysis(transcript, lang);
+    // The server's judgement came back with the transcript — but if that
+    // judge failed (null) while there is something to judge, ask once more
+    // the old way rather than settle for the neutral fallback.
+    const extras =
+      interviewExtras !== undefined && (interviewExtras !== null || transcript.length < 4)
+        ? interviewExtras
+        : await fetchInterviewAnalysis(transcript, lang);
     if (extras) {
       logic = extras.logic;
       eloquence = extras.eloquence;

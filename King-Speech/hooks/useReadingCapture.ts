@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import { Platform } from "react-native";
+import { speechRecordingOptions } from "@/lib/speechRecording";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // useReadingCapture — records the reading take for scoring + self-review.
@@ -95,14 +96,8 @@ export function useReadingCapture() {
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
       });
-      const baseOpts = Audio.RecordingOptionsPresets.HIGH_QUALITY;
-      const meteringOpts = {
-        ...baseOpts,
-        isMeteringEnabled: true,
-        ios: { ...(baseOpts.ios ?? {}), meteringEnabled: true },
-        android: { ...(baseOpts.android ?? {}) },
-        web: { ...(baseOpts.web ?? {}) },
-      };
+      // Speech preset (mono, 22 kHz, 48 kbps) — a smaller upload, same analysis.
+      const meteringOpts = speechRecordingOptions(Audio.RecordingOptionsPresets.HIGH_QUALITY);
       const { recording } = await Audio.Recording.createAsync(meteringOpts);
       recordingRef.current = recording;
       // Collect the real amplitude envelope from metering (dBFS → 0..1) so the

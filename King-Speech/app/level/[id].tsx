@@ -65,7 +65,7 @@ import {
   getTongueTwistersForModule,
   getModuleFromTongueTwisterId,
 } from "@/constants/tongueTwisterLoader";
-import { analyzeSpeech, analyzeSpeechPro, generateTips, FILLERS, type SpeechAnalysis } from "@/services/speechAnalysis";
+import { analyzeSpeech, analyzeSpeechPro, generateTips, FILLERS, isInterviewLevel as isInterviewLevelId, readInterviewExtras, type SpeechAnalysis } from "@/services/speechAnalysis";
 import { getApiUrl } from "@/lib/query-client";
 import { fetch as expoFetch } from "expo/fetch";
 import { ActivityIndicator } from "react-native";
@@ -853,6 +853,8 @@ export default function LevelScreen() {
       // genuinely ran — otherwise (offline / backend down) an empty transcript
       // just means we couldn't transcribe, which must NOT be blamed on the user.
       let transcribedOk = false;
+      // Interview levels: logic/eloquence come back with the transcript.
+      let interviewExtras: ReturnType<typeof readInterviewExtras>;
       if (audioBase64 && audioBase64.length > 100) {
         try {
           const url = new URL("/api/transcribe", getApiUrl()).toString();
@@ -868,6 +870,7 @@ export default function LevelScreen() {
                 isReadingLevel && lang === "kk" && !hasKazakhLiterature(getModuleFromReadingId(levelId))
                   ? "ru"
                   : lang,
+              ...(isInterviewLevelId(levelId) ? { interview: true } : {}),
             }),
           });
           if (res.ok) {
@@ -880,6 +883,7 @@ export default function LevelScreen() {
             if (typeof data.audioRms === "number" && Number.isFinite(data.audioRms)) {
               audioRms = data.audioRms;
             }
+            interviewExtras = readInterviewExtras(data);
           }
         } catch (e) {
           console.warn("transcribe failed:", e);
@@ -915,6 +919,7 @@ export default function LevelScreen() {
           lang,
           levelNumber: level.levelNumber,
           audioRms,
+          interviewExtras,
         });
         setCurrentAnalysis(analysis);
       } catch (e) {

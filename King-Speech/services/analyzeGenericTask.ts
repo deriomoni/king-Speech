@@ -1,6 +1,6 @@
 import { fetch as expoFetch } from "expo/fetch";
 import { getApiUrl } from "@/lib/query-client";
-import { analyzeSpeech, type SpeechAnalysis } from "@/services/speechAnalysis";
+import { analyzeSpeech, isInterviewLevel, readInterviewExtras, type SpeechAnalysis } from "@/services/speechAnalysis";
 import { pickLang, type Lang } from "@/context/LangContext";
 
 // Reusable speech-analysis pipeline for generic "speak this content" tasks
@@ -27,6 +27,9 @@ export async function analyzeGenericTask(params: {
   let serverDuration = durationSeconds;
   let audioRms: number | undefined;
   let transcribedOk = false;
+  // Interview levels get logic/eloquence judged in the same request.
+  const isInterview = isInterviewLevel(levelId);
+  let interviewExtras: ReturnType<typeof readInterviewExtras>;
 
   if (audioBase64 && audioBase64.length > 100) {
     try {
@@ -34,7 +37,7 @@ export async function analyzeGenericTask(params: {
       const res = await expoFetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audioBase64, audioDurationSeconds: durationSeconds, lang }),
+        body: JSON.stringify({ audioBase64, audioDurationSeconds: durationSeconds, lang, ...(isInterview ? { interview: true } : {}) }),
       });
       if (res.ok) {
         transcribedOk = true;
@@ -46,6 +49,7 @@ export async function analyzeGenericTask(params: {
         if (typeof data.audioRms === "number" && Number.isFinite(data.audioRms)) {
           audioRms = data.audioRms;
         }
+        interviewExtras = readInterviewExtras(data);
       }
     } catch (e) {
       console.warn("[analyzeGenericTask] transcribe failed:", e);
@@ -67,6 +71,7 @@ export async function analyzeGenericTask(params: {
       lang,
       levelNumber,
       audioRms,
+      interviewExtras,
     });
     return { kind: "ok", analysis };
   } catch (e) {

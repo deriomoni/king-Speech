@@ -55,6 +55,7 @@ import { LiveAudience, HALL_RATIO } from "@/components/audience/LiveAudience";
 import { OVATION_SEC } from "@/components/audience/scene";
 import { RecDot as RecMark } from "@/components/RecButton";
 import { rs, UI_SCALE } from "@/lib/responsive";
+import { speechRecordingOptions } from "@/lib/speechRecording";
 
 // Audience halls (first-person, speaker POV). Used as the variable stage
 // backdrop — the speech text sits on a white sheet at the bottom that blurs up
@@ -5130,14 +5131,8 @@ export default function ShowtimeStageScreen() {
       try {
         await Audio.requestPermissionsAsync();
         await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-        const baseOpts = Audio.RecordingOptionsPresets.HIGH_QUALITY;
-        const meteringOpts = {
-          ...baseOpts,
-          isMeteringEnabled: true,
-          ios: { ...(baseOpts.ios ?? {}), meteringEnabled: true },
-          android: { ...(baseOpts.android ?? {}) },
-          web: { ...(baseOpts.web ?? {}) },
-        };
+        // Speech preset (mono, 22 kHz, 48 kbps) — a smaller upload, same analysis.
+        const meteringOpts = speechRecordingOptions(Audio.RecordingOptionsPresets.HIGH_QUALITY);
         meterSamplesRef.current = [];
         waveformRef.current = null;
         const { recording } = await Audio.Recording.createAsync(meteringOpts);

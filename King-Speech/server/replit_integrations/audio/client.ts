@@ -155,7 +155,16 @@ export interface AudioLoudness {
  * buffer) returns `{ ok: false, ... }` so the caller can distinguish
  * "analysis failed" from "audio really was silent".
  */
-export async function computeLoudness(audioBuffer: Buffer): Promise<AudioLoudness> {
+export async function computeLoudness(
+  audioBuffer: Buffer,
+  /**
+   * Measure the audio the way it used to be measured after conversion — mono,
+   * 16 kHz, 16-bit — straight from the original upload. Lets the server skip
+   * writing an intermediate WAV while keeping the loudness numbers (and so the
+   * volume scores) the same as before.
+   */
+  opts: { asSpeechWav?: boolean } = {},
+): Promise<AudioLoudness> {
   const failed: AudioLoudness = {
     ok: false,
     rms: 0,
@@ -173,7 +182,9 @@ export async function computeLoudness(audioBuffer: Buffer): Promise<AudioLoudnes
       const ffmpeg = spawn("ffmpeg", [
         "-i", inputPath,
         "-vn", "-sn", "-dn",        // ignore video / subtitle / data tracks
-        "-af", "volumedetect",
+        "-af", opts.asSpeechWav
+          ? "aformat=sample_fmts=s16:channel_layouts=mono:sample_rates=16000,volumedetect"
+          : "volumedetect",
         "-f", "null",
         "-",
       ]);
@@ -341,13 +352,19 @@ export async function textToSpeechStream(
   })();
 }
 
+/** Containers the transcription API accepts as-is (no ffmpeg needed). */
+export type SttFormat = "wav" | "mp3" | "webm" | "m4a" | "ogg";
+
+// Speech-to-text model. Overridable per deploy (STT_MODEL) so a faster model
+// can be trialled without a code change; the default stays the accurate one.
+export const STT_MODEL = process.env.STT_MODEL || "gpt-4o-transcribe";
+
 /**
- * Speech-to-Text: Transcribes audio using dedicated transcription model.
- * Uses gpt-4o-mini-transcribe for accurate transcription.
+ * Speech-to-Text: Transcribes audio using the dedicated transcription model.
  */
 export async function speechToText(
   audioBuffer: Buffer,
-  format: "wav" | "mp3" | "webm" = "wav",
+  format: SttFormat = "wav",
   /**
    * Optional ISO-639-1 hint ("ru" | "en" | "kk"). Omitted → auto-detect (old
    * behaviour). Passing it notably improves accuracy, especially for Kazakh.
@@ -357,10 +374,36 @@ export async function speechToText(
   const file = await toFile(audioBuffer, `audio.${format}`);
   const response = await openai.audio.transcriptions.create({
     file,
-    model: "gpt-4o-transcribe",
+    model: STT_MODEL,
     ...(language ? { language } : {}),
   });
   return response.text;
+}
+
+/**
+ * Transcribe the upload as it arrived — the phone's m4a, the browser's webm —
+ * instead of converting it to WAV first: the API accepts these containers, so
+ * the ffmpeg round-trip (temp files + a process spawn) is skipped. Unknown
+ * formats, or an upload the API refuses, fall back to the old WAV path, so
+ * the result is never worse than before.
+ */
+export async function speechToTextFast(raw: Buffer, language?: string): Promise<string> {
+  const detected = detectAudioFormat(raw);
+  const direct: SttFormat | null =
+    detected === "mp4" ? "m4a" : detected === "unknown" ? null : detected;
+  if (direct) {
+    try {
+      return await speechToText(raw, direct, language);
+    } catch (err: any) {
+      // A rejected file (4xx) → retry converted. Anything else (network,
+      // 5xx, auth) would fail the same way again, so let it surface.
+      const status = err?.status ?? err?.response?.status;
+      if (!(typeof status === "number" && status >= 400 && status < 500)) throw err;
+      console.warn(`[stt] direct ${direct} rejected (${status}) — retrying as WAV`);
+    }
+  }
+  const { buffer, format } = await ensureCompatibleFormat(raw);
+  return speechToText(buffer, format, language);
 }
 
 /**

@@ -2,8 +2,126 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { speechToText, ensureCompatibleFormat, computeLoudness, synthesizeSpeech, type JennyVoice } from "./replit_integrations/audio/client";
-import { chatComplete } from "./llm";
+import { speechToTextFast, computeLoudness, synthesizeSpeech, detectAudioFormat, STT_MODEL, type JennyVoice } from "./replit_integrations/audio/client";
+import { chatComplete, CLAUDE_MODEL } from "./llm";
+
+// ── speech-analysis speed helpers ────────────────────────────────────────────
+
+/**
+ * Model for scoring speech (Show Time feedback, interview logic/eloquence).
+ * ANALYSIS_MODEL overrides it per deploy so a faster model can be trialled
+ * against the saved eval recordings; unset → the default model, as before.
+ */
+const ANALYSIS_MODEL = process.env.ANALYSIS_MODEL || undefined;
+/** Effort for those calls: ANALYSIS_EFFORT, else "low" for a trial model, else unset (as before). */
+const ANALYSIS_EFFORT = ((process.env.ANALYSIS_EFFORT as "low" | "medium" | "high" | undefined) || (ANALYSIS_MODEL ? "low" : undefined));
+
+/** Stage timer: `t.mark("stt")` … `t.log("transcribe")` → one log line. */
+function stageTimer() {
+  const t0 = Date.now();
+  let last = t0;
+  const parts: string[] = [];
+  return {
+    mark(name: string) {
+      const now = Date.now();
+      parts.push(`${name}=${now - last}ms`);
+      last = now;
+    },
+    /** Time since start, without starting a new stage. */
+    since(): number {
+      return Date.now() - t0;
+    },
+    log(route: string, extra = "") {
+      console.log(`[timing] ${route} ${parts.join(" ")} total=${Date.now() - t0}ms ${extra}`.trim());
+    },
+  };
+}
+
+/**
+ * Dev-only capture of real attempts for comparing models offline: with
+ * SAVE_EVAL_AUDIO=1 every analysed recording is written to eval-audio/
+ * (git-ignored) with what the server made of it. Off by default; never on in
+ * production unless someone sets the variable on purpose.
+ */
+const EVAL_DIR = path.resolve(process.cwd(), "eval-audio");
+function saveEvalSample(route: string, raw: Buffer, meta: Record<string, unknown>) {
+  if (process.env.SAVE_EVAL_AUDIO !== "1") return;
+  try {
+    fs.mkdirSync(EVAL_DIR, { recursive: true });
+    const fmt = detectAudioFormat(raw);
+    const ext = fmt === "mp4" ? "m4a" : fmt === "unknown" ? "bin" : fmt;
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const base = path.join(EVAL_DIR, `${stamp}-${route}`);
+    fs.writeFileSync(`${base}.${ext}`, raw);
+    fs.writeFileSync(
+      `${base}.json`,
+      JSON.stringify({ route, sttModel: STT_MODEL, analysisModel: ANALYSIS_MODEL ?? CLAUDE_MODEL, ...meta }, null, 2),
+    );
+  } catch (err) {
+    console.warn("[eval] could not save sample:", err);
+  }
+}
+
+/**
+ * Interview judgement: logic + eloquence on 0..10 and an optional one-line
+ * tip. Shared by /api/analyze-interview and /api/transcribe ({interview:true}).
+ * Throws on API errors (callers decide the fallback).
+ */
+async function judgeInterviewAnswer(
+  transcript: unknown,
+  lang: Lang,
+): Promise<{ logic: number; eloquence: number; tip?: string }> {
+  if (!transcript || typeof transcript !== "string" || transcript.trim().length < 4) {
+    // Nothing to score — neutral 6s so the analyzer can carry on.
+    return { logic: 6, eloquence: 6 };
+  }
+  const systemPrompt = lang !== "ru"
+    ? `You are a strict speech coach scoring an interview answer. Rate two qualities on a 0..10 scale:\n- logic: clarity of thought, structure (thesis → argument → conclusion), coherence.\n- eloquence: vocabulary range, precise wording, expressive style (penalize generic phrases & filler).\nReturn STRICTLY JSON: {"logic": <0-10>, "eloquence": <0-10>, "tip": "<one short coaching tip in English>"}`
+    : `Ты — строгий тренер по речи, оценивающий ответ на интервью. Оцени два качества по шкале 0..10:\n- logic: ясность мысли, структура (тезис → аргумент → вывод), связность.\n- eloquence: богатство словаря, точность формулировок, выразительность (штрафуй за шаблоны и слова-паразиты).\nВерни СТРОГО JSON: {"logic": <0-10>, "eloquence": <0-10>, "tip": "<один короткий совет на русском>"}`;
+  const out = await chatComplete({
+    system: withLangDirective(lang, systemPrompt),
+    user: transcript.trim().slice(0, 4000),
+    maxTokens: tokensFor(lang, 200),
+    json: true,
+    model: ANALYSIS_MODEL,
+    effort: ANALYSIS_EFFORT,
+  });
+  let parsed: any = {};
+  try { parsed = JSON.parse(out || "{}"); } catch { parsed = {}; }
+  const clamp = (v: any) => {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return 6;
+    return Math.min(10, Math.max(0, n));
+  };
+  return {
+    logic: clamp(parsed.logic),
+    eloquence: clamp(parsed.eloquence),
+    tip: typeof parsed.tip === "string" ? parsed.tip : undefined,
+  };
+}
+
+const NO_LOUDNESS = { ok: false, rms: 0, peak: 0, meanVolumeDb: -Infinity, maxVolumeDb: -Infinity };
+
+/**
+ * Transcribe + measure loudness of one upload, in parallel, straight from the
+ * original file (no WAV conversion — see speechToTextFast / computeLoudness).
+ * Loudness is measured as mono 16 kHz, exactly as after the old conversion.
+ */
+async function transcribeAndMeasure(raw: Buffer, lang: string | undefined, t: ReturnType<typeof stageTimer>) {
+  let sttMs = 0;
+  let loudMs = 0;
+  const [transcript, loudness] = await Promise.all([
+    speechToTextFast(raw, lang).then((s) => { sttMs = t.since(); return s; }),
+    computeLoudness(raw, { asSpeechWav: true })
+      .catch((err) => {
+        console.warn("computeLoudness failed:", err);
+        return NO_LOUDNESS;
+      })
+      .then((l) => { loudMs = t.since(); return l; }),
+  ]);
+  t.mark("stt+loudness");
+  return { transcript: transcript ?? "", loudness, sttMs, loudMs };
+}
 
 const JOURNALIST_NAME = "JENNY";
 const MAX_QUESTIONS   = 5;
@@ -518,16 +636,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           audioMaxVolumeDb: null,
         });
       }
-      const { buffer, format } = await ensureCompatibleFormat(rawBuffer);
-      // Run transcription and loudness measurement in parallel — they both
-      // operate on the same converted buffer and don't depend on each other.
-      const [transcript, loudness] = await Promise.all([
-        speechToText(buffer, format, sttLang),
-        computeLoudness(buffer).catch((err) => {
-          console.warn("computeLoudness failed:", err);
-          return { ok: false, rms: 0, peak: 0, meanVolumeDb: -Infinity, maxVolumeDb: -Infinity };
-        }),
-      ]);
+      // Transcription and loudness in parallel, both straight from the upload.
+      const t = stageTimer();
+      const { transcript, loudness, sttMs, loudMs } = await transcribeAndMeasure(rawBuffer, sttLang, t);
+      // Interview levels also need logic/eloquence judged from the transcript.
+      // Doing it here, in the same request, saves the phone a second round
+      // trip (it used to call /api/analyze-interview right after this).
+      const lang = getLang(req.body);
+      const interview = req.body?.interview === true
+        ? await judgeInterviewAnswer(transcript, lang).catch((err) => {
+            console.warn("interview judge failed:", err);
+            return null;
+          })
+        : undefined;
+      if (interview !== undefined) t.mark("interview");
+      t.log("transcribe", `bytes=${rawBuffer.length} dur=${durationOut}s stt=${sttMs}ms loud=${loudMs}ms`);
+      saveEvalSample("transcribe", rawBuffer, {
+        lang: sttLang ?? null, durationSec: durationOut, transcript, loudness, interview,
+      });
       // When loudness analysis failed (ffmpeg crash, non-zero exit, no
       // parseable output) return null so the client falls back to the
       // duration heuristic instead of mistaking the failure for silence.
@@ -541,6 +667,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         audioPeak: loudness.ok ? loudness.peak : null,
         audioMeanVolumeDb: loudness.ok ? dbOrNull(loudness.meanVolumeDb) : null,
         audioMaxVolumeDb: loudness.ok ? dbOrNull(loudness.maxVolumeDb) : null,
+        // Only when asked for (interview levels); null = the judge failed.
+        ...(interview !== undefined ? { interview } : {}),
       });
     } catch (err) {
       console.error("transcribe error:", err);
@@ -577,31 +705,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { transcript } = req.body;
       const lang = getLang(req.body);
-      if (!transcript || typeof transcript !== "string" || transcript.trim().length < 4) {
-        // Nothing to score — return neutral 6s so the analyzer can carry on.
-        return res.json({ logic: 6, eloquence: 6 });
-      }
-      const systemPrompt = lang !== "ru"
-        ? `You are a strict speech coach scoring an interview answer. Rate two qualities on a 0..10 scale:\n- logic: clarity of thought, structure (thesis → argument → conclusion), coherence.\n- eloquence: vocabulary range, precise wording, expressive style (penalize generic phrases & filler).\nReturn STRICTLY JSON: {"logic": <0-10>, "eloquence": <0-10>, "tip": "<one short coaching tip in English>"}`
-        : `Ты — строгий тренер по речи, оценивающий ответ на интервью. Оцени два качества по шкале 0..10:\n- logic: ясность мысли, структура (тезис → аргумент → вывод), связность.\n- eloquence: богатство словаря, точность формулировок, выразительность (штрафуй за шаблоны и слова-паразиты).\nВерни СТРОГО JSON: {"logic": <0-10>, "eloquence": <0-10>, "tip": "<один короткий совет на русском>"}`;
-      const out = await chatComplete({
-        system: withLangDirective(lang, systemPrompt),
-        user: transcript.trim().slice(0, 4000),
-        maxTokens: tokensFor(lang, 200),
-        json: true,
-      });
-      let parsed: any = {};
-      try { parsed = JSON.parse(out || "{}"); } catch { parsed = {}; }
-      const clamp = (v: any) => {
-        const n = Number(v);
-        if (!Number.isFinite(n)) return 6;
-        return Math.min(10, Math.max(0, n));
-      };
-      return res.json({
-        logic: clamp(parsed.logic),
-        eloquence: clamp(parsed.eloquence),
-        tip: typeof parsed.tip === "string" ? parsed.tip : undefined,
-      });
+      const t = stageTimer();
+      const result = await judgeInterviewAnswer(transcript, lang);
+      t.mark("llm");
+      t.log("analyze-interview");
+      return res.json(result);
     } catch (err) {
       console.error("analyze-interview error:", err);
       return res.status(500).json({ error: "Interview analysis failed" });
@@ -707,8 +815,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!audioBase64) return res.status(400).json({ error: "audioBase64 required" });
 
       const rawBuffer = Buffer.from(audioBase64, "base64");
-      const { buffer, format } = await ensureCompatibleFormat(rawBuffer);
-      const transcript = await speechToText(buffer, format, isLang(req.body?.lang) ? req.body.lang : undefined);
+      // Transcribe and measure loudness at the same time (they used to run
+      // one after the other), straight from the upload — no WAV conversion.
+      const t = stageTimer();
+      const { transcript, loudness: loud, sttMs, loudMs } = await transcribeAndMeasure(
+        rawBuffer, isLang(req.body?.lang) ? req.body.lang : undefined, t,
+      );
 
       const labels = L(lang, {
         en: { diction: "Diction", expressiveness: "Expressiveness", voice: "Voice", confidence: "Confidence" },
@@ -745,10 +857,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // --- Real measured signals so scoring is grounded, not guessed ---
-      // Acoustic loudness (volume/projection) straight from the audio.
-      const loud = await computeLoudness(buffer).catch(() => ({
-        ok: false, rms: 0, peak: 0, meanVolumeDb: -Infinity, maxVolumeDb: -Infinity,
-      }));
+      // Acoustic loudness (volume/projection): `loud`, measured above.
       // Speech rate (tempo) and filler density from the transcript + duration.
       const tokens = transcript.toLowerCase().split(WORD_SPLIT_RE).filter(Boolean);
       const wordCount = tokens.length;
@@ -831,10 +940,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user: `${topicLabel}: "${title ?? (lang !== "ru" ? "public speech" : "публичное выступление")}"\n\n${signals}\n\n${transcriptLabel}:\n${transcript}`,
         maxTokens: tokensFor(lang, 400),
         json: true,
+        model: ANALYSIS_MODEL,
+        effort: ANALYSIS_EFFORT,
       });
+      t.mark("llm");
+      t.log("analyze-speech", `bytes=${rawBuffer.length} stt=${sttMs}ms loud=${loudMs}ms lang=${lang}`);
 
       let parsed: any = {};
       try { parsed = JSON.parse(out || "{}"); } catch { parsed = {}; }
+      saveEvalSample("analyze-speech", rawBuffer, {
+        lang, title: title ?? null, moduleNumber: moduleNumber ?? null, durationSec: dur,
+        scriptText, transcript, loudness: loud, signals, result: parsed,
+      });
 
       const stars = Math.min(3, Math.max(1, Math.round(parsed.stars ?? 2))) as 1 | 2 | 3;
       const scoreMap: Record<1 | 2 | 3, number> = { 1: 4, 2: 7, 3: 10 };
@@ -937,8 +1054,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[answer] session=${sessionId} q=${session.questionIndex + 1}/${MAX_QUESTIONS}`);
 
       const rawBuffer = Buffer.from(audioBase64, "base64");
-      const { buffer, format } = await ensureCompatibleFormat(rawBuffer);
-      const transcript = await speechToText(buffer, format, lang);
+      const t = stageTimer();
+      const transcript = await speechToTextFast(rawBuffer, lang);
+      t.mark("stt");
+      t.log("interview/answer", `bytes=${rawBuffer.length}`);
 
       if (!transcript || transcript.trim().length < 3) {
         const emptyFeedback = L(lang, {

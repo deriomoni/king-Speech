@@ -42,3 +42,4 @@ yarn-error.*
 .vercel
 
 .env
+eval-audio/
