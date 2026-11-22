@@ -132,15 +132,13 @@ export default function CheatSheetScreen() {
         <Animated.View entering={FadeIn.duration(400)} style={{ gap: rs(10) }}>
           {/* Set like the King Speech logo: Geologica Bold, tight tracking,
               stretched a little in height (scaleY; the margin makes room). */}
-          {lang === "kk" ? (
-            <Text style={[styles.hero, styles.heroTall, { color: colors.text, fontSize: rs(44), lineHeight: rs(48), letterSpacing: -rs(1.8), marginBottom: rs(48) * 2 * (HERO_STRETCH - 1) }]}>
-              {"Жылдам\nдайындық"}
-            </Text>
-          ) : (
-            <Text style={[styles.hero, styles.heroTall, { color: colors.text, fontSize: rs(43), lineHeight: rs(50), letterSpacing: -rs(1.7), marginBottom: rs(50) * (HERO_STRETCH - 1) }]}>
-              Get Ready
-            </Text>
-          )}
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            style={[styles.hero, styles.heroTall, { color: colors.text, fontSize: rs(43), lineHeight: rs(50), letterSpacing: -rs(1.7), marginBottom: rs(50) * (HERO_STRETCH - 1) }]}
+          >
+            {pickLang(lang, { ru: "Приготовься", en: "Get Ready", kk: "Дайындал" })}
+          </Text>
           <Text style={[styles.heroSub, { color: colors.textSecondary }]}>
             {dailyText}
           </Text>
