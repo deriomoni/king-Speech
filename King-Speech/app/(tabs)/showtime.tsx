@@ -65,7 +65,8 @@ export default function ShowTimeScreen() {
   // Figma tokens not in ThemeContext.
   const stroke = isLight ? "rgba(38,38,40,0.08)" : "rgba(240,238,233,0.06)"; // stroke/shape
   const inkFaint = isLight ? "rgba(38,38,40,0.35)" : "rgba(240,238,233,0.35)"; // showtime/ink-faint
-  const bgMid = isLight ? c.bgSecondary : "#2E2E30"; // showtime/bg-mid
+  // dark: plain app background, like every other screen (the grey mid band looked washed out)
+  const bgMid = isLight ? c.bgSecondary : c.bg;
 
   const [query, setQuery] = useState("");
   const [activeCat, setActiveCat] = useState<ThemeCategoryId>("popular");

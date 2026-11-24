@@ -68,8 +68,8 @@ const TAB_TOKENS = {
     topHighlight: "rgba(240,238,233,0.14)", // tab/highlight
     border: "rgba(240,238,233,0.06)", // tab/border
     inactive: "#81807F", // tab/icon-inactive
-    active: "#FFD857", // tab/icon-active
-    shadowColor: "rgba(255,216,87,0.22)", // tab/shadow
+    active: "#F0EEE9", // active tab = white ink (was gold)
+    shadowColor: "rgba(0,0,0,0.35)", // tab/shadow (neutral, no gold glow)
   },
   light: {
     barBg: "#FAF9F6",
