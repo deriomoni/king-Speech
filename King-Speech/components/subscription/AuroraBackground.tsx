@@ -39,7 +39,7 @@ const BANDS = [
 const STOPS = [...BANDS, ...BANDS.slice(1), ...BANDS.slice(1)];
 const LOCS = STOPS.map((_, i) => i / (STOPS.length - 1));
 
-const COLUMNS = 36;
+const COLUMNS = 72;
 const LOOP_MS = 18000;
 
 function Column({
@@ -65,9 +65,9 @@ function Column({
   });
   return (
     <Animated.View
-      style={[{ position: "absolute", top: 0, left: i * colW, width: colW + 1, height: period * 3 }, style]}
+      style={[{ position: "absolute", top: 0, left: Math.floor(i * colW), width: Math.ceil(colW) + 1, height: period * 3 }, style]}
     >
-      <LinearGradient colors={STOPS as unknown as string[]} locations={LOCS} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={STOPS as unknown as readonly [string, string, ...string[]]} locations={LOCS} style={StyleSheet.absoluteFill} />
     </Animated.View>
   );
 }

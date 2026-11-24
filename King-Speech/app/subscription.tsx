@@ -19,6 +19,7 @@ import { rs } from "@/lib/responsive";
 import { useScreenMusic } from "@/lib/music";
 import { DARK } from "@/context/ThemeContext";
 import AuroraBackground from "@/components/subscription/AuroraBackground";
+import { APRICOT, FreePlanRow, GlassPlanCard } from "@/components/subscription/GlassPlan";
 import { useLang, pickLang } from "@/context/LangContext";
 import AppDialog from "@/components/AppDialog";
 import CoinIcon from "@/components/CoinIcon";
@@ -123,10 +124,10 @@ const STR = {
   free: { ru: "Бесплатный", en: "Free", kk: "Тегін" },
   current: { ru: "ТЕКУЩИЙ", en: "CURRENT", kk: "ҚАЗІРГІ" },
   forever: { ru: "навсегда", en: "forever", kk: "мәңгі" },
-  freeItems: {
-    ru: ["5 уровней пути", "Разминка и скороговорки", "3 темы Show Time", "Базовый разбор речи"],
-    en: ["5 path levels", "Warm-ups and tongue twisters", "3 Show Time topics", "Basic speech analysis"],
-    kk: ["Жолдың 5 деңгейі", "Жаттығулар мен тіл бұрауыштар", "Сахна уақытының 3 тақырыбы", "Сөйлеуді негізгі талдау"],
+  freeNote: {
+    ru: "5 уровней пути · 3 темы Show Time · базовый разбор",
+    en: "5 path levels · 3 Show Time topics · basic analysis",
+    kk: "Жолдың 5 деңгейі · Show Time-ның 3 тақырыбы · негізгі талдау",
   },
   royal: { ru: "Королевский", en: "Royal", kk: "Патша" },
   popular: { ru: "ПОПУЛЯРНЫЙ", en: "POPULAR", kk: "ТАНЫМАЛ" },
@@ -143,9 +144,24 @@ const STR = {
     kk: "Жылдық төлемде айына ≈ $3.33",
   },
   royalItems: {
-    ru: ["Все 67 модулей пути", "Все темы Show Time и Королевские манеры", "Подробный ИИ-разбор речи", "Без рекламы"],
-    en: ["All 67 path modules", "All Show Time topics and Royal manners", "Detailed AI speech analysis", "No ads"],
-    kk: ["Жолдың барлық 67 модулі", "Сахна уақытының барлық тақырыбы мен Корольдік әдеп", "Сөйлеуді ЖИ-мен толық талдау", "Жарнамасыз"],
+    ru: [
+      { title: "Весь путь — 67 модулей", detail: "От первой уверенной фразы до выступления без бумажки" },
+      { title: "ИИ-разбор каждой записи", detail: "Темп, паузы, слова-паразиты и чёткость — и что исправить" },
+      { title: "Все темы Show Time", detail: "Репетируй выступление перед живым залом" },
+      { title: "«Королевские манеры» и без рекламы", detail: "Этикет и подача — без отвлечений" },
+    ],
+    en: [
+      { title: "The whole path — 67 modules", detail: "From your first confident line to speaking without notes" },
+      { title: "AI review of every recording", detail: "Pace, pauses, filler words and clarity — and what to fix" },
+      { title: "Every Show Time topic", detail: "Rehearse your talk in front of a live audience" },
+      { title: "Royal manners, no ads", detail: "Etiquette and delivery — no distractions" },
+    ],
+    kk: [
+      { title: "Бүкіл жол — 67 модуль", detail: "Алғашқы сенімді сөйлемнен қағазсыз сөйлеуге дейін" },
+      { title: "Әр жазбаны ЖИ талдайды", detail: "Қарқын, үзіліс, арам сөздер мен анықтық — және не түзету керек" },
+      { title: "Show Time-ның барлық тақырыбы", detail: "Сөзіңізді тірі залдың алдында қайталаңыз" },
+      { title: "«Корольдік әдеп», жарнамасыз", detail: "Әдеп пен мәнер — ештеңе алаңдатпайды" },
+    ],
   },
   emperor: { ru: "Император", en: "Emperor", kk: "Император" },
   maximum: { ru: "МАКСИМУМ", en: "MAXIMUM", kk: "МАКСИМУМ" },
@@ -161,25 +177,25 @@ const STR = {
   },
   emperorItems: {
     ru: [
-      "Всё из Королевского",
-      "Личный ИИ-коуч и план тренировок",
-      "Свои темы и сценарии",
-      "Эксклюзивные награды и рамки",
-      "x2 монеты за каждый уровень",
+      { title: "Всё, что есть в Королевском", detail: "" },
+      { title: "Личный ИИ-коуч", detail: "Видит твои слабые места и каждый день даёт план тренировки" },
+      { title: "Свои темы и сценарии", detail: "Загрузи реальное выступление и отрепетируй его перед залом" },
+      { title: "x2 монеты за каждый уровень", detail: "Быстрее открываешь подсказки и бонусы" },
+      { title: "Эксклюзивные награды и рамки", detail: "Видно всем, кто смотрит твой профиль" },
     ],
     en: [
-      "Everything in Royal",
-      "Personal AI coach and training plan",
-      "Your own topics and scripts",
-      "Exclusive awards and frames",
-      "x2 coins for every level",
+      { title: "Everything in Royal", detail: "" },
+      { title: "Personal AI coach", detail: "Spots your weak points and gives you a training plan every day" },
+      { title: "Your own topics and scripts", detail: "Upload your real talk and rehearse it in front of the audience" },
+      { title: "x2 coins for every level", detail: "Unlock hints and bonuses faster" },
+      { title: "Exclusive awards and frames", detail: "Seen by everyone who views your profile" },
     ],
     kk: [
-      "Патша жоспарындағының бәрі",
-      "Жеке ЖИ-коуч және жаттығу жоспары",
-      "Өз тақырыптарыңыз бен сценарийлеріңіз",
-      "Эксклюзив марапаттар мен жақтаулар",
-      "Әр деңгей үшін x2 монета",
+      { title: "Патша жоспарындағының бәрі", detail: "" },
+      { title: "Жеке ЖИ-коуч", detail: "Әлсіз тұстарыңызды көріп, күн сайын жаттығу жоспарын береді" },
+      { title: "Өз тақырыптарыңыз бен сценарийлеріңіз", detail: "Нақты сөзіңізді жүктеп, залдың алдында қайталаңыз" },
+      { title: "Әр деңгей үшін x2 монета", detail: "Кеңестер мен бонустарды тезірек ашасыз" },
+      { title: "Эксклюзив марапаттар мен жақтаулар", detail: "Профиліңізді көргендердің бәріне көрінеді" },
     ],
   },
   close: { ru: "Закрыть", en: "Close", kk: "Жабу" },
@@ -191,8 +207,7 @@ const STR = {
     kk: "King Speech-тің барлық сахнасын, тақырыбы мен талдауын ашыңыз",
   },
   currentPlan: { ru: "Текущий план", en: "Current plan", kk: "Қазіргі жоспар" },
-  goRoyal: { ru: "Стать Королём", en: "Go Royal", kk: "Патша болу" },
-  goEmperor: { ru: "Стать Императором", en: "Go Emperor", kk: "Император болу" },
+  buy: { ru: "Приобрести", en: "Get it", kk: "Сатып алу" },
   promoTitle: { ru: "Есть промокод?", en: "Have a promo code?", kk: "Промокодыңыз бар ма?" },
   promoPlaceholder: { ru: "Введите промокод", en: "Enter promo code", kk: "Промокодты енгізіңіз" },
   apply: { ru: "Применить", en: "Apply", kk: "Қолдану" },
@@ -243,167 +258,56 @@ export default function SubscriptionScreen() {
     else router.replace("/(tabs)/profile" as any);
   };
 
-  // ── Free card (Figma 132:192) ────────────────────────────────────────────
   const freeCard = (
-    <View
-      style={[
-        styles.card,
-        styles.cardShadow,
-        !isDark && { shadowOpacity: 0.18 },
-        isDark
-          ? { backgroundColor: "#343435", borderColor: "rgba(240,238,233,0.12)" }
-          : { backgroundColor: theme.cardElevated, borderColor: theme.cardBorder },
-        { padding: rs(19), paddingBottom: rs(19.5) },
-      ]}
-    >
-      <View style={styles.cardHead}>
-        <Text style={[styles.freeTitle, { color: theme.text }]}>{tr(STR.free)}</Text>
-        <Badge
-          label={tr(STR.current)}
-          bg={isDark ? "#4F4F4F" : "rgba(38,38,40,0.10)"}
-          color={theme.text}
-          style={{ marginTop: rs(4) }}
-        />
-      </View>
-      <View style={styles.priceRow}>
-        <Text style={[styles.bigPrice, { color: theme.text }]}>$0</Text>
-        <Text style={[styles.priceNote, { color: ink(0.55) }]}>{tr(STR.forever)}</Text>
-      </View>
-      <View style={{ marginTop: rs(19) }}>
-        <Checklist
-          tone="free"
-          color={ink(0.9)}
-          items={tr(STR.freeItems)}
-        />
-      </View>
-    </View>
+    <FreePlanRow title={tr(STR.free)} badge={tr(STR.current)} price="$0" note={tr(STR.freeNote)} />
   );
 
-  // ── Royal card (Figma 132:206) ───────────────────────────────────────────
+  // Royal: violet → fuchsia glass
   const royalCard = (
-    <View style={[styles.card, styles.cardShadow,
-        !isDark && { shadowOpacity: 0.18 }, { borderColor: "#FFF5D1", overflow: "hidden" }]}>
-      <LinearGradient
-        colors={["#FFED9E", "#FFD857", "#FABD33"]}
-        locations={[0, 0.393, 0.714]}
-        start={{ x: 0.2, y: 0 }}
-        end={{ x: 0.8, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-      {/* Crown watermark, top-right, rotated 12.77° */}
-      <View pointerEvents="none" style={styles.watermark}>
-        <SvgXml xml={CROWN_WATERMARK_SVG} width={rs(157.703)} height={rs(104.122)} />
-      </View>
-      {/* inset top highlight */}
-      <View pointerEvents="none" style={[styles.innerHighlight, { backgroundColor: "rgba(255,255,255,0.7)", height: rs(2) }]} />
-      <View style={{ padding: rs(19), paddingTop: rs(21), paddingBottom: rs(27.5) }}>
-        <View style={styles.cardHead}>
-          <Text style={[styles.planTitle, { color: INK }]}>{tr(STR.royal)}</Text>
-          <Badge label={tr(STR.popular)} star bg={INK} color={GOLD} style={{ marginTop: rs(4) }} />
-        </View>
-        <Text style={[styles.planSub, { color: "rgba(38,38,40,0.65)", marginTop: rs(6) }]}>
-          {tr(STR.royalSub)}
-        </Text>
-        <View style={styles.priceTiles}>
-          <PriceTile
-            variant="royal"
-            label={tr(STR.month)}
-            price="$4.99"
-            selected={royalPeriod === "month"}
-            onPress={() => setRoyalPeriod("month")}
-          />
-          <PriceTile
-            variant="royal"
-            label={tr(STR.year)}
-            price="$39.99"
-            save="−33%"
-            selected={royalPeriod === "year"}
-            onPress={() => setRoyalPeriod("year")}
-          />
-        </View>
-        <Text style={[styles.perMonth, { color: "rgba(38,38,40,0.6)" }]}>{tr(STR.royalPerMonth)}</Text>
-        <View style={{ marginTop: rs(13) }}>
-          <Checklist
-            tone="royal"
-            color="rgba(38,38,40,0.9)"
-            items={tr(STR.royalItems)}
-          />
-        </View>
-      </View>
-    </View>
+    <GlassPlanCard
+      title={tr(STR.royal)}
+      badge={tr(STR.popular)}
+      sub={tr(STR.royalSub)}
+      tint={["rgba(110,52,230,0.62)", "rgba(153,50,204,0.5)", "rgba(226,62,176,0.55)"]}
+      accent="#F7B6F0"
+      monthLabel={tr(STR.month)}
+      yearLabel={tr(STR.year)}
+      monthPrice="$4.99"
+      yearPrice="$39.99"
+      save="−33%"
+      period={royalPeriod}
+      onPeriod={setRoyalPeriod}
+      perMonth={tr(STR.royalPerMonth)}
+      items={tr(STR.royalItems)}
+      cta={tr(STR.buy)}
+      ctaColors={["#FFFFFF", "#FBE9FF"]}
+      ctaText="#3B0E5C"
+      onCta={() => showSoon()}
+    />
   );
 
-  // ── Emperor card (Figma 132:231) ─────────────────────────────────────────
+  // Emperor: orange → violet glass
   const emperorCard = (
-    <View
-      style={[
-        styles.card,
-        styles.cardShadow,
-        !isDark && { shadowOpacity: 0.18 },
-        { borderWidth: 4, borderColor: "rgba(255,242,191,0.9)", backgroundColor: "#2F2F31", overflow: "hidden" },
-      ]}
-    >
-      {/* radial gold glow, bottom-left */}
-      <Svg pointerEvents="none" style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 362 360">
-        <Defs>
-          <RadialGradient id="empGlow" cx="60.3" cy="278.2" rx="201.1" ry="163.6" gradientUnits="userSpaceOnUse">
-            <Stop offset="0" stopColor="#FFD857" stopOpacity="0.35" />
-            <Stop offset="1" stopColor="#FFD857" stopOpacity="0" />
-          </RadialGradient>
-        </Defs>
-        <Rect x="0" y="0" width="362" height="360" fill="url(#empGlow)" />
-      </Svg>
-      <LinearGradient
-        pointerEvents="none"
-        colors={["rgba(240,238,233,0.1)", "rgba(240,238,233,0)"]}
-        style={styles.sheen}
-      />
-      <View pointerEvents="none" style={[styles.innerHighlight, { backgroundColor: "rgba(240,238,233,0.2)", height: rs(1.5) }]} />
-      <View pointerEvents="none" style={{ position: "absolute", left: rs(4), top: rs(4) }}>
-        <SvgXml xml={EMPEROR_CROWN_SVG} width={rs(54)} height={rs(41.9964)} />
-      </View>
-      <View pointerEvents="none" style={{ position: "absolute", left: rs(286), top: rs(56) }}>
-        <SvgXml xml={SPARKLE4_SVG} width={rs(26)} height={rs(26)} />
-      </View>
-      <View pointerEvents="none" style={{ position: "absolute", left: rs(320), top: rs(136) }}>
-        <SvgXml xml={SPARKLE3_SVG} width={rs(23)} height={rs(23)} />
-      </View>
-      <View style={{ paddingHorizontal: rs(18), paddingTop: rs(18), paddingBottom: rs(24.5) }}>
-        <View style={styles.cardHead}>
-          <Text style={[styles.planTitle, { color: GOLD, marginLeft: rs(42) }]}>{tr(STR.emperor)}</Text>
-          <Badge label={tr(STR.maximum)} bg={GOLD} color={INK} style={{ marginTop: rs(6) }} />
-        </View>
-        <Text style={[styles.planSub, { color: "rgba(240,238,233,0.65)", marginTop: rs(7) }]}>
-          {tr(STR.emperorSub)}
-        </Text>
-        <View style={styles.priceTiles}>
-          <PriceTile
-            variant="emperor"
-            label={tr(STR.month)}
-            price="$9.99"
-            selected={emperorPeriod === "month"}
-            onPress={() => setEmperorPeriod("month")}
-          />
-          <PriceTile
-            variant="emperor"
-            label={tr(STR.year)}
-            price="$79.99"
-            save="−33%"
-            selected={emperorPeriod === "year"}
-            onPress={() => setEmperorPeriod("year")}
-          />
-        </View>
-        <Text style={[styles.perMonth, { color: "rgba(240,238,233,0.5)" }]}>{tr(STR.emperorPerMonth)}</Text>
-        <View style={{ marginTop: rs(13) }}>
-          <Checklist
-            tone="emperor"
-            color="rgba(240,238,233,0.9)"
-            items={tr(STR.emperorItems)}
-            trailing={<CoinIcon size={rs(17)} color={GOLD} style={{ marginLeft: rs(6) }} />}
-          />
-        </View>
-      </View>
-    </View>
+    <GlassPlanCard
+      title={tr(STR.emperor)}
+      badge={tr(STR.maximum)}
+      sub={tr(STR.emperorSub)}
+      tint={["rgba(255,128,64,0.6)", "rgba(220,70,120,0.5)", "rgba(120,40,200,0.6)"]}
+      accent={APRICOT}
+      monthLabel={tr(STR.month)}
+      yearLabel={tr(STR.year)}
+      monthPrice="$9.99"
+      yearPrice="$79.99"
+      save="−33%"
+      period={emperorPeriod}
+      onPeriod={setEmperorPeriod}
+      perMonth={tr(STR.emperorPerMonth)}
+      items={tr(STR.emperorItems)}
+      cta={tr(STR.buy)}
+      ctaColors={["#FFE9D6", APRICOT]}
+      ctaText="#3A1206"
+      onCta={() => showSoon()}
+    />
   );
 
   return (
@@ -428,63 +332,15 @@ export default function SubscriptionScreen() {
           </Pressable>
         </View>
 
-        {/* Hero crown + sparkles (positions relative to the screen centre) */}
-        <View style={styles.hero} pointerEvents="none">
-          <View style={[styles.heroAbs, { marginLeft: rs(-105), top: rs(-11) }]}>
-            <SvgXml xml={CROWN_GLOW_SVG} width={rs(210)} height={rs(188.213)} />
-          </View>
-          <View style={[styles.heroAbs, { marginLeft: rs(-92), top: rs(15) }]}>
-            <SvgXml xml={CROWN_SVG} width={rs(184)} height={rs(163.666)} />
-          </View>
-          <View style={[styles.heroAbs, { marginLeft: rs(-97), top: 0 }]}>
-            <SvgXml xml={SPARKLE0_SVG} width={rs(32)} height={rs(32)} />
-          </View>
-          <View style={[styles.heroAbs, { marginLeft: rs(73), top: rs(-8) }]}>
-            <SvgXml xml={SPARKLE1_SVG} width={rs(27)} height={rs(27)} />
-          </View>
-          <View style={[styles.heroAbs, { marginLeft: rs(91), top: rs(88) }]}>
-            <SvgXml xml={SPARKLE2_SVG} width={rs(25)} height={rs(25)} />
-          </View>
-          <View style={[styles.heroAbs, { marginLeft: rs(-113), top: rs(102) }]}>
-            <SvgXml xml={SPARKLE3_SVG} width={rs(23)} height={rs(23)} />
-          </View>
-        </View>
-
         <Text style={[styles.title, { color: theme.text }]}>{tr(STR.title)}</Text>
         <Text style={[styles.subtitle, { color: ink(0.7) }]}>
           {tr(STR.subtitle)}
         </Text>
 
         <View style={styles.plans}>
-          <PlanWithTray
-            card={freeCard}
-            disabled
-            trayLabel={tr(STR.currentPlan)}
-            trayLabelColor={theme.btnSecondaryText}
-            trayStyle={{
-              backgroundColor: theme.btnSecondary,
-              shadowColor: "#000",
-              shadowOpacity: 0.25,
-              shadowRadius: rs(4),
-              shadowOffset: { width: 0, height: rs(4) },
-            }}
-          />
-          <PlanWithTray
-            card={royalCard}
-            trayLabel={tr(STR.goRoyal)}
-            trayChevron
-            trayLabelColor={GOLD}
-            onTrayPress={() => showSoon()}
-            trayStyle={{ backgroundColor: "#262628", borderWidth: 2, borderColor: "#666666" }}
-          />
-          <PlanWithTray
-            card={emperorCard}
-            trayLabel={tr(STR.goEmperor)}
-            trayChevron
-            trayLabelColor={INK}
-            onTrayPress={() => showSoon()}
-            trayStyle={{ backgroundColor: GOLD, borderWidth: 4, borderColor: theme.ctaStroke, paddingBottom: rs(19) }}
-          />
+          {freeCard}
+          {royalCard}
+          {emperorCard}
         </View>
 
         {/* Promo code */}
@@ -602,6 +458,7 @@ const styles = StyleSheet.create({
   hero: { height: 162, alignSelf: "stretch" },
   heroAbs: { position: "absolute", left: "50%" },
   title: {
+    marginTop: 48,
     fontSize: 40,
     lineHeight: 44,
     fontFamily: "Geologica_900Black",
@@ -610,7 +467,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   subtitle: {
-    marginTop: 2,
+    marginTop: 10,
     fontSize: 15,
     lineHeight: 18,
     fontFamily: "Geologica_600SemiBold",
@@ -618,7 +475,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     maxWidth: 322,
   },
-  plans: { marginTop: 24, paddingHorizontal: 20, gap: 24 },
+  plans: { marginTop: 28, paddingHorizontal: 20, gap: 18 },
   card: { borderRadius: 22, borderWidth: 2 },
   cardShadow: {
     shadowColor: "#000",
