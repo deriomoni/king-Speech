@@ -271,6 +271,26 @@ function useIntroRise(intro: SharedValue<number> | undefined, ord: number) {
     return { opacity: p, transform: [{ translateY: native ? (1 - e) * 26 : 0 }] };
   }, [ord]);
 }
+/** How far a brick's face is still pressed in (1 = fully sunk) during the
+ *  intro: it appears pressed, then springs out — with a small overshoot — to
+ *  its usual shape, like a brick released after a tap. */
+function introSinkAt(intro: number, ord: number) {
+  "worklet";
+  if (ord < 0 || intro < 0) return 0;
+  const p = introClamp((intro - ord * INTRO.brickStep - 140) / INTRO.brickDur);
+  // easeOutBack: 1 → 0 with a little bounce past the rest position
+  const c1 = 1.9;
+  const c3 = c1 + 1;
+  const back = 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2);
+  return 1 - back;
+}
+/** Brick fading in (fast) for the pressed-in pop. */
+function useIntroFadeIn(intro: SharedValue<number> | undefined, ord: number) {
+  return useAnimatedStyle(() => {
+    if (!intro || ord < 0 || intro.value < 0) return { opacity: 1 };
+    return { opacity: introClamp((intro.value - ord * INTRO.brickStep) / 160) };
+  }, [ord]);
+}
 /** A level's name + icon stamped onto its brick. */
 function useIntroStamp(intro: SharedValue<number> | undefined, ord: number) {
   const native = Platform.OS !== "web";
@@ -413,7 +433,7 @@ function StepBlockBase({
   const entryStyle = useAnimatedStyle(() => ({
     opacity: entryOpacity.value,
   }));
-  const riseStyle = useIntroRise(intro, ord);
+  const riseStyle = useIntroFadeIn(intro, ord);
   const stampStyle = useIntroStamp(intro, ord);
 
   // Glow only on the single naturally-available step (never on overridden ones).
@@ -457,7 +477,11 @@ function StepBlockBase({
   const native = Platform.OS !== "web";
 
   const sinkDepth = rs(DEPTH) * 0.8;
-  const faceSinkStyle = useAnimatedStyle(() => ({ top: press.value * sinkDepth }));
+  const faceSinkStyle = useAnimatedStyle(() => {
+    // the press, or the new-rank intro pop (whichever is deeper)
+    const introSink = intro ? introSinkAt(intro.value, ord) : 0;
+    return { top: Math.max(press.value, introSink) * sinkDepth + Math.min(0, introSink) * sinkDepth };
+  }, [ord]);
   const tumbleStyle = useAnimatedStyle(() =>
     native
       ? {
