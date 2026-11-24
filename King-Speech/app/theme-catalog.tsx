@@ -68,9 +68,10 @@ export default function ThemeCatalogScreen() {
   const { width: winW } = useWindowDimensions();
 
   const stroke = isLight ? "rgba(38,38,40,0.08)" : "rgba(240,238,233,0.06)";
-  // Name plate under each cover: tucked behind the cover's rounded bottom so
-  // it shows in the squircle's corners — a shade off the card in either theme.
-  const plate = isLight ? "rgba(38,38,40,0.055)" : "rgba(240,238,233,0.07)";
+  // Name plate (like the reference's beige block): no card frame any more —
+  // the cover sits on top of a rounded plate that starts behind its lower part
+  // and shows in the squircle's bottom corners. Dark plate in dark, light in light.
+  const plate = isLight ? "#EFEDE8" : "#2A2A2C";
   const topPad = Platform.OS === "web" ? rs(54) : insets.top;
   const bottomPad = Platform.OS === "web" ? rs(34) : insets.bottom;
 
@@ -262,13 +263,13 @@ export default function ThemeCatalogScreen() {
                     onPress={() => pick(k)}
                     style={({ pressed }) => [
                       s.card,
-                      // square cover (inner width) + room for two title lines and the meta
-                      { width: cardW, height: cardW + rs(70), backgroundColor: c.card, borderColor: stroke, opacity: pressed ? 0.85 : 1 },
+                      // square cover + room for two title lines and the meta
+                      { width: cardW, height: cardW + rs(56), opacity: pressed ? 0.85 : 1 },
                     ]}
                   >
                     <View
                       pointerEvents="none"
-                      style={[s.plate, { top: rs(6) + (cardW - rs(12)) * 0.8, backgroundColor: plate }]}
+                      style={[s.plate, { top: cardW * 0.72, backgroundColor: plate, borderColor: stroke }]}
                     />
                     <View
                       ref={(n) => {
@@ -388,7 +389,7 @@ const s = StyleSheet.create({
   sectionCount: { fontSize: 13, fontFamily: "Geologica_600SemiBold" },
 
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  card: { borderRadius: 22, borderWidth: 2, padding: 6, overflow: "hidden" },
+  card: {},
   photo: { position: "absolute", left: 0, top: 0, right: 0, bottom: 0, width: "100%", height: "100%" },
   cover: { aspectRatio: 1 },
   coverOrb: {
@@ -400,8 +401,8 @@ const s = StyleSheet.create({
     borderRadius: 55,
     backgroundColor: "rgba(255,255,255,0.18)",
   },
-  plate: { position: "absolute", left: 6, right: 6, bottom: 6, borderRadius: 16 },
-  cardTitle: { fontSize: 15, lineHeight: 18, fontFamily: "Geologica_700Bold", marginTop: 10, marginHorizontal: 6 },
-  cardMeta: { position: "absolute", left: 12, bottom: 12, fontSize: 12, fontFamily: "Geologica_600SemiBold" },
+  plate: { position: "absolute", left: 0, right: 0, bottom: 0, borderRadius: 22, borderWidth: 1 },
+  cardTitle: { fontSize: 13, lineHeight: 16, fontFamily: "Geologica_700Bold", marginTop: 9, marginHorizontal: 12 },
+  cardMeta: { position: "absolute", left: 12, bottom: 10, fontSize: 10, fontFamily: "Geologica_600SemiBold" },
   empty: { fontSize: 13, fontFamily: "Geologica_600SemiBold", marginTop: 24, textAlign: "center" },
 });
