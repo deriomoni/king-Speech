@@ -28,7 +28,8 @@ import { useTheme } from "@/context/ThemeContext";
 import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
 import { PlayTriangleIcon, SearchIcon } from "@/components/showtime/ShowTimeIcons";
 import { openShowTimeStage } from "@/components/showtime/useShowTimeEntry";
-import { showtimeCover } from "@/constants/showtimeCovers";
+import { showtimeCover, showtimeCoverFocusY } from "@/constants/showtimeCovers";
+import CoverImage from "@/components/showtime/CoverImage";
 import { CoverFlight, previewRect, type CoverRect } from "@/components/showtime/CoverFlight";
 import { markFlightLaunch, subscribeFlightReturn } from "@/components/showtime/coverFlightStore";
 import { THEME_CATEGORIES, categoryOf, type ThemeCategoryId } from "@/components/showtime/themeCategories";
@@ -216,7 +217,7 @@ export default function ThemeCatalogScreen() {
               onPress={() => pick(featuredKey, "featured", rs(24))}
               style={s.featured}
             >
-              <Image source={showtimeCover(featuredKey)} style={s.photo} resizeMode="cover" />
+              <CoverImage source={showtimeCover(featuredKey)} focusY={showtimeCoverFocusY(featuredKey)} />
               <LinearGradient
                 colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.6)"]}
                 style={s.featuredBand}
@@ -274,7 +275,7 @@ export default function ThemeCatalogScreen() {
                       collapsable={false}
                       style={s.cover}
                     >
-                      <Image source={showtimeCover(k)} style={s.photo} resizeMode="cover" />
+                      <CoverImage source={showtimeCover(k)} focusY={showtimeCoverFocusY(k)} />
                     </View>
                     <Text style={[s.cardTitle, { color: c.text }]} numberOfLines={2}>
                       {t.title}

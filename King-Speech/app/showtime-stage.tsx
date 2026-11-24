@@ -50,7 +50,8 @@ import CoinIcon from "@/components/CoinIcon";
 import { SvgXml } from "react-native-svg";
 import { useTheme } from "@/context/ThemeContext";
 import { categoryOf, THEME_CATEGORIES } from "@/components/showtime/themeCategories";
-import { showtimeCover, showtimeCoverCredit } from "@/constants/showtimeCovers";
+import { showtimeCover, showtimeCoverCredit, showtimeCoverFocusY } from "@/constants/showtimeCovers";
+import CoverImage from "@/components/showtime/CoverImage";
 import { clearFlightLaunch, isFlightLanding, requestFlightReturn } from "@/components/showtime/coverFlightStore";
 import { LiveAudience, HALL_RATIO } from "@/components/audience/LiveAudience";
 import { OVATION_SEC } from "@/components/audience/scene";
@@ -5469,7 +5470,7 @@ export default function ShowtimeStageScreen() {
               entering={flightLanding ? undefined : FadeIn.duration(450)}
               style={[s.pvArt, { backgroundColor: isDarkUi ? "#2E2E30" : "#E8E6E1" }]}
             >
-              <Image source={showtimeCover(levelId)} style={s.pvPhoto} resizeMode="cover" />
+              <CoverImage source={showtimeCover(levelId)} focusY={showtimeCoverFocusY(levelId)} />
             </Animated.View>
 
             {/* The rest comes in one block after another. */}
