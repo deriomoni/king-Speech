@@ -31,6 +31,7 @@ import { LinearGradient as ExpoLinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
+import { playUi } from "@/lib/uiSound";
 import { router } from "expo-router";
 import Colors from "@/constants/colors";
 import {
@@ -497,8 +498,10 @@ function StepBlockBase({
   const handlePressIn = () => {
     if (isLocked) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      playUi("locked");
       return;
     }
+    playUi("tapPrimary");
     press.value = withTiming(1, { duration: 90, easing: Easing.out(Easing.quad) });
     if (native) tiltX.value = withTiming(10, { duration: 90 });
     if (Platform.OS !== "web") {

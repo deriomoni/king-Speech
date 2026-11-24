@@ -17,6 +17,7 @@ import {
   Stack,
   useRouter,
   useSegments,
+  useNavigationContainerRef,
   ThemeProvider as NavThemeProvider,
   DarkTheme as NavDarkTheme,
   DefaultTheme as NavDefaultTheme,
@@ -34,6 +35,7 @@ import Animated, {
   FadeIn,
 } from "react-native-reanimated";
 import { BrandSplash } from "@/components/BrandSplash";
+import { playUi, preloadUiSounds } from "@/lib/uiSound";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
 import { GameProvider, useGame } from "@/context/GameContext";
@@ -181,6 +183,23 @@ function ReadinessGate({
   // never see the real Google/Apple sign-in flow.
   const router = useRouter();
   const segments = useSegments();
+
+  // UI sounds: warm them up, and play «back» whenever a screen is popped off
+  // the root stack — by a button, a swipe or the hardware back key.
+  const navRef = useNavigationContainerRef();
+  useEffect(() => {
+    preloadUiSounds();
+  }, []);
+  useEffect(() => {
+    if (!ready) return;
+    let depth = -1;
+    const unsub = navRef.addListener("state", (e: any) => {
+      const n = e?.data?.state?.routes?.length ?? 0;
+      if (depth > 0 && n > 0 && n < depth) playUi("back");
+      depth = n;
+    });
+    return unsub;
+  }, [ready, navRef]);
   useEffect(() => {
     if (!ready) return;
     const u = auth.user;

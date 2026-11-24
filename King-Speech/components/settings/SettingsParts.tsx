@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SvgXml } from "react-native-svg";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import * as Haptics from "@/lib/haptics";
+import { playUi } from "@/lib/uiSound";
 import type { Theme } from "@/context/ThemeContext";
 import { rs } from "@/lib/responsive";
 
@@ -64,6 +65,7 @@ export function PressScale({
       onPressIn={() => {
         scale.value = withSpring(pressedScale, PRESS_SPRING);
         tapHaptic();
+        playUi("tapSecondary");
       }}
       onPressOut={() => {
         scale.value = withSpring(1, PRESS_SPRING);
@@ -103,6 +105,7 @@ export function GoldSwitch({
       hitSlop={rs(8)}
       onPress={() => {
         tapHaptic();
+        playUi(value ? "toggleOff" : "toggleOn");
         onValueChange(!value);
       }}
       style={[styles.switch, { backgroundColor: value ? theme.switchOn : theme.switchTrackOff }]}

@@ -4,6 +4,7 @@ import { Platform, Pressable, StyleSheet, View, type ColorValue } from "react-na
 import React from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "@/lib/haptics";
+import { playUi } from "@/lib/uiSound";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -110,6 +111,7 @@ function SonicTabBar({ state, emitter, navigateToTab, descriptors }: BottomTabBa
   if (tabBarHidden) return null;
 
   const press = (slot: Slot) => {
+    playUi("tabSwitch");
     if (Platform.OS !== "web") {
       Haptics.selectionAsync().catch(() => {});
     }

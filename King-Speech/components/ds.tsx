@@ -5,6 +5,7 @@
  * untouched per the brief) should compose from these primitives. They wrap
  * the right blur/glow/typography choices so individual screens stay short.
  */
+import { playUi } from "@/lib/uiSound";
 import React from "react";
 import {
   View,
@@ -255,7 +256,10 @@ export function PrimaryButton({
     <Animated.View style={[aStyle, style]}>
       <Pressable
         onPress={onPress}
-        onPressIn={() => (scale.value = withSpring(0.97, { damping: 18, stiffness: 280 }))}
+        onPressIn={() => {
+          scale.value = withSpring(0.97, { damping: 18, stiffness: 280 });
+          playUi("tapPrimary");
+        }}
         onPressOut={() => (scale.value = withSpring(1, { damping: 18, stiffness: 280 }))}
         disabled={disabled}
         testID={testID}
