@@ -217,12 +217,7 @@ export default function ThemeCatalogScreen() {
               onPress={() => pick(featuredKey, "featured", rs(24))}
               style={s.featured}
             >
-              <CoverImage source={showtimeCover(featuredKey)} focusY={showtimeCoverFocusY(featuredKey)} />
-              <LinearGradient
-                colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.6)"]}
-                style={s.featuredBand}
-                pointerEvents="none"
-              />
+              <CoverImage source={showtimeCover(featuredKey)} focusY={showtimeCoverFocusY(featuredKey)} shape="pillow" shadeFrom={40} />
               <View style={s.tag}>
                 <Text style={s.tagText}>{tr("ТЕМА НЕДЕЛИ", "TOPIC OF THE WEEK", "АПТА ТАҚЫРЫБЫ")}</Text>
               </View>
@@ -275,7 +270,7 @@ export default function ThemeCatalogScreen() {
                       collapsable={false}
                       style={s.cover}
                     >
-                      <CoverImage source={showtimeCover(k)} focusY={showtimeCoverFocusY(k)} />
+                      <CoverImage source={showtimeCover(k)} focusY={showtimeCoverFocusY(k)} shape="pillow" />
                     </View>
                     <Text style={[s.cardTitle, { color: c.text }]} numberOfLines={2}>
                       {t.title}
