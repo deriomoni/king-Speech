@@ -67,7 +67,7 @@ function Column({
     <Animated.View
       style={[{ position: "absolute", top: 0, left: Math.floor(i * colW), width: Math.ceil(colW) + 1, height: period * 3 }, style]}
     >
-      <LinearGradient colors={STOPS as unknown as readonly [string, string, ...string[]]} locations={LOCS} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={STOPS as unknown as readonly [string, string, ...string[]]} locations={LOCS as unknown as readonly [number, number, ...number[]]} style={StyleSheet.absoluteFill} />
     </Animated.View>
   );
 }
