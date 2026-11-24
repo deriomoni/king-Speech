@@ -19,7 +19,29 @@ import { rs } from "@/lib/responsive";
 import { useScreenMusic } from "@/lib/music";
 import { DARK } from "@/context/ThemeContext";
 import AuroraBackground from "@/components/subscription/AuroraBackground";
-import { LOGO_CROWN, LOGO_H, LOGO_KING_XML, LOGO_SPEECH_XML, LOGO_TEXT_BOX } from "@/assets/figma/settings/logoParts";
+import { LOGO_CROWN, LOGO_H, LOGO_KING_XML, LOGO_SPEECH_XML } from "@/assets/figma/settings/logoParts";
+
+// «King Speech» on ONE line, built from the stacked logo: «Speech» is moved up
+// onto «King»'s baseline and to its right. Logo units: «K» cap 1.095 → 22.855
+// (baseline), «Speech» baseline 47.73; «King» ends at x 122.33.
+const BRAND_INK = "rgba(240,238,233,0.92)";
+const inner = (xml: string) => xml.slice(xml.indexOf(">") + 1, xml.lastIndexOf("</svg>")).split("__FG__").join(BRAND_INK);
+const BRAND_DY = 47.73 - 22.855;
+const BRAND_DX = 122.33 + 6.5 - 67.6;
+const BRAND_VB = { x: 67.6, y: 0, w: 158.98 + BRAND_DX - 67.6 + 0.5, h: 29.2 };
+const BRAND_INLINE_XML =
+  `<svg viewBox="${BRAND_VB.x} ${BRAND_VB.y} ${BRAND_VB.w} ${BRAND_VB.h}" xmlns="http://www.w3.org/2000/svg">` +
+  inner(LOGO_KING_XML) +
+  `<g transform="translate(${BRAND_DX} ${-BRAND_DY})">${inner(LOGO_SPEECH_XML)}</g></svg>`;
+// subtitle is 15pt: Geologica caps ≈ 0.72em → scale the logo's 21.76-unit caps to that
+const BRAND_K = (15 * 0.72) / 21.76;
+const BRAND = {
+  w: rs(BRAND_VB.w * BRAND_K),
+  h: rs(BRAND_VB.h * BRAND_K),
+  // part of the wordmark below its baseline (the g / p tails)
+  descent: rs((BRAND_VB.h - 22.855) * BRAND_K),
+  crownH: rs(15 * 0.95),
+};
 import { APRICOT, FreePlanRow, GlassPlanCard } from "@/components/subscription/GlassPlan";
 import { useLang, pickLang } from "@/context/LangContext";
 import AppDialog from "@/components/AppDialog";
@@ -337,21 +359,20 @@ export default function SubscriptionScreen() {
         </View>
 
         <Text style={[styles.title, { color: theme.text }]}>{tr(STR.title)}</Text>
+        {/* subtitle + the brand inline: one-line «King Speech» wordmark sized to
+            the text's cap height, sitting on its baseline, then the crown */}
         <Text style={[styles.subtitle, { color: ink(0.7) }]}>
-          {tr(STR.subtitle)}
-        </Text>
-        {/* the brand: text wordmark, then the crown */}
-        <View style={styles.brandRow} accessibilityLabel="King Speech">
-          <View style={{ width: rs(30) * (LOGO_TEXT_BOX.w / LOGO_H), height: rs(30) }}>
-            <SvgXml xml={LOGO_KING_XML.split("__FG__").join("#F0EEE9")} width="100%" height="100%" style={StyleSheet.absoluteFill} />
-            <SvgXml xml={LOGO_SPEECH_XML.split("__FG__").join("#F0EEE9")} width="100%" height="100%" style={StyleSheet.absoluteFill} />
+          {tr(STR.subtitle)}{" "}
+          <View style={{ flexDirection: "row", alignItems: "flex-end", transform: [{ translateY: BRAND.descent }] }}>
+            <SvgXml xml={BRAND_INLINE_XML} width={BRAND.w} height={BRAND.h} />
+            <SvgXml
+              xml={LOGO_CROWN.xml.split("__FG__").join(BRAND_INK)}
+              width={BRAND.crownH * (LOGO_CROWN.w / LOGO_H)}
+              height={BRAND.crownH}
+              style={{ marginLeft: rs(5), marginBottom: BRAND.descent }}
+            />
           </View>
-          <SvgXml
-            xml={LOGO_CROWN.xml.split("__FG__").join("#F0EEE9")}
-            width={rs(30) * (LOGO_CROWN.w / LOGO_H)}
-            height={rs(30)}
-          />
-        </View>
+        </Text>
 
         <View style={styles.plans}>
           {freeCard}
@@ -469,7 +490,6 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     maxWidth: 322,
   },
-  brandRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 10 },
   plans: { marginTop: 28, paddingHorizontal: 20, gap: 18 },
   card: { borderRadius: 22, borderWidth: 2 },
   cardShadow: {
