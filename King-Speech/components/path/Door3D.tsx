@@ -361,7 +361,7 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
       )}
 
       {/* contact shadow: the door stands on the floor */}
-      <Ellipse cx={floorC[0]} cy={floorC[1] + 2} rx={118} ry={14} fill={`url(#${id("contact")})`} />
+      {!fast && <Ellipse cx={floorC[0]} cy={floorC[1] + 2} rx={118} ry={14} fill={`url(#${id("contact")})`} />}
 
       {/* the casing stands proud of the wall: a soft shadow behind it */}
       {!fast && <Polygon

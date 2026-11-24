@@ -166,7 +166,7 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
     ? T("Закрыть", "Close", "Жабу")
     : isFinal
       ? T("Вернуться на главный", "Return home", "Басты бетке оралу")
-      : T("Начать новый ранг", "Start the new rank", "Жаңа дәрежені бастау");
+      : T("Перейти на следующий ранг", "Go to the next rank", "Келесі дәрежеге өту");
 
   return (
     <View style={{ flex: 1, backgroundColor: bg }}>

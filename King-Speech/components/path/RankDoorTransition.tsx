@@ -10,7 +10,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Pressable, Platform, useWindowDimensions } from "react-native";
 import { LinearGradient as ExpoLinearGradient } from "expo-linear-gradient";
-import Svg, { Defs, G, Polygon, RadialGradient, Rect, Stop } from "react-native-svg";
+import Svg, { Defs, Ellipse, G, Polygon, RadialGradient, Rect, Stop } from "react-native-svg";
 import Animated, {
   Easing,
   cancelAnimation,
@@ -99,6 +99,9 @@ const RAYS = Array.from({ length: 11 }, (_, i) => ({
   spread: 0.05 + ((i * 7) % 5) * 0.012,
   len: 0.75 + ((i * 3) % 4) * 0.12,
 }));
+
+// [width ×, opacity] of the layers each soft ray is built from
+const RAY_SOFT: [number, number][] = [[2.6, 0.18], [1.9, 0.24], [1.35, 0.3], [0.8, 0.4]];
 
 const MOTE_BASE = 100;
 
@@ -246,6 +249,10 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
       transform: [{ translateX: (1 - s) * (px - W / 2) }, { translateY: (1 - s) * (py - H / 2) }, { scale: s }],
     };
   });
+  const auraStyle = useAnimatedStyle(() => {
+    const d = doorAt(Math.min(t.value, DOOR_STILL_AT));
+    return { opacity: 0.35 + 0.65 * d.light };
+  });
   const washStyle = useAnimatedStyle(() => {
     const d = doorAt(Math.min(t.value, DOOR_STILL_AT));
     const rayOp = clamp01((d.light - 0.7) / 0.3) * Math.min(1, d.open);
@@ -326,9 +333,14 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
                   const len = diag * 2.4;
                   const cx = px + W;
                   const cy = py + H;
-                  const p1 = [cx + Math.cos(r.a - r.spread) * len, cy + Math.sin(r.a - r.spread) * len];
-                  const p2 = [cx + Math.cos(r.a + r.spread) * len, cy + Math.sin(r.a + r.spread) * len];
-                  return <Polygon key={i} points={`${cx},${cy} ${p1[0]},${p1[1]} ${p2[0]},${p2[1]}`} fill="url(#rdtRay)" />;
+                  // a stack of ever wider, fainter wedges reads as a blurred
+                  // beam without an SVG blur filter (cheap on phones)
+                  return RAY_SOFT.map(([k, o], j) => {
+                    const sp = r.spread * k;
+                    const p1 = [cx + Math.cos(r.a - sp) * len, cy + Math.sin(r.a - sp) * len];
+                    const p2 = [cx + Math.cos(r.a + sp) * len, cy + Math.sin(r.a + sp) * len];
+                    return <Polygon key={`${i}-${j}`} points={`${cx},${cy} ${p1[0]},${p1[1]} ${p2[0]},${p2[1]}`} fill="url(#rdtRay)" opacity={o} />;
+                  });
                 })}
               </G>
             </Svg>
@@ -337,6 +349,20 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
 
         {/* the door — same camera as the room */}
         <Animated.View style={[StyleSheet.absoluteFill, cameraStyle]}>
+          {/* a bright aura round the door, swelling as its light does */}
+          <Animated.View style={[StyleSheet.absoluteFill, auraStyle]} pointerEvents="none">
+            <Svg width={W} height={H}>
+              <Defs>
+                <RadialGradient id="rdtAura" cx="50%" cy="50%" r="50%">
+                  <Stop offset="0" stopColor={LIGHT_CORE} stopOpacity={1} />
+                  <Stop offset="0.35" stopColor={palette.glow} stopOpacity={0.75} />
+                  <Stop offset="0.7" stopColor={palette.glow} stopOpacity={0.25} />
+                  <Stop offset="1" stopColor={palette.glow} stopOpacity={0} />
+                </RadialGradient>
+              </Defs>
+              <Ellipse cx={doorLeft + doorW / 2} cy={doorTop + doorH * 0.45} rx={doorW * 0.95} ry={doorH * 0.78} fill="url(#rdtAura)" />
+            </Svg>
+          </Animated.View>
           <View style={{ position: "absolute", left: doorLeft, top: doorTop }}>
             <Door3D
               width={doorW}
@@ -344,6 +370,7 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
               light={door.light}
               palette={palette}
               fast
+              floorLight={false}
             />
           </View>
         </Animated.View>
