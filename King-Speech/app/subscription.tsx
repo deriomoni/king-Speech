@@ -16,6 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, RadialGradient, Rect, Stop, SvgXml } from "react-native-svg";
 import * as Haptics from "@/lib/haptics";
 import { rs } from "@/lib/responsive";
+import { useScreenMusic } from "@/lib/music";
 import { useTheme } from "@/context/ThemeContext";
 import { useLang, pickLang } from "@/context/LangContext";
 import AppDialog from "@/components/AppDialog";
@@ -212,6 +213,7 @@ const STR = {
 };
 
 export default function SubscriptionScreen() {
+  useScreenMusic("premium");
   const { theme, themeMode } = useTheme();
   const { lang } = useLang();
   const tr = <T,>(v: L10n<T>): T => pickLang(lang, v);

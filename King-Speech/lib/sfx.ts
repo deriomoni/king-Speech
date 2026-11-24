@@ -16,6 +16,9 @@ let muted = false;
 export function setSfxMuted(v: boolean) {
   muted = v;
 }
+export function isSfxMuted() {
+  return muted;
+}
 
 // ── WAV synthesis ────────────────────────────────────────────────────────────
 const SAMPLE_RATE = 22050;

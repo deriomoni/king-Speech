@@ -25,6 +25,7 @@ import CoinIcon from "@/components/CoinIcon";
 import NextChevron from "@/components/NextChevron";
 import { useGame } from "@/context/GameContext";
 import { rs } from "@/lib/responsive";
+import { useScreenMusic } from "@/lib/music";
 import { pickLang, type Lang } from "@/context/LangContext";
 import {
   RAYS_SVG,
@@ -220,6 +221,7 @@ const PILL_COIN: [number, number] = [PILL.x + 19, PILL.y + PILL.h / 2];
 
 function VictoryScreen({ bestScore, durationSec, xpEarned, onNext, onMap, t, lang }: LevelCompleteModalProps) {
   const { coins: balance } = useGame();
+  useScreenMusic("victory");
   const insets = useSafeAreaInsets();
   const { width: W, height: H } = useWindowDimensions();
 

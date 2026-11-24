@@ -17,12 +17,14 @@ import { useTheme } from "@/context/ThemeContext";
 import OscarMascot from "@/components/OscarMascot";
 import { PillButton } from "@/components/auth/AuthUI";
 import { rs } from "@/lib/responsive";
+import { useScreenMusic } from "@/lib/music";
 
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t, lang, setLang } = useLang();
   const { theme } = useTheme();
+  useScreenMusic("welcome");
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;

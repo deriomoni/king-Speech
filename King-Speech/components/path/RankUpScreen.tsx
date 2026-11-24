@@ -24,6 +24,7 @@ import Animated, {
 import { router } from "expo-router";
 import { leaveTo } from "@/lib/nav";
 import { Audio } from "@/lib/av";
+import { useScreenMusic } from "@/lib/music";
 import { RankBackground } from "./RankBackground";
 import { useTheme } from "@/context/ThemeContext";
 import { getRankTheme, pickLocalized, type RankTheme } from "./rankTheme";
@@ -557,6 +558,8 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
   // the white-out peak so its entrance animations play as the light fades.
   const [doorScene, setDoorScene] = useState(!memento);
   const [revealed, setRevealed] = useState(memento);
+  // the fanfare comes with the reveal of a live rank-up, not on re-visits
+  useScreenMusic("rankUp", revealed && !memento);
 
   const recordings = showTimeRecordings[fromRank] ?? [];
   const firstRecording = recordings[0]?.uri;
