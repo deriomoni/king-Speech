@@ -515,7 +515,7 @@ export default function ProfileScreen() {
               height={156}
               style={{ flex: 1 }}
               text={{
-                title: pickLang(lang, { ru: "Стать автором", en: "Become an author", kk: "Автор болу" }),
+                title: "My Studio",
                 sub: pickLang(lang, { ru: "Предложи свою тему", en: "Suggest your topic", kk: "Өз тақырыбыңызды ұсыныңыз" }),
                 x: 16,
                 y: 104,

@@ -337,7 +337,7 @@ export default function AuthorScreen() {
             </Pressable>
           </View>
 
-          <Text style={[s.title, { color: c.text }]}>{tr("Стать автором", "Become an author", "Автор болу")}</Text>
+          <Text style={[s.title, { color: c.text }]}>My Studio</Text>
           <Text style={[s.subtitle, { color: c.textMuted }]}>
             {tr("Напиши своё выступление и прочитай его", "Write your speech and read it aloud", "Сөзіңізді жазып, оны дауыстап оқыңыз")}
           </Text>
