@@ -15,6 +15,7 @@ import { leaveTo } from "@/lib/nav";
 import { useScreenMusic } from "@/lib/music";
 import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useGame, RANKS_MODULAR } from "@/context/GameContext";
+import { useDevTools } from "@/context/DevToolsContext";
 import OscarMascot from "@/components/OscarMascot";
 import RecordingPlayer from "@/components/RecordingPlayer";
 import RankDoorTransition from "./RankDoorTransition";
@@ -91,7 +92,8 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
   const isFinal = fromRank >= 5;
   const { lang } = useLang();
   const insets = useSafeAreaInsets();
-  const { levels, activityLog, showTimeRecordings, readingRecordings, advanceRank, markPortalCompleted } = useGame();
+  const { levels, activityLog, showTimeRecordings, readingRecordings, advanceRank, setCurrentRank, markPortalCompleted } = useGame();
+  const { isOpenTestingEnabled } = useDevTools();
   const topPad = Platform.OS === "web" ? 54 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
   const T = (ru: string, en: string, kk: string) => pickLang(lang, { ru, en, kk });
@@ -143,7 +145,7 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
     ? T("Воспоминание о ранге", "A rank to remember", "Есте сақтар дәреже")
     : isFinal
       ? T("Ты прошёл все ранги", "You completed every rank", "Сен барлық дәрежеден өттің")
-      : T("Ты переходишь на следующий ранг", "You're moving up to the next rank", "Сен келесі дәрежеге өтесің");
+      : T("Ты переходишь в следующий ранг", "You're moving up to the next rank", "Сен келесі дәрежеге өтесің");
   const title = memento
     ? rankTitle(fromRank, lang)
     : isFinal
@@ -158,9 +160,15 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
       return;
     }
     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    // a dev preview never changes progress; the last rank has nowhere to go
-    if (!preview) markPortalCompleted(fromRank);
-    if (!isFinal && !preview) advanceRank();
+    // the player lands straight on the next rank's Path (the Path tab always
+    // shows the current rank). Real progress only outside testing; a preview /
+    // Open Testing run just switches the map to the next rank, like the dev
+    // rank buttons do. The last rank has nowhere to go.
+    if (!preview && !isOpenTestingEnabled) markPortalCompleted(fromRank);
+    if (!isFinal) {
+      if (preview || isOpenTestingEnabled) setCurrentRank(fromRank + 1);
+      else advanceRank();
+    }
     leaveTo("/");
   };
 
@@ -168,7 +176,7 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
     ? T("Закрыть", "Close", "Жабу")
     : isFinal
       ? T("Вернуться на главный", "Return home", "Басты бетке оралу")
-      : T("Перейти на следующий ранг", "Go to the next rank", "Келесі дәрежеге өту");
+      : T("Перейти в следующий ранг", "Go to the next rank", "Келесі дәрежеге өту");
 
   return (
     <View style={{ flex: 1, backgroundColor: bg }}>

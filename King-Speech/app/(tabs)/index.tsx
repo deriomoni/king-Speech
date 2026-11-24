@@ -884,6 +884,24 @@ export default function PathScreen() {
     }, [scrollToActive]),
   );
 
+  // After a rank change (e.g. «Перейти в следующий ранг») open the new rank at
+  // its start — the bottom of the ladder, where its first level is. Covers
+  // Open Testing (no auto-scroll) and a rank whose levels aren't unlocked yet.
+  const prevRankRef = useRef(currentRank);
+  useEffect(() => {
+    const changed = prevRankRef.current !== currentRank;
+    prevRankRef.current = currentRank;
+    // on first mount only when there is no active level to pin to
+    if (!changed && activeKey) return;
+    // twice: the tall map is still reflowing right after the switch
+    const a = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 120);
+    const b = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 600);
+    return () => {
+      clearTimeout(a);
+      clearTimeout(b);
+    };
+  }, [currentRank]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [scrollY, setScrollY] = useState(0);
   const [viewportH, setViewportH] = useState(0);
   const scrollYSV = useSharedValue(0);

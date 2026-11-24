@@ -107,7 +107,8 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, ti
 
   useEffect(() => {
     // dev on web: ?doorT=<ms> freezes the cut-scene on one frame for design checks
-    const freeze = __DEV__ && Platform.OS === "web" ? Number(new URLSearchParams(globalThis.location?.search).get("doorT")) : NaN;
+    const raw = __DEV__ && Platform.OS === "web" ? new URLSearchParams(globalThis.location?.search).get("doorT") : null;
+    const freeze = raw ? Number(raw) : NaN;
     if (freeze >= 0) {
       t.value = Math.min(freeze, REVEAL_AT - 1);
       return;
