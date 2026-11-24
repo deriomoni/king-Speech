@@ -8,9 +8,9 @@
 import React from "react";
 import { View, Text, StyleSheet, Pressable, Platform } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Defs, RadialGradient, Stop, Circle, Path } from "react-native-svg";
+import Svg, { Defs, RadialGradient, Stop, Circle } from "react-native-svg";
 import * as Haptics from "@/lib/haptics";
-import { CROWN_PATH } from "@/constants/crownPath";
+import MannersMark, { MANNERS_MARK_RATIO } from "@/components/manners/MannersMark";
 import { rs } from "@/lib/responsive";
 import { pickLang, type Lang } from "@/context/LangContext";
 
@@ -149,33 +149,20 @@ function placed(x: number, y: number, w: number, h: number, figmaRot: number) {
   };
 }
 
-const CROWN_W = 92;
-const CROWN_H = (CROWN_W * 39) / 48.3;
-
-function CrownMark({ color, outline }: { color: string; outline?: string }) {
-  const k = 48.3 / rs(CROWN_W);
-  return (
-    <Svg width={rs(CROWN_W)} height={rs(CROWN_H)} viewBox="-1 -1 50.3 41">
-      <Path
-        d={CROWN_PATH}
-        fill={outline ? "none" : color}
-        stroke={outline}
-        strokeWidth={outline ? rs(1.5) * k : undefined}
-      />
-    </Svg>
-  );
-}
+// The «Королевские манеры» mark (crown + bow tie), sized like the old crown.
+const MARK_H = 84;
+const MARK_W = MARK_H * MANNERS_MARK_RATIO;
 
 function MannersArt({ look }: { look: Look }) {
   return (
     <>
       {/* Outlined echo behind */}
-      <View pointerEvents="none" style={placed(48, 26, CROWN_W, CROWN_H, 9)}>
-        <CrownMark color={look.maskEcho} outline={look.maskEcho} />
+      <View pointerEvents="none" style={placed(52, 18, MARK_W, MARK_H, 9)}>
+        <MannersMark height={rs(MARK_H)} color={look.maskEcho} outline={look.maskEcho} />
       </View>
-      {/* Solid crown */}
-      <View pointerEvents="none" style={placed(26, 40, CROWN_W, CROWN_H, -6)}>
-        <CrownMark color={look.mask} />
+      {/* Solid mark */}
+      <View pointerEvents="none" style={placed(26, 34, MARK_W, MARK_H, -6)}>
+        <MannersMark height={rs(MARK_H)} color={look.mask} />
       </View>
     </>
   );

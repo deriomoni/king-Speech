@@ -6,29 +6,20 @@ import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
-import Svg, { Path } from "react-native-svg";
 import { router } from "expo-router";
 import { useAppColors } from "@/hooks/useAppColors";
 import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { colors as brand } from "@/theme/tokens";
 import { fonts } from "@/constants/colors";
 import { rs } from "@/lib/responsive";
-import { CROWN_PATH } from "@/constants/crownPath";
 import { MANNERS_RULES, MANNERS_TOTAL, pickMannersRound, tl, type MannersRule } from "@/constants/mannersData";
 import { useMannersProgress } from "@/lib/mannersProgress";
 import MannersQuiz, { MannersButton, type MannersResult } from "@/components/manners/MannersQuiz";
+import MannersMark from "@/components/manners/MannersMark";
 
 const ROUND = 5;
 type Tab = "quiz" | "mine";
 type Phase = { kind: "home" } | { kind: "quiz"; rules: MannersRule[] } | { kind: "result"; results: MannersResult[] };
-
-function Crown({ size, color }: { size: number; color: string }) {
-  return (
-    <Svg width={size} height={(size * 39) / 48.3} viewBox="0 0 48.3 39">
-      <Path d={CROWN_PATH} fill={color} />
-    </Svg>
-  );
-}
 
 export default function MannersScreen() {
   const insets = useSafeAreaInsets();
@@ -131,7 +122,7 @@ export default function MannersScreen() {
           <Animated.View key="quiz" entering={FadeIn.duration(260)}>
             <View style={[styles.hero, { backgroundColor: theme.card }]}>
               <View style={[styles.crownWrap, { backgroundColor: theme.accentDim }]}>
-                <Crown size={rs(34)} color={isDark ? theme.accent : "#262628"} />
+                <MannersMark height={rs(36)} color={isDark ? theme.accent : "#262628"} />
               </View>
               <Text style={[styles.heroTitle, { color: theme.text }]}>
                 {pickLang(lang, { ru: `Раунд из ${ROUND} ситуаций`, en: `A round of ${ROUND} situations`, kk: `${ROUND} жағдайдан тұратын раунд` })}

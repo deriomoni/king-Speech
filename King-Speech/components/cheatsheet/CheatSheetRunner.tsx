@@ -29,11 +29,10 @@ import { fonts } from "@/constants/colors";
 import { useAppColors } from "@/hooks/useAppColors";
 import { pickLang, type Lang } from "@/context/LangContext";
 import { rs } from "@/lib/responsive";
-import Svg, { Path } from "react-native-svg";
 import { MannersQuestion } from "@/components/manners/MannersQuiz";
 import { pickMannersRound } from "@/constants/mannersData";
 import { useMannersProgress } from "@/lib/mannersProgress";
-import { CROWN_PATH } from "@/constants/crownPath";
+import MannersMark from "@/components/manners/MannersMark";
 import {
   tx,
   DIFFICULTY_LABEL,
@@ -419,9 +418,7 @@ function MannersView({ lang, c }: { lang: Lang; c: AppColors }) {
   return (
     <View style={styles.mannersWrap}>
       <View style={styles.mannersHead}>
-        <Svg width={rs(22)} height={rs(18)} viewBox="0 0 48.3 39">
-          <Path d={CROWN_PATH} fill={GOLD} />
-        </Svg>
+        <MannersMark height={rs(22)} color={GOLD} />
         <Text style={[styles.mannersKicker, { color: c.text }]}>
           {pickLang(lang, { ru: "Королевские манеры", en: "Royal manners", kk: "Корольдік әдеп" })}
         </Text>

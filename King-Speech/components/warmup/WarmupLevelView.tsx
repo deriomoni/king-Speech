@@ -1,7 +1,6 @@
 import React, { useCallback, useRef, useState } from "react";
 import { View, StyleSheet, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Path } from "react-native-svg";
 import { router } from "expo-router";
 import BreathingExerciseView from "@/components/warmup/BreathingExerciseView";
 import MouthExerciseView from "@/components/warmup/MouthExerciseView";
@@ -14,7 +13,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useLang, pickLang } from "@/context/LangContext";
 import MannersQuiz from "@/components/manners/MannersQuiz";
 import { mannersForModule } from "@/constants/mannersData";
-import { CROWN_PATH } from "@/constants/crownPath";
+import MannersMark from "@/components/manners/MannersMark";
 import { rs } from "@/lib/responsive";
 
 export interface WarmupCompletePayload {
@@ -131,9 +130,7 @@ export default function WarmupLevelView({
       {step === "manners" && (
         <View style={{ flex: 1, paddingTop: topPad }}>
           <View style={styles.mannersHead}>
-            <Svg width={rs(22)} height={rs(18)} viewBox="0 0 48.3 39">
-              <Path d={CROWN_PATH} fill={theme.accentInk} />
-            </Svg>
+            <MannersMark height={rs(22)} color={theme.accentInk} />
             <Text style={[styles.mannersKicker, { color: theme.accentInk }]}>
               {pickLang(lang, { ru: "Королевские манеры", en: "Royal manners", kk: "Корольдік әдеп" })}
             </Text>
