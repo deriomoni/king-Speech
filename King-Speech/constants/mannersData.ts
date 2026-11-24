@@ -6,6 +6,11 @@
 import type { ComponentProps } from "react";
 import type { Ionicons } from "@expo/vector-icons";
 import { pickLang, type Lang } from "@/context/LangContext";
+import { PACK as CITY } from "@/constants/manners/city";
+import { PACK as HOME } from "@/constants/manners/home";
+import { PACK as TRAVEL } from "@/constants/manners/travel";
+import { PACK as DIGITAL } from "@/constants/manners/digital";
+import { PACK as SCENES } from "@/constants/manners/scenes";
 
 export type L = { ru: string; en?: string; kk?: string };
 export const tl = (v: L, lang: Lang) => pickLang(lang, v as { ru: string; en?: string; kk?: string });
@@ -19,14 +24,24 @@ export type MannersRule = {
   rule: L;
   /** The situation question. */
   question: L;
+  /** 3–4 ways to act. */
   options: L[];
-  /** Index into `options`. */
-  correct: number;
+  /** Index into `options` — or several indexes when more than one way is fine
+   *  (any of them counts as right; all are shown as right after answering). */
+  correct: number | number[];
   /** Shown after answering: why this is the royal way. */
   why: L;
+  /** Optional: one short note per option, shown under it after answering. */
+  notes?: L[];
+  /** Optional tag: a genuinely hard case, or one with a catch. */
+  kind?: "hard" | "trick";
 };
 
-export const MANNERS_RULES: MannersRule[] = [
+/** Indexes of every acceptable answer. */
+export const correctIndexes = (r: MannersRule): number[] => (Array.isArray(r.correct) ? r.correct : [r.correct]);
+export const isCorrectOption = (r: MannersRule, i: number) => correctIndexes(r).includes(i);
+
+const BASE_RULES: MannersRule[] = [
   {
     id: "greet-all",
     icon: "hand-left",
@@ -253,25 +268,58 @@ export const MANNERS_RULES: MannersRule[] = [
   },
 ];
 
+// Base rules + themed packs (city, home & traditions, travel, digital, big scenes).
+export const MANNERS_RULES: MannersRule[] = [...BASE_RULES, ...CITY, ...HOME, ...TRAVEL, ...DIGITAL, ...SCENES];
+
 export const MANNERS_TOTAL = MANNERS_RULES.length;
 
 export function getMannersRule(id: string): MannersRule | undefined {
   return MANNERS_RULES.find((r) => r.id === id);
 }
 
-/** A quiz round: unseen rules first, then the rest, shuffled. */
-export function pickMannersRound(count: number, seen: string[] = []): MannersRule[] {
-  const shuffle = <T,>(a: T[]) => {
-    const b = [...a];
-    for (let i = b.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [b[i], b[j]] = [b[j], b[i]];
+const shuffle = <T,>(a: T[]) => {
+  const b = [...a];
+  for (let i = b.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [b[i], b[j]] = [b[j], b[i]];
+  }
+  return b;
+};
+
+// Rules of the previous round — the next one avoids them while it can.
+let lastRound = new Set<string>();
+
+/**
+ * A quiz round that always feels new: unseen rules first, then the ones the
+ * player got wrong, then the rest — never the previous round's rules while
+ * there are others. Every round of 4+ carries at least one hard or trick case
+ * when the pool has one.
+ */
+export function pickMannersRound(
+  count: number,
+  seen: string[] = [],
+  missed: string[] = [],
+): MannersRule[] {
+  const seenSet = new Set(seen);
+  const missedSet = new Set(missed);
+  const pool = MANNERS_RULES.filter((r) => !lastRound.has(r.id));
+  const base = pool.length >= count ? pool : MANNERS_RULES;
+  const ranked = [
+    ...shuffle(base.filter((r) => !seenSet.has(r.id))),
+    ...shuffle(base.filter((r) => seenSet.has(r.id) && missedSet.has(r.id))),
+    ...shuffle(base.filter((r) => seenSet.has(r.id) && !missedSet.has(r.id))),
+  ];
+  let round = ranked.slice(0, count);
+  if (count >= 4) {
+    const tough = (r: MannersRule) => !!r.kind;
+    if (!round.some(tough)) {
+      const extra = ranked.slice(count).find(tough);
+      if (extra) round = [...round.slice(0, count - 1), extra];
     }
-    return b;
-  };
-  const fresh = shuffle(MANNERS_RULES.filter((r) => !seen.includes(r.id)));
-  const old = shuffle(MANNERS_RULES.filter((r) => seen.includes(r.id)));
-  return [...fresh, ...old].slice(0, count);
+  }
+  round = shuffle(round);
+  lastRound = new Set(round.map((r) => r.id));
+  return round;
 }
 
 /** Deterministic pick for a Path module (same question each visit). */

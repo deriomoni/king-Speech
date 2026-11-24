@@ -32,7 +32,8 @@ export default function MannersScreen() {
   const seenIds = useMemo(() => Object.keys(progress), [progress]);
   const passed = seenIds.length;
 
-  const start = () => setPhase({ kind: "quiz", rules: pickMannersRound(ROUND, seenIds) });
+  const missedIds = useMemo(() => seenIds.filter((id) => !progress[id].correct), [seenIds, progress]);
+  const start = () => setPhase({ kind: "quiz", rules: pickMannersRound(ROUND, seenIds, missedIds) });
   const back = () => (router.canGoBack() ? router.back() : router.replace("/(tabs)/showtime"));
 
   if (phase.kind === "quiz") {

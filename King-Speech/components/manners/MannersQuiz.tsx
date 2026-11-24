@@ -1,9 +1,9 @@
 // «Королевские манеры» quiz: a situation, three ways to act, then the right
 // answer with the reason why. Used full-screen by the mode (with a result
 // screen) and embedded in Path levels / quick prep (questions only).
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, Pressable, ScrollView, Platform } from "react-native";
-import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import Animated, { Easing, FadeIn, FadeInDown, cancelAnimation, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
 import NextChevron from "@/components/NextChevron";
@@ -12,7 +12,7 @@ import { colors as brand } from "@/theme/tokens";
 import { fonts } from "@/constants/colors";
 import { pickLang, type Lang } from "@/context/LangContext";
 import { rs } from "@/lib/responsive";
-import { type MannersRule, tl } from "@/constants/mannersData";
+import { type MannersRule, correctIndexes, isCorrectOption, tl } from "@/constants/mannersData";
 import { recordMannersAnswer } from "@/lib/mannersProgress";
 import { useGame } from "@/context/GameContext";
 
@@ -38,9 +38,12 @@ function Option({
   state,
   onPress,
   disabled,
+  note,
 }: {
   letter: string;
   text: string;
+  /** Shown under the text once the question is answered. */
+  note?: string;
   state: "idle" | "right" | "wrong" | "missed" | "dim";
   onPress: () => void;
   disabled: boolean;
@@ -53,7 +56,7 @@ function Option({
   const bg =
     state === "right" ? GOOD + (isDark ? "26" : "22") : state === "wrong" ? BAD + (isDark ? "22" : "1C") : theme.card;
   return (
-    <Animated.View style={[anim, { opacity: state === "dim" ? 0.45 : 1 }]}>
+    <Animated.View style={[anim, { opacity: state === "dim" ? (note ? 0.7 : 0.45) : 1 }]}>
       <Pressable
         disabled={disabled}
         onPress={onPress}
@@ -80,7 +83,14 @@ function Option({
             <Text style={[styles.badgeTxt, { color: theme.textSecondary }]}>{letter}</Text>
           )}
         </View>
-        <Text style={[styles.optionTxt, { color: theme.text }]}>{text}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.optionTxt, { color: theme.text }]}>{text}</Text>
+          {note ? (
+            <Animated.Text entering={FadeIn.duration(300)} style={[styles.optionNote, { color: theme.textSecondary }]}>
+              {note}
+            </Animated.Text>
+          ) : null}
+        </View>
       </Pressable>
     </Animated.View>
   );
@@ -92,24 +102,52 @@ export function MannersQuestion({
   lang,
   onAnswered,
   countsForStreak = true,
+  timed = false,
 }: {
   rule: MannersRule;
   lang: Lang;
   onAnswered: (correct: boolean) => void;
   /** One «В ударе» point per answer; off inside Path levels (the level counts). */
   countsForStreak?: boolean;
+  /** Decide-fast mode: a time bar; when it runs out the question counts as missed. */
+  timed?: boolean;
 }) {
   const { logActivity } = useGame();
-  const { theme } = useAppColors();
+  const { theme, isDark } = useAppColors();
   const order = useMemo(() => shuffledOrder(rule.options.length), [rule.id]);
+  // -1 = time ran out
   const [picked, setPicked] = useState<number | null>(null);
   const answered = picked !== null;
-  const isRight = picked === rule.correct;
+  const timedOut = picked === -1;
+  const isRight = picked !== null && picked >= 0 && isCorrectOption(rule, picked);
+  const multi = correctIndexes(rule).length > 1;
+
+  // Time to decide: enough to read the situation and the options, never a race.
+  const seconds = useMemo(() => {
+    const chars = tl(rule.question, lang).length + rule.options.reduce((n, o) => n + tl(o, lang).length, 0);
+    return Math.round(Math.min(32, Math.max(14, 8 + chars / 22)));
+  }, [rule.id, lang]); // eslint-disable-line react-hooks/exhaustive-deps
+  const left = useSharedValue(1);
+  const barStyle = useAnimatedStyle(() => ({ width: `${left.value * 100}%` }));
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pickRef = useRef<(i: number) => void>(() => {});
+  useEffect(() => {
+    if (!timed) return;
+    left.value = 1;
+    left.value = withTiming(0, { duration: seconds * 1000, easing: Easing.linear });
+    timer.current = setTimeout(() => pickRef.current(-1), seconds * 1000);
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+      cancelAnimation(left);
+    };
+  }, [rule.id, timed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pick = (i: number) => {
     if (answered) return;
+    if (timer.current) clearTimeout(timer.current);
+    cancelAnimation(left);
     setPicked(i);
-    const ok = i === rule.correct;
+    const ok = i >= 0 && isCorrectOption(rule, i);
     recordMannersAnswer(rule.id, ok);
     if (countsForStreak) logActivity("other");
     if (Platform.OS !== "web") {
@@ -117,28 +155,57 @@ export function MannersQuestion({
     }
     onAnswered(ok);
   };
+  pickRef.current = pick;
+
+  const kindLabel =
+    rule.kind === "trick"
+      ? pickLang(lang, { ru: "С подвохом", en: "Trick question", kk: "Астарлы сұрақ" })
+      : rule.kind === "hard"
+        ? pickLang(lang, { ru: "Сложная ситуация", en: "Tough call", kk: "Күрделі жағдай" })
+        : null;
 
   return (
     <View style={styles.q}>
-      <Text style={[styles.kicker, { color: theme.textMuted }]}>
-        {pickLang(lang, { ru: "Как ты поступишь?", en: "What would you do?", kk: "Сіз не істейсіз?" })}
-      </Text>
+      <View style={styles.kickerRow}>
+        <Text style={[styles.kicker, { color: theme.textMuted }]}>
+          {pickLang(lang, { ru: "Как ты поступишь?", en: "What would you do?", kk: "Сен не істейсің?" })}
+        </Text>
+        {kindLabel && (
+          <View style={[styles.kindChip, { backgroundColor: rule.kind === "trick" ? brand.purple + "22" : brand.warning + "26" }]}>
+            <Ionicons name={rule.kind === "trick" ? "eye" : "flash"} size={rs(12)} color={rule.kind === "trick" ? brand.purple : brand.warning} />
+            <Text style={[styles.kindTxt, { color: rule.kind === "trick" ? brand.purple : brand.warning }]}>{kindLabel}</Text>
+          </View>
+        )}
+      </View>
+      {timed && (
+        <View style={[styles.timeTrack, { backgroundColor: isDark ? "rgba(240,238,233,0.08)" : "rgba(38,38,40,0.07)", opacity: answered ? 0 : 1 }]}>
+          <Animated.View style={[styles.timeBar, { backgroundColor: theme.cta }, barStyle]} />
+        </View>
+      )}
       <Text style={[styles.question, { color: theme.text }]}>{tl(rule.question, lang)}</Text>
 
       <View style={styles.options}>
         {order.map((oi, k) => {
+          const good = isCorrectOption(rule, oi);
           const state: "idle" | "right" | "wrong" | "missed" | "dim" = !answered
             ? "idle"
             : oi === picked
-              ? oi === rule.correct
+              ? good
                 ? "right"
                 : "wrong"
-              : oi === rule.correct
+              : good
                 ? "missed"
                 : "dim";
           return (
             <Animated.View key={oi} entering={FadeInDown.duration(320).delay(80 + k * 70)}>
-              <Option letter={LETTERS[k]} text={tl(rule.options[oi], lang)} state={state} disabled={answered} onPress={() => pick(oi)} />
+              <Option
+                letter={LETTERS[k]}
+                text={tl(rule.options[oi], lang)}
+                note={answered && rule.notes?.[oi] ? tl(rule.notes[oi], lang) : undefined}
+                state={state}
+                disabled={answered}
+                onPress={() => pick(oi)}
+              />
             </Animated.View>
           );
         })}
@@ -151,11 +218,22 @@ export function MannersQuestion({
               <Ionicons name={isRight ? "checkmark-circle" : "information-circle"} size={rs(20)} color={isRight ? GOOD : BAD} />
             </View>
             <Text style={[styles.revealTitle, { color: isRight ? GOOD : BAD }]}>
-              {isRight
-                ? pickLang(lang, { ru: "Верно!", en: "Correct!", kk: "Дұрыс!" })
-                : pickLang(lang, { ru: "Не совсем", en: "Not quite", kk: "Толық емес" })}
+              {timedOut
+                ? pickLang(lang, { ru: "Время вышло", en: "Time's up", kk: "Уақыт бітті" })
+                : isRight
+                  ? pickLang(lang, { ru: "Верно!", en: "Correct!", kk: "Дұрыс!" })
+                  : pickLang(lang, { ru: "Не совсем", en: "Not quite", kk: "Толық емес" })}
             </Text>
           </View>
+          {multi && (
+            <Text style={[styles.multiNote, { color: theme.textSecondary }]}>
+              {pickLang(lang, {
+                ru: "Здесь подходит больше одного варианта — все верные отмечены.",
+                en: "More than one answer works here — all the good ones are marked.",
+                kk: "Мұнда бірнеше нұсқа дұрыс — барлығы белгіленген.",
+              })}
+            </Text>
+          )}
           <Text style={[styles.ruleTitle, { color: theme.text }]}>{tl(rule.title, lang)}</Text>
           <Text style={[styles.why, { color: theme.textSecondary }]}>{tl(rule.why, lang)}</Text>
         </Animated.View>
@@ -271,6 +349,7 @@ export default function MannersQuiz({
             rule={rule}
             lang={lang}
             countsForStreak={!embedded}
+            timed={!embedded}
             onAnswered={(ok) => {
               setAnswered(true);
               setResults((r) => {
@@ -315,7 +394,13 @@ const styles = StyleSheet.create({
 
   scroll: { paddingHorizontal: 22, paddingTop: 22, paddingBottom: 24 },
   q: { gap: 0 },
+  kickerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
   kicker: { fontSize: 13, fontFamily: fonts.bodySemibold, letterSpacing: 0.2 },
+  kindChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
+  kindTxt: { fontSize: 12, fontFamily: fonts.bodyBold },
+  timeTrack: { height: 4, borderRadius: 2, marginTop: 12, overflow: "hidden" },
+  timeBar: { height: 4, borderRadius: 2 },
+  multiNote: { fontSize: 14, lineHeight: 20, fontFamily: fonts.body, marginTop: 10 },
   question: { fontSize: 25, lineHeight: 32, fontFamily: fonts.display, marginTop: 10, letterSpacing: -0.3 },
   options: { gap: 10, marginTop: 26 },
   option: {
@@ -329,7 +414,8 @@ const styles = StyleSheet.create({
   },
   badge: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
   badgeTxt: { fontSize: 13, fontFamily: fonts.bodyBold },
-  optionTxt: { flex: 1, fontSize: 16, lineHeight: 22, fontFamily: fonts.body },
+  optionTxt: { fontSize: 16, lineHeight: 22, fontFamily: fonts.body },
+  optionNote: { fontSize: 13, lineHeight: 18, fontFamily: fonts.body, marginTop: 4 },
 
   reveal: { marginTop: 18, borderRadius: 22, padding: 18 },
   revealHead: { flexDirection: "row", alignItems: "center", gap: 10 },
