@@ -465,10 +465,19 @@ const COUNTS = [9, 9, 10, 11, 10, 8, 8, 7, 6, 5, 5];
 const FLOOR_Y = ROWS[NR - 1].y + ROWS[NR - 1].pb * 1.4;
 /** back rows are tiny — their faces skip the skin mask (bangs over eyes don't read at that size) */
 const FAR_ROWS = 3;
-const SEAT: RGB = [0.76, 0.14, 0.12];
+/** seat colours, one per level (cycling): the seats, the room behind them and
+ *  the haze between the rows, all in the same hue. 0 is the original red. */
+const SEAT_TONES: { seat: RGB; room: RGB; fog: RGB }[] = [
+  { seat: [0.76, 0.14, 0.12], room: [0.16, 0.02, 0.02], fog: [0.06, 0.0, 0.01] }, // red
+  { seat: [0.2, 0.33, 0.66], room: [0.03, 0.05, 0.14], fog: [0.0, 0.01, 0.05] }, // royal blue
+  { seat: [0.12, 0.52, 0.38], room: [0.02, 0.1, 0.06], fog: [0.0, 0.04, 0.02] }, // emerald
+  { seat: [0.52, 0.22, 0.55], room: [0.1, 0.03, 0.11], fog: [0.04, 0.0, 0.05] }, // plum
+  { seat: [0.84, 0.62, 0.18], room: [0.15, 0.09, 0.02], fog: [0.05, 0.03, 0.0] }, // mustard
+  { seat: [0.13, 0.52, 0.58], room: [0.02, 0.1, 0.12], fog: [0.0, 0.04, 0.05] }, // teal
+  { seat: [0.85, 0.42, 0.2], room: [0.16, 0.05, 0.02], fog: [0.06, 0.02, 0.0] }, // terracotta
+];
 // «Затемнить зал»: a hazy backlit room, the rows and people as flat dark shapes
 const SIL_BG: RGB = [0.34, 0.29, 0.32], SIL_SEAT: RGB = [0.19, 0.16, 0.18], SIL_PEOPLE: RGB = [0.045, 0.04, 0.05];
-const FOG: RGB = [0.06, 0.0, 0.01];
 const seatX = (r: number, c: number) => HALL.W / 2 + (c + (r % 2 ? 0.5 : 0)) * ROWS[r].p;
 
 // ---------------- entrance ----------------
@@ -813,11 +822,13 @@ export class Audience {
     const cr = this.painter.cr; const W = HALL.W, H = HALL.H;
     cr.sil = null;
     // the house: a dark red room; with the lights down a dim haze the rows stand against
-    cr.setRGB(sil ? SIL_BG : [0.16, 0.02, 0.02]); cr.paint();
+    // variant = level number − 1: the lighting kit cycles by 4, the seat colour by 7
+    const tone = SEAT_TONES[this.variant % SEAT_TONES.length];
+    cr.setRGB(sil ? SIL_BG : tone.room); cr.paint();
     for (let r = 0; r < NR; r++) {
       const R = ROWS[r]; const n = Math.floor(W / 2 / R.p) + 2;
       cr.sil = sil ? SIL_SEAT : null;
-      for (let c = -n - 1; c < n + 2; c++) this.seat(r, seatX(r, c), SEAT);
+      for (let c = -n - 1; c < n + 2; c++) this.seat(r, seatX(r, c), tone.seat);
       cr.sil = sil;
       this.places.forEach((pl, j) => {
         if (pl.r !== r) return;
@@ -830,7 +841,7 @@ export class Audience {
       cr.sil = null;
       // haze between rows: twice the rows of the clip, half the fog per row,
       // so the far end reads about as deep as it did there
-      if (r < NR - 1) { cr.setRGBA(sil ? SIL_BG : FOG, sil ? 0.05 : 0.07); cr.paint(); }
+      if (r < NR - 1) { cr.setRGBA(sil ? SIL_BG : tone.fog, sil ? 0.05 : 0.07); cr.paint(); }
     }
     if (!sil) {
       // the back rows fall into the dark under the ceiling, the front rows into

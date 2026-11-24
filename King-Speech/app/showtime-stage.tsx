@@ -5351,7 +5351,7 @@ export default function ShowtimeStageScreen() {
             dimRef={dimRef}
             lang={lang}
             levelsRef={meterSamplesRef}
-            variant={(getModuleFromShowtimeId(levelId) - 1) % 4}
+            variant={getModuleFromShowtimeId(levelId) - 1}
           />
         </View>
       ) : (
