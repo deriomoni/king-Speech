@@ -5,7 +5,7 @@
 // Usage (e.g. in app/(tabs)/index.tsx):
 //   const [tipOpen, setTipOpen] = useState(false);
 //   <DailyTipOverlay visible={tipOpen} onClose={() => setTipOpen(false)} tip={getDailyTip()} />
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Pressable, Modal, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
@@ -35,6 +35,8 @@ export interface DailyTip {
   action?: string;
   /** Day counter shown bottom-right («день 27»). */
   day: number;
+  /** Days since epoch — picks the back sheet's colour of the day. */
+  dayIndex?: number;
   /** Index into DAILY_TIPS_BY_LANG — lets the overlay re-localize the tip. */
   tipIndex?: number;
 }
@@ -194,7 +196,7 @@ export function getDailyTip(
     const sIdx = Math.floor(Date.UTC(s.getFullYear(), s.getMonth(), s.getDate()) / 86400000);
     day = Math.max(1, dayIndex - sIdx + 1);
   }
-  return { ...base, day, tipIndex };
+  return { ...base, day, tipIndex, dayIndex };
 }
 
 function Title({ tip }: { tip: DailyTip }) {
@@ -226,6 +228,10 @@ function Body({ tip, long }: { tip: DailyTip; long?: boolean }) {
   );
 }
 
+const CTA_DELAY_MS = 5000;
+/** The fanned back sheet — a different colour each day. */
+const SHEET_COLORS = ["#FFD857", "#B99BFF", "#7AD593", "#7AB8FF", "#FF9C8C", "#FFB86B", "#F59AC8"];
+
 export default function DailyTipOverlay({
   visible,
   onClose,
@@ -240,7 +246,21 @@ export default function DailyTipOverlay({
   // Re-localize a tip produced by getDailyTip() to the current UI language.
   const localized =
     tip.tipIndex != null ? (DAILY_TIPS_BY_LANG[lang] ?? DAILY_TIPS)[tip.tipIndex] : undefined;
-  if (localized) tip = { ...localized, day: tip.day, tipIndex: tip.tipIndex };
+  if (localized) tip = { ...localized, day: tip.day, tipIndex: tip.tipIndex, dayIndex: tip.dayIndex };
+  // the back sheet takes a new colour every day
+  const di = tip.dayIndex ?? Math.floor(Date.now() / 86400000);
+  const sheetColor = SHEET_COLORS[((di % SHEET_COLORS.length) + SHEET_COLORS.length) % SHEET_COLORS.length];
+  const sheetXml = SHEET_YELLOW_SVG.replace('fill="#FFD857"', `fill="${sheetColor}"`);
+  // «Понятно» appears only after the tip has had a few seconds to be read
+  const [ctaShown, setCtaShown] = useState(false);
+  useEffect(() => {
+    if (!visible) {
+      setCtaShown(false);
+      return;
+    }
+    const t = setTimeout(() => setCtaShown(true), CTA_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [visible]);
   const closeLabel = pickLang(lang, { ru: "Закрыть", en: "Close", kk: "Жабу" });
   const topPad = Platform.OS === "web" ? 54 : insets.top;
   // Long tips get slightly smaller body type so everything fits the fixed sheet.
@@ -267,7 +287,7 @@ export default function DailyTipOverlay({
             <View style={styles.stage}>
               {/* fanned sheets behind */}
               <View style={[styles.sheetBehind, { left: rs(-3.4), top: rs(-25.6), transform: [{ rotate: "-7deg" }] }]}>
-                <SvgXml xml={SHEET_YELLOW_SVG} width={rs(300)} height={rs(340)} />
+                <SvgXml xml={sheetXml} width={rs(300)} height={rs(340)} />
               </View>
               <View style={[styles.sheetBehind, { left: rs(7.6), top: rs(-5.6), transform: [{ rotate: "5deg" }] }]}>
                 <SvgXml xml={SHEET_DARK_SVG} width={rs(300)} height={rs(340)} />
@@ -283,22 +303,24 @@ export default function DailyTipOverlay({
                   <Body tip={tip} long={long} />
                 </View>
                 {tip.action ? <Text style={[styles.action, long && styles.textLong]}>{tip.action}</Text> : null}
-                {/* In flow under the text so a long tip can never run into it. */}
-                <View style={styles.dayRow}>
-                  <Text style={styles.dayWord}>{pickLang(lang, { ru: "день", en: "day", kk: "күн" })}</Text>
-                  <Text style={styles.dayNum}>{tip.day}</Text>
-                </View>
               </View>
             </View>
           </Animated.View>
 
-          <Pressable
-            onPress={onClose}
-            style={({ pressed }) => [styles.cta, { opacity: pressed ? 0.88 : 1 }]}
-            accessibilityRole="button"
-          >
-            <Text style={styles.ctaText}>{pickLang(lang, { ru: "Понятно", en: "Got it", kk: "Түсінікті" })}</Text>
-          </Pressable>
+          {ctaShown ? (
+            <Animated.View entering={FadeIn.duration(400)}>
+              <Pressable
+                onPress={onClose}
+                style={({ pressed }) => [styles.cta, { opacity: pressed ? 0.88 : 1 }]}
+                accessibilityRole="button"
+              >
+                <Text style={styles.ctaText}>{pickLang(lang, { ru: "Понятно", en: "Got it", kk: "Түсінікті" })}</Text>
+              </Pressable>
+            </Animated.View>
+          ) : (
+            // keeps the sheet where it will stay once the button shows up
+            <View style={[styles.cta, { backgroundColor: "transparent" }]} />
+          )}
         </View>
       </Animated.View>
     </Modal>
@@ -347,17 +369,7 @@ const styles = StyleSheet.create({
     color: "rgba(38,38,40,0.8)",
     fontFamily: "Geologica_300Light",
   },
-  dayRow: { alignSelf: "flex-end", marginTop: 6, marginRight: 6, flexDirection: "row", alignItems: "baseline" },
   textLong: { fontSize: 13.5, lineHeight: 19 },
-  dayWord: {
-    fontSize: 18,
-    fontFamily: "Geologica_300Light",
-    fontStyle: "italic",
-    letterSpacing: -0.09,
-    color: INK,
-    marginRight: 9,
-  },
-  dayNum: { fontSize: 30, fontFamily: "Geologica_900Black", letterSpacing: -0.3, color: INK },
   cta: {
     marginTop: 78,
     width: 220,

@@ -34,13 +34,11 @@ import { kingSpeechLogoXml } from "@/assets/figma/settings/logo";
 import { bekWaveLogoXml } from "@/assets/figma/settings/bekwave";
 import RoundStar from "@/components/RoundStar";
 import { rs } from "@/lib/responsive";
+import { CROWN_ICON_SVG } from "@/assets/figma/new/svgs";
 
-// Figma "icon/crown-outline" (405:1310); __FG__ is swapped for theme.text.
-const CROWN_OUTLINE_XML = `<svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M3.5 16.5L2.6 7.6L7.4 11L11 4.6L14.6 11L19.4 7.6L18.5 16.5H3.5Z" stroke="__FG__" stroke-width="1.6" stroke-linejoin="round"/>
-<path d="M4.5 19H17.5" stroke="__FG__" stroke-width="1.6" stroke-linecap="round"/>
-<path d="M11 13.9C11.718 13.9 12.3 13.318 12.3 12.6C12.3 11.882 11.718 11.3 11 11.3C10.282 11.3 9.7 11.882 9.7 12.6C9.7 13.318 10.282 13.9 11 13.9Z" fill="__FG__"/>
-</svg>`;
+// The subscription crown — the paywall's hand-built logo, in the theme ink
+// (__FG__ is swapped for theme.text).
+const CROWN_ICON = CROWN_ICON_SVG.replace(/url(#crownIconG)/g, "__FG__");
 
 // Muted segmented control: neutral track, the selected segment is just a
 // slightly lighter chip — no accent colour, no outline.
@@ -191,7 +189,7 @@ export default function SettingsScreen() {
               </Pressable>
               <ListRow
                 theme={theme}
-                icon={<ThemedSvg xml={CROWN_OUTLINE_XML} width={rs(22)} height={rs(22)} fg={theme.text} />}
+                icon={<ThemedSvg xml={CROWN_ICON} width={rs(24)} height={rs(18.5)} fg={theme.text} />}
                 label={pickLang(appLang, { ru: "Бесплатный план", en: "Free plan", kk: "Тегін жоспар" })}
                 // Only the «Улучшить» pill opens the paywall — the row itself is inert.
                 right={
