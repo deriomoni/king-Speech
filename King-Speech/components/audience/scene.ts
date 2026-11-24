@@ -847,7 +847,9 @@ export class Audience {
       // the back rows fall into the dark under the ceiling, the front rows into
       // the shadow below the stage edge
       cr.linear(0, 0, 0, ROWS[6].y, DARK, 0.85, 0);
-      cr.linear(0, ROWS[7].y, 0, FLOOR_Y, DARK, 0, 0.58);
+      // the front rows sink into black towards the stage edge — under the
+      // teleprompter only the footlights glow
+      cr.linear(0, ROWS[7].y, 0, FLOOR_Y, [0, 0, 0], 0, 0.93);
       const fl = 0.5 + 0.3 * Math.sin((TAU * t) / 3.1) + 0.2 * Math.sin((TAU * t) / 0.77);
       cr.radial(W / 2, H * 0.48, 100, W * 0.8, [1, 0.88, 0.75, 0.05 + 0.03 * fl], [1, 0.88, 0.75, 0]);
       cr.radial(W / 2, H * 0.42, H * 0.3, W * 0.95, [0, 0, 0, 0], [0.04, 0, 0, 0.45]);
@@ -947,12 +949,10 @@ export class Audience {
       cr.setRGB(i % 2 ? [0.5, 0.31, 0.19] : [0.45, 0.27, 0.16]); cr.fillPreserve();
       cr.setRGB(INK); cr.setLineWidth(lw * 0.55); cr.stroke();
     }
-    // light pooling on the boards near the speaker
-    if (!sil) cr.glow(W / 2, H, W * 0.6, (H - yb) * 0.9, [1, 0.86, 0.62], 0.16);
-    // the boards run on under the speech: a soft, edgeless fade into the dark stage panel
-    cr.linear(0, yb + (H - yb) * 0.08, 0, yb + (H - yb) * 0.8, [0.07, 0.065, 0.075], 0, 0.94);
+    // the boards are all but gone in the dark: they melt into the black under the speech
+    cr.linear(0, yb, 0, yb + (H - yb) * 0.25, [0, 0, 0], 0.8, 1);
     // apron lip
-    cr.rectangle(-20, y0, W + 40, lip); cr.setRGB([0.22, 0.12, 0.08]); cr.fillPreserve(); cr.setRGB(INK); cr.setLineWidth(lw); cr.stroke();
+    cr.rectangle(-20, y0, W + 40, lip); cr.setRGB([0.05, 0.035, 0.03]); cr.fillPreserve(); cr.setRGB(INK); cr.setLineWidth(lw); cr.stroke();
     // bulbs along the stage edge: evenly spaced with air between them, each
     // with a warm halo; the classic bulbs now and then blink off for a moment
     const k = this.variant % KITS, B = BULB[k];
@@ -961,8 +961,8 @@ export class Audience {
     // the same metal as the pipe the spotlights hang from
     const railT = y0 + lip * 0.1, railH = 0.22 * pb, baseY = railT + railH * 0.2;
     cr.sil = dark;
-    cr.rectangle(-20, railT, W + 40, railH); cr.setRGB([0.2, 0.19, 0.21]); cr.fillPreserve(); cr.setRGB(INK); cr.setLineWidth(lw); cr.stroke();
-    cr.rectangle(-20, railT + railH * 0.62, W + 40, railH * 0.38); cr.setRGB([0.14, 0.13, 0.15]); cr.fill();
+    cr.rectangle(-20, railT, W + 40, railH); cr.setRGB([0.07, 0.07, 0.08]); cr.fillPreserve(); cr.setRGB(INK); cr.setLineWidth(lw); cr.stroke();
+    cr.rectangle(-20, railT + railH * 0.62, W + 40, railH * 0.38); cr.setRGB([0.035, 0.035, 0.04]); cr.fill();
     cr.sil = null;
     const slots = B.strip ? [0.2, 0.5, 0.8] : [1, 2, 3, 4, 5, 6, 7].map((i) => i / 8);
     slots.forEach((fx, i) => {
@@ -970,7 +970,7 @@ export class Audience {
       // a socket block on the rail under each bulb
       const sw = B.strip ? w * 1.04 : Math.max(w * 0.78, h * 0.5), sh = railH * 0.7;
       cr.sil = dark;
-      cr.rectangle(x - sw / 2, railT - sh * 0.5, sw, sh); cr.setRGB([0.3, 0.29, 0.31]); cr.fillPreserve(); cr.setRGB(INK); cr.setLineWidth(lw * 0.8); cr.stroke();
+      cr.rectangle(x - sw / 2, railT - sh * 0.5, sw, sh); cr.setRGB([0.11, 0.11, 0.12]); cr.fillPreserve(); cr.setRGB(INK); cr.setLineWidth(lw * 0.8); cr.stroke();
       cr.sil = null;
       // switched on one after another, left to right, just after the spotlights
       const pw = lampPower(this.rel(t), LIGHTS_AT + 0.15 + i * 0.07);

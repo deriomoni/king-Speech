@@ -4707,14 +4707,16 @@ function TextEdgeBlur({ edge }: { edge: "top" | "bottom" }) {
     Platform.OS === "android"
       ? edge === "top"
         ? [{ h: 44, i: 14 }]
-        : [{ h: 58, i: 16 }]
+        : [{ h: 72, i: 16 }]
       : edge === "top"
         ? [{ h: 56, i: 5 }, { h: 36, i: 11 }, { h: 18, i: 20 }]
-        : [{ h: 72, i: 5 }, { h: 48, i: 12 }, { h: 26, i: 24 }];
+        // six thin steps, each a little stronger than the one above, so the
+        // blur creeps in with no visible edge
+        : [{ h: 112, i: 1.5 }, { h: 94, i: 3 }, { h: 77, i: 5 }, { h: 60, i: 8 }, { h: 43, i: 13 }, { h: 26, i: 22 }];
   const anchor = edge === "top" ? { top: 0 } : { bottom: 0 };
   const fade: [string, string] = edge === "top"
-    ? ["rgba(38,38,40,0.72)", "rgba(38,38,40,0)"]
-    : ["rgba(38,38,40,0)", "rgba(38,38,40,0.82)"];
+    ? ["rgba(0,0,0,0.72)", "rgba(0,0,0,0)"]
+    : ["rgba(0,0,0,0)", "rgba(0,0,0,0.85)"];
   return (
     <View pointerEvents="none" style={[teb.wrap, anchor, { height: rs(strips[0].h) }]}>
       {strips.map((strip, i) => (
@@ -5412,23 +5414,24 @@ export default function ShowtimeStageScreen() {
       <LinearGradient
         pointerEvents="none"
         colors={LiveAudience ? [
-          // live hall: keep the rows and the stage edge clear, darken only
-          // where the speech starts
+          // live hall: the hall itself sinks its front rows into black (the
+          // footlights stay lit); here the black only takes over below the
+          // footlights, where the speech starts
           "rgba(0,0,0,0)",
-          "rgba(0,0,0,0.04)",
-          "rgba(38,38,40,0.3)",
-          "rgba(38,38,40,0.85)",
-          "#262628",
-          "#262628",
+          "rgba(0,0,0,0)",
+          "rgba(0,0,0,0.55)",
+          "rgba(0,0,0,0.92)",
+          "#000",
+          "#000",
         ] : [
           "rgba(0,0,0,0.14)",
           "rgba(0,0,0,0.18)",
-          "rgba(38,38,40,0.45)",
-          "rgba(38,38,40,0.85)",
-          "#262628",
-          "#262628",
+          "rgba(0,0,0,0.5)",
+          "rgba(0,0,0,0.88)",
+          "#000",
+          "#000",
         ]}
-        locations={LiveAudience ? [0, 0.36, 0.5, 0.6, 0.66, 1] : [0, 0.3, 0.44, 0.54, 0.62, 1]}
+        locations={LiveAudience ? [0, 0.47, 0.51, 0.55, 0.59, 1] : [0, 0.3, 0.44, 0.54, 0.62, 1]}
         style={StyleSheet.absoluteFill}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
@@ -5858,7 +5861,7 @@ const s = StyleSheet.create({
   linesScroll: { flex: 1, width: "100%" },
   // Bottom padding = the bottom edge blur, so the last lines can scroll up
   // out from under it and stay readable.
-  linesContainer: { flexGrow: 1, justifyContent: "center", alignItems: "center", gap: 0, paddingTop: 4, paddingBottom: rs(80) },
+  linesContainer: { flexGrow: 1, justifyContent: "center", alignItems: "center", gap: 0, paddingTop: 4, paddingBottom: rs(118) },
   progressBg: { height: 3, borderRadius: 2, backgroundColor: "rgba(240,238,233,0.18)", overflow: "hidden" },
   progressFill: { height: 3, borderRadius: 2, backgroundColor: "#FFD166" },
   navRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
