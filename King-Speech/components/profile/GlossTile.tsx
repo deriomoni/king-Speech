@@ -40,6 +40,13 @@ const LOOK = {
   },
 };
 
+/** A colour identity for the tile: rich diagonal gradient + glow behind the art. */
+export type TilePalette = {
+  fill: readonly [string, string, string];
+  /** soft light behind the illustration */
+  glow: string;
+};
+
 export type TileText = {
   title: string;
   sub: string;
@@ -61,7 +68,10 @@ export default function GlossTile({
   onPress,
   style,
   idSuffix,
+  palette,
 }: {
+  /** Colourful tile (same in both themes) instead of the plain gloss slab. */
+  palette?: TilePalette;
   mode: ThemeMode;
   height: number;
   text: TileText;
@@ -74,7 +84,19 @@ export default function GlossTile({
   /** Unique id for the svg gradient (several tiles share the web DOM). */
   idSuffix: string;
 }) {
-  const look = LOOK[mode];
+  const base = LOOK[mode];
+  const look = palette
+    ? {
+        fill: palette.fill,
+        fillLoc: [0, 0.55, 1] as const,
+        stroke: ["rgba(255,255,255,0.38)", "rgba(255,255,255,0.08)", "rgba(255,255,255,0.16)"] as const,
+        spotColor: palette.glow,
+        spotOpacity: 1,
+        spotStop: 0.55,
+        ink: "#FFFFFF",
+        shadow: { y: 12, blur: 26, color: palette.fill[1] + "59", opacity: 0.35 },
+      }
+    : base;
   const shadow =
     Platform.OS === "web"
       ? ({ boxShadow: `0px ${rs(look.shadow.y)}px ${rs(look.shadow.blur)}px ${look.shadow.color}` } as any)
@@ -83,7 +105,7 @@ export default function GlossTile({
           // rounded bounds instead of re-rendering every tile offscreen to find
           // its alpha mask (a real cost with 5 tiles in a scrolling screen).
           backgroundColor: look.fill[2],
-          shadowColor: "#000",
+          shadowColor: palette ? palette.fill[1] : "#000",
           shadowOpacity: look.shadow.opacity,
           shadowRadius: rs(look.shadow.blur / 2),
           shadowOffset: { width: 0, height: rs(look.shadow.y) },
@@ -106,7 +128,22 @@ export default function GlossTile({
       ]}
     >
       <LinearGradient colors={look.stroke} locations={[0, 0.5, 1]} style={styles.stroke}>
-        <LinearGradient colors={look.fill} locations={look.fillLoc} style={styles.fill}>
+        <LinearGradient
+          colors={look.fill}
+          locations={look.fillLoc}
+          start={palette ? { x: 0, y: 0 } : undefined}
+          end={palette ? { x: 1, y: 1 } : undefined}
+          style={styles.fill}
+        >
+          {palette ? (
+            // glass: light from the top edge
+            <LinearGradient
+              pointerEvents="none"
+              colors={["rgba(255,255,255,0.22)", "rgba(255,255,255,0)"]}
+              locations={[0, 0.5]}
+              style={StyleSheet.absoluteFill}
+            />
+          ) : null}
           <Svg
             pointerEvents="none"
             width={rs(spot.size)}
@@ -136,6 +173,7 @@ export default function GlossTile({
             numberOfLines={1}
             style={[
               styles.sub,
+              palette && { opacity: 0.78 },
               {
                 color: look.ink,
                 left: rs(text.x - 1),

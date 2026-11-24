@@ -36,7 +36,15 @@ import { useTheme, type Theme } from "@/context/ThemeContext";
 import ProfileCover, { COVER_HEIGHT, PlainPlateThumb } from "@/components/profile/ProfileCover";
 import { COVER_PATTERNS, COVER_ART_RATIO } from "@/components/profile/coverPatterns";
 import StreakCard from "@/components/profile/StreakCard";
-import GlossTile from "@/components/profile/GlossTile";
+import GlossTile, { type TilePalette } from "@/components/profile/GlossTile";
+
+// Each profile tile has its own colour (same in light and dark).
+const TILE_PALETTES: Record<"diary" | "studio" | "library" | "coins", TilePalette> = {
+  diary: { fill: ["#FF8A5C", "#E8457A", "#8E2A72"], glow: "#FFD3B5" },
+  studio: { fill: ["#9B7BFF", "#6B42E6", "#33188F"], glow: "#D9CCFF" },
+  library: { fill: ["#36CDB0", "#14918A", "#0B4A5C"], glow: "#B8FFF0" },
+  coins: { fill: ["#4B6BFF", "#2537C9", "#141C6E"], glow: "#FFE7A3" },
+};
 import ProfileMenuPopover, { type MenuAnchor, type MenuOption } from "@/components/profile/ProfileMenuPopover";
 import {
   CASSETTE,
@@ -498,8 +506,9 @@ export default function ProfileScreen() {
                 subSize: 12,
                 subOffset: 28,
               }}
-              spot={{ x: 170, y: -70, size: 240 }}
-              art={art(themedSvg(CASSETTE, mode), 207, 15, 129, 82)}
+              spot={{ x: 160, y: -60, size: 240 }}
+              palette={TILE_PALETTES.diary}
+              art={art(themedSvg(CASSETTE, "dark"), 207, 15, 129, 82)}
               onPress={() => router.push("/diary")}
             />
           </EdgeScale>
@@ -519,8 +528,9 @@ export default function ProfileScreen() {
                 subSize: 12,
                 subOffset: 28,
               }}
-              spot={{ x: 170, y: -70, size: 240 }}
-              art={art(themedSvg(QUILL, mode), 228, 16, 83, 76)}
+              spot={{ x: 150, y: -64, size: 240 }}
+              palette={TILE_PALETTES.studio}
+              art={art(themedSvg(QUILL, "dark"), 228, 16, 83, 76)}
               onPress={() => router.push("/author")}
             />
           </EdgeScale>
@@ -539,8 +549,9 @@ export default function ProfileScreen() {
                 subSize: 12,
                 subOffset: 28,
               }}
-              spot={{ x: 170, y: -70, size: 240 }}
-              art={art(themedSvg(LIBRARY, mode), 187.5, 12, 155, 91)}
+              spot={{ x: 160, y: -64, size: 240 }}
+              palette={TILE_PALETTES.library}
+              art={art(themedSvg(LIBRARY, "dark"), 187.5, 12, 155, 91)}
               onPress={() => router.push("/library")}
             />
           </EdgeScale>
@@ -549,6 +560,7 @@ export default function ProfileScreen() {
             <GlossTile
               mode={mode}
               idSuffix="coins"
+              palette={TILE_PALETTES.coins}
               height={92}
               text={{
                 title: pickLang(lang, { ru: "Купить монеты", en: "Buy coins", kk: "Монета сатып алу" }),
@@ -560,7 +572,7 @@ export default function ProfileScreen() {
                 subOffset: 30,
               }}
               spot={{ x: 170, y: -70, size: 240 }}
-              art={art(themedSvg(COINS, mode), 218, 10, 120, 73)}
+              art={art(themedSvg(COINS, "dark"), 218, 10, 120, 73)}
               onPress={() => router.push("/coins")}
             />
           </EdgeScale>
