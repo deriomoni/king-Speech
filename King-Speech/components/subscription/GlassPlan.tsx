@@ -281,7 +281,7 @@ const st = StyleSheet.create({
   halo: { position: "absolute", left: 6, right: 6, top: 2, bottom: 2, borderRadius: 24 },
   ctaWrap: { borderRadius: 20, shadowRadius: 18, shadowOffset: { width: 0, height: 0 } },
   cta: { height: 58, borderRadius: 20, alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  ctaRim: { ...StyleSheet.absoluteFillObject, borderRadius: 20, borderWidth: 1.2, borderColor: "rgba(255,255,255,0.85)" },
+  ctaRim: { position: "absolute", left: 0, right: 0, top: 0, bottom: 0, borderRadius: 20, borderWidth: 1.2, borderColor: "rgba(255,255,255,0.85)" },
   ctaText: { fontSize: 17, letterSpacing: -0.1, fontFamily: "Geologica_900Black" },
 
   free: { padding: 20, gap: 14 },
