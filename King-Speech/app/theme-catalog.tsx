@@ -122,7 +122,9 @@ export default function ThemeCatalogScreen() {
   const contentW = Math.min(winW, rs(480)) - rs(40);
   const cardW = Math.floor((contentW - rs(12)) / 2);
   // square cover + room for two title lines and the meta
-  const cardH = cardW + rs(56);
+  // title (≤2 lines × 16) starts 9 under the cover; the meta (≈13 tall) sits
+  // 10 from the bottom — 70 keeps a 4pt gap even with a two-line title
+  const cardH = cardW + rs(70);
 
   const goBack = () => {
     if (router.canGoBack()) router.back();
