@@ -48,7 +48,6 @@ export const SPRITES: Record<string, number> = {
   "bg_5.png": require("@/assets/showtime/audience/live/bg_5.png"),
   "bg_6.png": require("@/assets/showtime/audience/live/bg_6.png"),
   "bg_7.png": require("@/assets/showtime/audience/live/bg_7.png"),
-  "bg_8.png": require("@/assets/showtime/audience/live/bg_8.png"),
   "bg_9.png": require("@/assets/showtime/audience/live/bg_9.png"),
   "bg_10.png": require("@/assets/showtime/audience/live/bg_10.png"),
   "bg_11.png": require("@/assets/showtime/audience/live/bg_11.png"),
@@ -70,7 +69,6 @@ export const BG_SPRITES: BgSprite[] = [
   { file: "bg_5.png", w: 957, h: 1266, eye: 0.26, body: 0.72 }, // оператор с камерой
   { file: "bg_6.png", w: 807, h: 1270, eye: 0.29, body: 0.9 },  // девушка в шляпе
   { file: "bg_7.png", w: 850, h: 1271, eye: 0.33, body: 0.85 }, // парень в капюшоне с телефоном
-  { file: "bg_8.png", w: 874, h: 1297, eye: 0.26, body: 0.9 },  // бородач говорит по телефону
   { file: "bg_9.png", w: 737, h: 1165, eye: 0.28, body: 0.88 },  // мужчина в наушниках скучает
   { file: "bg_10.png", w: 697, h: 1119, eye: 0.29, body: 0.88 }, // уставшая девушка в худи
   { file: "bg_11.png", w: 747, h: 1175, eye: 0.26, body: 0.88 }, // парень спит на плече
