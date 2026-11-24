@@ -847,9 +847,11 @@ export class Audience {
       // the back rows fall into the dark under the ceiling, the front rows into
       // the shadow below the stage edge
       cr.linear(0, 0, 0, ROWS[6].y, DARK, 0.85, 0);
-      // the front rows sink into black towards the stage edge — under the
-      // teleprompter only the footlights glow
-      cr.linear(0, ROWS[7].y, 0, FLOOR_Y, [0, 0, 0], 0, 0.93);
+      cr.linear(0, ROWS[7].y, 0, FLOOR_Y, DARK, 0, 0.58);
+      // only the first row sinks softly into black towards the stage edge,
+      // so under the teleprompter just the footlights glow
+      const R0 = ROWS[NR - 1];
+      cr.linear(0, R0.y + R0.pb * 0.2, 0, FLOOR_Y, [0, 0, 0], 0, 0.88);
       const fl = 0.5 + 0.3 * Math.sin((TAU * t) / 3.1) + 0.2 * Math.sin((TAU * t) / 0.77);
       cr.radial(W / 2, H * 0.48, 100, W * 0.8, [1, 0.88, 0.75, 0.05 + 0.03 * fl], [1, 0.88, 0.75, 0]);
       cr.radial(W / 2, H * 0.42, H * 0.3, W * 0.95, [0, 0, 0, 0], [0.04, 0, 0, 0.45]);

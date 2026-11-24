@@ -5856,7 +5856,7 @@ const s = StyleSheet.create({
   // short speeches sit vertically centered and long ones scroll within bounds.
   // top (SH * 0.5) and the side insets are set inline: window-derived values
   // must not go through the auto-scaled StyleSheet.
-  speechPanel: { position: "absolute", bottom: 0, left: 0, right: 0, paddingTop: 14, paddingHorizontal: 18, gap: 12 },
+  speechPanel: { position: "absolute", bottom: 0, left: 0, right: 0, paddingTop: 14, paddingHorizontal: 18, gap: 12, overflow: "hidden" },
   linesWrap: { flex: 1, width: "100%", overflow: "hidden" },
   linesScroll: { flex: 1, width: "100%" },
   // Bottom padding = the bottom edge blur, so the last lines can scroll up
