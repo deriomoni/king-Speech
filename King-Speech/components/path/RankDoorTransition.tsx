@@ -10,7 +10,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Pressable, Platform, useWindowDimensions } from "react-native";
 import { LinearGradient as ExpoLinearGradient } from "expo-linear-gradient";
-import Svg, { Defs, Ellipse, FeGaussianBlur, Filter, G, LinearGradient, Polygon, RadialGradient, Rect, Stop } from "react-native-svg";
+import Svg, { Defs, G, Polygon, RadialGradient, Rect, Stop } from "react-native-svg";
 import Animated, {
   Easing,
   cancelAnimation,
@@ -27,18 +27,18 @@ import { UI_SCALE, rs } from "@/lib/responsive";
 
 // ── timeline (ms) ────────────────────────────────────────────────────────────
 // Unhurried on purpose: the door gets a moment on screen before the pull.
-const FADE_IN = 700;
-const JIGGLE_AT = 1100; // latch: the door twitches
-const OPEN_AT = 1450;
-const OPEN_DUR = 2000;
-const PULL_AT = 3750; // the open door is held ~300ms, then the camera is dragged in
-const PULL_DUR = 1800;
-const SWING_AT = 3600; // …while the draught swings the door wider
-const SWING_DUR = 700;
-const FLASH_AT = 4900;
-const FLASH_DUR = 700;
+const FADE_IN = 900;
+const JIGGLE_AT = 1500; // latch: the door twitches
+const OPEN_AT = 1950;
+const OPEN_DUR = 2800;
+const PULL_AT = 5150; // the open door is held ~400ms, then the camera is drawn in
+const PULL_DUR = 2500;
+const SWING_AT = 4950; // …while the draught swings the door wider
+const SWING_DUR = 900;
+const FLASH_AT = 6750;
+const FLASH_DUR = 900;
 const REVEAL_AT = FLASH_AT + FLASH_DUR; // new rank mounts under the white
-const OUT_DUR = 850;
+const OUT_DUR = 1000;
 const END_AT = REVEAL_AT + OUT_DUR;
 const DOOR_STILL_AT = SWING_AT + SWING_DUR; // no more door re-renders after this
 
@@ -58,6 +58,10 @@ function easeInQuart(x: number) {
   "worklet";
   return x * x * x * x;
 }
+function easeInCubic(x: number) {
+  "worklet";
+  return x * x * x;
+}
 function easeOutCubic(x: number) {
   "worklet";
   return 1 - Math.pow(1 - x, 3);
@@ -65,7 +69,7 @@ function easeOutCubic(x: number) {
 /** Door swing (0..1.35) and light behind it (0..1) at time t. */
 function doorAt(t: number) {
   "worklet";
-  const jiggle = t > JIGGLE_AT && t < OPEN_AT ? Math.sin(seg(t, JIGGLE_AT, 260) * Math.PI) * 0.035 : 0;
+  const jiggle = t > JIGGLE_AT && t < OPEN_AT ? Math.sin(seg(t, JIGGLE_AT, 340) * Math.PI) * 0.035 : 0;
   const open = Math.max(jiggle, easeInOutCubic(seg(t, OPEN_AT, OPEN_DUR))) + 0.35 * easeOutCubic(seg(t, SWING_AT, SWING_DUR));
   // a pulsing leak while shut, then the light swells with the swing itself
   const leak = 0.3 + 0.1 * Math.sin(t / 180) * (1 - seg(t, JIGGLE_AT, OPEN_AT - JIGGLE_AT)) + 0.2 * seg(t, JIGGLE_AT, OPEN_AT - JIGGLE_AT);
@@ -84,8 +88,8 @@ const MOTES = Array.from({ length: 24 }, (_, i) => {
   return {
     angle: r(1) * Math.PI * 2,
     dist: 0.55 + r(2) * 0.6, // × screen diagonal / 2
-    at: PULL_AT - 350 + r(3) * 900,
-    dur: 700 + r(4) * 500,
+    at: PULL_AT - 450 + r(3) * 1200,
+    dur: 950 + r(4) * 700,
     w: 1.5 + r(5) * 2.5,
   };
 });
@@ -128,40 +132,6 @@ function Mote({ m, t, px, py, diag, color }: { m: (typeof MOTES)[number]; t: Sha
         { position: "absolute", left: 0, top: 0, width: base, height: mw, borderRadius: mw / 2, backgroundColor: color },
         style,
       ]}
-    />
-  );
-}
-
-// Dust hanging in the spotlight: drifts slowly upward and twinkles, then
-// clears out when the camera is pulled in.
-const DUST = Array.from({ length: 18 }, (_, i) => {
-  const r = (n: number) => {
-    const x = Math.sin((i + 3) * 91.17 + n * 13.7) * 24634.6345;
-    return x - Math.floor(x);
-  };
-  return { x: r(1) * 2 - 1, y: r(2), size: 1.6 + r(3) * 2.6, speed: 0.006 + r(4) * 0.01, phase: r(5) * 6.28 };
-});
-
-function Dust({ d, t, cx, top, w, h, color }: { d: (typeof DUST)[number]; t: SharedValue<number>; cx: number; top: number; w: number; h: number; color: string }) {
-  const size = d.size * UI_SCALE;
-  const style = useAnimatedStyle(() => {
-    const tt = t.value;
-    const rise = ((d.y + tt * d.speed * 0.01) % 1 + 1) % 1;
-    const y = top + h * (1 - rise);
-    // the cone of light widens toward the floor
-    const x = cx + d.x * w * (0.35 + 0.65 * (1 - rise)) * 0.5 + Math.sin(tt / 900 + d.phase) * 6;
-    const fadeEdge = Math.sin(Math.PI * rise);
-    const twinkle = 0.55 + 0.45 * Math.sin(tt / 420 + d.phase * 3);
-    const gone = 1 - seg(tt, PULL_AT - 300, 500);
-    return {
-      opacity: fadeEdge * twinkle * gone * easeOutCubic(seg(tt, 0, FADE_IN)) * 0.8,
-      transform: [{ translateX: x - size / 2 }, { translateY: y - size / 2 }],
-    };
-  });
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[{ position: "absolute", left: 0, top: 0, width: size, height: size, borderRadius: size / 2, backgroundColor: color }, style]}
     />
   );
 }
@@ -217,10 +187,10 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
       const tt = Math.min(t.value, DOOR_STILL_AT);
       const d = doorAt(tt);
       // quantised so React only hears about visible changes
-      return Math.round(d.open * 400) * 1000 + Math.round(d.light * 100);
+      return Math.round(d.open * 220) * 1000 + Math.round(d.light * 60);
     },
     (key, prev) => {
-      if (key !== prev) runOnJS(setDoor)({ open: Math.floor(key / 1000) / 400, light: (key % 1000) / 100 });
+      if (key !== prev) runOnJS(setDoor)({ open: Math.floor(key / 1000) / 220, light: (key % 1000) / 60 });
     },
   );
   useAnimatedReaction(
@@ -253,10 +223,10 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
   const rootStyle = useAnimatedStyle(() => ({ opacity: 1 - seg(t.value, REVEAL_AT, OUT_DUR) }));
   const cameraStyle = useAnimatedStyle(() => {
     const tt = t.value;
-    const pull = easeInQuart(seg(tt, PULL_AT, PULL_DUR));
+    const pull = easeInCubic(seg(tt, PULL_AT, PULL_DUR));
     // a short breath back before the rush in
     const brace = Math.sin(seg(tt, PULL_AT - 500, 500) * Math.PI * 0.5) * (1 - seg(tt, PULL_AT, 400));
-    const s = (1 - 0.05 * brace) * (1 + pull * 11);
+    const s = (1 - 0.04 * brace) * (1 + pull * 9);
     const shake = tt > PULL_AT && tt < FLASH_AT ? Math.sin(tt / 23) * shakeAmp * pull : 0;
     return {
       opacity: easeOutCubic(seg(tt, 0, FADE_IN)),
@@ -269,7 +239,7 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
   });
   const lightCamStyle = useAnimatedStyle(() => {
     const tt = t.value;
-    const pull = easeInQuart(seg(tt, PULL_AT, PULL_DUR));
+    const pull = easeInCubic(seg(tt, PULL_AT, PULL_DUR));
     const s = 1 + pull * 2.5;
     return {
       opacity: easeOutCubic(seg(tt, 0, FADE_IN)),
@@ -312,48 +282,18 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
 
         {/* the room — scales as one piece when the camera gets pulled in */}
         <Animated.View style={[StyleSheet.absoluteFill, cameraStyle]}>
-          <ExpoLinearGradient
-            colors={lightTheme ? ["#FFFDF9", "#F7F1E7", "#EFE6D7"] : ["#0B0A0D", "#17131C", "#221B26"]}
-            locations={[0, 0.6, 1]}
-            style={[StyleSheet.absoluteFill, { bottom: H - floorY }]}
-          />
-          <ExpoLinearGradient
-            colors={lightTheme ? ["#E9DFCE", "#F4EEE4"] : ["#2A2129", "#0E0C10"]}
-            style={{ position: "absolute", left: 0, right: 0, top: floorY, bottom: 0 }}
-          />
-          <Svg width={W} height={H} style={StyleSheet.absoluteFill}>
-            <Defs>
-              {/* a spotlight from above, tinted like the door */}
-              <RadialGradient id="rdtSpot" cx="50%" cy="50%" r="50%">
-                <Stop offset="0" stopColor={lightTheme ? "#FFFFFF" : palette.glow} stopOpacity={lightTheme ? 0.95 : 0.34} />
-                <Stop offset="0.55" stopColor={palette.glow} stopOpacity={lightTheme ? 0.12 : 0.1} />
-                <Stop offset="1" stopColor={palette.glow} stopOpacity={0} />
-              </RadialGradient>
-              {/* where that light lands on the floor */}
-              <RadialGradient id="rdtFloor" cx="50%" cy="50%" r="50%">
-                <Stop offset="0" stopColor={palette.glow} stopOpacity={lightTheme ? 0.3 : 0.22} />
-                <Stop offset="1" stopColor={palette.glow} stopOpacity={0} />
-              </RadialGradient>
-              {/* the door mirrored faintly in a polished floor */}
-              <LinearGradient id="rdtRefl" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor={palette.slab} stopOpacity={lightTheme ? 0.35 : 0.16} />
-                <Stop offset="1" stopColor={palette.slab} stopOpacity={0} />
-              </LinearGradient>
-              <Filter id="rdtSoft" x="-40%" y="-20%" width="180%" height="140%">
-                <FeGaussianBlur stdDeviation={rs(10)} />
-              </Filter>
-              <LinearGradient id="rdtBase" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor={lightTheme ? "#FFFFFF" : "#3A2F3A"} />
-                <Stop offset="1" stopColor={lightTheme ? "#DCCFB9" : "#1A151C"} />
-              </LinearGradient>
-            </Defs>
-            <Ellipse cx={W / 2} cy={doorTop - doorH * 0.05} rx={W * 0.62} ry={doorH * 0.95} fill="url(#rdtSpot)" />
-            <Ellipse cx={W / 2} cy={floorY + rs(26)} rx={W * 0.58} ry={rs(70)} fill="url(#rdtFloor)" />
-            <Rect x={W / 2 - doorW * 0.36} y={floorY + rs(4)} width={doorW * 0.72} height={doorH * 0.45} fill="url(#rdtRefl)" filter="url(#rdtSoft)" />
-            {/* baseboard where the wall meets the floor */}
-            <Rect x={0} y={floorY - rs(9)} width={W} height={rs(9)} fill="url(#rdtBase)" />
-            <Rect x={0} y={floorY - rs(9)} width={W} height={1} fill="#FFFFFF" opacity={lightTheme ? 0.9 : 0.08} />
-          </Svg>
+          {lightTheme ? (
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: "#FFFFFF" }]} />
+          ) : (
+            <>
+              <ExpoLinearGradient
+                colors={["#0B0A0D", "#17131C", "#1E1822"]}
+                locations={[0, 0.6, 1]}
+                style={[StyleSheet.absoluteFill, { bottom: H - floorY }]}
+              />
+              <ExpoLinearGradient colors={["#2A2129", "#0E0C10"]} style={{ position: "absolute", left: 0, right: 0, top: floorY, bottom: 0 }} />
+            </>
+          )}
 
         </Animated.View>
 
@@ -380,11 +320,8 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
                   <Stop offset="0.3" stopColor={palette.glow} stopOpacity={0.24} />
                   <Stop offset="1" stopColor={palette.glow} stopOpacity={0} />
                 </RadialGradient>
-                <Filter id="rdtRayBlur" x="-20%" y="-20%" width="140%" height="140%">
-                  <FeGaussianBlur stdDeviation={7} />
-                </Filter>
               </Defs>
-              <G filter="url(#rdtRayBlur)">
+              <G>
                 {RAYS.map((r, i) => {
                   const len = diag * 2.4;
                   const cx = px + W;
@@ -406,14 +343,10 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
               open={door.open}
               light={door.light}
               palette={palette}
+              fast
             />
           </View>
         </Animated.View>
-
-        {/* dust in the spotlight */}
-        {DUST.map((d, i) => (
-          <Dust key={`d${i}`} d={d} t={t} cx={W / 2} top={doorTop - doorH * 0.25} w={doorW * 1.5} h={doorH * 1.1} color={lightTheme ? palette.glow : "#FFF3D6"} />
-        ))}
 
         {/* motes sucked into the doorway */}
         {MOTES.map((m, i) => (
@@ -421,7 +354,7 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
         ))}
 
         {/* vignette (dark room only) */}
-        <Animated.View style={[StyleSheet.absoluteFill, vignetteStyle]}>
+        <Animated.View style={[StyleSheet.absoluteFill, vignetteStyle, lightTheme && { display: "none" }]}>
           <ExpoLinearGradient
             colors={
               lightTheme

@@ -47,6 +47,11 @@ interface Props {
   /** Real amplitude envelope (0..1 per bar), e.g. from record-time metering.
    *  When absent, the waveform is decoded from the audio (web) or falls back. */
   waveform?: number[];
+  /** Compact look: solid play button, the bars (tap to seek) and the time —
+   *  no frame, no «again», no progress line. */
+  minimal?: boolean;
+  /** Length known up front, so the time shows before the first play. */
+  knownDurationSec?: number;
 }
 
 /**
@@ -62,6 +67,8 @@ export default function RecordingPlayer({
   onComplete,
   autoPlay,
   waveform,
+  minimal = false,
+  knownDurationSec,
 }: Props) {
   const { lang } = useLang();
   // Real waveform: prefer a passed-in amplitude envelope (record-time metering),
@@ -74,7 +81,7 @@ export default function RecordingPlayer({
       ? toHeights(decoded.samples)
       : FALLBACK_HEIGHTS;
   const [isPlaying, setIsPlaying] = useState(false);
-  const [durationSec, setDurationSec] = useState(0);
+  const [durationSec, setDurationSec] = useState(knownDurationSec && knownDurationSec > 0 ? knownDurationSec : 0);
   const [positionSec, setPositionSec] = useState(0);
   const soundRef = useRef<any>(null);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
@@ -224,6 +231,33 @@ export default function RecordingPlayer({
       .padStart(2, "0")}`;
   const progress = durationSec > 0 ? Math.min(1, positionSec / durationSec) : 0;
 
+  if (minimal) {
+    return (
+      <View style={s.row}>
+        <Pressable
+          onPress={play}
+          disabled={!uri}
+          style={({ pressed }) => [s.playBtn, { backgroundColor: accentColor, borderWidth: 0, transform: [{ scale: pressed ? 0.94 : 1 }] }]}
+        >
+          <Ionicons name={isPlaying ? "pause" : "play"} size={rs(22)} color="#FFFFFF" style={{ marginLeft: isPlaying ? 0 : rs(3) }} />
+        </Pressable>
+        <View
+          style={s.waveWrap}
+          onLayout={(e) => { barWidthRef.current = e.nativeEvent.layout.width; }}
+          onStartShouldSetResponder={() => !!uri && durationSec > 0}
+          onResponderGrant={(e) => seekFromEvent(e, true)}
+          onResponderMove={(e) => seekFromEvent(e, false)}
+        >
+          {barHeights.map((h, i) => {
+            const filled = (i + 0.5) / BAR_COUNT <= progress;
+            return <View key={i} style={{ width: rs(3), borderRadius: rs(2), height: rs(h), backgroundColor: filled ? accentColor : trackColor }} />;
+          })}
+        </View>
+        <Text style={[s.timeMin, { color: textColor }]}>{fmt(isPlaying || positionSec > 0 ? positionSec : durationSec)}</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={[s.container, { borderColor: trackColor }]}>
       <View style={s.row}>
@@ -317,6 +351,7 @@ const s = StyleSheet.create({
     backgroundColor: "#fff",
     borderWidth: 2,
   },
+  timeMin: { fontSize: 13, fontFamily: "Geologica_600SemiBold", minWidth: 40, textAlign: "right" },
   timeRow: { flexDirection: "row", justifyContent: "space-between" },
   time: { fontSize: 11, fontFamily: "Geologica_500Medium", letterSpacing: 0.5 },
 });

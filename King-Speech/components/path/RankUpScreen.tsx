@@ -13,7 +13,6 @@ import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { router } from "expo-router";
 import { leaveTo } from "@/lib/nav";
 import { useScreenMusic } from "@/lib/music";
-import { useTheme } from "@/context/ThemeContext";
 import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useGame, RANKS_MODULAR } from "@/context/GameContext";
 import OscarMascot from "@/components/OscarMascot";
@@ -91,7 +90,6 @@ const tint = (hex: string, k: number, a = 1) => `rgba(${tintRgb(hex, k).join(","
 export default function RankUpScreen({ fromRank, memento = false, preview = false }: Props) {
   const isFinal = fromRank >= 5;
   const { lang } = useLang();
-  const { themeMode } = useTheme();
   const insets = useSafeAreaInsets();
   const { levels, activityLog, showTimeRecordings, readingRecordings, advanceRank, markPortalCompleted } = useGame();
   const topPad = Platform.OS === "web" ? 54 : insets.top;
@@ -107,7 +105,10 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
 
   // the page wears the colour of the door the player just walked through
   const door = doorPaletteForRank(fromRank);
-  const bg = tint(door.slab, 0.38);
+  // a soft gradient in the rank colour: pale casing at the top, the door's
+  // own tone in the middle, a warmer glow at the bottom
+  const grad = [tint(door.casing, 0.25), tint(door.slab, 0.3), tint(door.glow, 0.4)] as const;
+  const bg = grad[2];
   const card = "rgba(255,255,255,0.58)";
 
   // their very first reading — or, for players from before it was kept,
@@ -146,9 +147,6 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
     : isFinal
       ? T("Твой Голос", "The Voice is Yours", "Дауыс — сенікі")
       : rankTitle(fromRank + 1, lang);
-  const dateStr = take
-    ? new Date(take.date).toLocaleDateString(lang === "en" ? "en-GB" : lang === "kk" ? "kk-KZ" : "ru-RU", { day: "numeric", month: "long" })
-    : "";
 
   const handleStart = () => {
     if (memento) {
@@ -172,6 +170,7 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
 
   return (
     <View style={{ flex: 1, backgroundColor: bg }}>
+      <LinearGradient colors={grad} locations={[0, 0.5, 1]} start={{ x: 0.15, y: 0 }} end={{ x: 0.85, y: 1 }} style={StyleSheet.absoluteFill} />
       {revealed && (
         <ScrollView
           contentContainerStyle={[s.scroll, { paddingTop: topPad + rs(22), paddingBottom: bottomPad + rs(112) }]}
@@ -193,11 +192,16 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
             <Text style={s.cardTitle}>{T("Так звучал твой голос в начале", "How your voice sounded at the start", "Басында дауысың осылай естілді")}</Text>
             {take ? (
               <>
-                <Text style={s.cardSub} numberOfLines={1}>
-                  {[take.title, dateStr].filter(Boolean).join(" · ")}
-                </Text>
-                <View style={{ marginTop: rs(12) }}>
-                  <RecordingPlayer uri={take.uri} waveform={take.waveform} accentColor={INK} trackColor={ink(0.14)} textColor={ink(0.55)} />
+                <View style={{ marginTop: rs(14) }}>
+                  <RecordingPlayer
+                    minimal
+                    uri={take.uri}
+                    waveform={take.waveform}
+                    knownDurationSec={take.durationSec}
+                    accentColor={INK}
+                    trackColor={ink(0.16)}
+                    textColor={ink(0.6)}
+                  />
                 </View>
                 <Text style={s.cardHint}>
                   {T("Послушай — и сравни с тем, как говоришь сейчас.", "Listen — and compare it with how you speak now.", "Тыңдап көр — қазіргі сөйлеуіңмен салыстыр.")}
@@ -221,9 +225,6 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
               <View style={s.grid}>
                 {highlights.map((h) => (
                   <View key={h.key} style={[s.tile, { backgroundColor: card }, highlights.length === 1 && { width: "100%" }]}>
-                    <View style={[s.tileIcon, { backgroundColor: tint(door.glow, 0.25) }]}>
-                      <Ionicons name={h.icon} size={rs(17)} color={INK} />
-                    </View>
                     <Text style={[s.tileValue, !/^d+$/.test(h.value) && s.tileWord]} numberOfLines={2}>
                       {h.value}
                     </Text>
@@ -246,7 +247,7 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
 
       {revealed && (
         <Animated.View entering={FadeIn.duration(500).delay(300)} style={[s.ctaWrap, { paddingBottom: bottomPad + rs(16) }]} pointerEvents="box-none">
-          <LinearGradient colors={[tint(door.slab, 0.38, 0), bg]} locations={[0, 0.45]} style={s.ctaFade} pointerEvents="none" />
+          <LinearGradient colors={[tint(door.glow, 0.4, 0), bg]} locations={[0, 0.45]} style={s.ctaFade} pointerEvents="none" />
           <Pressable
             onPress={handleStart}
             style={({ pressed }) => [s.cta, { transform: [{ scale: pressed ? 0.97 : 1 }] }]}
@@ -263,7 +264,8 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
       {doorScene && (
         <RankDoorTransition
           rank={fromRank}
-          light={themeMode !== "dark"}
+          // a plain white room keeps every eye on the door
+          light
           lead={
             isFinal
               ? T("Ты прошёл все ранги", "You completed every rank", "Сен барлық дәрежеден өттің")
@@ -290,9 +292,8 @@ const s = StyleSheet.create({
   cardHint: { color: ink(0.55), fontSize: 13, lineHeight: 18, fontFamily: "Geologica_400Regular", marginTop: 10 },
   section: { color: INK, fontSize: 19, letterSpacing: -0.2, fontFamily: "Geologica_800ExtraBold", marginTop: 8, marginBottom: 12 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  tile: { width: "47.5%", flexGrow: 1, borderRadius: 22, padding: 14, minHeight: 128 },
-  tileIcon: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
-  tileValue: { color: INK, fontSize: 26, letterSpacing: -0.5, fontFamily: "Geologica_900Black", marginTop: 12 },
+  tile: { width: "47.5%", flexGrow: 1, borderRadius: 22, padding: 16, minHeight: 104 },
+  tileValue: { color: INK, fontSize: 28, letterSpacing: -0.5, fontFamily: "Geologica_900Black" },
   // words ("по вечерам", "Скороговорки") sit smaller than numbers
   tileWord: { fontSize: 19, lineHeight: 23, letterSpacing: -0.2 },
   tileLabel: { color: ink(0.6), fontSize: 13, lineHeight: 17, fontFamily: "Geologica_500Medium", marginTop: 2 },

@@ -124,9 +124,12 @@ type Props = {
   palette?: DoorPalette;
   /** Draw the pool of light spilling over the floor. */
   floorLight?: boolean;
+  /** Animated use: no SVG blur filters (they are re-rasterised on every
+   *  frame and make the swing stutter on phones). */
+  fast?: boolean;
 };
 
-export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALETTE, floorLight = true }: Props) {
+export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALETTE, floorLight = true, fast = false }: Props) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const id = (s: string) => `d3${uid}${s}`;
   const p = palette;
@@ -361,12 +364,12 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
       <Ellipse cx={floorC[0]} cy={floorC[1] + 2} rx={118} ry={14} fill={`url(#${id("contact")})`} />
 
       {/* the casing stands proud of the wall: a soft shadow behind it */}
-      <Polygon
+      {!fast && <Polygon
         points={pts([[XL - CASE + 5, YT - CASE + 7, 0], [XR + CASE + 5, YT - CASE + 7, 0], [XR + CASE + 5, 0, 0], [XL - CASE + 5, 0, 0]])}
         fill="#000000"
         opacity={0.35}
         filter={`url(#${id("wallShadow")})`}
-      />
+      />}
 
       {/* the room behind */}
       <Polygon points={pts(back)} fill={p.room} />
@@ -385,12 +388,12 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
       />
 
       {/* blinding white bloom spilling over the frame as the door opens */}
-      {spill > 0.01 && (
+      {!fast && spill > 0.01 && (
         <Polygon points={pts(bloom)} fill="#FFFFFF" opacity={0.85 * Math.min(1, spill * 1.1)} filter={`url(#${id("bloom")})`} />
       )}
 
       {floorLight && spill > 0.01 && (
-        <Polygon points={pts(pool)} fill={`url(#${id("pool")})`} opacity={spill} filter={`url(#${id("softer")})`} />
+        <Polygon points={pts(pool)} fill={`url(#${id("pool")})`} opacity={spill} filter={fast ? undefined : `url(#${id("softer")})`} />
       )}
 
       {/* light leaking under a shut door */}
@@ -429,7 +432,7 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
         <Path key={hy} d={rectD(0.6, hy, 5, hy + 16)} fill={`url(#${id("metal")})`} stroke={ink} strokeWidth={0.9} />
       ))}
       {/* knob: rose on the face + a ball standing off it */}
-      <Ellipse cx={ball[0] + 1.6} cy={ball[1] + 3.2} rx={ballR * 1.05} ry={ballR * 0.8} fill="#000000" opacity={0.22} filter={`url(#${id("knobShadow")})`} />
+      <Ellipse cx={ball[0] + 1.6} cy={ball[1] + 3.2} rx={ballR * 1.05} ry={ballR * 0.8} fill="#000000" opacity={fast ? 0.14 : 0.22} filter={fast ? undefined : `url(#${id("knobShadow")})`} />
       <Polygon points={knobRose} fill={`url(#${id("metal")})`} stroke={ink} strokeWidth={1.1} strokeLinejoin="round" />
       <Circle cx={ball[0]} cy={ball[1]} r={ballR} fill={`url(#${id("knob")})`} stroke={ink} strokeWidth={1.1} />
       <Circle cx={ball[0] - ballR * 0.32} cy={ball[1] - ballR * 0.36} r={ballR * 0.28} fill="#FFFFFF" opacity={0.85} />
