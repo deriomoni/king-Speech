@@ -13,7 +13,7 @@ let clipSeq = 0;
 
 // Squircle: straight sides, big smooth (superellipse-like) corners.
 function squirclePath(w: number, h: number): string {
-  const r = Math.min(w, h) * 0.3; // how far each corner reaches along a side
+  const r = Math.min(w, h) * 0.42; // how far each corner reaches along a side
   const t = r * 0.14; // control-point offset from the corner vertex (smaller = squarer)
   const f = (n: number) => n.toFixed(2);
   return [
