@@ -38,7 +38,7 @@ import { CROWN_ICON_SVG } from "@/assets/figma/new/svgs";
 
 // The subscription crown — the paywall's hand-built logo, in the theme ink
 // (__FG__ is swapped for theme.text).
-const CROWN_ICON = CROWN_ICON_SVG.replace(/url(#crownIconG)/g, "__FG__");
+const CROWN_ICON = CROWN_ICON_SVG.split("url(#crownIconG)").join("__FG__");
 
 // Muted segmented control: neutral track, the selected segment is just a
 // slightly lighter chip — no accent colour, no outline.
