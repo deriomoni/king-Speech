@@ -26,6 +26,9 @@ import { ThemeCoverGallery, COVER_CARD, COVER_CY } from "@/components/showtime/T
 import { CoverFlight, previewRect, type CoverRect } from "@/components/showtime/CoverFlight";
 import { markFlightLaunch, subscribeFlightReturn } from "@/components/showtime/coverFlightStore";
 import { showtimeCover } from "@/constants/showtimeCovers";
+
+// Cover corner radius as a share of the side — matches the theme catalog shape.
+const COVER_ROUND = 0.3;
 import { ShowTimeLogo } from "@/components/showtime/ShowTimeLogo";
 import { OpenCatalogIcon, SearchIcon } from "@/components/showtime/ShowTimeIcons";
 import { ShowTimeModeTiles } from "@/components/showtime/ModeTiles";
@@ -340,6 +343,7 @@ export default function ShowTimeScreen() {
                       {
                         width: tileSize,
                         height: tileSize,
+                        borderRadius: tileSize * COVER_ROUND,
                         backgroundColor: "transparent",
                         paddingLeft: rs(11),
                         paddingBottom: rs(12),
@@ -349,7 +353,7 @@ export default function ShowTimeScreen() {
                   >
                     <Image
                       source={showtimeCover(k)}
-                      style={[st.tilePhoto, { width: tileSize, height: tileSize }]}
+                      style={[st.tilePhoto, { width: tileSize, height: tileSize, borderRadius: tileSize * COVER_ROUND }]}
                       resizeMode="cover"
                     />
                     <LinearGradient
@@ -361,7 +365,7 @@ export default function ShowTimeScreen() {
                       {speechThemes[k].title}
                     </Text>
                     {/* The photo fills the whole square; the selection ring sits on top. */}
-                    {sel && <View pointerEvents="none" style={[st.tileRing, { borderColor: c.text }]} />}
+                    {sel && <View pointerEvents="none" style={[st.tileRing, { borderColor: c.text, borderRadius: tileSize * COVER_ROUND }]} />}
                   </Pressable>
                 );
               })}

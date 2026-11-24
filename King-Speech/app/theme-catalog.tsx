@@ -340,8 +340,8 @@ const s = StyleSheet.create({
   featuredBand: { position: "absolute", left: 0, right: 0, top: 40, bottom: 0 },
   tag: {
     position: "absolute",
-    left: 18,
-    top: 18,
+    left: 34,
+    top: 30,
     height: 23,
     paddingHorizontal: 10,
     borderRadius: 12,
@@ -351,9 +351,9 @@ const s = StyleSheet.create({
   tagText: { color: "#FFD857", fontSize: 10, letterSpacing: 0.4, fontFamily: "Geologica_800ExtraBold" },
   featuredBottom: {
     position: "absolute",
-    left: 18,
-    right: 18,
-    bottom: 18,
+    left: 34,
+    right: 36,
+    bottom: 36,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,

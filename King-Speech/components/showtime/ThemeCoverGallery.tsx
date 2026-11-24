@@ -47,7 +47,8 @@ const OUTER_X = [-70, -127.1, -168.7, -209.8, -251];
 const INNER_X = [70, -53.7, -86.1, -118.2, -150.3];
 const OUTER_H = [140, 136.4, 135.8, 135.2, 134.6];
 const INNER_H = [140, 105.4, 105.0, 104.6, 104.2];
-const RADII = [16, 12, 12, 12, 12].map((v) => v * SIZE_K);
+// Big rounded corners (≈ the theme catalog shape), same share on every card.
+const RADII = [0.3, 0.3, 0.3, 0.3, 0.3].map((v) => v * CARD);
 // Tap zones (distance from centre) → slot index.
 const ZONES = [70, 127.1, 168.7, 209.8].map((v) => v * SIZE_K);
 
