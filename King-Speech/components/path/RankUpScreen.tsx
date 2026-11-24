@@ -100,8 +100,10 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
   // white-out peak so its entrance plays as the light fades.
   const [doorScene, setDoorScene] = useState(!memento);
   const [revealed, setRevealed] = useState(memento);
-  // the fanfare starts with the door itself on a live rank-up, not on re-visits
-  useScreenMusic("rankUp", !memento);
+  // the fanfare starts on the cut-scene's first frame — not while the screen
+  // is still loading — and only on a live rank-up, not on re-visits
+  const [musicOn, setMusicOn] = useState(false);
+  useScreenMusic("rankUp", musicOn && !memento);
 
   // the page wears the colour of the door the player just walked through
   const door = doorPaletteForRank(fromRank);
@@ -272,6 +274,7 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
               : T("Ты переходишь в новый ранг", "You're entering a new rank", "Сен жаңа дәрежеге өтесің")
           }
           title={title}
+          onStart={() => setMusicOn(true)}
           onReveal={() => setRevealed(true)}
           onDone={() => setDoorScene(false)}
         />

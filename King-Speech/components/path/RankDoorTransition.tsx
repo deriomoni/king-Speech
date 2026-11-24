@@ -20,7 +20,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import * as Haptics from "@/lib/haptics";
-import Door3D, { DOOR_FLOOR_Y, DOOR_VB_H, DOOR_VB_W, DOORWAY_GAP_CENTER, doorPaletteForRank, vividDoorForRank } from "./Door3D";
+import Door3D, { DOOR_FLOOR_Y, DOOR_VB_H, DOOR_VB_W, DOORWAY_GAP_CENTER, doorPaletteForRank } from "./Door3D";
 import { rs } from "@/lib/responsive";
 
 // ── timeline (ms) ────────────────────────────────────────────────────────────
@@ -80,11 +80,9 @@ const LIGHT_CORE = "#FFFDF4";
 // The dark room: a deep indigo — the complement of the yellow door — rather
 // than flat black, so the colours stay clean instead of muddy.
 const ROOM = {
-  wall: ["#1C1840", "#17143A", "#120F2E"] as const,
-  floorTop: "#0F0D27",
-  floorBottom: "#0A091C",
-  base: "#2A2556",
-  baseEdge: "rgba(255,255,255,0.10)",
+  wall: ["#0C0A1C", "#0A0818", "#080614"] as const,
+  floorTop: "#070612",
+  floorBottom: "#04030B",
 };
 
 type Props = {
@@ -98,11 +96,12 @@ type Props = {
   onReveal: () => void;
   /** Called once the white has faded away. */
   onDone: () => void;
+  /** Called on the cut-scene's first frame — start the music here. */
+  onStart?: () => void;
 };
 
-export default function RankDoorTransition({ rank, light: lightTheme = false, lead, title, onReveal, onDone }: Props) {
-  // the dark room gets the saturated door; the white stage keeps the pastel one
-  const palette = lightTheme ? doorPaletteForRank(rank) : vividDoorForRank(rank);
+export default function RankDoorTransition({ rank, light: lightTheme = false, lead, title, onReveal, onDone, onStart }: Props) {
+  const palette = doorPaletteForRank(rank);
   const { width: W, height: H } = useWindowDimensions();
   const t = useSharedValue(0);
   const [door, setDoor] = useState({ open: 0, light: 0.35 });
@@ -114,13 +113,28 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
       t.value = Math.min(freeze, REVEAL_AT - 1);
       return;
     }
-    t.value = withTiming(END_AT, { duration: END_AT, easing: Easing.linear });
-    return () => cancelAnimation(t);
+    // wait until mounting work is done and a frame has been painted, so the
+    // cut-scene (and the music that starts with it) never begins half-loaded
+    // (a short beat, then two painted frames)
+    let raf = 0;
+    const timer = setTimeout(() => {
+      raf = requestAnimationFrame(() => {
+        raf = requestAnimationFrame(() => {
+          t.value = withTiming(END_AT, { duration: END_AT, easing: Easing.linear });
+          cbRef.current.onStart?.();
+        });
+      });
+    }, 250);
+    return () => {
+      clearTimeout(timer);
+      cancelAnimationFrame(raf);
+      cancelAnimation(t);
+    };
   }, []);
 
   // ── JS side: door re-renders (only while it moves) + one-shot cues ──
-  const cbRef = useRef({ onReveal, onDone });
-  cbRef.current = { onReveal, onDone };
+  const cbRef = useRef({ onReveal, onDone, onStart });
+  cbRef.current = { onReveal, onDone, onStart };
   const cue = useCallback((name: string) => {
     const tap = (fn: () => Promise<void>) => {
       if (Platform.OS !== "web") fn().catch(() => {});
@@ -169,7 +183,6 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
   const px = doorLeft + DOORWAY_GAP_CENTER.x * doorW;
   const py = doorTop + DOORWAY_GAP_CENTER.y * doorH;
   const floorY = doorTop + DOOR_FLOOR_Y * doorH;
-  const baseH = rs(11);
 
   // ── UI-thread styles ──
   const rootStyle = useAnimatedStyle(() => ({ opacity: 1 - seg(t.value, REVEAL_AT, OUT_DUR) }));
@@ -222,9 +235,6 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
             <>
               <ExpoLinearGradient colors={ROOM.wall} locations={[0, 0.65, 1]} style={[StyleSheet.absoluteFill, { bottom: H - floorY }]} />
               <ExpoLinearGradient colors={[ROOM.floorTop, ROOM.floorBottom]} style={{ position: "absolute", left: 0, right: 0, top: floorY, bottom: 0 }} />
-              {/* baseboard: parts the wall from the floor */}
-              <View style={{ position: "absolute", left: 0, right: 0, top: floorY - baseH, height: baseH, backgroundColor: ROOM.base }} />
-              <View style={{ position: "absolute", left: 0, right: 0, top: floorY - baseH, height: 1.5, backgroundColor: ROOM.baseEdge }} />
             </>
           )}
         </Animated.View>
@@ -242,7 +252,7 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
             colors={
               lightTheme
                 ? ["rgba(120,96,60,0.10)", "rgba(120,96,60,0)", "rgba(120,96,60,0)", "rgba(120,96,60,0.14)"]
-                : ["rgba(8,6,22,0.6)", "rgba(8,6,22,0)", "rgba(8,6,22,0)", "rgba(8,6,22,0.6)"]
+                : ["rgba(3,2,9,0.6)", "rgba(3,2,9,0)", "rgba(3,2,9,0)", "rgba(3,2,9,0.6)"]
             }
             locations={[0, 0.25, 0.75, 1]}
             style={StyleSheet.absoluteFill}
