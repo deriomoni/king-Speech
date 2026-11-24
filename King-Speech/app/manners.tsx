@@ -121,8 +121,8 @@ export default function MannersScreen() {
         {tab === "quiz" ? (
           <Animated.View key="quiz" entering={FadeIn.duration(260)}>
             <View style={[styles.hero, { backgroundColor: theme.card }]}>
-              <View style={[styles.crownWrap, { backgroundColor: theme.accentDim }]}>
-                <MannersMark height={rs(36)} color={isDark ? theme.accent : "#262628"} />
+              <View style={styles.crownWrap}>
+                <MannersMark height={rs(52)} color={isDark ? theme.accent : "#262628"} />
               </View>
               <Text style={[styles.heroTitle, { color: theme.text }]}>
                 {pickLang(lang, { ru: `Раунд из ${ROUND} ситуаций`, en: `A round of ${ROUND} situations`, kk: `${ROUND} жағдайдан тұратын раунд` })}
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   tabCountTxt: { fontSize: 11, fontFamily: fonts.bodyBold },
 
   hero: { marginTop: 16, borderRadius: 28, padding: 22 },
-  crownWrap: { width: 64, height: 64, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  crownWrap: { alignSelf: "flex-start" },
   heroTitle: { fontSize: 22, lineHeight: 28, fontFamily: fonts.display, marginTop: 18 },
   heroText: { fontSize: 15, lineHeight: 22, fontFamily: fonts.body, marginTop: 6 },
   ticks: { flexDirection: "row", gap: 4, marginTop: 22 },

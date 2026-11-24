@@ -10,7 +10,7 @@ import { View, Text, StyleSheet, Pressable, Platform } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, RadialGradient, Stop, Circle } from "react-native-svg";
 import * as Haptics from "@/lib/haptics";
-import MannersMark, { MANNERS_MARK_RATIO } from "@/components/manners/MannersMark";
+import MannersMark from "@/components/manners/MannersMark";
 import { rs } from "@/lib/responsive";
 import { pickLang, type Lang } from "@/context/LangContext";
 
@@ -150,21 +150,14 @@ function placed(x: number, y: number, w: number, h: number, figmaRot: number) {
 }
 
 // The «Королевские манеры» mark (crown + bow tie), sized like the old crown.
-const MARK_H = 84;
-const MARK_W = MARK_H * MANNERS_MARK_RATIO;
+const MARK_H = 92;
 
 function MannersArt({ look }: { look: Look }) {
+  // Centred in the space above the title.
   return (
-    <>
-      {/* Outlined echo behind */}
-      <View pointerEvents="none" style={placed(52, 18, MARK_W, MARK_H, 9)}>
-        <MannersMark height={rs(MARK_H)} color={look.maskEcho} outline={look.maskEcho} />
-      </View>
-      {/* Solid mark */}
-      <View pointerEvents="none" style={placed(26, 34, MARK_W, MARK_H, -6)}>
-        <MannersMark height={rs(MARK_H)} color={look.mask} />
-      </View>
-    </>
+    <View pointerEvents="none" style={styles.markSlot}>
+      <MannersMark height={rs(MARK_H)} color={look.mask} />
+    </View>
   );
 }
 
@@ -254,6 +247,7 @@ export function ShowTimeModeTiles({
 }
 
 const styles = StyleSheet.create({
+  markSlot: { position: "absolute", left: 0, right: 0, top: 24, alignItems: "center" },
   row: { flexDirection: "row", gap: 12 },
   outer: { flex: 1, height: HEIGHT, borderRadius: RADIUS },
   stroke: { flex: 1, borderRadius: RADIUS, padding: 1 },

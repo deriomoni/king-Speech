@@ -13,6 +13,8 @@ const r = (n: number) => +n.toFixed(2);
 const SIDE_X = 266; // left side (right = 758)
 const SIDE_TOP = 366; // side-peak tip
 const PEAK = 293; // centre peak tip
+const TIP = 16; // flat top of every tooth (side teeth match the centre one)
+const SIDE_TIP_X = SIDE_X + TIP; // inner end of the side tooth tip
 const CORNER = 600; // where the sides meet the bottom curve
 const SAG = 160; // control-point drop of the bottom curve
 
@@ -27,11 +29,13 @@ export const CROWN_BOTTOM_Y = CORNER + SAG / 2; // lowest point (centre)
 function crownPath(): string {
   return [
     `M ${SIDE_X} ${SIDE_TOP}`,
-    `C 296 412 340 416 378 416`,
-    `C 430 416 482 372 504 ${PEAK}`,
-    `L ${mx(504)} ${PEAK}`,
+    `L ${SIDE_TIP_X} ${SIDE_TOP}`,
+    `C 288 395 330 416 378 416`,
+    `C 430 416 482 372 ${CX - TIP / 2} ${PEAK}`,
+    `L ${CX + TIP / 2} ${PEAK}`,
     `C ${mx(482)} 372 ${mx(430)} 416 ${mx(378)} 416`,
-    `C ${mx(340)} 416 ${mx(296)} 412 ${mx(SIDE_X)} ${SIDE_TOP}`,
+    `C ${mx(330)} 416 ${mx(288)} 395 ${mx(SIDE_TIP_X)} ${SIDE_TOP}`,
+    `L ${mx(SIDE_X)} ${SIDE_TOP}`,
     `L ${mx(SIDE_X)} ${CORNER - 12}`,
     `Q ${mx(SIDE_X)} ${CORNER} ${r(mx(c0.x))} ${r(c0.y)}`,
     `Q ${CX} ${r(midCtrlY)} ${r(c0.x)} ${r(c0.y)}`,
@@ -67,8 +71,8 @@ const wingPath = (mirror: boolean) =>
 export const BALL_R = 52;
 export const BALLS: [number, number][] = [
   [CX, PEAK - 18 - BALL_R],
-  [282, SIDE_TOP - 18 - BALL_R],
-  [mx(282), SIDE_TOP - 18 - BALL_R],
+  [SIDE_X + TIP / 2, SIDE_TOP - 18 - BALL_R], // every ball centred over its tooth tip
+  [mx(SIDE_X + TIP / 2), SIDE_TOP - 18 - BALL_R],
 ];
 
 export const CROWN = crownPath();
