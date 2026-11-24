@@ -361,22 +361,21 @@ export default function SubscriptionScreen() {
         </View>
 
         <Text style={[styles.title, { color: theme.text }]}>{tr(STR.title)}</Text>
-        {/* subtitle + the brand inline: one-line «King Speech» wordmark sized to
-            the text's cap height, sitting on its baseline, then the crown */}
-        <Text style={[styles.subtitle, { color: ink(0.7) }]}>
-          {tr(STR.subtitle)}{" "}
-          <View style={{ flexDirection: "row", alignItems: "flex-end", transform: [{ translateY: BRAND.descent }] }}>
-            <SvgXml xml={BRAND_INLINE_XML} width={BRAND.w} height={BRAND.h} />
-            <SvgXml
-              xml={LOGO_CROWN.xml.split("__FG__").join(BRAND_INK)}
-              width={BRAND.crownH * (LOGO_CROWN.w / LOGO_H)}
-              height={BRAND.crownH}
-              // the crown art ends at y≈45.9 of its 53-unit box: drop that empty strip so
-              // the crown sits on the text baseline
-              style={{ marginLeft: rs(5), marginBottom: BRAND.descent - BRAND.crownH * ((53 - 45.9) / 53) }}
-            />
-          </View>
-        </Text>
+        {/* subtitle, then the brand on its own line: one-line «King Speech»
+            wordmark + crown. Not inline inside <Text> — iOS clips inline views
+            to the line box, which cut the «g» tail. */}
+        <Text style={[styles.subtitle, { color: ink(0.7) }]}>{tr(STR.subtitle)}</Text>
+        <View style={styles.brandRow} accessibilityLabel="King Speech">
+          <SvgXml xml={BRAND_INLINE_XML} width={BRAND.w} height={BRAND.h} />
+          <SvgXml
+            xml={LOGO_CROWN.xml.split("__FG__").join(BRAND_INK)}
+            width={BRAND.crownH * (LOGO_CROWN.w / LOGO_H)}
+            height={BRAND.crownH}
+            // bottoms align: lift the crown by the wordmark's descent (so it stands
+            // on the letters' baseline) minus the empty strip under the crown art
+            style={{ marginLeft: rs(5), marginBottom: BRAND.descent - BRAND.crownH * ((53 - 45.9) / 53) }}
+          />
+        </View>
 
         <View style={styles.plans}>
           {freeCard}
@@ -494,6 +493,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     maxWidth: 322,
   },
+  brandRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "center", marginTop: 4 },
   plans: { marginTop: 28, paddingHorizontal: 20, gap: 18 },
   card: { borderRadius: 22, borderWidth: 2 },
   cardShadow: {
