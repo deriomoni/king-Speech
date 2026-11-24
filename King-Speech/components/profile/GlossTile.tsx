@@ -1,5 +1,5 @@
 import React from "react";
-import { Text, StyleSheet, Pressable, Platform, type ViewStyle } from "react-native";
+import { Image, Text, StyleSheet, Pressable, Platform, type ViewStyle } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, RadialGradient, Stop, Circle } from "react-native-svg";
 import * as Haptics from "@/lib/haptics";
@@ -57,6 +57,8 @@ export type TileText = {
   subSize: number;
   /** Gap from title top to subtitle top. */
   subOffset: number;
+  /** Subtitle may wrap to this many lines (default 1). */
+  subLines?: number;
 };
 
 export default function GlossTile({
@@ -69,7 +71,10 @@ export default function GlossTile({
   style,
   idSuffix,
   palette,
+  radius = RADIUS,
 }: {
+  /** Corner radius (bento tiles use rounder corners). */
+  radius?: number;
   /** Colourful tile (same in both themes) instead of the plain gloss slab. */
   palette?: TilePalette;
   mode: ThemeMode;
@@ -121,28 +126,45 @@ export default function GlossTile({
       }}
       style={({ pressed }) => [
         styles.outer,
-        { height: rs(height) },
+        { height: rs(height), borderRadius: radius },
         shadow,
         pressed && { opacity: 0.88, transform: [{ scale: 0.99 }] },
         style,
       ]}
     >
-      <LinearGradient colors={look.stroke} locations={[0, 0.5, 1]} style={styles.stroke}>
+      <LinearGradient colors={look.stroke} locations={[0, 0.5, 1]} style={[styles.stroke, { borderRadius: radius }]}>
         <LinearGradient
           colors={look.fill}
           locations={look.fillLoc}
           start={palette ? { x: 0, y: 0 } : undefined}
           end={palette ? { x: 1, y: 1 } : undefined}
-          style={styles.fill}
+          style={[styles.fill, { borderRadius: radius - 1 }]}
         >
           {palette ? (
-            // glass: light from the top edge
-            <LinearGradient
-              pointerEvents="none"
-              colors={["rgba(255,255,255,0.22)", "rgba(255,255,255,0)"]}
-              locations={[0, 0.5]}
-              style={StyleSheet.absoluteFill}
-            />
+            <>
+              {/* glass: light from the top edge */}
+              <LinearGradient
+                pointerEvents="none"
+                colors={["rgba(255,255,255,0.26)", "rgba(255,255,255,0)"]}
+                locations={[0, 0.5]}
+                style={StyleSheet.absoluteFill}
+              />
+              {/* a soft diagonal glint across the glass */}
+              <LinearGradient
+                pointerEvents="none"
+                colors={["rgba(255,255,255,0)", "rgba(255,255,255,0.13)", "rgba(255,255,255,0)"]}
+                locations={[0.28, 0.4, 0.52]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+              {/* frosted grain */}
+              <Image
+                source={require("@/assets/images/noise.png")}
+                resizeMode="repeat"
+                style={[StyleSheet.absoluteFill, { opacity: 0.07 }]}
+              />
+            </>
           ) : null}
           <Svg
             pointerEvents="none"
@@ -170,9 +192,10 @@ export default function GlossTile({
             {text.title}
           </Text>
           <Text
-            numberOfLines={1}
+            numberOfLines={text.subLines ?? 1}
             style={[
               styles.sub,
+              (text.subLines ?? 1) > 1 && { right: rs(text.x - 1), lineHeight: rs(text.subSize * 1.3) },
               palette && { opacity: 0.78 },
               {
                 color: look.ink,

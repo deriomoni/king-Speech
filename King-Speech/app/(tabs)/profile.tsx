@@ -492,74 +492,77 @@ export default function ProfileScreen() {
             pointerEvents="none"
           />
 
-          <EdgeScale entering={FadeInDown.delay(220).duration(400)}>
+          {/* Bento: tall diary on the left, studio + library stacked on the right,
+              coins across the bottom. */}
+          <EdgeScale entering={FadeInDown.delay(220).duration(400)} style={styles.bentoRow}>
             <GlossTile
               mode={mode}
               idSuffix="diary"
-              height={112}
+              height={232}
+              radius={32}
+              style={{ flex: 1 }}
               text={{
                 title: pickLang(lang, { ru: "Аудио-дневник", en: "Audio diary", kk: "Аудиокүнделік" }),
                 sub: pickLang(lang, { ru: "Расскажи, как прошёл день", en: "Tell how your day went", kk: "Күніңіз қалай өткенін айтып беріңіз" }),
-                x: 20,
-                y: 32,
-                titleSize: 18,
+                x: 18,
+                y: 156,
+                titleSize: 17,
                 subSize: 12,
-                subOffset: 28,
+                subOffset: 27,
+                subLines: 2,
               }}
-              spot={{ x: 160, y: -60, size: 240 }}
+              spot={{ x: -40, y: -60, size: 260 }}
               palette={TILE_PALETTES.diary}
-              art={art(themedSvg(CASSETTE, "dark"), 207, 15, 129, 82)}
+              art={art(themedSvg(CASSETTE, "dark"), 18, 34, 140, 89)}
               onPress={() => router.push("/diary")}
             />
+            <View style={styles.bentoCol}>
+              <GlossTile
+                mode={mode}
+                idSuffix="author"
+                height={110}
+                radius={32}
+                text={{
+                  title: "My Studio",
+                  sub: pickLang(lang, { ru: "Предложи свою тему", en: "Suggest your topic", kk: "Өз тақырыбыңызды ұсыныңыз" }),
+                  x: 16,
+                  y: 62,
+                  titleSize: 16,
+                  subSize: 11,
+                  subOffset: 22,
+                }}
+                spot={{ x: 40, y: -80, size: 200 }}
+                palette={TILE_PALETTES.studio}
+                art={art(themedSvg(QUILL, "dark"), 104, 8, 58, 53)}
+                onPress={() => router.push("/author")}
+              />
+              <GlossTile
+                mode={mode}
+                idSuffix="library"
+                height={110}
+                radius={32}
+                text={{
+                  title: pickLang(lang, { ru: "Библиотека", en: "Library", kk: "Кітапхана" }),
+                  sub: pickLang(lang, { ru: "Твои выступления", en: "Your performances", kk: "Өнер көрсетулеріңіз" }),
+                  x: 16,
+                  y: 62,
+                  titleSize: 16,
+                  subSize: 11,
+                  subOffset: 22,
+                }}
+                spot={{ x: 40, y: -80, size: 200 }}
+                palette={TILE_PALETTES.library}
+                art={art(themedSvg(LIBRARY, "dark"), 70, 6, 92, 54)}
+                onPress={() => router.push("/library")}
+              />
+            </View>
           </EdgeScale>
 
-          {/* «Награды» removed — My Studio now takes the whole row */}
-          <EdgeScale entering={FadeInDown.delay(280).duration(400)} style={{ marginTop: rs(16) }}>
-            <GlossTile
-              mode={mode}
-              idSuffix="author"
-              height={112}
-              text={{
-                title: "My Studio",
-                sub: pickLang(lang, { ru: "Предложи свою тему", en: "Suggest your topic", kk: "Өз тақырыбыңызды ұсыныңыз" }),
-                x: 20,
-                y: 32,
-                titleSize: 18,
-                subSize: 12,
-                subOffset: 28,
-              }}
-              spot={{ x: 150, y: -64, size: 240 }}
-              palette={TILE_PALETTES.studio}
-              art={art(themedSvg(QUILL, "dark"), 228, 16, 83, 76)}
-              onPress={() => router.push("/author")}
-            />
-          </EdgeScale>
-
-          <EdgeScale entering={FadeInDown.delay(340).duration(400)} style={{ marginTop: rs(14) }}>
-            <GlossTile
-              mode={mode}
-              idSuffix="library"
-              height={112}
-              text={{
-                title: pickLang(lang, { ru: "Моя библиотека", en: "My library", kk: "Менің кітапханам" }),
-                sub: pickLang(lang, { ru: "Записи твоих выступлений", en: "Recordings of your performances", kk: "Өнер көрсетулеріңіздің жазбалары" }),
-                x: 20,
-                y: 32,
-                titleSize: 18,
-                subSize: 12,
-                subOffset: 28,
-              }}
-              spot={{ x: 160, y: -64, size: 240 }}
-              palette={TILE_PALETTES.library}
-              art={art(themedSvg(LIBRARY, "dark"), 187.5, 12, 155, 91)}
-              onPress={() => router.push("/library")}
-            />
-          </EdgeScale>
-
-          <EdgeScale entering={FadeInDown.delay(400).duration(400)} style={{ marginTop: rs(14) }}>
+          <EdgeScale entering={FadeInDown.delay(300).duration(400)} style={{ marginTop: rs(12) }}>
             <GlossTile
               mode={mode}
               idSuffix="coins"
+              radius={32}
               palette={TILE_PALETTES.coins}
               height={92}
               text={{
@@ -705,6 +708,8 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  bentoRow: { flexDirection: "row", gap: 12 },
+  bentoCol: { flex: 1, gap: 12 },
   container: { flex: 1 },
   scrollOuter: { flexGrow: 1 },
   topPanel: {
