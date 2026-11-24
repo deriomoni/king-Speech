@@ -68,6 +68,9 @@ export default function ThemeCatalogScreen() {
   const { width: winW } = useWindowDimensions();
 
   const stroke = isLight ? "rgba(38,38,40,0.08)" : "rgba(240,238,233,0.06)";
+  // Name plate under each cover: tucked behind the cover's rounded bottom so
+  // it shows in the squircle's corners — a shade off the card in either theme.
+  const plate = isLight ? "rgba(38,38,40,0.055)" : "rgba(240,238,233,0.07)";
   const topPad = Platform.OS === "web" ? rs(54) : insets.top;
   const bottomPad = Platform.OS === "web" ? rs(34) : insets.bottom;
 
@@ -264,6 +267,10 @@ export default function ThemeCatalogScreen() {
                     ]}
                   >
                     <View
+                      pointerEvents="none"
+                      style={[s.plate, { top: rs(6) + (cardW - rs(12)) * 0.8, backgroundColor: plate }]}
+                    />
+                    <View
                       ref={(n) => {
                         coverRefs.current[k] = n;
                       }}
@@ -393,6 +400,7 @@ const s = StyleSheet.create({
     borderRadius: 55,
     backgroundColor: "rgba(255,255,255,0.18)",
   },
+  plate: { position: "absolute", left: 6, right: 6, bottom: 6, borderRadius: 16 },
   cardTitle: { fontSize: 15, lineHeight: 18, fontFamily: "Geologica_700Bold", marginTop: 10, marginHorizontal: 6 },
   cardMeta: { position: "absolute", left: 12, bottom: 12, fontSize: 12, fontFamily: "Geologica_600SemiBold" },
   empty: { fontSize: 13, fontFamily: "Geologica_600SemiBold", marginTop: 24, textAlign: "center" },
