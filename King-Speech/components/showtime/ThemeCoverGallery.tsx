@@ -180,7 +180,8 @@ function Card({ idx, target, theme, cx }: CardProps) {
     const s = off > 0 ? -1 : 1; // 1 = left side, -1 = right side
     return {
       zIndex: 100 - Math.round(a * 10),
-      opacity: interpolate(a, [0, 3, 3.6], [1, 1, 0], Extrapolation.CLAMP),
+      // only the selected theme is fully opaque; the rest are 40% see-through
+      opacity: interpolate(a, [0, 1, 3, 3.6], [1, 0.6, 0.6, 0], Extrapolation.CLAMP),
       borderRadius: interpolate(a, K, RADII, Extrapolation.CLAMP),
       transform: [
         { perspective: PERSPECTIVE },
