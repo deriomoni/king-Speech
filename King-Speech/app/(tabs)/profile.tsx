@@ -41,7 +41,6 @@ import ProfileMenuPopover, { type MenuAnchor, type MenuOption } from "@/componen
 import {
   CASSETTE,
   QUILL,
-  TROPHY,
   LIBRARY,
   COINS,
   RANK_SHIELD,
@@ -505,47 +504,24 @@ export default function ProfileScreen() {
             />
           </EdgeScale>
 
-          <EdgeScale
-            entering={FadeInDown.delay(280).duration(400)}
-            style={[styles.tilesRow, { marginTop: rs(16) }]}
-          >
+          {/* «Награды» removed — My Studio now takes the whole row */}
+          <EdgeScale entering={FadeInDown.delay(280).duration(400)} style={{ marginTop: rs(16) }}>
             <GlossTile
               mode={mode}
               idSuffix="author"
-              height={156}
-              style={{ flex: 1 }}
+              height={112}
               text={{
                 title: "My Studio",
                 sub: pickLang(lang, { ru: "Предложи свою тему", en: "Suggest your topic", kk: "Өз тақырыбыңызды ұсыныңыз" }),
-                x: 16,
-                y: 104,
-                titleSize: 17,
+                x: 20,
+                y: 32,
+                titleSize: 18,
                 subSize: 12,
-                subOffset: 24,
+                subOffset: 28,
               }}
-              spot={{ x: -20, y: -50, size: 200 }}
-              art={art(themedSvg(QUILL, mode), 43, 26, 83, 76)}
+              spot={{ x: 170, y: -70, size: 240 }}
+              art={art(themedSvg(QUILL, mode), 228, 16, 83, 76)}
               onPress={() => router.push("/author")}
-            />
-            <GlossTile
-              mode={mode}
-              idSuffix="awards"
-              height={156}
-              style={{ flex: 1 }}
-              text={{
-                title: pickLang(lang, { ru: "Награды", en: "Awards", kk: "Марапаттар" }),
-                sub: pickLang(lang, { ru: "Кубки и достижения", en: "Cups and achievements", kk: "Кубоктар мен жетістіктер" }),
-                x: 16,
-                y: 104,
-                titleSize: 17,
-                subSize: 12,
-                subOffset: 24,
-              }}
-              spot={{ x: -10, y: -50, size: 200 }}
-              art={art(themedSvg(TROPHY, mode), 35, 11, 112, 80)}
-              onPress={() => {
-                // TODO(design): awards / achievements screen doesn't exist yet.
-              }}
             />
           </EdgeScale>
 
@@ -821,7 +797,6 @@ const styles = StyleSheet.create({
   },
   streak: { marginTop: 14 },
 
-  tilesRow: { flexDirection: "row", gap: 12 },
   // Modals
   nameBackdrop: {
     flex: 1,
