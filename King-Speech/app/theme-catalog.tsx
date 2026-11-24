@@ -216,7 +216,7 @@ export default function ThemeCatalogScreen() {
               onPress={() => pick(featuredKey, "featured", rs(24))}
               style={s.featured}
             >
-              <CoverImage source={showtimeCover(featuredKey)} focusY={showtimeCoverFocusY(featuredKey)} shape="pillow" shadeFrom={40} />
+              <CoverImage source={showtimeCover(featuredKey)} focusY={showtimeCoverFocusY(featuredKey)} shape="squircle" shadeFrom={0.45} />
               <View style={s.tag}>
                 <Text style={s.tagText}>{tr("ТЕМА НЕДЕЛИ", "TOPIC OF THE WEEK", "АПТА ТАҚЫРЫБЫ")}</Text>
               </View>
@@ -259,7 +259,8 @@ export default function ThemeCatalogScreen() {
                     onPress={() => pick(k)}
                     style={({ pressed }) => [
                       s.card,
-                      { width: cardW, backgroundColor: c.card, borderColor: stroke, opacity: pressed ? 0.85 : 1 },
+                      // square cover (inner width) + room for two title lines and the meta
+                      { width: cardW, height: cardW + rs(70), backgroundColor: c.card, borderColor: stroke, opacity: pressed ? 0.85 : 1 },
                     ]}
                   >
                     <View
@@ -269,7 +270,7 @@ export default function ThemeCatalogScreen() {
                       collapsable={false}
                       style={s.cover}
                     >
-                      <CoverImage source={showtimeCover(k)} focusY={showtimeCoverFocusY(k)} shape="pillow" />
+                      <CoverImage source={showtimeCover(k)} focusY={showtimeCoverFocusY(k)} shape="squircle" />
                     </View>
                     <Text style={[s.cardTitle, { color: c.text }]} numberOfLines={2}>
                       {t.title}
@@ -326,7 +327,7 @@ const s = StyleSheet.create({
   chip: { height: 36, borderRadius: 18, borderWidth: 1, paddingHorizontal: 15, justifyContent: "center" },
   chipText: { fontSize: 13, fontFamily: "Geologica_700Bold" },
 
-  featured: { height: 168, borderRadius: 24, overflow: "hidden", marginTop: 20 },
+  featured: { aspectRatio: 1, marginTop: 20 },
   featuredOrb: {
     position: "absolute",
     left: 190,
@@ -380,9 +381,9 @@ const s = StyleSheet.create({
   sectionCount: { fontSize: 13, fontFamily: "Geologica_600SemiBold" },
 
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  card: { height: 214, borderRadius: 22, borderWidth: 2, padding: 6, overflow: "hidden" },
+  card: { borderRadius: 22, borderWidth: 2, padding: 6, overflow: "hidden" },
   photo: { position: "absolute", left: 0, top: 0, right: 0, bottom: 0, width: "100%", height: "100%" },
-  cover: { height: 128, borderRadius: 16, overflow: "hidden" },
+  cover: { aspectRatio: 1 },
   coverOrb: {
     position: "absolute",
     right: -34,
