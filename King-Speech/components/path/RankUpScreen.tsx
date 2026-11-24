@@ -202,7 +202,7 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
           </Animated.View>
 
           <Animated.View entering={FadeIn.duration(500).delay(120)} style={s.oscar}>
-            <OscarMascot emotion="cool" size={rs(186)} />
+            <OscarMascot emotion="shiny" size={rs(186)} />
           </Animated.View>
 
           {/* how they sounded at the very start */}

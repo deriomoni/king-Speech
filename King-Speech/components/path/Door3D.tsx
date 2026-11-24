@@ -378,6 +378,12 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
       <Polygon points={pts(back)} fill={p.room} />
       <Polygon points={pts(back)} fill={`url(#${id("roomG")})`} opacity={L} />
 
+      {/* the floor of the lit room inside the doorway, behind the slim sill —
+          lit like the room, so no dark gap shows between sill and light */}
+      {fast && (
+        <Polygon points={pts([[XL, 0, -DEPTH], [XR, 0, -DEPTH], [XR, 0, -SILL_D], [XL, 0, -SILL_D]])} fill={lit(p.room, 1, "#FFF6DC", 0.35 * L)} />
+      )}
+
       {/* threshold: a thin sill on the floor between the jambs, inside the
           frame — drawn before the jambs, casing and slab so they all sit over it */}
       {fast && (
