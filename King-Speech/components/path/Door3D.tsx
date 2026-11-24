@@ -223,6 +223,15 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
     }
     return d + `L${fp(u1, y1)}Z`;
   };
+  // just the left side and the curved top of an arch, for a highlight line
+  const archTopD = (u0: number, y0: number, u1: number, y1: number, rise: number) => {
+    let d = `M${fp(u0, y1)}L${fp(u0, y0 + rise)}`;
+    for (let i = 1; i <= 14; i++) {
+      const q = i / 14;
+      d += `L${fp(u0 + (u1 - u0) * q, y0 + rise - Math.sin(Math.PI * q) * rise)}`;
+    }
+    return d;
+  };
   const sy = YT + 1; // slab top
   const KU = OW - 13; // knob, near the free edge
   const KY = sy + 116;
@@ -234,7 +243,15 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
   const ball = proj(P(KU, KY, ballZ));
   const ballR = (4.6 * F) / (CAM.z - P(KU, KY, ballZ)[2]);
 
-  const sw = 2.6; // bold black ink outline, like a printed illustration
+  // outline: a deep tint of the door's own colour (not flat black), so the
+  // door reads as a lit object rather than a sticker
+  const ink = lit(p.slab, 0.36, "#2B1D12", 0.35);
+  const sw = 1.7;
+  const lighten = (c: string, k: number) => lit(c, 1, "#FFFFFF", k);
+  const darken = (c: string, k: number) => lit(c, 1 - k, "#000000", 0);
+  const slabBase = lit(p.slab, faceK, "#FFFFFF", faceWarm);
+  const metal = { hi: "#FFF6D6", mid: "#E9B949", lo: "#9A6A1E" };
+  const floorC = proj([0, 0, 6]);
   // the room light is pure white, so what it hits inside the opening whitens
   const jambTone = (base: number, warmK: number) => lit(p.jamb, base, "#FFFFFF", warmK * L);
   const staticFaces: (Face & { fill: string })[] = [
@@ -272,13 +289,60 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
         <Filter id={id("softer")} x="-100%" y="-400%" width="300%" height="900%">
           <FeGaussianBlur stdDeviation={14} />
         </Filter>
+        {/* the light beyond the doorway: a blinding core, warm toward the edges */}
+        <RadialGradient id={id("roomG")} cx="45%" cy="55%" r="70%">
+          <Stop offset="0" stopColor="#FFFFFF" />
+          <Stop offset="0.55" stopColor={lit(p.glow, 1, "#FFFFFF", 0.75)} />
+          <Stop offset="1" stopColor={lit(p.glow, 1, "#FFFFFF", 0.35)} />
+        </RadialGradient>
+        <Filter id={id("wallShadow")} x="-50%" y="-50%" width="200%" height="200%">
+          <FeGaussianBlur stdDeviation={6} />
+        </Filter>
+        <Filter id={id("knobShadow")} x="-100%" y="-100%" width="300%" height="300%">
+          <FeGaussianBlur stdDeviation={1.6} />
+        </Filter>
         <Filter id={id("bloom")} x="-100%" y="-100%" width="300%" height="300%">
           <FeGaussianBlur stdDeviation={10} />
         </Filter>
-        <RadialGradient id={id("knob")} cx="35%" cy="32%" r="75%">
-          <Stop offset="0" stopColor="#FFFFFF" />
-          <Stop offset="0.6" stopColor="#F6F4F9" />
-          <Stop offset="1" stopColor="#D9D4E2" />
+        <RadialGradient id={id("knob")} cx="32%" cy="28%" r="80%">
+          <Stop offset="0" stopColor={metal.hi} />
+          <Stop offset="0.45" stopColor={metal.mid} />
+          <Stop offset="1" stopColor={metal.lo} />
+        </RadialGradient>
+        <LinearGradient id={id("metal")} x1="0" y1="0" x2="1" y2="1">
+          <Stop offset="0" stopColor={metal.hi} />
+          <Stop offset="0.5" stopColor={metal.mid} />
+          <Stop offset="1" stopColor={metal.lo} />
+        </LinearGradient>
+        {/* slab face: soft light from the top corner, falling off downward */}
+        <LinearGradient id={id("slabG")} x1="0" y1="0" x2="0.55" y2="1">
+          <Stop offset="0" stopColor={lighten(slabBase, 0.22)} />
+          <Stop offset="0.55" stopColor={slabBase} />
+          <Stop offset="1" stopColor={darken(slabBase, 0.14)} />
+        </LinearGradient>
+        {/* recessed panel: the top bevel sits in shadow, the bottom catches light */}
+        <LinearGradient id={id("recess")} x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={darken(slabBase, 0.26)} />
+          <Stop offset="1" stopColor={lighten(slabBase, 0.18)} />
+        </LinearGradient>
+        {/* raised field inside it: lit on top, rounding away below */}
+        <LinearGradient id={id("field")} x1="0" y1="0" x2="0.3" y2="1">
+          <Stop offset="0" stopColor={lighten(slabBase, 0.2)} />
+          <Stop offset="1" stopColor={darken(slabBase, 0.08)} />
+        </LinearGradient>
+        <LinearGradient id={id("casingG")} x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={lighten(lit(p.casing, 1, p.light, 0.12 * L), 0.3)} />
+          <Stop offset="1" stopColor={darken(lit(p.casing, 1, p.light, 0.12 * L), 0.12)} />
+        </LinearGradient>
+        {/* shadow the casing head throws down onto a shut slab */}
+        <LinearGradient id={id("ao")} x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#000000" stopOpacity={0.28} />
+          <Stop offset="1" stopColor="#000000" stopOpacity={0} />
+        </LinearGradient>
+        <RadialGradient id={id("contact")} cx="50%" cy="50%" r="50%">
+          <Stop offset="0" stopColor="#000000" stopOpacity={0.5} />
+          <Stop offset="0.6" stopColor="#000000" stopOpacity={0.18} />
+          <Stop offset="1" stopColor="#000000" stopOpacity={0} />
         </RadialGradient>
       </Defs>
 
@@ -293,18 +357,29 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
         />
       )}
 
+      {/* contact shadow: the door stands on the floor */}
+      <Ellipse cx={floorC[0]} cy={floorC[1] + 2} rx={118} ry={14} fill={`url(#${id("contact")})`} />
+
+      {/* the casing stands proud of the wall: a soft shadow behind it */}
+      <Polygon
+        points={pts([[XL - CASE + 5, YT - CASE + 7, 0], [XR + CASE + 5, YT - CASE + 7, 0], [XR + CASE + 5, 0, 0], [XL - CASE + 5, 0, 0]])}
+        fill="#000000"
+        opacity={0.35}
+        filter={`url(#${id("wallShadow")})`}
+      />
+
       {/* the room behind */}
       <Polygon points={pts(back)} fill={p.room} />
-      <Polygon points={pts(back)} fill="#FFFFFF" opacity={L} />
+      <Polygon points={pts(back)} fill={`url(#${id("roomG")})`} opacity={L} />
 
       {/* jamb reveals + casing — static faces, back-face culled */}
       {staticFaces.filter((f) => visible(f)).map((f, i) => (
-        <Polygon key={`j${i}`} points={pts(f.pts)} fill={f.fill} stroke={p.stroke} strokeWidth={sw} strokeLinejoin="round" />
+        <Polygon key={`j${i}`} points={pts(f.pts)} fill={f.fill} stroke={ink} strokeWidth={sw} strokeLinejoin="round" />
       ))}
       <Path
         d={casingD}
-        fill={lit(p.casing, 1, p.light, 0.12 * L)}
-        stroke={p.stroke}
+        fill={`url(#${id("casingG")})`}
+        stroke={ink}
         strokeWidth={sw}
         strokeLinejoin="round"
       />
@@ -329,16 +404,35 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
 
       {/* the slab (a convex box: culling alone orders it), then its handle */}
       {slab.filter(visible).map((f, i) => (
-        <Polygon key={`s${i}`} points={pts(f.pts)} fill={shadeFace(f)} stroke={p.stroke} strokeWidth={sw} strokeLinejoin="round" />
+        <Polygon
+          key={`s${i}`}
+          points={pts(f.pts)}
+          fill={f.kind === "face" && f === (frontVisible ? slab[0] : slab[1]) ? `url(#${id("slabG")})` : shadeFace(f)}
+          stroke={ink}
+          strokeWidth={sw}
+          strokeLinejoin="round"
+        />
       ))}
+      {/* the head of the casing shades the top of the slab while it's shut */}
+      {open < 0.5 && (
+        <Path d={rectD(0.5, sy, OW - 1.5, sy + 16)} fill={`url(#${id("ao")})`} opacity={1 - open * 2} />
+      )}
       {/* panels: outer recess (bevel, darker) + inner field */}
-      <Path d={archD(19, sy + 18, 79, sy + 118, 14)} fill={tone(0.84)} stroke={p.stroke} strokeWidth={2.1} strokeLinejoin="round" />
-      <Path d={archD(25, sy + 25, 73, sy + 111, 11)} fill={tone(0.97)} stroke={p.stroke} strokeWidth={1.3} strokeLinejoin="round" />
-      <Path d={rectD(19, sy + 140, 79, sy + 192)} fill={tone(0.84)} stroke={p.stroke} strokeWidth={2.1} strokeLinejoin="round" />
-      <Path d={rectD(25, sy + 147, 73, sy + 185)} fill={tone(0.97)} stroke={p.stroke} strokeWidth={1.3} strokeLinejoin="round" />
+      <Path d={archD(19, sy + 18, 79, sy + 118, 14)} fill={`url(#${id("recess")})`} stroke={ink} strokeWidth={1.3} strokeLinejoin="round" />
+      <Path d={archD(25, sy + 25, 73, sy + 111, 11)} fill={`url(#${id("field")})`} stroke={ink} strokeWidth={0.8} strokeOpacity={0.55} strokeLinejoin="round" />
+      <Path d={archTopD(27, sy + 27.5, 71, sy + 70, 9)} fill="none" stroke="#FFFFFF" strokeOpacity={0.45} strokeWidth={1.1} />
+      <Path d={rectD(19, sy + 140, 79, sy + 192)} fill={`url(#${id("recess")})`} stroke={ink} strokeWidth={1.3} strokeLinejoin="round" />
+      <Path d={rectD(25, sy + 147, 73, sy + 185)} fill={`url(#${id("field")})`} stroke={ink} strokeWidth={0.8} strokeOpacity={0.55} strokeLinejoin="round" />
+      <Path d={`M${fp(26.5, sy + 183)}L${fp(26.5, sy + 148.5)}L${fp(71.5, sy + 148.5)}`} fill="none" stroke="#FFFFFF" strokeOpacity={0.45} strokeWidth={1.1} />
+      {/* hinges on the hinge side */}
+      {frontVisible && [sy + 26, sy + 178].map((hy) => (
+        <Path key={hy} d={rectD(0.6, hy, 5, hy + 16)} fill={`url(#${id("metal")})`} stroke={ink} strokeWidth={0.9} />
+      ))}
       {/* knob: rose on the face + a ball standing off it */}
-      <Polygon points={knobRose} fill="#ECE9F1" stroke={p.stroke} strokeWidth={1.6} strokeLinejoin="round" />
-      <Circle cx={ball[0]} cy={ball[1]} r={ballR} fill={`url(#${id("knob")})`} stroke={p.stroke} strokeWidth={1.6} />
+      <Ellipse cx={ball[0] + 1.6} cy={ball[1] + 3.2} rx={ballR * 1.05} ry={ballR * 0.8} fill="#000000" opacity={0.22} filter={`url(#${id("knobShadow")})`} />
+      <Polygon points={knobRose} fill={`url(#${id("metal")})`} stroke={ink} strokeWidth={1.1} strokeLinejoin="round" />
+      <Circle cx={ball[0]} cy={ball[1]} r={ballR} fill={`url(#${id("knob")})`} stroke={ink} strokeWidth={1.1} />
+      <Circle cx={ball[0] - ballR * 0.32} cy={ball[1] - ballR * 0.36} r={ballR * 0.28} fill="#FFFFFF" opacity={0.85} />
       </G>
     </Svg>
     </View>

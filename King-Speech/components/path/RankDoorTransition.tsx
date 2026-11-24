@@ -10,7 +10,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Pressable, Platform, useWindowDimensions } from "react-native";
 import { LinearGradient as ExpoLinearGradient } from "expo-linear-gradient";
-import Svg, { Defs, FeGaussianBlur, Filter, G, Polygon, RadialGradient, Rect, Stop } from "react-native-svg";
+import Svg, { Defs, Ellipse, FeGaussianBlur, Filter, G, LinearGradient, Polygon, RadialGradient, Rect, Stop } from "react-native-svg";
 import Animated, {
   Easing,
   cancelAnimation,
@@ -132,6 +132,40 @@ function Mote({ m, t, px, py, diag, color }: { m: (typeof MOTES)[number]; t: Sha
   );
 }
 
+// Dust hanging in the spotlight: drifts slowly upward and twinkles, then
+// clears out when the camera is pulled in.
+const DUST = Array.from({ length: 18 }, (_, i) => {
+  const r = (n: number) => {
+    const x = Math.sin((i + 3) * 91.17 + n * 13.7) * 24634.6345;
+    return x - Math.floor(x);
+  };
+  return { x: r(1) * 2 - 1, y: r(2), size: 1.6 + r(3) * 2.6, speed: 0.006 + r(4) * 0.01, phase: r(5) * 6.28 };
+});
+
+function Dust({ d, t, cx, top, w, h, color }: { d: (typeof DUST)[number]; t: SharedValue<number>; cx: number; top: number; w: number; h: number; color: string }) {
+  const size = d.size * UI_SCALE;
+  const style = useAnimatedStyle(() => {
+    const tt = t.value;
+    const rise = ((d.y + tt * d.speed * 0.01) % 1 + 1) % 1;
+    const y = top + h * (1 - rise);
+    // the cone of light widens toward the floor
+    const x = cx + d.x * w * (0.35 + 0.65 * (1 - rise)) * 0.5 + Math.sin(tt / 900 + d.phase) * 6;
+    const fadeEdge = Math.sin(Math.PI * rise);
+    const twinkle = 0.55 + 0.45 * Math.sin(tt / 420 + d.phase * 3);
+    const gone = 1 - seg(tt, PULL_AT - 300, 500);
+    return {
+      opacity: fadeEdge * twinkle * gone * easeOutCubic(seg(tt, 0, FADE_IN)) * 0.8,
+      transform: [{ translateX: x - size / 2 }, { translateY: y - size / 2 }],
+    };
+  });
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[{ position: "absolute", left: 0, top: 0, width: size, height: size, borderRadius: size / 2, backgroundColor: color }, style]}
+    />
+  );
+}
+
 type Props = {
   /** Rank being completed — picks the door colour (same door as on the Path). */
   rank: number;
@@ -152,6 +186,12 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
   const [door, setDoor] = useState({ open: 0, light: 0.35 });
 
   useEffect(() => {
+    // dev on web: ?doorT=<ms> freezes the cut-scene on one frame for design checks
+    const freeze = __DEV__ && Platform.OS === "web" ? Number(new URLSearchParams(globalThis.location?.search).get("doorT")) : NaN;
+    if (freeze >= 0) {
+      t.value = Math.min(freeze, REVEAL_AT - 1);
+      return;
+    }
     t.value = withTiming(END_AT, { duration: END_AT, easing: Easing.linear });
     return () => cancelAnimation(t);
   }, []);
@@ -272,18 +312,48 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
 
         {/* the room — scales as one piece when the camera gets pulled in */}
         <Animated.View style={[StyleSheet.absoluteFill, cameraStyle]}>
-          {lightTheme ? (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: "#FFFFFF" }]} />
-          ) : (
-            <>
-              <ExpoLinearGradient
-                colors={["#0B0A0D", "#17131C", "#1E1822"]}
-                locations={[0, 0.6, 1]}
-                style={[StyleSheet.absoluteFill, { bottom: H - floorY }]}
-              />
-              <ExpoLinearGradient colors={["#2A2129", "#0E0C10"]} style={{ position: "absolute", left: 0, right: 0, top: floorY, bottom: 0 }} />
-            </>
-          )}
+          <ExpoLinearGradient
+            colors={lightTheme ? ["#FFFDF9", "#F7F1E7", "#EFE6D7"] : ["#0B0A0D", "#17131C", "#221B26"]}
+            locations={[0, 0.6, 1]}
+            style={[StyleSheet.absoluteFill, { bottom: H - floorY }]}
+          />
+          <ExpoLinearGradient
+            colors={lightTheme ? ["#E9DFCE", "#F4EEE4"] : ["#2A2129", "#0E0C10"]}
+            style={{ position: "absolute", left: 0, right: 0, top: floorY, bottom: 0 }}
+          />
+          <Svg width={W} height={H} style={StyleSheet.absoluteFill}>
+            <Defs>
+              {/* a spotlight from above, tinted like the door */}
+              <RadialGradient id="rdtSpot" cx="50%" cy="50%" r="50%">
+                <Stop offset="0" stopColor={lightTheme ? "#FFFFFF" : palette.glow} stopOpacity={lightTheme ? 0.95 : 0.34} />
+                <Stop offset="0.55" stopColor={palette.glow} stopOpacity={lightTheme ? 0.12 : 0.1} />
+                <Stop offset="1" stopColor={palette.glow} stopOpacity={0} />
+              </RadialGradient>
+              {/* where that light lands on the floor */}
+              <RadialGradient id="rdtFloor" cx="50%" cy="50%" r="50%">
+                <Stop offset="0" stopColor={palette.glow} stopOpacity={lightTheme ? 0.3 : 0.22} />
+                <Stop offset="1" stopColor={palette.glow} stopOpacity={0} />
+              </RadialGradient>
+              {/* the door mirrored faintly in a polished floor */}
+              <LinearGradient id="rdtRefl" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor={palette.slab} stopOpacity={lightTheme ? 0.35 : 0.16} />
+                <Stop offset="1" stopColor={palette.slab} stopOpacity={0} />
+              </LinearGradient>
+              <Filter id="rdtSoft" x="-40%" y="-20%" width="180%" height="140%">
+                <FeGaussianBlur stdDeviation={rs(10)} />
+              </Filter>
+              <LinearGradient id="rdtBase" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor={lightTheme ? "#FFFFFF" : "#3A2F3A"} />
+                <Stop offset="1" stopColor={lightTheme ? "#DCCFB9" : "#1A151C"} />
+              </LinearGradient>
+            </Defs>
+            <Ellipse cx={W / 2} cy={doorTop - doorH * 0.05} rx={W * 0.62} ry={doorH * 0.95} fill="url(#rdtSpot)" />
+            <Ellipse cx={W / 2} cy={floorY + rs(26)} rx={W * 0.58} ry={rs(70)} fill="url(#rdtFloor)" />
+            <Rect x={W / 2 - doorW * 0.36} y={floorY + rs(4)} width={doorW * 0.72} height={doorH * 0.45} fill="url(#rdtRefl)" filter="url(#rdtSoft)" />
+            {/* baseboard where the wall meets the floor */}
+            <Rect x={0} y={floorY - rs(9)} width={W} height={rs(9)} fill="url(#rdtBase)" />
+            <Rect x={0} y={floorY - rs(9)} width={W} height={1} fill="#FFFFFF" opacity={lightTheme ? 0.9 : 0.08} />
+          </Svg>
 
         </Animated.View>
 
@@ -340,15 +410,24 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
           </View>
         </Animated.View>
 
+        {/* dust in the spotlight */}
+        {DUST.map((d, i) => (
+          <Dust key={`d${i}`} d={d} t={t} cx={W / 2} top={doorTop - doorH * 0.25} w={doorW * 1.5} h={doorH * 1.1} color={lightTheme ? palette.glow : "#FFF3D6"} />
+        ))}
+
         {/* motes sucked into the doorway */}
         {MOTES.map((m, i) => (
           <Mote key={i} m={m} t={t} px={px} py={py} diag={diag} color={lightTheme ? palette.glow : LIGHT_CORE} />
         ))}
 
         {/* vignette (dark room only) */}
-        <Animated.View style={[StyleSheet.absoluteFill, vignetteStyle, lightTheme && { display: "none" }]}>
+        <Animated.View style={[StyleSheet.absoluteFill, vignetteStyle]}>
           <ExpoLinearGradient
-            colors={["rgba(0,0,0,0.55)", "rgba(0,0,0,0)", "rgba(0,0,0,0)", "rgba(0,0,0,0.6)"]}
+            colors={
+              lightTheme
+                ? ["rgba(120,96,60,0.10)", "rgba(120,96,60,0)", "rgba(120,96,60,0)", "rgba(120,96,60,0.14)"]
+                : ["rgba(0,0,0,0.55)", "rgba(0,0,0,0)", "rgba(0,0,0,0)", "rgba(0,0,0,0.6)"]
+            }
             locations={[0, 0.25, 0.75, 1]}
             style={StyleSheet.absoluteFill}
           />
@@ -357,7 +436,7 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
         {/* heading */}
         <Animated.View style={[styles.heading, { top: H * 0.1 }, headingStyle]}>
           <Text style={[styles.lead, lightTheme && { color: "#6B6874" }]}>{lead}</Text>
-          <Text style={[styles.title, lightTheme && { color: "#232129" }]} numberOfLines={2} adjustsFontSizeToFit>
+          <Text style={[styles.title, lightTheme && { color: "#232129", textShadowColor: "rgba(246,201,68,0.45)", textShadowRadius: 18 }]} numberOfLines={2} adjustsFontSizeToFit>
             {title}
           </Text>
         </Animated.View>
@@ -387,6 +466,9 @@ const styles = StyleSheet.create({
   },
   title: {
     color: "#FFD45C",
+    textShadowColor: "rgba(255,190,60,0.55)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 22,
     fontFamily: "Geologica_700Bold",
     fontSize: 46,
     lineHeight: 52,

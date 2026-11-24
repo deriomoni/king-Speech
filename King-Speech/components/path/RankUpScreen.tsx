@@ -558,8 +558,8 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
   // the white-out peak so its entrance animations play as the light fades.
   const [doorScene, setDoorScene] = useState(!memento);
   const [revealed, setRevealed] = useState(memento);
-  // the fanfare comes with the reveal of a live rank-up, not on re-visits
-  useScreenMusic("rankUp", revealed && !memento);
+  // the fanfare starts with the door itself on a live rank-up, not on re-visits
+  useScreenMusic("rankUp", !memento);
 
   const recordings = showTimeRecordings[fromRank] ?? [];
   const firstRecording = recordings[0]?.uri;
