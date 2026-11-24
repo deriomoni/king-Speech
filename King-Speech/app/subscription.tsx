@@ -17,7 +17,8 @@ import Svg, { Defs, RadialGradient, Rect, Stop, SvgXml } from "react-native-svg"
 import * as Haptics from "@/lib/haptics";
 import { rs } from "@/lib/responsive";
 import { useScreenMusic } from "@/lib/music";
-import { useTheme } from "@/context/ThemeContext";
+import { DARK } from "@/context/ThemeContext";
+import AuroraBackground from "@/components/subscription/AuroraBackground";
 import { useLang, pickLang } from "@/context/LangContext";
 import AppDialog from "@/components/AppDialog";
 import CoinIcon from "@/components/CoinIcon";
@@ -214,10 +215,11 @@ const STR = {
 
 export default function SubscriptionScreen() {
   useScreenMusic("premium");
-  const { theme, themeMode } = useTheme();
+  // The paywall always sits on the dark animated aurora, whatever the app theme.
+  const theme = DARK;
   const { lang } = useLang();
   const tr = <T,>(v: L10n<T>): T => pickLang(lang, v);
-  const isDark = themeMode === "dark";
+  const isDark = true;
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 54 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -405,29 +407,12 @@ export default function SubscriptionScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.bg }]}>
+    <View style={[styles.container, { backgroundColor: "#08061A" }]}>
+      <AuroraBackground />
       <ScrollView
         contentContainerStyle={{ paddingTop: topPad, paddingBottom: bottomPad + rs(24) }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Page glow — radial gold centred behind the hero/plans */}
-        <Svg
-          pointerEvents="none"
-          style={styles.pageGlow}
-          width="100%"
-          height={rs(1100)}
-          viewBox="0 0 402 1100"
-          preserveAspectRatio="none"
-        >
-          <Defs>
-            <RadialGradient id="pageGlow" cx="201" cy="541.8" rx="182.7" ry="436.9" gradientUnits="userSpaceOnUse">
-              <Stop offset="0" stopColor="#FFD857" stopOpacity={isDark ? 0.38 : 0.3} />
-              <Stop offset="1" stopColor="#FFD857" stopOpacity="0" />
-            </RadialGradient>
-          </Defs>
-          <Rect x="0" y="0" width="402" height="1100" fill="url(#pageGlow)" />
-        </Svg>
-
         {/* Top bar: close ✕ + restore purchases */}
         <View style={styles.topBar}>
           <Pressable onPress={close} hitSlop={8} accessibilityLabel={tr(STR.close)} style={styles.closeBtn}>
