@@ -29,7 +29,7 @@ import { PlayTriangleIcon, SearchIcon } from "@/components/showtime/ShowTimeIcon
 import { openShowTimeStage } from "@/components/showtime/useShowTimeEntry";
 import { showtimeCover, showtimeCoverFocusY } from "@/constants/showtimeCovers";
 import CoverImage from "@/components/showtime/CoverImage";
-import { CoverFlight, previewRect, type CoverRect } from "@/components/showtime/CoverFlight";
+import { CoverFlight, previewRect, squircleRadius, type CoverRect } from "@/components/showtime/CoverFlight";
 import { markFlightLaunch, subscribeFlightReturn } from "@/components/showtime/coverFlightStore";
 import { THEME_CATEGORIES, categoryOf, type ThemeCategoryId } from "@/components/showtime/themeCategories";
 import { rs } from "@/lib/responsive";
@@ -154,7 +154,9 @@ export default function ThemeCatalogScreen() {
       subscribeFlightReturn((origin, levelId) => {
         const tap = lastTap.current;
         if (origin !== "catalog" || !tap) return;
-        measure(tap.ref, (cover) => setFlight({ levelId, cover, radius: tap.radius, dir: "back" }));
+        measure(tap.ref, (cover) =>
+          setFlight({ levelId, cover, radius: squircleRadius(Math.min(cover.w, cover.h)), dir: "back" }),
+        );
       }),
     [],
   );
@@ -163,7 +165,10 @@ export default function ThemeCatalogScreen() {
     if (!t || flight) return;
     lastTap.current = { ref, radius };
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    const ok = measure(ref, (cover) => setFlight({ levelId: t.levelId, cover, radius, dir: "out" }));
+    // every catalog cover is a squircle: match its corners from the measured size
+    const ok = measure(ref, (cover) =>
+      setFlight({ levelId: t.levelId, cover, radius: squircleRadius(Math.min(cover.w, cover.h)), dir: "out" }),
+    );
     if (!ok) openShowTimeStage(t.levelId);
   };
   const onFlightDone = () => {
@@ -331,6 +336,7 @@ export default function ThemeCatalogScreen() {
           source={showtimeCover(flight.levelId)}
           cover={flight.cover}
           coverRadius={flight.radius}
+          focusY={showtimeCoverFocusY(flight.levelId)}
           preview={previewRect(winW, stagePad)}
           direction={flight.dir}
           delay={flight.dir === "back" ? 320 : 0}

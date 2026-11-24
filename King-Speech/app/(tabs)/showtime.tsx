@@ -25,7 +25,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { ThemeCoverGallery, COVER_CARD, COVER_CY } from "@/components/showtime/ThemeCoverGallery";
 import { CoverFlight, previewRect, type CoverRect } from "@/components/showtime/CoverFlight";
 import { markFlightLaunch, subscribeFlightReturn } from "@/components/showtime/coverFlightStore";
-import { showtimeCover } from "@/constants/showtimeCovers";
+import { showtimeCover, showtimeCoverFocusY } from "@/constants/showtimeCovers";
 
 // Cover corner radius as a share of the side — matches the theme catalog shape.
 const COVER_ROUND = 0.3;
@@ -425,7 +425,8 @@ export default function ShowTimeScreen() {
           key={flight.levelId + flight.dir}
           source={showtimeCover(flight.levelId)}
           cover={flight.cover}
-          coverRadius={rs(16 * 1.45)}
+          coverRadius={COVER_CARD * 0.3} // the gallery card's corner (RADII = 0.3·card)
+          focusY={showtimeCoverFocusY(flight.levelId)}
           preview={previewRect(winW, stagePad)}
           direction={flight.dir}
           delay={flight.dir === "back" ? 320 : 0}

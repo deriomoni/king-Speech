@@ -28,6 +28,8 @@ const PV_SIDE = rs(28);
 const PV_TOP = rs(43);
 const PV_RATIO = 1.35;
 export const PREVIEW_RADIUS = rs(22);
+/** Corner radius that matches CoverImage's squircle (reach 0.42·w, tight control). */
+export const squircleRadius = (w: number) => w * 0.255;
 
 /** Where the photo sits on the theme preview. */
 export function previewRect(winW: number, topPad: number): CoverRect {
@@ -45,8 +47,11 @@ export function CoverFlight({
   direction,
   bg,
   delay = 0,
+  focusY = 0.5,
   onDone,
 }: {
+  /** Vertical crop focus — same as the CoverImage on both ends, so the picture never jumps. */
+  focusY?: number;
   source: ImageSourcePropType;
   /** The cover on the origin screen. */
   cover: CoverRect;
@@ -89,6 +94,21 @@ export function CoverFlight({
     };
   });
 
+  // Like CoverImage: a square photo as wide as the card, shifted by focusY
+  // when the card is wider than tall (the preview).
+  const photo = useAnimatedStyle(() => {
+    const t = p.value;
+    const w = cover.w + (preview.w - cover.w) * t;
+    const h = cover.h + (preview.h - cover.h) * t;
+    const side = Math.max(w, h);
+    return {
+      width: side,
+      height: side,
+      left: (w - side) / 2,
+      top: -(side - h) * Math.max(0, Math.min(1, focusY)),
+    };
+  });
+
   return (
     <>
       <Animated.View
@@ -96,7 +116,7 @@ export function CoverFlight({
         style={[StyleSheet.absoluteFill, { backgroundColor: bg, zIndex: 50 }, backdrop]}
       />
       <Animated.View pointerEvents="none" style={[styles.card, card]}>
-        <Image source={source} style={styles.photo} resizeMode="cover" />
+        <Animated.Image source={source} style={[styles.photo, photo]} resizeMode="cover" />
       </Animated.View>
     </>
   );
@@ -104,5 +124,5 @@ export function CoverFlight({
 
 const styles = StyleSheet.create({
   card: { position: "absolute", overflow: "hidden", zIndex: 51 },
-  photo: { position: "absolute", left: 0, top: 0, right: 0, bottom: 0, width: "100%", height: "100%" },
+  photo: { position: "absolute" },
 });
