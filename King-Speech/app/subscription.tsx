@@ -34,13 +34,14 @@ const BRAND_INLINE_XML =
   inner(LOGO_KING_XML) +
   `<g transform="translate(${BRAND_DX} ${-BRAND_DY})">${inner(LOGO_SPEECH_XML)}</g></svg>`;
 // subtitle is 15pt: Geologica caps ≈ 0.72em → scale the logo's 21.76-unit caps to that
-const BRAND_K = (15 * 0.72) / 21.76;
+// +30%: the wordmark reads at the same size as the 15pt text next to it
+const BRAND_K = ((15 * 0.72) / 21.76) * 1.3;
 const BRAND = {
   w: rs(BRAND_VB.w * BRAND_K),
   h: rs(BRAND_VB.h * BRAND_K),
   // part of the wordmark below its baseline (the g / p tails)
   descent: rs((BRAND_VB.h - 22.855) * BRAND_K),
-  crownH: rs(15 * 0.95),
+  crownH: rs(15 * 0.95 * 1.3),
 };
 import { APRICOT, FreePlanRow, GlassPlanCard } from "@/components/subscription/GlassPlan";
 import { useLang, pickLang } from "@/context/LangContext";
