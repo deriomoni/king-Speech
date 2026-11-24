@@ -472,7 +472,8 @@ const st = StyleSheet.create({
   },
   searchInput: { flex: 1, height: 40, fontSize: 15, fontFamily: "Geologica_600SemiBold", padding: 0 },
 
-  sectionHeading: { fontSize: 16, fontFamily: "Geologica_800ExtraBold", textAlign: "center", marginBottom: 2 },
+  // 8 (header) + 12 above = 20 below: the gallery stage has 14×1.45 ≈ 20pt of air over the cover
+  sectionHeading: { fontSize: 16, fontFamily: "Geologica_800ExtraBold", textAlign: "center", marginTop: 12, marginBottom: 0 },
 
   themeInfo: { paddingHorizontal: 4, marginTop: 8 },
   titleRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 6 },
