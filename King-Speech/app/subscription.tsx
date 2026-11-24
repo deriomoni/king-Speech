@@ -370,7 +370,9 @@ export default function SubscriptionScreen() {
               xml={LOGO_CROWN.xml.split("__FG__").join(BRAND_INK)}
               width={BRAND.crownH * (LOGO_CROWN.w / LOGO_H)}
               height={BRAND.crownH}
-              style={{ marginLeft: rs(5), marginBottom: BRAND.descent }}
+              // the crown art ends at y≈45.9 of its 53-unit box: drop that empty strip so
+              // the crown sits on the text baseline
+              style={{ marginLeft: rs(5), marginBottom: BRAND.descent - BRAND.crownH * ((53 - 45.9) / 53) }}
             />
           </View>
         </Text>
