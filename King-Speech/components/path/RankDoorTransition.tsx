@@ -10,7 +10,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Pressable, Platform, useWindowDimensions } from "react-native";
 import { LinearGradient as ExpoLinearGradient } from "expo-linear-gradient";
-import Svg, { Defs, Ellipse, G, Polygon, RadialGradient, Rect, Stop } from "react-native-svg";
 import Animated, {
   Easing,
   cancelAnimation,
@@ -19,11 +18,10 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-  type SharedValue,
 } from "react-native-reanimated";
 import * as Haptics from "@/lib/haptics";
-import Door3D, { DOOR_FLOOR_Y, DOOR_VB_H, DOOR_VB_W, DOORWAY_GAP_CENTER, doorPaletteForRank } from "./Door3D";
-import { UI_SCALE, rs } from "@/lib/responsive";
+import Door3D, { DOOR_FLOOR_Y, DOOR_VB_H, DOOR_VB_W, DOORWAY_GAP_CENTER, doorPaletteForRank, vividDoorForRank } from "./Door3D";
+import { rs } from "@/lib/responsive";
 
 // ── timeline (ms) ────────────────────────────────────────────────────────────
 // Unhurried on purpose: the door gets a moment on screen before the pull.
@@ -79,65 +77,15 @@ function doorAt(t: number) {
 
 const LIGHT_CORE = "#FFFDF4";
 
-// Deterministic "random" motes.
-const MOTES = Array.from({ length: 24 }, (_, i) => {
-  const r = (n: number) => {
-    const x = Math.sin((i + 1) * 12.9898 + n * 78.233) * 43758.5453;
-    return x - Math.floor(x);
-  };
-  return {
-    angle: r(1) * Math.PI * 2,
-    dist: 0.55 + r(2) * 0.6, // × screen diagonal / 2
-    at: PULL_AT - 450 + r(3) * 1200,
-    dur: 950 + r(4) * 700,
-    w: 1.5 + r(5) * 2.5,
-  };
-});
-
-const RAYS = Array.from({ length: 11 }, (_, i) => ({
-  a: -Math.PI / 2 + (i - 5) * 0.27 + (i % 2 ? 0.05 : -0.04),
-  spread: 0.05 + ((i * 7) % 5) * 0.012,
-  len: 0.75 + ((i * 3) % 4) * 0.12,
-}));
-
-// [width ×, opacity] of the layers each soft ray is built from
-const RAY_SOFT: [number, number][] = [[2.6, 0.18], [1.9, 0.24], [1.35, 0.3], [0.8, 0.4]];
-
-const MOTE_BASE = 100;
-
-function Mote({ m, t, px, py, diag, color }: { m: (typeof MOTES)[number]; t: SharedValue<number>; px: number; py: number; diag: number; color: string }) {
-  const cx = Math.cos(m.angle);
-  const cy = Math.sin(m.angle);
-  // Tablet: the streaks grow with the UI (UI_SCALE is 1 on phones).
-  const base = MOTE_BASE * UI_SCALE;
-  const mw = m.w * UI_SCALE;
-  const style = useAnimatedStyle(() => {
-    const q = seg(t.value, m.at, m.dur);
-    if (q <= 0 || q >= 1) return { opacity: 0 };
-    const e = easeInQuart(q);
-    const r = diag * m.dist * (1 - e);
-    const tail = (10 + 70 * e) * UI_SCALE;
-    const mid = r + tail / 2;
-    return {
-      opacity: Math.sin(Math.PI * q) * 0.9,
-      transform: [
-        { translateX: px + cx * mid - base / 2 },
-        { translateY: py + cy * mid - mw / 2 },
-        { rotate: `${m.angle}rad` },
-        { scaleX: tail / base },
-        { scaleY: 1 - e * 0.6 },
-      ],
-    };
-  });
-  return (
-    <Animated.View
-      style={[
-        { position: "absolute", left: 0, top: 0, width: base, height: mw, borderRadius: mw / 2, backgroundColor: color },
-        style,
-      ]}
-    />
-  );
-}
+// The dark room: a deep indigo — the complement of the yellow door — rather
+// than flat black, so the colours stay clean instead of muddy.
+const ROOM = {
+  wall: ["#1C1840", "#17143A", "#120F2E"] as const,
+  floorTop: "#0F0D27",
+  floorBottom: "#0A091C",
+  base: "#2A2556",
+  baseEdge: "rgba(255,255,255,0.10)",
+};
 
 type Props = {
   /** Rank being completed — picks the door colour (same door as on the Path). */
@@ -153,7 +101,8 @@ type Props = {
 };
 
 export default function RankDoorTransition({ rank, light: lightTheme = false, lead, title, onReveal, onDone }: Props) {
-  const palette = doorPaletteForRank(rank);
+  // the dark room gets the saturated door; the white stage keeps the pastel one
+  const palette = lightTheme ? doorPaletteForRank(rank) : vividDoorForRank(rank);
   const { width: W, height: H } = useWindowDimensions();
   const t = useSharedValue(0);
   const [door, setDoor] = useState({ open: 0, light: 0.35 });
@@ -220,7 +169,7 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
   const px = doorLeft + DOORWAY_GAP_CENTER.x * doorW;
   const py = doorTop + DOORWAY_GAP_CENTER.y * doorH;
   const floorY = doorTop + DOOR_FLOOR_Y * doorH;
-  const diag = Math.hypot(W, H) / 2;
+  const baseH = rs(11);
 
   // ── UI-thread styles ──
   const rootStyle = useAnimatedStyle(() => ({ opacity: 1 - seg(t.value, REVEAL_AT, OUT_DUR) }));
@@ -239,28 +188,6 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
         { scale: s },
       ],
     };
-  });
-  const lightCamStyle = useAnimatedStyle(() => {
-    const tt = t.value;
-    const pull = easeInCubic(seg(tt, PULL_AT, PULL_DUR));
-    const s = 1 + pull * 2.5;
-    return {
-      opacity: easeOutCubic(seg(tt, 0, FADE_IN)),
-      transform: [{ translateX: (1 - s) * (px - W / 2) }, { translateY: (1 - s) * (py - H / 2) }, { scale: s }],
-    };
-  });
-  const auraStyle = useAnimatedStyle(() => {
-    const d = doorAt(Math.min(t.value, DOOR_STILL_AT));
-    return { opacity: 0.35 + 0.65 * d.light };
-  });
-  const washStyle = useAnimatedStyle(() => {
-    const d = doorAt(Math.min(t.value, DOOR_STILL_AT));
-    const rayOp = clamp01((d.light - 0.7) / 0.3) * Math.min(1, d.open);
-    return { opacity: 0.25 * d.light + 0.5 * rayOp };
-  });
-  const raysStyle = useAnimatedStyle(() => {
-    const d = doorAt(Math.min(t.value, DOOR_STILL_AT));
-    return { opacity: clamp01((d.light - 0.7) / 0.3) * Math.min(1, d.open) };
   });
   const vignetteStyle = useAnimatedStyle(() => ({ opacity: 1 - easeInQuart(seg(t.value, PULL_AT, PULL_DUR)) }));
   const headingStyle = useAnimatedStyle(() => {
@@ -285,7 +212,7 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
   return (
     <Pressable style={[StyleSheet.absoluteFill, { zIndex: 50, overflow: "hidden" }]} onPress={skip} accessibilityRole="button" accessibilityLabel={title}>
       <Animated.View style={[StyleSheet.absoluteFill, rootStyle]} pointerEvents="none">
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: lightTheme ? "#FFFFFF" : "#0B0A0D" }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: lightTheme ? "#FFFFFF" : ROOM.floorBottom }]} />
 
         {/* the room — scales as one piece when the camera gets pulled in */}
         <Animated.View style={[StyleSheet.absoluteFill, cameraStyle]}>
@@ -293,92 +220,21 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
             <View style={[StyleSheet.absoluteFill, { backgroundColor: "#FFFFFF" }]} />
           ) : (
             <>
-              <ExpoLinearGradient
-                colors={["#0B0A0D", "#17131C", "#1E1822"]}
-                locations={[0, 0.6, 1]}
-                style={[StyleSheet.absoluteFill, { bottom: H - floorY }]}
-              />
-              <ExpoLinearGradient colors={["#2A2129", "#0E0C10"]} style={{ position: "absolute", left: 0, right: 0, top: floorY, bottom: 0 }} />
+              <ExpoLinearGradient colors={ROOM.wall} locations={[0, 0.65, 1]} style={[StyleSheet.absoluteFill, { bottom: H - floorY }]} />
+              <ExpoLinearGradient colors={[ROOM.floorTop, ROOM.floorBottom]} style={{ position: "absolute", left: 0, right: 0, top: floorY, bottom: 0 }} />
+              {/* baseboard: parts the wall from the floor */}
+              <View style={{ position: "absolute", left: 0, right: 0, top: floorY - baseH, height: baseH, backgroundColor: ROOM.base }} />
+              <View style={{ position: "absolute", left: 0, right: 0, top: floorY - baseH, height: 1.5, backgroundColor: ROOM.baseEdge }} />
             </>
           )}
-
-        </Animated.View>
-
-        {/* warm wash + god rays: their own layer on a much gentler zoom, drawn
-            far past the screen with blurred edges and a gradient that dies out
-            before the tips — so neither ends nor edges ever show. */}
-        <Animated.View style={[styles.lightLayer, { left: -W, top: -H, width: 3 * W, height: 3 * H }, lightCamStyle]}>
-          <Animated.View style={[StyleSheet.absoluteFill, washStyle]}>
-            <Svg width={3 * W} height={3 * H}>
-              <Defs>
-                <RadialGradient id="rdtWash" cx={px + W} cy={py + H} r={diag * 1.1} gradientUnits="userSpaceOnUse">
-                  <Stop offset="0" stopColor={palette.glow} stopOpacity={0.5} />
-                  <Stop offset="1" stopColor={palette.glow} stopOpacity={0} />
-                </RadialGradient>
-              </Defs>
-              <Rect x={0} y={0} width={3 * W} height={3 * H} fill="url(#rdtWash)" />
-            </Svg>
-          </Animated.View>
-          <Animated.View style={[StyleSheet.absoluteFill, raysStyle]}>
-            <Svg width={3 * W} height={3 * H}>
-              <Defs>
-                <RadialGradient id="rdtRay" cx={px + W} cy={py + H} r={diag * 1.6} gradientUnits="userSpaceOnUse">
-                  <Stop offset="0" stopColor={LIGHT_CORE} stopOpacity={0.55} />
-                  <Stop offset="0.3" stopColor={palette.glow} stopOpacity={0.24} />
-                  <Stop offset="1" stopColor={palette.glow} stopOpacity={0} />
-                </RadialGradient>
-              </Defs>
-              <G>
-                {RAYS.map((r, i) => {
-                  const len = diag * 2.4;
-                  const cx = px + W;
-                  const cy = py + H;
-                  // a stack of ever wider, fainter wedges reads as a blurred
-                  // beam without an SVG blur filter (cheap on phones)
-                  return RAY_SOFT.map(([k, o], j) => {
-                    const sp = r.spread * k;
-                    const p1 = [cx + Math.cos(r.a - sp) * len, cy + Math.sin(r.a - sp) * len];
-                    const p2 = [cx + Math.cos(r.a + sp) * len, cy + Math.sin(r.a + sp) * len];
-                    return <Polygon key={`${i}-${j}`} points={`${cx},${cy} ${p1[0]},${p1[1]} ${p2[0]},${p2[1]}`} fill="url(#rdtRay)" opacity={o} />;
-                  });
-                })}
-              </G>
-            </Svg>
-          </Animated.View>
         </Animated.View>
 
         {/* the door — same camera as the room */}
         <Animated.View style={[StyleSheet.absoluteFill, cameraStyle]}>
-          {/* a bright aura round the door, swelling as its light does */}
-          <Animated.View style={[StyleSheet.absoluteFill, auraStyle]} pointerEvents="none">
-            <Svg width={W} height={H}>
-              <Defs>
-                <RadialGradient id="rdtAura" cx="50%" cy="50%" r="50%">
-                  <Stop offset="0" stopColor={LIGHT_CORE} stopOpacity={1} />
-                  <Stop offset="0.35" stopColor={palette.glow} stopOpacity={0.75} />
-                  <Stop offset="0.7" stopColor={palette.glow} stopOpacity={0.25} />
-                  <Stop offset="1" stopColor={palette.glow} stopOpacity={0} />
-                </RadialGradient>
-              </Defs>
-              <Ellipse cx={doorLeft + doorW / 2} cy={doorTop + doorH * 0.45} rx={doorW * 0.95} ry={doorH * 0.78} fill="url(#rdtAura)" />
-            </Svg>
-          </Animated.View>
           <View style={{ position: "absolute", left: doorLeft, top: doorTop }}>
-            <Door3D
-              width={doorW}
-              open={door.open}
-              light={door.light}
-              palette={palette}
-              fast
-              floorLight={false}
-            />
+            <Door3D width={doorW} open={door.open} light={door.light} palette={palette} fast floorLight={false} />
           </View>
         </Animated.View>
-
-        {/* motes sucked into the doorway */}
-        {MOTES.map((m, i) => (
-          <Mote key={i} m={m} t={t} px={px} py={py} diag={diag} color={lightTheme ? palette.glow : LIGHT_CORE} />
-        ))}
 
         {/* vignette (dark room only) */}
         <Animated.View style={[StyleSheet.absoluteFill, vignetteStyle, lightTheme && { display: "none" }]}>
@@ -386,7 +242,7 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
             colors={
               lightTheme
                 ? ["rgba(120,96,60,0.10)", "rgba(120,96,60,0)", "rgba(120,96,60,0)", "rgba(120,96,60,0.14)"]
-                : ["rgba(0,0,0,0.55)", "rgba(0,0,0,0)", "rgba(0,0,0,0)", "rgba(0,0,0,0.6)"]
+                : ["rgba(8,6,22,0.6)", "rgba(8,6,22,0)", "rgba(8,6,22,0)", "rgba(8,6,22,0.6)"]
             }
             locations={[0, 0.25, 0.75, 1]}
             style={StyleSheet.absoluteFill}
@@ -409,7 +265,6 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
 }
 
 const styles = StyleSheet.create({
-  lightLayer: { position: "absolute" },
   heading: {
     position: "absolute",
     left: 28,

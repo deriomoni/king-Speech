@@ -90,6 +90,17 @@ export const doorPaletteForRank = (index: number): DoorPalette => RANK_DOORS[Mat
 
 export const DEFAULT_DOOR_PALETTE: DoorPalette = DOOR_PALETTES.butter;
 
+/** Rich, saturated versions of the rank doors — for the rank-up cut-scene,
+ *  where the door stands alone in a dark room. */
+const VIVID_DOORS = [
+  mk("#FFC21F", "#FFD54F", "#E5A600", "#16151A", "#FFB300"), // 1 · yellow
+  mk("#9C72FF", "#B99BFF", "#8456F2", "#16151A", "#8B5CF6"), // 2 · violet
+  mk("#4FC26F", "#7AD593", "#3BA85A", "#16151A", "#34B85A"), // 3 · green
+  mk("#4A9DFF", "#7AB8FF", "#3384E8", "#16151A", "#3B8BF5"), // 4 · blue
+  mk("#FF7864", "#FF9C8C", "#E85F4C", "#16151A", "#FF6450"), // 5 · coral
+];
+export const vividDoorForRank = (index: number): DoorPalette => VIVID_DOORS[Math.max(0, Math.min(4, index - 1))];
+
 // ── colour helpers ──────────────────────────────────────────────────────────
 const rgb = (h: string) => {
   const n = parseInt(h.slice(1), 16);
@@ -295,8 +306,9 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
         {/* the light beyond the doorway: a blinding core, warm toward the edges */}
         <RadialGradient id={id("roomG")} cx="45%" cy="55%" r="70%">
           <Stop offset="0" stopColor="#FFFFFF" />
-          <Stop offset="0.55" stopColor={lit(p.glow, 1, "#FFFFFF", 0.75)} />
-          <Stop offset="1" stopColor={lit(p.glow, 1, "#FFFFFF", 0.35)} />
+          {/* blinding in the cut-scene: white to the very edges */}
+          <Stop offset="0.55" stopColor={fast ? "#FFFFFF" : lit(p.glow, 1, "#FFFFFF", 0.75)} />
+          <Stop offset="1" stopColor={fast ? "#FFF6DC" : lit(p.glow, 1, "#FFFFFF", 0.35)} />
         </RadialGradient>
         <Filter id={id("wallShadow")} x="-50%" y="-50%" width="200%" height="200%">
           <FeGaussianBlur stdDeviation={6} />
@@ -349,7 +361,7 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
         </RadialGradient>
       </Defs>
 
-      {L > 0.01 && (
+      {!fast && L > 0.01 && (
         <Ellipse
           cx={pc[0]}
           cy={pc[1] + 8}
@@ -394,6 +406,26 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
 
       {floorLight && spill > 0.01 && (
         <Polygon points={pts(pool)} fill={`url(#${id("pool")})`} opacity={spill} filter={fast ? undefined : `url(#${id("softer")})`} />
+      )}
+
+      {/* threshold: the frame carries on along the floor under the door */}
+      {fast && (
+        <>
+          <Polygon
+            points={pts([[XL - CASE, -1.2, -DEPTH], [XR + CASE, -1.2, -DEPTH], [XR + CASE, -1.2, CASE_Z + 6], [XL - CASE, -1.2, CASE_Z + 6]])}
+            fill={lit(p.casing, 1.02, "#FFFFFF", 0.25 * L)}
+            stroke={ink}
+            strokeWidth={sw}
+            strokeLinejoin="round"
+          />
+          <Polygon
+            points={pts([[XL - CASE, -1.2, CASE_Z + 6], [XR + CASE, -1.2, CASE_Z + 6], [XR + CASE, 4, CASE_Z + 6], [XL - CASE, 4, CASE_Z + 6]])}
+            fill={lit(p.casing, 0.8, "#FFFFFF", 0)}
+            stroke={ink}
+            strokeWidth={sw}
+            strokeLinejoin="round"
+          />
+        </>
       )}
 
       {/* light leaking under a shut door */}

@@ -264,8 +264,8 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
       {doorScene && (
         <RankDoorTransition
           rank={fromRank}
-          // a plain white room keeps every eye on the door
-          light
+          // pitch dark: the door opens out of the darkness into blinding light
+          light={false}
           lead={
             isFinal
               ? T("Ты прошёл все ранги", "You completed every rank", "Сен барлық дәрежеден өттің")
