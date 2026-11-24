@@ -33,6 +33,32 @@ import { CoverFlight, previewRect, type CoverRect } from "@/components/showtime/
 import { markFlightLaunch, subscribeFlightReturn } from "@/components/showtime/coverFlightStore";
 import { THEME_CATEGORIES, categoryOf, type ThemeCategoryId } from "@/components/showtime/themeCategories";
 import { rs } from "@/lib/responsive";
+import Svg, { Path } from "react-native-svg";
+
+/**
+ * One outline around cover + name plate: the cover's squircle top, straight
+ * sides running down past the cover, softly rounded bottom corners. Same
+ * squircle as CoverImage (corner reach 0.42·w, control offset 0.14·reach).
+ */
+function cardOutline(w: number, h: number, bottomR: number, inset: number) {
+  const r = w * 0.42;
+  const t = r * 0.14;
+  const x0 = inset, y0 = inset, x1 = w - inset, y1 = h - inset;
+  const R = bottomR - inset;
+  const n = (v: number) => v.toFixed(2);
+  return [
+    `M ${n(r)} ${n(y0)}`,
+    `L ${n(w - r)} ${n(y0)}`,
+    `C ${n(w - t)} ${n(y0)} ${n(x1)} ${n(t)} ${n(x1)} ${n(r)}`,
+    `L ${n(x1)} ${n(y1 - R)}`,
+    `Q ${n(x1)} ${n(y1)} ${n(x1 - R)} ${n(y1)}`,
+    `L ${n(x0 + R)} ${n(y1)}`,
+    `Q ${n(x0)} ${n(y1)} ${n(x0)} ${n(y1 - R)}`,
+    `L ${n(x0)} ${n(r)}`,
+    `C ${n(x0)} ${n(t)} ${n(t)} ${n(y0)} ${n(r)} ${n(y0)}`,
+    "Z",
+  ].join(" ");
+}
 
 const POPULAR_COUNT = 10;
 
@@ -72,6 +98,7 @@ export default function ThemeCatalogScreen() {
   // the cover sits on top of a rounded plate that starts behind its lower part
   // and shows in the squircle's bottom corners. Dark plate in dark, light in light.
   const plate = isLight ? "#EFEDE8" : "#2A2A2C";
+  const strokeLine = isLight ? "rgba(38,38,40,0.12)" : "rgba(240,238,233,0.10)";
   const topPad = Platform.OS === "web" ? rs(54) : insets.top;
   const bottomPad = Platform.OS === "web" ? rs(34) : insets.bottom;
 
@@ -94,6 +121,8 @@ export default function ThemeCatalogScreen() {
   // which StyleSheet auto-scales on tablets.
   const contentW = Math.min(winW, rs(480)) - rs(40);
   const cardW = Math.floor((contentW - rs(12)) / 2);
+  // square cover + room for two title lines and the meta
+  const cardH = cardW + rs(56);
 
   const goBack = () => {
     if (router.canGoBack()) router.back();
@@ -264,13 +293,12 @@ export default function ThemeCatalogScreen() {
                     style={({ pressed }) => [
                       s.card,
                       // square cover + room for two title lines and the meta
-                      { width: cardW, height: cardW + rs(56), opacity: pressed ? 0.85 : 1 },
+                      { width: cardW, height: cardH, opacity: pressed ? 0.85 : 1 },
                     ]}
                   >
-                    <View
-                      pointerEvents="none"
-                      style={[s.plate, { top: cardW * 0.72, backgroundColor: plate, borderColor: stroke }]}
-                    />
+                    <Svg pointerEvents="none" style={StyleSheet.absoluteFill} width={cardW} height={cardH}>
+                      <Path d={cardOutline(cardW, cardH, rs(30), 0)} fill={plate} />
+                    </Svg>
                     <View
                       ref={(n) => {
                         coverRefs.current[k] = n;
@@ -284,6 +312,10 @@ export default function ThemeCatalogScreen() {
                       {t.title}
                     </Text>
                     <Text style={[s.cardMeta, { color: c.textMuted }]}>{durationOf(t, lang)}</Text>
+                    {/* the outline goes over the cover so it rings both shapes as one */}
+                    <Svg pointerEvents="none" style={StyleSheet.absoluteFill} width={cardW} height={cardH}>
+                      <Path d={cardOutline(cardW, cardH, rs(30), 0.75)} fill="none" stroke={strokeLine} strokeWidth={1.5} />
+                    </Svg>
                   </Pressable>
                 </Animated.View>
               );
@@ -401,7 +433,6 @@ const s = StyleSheet.create({
     borderRadius: 55,
     backgroundColor: "rgba(255,255,255,0.18)",
   },
-  plate: { position: "absolute", left: 0, right: 0, bottom: 0, borderRadius: 22, borderWidth: 1 },
   cardTitle: { fontSize: 13, lineHeight: 16, fontFamily: "Geologica_700Bold", marginTop: 9, marginHorizontal: 12 },
   cardMeta: { position: "absolute", left: 12, bottom: 10, fontSize: 10, fontFamily: "Geologica_600SemiBold" },
   empty: { fontSize: 13, fontFamily: "Geologica_600SemiBold", marginTop: 24, textAlign: "center" },
