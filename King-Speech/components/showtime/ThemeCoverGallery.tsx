@@ -27,6 +27,7 @@ import Animated, {
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import type { SpeechTheme } from "@/app/showtime-stage";
 import { showtimeCover } from "@/constants/showtimeCovers";
+import { useTheme } from "@/context/ThemeContext";
 
 // Everything is 1.45× the Figma frame (covers were enlarged by 45 %), times the
 // tablet scale — every size below derives from SIZE_K, so the stylesheet is
@@ -173,6 +174,9 @@ const SHIFT = [0, -86, -123, -159, -195].map((v) => v * SIZE_K);
 
 function Card({ idx, target, theme, cx }: CardProps) {
   const cover = useMemo(() => showtimeCover(theme.levelId), [theme.levelId]);
+  // Cards stay opaque (no see-through edges); the unselected ones are washed
+  // 40% toward the screen background — lighter in light mode, darker in dark.
+  const { theme: ui } = useTheme();
 
   const card = useAnimatedStyle(() => {
     const off = idx - target.value;
@@ -180,8 +184,7 @@ function Card({ idx, target, theme, cx }: CardProps) {
     const s = off > 0 ? -1 : 1; // 1 = left side, -1 = right side
     return {
       zIndex: 100 - Math.round(a * 10),
-      // only the selected theme is fully opaque; the rest are 40% see-through
-      opacity: interpolate(a, [0, 1, 3, 3.6], [1, 0.6, 0.6, 0], Extrapolation.CLAMP),
+      opacity: interpolate(a, [0, 3, 3.6], [1, 1, 0], Extrapolation.CLAMP),
       borderRadius: interpolate(a, K, RADII, Extrapolation.CLAMP),
       transform: [
         { perspective: PERSPECTIVE },
@@ -190,6 +193,11 @@ function Card({ idx, target, theme, cx }: CardProps) {
         { scale: interpolate(a, K, SCALE, Extrapolation.CLAMP) },
       ],
     };
+  });
+
+  const veil = useAnimatedStyle(() => {
+    const a = Math.abs(idx - target.value);
+    return { opacity: interpolate(a, [0, 1], [0, 0.4], Extrapolation.CLAMP) };
   });
 
   // Far (inner) edge darkening: left cards are dark on the right, right cards on the left.
@@ -224,6 +232,7 @@ function Card({ idx, target, theme, cx }: CardProps) {
           style={StyleSheet.absoluteFill}
         />
       </Animated.View>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: ui.bg }, veil]} />
     </Animated.View>
   );
 }
