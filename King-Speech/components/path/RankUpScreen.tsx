@@ -2,7 +2,7 @@
 // colour of the door they just walked through. Oscar, their very first
 // reading take (to hear how far they've come), a few honest highlights of
 // how they trained, and a quote — in the app's own Geologica / card style.
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -105,6 +105,14 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
   // the fanfare starts on the cut-scene's first frame — not while the screen
   // is still loading — and only on a live rank-up, not on re-visits
   const [musicOn, setMusicOn] = useState(false);
+  // the CTA waits 7 s on a live rank-up so it doesn't pull the eye away
+  // while the player listens to their first take
+  const [ctaShown, setCtaShown] = useState(memento);
+  useEffect(() => {
+    if (!revealed || ctaShown) return;
+    const id = setTimeout(() => setCtaShown(true), 7000);
+    return () => clearTimeout(id);
+  }, [revealed, ctaShown]);
   useScreenMusic("rankUp", musicOn && !memento);
 
   // the page wears the colour of the door the player just walked through
@@ -255,8 +263,8 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
         </ScrollView>
       )}
 
-      {revealed && (
-        <Animated.View entering={FadeIn.duration(500).delay(300)} style={[s.ctaWrap, { paddingBottom: bottomPad + rs(16) }]} pointerEvents="box-none">
+      {revealed && ctaShown && (
+        <Animated.View entering={FadeIn.duration(600)} style={[s.ctaWrap, { paddingBottom: bottomPad + rs(16) }]} pointerEvents="box-none">
           <LinearGradient colors={[tint(door.glow, 0.4, 0), bg]} locations={[0, 0.45]} style={s.ctaFade} pointerEvents="none" />
           <Pressable
             onPress={handleStart}

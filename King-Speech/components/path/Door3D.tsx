@@ -26,6 +26,7 @@ const CASE = 9; // casing width
 const CASE_Z = 2.5; // casing proud of the wall
 const SLAB_T = 6; // door thickness
 const SLAB_GAP = 2; // light gap under the door
+const SILL_D = 9; // threshold depth: a slim sill, well inside the jamb
 
 // ── camera ──────────────────────────────────────────────────────────────────
 // three-quarter view from the front-right, a little above the head — the
@@ -382,7 +383,7 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
       {fast && (
         // top and visible front edge as one shape in one colour — no seam
         <Polygon
-          points={pts([[XL, -1, -DEPTH], [XR, -1, -DEPTH], [XR, -1, 0], [XR, 0.8, 0], [XL, 0.8, 0], [XL, -1, 0]])}
+          points={pts([[XL, -1, -SILL_D], [XR, -1, -SILL_D], [XR, -1, 0], [XR, 0.8, 0], [XL, 0.8, 0], [XL, -1, 0]])}
           fill={lit(p.jamb, 1, "#FFFFFF", 0.3 * L)}
           stroke={ink}
           strokeWidth={1.1}

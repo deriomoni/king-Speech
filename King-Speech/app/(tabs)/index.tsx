@@ -13,6 +13,7 @@ import {
 import { useFocusEffect, useIsFocused } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
+  useAnimatedProps,
   useSharedValue,
   useAnimatedStyle,
   useAnimatedScrollHandler,
@@ -234,6 +235,55 @@ function getSide(index: number): "left" | "right" {
 
 const ENTRY_ANIM_MAX = 10;
 
+// New-rank intro on the Path. One UI-thread clock (ms) drives everything, so
+// nothing re-renders while it plays: bricks rise into place one by one from
+// the bottom, then the thread is drawn up through them, and each level's name
+// is pressed onto its brick like a stamp the moment the thread reaches it.
+// `ord` = a row's place counted from the bottom; only the lowest rows (the
+// ones on screen) animate. Clock < 0 = no intro, everything at rest.
+const INTRO = {
+  rows: 12,
+  brickStep: 105,
+  brickDur: 520,
+  threadStep: 150,
+  stampLag: 70,
+  stampDur: 420,
+};
+const INTRO_THREAD_AT = (INTRO.rows - 1) * INTRO.brickStep + INTRO.brickDur + 120;
+const INTRO_TOTAL = INTRO_THREAD_AT + INTRO.rows * INTRO.threadStep + INTRO.stampLag + INTRO.stampDur;
+
+function introClamp(x: number) {
+  "worklet";
+  return x < 0 ? 0 : x > 1 ? 1 : x;
+}
+function introEaseOut(x: number) {
+  "worklet";
+  return 1 - Math.pow(1 - x, 3);
+}
+/** Brick / divider rising into place. */
+function useIntroRise(intro: SharedValue<number> | undefined, ord: number) {
+  const native = Platform.OS !== "web";
+  return useAnimatedStyle(() => {
+    if (!intro || ord < 0 || intro.value < 0) return { opacity: 1, transform: [{ translateY: 0 }] };
+    const p = introClamp((intro.value - ord * INTRO.brickStep) / INTRO.brickDur);
+    const e = introEaseOut(p);
+    // transforms only on native: on web they leave the brick rasterised/blurry
+    return { opacity: p, transform: [{ translateY: native ? (1 - e) * 26 : 0 }] };
+  }, [ord]);
+}
+/** A level's name + icon stamped onto its brick. */
+function useIntroStamp(intro: SharedValue<number> | undefined, ord: number) {
+  const native = Platform.OS !== "web";
+  return useAnimatedStyle(() => {
+    if (!intro || ord < 0 || intro.value < 0) return { opacity: 1, transform: [{ scale: 1 }] };
+    const q = introClamp((intro.value - INTRO_THREAD_AT - ord * INTRO.threadStep - INTRO.stampLag) / INTRO.stampDur);
+    // pressed down from slightly larger, with a soft settle
+    const e = introEaseOut(q);
+    return { opacity: introClamp(q * 1.8), transform: [{ scale: native ? 1.35 - 0.35 * e : 1 }] };
+  }, [ord]);
+}
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+
 function shapeRadius(
   shape: import("@/components/path/rankTheme").StepShape,
 ): number {
@@ -255,10 +305,15 @@ function SnakeConnectorBase({
   fromSide,
   toSide,
   color,
+  intro,
+  ord = -1,
 }: {
   fromSide: "left" | "right" | "center";
   toSide: "left" | "right" | "center";
   color: string;
+  intro?: SharedValue<number>;
+  /** Place of the row above this thread, counted from the bottom (-1 = static). */
+  ord?: number;
 }) {
   const [w, setW] = useState(0);
   const H = rs(30);
@@ -272,6 +327,15 @@ function SnakeConnectorBase({
   const sx = pos(fromSide);
   const ex = pos(toSide);
   const d = `M ${sx} 0 L ${sx} ${O} C ${sx} ${O + H * 0.55}, ${ex} ${O + H * 0.45}, ${ex} ${O + H} L ${ex} ${H + 2 * O}`;
+  // a generous length estimate: dash = gap = len, so the offset reveals it
+  const len = H + 2 * O + Math.abs(ex - sx) + 8;
+  // the path runs top → bottom; a negative offset reveals it from its END,
+  // i.e. the thread grows upward from the lower brick to this one
+  const drawProps = useAnimatedProps(() => {
+    if (!intro || ord < 1 || intro.value < 0) return { strokeDashoffset: 0 };
+    const p = introClamp((intro.value - INTRO_THREAD_AT - (ord - 1) * INTRO.threadStep) / INTRO.threadStep);
+    return { strokeDashoffset: -len * (1 - p) };
+  }, [ord, len]);
   return (
     <View
       style={{ width: "100%", height: H, zIndex: 0 }}
@@ -279,12 +343,14 @@ function SnakeConnectorBase({
     >
       {w > 0 && (
         <Svg width={w} height={H + 2 * O} style={{ position: "absolute", top: -O, left: 0 }}>
-          <Path
+          <AnimatedPath
             d={d}
             stroke={color}
             strokeWidth={rs(3)}
             strokeLinecap="round"
             fill="none"
+            strokeDasharray={[len, len]}
+            animatedProps={drawProps}
           />
         </Svg>
       )}
@@ -300,7 +366,11 @@ function StepBlockBase({
   isNaturallyAvailable,
   rankTheme,
   themeMode,
+  intro,
+  ord = -1,
 }: {
+  intro?: SharedValue<number>;
+  ord?: number;
   item: StepItem;
   index: number;
   totalDone: number;
@@ -343,6 +413,8 @@ function StepBlockBase({
   const entryStyle = useAnimatedStyle(() => ({
     opacity: entryOpacity.value,
   }));
+  const riseStyle = useIntroRise(intro, ord);
+  const stampStyle = useIntroStamp(intro, ord);
 
   // Glow only on the single naturally-available step (never on overridden ones).
   const showGlow = isNaturallyAvailable && item.status === "available";
@@ -465,7 +537,7 @@ function StepBlockBase({
   };
 
   return (
-    <Animated.View style={[entryStyle, { position: "relative" }]}>
+    <Animated.View style={[entryStyle, riseStyle, { position: "relative" }]}>
       {showGlow && <GlowRing color={levelColor} radius={shapeR} />}
 
       <Pressable
@@ -513,7 +585,7 @@ function StepBlockBase({
           />
           {showGlow && <BrickSheen />}
 
-          <View style={styles.stepLeft}>
+          <Animated.View style={[styles.stepLeft, stampStyle]}>
             {levelIconKind(item.id) ? (
               // Level glyph in every not-yet-completed state (locked bricks
               // used to show a padlock). Cut-outs take the face colour.
@@ -525,9 +597,9 @@ function StepBlockBase({
             ) : (
               <Ionicons name={item.icon as any} size={rs(22)} color={iconColor} />
             )}
-          </View>
+          </Animated.View>
 
-          <View style={styles.stepCenter}>
+          <Animated.View style={[styles.stepCenter, stampStyle]}>
             <Text
               style={[
                 styles.stepTitle,
@@ -553,7 +625,7 @@ function StepBlockBase({
             >
               {item.subtitle}
             </Text>
-          </View>
+          </Animated.View>
         </View>
         <BrickStroke
           width={rs(STEP_W)}
@@ -671,12 +743,18 @@ function ModuleDividerBase({
 // SVG icon + stroke and every connector each time. Rows only need to render
 // when their own data changes. (StepBlock still subscribes to DevTools itself,
 // so Open Testing re-renders it.)
+function IntroRise({ intro, ord, children }: { intro: SharedValue<number>; ord: number; children: React.ReactNode }) {
+  const style = useIntroRise(intro, ord);
+  return <Animated.View style={style}>{children}</Animated.View>;
+}
+
 const SnakeConnector = React.memo(SnakeConnectorBase);
 const ModuleDivider = React.memo(ModuleDividerBase);
 const StepBlock = React.memo(
   StepBlockBase,
   (a, b) =>
     a.index === b.index &&
+    a.ord === b.ord &&
     a.totalDone === b.totalDone &&
     a.isNaturallyAvailable === b.isNaturallyAvailable &&
     a.colors === b.colors &&
@@ -888,17 +966,32 @@ export default function PathScreen() {
   // its start — the bottom of the ladder, where its first level is. Covers
   // Open Testing (no auto-scroll) and a rank whose levels aren't unlocked yet.
   const prevRankRef = useRef(currentRank);
+  const intro = useSharedValue(-1);
   useEffect(() => {
     const changed = prevRankRef.current !== currentRank;
     prevRankRef.current = currentRank;
     // on first mount only when there is no active level to pin to
     if (!changed && activeKey) return;
+    // a new rank builds itself: hide its lowest rows right away, then play
+    // the intro once the map has settled at the bottom
+    if (changed) {
+      cancelAnimation(intro);
+      intro.value = 0;
+    }
     // twice: the tall map is still reflowing right after the switch
     const a = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 120);
     const b = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 600);
+    const c = changed
+      ? setTimeout(() => {
+          intro.value = withTiming(INTRO_TOTAL, { duration: INTRO_TOTAL, easing: Easing.linear }, (done) => {
+            if (done) intro.value = -1;
+          });
+        }, 700)
+      : undefined;
     return () => {
       clearTimeout(a);
       clearTimeout(b);
+      if (c) clearTimeout(c);
     };
   }, [currentRank]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1212,7 +1305,9 @@ export default function PathScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {renderItems.map((ri) => {
+        {renderItems.map((ri, i) => {
+          const fromBottom = renderItems.length - 1 - i;
+          const ord = fromBottom < INTRO.rows ? fromBottom : -1;
           if (ri.type === "divider") {
             return (
               <AnimatedRow
@@ -1221,11 +1316,13 @@ export default function PathScreen() {
                 viewportH={viewportH}
                 onLayoutY={(y) => recordItemY(ri.key, y)}
               >
-                <ModuleDivider
-                  moduleNum={ri.moduleNum ?? 1}
-                  colors={colors}
-                  lang={lang}
-                />
+                <IntroRise intro={intro} ord={ord}>
+                  <ModuleDivider
+                    moduleNum={ri.moduleNum ?? 1}
+                    colors={colors}
+                    lang={lang}
+                  />
+                </IntroRise>
               </AnimatedRow>
             );
           }
@@ -1291,6 +1388,8 @@ export default function PathScreen() {
                   isNaturallyAvailable={ri.key === activeKey}
                   rankTheme={rankTheme}
                   themeMode={themeMode}
+                  intro={intro}
+                  ord={ord}
                 />
               </View>
 
@@ -1299,6 +1398,8 @@ export default function PathScreen() {
                   fromSide={side}
                   toSide={ri.toSide ?? (side === "right" ? "left" : "right")}
                   color={ri.lowerDone ? item.color : PATH_CONNECTOR[themeMode]}
+                  intro={intro}
+                  ord={ord}
                 />
               )}
             </AnimatedRow>
