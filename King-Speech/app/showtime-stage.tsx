@@ -36,6 +36,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { leaveTo } from "@/lib/nav";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useLang, Lang, pickLang } from "@/context/LangContext";
+import StageCountdown from "@/components/showtime/StageCountdown";
 import {
   getShowtimeModule,
   getModuleFromShowtimeId,
@@ -4502,7 +4503,7 @@ const sl = StyleSheet.create({
   line: { fontSize: 14, lineHeight: 23, color: "rgba(255,255,255,0.42)", fontFamily: "Geologica_400Regular", textAlign: "center", paddingVertical: 2, textShadowColor: "rgba(0,0,0,0.55)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 },
   // Size lives in the animation above; this only carries the emphasis.
   lineActive: { color: "#FFFFFF", fontFamily: "Geologica_700Bold" },
-  lineDone: { color: "rgba(255,255,255,0.4)", textDecorationLine: "line-through", textDecorationColor: "rgba(255,255,255,0.25)" },
+  lineDone: { color: "rgba(255,255,255,0.4)" },
 });
 
 function lightenHex(hex: string, pct: number): string {
@@ -4872,7 +4873,7 @@ export default function ShowtimeStageScreen() {
       const w = en ? "words" : lang === "kk" ? "сөз" : nA10 === 1 && nA100 !== 11 ? "слово" : nA10 >= 2 && nA10 <= 4 && (nA100 < 12 || nA100 > 14) ? "слова" : "слов";
       return {
         category: authorCategoryParam ?? "",
-        meta: `${minutes} ${en ? "min" : "мин"}  ·  ${words} ${w}  ·  ${en ? "Photo" : "Фото"}: ${showtimeCoverCredit(levelId)}`,
+        meta: `${minutes} ${en ? "min" : "мин"}  ·  ${words} ${w}${showtimeCoverCredit(levelId) ? `  ·  ${en ? "Photo" : "Фото"}: ${showtimeCoverCredit(levelId)}` : ""}`,
       };
     }
     const rank = getShowtimeModule(getModuleFromShowtimeId(levelId))?.rank ?? 1;
@@ -4894,7 +4895,7 @@ export default function ShowtimeStageScreen() {
           : "слов";
     return {
       category: cat ? pickLang(lang, cat) : "",
-      meta: `${minutes} ${en ? "min" : "мин"}  ·  ${difficulty}  ·  ${words} ${wordsWord}  ·  ${en ? "Photo" : "Фото"}: ${showtimeCoverCredit(levelId)}`,
+      meta: `${minutes} ${en ? "min" : "мин"}  ·  ${difficulty}  ·  ${words} ${wordsWord}${showtimeCoverCredit(levelId) ? `  ·  ${en ? "Photo" : "Фото"}: ${showtimeCoverCredit(levelId)}` : ""}`,
     };
   }, [lang, levelId, speech, isAuthor, authorCategoryParam]);
   // Variable audience backdrop — one of the halls, chosen per run.
@@ -4971,7 +4972,7 @@ export default function ShowtimeStageScreen() {
   const toggleLight = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     const next = dimRef.current > 0.5 ? 0 : 1;
-    dimValue.value = withTiming(next * (LiveAudience ? 0.4 : 0.88), { duration: 450, easing: Easing.inOut(Easing.quad) });
+    dimValue.value = withTiming(next * (LiveAudience ? 0.4 : 0.88), { duration: 700, easing: Easing.inOut(Easing.cubic) });
     commitDim(next);
     pumpText();
   }, [pumpText, commitDim]);
@@ -5018,8 +5019,9 @@ export default function ShowtimeStageScreen() {
   // Auto-scroll pause: the on-stage pause button was removed at the owner's
   // request, so this stays false; kept so the auto-advance effect is unchanged.
   const [autoPaused] = useState(false);
-  const AUTO_SPEEDS = [0.5, 1, 1.5, 2];
-  const [speedIdx, setSpeedIdx] = useState(1); // default 1×
+  const AUTO_SPEEDS = [0.5, 0.75, 1, 1.5, 2];
+  const [speedIdx, setSpeedIdx] = useState(1); // default 0.75× — between 0.5× and 1×
+  const [countdownOn, setCountdownOn] = useState(false);
   const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const introTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [noiseBubbles, setNoiseBubbles] = useState<NoiseBubble[]>([]);
@@ -5065,7 +5067,7 @@ export default function ShowtimeStageScreen() {
 
   // Preload sound effects (generated once into cache) and free them on exit.
   useEffect(() => {
-    preloadSfx(["swipe", "click", "applause"]).catch(() => {});
+    preloadSfx(["click", "applause"]).catch(() => {});
     return () => { unloadSfx().catch(() => {}); };
   }, []);
 
@@ -5241,7 +5243,9 @@ export default function ShowtimeStageScreen() {
         setTimeLeft((prev) => {
           if (prev === null) return null;
           if (prev <= 1) {
-            finishPerformance();
+            // Time is up, but the speaker is never cut off mid-thought: the
+            // performance ends when the prompter (auto) or the speaker
+            // (manual) moves past the last paragraph.
             return 0;
           }
           return prev - 1;
@@ -5289,14 +5293,16 @@ export default function ShowtimeStageScreen() {
     const speed = AUTO_SPEEDS[speedIdx] ?? 1;
     const isLast = currentLine >= speech.lines.length - 1;
     const line = speech.lines[currentLine] ?? "";
-    const words = line.trim().split(/\s+/).filter(Boolean).length;
-    const readMs = Math.max(1700, 500 + words * 360) / speed;
-    const delay = isLast ? 1600 / speed : readMs;
+    // Pace by characters, not words: the same paragraph is fewer words in
+    // English, so word-based timing ran English lines too fast.
+    const chars = line.replace(/\s+/g, " ").trim().length;
+    const readMs = Math.max(1700, 500 + chars * 58) / speed;
+    // The last line gets its full reading time plus a moment to land the thought.
+    const delay = isLast ? readMs + 2000 : readMs;
     autoTimerRef.current = setTimeout(() => {
       if (isLast) {
         finishPerformance();
       } else {
-        playSfx("swipe").catch(() => {});
         setCurrentLine((l) => l + 1);
       }
     }, delay);
@@ -5537,11 +5543,34 @@ export default function ShowtimeStageScreen() {
                 );
               })}
             </View>
+            {scrollMode === "auto" && (
+              <Animated.View entering={FadeIn.duration(220)} style={{ marginTop: rs(12) }}>
+                <Text style={[s.pvKicker, { marginTop: 0, marginBottom: rs(8), color: isDarkUi ? "rgba(240,238,233,0.5)" : "rgba(38,38,40,0.5)" }]}>
+                  {pickLang(lang, { ru: "СКОРОСТЬ СУФЛЁРА", en: "PROMPTER SPEED", kk: "СУФЛЕР ЖЫЛДАМДЫҒЫ" })}
+                </Text>
+                <View style={[s.pvSeg, { backgroundColor: ui.card, borderColor: isDarkUi ? "rgba(240,238,233,0.06)" : "rgba(38,38,40,0.08)" }]}>
+                  {AUTO_SPEEDS.map((sp, i) => {
+                    const active = speedIdx === i;
+                    return (
+                      <Pressable
+                        key={sp}
+                        onPress={() => { Haptics.selectionAsync().catch(() => {}); setSpeedIdx(i); }}
+                        style={[s.pvSegItem, active && { backgroundColor: isDarkUi ? "rgba(240,238,233,0.12)" : "rgba(38,38,40,0.08)" }]}
+                      >
+                        <Text style={[s.pvSegText, { color: active ? ui.text : isDarkUi ? "rgba(240,238,233,0.5)" : "rgba(38,38,40,0.5)" }]}>
+                          {lang === "en" ? sp : String(sp).replace(".", ",")}×
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </Animated.View>
+            )}
             </Animated.View>
 
             <Animated.View entering={pvIn(4)}>
             <Pressable
-              onPress={() => (paidEntry ? showTimeEntry.begin(() => void handleStart()) : void handleStart())}
+              onPress={() => { if (countdownOn) return; paidEntry ? showTimeEntry.begin(() => setCountdownOn(true)) : setCountdownOn(true); }}
               style={({ pressed }) => [s.pvCta, { backgroundColor: ui.accent, borderColor: ui.ctaStroke, opacity: pressed ? 0.88 : 1 }]}
             >
               <RecMark size={rs(16)} />
@@ -5556,6 +5585,11 @@ export default function ShowtimeStageScreen() {
             </Animated.View>
           </ScrollView>
         </Animated.View>
+      )}
+
+      {/* 5-second countdown with a fresh tip before walking out on stage. */}
+      {countdownOn && !started && (
+        <StageCountdown lang={lang} onDone={() => { setCountdownOn(false); void handleStart(); }} />
       )}
 
       {/* Show Time entry pay dialog (only when today's free entry is used). */}
@@ -5612,7 +5646,7 @@ export default function ShowtimeStageScreen() {
           )}
           {started && !finished && scrollMode === "auto" && (
             <Pressable onPress={cycleSpeed} hitSlop={12} style={({ pressed }) => [s.speedTextBtn, { opacity: pressed ? 0.55 : 1 }]}>
-              <Text style={[s.speedText, { fontFamily: "Geologica_800ExtraBold" }]}>{AUTO_SPEEDS[speedIdx]}×</Text>
+              <Text style={[s.speedText, { fontFamily: "Geologica_800ExtraBold" }]}>{lang === "en" ? AUTO_SPEEDS[speedIdx] : String(AUTO_SPEEDS[speedIdx]).replace(".", ",")}×</Text>
             </Pressable>
           )}
         </View>
