@@ -28,7 +28,8 @@ const BRAND_INK = "rgba(240,238,233,0.92)";
 const inner = (xml: string) => xml.slice(xml.indexOf(">") + 1, xml.lastIndexOf("</svg>")).split("__FG__").join(BRAND_INK);
 const BRAND_DY = 47.73 - 22.855;
 const BRAND_DX = 122.33 + 6.5 - 67.6;
-const BRAND_VB = { x: 67.6, y: 0, w: 158.98 + BRAND_DX - 67.6 + 0.5, h: 29.2 };
+// generous box: the «g» tail reaches y≈29.1 — keep a margin so nothing is clipped
+const BRAND_VB = { x: 66.6, y: -1, w: 158.98 + BRAND_DX - 66.6 + 1.5, h: 32.5 };
 const BRAND_INLINE_XML =
   `<svg viewBox="${BRAND_VB.x} ${BRAND_VB.y} ${BRAND_VB.w} ${BRAND_VB.h}" xmlns="http://www.w3.org/2000/svg">` +
   inner(LOGO_KING_XML) +
@@ -40,7 +41,7 @@ const BRAND = {
   w: rs(BRAND_VB.w * BRAND_K),
   h: rs(BRAND_VB.h * BRAND_K),
   // part of the wordmark below its baseline (the g / p tails)
-  descent: rs((BRAND_VB.h - 22.855) * BRAND_K),
+  descent: rs((BRAND_VB.y + BRAND_VB.h - 22.855) * BRAND_K),
   crownH: rs(15 * 0.95 * 1.3),
 };
 import { APRICOT, FreePlanRow, GlassPlanCard } from "@/components/subscription/GlassPlan";
