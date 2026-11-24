@@ -818,9 +818,18 @@ export class Audience {
       if (sil < 0.999) cr.b.endLayer();
     }
   }
+  /** house lights: up 9 % while the speaker is on, rising to 30 % for the
+   *  closing ovation so the player sees who they spoke to */
+  houseLift(t: number) {
+    const up = this.finishedAt >= 0 ? ss(this.finishedAt, this.finishedAt + 1.4, t) : 0;
+    return 0.09 + 0.21 * up;
+  }
   private pass(t: number, sil: RGB | null) {
     const cr = this.painter.cr; const W = HALL.W, H = HALL.H;
     cr.sil = null;
+    const lift = this.houseLift(t);
+    const keep = Math.max(0, 1 - 1.4 * lift); // share of the house shadows left
+    const keepFront = Math.max(0, 1 - 1.6 * (lift - 0.09)); // the first row stays dark until the ovation
     // the house: a dark red room; with the lights down a dim haze the rows stand against
     // variant = level number − 1: the lighting kit cycles by 4, the seat colour by 7
     const tone = SEAT_TONES[this.variant % SEAT_TONES.length];
@@ -841,20 +850,22 @@ export class Audience {
       cr.sil = null;
       // haze between rows: twice the rows of the clip, half the fog per row,
       // so the far end reads about as deep as it did there
-      if (r < NR - 1) { cr.setRGBA(sil ? SIL_BG : tone.fog, sil ? 0.05 : 0.07); cr.paint(); }
+      if (r < NR - 1) { cr.setRGBA(sil ? SIL_BG : tone.fog, sil ? 0.05 : 0.07 * keep); cr.paint(); }
     }
     if (!sil) {
       // the back rows fall into the dark under the ceiling, the front rows into
       // the shadow below the stage edge
-      cr.linear(0, 0, 0, ROWS[6].y, DARK, 0.85, 0);
-      cr.linear(0, ROWS[7].y, 0, FLOOR_Y, DARK, 0, 0.58);
+      cr.linear(0, 0, 0, ROWS[6].y, DARK, 0.85 * keep, 0);
+      cr.linear(0, ROWS[7].y, 0, FLOOR_Y, DARK, 0, 0.58 * keep);
       // only the first row sinks softly into black towards the stage edge,
       // so under the teleprompter just the footlights glow
       const R0 = ROWS[NR - 1];
-      cr.linear(0, R0.y + R0.pb * 0.2, 0, FLOOR_Y, [0, 0, 0], 0, 0.88);
+      cr.linear(0, R0.y + R0.pb * 0.2, 0, FLOOR_Y, [0, 0, 0], 0, 0.88 * keepFront);
       const fl = 0.5 + 0.3 * Math.sin((TAU * t) / 3.1) + 0.2 * Math.sin((TAU * t) / 0.77);
       cr.radial(W / 2, H * 0.48, 100, W * 0.8, [1, 0.88, 0.75, 0.05 + 0.03 * fl], [1, 0.88, 0.75, 0]);
-      cr.radial(W / 2, H * 0.42, H * 0.3, W * 0.95, [0, 0, 0, 0], [0.04, 0, 0, 0.45]);
+      cr.radial(W / 2, H * 0.42, H * 0.3, W * 0.95, [0, 0, 0, 0], [0.04, 0, 0, 0.45 * keep]);
+      // a faint warm wash of house light over the whole room
+      cr.setRGBA([1, 0.93, 0.82], 0.12 * lift); cr.paint();
     }
     this.stage(t, sil);
     this.rig(t, sil);

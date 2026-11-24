@@ -189,7 +189,7 @@ export function useLiveAudience<H>(props: LiveAudienceProps, backend: Backend<H>
           exiting={FadeOut.duration(320)}
           style={{
             position: "absolute", top: b.y - rs(22), ...(b.side > 0 ? { left: b.x } : { right: width - b.x }),
-            opacity: 0.9 - silOf(dim) * 0.35,
+            opacity: 0.55 - silOf(dim) * 0.2, // murmurs stay in the background
           }}
         >
           {/* Plain, half-transparent murmur — no cloud, so it doesn't pull focus. */}
