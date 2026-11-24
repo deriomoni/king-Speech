@@ -380,22 +380,14 @@ export default function Door3D({ width, open, light, palette = DEFAULT_DOOR_PALE
       {/* threshold: a thin sill on the floor between the jambs, inside the
           frame — drawn before the jambs, casing and slab so they all sit over it */}
       {fast && (
-        <>
-          <Polygon
-            points={pts([[XL, -1, -DEPTH], [XR, -1, -DEPTH], [XR, -1, 0], [XL, -1, 0]])}
-            fill={lit(p.jamb, 1, "#FFFFFF", 0.3 * L)}
-            stroke={ink}
-            strokeWidth={1.1}
-            strokeLinejoin="round"
-          />
-          <Polygon
-            points={pts([[XL, -1, 0], [XR, -1, 0], [XR, 0.8, 0], [XL, 0.8, 0]])}
-            fill={lit(p.jamb, 0.78, "#FFFFFF", 0)}
-            stroke={ink}
-            strokeWidth={1.1}
-            strokeLinejoin="round"
-          />
-        </>
+        // top and visible front edge as one shape in one colour — no seam
+        <Polygon
+          points={pts([[XL, -1, -DEPTH], [XR, -1, -DEPTH], [XR, -1, 0], [XR, 0.8, 0], [XL, 0.8, 0], [XL, -1, 0]])}
+          fill={lit(p.jamb, 1, "#FFFFFF", 0.3 * L)}
+          stroke={ink}
+          strokeWidth={1.1}
+          strokeLinejoin="round"
+        />
       )}
 
       {/* jamb reveals + casing — static faces, back-face culled */}

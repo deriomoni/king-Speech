@@ -8,7 +8,7 @@
 // layers render once. Only the door's swing goes through React, and only
 // while the door is actually moving.
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, Pressable, Platform, useWindowDimensions } from "react-native";
+import { View, StyleSheet, Pressable, Platform, useWindowDimensions } from "react-native";
 import { LinearGradient as ExpoLinearGradient } from "expo-linear-gradient";
 import Animated, {
   Easing,
@@ -20,7 +20,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import * as Haptics from "@/lib/haptics";
-import Door3D, { DOOR_FLOOR_Y, DOOR_VB_H, DOOR_VB_W, DOORWAY_GAP_CENTER, doorPaletteForRank } from "./Door3D";
+import Door3D, { DOOR_FLOOR_Y, DOOR_VB_H, DOOR_VB_W, DOORWAY_CENTER, DOORWAY_GAP_CENTER, doorPaletteForRank } from "./Door3D";
 import { rs } from "@/lib/responsive";
 
 // ── timeline (ms) ────────────────────────────────────────────────────────────
@@ -90,7 +90,6 @@ type Props = {
   rank: number;
   /** Light theme: a clean white stage instead of the dark room. */
   light?: boolean;
-  lead: string;
   title: string;
   /** Called at the white-out peak — mount the new-rank screen underneath. */
   onReveal: () => void;
@@ -100,7 +99,7 @@ type Props = {
   onStart?: () => void;
 };
 
-export default function RankDoorTransition({ rank, light: lightTheme = false, lead, title, onReveal, onDone, onStart }: Props) {
+export default function RankDoorTransition({ rank, light: lightTheme = false, title, onReveal, onDone, onStart }: Props) {
   const palette = doorPaletteForRank(rank);
   const { width: W, height: H } = useWindowDimensions();
   const t = useSharedValue(0);
@@ -176,10 +175,10 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
   // ── layout ──
   const doorW = Math.min(W * 0.78, rs(330));
   const shakeAmp = rs(2.2);
-  const headingRise = rs(14);
   const doorH = (doorW * DOOR_VB_H) / DOOR_VB_W;
-  const doorLeft = (W - doorW) / 2;
-  const doorTop = H * 0.56 - doorH * 0.5;
+  // the doorway itself (not the drawing's box) sits dead centre
+  const doorLeft = W / 2 - DOORWAY_CENTER.x * doorW;
+  const doorTop = H / 2 - DOORWAY_CENTER.y * doorH;
   const px = doorLeft + DOORWAY_GAP_CENTER.x * doorW;
   const py = doorTop + DOORWAY_GAP_CENTER.y * doorH;
   const floorY = doorTop + DOOR_FLOOR_Y * doorH;
@@ -203,13 +202,6 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
     };
   });
   const vignetteStyle = useAnimatedStyle(() => ({ opacity: 1 - easeInQuart(seg(t.value, PULL_AT, PULL_DUR)) }));
-  const headingStyle = useAnimatedStyle(() => {
-    const sceneIn = easeOutCubic(seg(t.value, 0, FADE_IN));
-    return {
-      opacity: sceneIn * (1 - seg(t.value, PULL_AT - 300, 450)),
-      transform: [{ translateY: (1 - sceneIn) * headingRise }],
-    };
-  });
   const flashStyle = useAnimatedStyle(() => ({
     opacity: Math.max(easeOutCubic(seg(t.value, FLASH_AT, FLASH_DUR)), easeInQuart(seg(t.value, PULL_AT, PULL_DUR)) * 0.35),
   }));
@@ -259,14 +251,6 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
           />
         </Animated.View>
 
-        {/* heading */}
-        <Animated.View style={[styles.heading, { top: H * 0.1 }, headingStyle]}>
-          <Text style={[styles.lead, lightTheme && { color: "#6B6874" }]}>{lead}</Text>
-          <Text style={[styles.title, lightTheme && { color: "#232129", textShadowColor: "rgba(246,201,68,0.45)", textShadowRadius: 18 }]} numberOfLines={2} adjustsFontSizeToFit>
-            {title}
-          </Text>
-        </Animated.View>
-
         {/* white-out */}
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: LIGHT_CORE }, flashStyle]} />
       </Animated.View>
@@ -274,29 +258,3 @@ export default function RankDoorTransition({ rank, light: lightTheme = false, le
   );
 }
 
-const styles = StyleSheet.create({
-  heading: {
-    position: "absolute",
-    left: 28,
-    right: 28,
-    alignItems: "center",
-    gap: 8,
-  },
-  lead: {
-    color: "rgba(255,240,214,0.7)",
-    fontFamily: "Geologica_500Medium",
-    fontSize: 15,
-    letterSpacing: 0.4,
-    textAlign: "center",
-  },
-  title: {
-    color: "#FFD45C",
-    textShadowColor: "rgba(255,190,60,0.55)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 22,
-    fontFamily: "Geologica_700Bold",
-    fontSize: 46,
-    lineHeight: 52,
-    textAlign: "center",
-  },
-});

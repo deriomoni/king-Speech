@@ -268,11 +268,6 @@ export default function RankUpScreen({ fromRank, memento = false, preview = fals
           rank={fromRank}
           // pitch dark: the door opens out of the darkness into blinding light
           light={false}
-          lead={
-            isFinal
-              ? T("Ты прошёл все ранги", "You completed every rank", "Сен барлық дәрежеден өттің")
-              : T("Ты переходишь в новый ранг", "You're entering a new rank", "Сен жаңа дәрежеге өтесің")
-          }
           title={title}
           onStart={() => setMusicOn(true)}
           onReveal={() => setRevealed(true)}
