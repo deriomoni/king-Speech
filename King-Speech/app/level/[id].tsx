@@ -28,6 +28,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import LevelCompleteModal from "@/components/LevelCompleteModal";
+import { saveFirstReadingTake } from "@/lib/firstTake";
 import AppDialog from "@/components/AppDialog";
 import { Ionicons } from "@expo/vector-icons";
 import NextChevron from "@/components/NextChevron";
@@ -596,6 +597,17 @@ export default function LevelScreen() {
       setReadingWaveform(waveform ?? null);
       setReadingLineTimes(lineTimesMs ?? null);
       setReadingDurationSec(durationSeconds);
+      // the very first reading is kept for good — the rank-up screen plays it back
+      if (audioUri) {
+        saveFirstReadingTake({
+          uri: audioUri,
+          title: readingMeta?.workTitle || level.title,
+          author: readingMeta?.author,
+          date: Date.now(),
+          durationSec: durationSeconds,
+          waveform,
+        });
+      }
       setCurrentAnalysis(null);
       setShowReadingReview(true);
       setAnalyzing(true);
