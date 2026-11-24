@@ -19,7 +19,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "@/lib/haptics";
 import { getSpeechThemes, type SpeechTheme } from "@/app/showtime-stage";
