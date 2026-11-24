@@ -19,6 +19,7 @@ import { rs } from "@/lib/responsive";
 import { useScreenMusic } from "@/lib/music";
 import { DARK } from "@/context/ThemeContext";
 import AuroraBackground from "@/components/subscription/AuroraBackground";
+import { LOGO_CROWN, LOGO_H, LOGO_KING_XML, LOGO_SPEECH_XML, LOGO_TEXT_BOX } from "@/assets/figma/settings/logoParts";
 import { APRICOT, FreePlanRow, GlassPlanCard } from "@/components/subscription/GlassPlan";
 import { useLang, pickLang } from "@/context/LangContext";
 import AppDialog from "@/components/AppDialog";
@@ -72,9 +73,9 @@ const FAQ: { q: L10n; a: L10n }[] = [
       kk: "Император Патшадан немен ерекшеленеді?",
     },
     a: {
-      ru: "Император — это всё из Королевского плюс личный ИИ-коуч, свои темы и сценарии, эксклюзивные награды и x2 монеты за каждый уровень.",
-      en: "Emperor is everything in Royal plus a personal AI coach, your own topics and scripts, exclusive awards and x2 coins for every level.",
-      kk: "Император — Патша жоспарындағының бәрі, оған қоса жеке ЖИ-коуч, өз тақырыптарыңыз бен сценарийлеріңіз, эксклюзив марапаттар және әр деңгей үшін x2 монета.",
+      ru: "Император — это всё из Королевского плюс личный ИИ-коуч Oscar Prime, безлимитные монеты, свои темы и сценарии и эксклюзивные награды.",
+      en: "Emperor is everything in Royal plus Oscar Prime, your personal AI coach, unlimited coins, your own topics and scripts, and exclusive awards.",
+      kk: "Император — Патша жоспарындағының бәрі, оған қоса жеке ЖИ-коуч Oscar Prime, шексіз монеталар, өз тақырыптарыңыз бен сценарийлеріңіз және эксклюзив марапаттар.",
     },
   },
   {
@@ -121,7 +122,8 @@ const STR = {
     en: "Support chat is coming in one of the next updates.",
     kk: "Қолдау чаты жақын арадағы жаңартулардың бірінде пайда болады.",
   },
-  free: { ru: "Бесплатный", en: "Free", kk: "Тегін" },
+  free: { ru: "Базовый", en: "Basic", kk: "Базалық" },
+  perMonth: { ru: "/ мес", en: "/ month", kk: "/ ай" },
   current: { ru: "ТЕКУЩИЙ", en: "CURRENT", kk: "ҚАЗІРГІ" },
   forever: { ru: "навсегда", en: "forever", kk: "мәңгі" },
   freeNote: {
@@ -146,21 +148,21 @@ const STR = {
   royalItems: {
     ru: [
       { title: "Весь путь — 67 модулей", detail: "От первой уверенной фразы до выступления без бумажки" },
-      { title: "ИИ-разбор каждой записи", detail: "Темп, паузы, слова-паразиты и чёткость — и что исправить" },
-      { title: "Все темы Show Time", detail: "Репетируй выступление перед живым залом" },
-      { title: "«Королевские манеры» и без рекламы", detail: "Этикет и подача — без отвлечений" },
+      { title: "ИИ-разбор от Oscar v6.7", detail: "Подробный анализ речи и полезная обратная связь после каждой записи" },
+      { title: "Все темы Show Time", detail: "Репетируй выступление перед залом" },
+      { title: "Королевские уровни открыты", detail: "И никакой рекламы" },
     ],
     en: [
       { title: "The whole path — 67 modules", detail: "From your first confident line to speaking without notes" },
-      { title: "AI review of every recording", detail: "Pace, pauses, filler words and clarity — and what to fix" },
-      { title: "Every Show Time topic", detail: "Rehearse your talk in front of a live audience" },
-      { title: "Royal manners, no ads", detail: "Etiquette and delivery — no distractions" },
+      { title: "AI review by Oscar v6.7", detail: "In-depth speech analysis and useful feedback after every recording" },
+      { title: "Every Show Time topic", detail: "Rehearse your talk in front of an audience" },
+      { title: "Royal levels unlocked", detail: "And no ads at all" },
     ],
     kk: [
       { title: "Бүкіл жол — 67 модуль", detail: "Алғашқы сенімді сөйлемнен қағазсыз сөйлеуге дейін" },
-      { title: "Әр жазбаны ЖИ талдайды", detail: "Қарқын, үзіліс, арам сөздер мен анықтық — және не түзету керек" },
-      { title: "Show Time-ның барлық тақырыбы", detail: "Сөзіңізді тірі залдың алдында қайталаңыз" },
-      { title: "«Корольдік әдеп», жарнамасыз", detail: "Әдеп пен мәнер — ештеңе алаңдатпайды" },
+      { title: "Oscar v6.7 ЖИ-талдауы", detail: "Әр жазбадан кейін сөйлеуді терең талдау және пайдалы кері байланыс" },
+      { title: "Show Time-ның барлық тақырыбы", detail: "Сөзіңізді залдың алдында қайталаңыз" },
+      { title: "Корольдік деңгейлер ашық", detail: "Жарнама мүлде жоқ" },
     ],
   },
   emperor: { ru: "Император", en: "Emperor", kk: "Император" },
@@ -178,23 +180,23 @@ const STR = {
   emperorItems: {
     ru: [
       { title: "Всё, что есть в Королевском", detail: "" },
-      { title: "Личный ИИ-коуч", detail: "Видит твои слабые места и каждый день даёт план тренировки" },
+      { title: "Личный ИИ-коуч Oscar Prime", detail: "Видит твои слабые места и каждый день даёт план тренировки" },
+      { title: "Безлимитные монеты", detail: "Подсказки и бонусы — без ограничений" },
       { title: "Свои темы и сценарии", detail: "Загрузи реальное выступление и отрепетируй его перед залом" },
-      { title: "x2 монеты за каждый уровень", detail: "Быстрее открываешь подсказки и бонусы" },
       { title: "Эксклюзивные награды и рамки", detail: "Видно всем, кто смотрит твой профиль" },
     ],
     en: [
       { title: "Everything in Royal", detail: "" },
-      { title: "Personal AI coach", detail: "Spots your weak points and gives you a training plan every day" },
+      { title: "Oscar Prime, your personal AI coach", detail: "Spots your weak points and gives you a training plan every day" },
+      { title: "Unlimited coins", detail: "Hints and bonuses — no limits" },
       { title: "Your own topics and scripts", detail: "Upload your real talk and rehearse it in front of the audience" },
-      { title: "x2 coins for every level", detail: "Unlock hints and bonuses faster" },
       { title: "Exclusive awards and frames", detail: "Seen by everyone who views your profile" },
     ],
     kk: [
       { title: "Патша жоспарындағының бәрі", detail: "" },
-      { title: "Жеке ЖИ-коуч", detail: "Әлсіз тұстарыңызды көріп, күн сайын жаттығу жоспарын береді" },
+      { title: "Жеке ЖИ-коуч Oscar Prime", detail: "Әлсіз тұстарыңызды көріп, күн сайын жаттығу жоспарын береді" },
+      { title: "Шексіз монеталар", detail: "Кеңестер мен бонустар — шектеусіз" },
       { title: "Өз тақырыптарыңыз бен сценарийлеріңіз", detail: "Нақты сөзіңізді жүктеп, залдың алдында қайталаңыз" },
-      { title: "Әр деңгей үшін x2 монета", detail: "Кеңестер мен бонустарды тезірек ашасыз" },
       { title: "Эксклюзив марапаттар мен жақтаулар", detail: "Профиліңізді көргендердің бәріне көрінеді" },
     ],
   },
@@ -202,9 +204,9 @@ const STR = {
   restore: { ru: "Восстановить покупки", en: "Restore purchases", kk: "Сатып алуларды қалпына келтіру" },
   title: { ru: "Стань королём\nсцены", en: "Become the king\nof the stage", kk: "Сахнаның\nпатшасы болыңыз" },
   subtitle: {
-    ru: "Открой все сцены, темы и разборы King Speech",
-    en: "Unlock every stage, topic and analysis in King Speech",
-    kk: "King Speech-тің барлық сахнасын, тақырыбы мен талдауын ашыңыз",
+    ru: "Открой все сцены, темы и разборы",
+    en: "Unlock every stage, topic and analysis in",
+    kk: "Барлық сахна, тақырып пен талдауды ашыңыз",
   },
   currentPlan: { ru: "Текущий план", en: "Current plan", kk: "Қазіргі жоспар" },
   buy: { ru: "Приобрести", en: "Get it", kk: "Сатып алу" },
@@ -259,7 +261,7 @@ export default function SubscriptionScreen() {
   };
 
   const freeCard = (
-    <FreePlanRow title={tr(STR.free)} badge={tr(STR.current)} price="$0" note={tr(STR.freeNote)} />
+    <FreePlanRow title={tr(STR.free)} badge={tr(STR.current)} price="$0" per={tr(STR.perMonth)} />
   );
 
   // Royal: violet → fuchsia glass
@@ -282,6 +284,7 @@ export default function SubscriptionScreen() {
       cta={tr(STR.buy)}
       ctaColors={["#FFFFFF", "#FBE9FF"]}
       ctaText="#3B0E5C"
+      glow="#F7B6F0"
       onCta={() => showSoon()}
     />
   );
@@ -306,6 +309,7 @@ export default function SubscriptionScreen() {
       cta={tr(STR.buy)}
       ctaColors={["#FFE9D6", APRICOT]}
       ctaText="#3A1206"
+      glow="#FFB98A"
       onCta={() => showSoon()}
     />
   );
@@ -336,6 +340,18 @@ export default function SubscriptionScreen() {
         <Text style={[styles.subtitle, { color: ink(0.7) }]}>
           {tr(STR.subtitle)}
         </Text>
+        {/* the brand: text wordmark, then the crown */}
+        <View style={styles.brandRow} accessibilityLabel="King Speech">
+          <View style={{ width: rs(30) * (LOGO_TEXT_BOX.w / LOGO_H), height: rs(30) }}>
+            <SvgXml xml={LOGO_KING_XML.split("__FG__").join("#F0EEE9")} width="100%" height="100%" style={StyleSheet.absoluteFill} />
+            <SvgXml xml={LOGO_SPEECH_XML.split("__FG__").join("#F0EEE9")} width="100%" height="100%" style={StyleSheet.absoluteFill} />
+          </View>
+          <SvgXml
+            xml={LOGO_CROWN.xml.split("__FG__").join("#F0EEE9")}
+            width={rs(30) * (LOGO_CROWN.w / LOGO_H)}
+            height={rs(30)}
+          />
+        </View>
 
         <View style={styles.plans}>
           {freeCard}
@@ -357,9 +373,9 @@ export default function SubscriptionScreen() {
           />
           <Pressable
             onPress={() => showSoon(tr(STR.soonTitle), tr(STR.soonPromo))}
-            style={({ pressed }) => [styles.applyBtn, { backgroundColor: theme.btnSecondary, opacity: pressed ? 0.85 : 1 }]}
+            style={({ pressed }) => [styles.applyBtn, { backgroundColor: "#0A0910", opacity: pressed ? 0.85 : 1 }]}
           >
-            <Text style={[styles.applyText, { color: theme.btnSecondaryText }]}>{tr(STR.apply)}</Text>
+            <Text style={[styles.applyText, { color: "#F0EEE9" }]}>{tr(STR.apply)}</Text>
           </Pressable>
         </View>
 
@@ -400,28 +416,6 @@ export default function SubscriptionScreen() {
               </Pressable>
             );
           })}
-        </View>
-
-        {/* Support */}
-        <View style={[styles.support, { backgroundColor: ink(0.05), borderColor: ink(0.12) }]}>
-          <SvgXml
-            xml={isDark ? ICON_PLATE_SVG : ICON_PLATE_SVG.split("#FFD857").join("#B88A00")}
-            width={rs(48)}
-            height={rs(48)}
-          />
-          <View style={{ flex: 1, marginLeft: rs(14), marginRight: rs(8) }}>
-            <Text style={[styles.supportTitle, { color: theme.text }]}>{tr(STR.supportTitle)}</Text>
-            <Text style={[styles.supportSub, { color: ink(0.6) }]}>{tr(STR.supportSub)}</Text>
-          </View>
-          <Pressable
-            onPress={() => {
-              // TODO(design): open the support chat / mail once a support channel exists.
-              showSoon(tr(STR.soonTitle), tr(STR.soonSupport));
-            }}
-            style={({ pressed }) => [styles.writeBtn, { backgroundColor: theme.btnSecondary, opacity: pressed ? 0.85 : 1 }]}
-          >
-            <Text style={[styles.writeText, { color: theme.btnSecondaryText }]}>{tr(STR.write)}</Text>
-          </Pressable>
         </View>
 
         <Text style={[styles.legal, { color: ink(0.4) }]}>
@@ -475,6 +469,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     maxWidth: 322,
   },
+  brandRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 10 },
   plans: { marginTop: 28, paddingHorizontal: 20, gap: 18 },
   card: { borderRadius: 22, borderWidth: 2 },
   cardShadow: {

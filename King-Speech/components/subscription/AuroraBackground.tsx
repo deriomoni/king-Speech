@@ -8,7 +8,7 @@
 // nudged up/down by two sines of its x — neighbours differ by a few px, so
 // the bands read as continuous waves. Everything runs on the UI thread.
 import React, { useEffect } from "react";
-import { Image, StyleSheet, View, useWindowDimensions } from "react-native";
+import { StyleSheet, View, useWindowDimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   Easing,
@@ -94,12 +94,6 @@ export default function AuroraBackground() {
         colors={["rgba(8,6,26,0.55)", "rgba(8,6,26,0.05)", "rgba(8,6,26,0.05)", "rgba(8,6,26,0.6)"]}
         locations={[0, 0.3, 0.65, 1]}
         style={StyleSheet.absoluteFill}
-      />
-      {/* film grain */}
-      <Image
-        source={require("@/assets/images/noise.png")}
-        resizeMode="repeat"
-        style={[StyleSheet.absoluteFill, { width: W, height: H, opacity: 0.08 }]}
       />
     </View>
   );

@@ -1,6 +1,14 @@
 // Premium paywall plans on the aurora: frosted-glass cards (blur + tinted
 // gradient + grain + top sheen + hairline rim) and a compact matte «free» row.
-import React from "react";
+import React, { useEffect } from "react";
+import Animated, {
+  Easing,
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 import { Image, Pressable, StyleSheet, Text, View, type ViewStyle } from "react-native";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -16,9 +24,11 @@ function Glass({
   radius,
   blur = 36,
   rim = "rgba(255,255,255,0.22)",
+  grain = true,
   style,
   children,
 }: {
+  grain?: boolean;
   tint: readonly [string, string, ...string[]];
   radius: number;
   blur?: number;
@@ -34,7 +44,7 @@ function Glass({
         style={StyleSheet.absoluteFill}
       />
       <LinearGradient colors={tint} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-      <Image source={NOISE} resizeMode="repeat" style={[StyleSheet.absoluteFill, { opacity: 0.07 }]} />
+      {grain ? <Image source={NOISE} resizeMode="repeat" style={[StyleSheet.absoluteFill, { opacity: 0.07 }]} /> : null}
       {/* glass sheen: light from the top edge */}
       <LinearGradient
         pointerEvents="none"
@@ -51,30 +61,79 @@ function Glass({
   );
 }
 
-/** The free plan, small: matte dark glass, one line of what's included. */
-export function FreePlanRow({ title, badge, price, note }: { title: string; badge: string; price: string; note: string }) {
+/** The free plan: matte dark glass (no grain) — name + «current» on top,
+ *  the price underneath, everything on one symmetric grid. */
+export function FreePlanRow({ title, badge, price, per }: { title: string; badge: string; price: string; per: string }) {
   return (
     <Glass
-      tint={["rgba(10,8,22,0.62)", "rgba(10,8,22,0.5)"]}
-      radius={rs(20)}
+      tint={["rgba(10,8,22,0.66)", "rgba(10,8,22,0.54)"]}
+      radius={rs(24)}
       blur={28}
+      grain={false}
       rim="rgba(255,255,255,0.10)"
     >
-      <View style={st.freeRow}>
-        <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: rs(8) }}>
-            <Text style={st.freeTitle}>{title}</Text>
-            <View style={st.freeBadge}>
-              <Text style={st.freeBadgeText}>{badge}</Text>
-            </View>
+      <View style={st.free}>
+        <View style={st.freeTop}>
+          <Text style={st.freeTitle}>{title}</Text>
+          <View style={st.freeBadge}>
+            <Text style={st.freeBadgeText}>{badge}</Text>
           </View>
-          <Text style={st.freeNote} numberOfLines={2}>
-            {note}
-          </Text>
         </View>
-        <Text style={st.freePrice}>{price}</Text>
+        <View style={st.freePriceRow}>
+          <Text style={st.freePrice}>{price}</Text>
+          <Text style={st.freePer}>{per}</Text>
+        </View>
       </View>
     </Glass>
+  );
+}
+
+/** «Приобрести»: glass pill with a soft halo that breathes. */
+function BuyButton({
+  label,
+  colors,
+  textColor,
+  glow,
+  onPress,
+}: {
+  label: string;
+  colors: readonly [string, string, ...string[]];
+  textColor: string;
+  glow: string;
+  onPress: () => void;
+}) {
+  const pulse = useSharedValue(0);
+  useEffect(() => {
+    pulse.value = withRepeat(withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.sin) }), -1, true);
+    return () => cancelAnimation(pulse);
+  }, [pulse]);
+  const halo = useAnimatedStyle(() => ({
+    opacity: 0.22 + pulse.value * 0.38,
+    transform: [{ scaleX: 1 + pulse.value * 0.025 }, { scaleY: 1 + pulse.value * 0.12 }],
+  }));
+  const shine = useAnimatedStyle(() => ({ shadowOpacity: 0.35 + pulse.value * 0.45 }));
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={({ pressed }) => [{ marginTop: 24, transform: [{ scale: pressed ? 0.985 : 1 }] }]}
+    >
+      {/* breathing halo behind the pill */}
+      <Animated.View pointerEvents="none" style={[st.halo, { backgroundColor: glow }, halo]} />
+      <Animated.View style={[st.ctaWrap, { shadowColor: glow }, shine]}>
+        <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.cta}>
+          {/* glass: bright top sheen + inner rim */}
+          <LinearGradient
+            pointerEvents="none"
+            colors={["rgba(255,255,255,0.75)", "rgba(255,255,255,0)"]}
+            locations={[0, 0.55]}
+            style={StyleSheet.absoluteFill}
+          />
+          <View pointerEvents="none" style={st.ctaRim} />
+          <Text style={[st.ctaText, { color: textColor }]}>{label}</Text>
+        </LinearGradient>
+      </Animated.View>
+    </Pressable>
   );
 }
 
@@ -98,8 +157,11 @@ export function GlassPlanCard({
   cta,
   ctaColors,
   ctaText,
+  glow,
   onCta,
 }: {
+  /** colour of the button's breathing halo */
+  glow: string;
   title: string;
   badge: string;
   sub: string;
@@ -174,13 +236,7 @@ export function GlassPlanCard({
           ))}
         </View>
 
-        <Pressable onPress={onCta} accessibilityRole="button" style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.985 : 1 }] }]}>
-          <LinearGradient colors={ctaColors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.cta}>
-            <Text style={[st.ctaText, { color: ctaText }]}>
-              {cta} · {price}
-            </Text>
-          </LinearGradient>
-        </Pressable>
+        <BuyButton label={`${cta} · ${price}`} colors={ctaColors} textColor={ctaText} glow={glow} onPress={onCta} />
       </View>
     </Glass>
   );
@@ -222,13 +278,18 @@ const st = StyleSheet.create({
   dotTick: { fontSize: 11, color: "#140A1E", fontFamily: "Geologica_900Black", marginTop: -1 },
   itemTitle: { fontSize: 15, lineHeight: 20, color: CREAM, fontFamily: "Geologica_700Bold" },
   itemDetail: { marginTop: 2, fontSize: 12.5, lineHeight: 17, color: "rgba(255,247,240,0.62)", fontFamily: "Geologica_500Medium" },
-  cta: { marginTop: 22, height: 58, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  halo: { position: "absolute", left: 6, right: 6, top: 2, bottom: 2, borderRadius: 24 },
+  ctaWrap: { borderRadius: 20, shadowRadius: 18, shadowOffset: { width: 0, height: 0 } },
+  cta: { height: 58, borderRadius: 20, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  ctaRim: { ...StyleSheet.absoluteFillObject, borderRadius: 20, borderWidth: 1.2, borderColor: "rgba(255,255,255,0.85)" },
   ctaText: { fontSize: 17, letterSpacing: -0.1, fontFamily: "Geologica_900Black" },
 
-  freeRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 18, paddingVertical: 14, gap: 12 },
-  freeTitle: { fontSize: 16, color: CREAM, fontFamily: "Geologica_800ExtraBold" },
-  freeBadge: { backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 },
-  freeBadgeText: { fontSize: 9.5, letterSpacing: 0.7, color: "rgba(255,247,240,0.75)", fontFamily: "Geologica_800ExtraBold" },
-  freeNote: { marginTop: 4, fontSize: 12, lineHeight: 16, color: "rgba(255,247,240,0.55)", fontFamily: "Geologica_500Medium" },
-  freePrice: { fontSize: 22, color: CREAM, fontFamily: "Geologica_900Black" },
+  free: { padding: 20, gap: 14 },
+  freeTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  freeTitle: { fontSize: 20, color: CREAM, fontFamily: "Geologica_800ExtraBold" },
+  freeBadge: { backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  freeBadgeText: { fontSize: 10.5, letterSpacing: 0.8, color: "rgba(255,247,240,0.8)", fontFamily: "Geologica_800ExtraBold" },
+  freePriceRow: { flexDirection: "row", alignItems: "baseline", gap: 6 },
+  freePrice: { fontSize: 32, letterSpacing: -0.4, color: CREAM, fontFamily: "Geologica_900Black" },
+  freePer: { fontSize: 13, color: "rgba(255,247,240,0.55)", fontFamily: "Geologica_600SemiBold" },
 });
