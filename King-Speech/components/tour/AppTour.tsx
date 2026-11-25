@@ -27,6 +27,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { rs } from "@/lib/responsive";
 import { playUi } from "@/lib/uiSound";
+import { useOscarVoice } from "@/lib/oscarVoice";
 import OscarMascot from "@/components/OscarMascot";
 import { IconHome, IconCheatSheet, IconClapperboard, IconAvatar, IconGear } from "@/components/tabs/TabBarIcons";
 
@@ -196,6 +197,10 @@ export default function AppTour() {
     };
   });
 
+  // Oscar talks the overview through, and sees you off at the end
+  useOscarVoice("overview", step.kind === "overview" && !closing, 300);
+  useOscarVoice("sendoff", step.kind === "done" && !closing, 300);
+
   // show the section behind its card
   useEffect(() => {
     if (step.kind === "section") router.navigate(step.s.route as never);
@@ -254,9 +259,9 @@ export default function AppTour() {
   } else {
     title = tr({ ru: "Всё готово!", en: "You're all set!", kk: "Бәрі дайын!" });
     body = tr({
-      ru: "Начни с первого уровня на Пути. Если что — я рядом.",
-      en: "Start with the first level on the Path. I'm around if you need me.",
-      kk: "Жолдағы бірінші деңгейден баста. Керек болса — мен осындамын.",
+      ru: "По глазам вижу — тебе уже не терпится приступить! Не буду тебя томить. Вперёд и с песней!",
+      en: "I can see it in your eyes — you can't wait to get started! So I won't keep you waiting. Off you go, and good luck!",
+      kk: "Көзіңнен көріп тұрмын — бастауға асығып тұрсың! Сені күттірмейін. Алға, сәттілік!",
     });
   }
 

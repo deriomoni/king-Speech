@@ -26,6 +26,7 @@ import { rs } from "@/lib/responsive";
 import { useScreenMusic } from "@/lib/music";
 import { setLogoHandoff, useSplashDone } from "@/lib/splashState";
 import { playUi } from "@/lib/uiSound";
+import { useOscarVoice } from "@/lib/oscarVoice";
 import * as Haptics from "@/lib/haptics";
 import { AnimatedBrandLogo } from "@/components/AnimatedBrandLogo";
 import AuroraBackground, { AURORA_DUSK } from "@/components/subscription/AuroraBackground";
@@ -203,6 +204,9 @@ export default function WelcomeScreen() {
   const text = greeting.length > 11 && words.length > 1 ? `${words[0]}\n${words.slice(1).join(" ")}` : greeting;
 
   const run = useSplashDone();
+  // Oscar's welcome, voiced, once the logo has settled («…нажимай эту кнопку»)
+  const [leaving, setLeaving] = useState(false);
+  useOscarVoice("welcome", run && !leaving, 1400);
   const { width: W, height: H } = useWindowDimensions();
   // the splash's logo, 1:1 — then it settles smaller, near the top
   const splashW = Math.min(W * 0.64, rs(290));
@@ -235,6 +239,7 @@ export default function WelcomeScreen() {
 
   // sign-in shares the aurora; its logo glides down from where this one is
   const start = () => {
+    setLeaving(true);
     setLogoHandoff(H / 2 + endY);
     router.push("/(auth)/login");
   };

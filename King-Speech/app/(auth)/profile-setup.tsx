@@ -1,7 +1,8 @@
 // Sign-up, step 1 — a short scene on black, hosted by Oscar:
-//   3 s of pure black, then Oscar: «Здравствуйте! Меня зовут Оскар.» → «А как вас зовут?»
+//   3 s of pure black, then Oscar (voiced): «Ах да, где же мои манеры? Забыл
+//   представиться. Я Оскар.» → «А как зовут тебя?»
 //   → Oscar steps away, the question settles as the title, the name field appears
-//   → (return key) Oscar again: «{Имя}, рад знакомству!» → steps away
+//   → (return key) Oscar again: «{Имя}, рад знакомству! Пойдём, покажу тебе тут всё.»
 //   → «Сколько вам лет?» with the options fading in
 //   → picking one saves the draft and opens the short questionnaire.
 import React, { useCallback, useEffect, useState } from "react";
@@ -15,6 +16,7 @@ import { useAuth } from "@/context/AuthContext";
 import OscarMascot from "@/components/OscarMascot";
 import { rs } from "@/lib/responsive";
 import { playUi } from "@/lib/uiSound";
+import { useOscarVoice } from "@/lib/oscarVoice";
 
 type Phase = "blank" | "hello" | "ask" | "name" | "greet" | "age";
 type L = { ru: string; en: string; kk: string };
@@ -31,9 +33,10 @@ const AGES: { id: string; label: L }[] = [
 ];
 
 const BLANK_MS = 3000; // pure black first — then Oscar
-const HELLO_MS = 2200; // «Здравствуйте! Меня зовут Оскар.»
-const ASK_MS = 1700; // «А как вас зовут?» before it becomes the title
-const GREET_MS = 2200; // «{Имя}, рад знакомству!»
+// timed to the recordings (intro 5.7 s, greet 3.0 s)
+const HELLO_MS = 4000; // «Ах да, где же мои манеры? … Я Оскар.»
+const ASK_MS = 2300; // «А как зовут тебя?» before it becomes the title
+const GREET_MS = 3600; // «{Имя}, рад знакомству! Пойдём, покажу тебе тут всё.»
 
 export default function ProfileSetupScreen() {
   const insets = useSafeAreaInsets();
@@ -99,10 +102,21 @@ export default function ProfileSetupScreen() {
   const firstName = name.trim().split(/\s+/)[0] ?? "";
   const oscarLine =
     phase === "hello"
-      ? tr({ ru: "Здравствуйте! Меня зовут Оскар.", en: "Hello! My name is Oscar.", kk: "Сәлеметсіз бе! Менің атым Оскар." })
+      ? tr({
+          ru: "Ах да, где же мои манеры? Забыл представиться. Я Оскар.",
+          en: "Oh, where are my manners? I forgot to introduce myself. I'm Oscar.",
+          kk: "Әй, әдебім қайда? Танысуды ұмытып кетіппін. Мен Оскармын.",
+        })
       : phase === "ask"
-        ? tr({ ru: "А как вас зовут?", en: "And what's your name?", kk: "Ал сіздің атыңыз кім?" })
-        : tr({ ru: `${firstName}, рад знакомству!`, en: `${firstName}, nice to meet you!`, kk: `${firstName}, танысқаныма қуаныштымын!` });
+        ? tr({ ru: "А как зовут тебя?", en: "And what's your name?", kk: "Ал сенің атың кім?" })
+        : tr({
+            ru: `${firstName}, рад знакомству! Пойдём, покажу тебе тут всё.`,
+            en: `${firstName}, glad to meet you! Come on, I'll show you everything here.`,
+            kk: `${firstName}, танысқаныма қуаныштымын! Жүр, бәрін көрсетейін.`,
+          });
+  // his voice: the intro over «hello → ask», the greeting after the name
+  useOscarVoice("intro", phase === "hello");
+  useOscarVoice("greet", phase === "greet");
   const oscarShown = phase === "hello" || phase === "ask" || phase === "greet";
 
   return (
