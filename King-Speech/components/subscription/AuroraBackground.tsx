@@ -121,10 +121,26 @@ function Column({
       style={[{ position: "absolute", top: 0, left: Math.floor(i * colW), width: Math.ceil(colW) + 1, height: period * 3 }, style]}
     >
       <LinearGradient colors={stops as unknown as readonly [string, string, ...string[]]} locations={locs as unknown as readonly [number, number, ...number[]]} style={StyleSheet.absoluteFill} />
-      {soft && slice === 0 ? (
-        // a soft shade where a stripe begins, so each stripe reads as its own blade
+      {soft ? (
+        // fluted glass: every stripe is a rounded glass blade — shaded where
+        // it begins, catching more light across its width, with a bright
+        // glint along its far edge
+        <View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              backgroundColor:
+                slice === 0
+                  ? "rgba(0,0,0,0.22)"
+                  : `rgba(255,255,255,${(0.015 + 0.075 * (slice / (SLICES - 1)) ** 2).toFixed(3)})`,
+            },
+          ]}
+        />
+      ) : null}
+      {soft && slice === SLICES - 1 ? (
         <LinearGradient
-          colors={["rgba(0,0,0,0.14)", "rgba(0,0,0,0)"]}
+          colors={["rgba(255,255,255,0)", "rgba(255,255,255,0.32)"]}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
           style={StyleSheet.absoluteFill}

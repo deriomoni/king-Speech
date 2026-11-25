@@ -18,7 +18,6 @@ import { useLang, pickLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { KingSpeechLogo } from "@/components/auth/AuthUI";
-import GlassPill from "@/components/auth/GlassPill";
 import AuroraBackground, { AURORA_DUSK } from "@/components/subscription/AuroraBackground";
 import { rs } from "@/lib/responsive";
 
@@ -111,7 +110,7 @@ export default function LoginScreen() {
   return (
     <View style={[s.root, { backgroundColor: "#070423", paddingTop: topPad, paddingBottom: bottomPad + rs(20) }]}>
       <StatusBar barStyle="light-content" />
-      <AuroraBackground palette={AURORA_DUSK} dim={false} rim grain />
+      <AuroraBackground palette={AURORA_DUSK} dim={false} rim />
 
       <Animated.View entering={FadeIn.duration(500)} style={s.center}>
         <KingSpeechLogo color={CREAM} width={220} />
@@ -128,38 +127,38 @@ export default function LoginScreen() {
 
       <Animated.View entering={FadeInDown.delay(150).duration(500)} style={s.btns}>
         {/* Google — the main way in: bright glass with a breathing glow */}
-        <GlassPill primary onPress={handleGoogle} disabled={busy !== null}>
-          <Ionicons name="logo-google" size={rs(19)} color={CREAM} />
-          <Text style={[s.btnTxt, { color: CREAM }]}>
+        <Pressable style={({ pressed }) => [s.btn, s.black, { opacity: pressed ? 0.85 : 1 }]} onPress={handleGoogle} disabled={busy !== null}>
+          <Ionicons name="logo-google" size={rs(19)} color="#FFFFFF" />
+          <Text style={[s.btnTxt, { color: "#FFFFFF" }]}>
             {pickLang(lang, { ru: "Войти через Google", en: "Continue with Google", kk: "Google арқылы кіру" })}
           </Text>
           {busy === "google" ? (
             <View style={s.busy}>
-              <ActivityIndicator size="small" color={CREAM} />
+              <ActivityIndicator size="small" color="#FFFFFF" />
             </View>
           ) : null}
-        </GlassPill>
+        </Pressable>
 
-        {/* Apple — iOS only: dark glass */}
+        {/* Apple — iOS only */}
         {Platform.OS === "ios" && (
-          <GlassPill onPress={handleApple} disabled={busy !== null}>
-            <Ionicons name="logo-apple" size={rs(20)} color={CREAM} />
-            <Text style={[s.btnTxt, { color: CREAM }]}>{t("continueApple")}</Text>
+          <Pressable style={({ pressed }) => [s.btn, s.black, { opacity: pressed ? 0.85 : 1 }]} onPress={handleApple} disabled={busy !== null}>
+            <Ionicons name="logo-apple" size={rs(20)} color="#FFFFFF" />
+            <Text style={[s.btnTxt, { color: "#FFFFFF" }]}>{t("continueApple")}</Text>
             {busy === "apple" ? (
               <View style={s.busy}>
-                <ActivityIndicator size="small" color={CREAM} />
+                <ActivityIndicator size="small" color="#FFFFFF" />
               </View>
             ) : null}
-          </GlassPill>
+          </Pressable>
         )}
 
-        {/* Email — dark glass */}
-        <GlassPill onPress={handleEmail} disabled={busy !== null}>
-          <Ionicons name="mail-outline" size={rs(19)} color={CREAM} />
-          <Text style={[s.btnTxt, { color: CREAM }]}>
+        {/* Email */}
+        <Pressable style={({ pressed }) => [s.btn, s.black, { opacity: pressed ? 0.85 : 1 }]} onPress={handleEmail} disabled={busy !== null}>
+          <Ionicons name="mail-outline" size={rs(19)} color="#FFFFFF" />
+          <Text style={[s.btnTxt, { color: "#FFFFFF" }]}>
             {pickLang(lang, { ru: "Войти по email", en: "Continue with email", kk: "Email арқылы кіру" })}
           </Text>
-        </GlassPill>
+        </Pressable>
       </Animated.View>
 
       {/* Continue offline — always available as a fallback (AsyncStorage only). */}
@@ -223,10 +222,8 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.22)",
   },
+  black: { backgroundColor: "#0A0A0C" },
   btnTxt: {
-    textShadowColor: "rgba(10,8,30,0.35)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
     fontSize: 17,
     fontFamily: "Geologica_800ExtraBold",
   },
