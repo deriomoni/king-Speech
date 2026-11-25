@@ -80,13 +80,20 @@ export default function EmailAuthScreen() {
 
   const isUp = mode === "signUp";
 
+  // back to the sign-in screen; after a reload there may be nothing to pop, so
+  // fall back to replacing the route instead of throwing
+  const goBack = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace("/(auth)/login");
+  };
+
   return (
     <View style={[s.root, { paddingTop: topPad, paddingBottom: bottomPad + rs(16) }]}>
       <StatusBar barStyle="light-content" />
       {/* arrives already darkened, stripe by stripe, from the sign-in screen */}
       <AuroraBackground palette={AURORA_DUSK} dim={false} rim shade={1} />
 
-      <Pressable onPress={() => router.back()} hitSlop={12} style={s.back} accessibilityLabel={tr({ ru: "Назад", en: "Back", kk: "Артқа" })}>
+      <Pressable onPress={goBack} hitSlop={12} style={s.back} accessibilityLabel={tr({ ru: "Назад", en: "Back", kk: "Артқа" })}>
         <Ionicons name="chevron-back" size={rs(26)} color="#FFFFFF" />
       </Pressable>
 
