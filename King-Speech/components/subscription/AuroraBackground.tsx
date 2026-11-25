@@ -50,11 +50,30 @@ export const AURORA_DUSK = [
 
 // three periods (column = exactly 3 periods tall) so the scroll wraps seamlessly
 const tripled = (b: readonly string[]) => [...b, ...b.slice(1), ...b.slice(1)];
+
+const hexRgb = (h: string) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const rgbHex = (c: number[]) => "#" + c.map((v) => Math.round(v).toString(16).padStart(2, "0")).join("");
+/** Adds eased (smoothstep) in-between tones so neighbouring colours melt into each other. */
+function blended(b: readonly string[], steps = 4): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < b.length - 1; i++) {
+    const a = hexRgb(b[i]), c = hexRgb(b[i + 1]);
+    for (let k = 0; k < steps; k++) {
+      const t = k / steps;
+      const e = t * t * (3 - 2 * t);
+      out.push(rgbHex(a.map((v, j) => v + (c[j] - v) * e)));
+    }
+  }
+  out.push(b[b.length - 1]);
+  return out;
+}
 const locsOf = (stops: readonly string[]) => stops.map((_, i) => i / (stops.length - 1));
 const STOPS = tripled(BANDS);
 const LOCS = locsOf(STOPS);
 
 const COLUMNS = 72;
+/** Soft mode (sign-in): fewer, wider columns — the streaks read as a texture. */
+const SOFT_COLUMNS = 22;
 const LOOP_MS = 18000;
 
 function Column({
@@ -74,7 +93,7 @@ function Column({
   stops: string[];
   locs: number[];
 }) {
-  const x = i / COLUMNS;
+  const x = i / (soft ? SOFT_COLUMNS : COLUMNS);
   const style = useAnimatedStyle(() => {
     const t = clock.value; // 0 → 1 per loop
     const TAU = Math.PI * 2;
@@ -91,6 +110,15 @@ function Column({
       style={[{ position: "absolute", top: 0, left: Math.floor(i * colW), width: Math.ceil(colW) + 1, height: period * 3 }, style]}
     >
       <LinearGradient colors={stops as unknown as readonly [string, string, ...string[]]} locations={locs as unknown as readonly [number, number, ...number[]]} style={StyleSheet.absoluteFill} />
+      {soft ? (
+        // each streak: a faint light-to-shade sheen across its width
+        <LinearGradient
+          colors={["rgba(255,255,255,0.10)", "rgba(255,255,255,0)", "rgba(0,0,0,0.10)"]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
     </Animated.View>
   );
 }
@@ -108,12 +136,13 @@ export default function AuroraBackground({
   rim?: boolean;
 }) {
   const { width: W, height: H } = useWindowDimensions();
-  const stops = React.useMemo(() => (palette ? tripled(palette) : STOPS), [palette]);
+  const stops = React.useMemo(() => (palette ? tripled(blended(palette)) : STOPS), [palette]);
   const locs = React.useMemo(() => (palette ? locsOf(stops) : LOCS), [palette, stops]);
   // one palette period ≈ 1.15 screens: about one band of each colour on screen
   // custom palettes (sign-in) read as one calm sweep: a longer period
   const period = H * (palette ? 2.2 : 1.15);
-  const colW = W / COLUMNS;
+  const cols = palette ? SOFT_COLUMNS : COLUMNS;
+  const colW = W / cols;
   const clock = useSharedValue(0);
 
   useEffect(() => {
@@ -123,7 +152,7 @@ export default function AuroraBackground({
 
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.root]}>
-      {Array.from({ length: COLUMNS }, (_, i) => (
+      {Array.from({ length: cols }, (_, i) => (
         <Column key={i} i={i} colW={colW} period={period} clock={clock} stops={stops} locs={locs} soft={!!palette} />
       ))}
       {/* keep the UI readable: deep top and bottom, softer middle */}
@@ -144,8 +173,8 @@ export default function AuroraBackground({
               <Stop offset="0.75" stopColor="#FF5FA8" />
               <Stop offset="1" stopColor="#FF3B2F" />
             </SvgLinearGradient>
-            <Filter id="auroraRimBlur" x="-20%" y="-20%" width="140%" height="140%">
-              <FeGaussianBlur stdDeviation={W * 0.045} />
+            <Filter id="auroraRimBlur" x="-30%" y="-30%" width="160%" height="160%">
+              <FeGaussianBlur stdDeviation={W * 0.08} />
             </Filter>
           </Defs>
           <Rect
@@ -156,9 +185,9 @@ export default function AuroraBackground({
             rx={W * 0.12}
             fill="none"
             stroke="url(#auroraRim)"
-            strokeWidth={W * 0.16}
+            strokeWidth={W * 0.24}
             filter="url(#auroraRimBlur)"
-            opacity={0.9}
+            opacity={0.8}
           />
         </Svg>
       ) : null}
