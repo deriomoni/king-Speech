@@ -20,13 +20,15 @@ import { useLang, Lang, LANGS, LANG_NAMES } from "@/context/LangContext";
 import { rs } from "@/lib/responsive";
 import { useScreenMusic } from "@/lib/music";
 import { useSplashDone } from "@/lib/splashState";
+import OscarMascot from "@/components/OscarMascot";
 
 const LANG_SHORT: Record<Lang, string> = { ru: "RU", kk: "ҚАЗ", en: "EN" };
 const AnimatedSvgText = Animated.createAnimatedComponent(SvgText);
+const BRAND_GOLD = "#FFD857";
 
-const DRAW_MS = 1700; // outline traced in
-const FILL_AT = 1100; // fill starts while the outline finishes
-const SUB_AT = 1900; // the line under it
+const DRAW_MS = 2600; // outline traced in
+const FILL_AT = 1800; // fill starts while the outline finishes
+const SUB_AT = 2500; // the line under it
 const CTA_AT = 3000; // «Начать»
 const DASH = 1400; // longer than any glyph outline run
 
@@ -37,7 +39,7 @@ function DrawnLine({ text, y, size, width, run }: { text: string; y: number; siz
   useEffect(() => {
     if (!run) return;
     draw.value = withTiming(1, { duration: DRAW_MS, easing: Easing.inOut(Easing.cubic) });
-    fill.value = withDelay(FILL_AT, withTiming(1, { duration: 900, easing: Easing.out(Easing.quad) }));
+    fill.value = withDelay(FILL_AT, withTiming(1, { duration: 1100, easing: Easing.out(Easing.quad) }));
   }, [run, draw, fill]);
   const props = useAnimatedProps(() => ({
     strokeDashoffset: DASH * (1 - draw.value),
@@ -52,8 +54,8 @@ function DrawnLine({ text, y, size, width, run }: { text: string; y: number; siz
       fontSize={size}
       fontFamily="Geologica_900Black"
       fontWeight="900"
-      fill="#FFFFFF"
-      stroke="#FFFFFF"
+      fill={BRAND_GOLD}
+      stroke={BRAND_GOLD}
       strokeWidth={1.2}
       strokeDasharray={[DASH, DASH]}
       animatedProps={props}
@@ -123,8 +125,16 @@ export default function WelcomeScreen() {
         </Animated.View>
 
         <View style={s.center}>
+          {/* Oscar waves hello */}
+          {run ? (
+            <Animated.View entering={FadeIn.duration(900)} style={s.oscar}>
+              <OscarMascot emotion="hi" size={rs(190)} />
+            </Animated.View>
+          ) : (
+            <View style={[s.oscar, { height: rs(190) }]} />
+          )}
           {/* key = text: switching language redraws the greeting */}
-          <Svg key={greeting} width={boxW} height={lineH * lines.length + size * 0.25}>
+          <Svg key={`${lang}:${greeting}`} width={boxW} height={lineH * lines.length + size * 0.25}>
             {lines.map((ln, i) => (
               <DrawnLine key={ln + i} text={ln} y={size + i * lineH} size={size} width={boxW} run={run} />
             ))}
@@ -162,6 +172,7 @@ const s = StyleSheet.create({
   langBtnOn: { backgroundColor: "#FFFFFF" },
   langTxt: { fontSize: 13, fontFamily: "Geologica_600SemiBold", letterSpacing: 0.65 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 },
+  oscar: { marginBottom: 8, alignItems: "center", justifyContent: "center" },
   sub: {
     marginTop: 14,
     fontSize: 16,

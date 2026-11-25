@@ -19,6 +19,7 @@ import Animated, {
   runOnJS,
   useSharedValue,
   withTiming,
+  withDelay,
   type SharedValue,
 } from "react-native-reanimated";
 
@@ -175,7 +176,10 @@ export default function AuroraBackground({
   shade = 0,
   initialShade,
   shadeMs = 1100,
+  fromBlack = false,
 }: {
+  /** On mount, the gradient draws itself out of black, top → bottom. */
+  fromBlack?: boolean;
   /** Recolour the whole gradient darker (0 = normal, 1 = dark), washing in from the top — animated on change. */
   shade?: number;
   /** Where the darkening starts on mount (default: = shade, no animation). */
@@ -211,6 +215,21 @@ export default function AuroraBackground({
       if (done && shade === 0) runOnJS(setDarkOn)(false);
     });
   }, [shade, shadeMs, shadeV]);
+  // reveal from black: a black sheet under a soft mask slides away downward
+  const intro = useSharedValue(fromBlack ? 1 : 0);
+  const [introOn, setIntroOn] = React.useState(fromBlack);
+  useEffect(() => {
+    if (!fromBlack) return;
+    intro.value = withDelay(
+      150,
+      withTiming(0, { duration: 1500, easing: Easing.inOut(Easing.sin) }, (done) => {
+        if (done) runOnJS(setIntroOn)(false);
+      }),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const introMaskStyle = useAnimatedStyle(() => ({ transform: [{ translateY: H * (1 - 2 * intro.value) }] }));
+  const introWebStyle = useAnimatedStyle(() => ({ opacity: intro.value }));
   // a tall soft mask slides down: opaque on top, a full screen of feather below
   const webDarkStyle = useAnimatedStyle(() => ({ opacity: shadeV.value }));
   const maskStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -2 * H * (1 - shadeV.value) }] }));
@@ -253,6 +272,28 @@ export default function AuroraBackground({
           {Array.from({ length: cols }, (_, i) => (
             <Column key={`d${i}`} i={i} colW={colW} period={period} clock={clock} stops={darkStops} locs={locs} soft />
           ))}
+        </MaskedView>
+      ) : null}
+      {introOn && Platform.OS === "web" ? (
+        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: "#000000" }, introWebStyle]} />
+      ) : null}
+      {introOn && Platform.OS !== "web" ? (
+        // black, masked: clear on top, solid below; the mask slides down so the
+        // colours appear from the top and the black drains off the bottom
+        <MaskedView
+          pointerEvents="none"
+          style={StyleSheet.absoluteFill}
+          maskElement={
+            <Animated.View style={[{ position: "absolute", left: 0, right: 0, top: 0, height: 2 * H }, introMaskStyle]}>
+              <LinearGradient
+                colors={["rgba(0,0,0,0)", "#000000", "#000000"]}
+                locations={[0, 0.5, 1]}
+                style={StyleSheet.absoluteFill}
+              />
+            </Animated.View>
+          }
+        >
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: "#000000" }]} />
         </MaskedView>
       ) : null}
       {/* keep the UI readable: deep top and bottom, softer middle */}

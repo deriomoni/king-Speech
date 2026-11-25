@@ -17,7 +17,7 @@ import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useLang, pickLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
-import { KingSpeechLogo } from "@/components/auth/AuthUI";
+import { AnimatedBrandLogo, LOGO_INTRO_MS } from "@/components/AnimatedBrandLogo";
 import AuroraBackground, { AURORA_DUSK } from "@/components/subscription/AuroraBackground";
 import { rs } from "@/lib/responsive";
 
@@ -115,27 +115,30 @@ export default function LoginScreen() {
   // Sign-in on the paywall's animated aurora (same component, 1:1): light
   // logo in the middle, the ways in at the bottom.
   const INK = "#262628";
+  // buttons and links rise in once the logo has landed
+  const UI_AT = 700 + LOGO_INTRO_MS - 600;
   const CREAM = "#FFF7F0";
 
   return (
     <View style={[s.root, { backgroundColor: "#070423", paddingTop: topPad, paddingBottom: bottomPad + rs(20) }]}>
       <StatusBar barStyle="light-content" />
-      <AuroraBackground palette={AURORA_DUSK} dim={false} rim shade={leaving ? 1 : 0} initialShade={0} />
+      <AuroraBackground palette={AURORA_DUSK} dim={false} rim fromBlack shade={leaving ? 1 : 0} initialShade={0} />
 
-      <Animated.View entering={FadeIn.duration(500)} style={s.center}>
-        <KingSpeechLogo color={CREAM} width={220} />
-      </Animated.View>
+      {/* the logo arrives exactly like the launch splash's */}
+      <View style={s.center}>
+        <AnimatedBrandLogo width={rs(220)} color={CREAM} delay={700} />
+      </View>
 
       {!configured && (
-        <View style={s.notConfiguredBanner}>
+        <Animated.View entering={FadeIn.delay(UI_AT).duration(700)} style={s.notConfiguredBanner}>
           <Ionicons name="warning-outline" size={rs(16)} color={CREAM} />
           <Text style={[s.notConfiguredTxt, { color: "rgba(255,247,240,0.75)" }]}>
             {pickLang(lang, { ru: "Облачная авторизация не настроена. Доступен только режим без входа.", en: "Cloud sign-in isn't configured. Only offline mode is available.", kk: "Бұлттық авторизация бапталмаған. Тек кірусіз режим қолжетімді." })}
           </Text>
-        </View>
+        </Animated.View>
       )}
 
-      <Animated.View entering={FadeInDown.delay(150).duration(500)} style={s.btns}>
+      <Animated.View entering={FadeInDown.delay(UI_AT).duration(700)} style={s.btns}>
         {/* Google — the main way in: bright glass with a breathing glow */}
         <Pressable style={({ pressed }) => [s.btn, s.black, { opacity: pressed ? 0.85 : 1 }]} onPress={handleGoogle} disabled={busy !== null}>
           <Ionicons name="logo-google" size={rs(19)} color="#FFFFFF" />
@@ -165,6 +168,7 @@ export default function LoginScreen() {
       </Animated.View>
 
       {/* Email + password sign-in / sign-up */}
+      <Animated.View entering={FadeIn.delay(UI_AT + 250).duration(700)}>
       <Pressable
         style={({ pressed }) => [s.skipBtn, { opacity: pressed ? 0.6 : 1 }]}
         onPress={goEmail}
@@ -178,14 +182,17 @@ export default function LoginScreen() {
           <NextChevron color="#FFFFFF" size={rs(13)} />
         </View>
       </Pressable>
+      </Animated.View>
 
       {/* Dev only: no Firebase keys yet → still let the team into the app. */}
       {__DEV__ && !configured ? (
+        <Animated.View entering={FadeIn.delay(UI_AT + 400).duration(700)}>
         <Pressable onPress={handleOffline} disabled={busy !== null} hitSlop={8} style={{ alignSelf: "center", marginTop: rs(10) }}>
           <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontFamily: "Geologica_600SemiBold" }}>
             dev: продолжить без входа
           </Text>
         </Pressable>
+        </Animated.View>
       ) : null}
     </View>
   );
