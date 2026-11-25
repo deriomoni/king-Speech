@@ -18,6 +18,7 @@ import { useLang, pickLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { KingSpeechLogo } from "@/components/auth/AuthUI";
+import FlareBackground, { FLARE_BG } from "@/components/auth/FlareBackground";
 import { rs } from "@/lib/responsive";
 
 export default function LoginScreen() {
@@ -104,11 +105,11 @@ export default function LoginScreen() {
   // Sign-in: the brand gold and nothing else — the logo in the middle, the
   // ways in at the bottom.
   const INK = "#262628";
-  const GOLD = theme.accent;
 
   return (
-    <View style={[s.root, { backgroundColor: GOLD, paddingTop: topPad, paddingBottom: bottomPad + rs(20) }]}>
-      <StatusBar barStyle="dark-content" />
+    <View style={[s.root, { backgroundColor: FLARE_BG, paddingTop: topPad, paddingBottom: bottomPad + rs(20) }]}>
+      <StatusBar barStyle="light-content" />
+      <FlareBackground />
 
       <Animated.View entering={FadeIn.duration(500)} style={s.center}>
         <KingSpeechLogo color={INK} width={220} />
