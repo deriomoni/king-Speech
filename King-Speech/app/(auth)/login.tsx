@@ -19,6 +19,7 @@ import Animated, {
   FadeInDown,
   runOnJS,
   useAnimatedProps,
+  useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
@@ -145,6 +146,9 @@ export default function LoginScreen() {
       {/* the logo arrives exactly like the launch splash's */}
       <View style={s.center}>
         <AnimatedBrandLogo width={rs(220)} color={CREAM} delay={700} />
+        <Animated.View entering={FadeIn.delay(UI_AT + 300).duration(900)}>
+          <QuoteRotator lang={lang} />
+        </Animated.View>
       </View>
 
       {!configured && (
@@ -221,7 +225,87 @@ export default function LoginScreen() {
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
+// Why speaking matters — in the words of people who knew. One every 15 s.
+type LQ = { ru: string; en: string; kk: string };
+const QUOTES: { text: LQ; who: LQ }[] = [
+  {
+    text: {
+      ru: "Все великие ораторы поначалу были плохими ораторами.",
+      en: "All the great speakers were bad speakers at first.",
+      kk: "Барлық ұлы шешендер алғашында нашар сөйлеген.",
+    },
+    who: { ru: "Ральф Уолдо Эмерсон", en: "Ralph Waldo Emerson", kk: "Ральф Уолдо Эмерсон" },
+  },
+  {
+    text: {
+      ru: "Слово стало верным — стань верным и ты, слушатель.",
+      en: "The word has been set right — listener, set yourself right too.",
+      kk: "Сөз түзелді, тыңдаушы, сен де түзел.",
+    },
+    who: { ru: "Абай Кунанбаев", en: "Abai Kunanbayev", kk: "Абай Құнанбаев" },
+  },
+  {
+    text: {
+      ru: "Кто ясно мыслит, тот ясно излагает.",
+      en: "What is well conceived is clearly said.",
+      kk: "Анық ойлаған адам анық жеткізеді.",
+    },
+    who: { ru: "Никола Буало", en: "Nicolas Boileau", kk: "Никола Буало" },
+  },
+  {
+    text: {
+      ru: "Нет ничего столь невероятного, что слово не сделало бы убедительным.",
+      en: "Nothing is so incredible that speech cannot make it convincing.",
+      kk: "Сөз сендірмейтіндей мүмкін емес нәрсе жоқ.",
+    },
+    who: { ru: "Цицерон", en: "Cicero", kk: "Цицерон" },
+  },
+  {
+    text: {
+      ru: "Всё, что вообще может быть сказано, может быть сказано ясно.",
+      en: "Whatever can be said at all can be said clearly.",
+      kk: "Айтуға болатынның бәрін анық айтуға болады.",
+    },
+    who: { ru: "Людвиг Витгенштейн", en: "Ludwig Wittgenstein", kk: "Людвиг Витгенштейн" },
+  },
+];
+const QUOTE_MS = 15000;
+
+function QuoteRotator({ lang }: { lang: "ru" | "en" | "kk" }) {
+  const [i, setI] = useState(0);
+  const o = useSharedValue(1);
+  useEffect(() => {
+    const id = setInterval(() => {
+      // fade out, swap, fade in
+      o.value = withTiming(0, { duration: 700, easing: Easing.inOut(Easing.quad) });
+      setTimeout(() => {
+        setI((n) => (n + 1) % QUOTES.length);
+        o.value = withTiming(1, { duration: 900, easing: Easing.inOut(Easing.quad) });
+      }, 720);
+    }, QUOTE_MS);
+    return () => clearInterval(id);
+  }, [o]);
+  const style = useAnimatedStyle(() => ({ opacity: o.value, transform: [{ translateY: (1 - o.value) * 6 }] }));
+  const q = QUOTES[i];
+  return (
+    <Animated.View style={[s.quote, style]}>
+      <Text style={s.quoteTxt}>«{q.text[lang]}»</Text>
+      <Text style={s.quoteWho}>— {q.who[lang]}</Text>
+    </Animated.View>
+  );
+}
+
 const s = StyleSheet.create({
+  quote: { marginTop: 22, maxWidth: 300, alignItems: "center", minHeight: 86 },
+  quoteTxt: {
+    fontSize: 15,
+    lineHeight: 21,
+    textAlign: "center",
+    color: "rgba(255,247,240,0.88)",
+    fontFamily: "Geologica_500Medium",
+    fontStyle: "italic",
+  },
+  quoteWho: { marginTop: 8, fontSize: 12.5, color: "rgba(255,247,240,0.6)", fontFamily: "Geologica_700Bold" },
   root: {
     flex: 1,
     paddingHorizontal: 24,

@@ -64,7 +64,7 @@ export default function ProfileSetupScreen() {
       <StatusBar barStyle="light-content" />
 
       {step === "name" ? (
-        <Animated.View key="name" entering={FadeIn.duration(400)} exiting={FadeOutUp.duration(250)} style={s.block}>
+        <Animated.View key="name" entering={FadeIn.delay(450).duration(700)} exiting={FadeOutUp.duration(250)} style={s.block}>
           <Text style={s.title}>{tr({ ru: "Как вас зовут?", en: "What's your name?", kk: "Атыңыз кім?" })}</Text>
           <TextInput
             value={name}

@@ -18,7 +18,6 @@ import Animated, {
   useSharedValue,
   withDelay,
   withSequence,
-  withSpring,
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
@@ -117,14 +116,16 @@ function LangCircle({
   onPress: () => void;
 }) {
   const style = useAnimatedStyle(() => {
-    // roll out to the left: travel + a turn, each circle a beat after the last
-    const lag = Math.max(0, Math.min(1, p.value * 1.25 - index * 0.12));
+    // roll out to the left: travel + a turn; the farther circles start a touch
+    // earlier so they lead and nothing overlaps on the way
+    const start = (2 - index) * 0.08;
+    const lag = Math.max(0, Math.min(1, (p.value - start) / (1 - start)));
     return {
       opacity: lag,
       transform: [
         { translateX: -(index + 1) * 54 * lag },
-        { rotate: `${(1 - lag) * -300}deg` },
-        { scale: 0.6 + lag * 0.4 },
+        { rotate: `${(1 - lag) * -240}deg` },
+        { scale: 0.7 + lag * 0.3 },
       ],
     };
   });
@@ -142,7 +143,7 @@ function LangGlobe({ lang, onPick }: { lang: Lang; onPick: (l: Lang) => void }) 
   const [open, setOpen] = useState(false);
   const p = useSharedValue(0);
   useEffect(() => {
-    p.value = withSpring(open ? 1 : 0, { damping: 15, stiffness: 140 });
+    p.value = withTiming(open ? 1 : 0, { duration: open ? 650 : 450, easing: Easing.inOut(Easing.cubic) });
   }, [open, p]);
   return (
     <View style={s.globeWrap}>
@@ -166,7 +167,7 @@ function LangGlobe({ lang, onPick }: { lang: Lang; onPick: (l: Lang) => void }) 
         style={({ pressed }) => [s.globe, open && s.globeOpen, { opacity: pressed ? 0.8 : 1 }]}
         accessibilityLabel="Language"
       >
-        <Ionicons name={open ? "close" : "globe-outline"} size={rs(20)} color={open ? "#000000" : "#FFFFFF"} />
+        <Ionicons name={open ? "close" : "globe-outline"} size={rs(24)} color="#FFFFFF" />
       </Pressable>
     </View>
   );
@@ -259,12 +260,10 @@ const s = StyleSheet.create({
   globe: {
     width: CIRCLE,
     height: CIRCLE,
-    borderRadius: CIRCLE / 2,
-    backgroundColor: "rgba(255,255,255,0.1)",
     alignItems: "center",
     justifyContent: "center",
   },
-  globeOpen: { backgroundColor: "#FFFFFF" },
+  globeOpen: {},
   langCircle: {
     position: "absolute",
     left: 0,
