@@ -2,10 +2,12 @@
 // Only to learn who the player is (motivation, where they speak, how they feel
 // about it now, how much time they have); the answers live in the profile.
 // Finishing completes the profile and the root gate moves on to onboarding.
-import React, { useState } from "react";
-import { Platform, Pressable, StatusBar, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useRef, useState } from "react";
+import { BackHandler, Platform, Pressable, StatusBar, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Animated, { FadeInRight, FadeOutLeft } from "react-native-reanimated";
+import { useFocusEffect, useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import Animated, { FadeInLeft, FadeInRight, FadeOutLeft, FadeOutRight } from "react-native-reanimated";
 import { useLang, pickLang } from "@/context/LangContext";
 import { useAuth } from "@/context/AuthContext";
 import { rs } from "@/lib/responsive";
@@ -73,7 +75,11 @@ export default function SurveyScreen() {
   const tr = (v: L) => pickLang(lang, v);
   const { saveSurvey } = useAuth();
 
+  const router = useRouter();
   const [i, setI] = useState(0);
+  // which way the questions slide: forward → from the right, back → from the left
+  const [dir, setDir] = useState<1 | -1>(1);
+  const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
   const [saving, setSaving] = useState(false);
 
@@ -85,6 +91,7 @@ export default function SurveyScreen() {
 
   const next = async (a = answers) => {
     if (!isLast) {
+      setDir(1);
       setI(i + 1);
       return;
     }
@@ -104,13 +111,40 @@ export default function SurveyScreen() {
       const a = { ...answers, [q.id]: [id] };
       setAnswers(a);
       // single choice: move on by itself
-      setTimeout(() => next(a), 220);
+      pending.current = setTimeout(() => next(a), 220);
     }
   };
+
+  // a mistap? step back: the previous question keeps its answers to change;
+  // from the first one — back to the age
+  const back = useCallback(() => {
+    if (saving) return true;
+    if (pending.current) clearTimeout(pending.current);
+    if (i > 0) {
+      playUi("back");
+      setDir(-1);
+      setI(i - 1);
+    } else if (router.canGoBack()) {
+      router.back();
+    }
+    return true;
+  }, [i, saving, router]);
+
+  // Android hardware back does the same
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener("hardwareBackPress", back);
+      return () => sub.remove();
+    }, [back]),
+  );
 
   return (
     <View style={[s.root, { paddingTop: topPad + rs(16), paddingBottom: bottomPad + rs(20) }]}>
       <StatusBar barStyle="light-content" />
+
+      <Pressable onPress={back} hitSlop={12} style={s.back} accessibilityLabel={tr({ ru: "Назад", en: "Back", kk: "Артқа" })}>
+        <Ionicons name="chevron-back" size={rs(26)} color="#FFFFFF" />
+      </Pressable>
 
       {/* progress */}
       <View style={s.progress}>
@@ -119,7 +153,8 @@ export default function SurveyScreen() {
         ))}
       </View>
 
-      <Animated.View key={q.id} entering={FadeInRight.duration(380)} exiting={FadeOutLeft.duration(220)} style={s.block}>
+      <Animated.View key={q.id} entering={(dir === 1 ? FadeInRight : FadeInLeft).duration(380)}
+        exiting={(dir === 1 ? FadeOutLeft : FadeOutRight).duration(220)} style={s.block}>
         <Text style={s.title}>{tr(q.title)}</Text>
         {q.hint ? <Text style={s.hint}>{tr(q.hint)}</Text> : null}
         <View style={s.options}>
@@ -161,6 +196,7 @@ export default function SurveyScreen() {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000000", paddingHorizontal: 24 },
+  back: { alignSelf: "flex-start", marginLeft: -6, marginBottom: 12 },
   progress: { flexDirection: "row", gap: 6 },
   dash: { flex: 1, height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.15)" },
   dashOn: { backgroundColor: "#FFFFFF" },

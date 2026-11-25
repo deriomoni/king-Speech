@@ -4,10 +4,11 @@
 //   → (return key) Oscar again: «{Имя}, рад знакомству!» → steps away
 //   → «Сколько вам лет?» with the options fading in
 //   → picking one saves the draft and opens the short questionnaire.
-import React, { useEffect, useState } from "react";
-import { Keyboard, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, Text, TextInput, View } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { BackHandler, Keyboard, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeIn, FadeInDown, FadeOut, FadeOutUp } from "react-native-reanimated";
 import { useLang, pickLang } from "@/context/LangContext";
 import { useAuth } from "@/context/AuthContext";
@@ -71,6 +72,28 @@ export default function ProfileSetupScreen() {
     setTimeout(() => router.push("/(auth)/survey"), 350);
   };
 
+  // coming back from the questionnaire: the age can be picked again
+  useFocusEffect(
+    useCallback(() => {
+      setAge(null);
+    }, []),
+  );
+
+  // a mistap on the age? back to the name (it stays filled in)
+  const backToName = useCallback(() => {
+    if (phase !== "age") return false;
+    playUi("back");
+    setAge(null);
+    setPhase("name");
+    return true;
+  }, [phase]);
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener("hardwareBackPress", backToName);
+      return () => sub.remove();
+    }, [backToName]),
+  );
+
   const firstName = name.trim().split(/\s+/)[0] ?? "";
   const oscarLine =
     phase === "hello"
@@ -127,6 +150,14 @@ export default function ProfileSetupScreen() {
       ) : null}
 
       {phase === "age" ? (
+        <Animated.View key="age-back" entering={FadeIn.duration(600)} exiting={FadeOut.duration(250)} style={[s.back, { top: topPad + rs(12) }]}>
+          <Pressable onPress={backToName} hitSlop={12} accessibilityLabel={tr({ ru: "Назад", en: "Back", kk: "Артқа" })}>
+            <Ionicons name="chevron-back" size={rs(26)} color="#FFFFFF" />
+          </Pressable>
+        </Animated.View>
+      ) : null}
+
+      {phase === "age" ? (
         <Animated.View key="age" entering={FadeIn.duration(800)} style={s.block}>
           <Text style={s.title}>{tr({ ru: "Сколько вам лет?", en: "How old are you?", kk: "Жасыңыз нешеде?" })}</Text>
           <Text style={s.note}>
@@ -172,6 +203,7 @@ const s = StyleSheet.create({
     fontFamily: "Geologica_700Bold",
   },
   block: { flex: 1, justifyContent: "center" },
+  back: { position: "absolute", left: 18, zIndex: 2 },
   title: { fontSize: 32, letterSpacing: -0.5, color: "#FFFFFF", fontFamily: "Geologica_900Black" },
   input: {
     marginTop: 20,
