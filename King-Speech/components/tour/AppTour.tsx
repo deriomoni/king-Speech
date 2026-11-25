@@ -1,5 +1,5 @@
 // First-run tour, shown over the main app right after sign-up (instead of the
-// old onboarding screens). Short and finite — 8 cards, «Пропустить» anytime:
+// old onboarding screens). Short and finite — 8 frosted-glass cards:
 //   1. Oscar says hi
 //   2. the five sections at a glance (the whole tab bar lit up)
 //   3–7. each section in turn: the app switches to it, its tab is spotlighted
@@ -8,7 +8,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import Svg, { Path } from "react-native-svg";
+import Svg, { Defs, LinearGradient as SvgGradient, Path, Stop } from "react-native-svg";
+import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   Easing,
@@ -17,6 +18,7 @@ import Animated, {
   FadeOut,
   useAnimatedProps,
   useSharedValue,
+  withRepeat,
   withTiming,
 } from "react-native-reanimated";
 import { useLang, pickLang } from "@/context/LangContext";
@@ -39,7 +41,6 @@ const BAR_SIDE = 16;
 const BAR_BORDER = 5;
 const BAR_PAD = 8;
 
-const GOLD = "#FFD857";
 
 type Section = { route: string; tab: number; Icon: IconC; name: L; short: L; title: L; body: L };
 
@@ -181,6 +182,18 @@ export default function AppTour() {
     d: hw.value > 0.5 ? rrect(hx.value, hy.value, hw.value, hh.value, hr.value) : "M0,0",
     strokeOpacity: hw.value > 4 ? 1 : 0,
   }));
+  // a ripple keeps leaving the ring outwards, softly fading
+  const pulse = useSharedValue(0);
+  useEffect(() => {
+    pulse.value = withRepeat(withTiming(1, { duration: 1700, easing: Easing.out(Easing.quad) }), -1, false);
+  }, [pulse]);
+  const rippleProps = useAnimatedProps(() => {
+    const o = pulse.value * 14;
+    return {
+      d: hw.value > 0.5 ? rrect(hx.value - o, hy.value - o, hw.value + o * 2, hh.value + o * 2, hr.value + o) : "M0,0",
+      strokeOpacity: hw.value > 4 ? (1 - pulse.value) * 0.85 : 0,
+    };
+  });
 
   // show the section behind its card
   useEffect(() => {
@@ -207,13 +220,10 @@ export default function AppTour() {
     playUi("back");
     setI(i - 1);
   };
-  const skip = () => {
-    playUi("tapSoft");
-    finish();
-  };
 
   const dark = themeMode === "dark";
-  const card = dark ? "#1E1E21" : "#FFFFFF";
+  const card = dark ? "rgba(32,32,36,0.55)" : "rgba(255,255,255,0.62)";
+  const edge = dark ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.75)";
   const ink = dark ? "#F0EEE9" : "#262628";
   const soft = dark ? "rgba(240,238,233,0.62)" : "rgba(38,38,40,0.62)";
   const line = dark ? "rgba(240,238,233,0.08)" : "rgba(38,38,40,0.07)";
@@ -267,21 +277,30 @@ export default function AppTour() {
       <Pressable style={StyleSheet.absoluteFill} onPress={() => {}}>
         <Svg width={W} height={H} style={StyleSheet.absoluteFill}>
           <AnimatedPath animatedProps={dimProps} fill="rgba(0,0,0,0.72)" fillRule="evenodd" />
-          <AnimatedPath animatedProps={ringProps} fill="none" stroke={GOLD} strokeWidth={3} />
+          <Defs>
+            <SvgGradient id="tourRing" x1="0" y1="0" x2="1" y2="1">
+              <Stop offset="0" stopColor="#FFE9A0" />
+              <Stop offset="0.3" stopColor="#FFB42E" />
+              <Stop offset="0.55" stopColor="#FF8E3A" />
+              <Stop offset="0.8" stopColor="#C2338F" />
+              <Stop offset="1" stopColor="#6A22C8" />
+            </SvgGradient>
+          </Defs>
+          {/* soft glow under the line */}
+          <AnimatedPath animatedProps={ringProps} fill="none" stroke="url(#tourRing)" strokeWidth={14} opacity={0.16} />
+          <AnimatedPath animatedProps={ringProps} fill="none" stroke="url(#tourRing)" strokeWidth={7} opacity={0.3} />
+          <AnimatedPath animatedProps={rippleProps} fill="none" stroke="url(#tourRing)" strokeWidth={2} />
+          <AnimatedPath animatedProps={ringProps} fill="none" stroke="url(#tourRing)" strokeWidth={3} />
         </Svg>
       </Pressable>
 
       <View pointerEvents="box-none" style={[s.cardWrap, cardPos]}>
-        <Animated.View key={i} entering={FadeInDown.duration(420)} style={[s.card, { backgroundColor: card }]}>
+        <Animated.View key={i} entering={FadeInDown.duration(420)} style={[s.card, { backgroundColor: card, borderColor: edge }]}>
+          <BlurView intensity={40} tint={dark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
           <View style={s.head}>
             <Text style={[s.count, { color: soft }]}>
               {i + 1} / {STEPS.length}
             </Text>
-            {step.kind !== "done" && step.kind !== "hello" ? (
-              <Pressable onPress={skip} hitSlop={10}>
-                <Text style={[s.skip, { color: soft }]}>{tr({ ru: "Пропустить", en: "Skip", kk: "Өткізу" })}</Text>
-              </Pressable>
-            ) : null}
           </View>
 
           {centered ? (
@@ -292,6 +311,15 @@ export default function AppTour() {
 
           <Text style={[s.title, { color: ink }, centered && s.center]}>{title}</Text>
           {body ? <Text style={[s.body, { color: soft }, centered && s.center]}>{body}</Text> : null}
+          {step.kind === "done" ? (
+            <Text style={[s.cheer, { color: ink }]}>
+              {tr({
+                ru: "Каждый великий оратор когда-то волновался так же, как ты. Первый шаг ты уже сделал — дальше будет только увереннее!",
+                en: "Every great speaker was once as nervous as you. You've already taken the first step — it only gets more confident from here!",
+                kk: "Әр ұлы шешен бір кезде дәл сен сияқты толқыған. Алғашқы қадамды жасадың — әрі қарай тек сенімдірек болады!",
+              })}
+            </Text>
+          ) : null}
 
           {step.kind === "overview" ? (
             <View style={s.list}>
@@ -349,19 +377,16 @@ const s = StyleSheet.create({
     maxWidth: 440,
     borderRadius: 28,
     padding: 22,
-    shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 12,
+    overflow: "hidden",
+    borderWidth: 1,
   },
   head: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   count: { fontSize: 13, fontFamily: "Geologica_700Bold", letterSpacing: 0.3 },
-  skip: { fontSize: 14, fontFamily: "Geologica_600SemiBold" },
   oscar: { alignItems: "center", marginBottom: 8 },
   title: { fontSize: 24, lineHeight: 29, letterSpacing: -0.4, fontFamily: "Geologica_900Black" },
   body: { marginTop: 8, fontSize: 16, lineHeight: 22, fontFamily: "Geologica_500Medium" },
   center: { textAlign: "center" },
+  cheer: { marginTop: 14, fontSize: 15, lineHeight: 21, textAlign: "center", fontFamily: "Geologica_600SemiBold", fontStyle: "italic" },
   list: { marginTop: 12 },
   row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 9 },
   rowName: { width: rs(124), fontSize: 16, fontFamily: "Geologica_800ExtraBold" },
