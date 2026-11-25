@@ -9,6 +9,7 @@ import Animated, { FadeInRight, FadeOutLeft } from "react-native-reanimated";
 import { useLang, pickLang } from "@/context/LangContext";
 import { useAuth } from "@/context/AuthContext";
 import { rs } from "@/lib/responsive";
+import { playUi } from "@/lib/uiSound";
 
 type L = { ru: string; en: string; kk: string };
 type Q = { id: string; title: L; hint?: L; multi: boolean; options: { id: string; label: L }[] };
@@ -127,7 +128,10 @@ export default function SurveyScreen() {
             return (
               <Pressable
                 key={o.id}
-                onPress={() => toggle(o.id)}
+                onPress={() => {
+                  playUi("tapSoft");
+                  toggle(o.id);
+                }}
                 style={({ pressed }) => [s.option, on && s.optionOn, { opacity: pressed ? 0.85 : 1 }]}
               >
                 <Text style={[s.optionTxt, on && s.optionTxtOn]}>{tr(o.label)}</Text>
@@ -139,7 +143,10 @@ export default function SurveyScreen() {
 
       {q.multi ? (
         <Pressable
-          onPress={() => next()}
+          onPress={() => {
+            playUi("tapPrimary");
+            next();
+          }}
           disabled={picked.length === 0 || saving}
           style={({ pressed }) => [s.btn, { opacity: picked.length === 0 ? 0.35 : pressed ? 0.85 : 1 }]}
         >

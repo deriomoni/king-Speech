@@ -22,6 +22,7 @@ import { useLang, pickLang } from "@/context/LangContext";
 import { useAuth } from "@/context/AuthContext";
 import AuroraBackground, { AURORA_DUSK } from "@/components/subscription/AuroraBackground";
 import { rs } from "@/lib/responsive";
+import { playUi } from "@/lib/uiSound";
 
 type Mode = "signIn" | "signUp";
 
@@ -140,7 +141,13 @@ export default function EmailAuthScreen() {
               autoComplete={isUp ? "new-password" : "password"}
               style={s.input}
             />
-            <Pressable onPress={() => setShowPass((v) => !v)} hitSlop={10}>
+            <Pressable
+              onPress={() => {
+                playUi("tapSoft");
+                setShowPass((v) => !v);
+              }}
+              hitSlop={10}
+            >
               <Ionicons name={showPass ? "eye-off-outline" : "eye-outline"} size={rs(18)} color="rgba(255,255,255,0.7)" />
             </Pressable>
           </View>
@@ -163,7 +170,10 @@ export default function EmailAuthScreen() {
           {error ? <Text style={s.error}>{error}</Text> : null}
 
           <Pressable
-            onPress={submit}
+            onPress={() => {
+              playUi("tapPrimary");
+              submit();
+            }}
             disabled={!canSubmit}
             style={({ pressed }) => [s.btn, { opacity: pressed ? 0.85 : 1 }]}
           >
@@ -178,13 +188,27 @@ export default function EmailAuthScreen() {
           </Pressable>
 
           {!isUp ? (
-            <Pressable onPress={forgot} hitSlop={8} style={s.linkWrap}>
+            <Pressable
+              onPress={() => {
+                playUi("tapSoft");
+                forgot();
+              }}
+              hitSlop={8}
+              style={s.linkWrap}
+            >
               <Text style={s.link}>{tr({ ru: "Забыли пароль?", en: "Forgot password?", kk: "Құпиясөзді ұмыттыңыз ба?" })}</Text>
             </Pressable>
           ) : null}
         </Animated.View>
 
-        <Pressable onPress={() => setMode(isUp ? "signIn" : "signUp")} hitSlop={10} style={s.switch}>
+        <Pressable
+          onPress={() => {
+            playUi("tapSoft");
+            setMode(isUp ? "signIn" : "signUp");
+          }}
+          hitSlop={10}
+          style={s.switch}
+        >
           <Text style={s.switchTxt}>
             {isUp
               ? tr({ ru: "Уже есть аккаунт? ", en: "Already have an account? ", kk: "Аккаунтыңыз бар ма? " })

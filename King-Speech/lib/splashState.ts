@@ -28,3 +28,15 @@ export function useSplashDone(): boolean {
   }, []);
   return isDone;
 }
+
+// Where Welcome leaves the logo (its centre, window coordinates), so sign-in
+// can pick it up from there and glide it into its own place.
+let logoCY: number | null = null;
+export function setLogoHandoff(cy: number) {
+  logoCY = cy;
+}
+export function takeLogoHandoff(): number | null {
+  const v = logoCY;
+  logoCY = null;
+  return v;
+}

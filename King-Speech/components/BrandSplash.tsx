@@ -34,7 +34,6 @@ export function BrandSplash({ ready, onFinish }: { ready: boolean; onFinish: () 
   useEffect(() => {
     if (!ready || !introDone || leaving.current) return;
     leaving.current = true;
-    exitScale.value = withDelay(HOLD, withTiming(1.05, { duration: EXIT_DUR, easing: Easing.in(Easing.quad) }));
     layerO.value = withDelay(
       HOLD,
       withTiming(0, { duration: EXIT_DUR, easing: Easing.in(Easing.quad) }, (fin) => {

@@ -13,6 +13,7 @@ import { useLang, pickLang } from "@/context/LangContext";
 import { useAuth } from "@/context/AuthContext";
 import OscarMascot from "@/components/OscarMascot";
 import { rs } from "@/lib/responsive";
+import { playUi } from "@/lib/uiSound";
 
 type Phase = "hello" | "ask" | "name" | "greet" | "age";
 type L = { ru: string; en: string; kk: string };
@@ -140,7 +141,13 @@ export default function ProfileSetupScreen() {
               const on = age === a.id;
               return (
                 <Animated.View key={a.id} entering={FadeInDown.delay(250 + i * 70).duration(500)}>
-                  <Pressable onPress={() => pickAge(a.id)} style={[s.chip, on && s.chipOn]}>
+                  <Pressable
+                    onPress={() => {
+                      playUi("tapSoft");
+                      pickAge(a.id);
+                    }}
+                    style={[s.chip, on && s.chipOn]}
+                  >
                     <Text style={[s.chipTxt, on && s.chipTxtOn]}>{tr(a.label)}</Text>
                   </Pressable>
                 </Animated.View>

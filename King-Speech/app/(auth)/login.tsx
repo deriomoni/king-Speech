@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import NextChevron from "@/components/NextChevron";
 import {
   View,
@@ -27,6 +27,8 @@ import { useAuth } from "@/context/AuthContext";
 import { AnimatedBrandLogo } from "@/components/AnimatedBrandLogo";
 import AuroraBackground, { AURORA_DUSK } from "@/components/subscription/AuroraBackground";
 import { rs } from "@/lib/responsive";
+import { takeLogoHandoff } from "@/lib/splashState";
+import { playUi } from "@/lib/uiSound";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
@@ -46,8 +48,24 @@ export default function LoginScreen() {
   // «Войти»: the stripes darken one by one, then the email screen (already
   // dark) takes over; coming back, they light up again the same way.
   const [leaving, setLeaving] = useState(false);
+  // the logo glides down from where Welcome left it
+  const handoff = useRef(takeLogoHandoff()).current;
+  const logoRef = useRef<any>(null);
+  const logoY = useSharedValue(0);
+  const logoO = useSharedValue(handoff == null ? 1 : 0);
+  const onLogoLayout = () => {
+    if (handoff == null) return;
+    logoRef.current?.measureInWindow((_x: number, y: number, _w: number, h: number) => {
+      logoY.value = handoff - (y + h / 2);
+      logoO.value = 1;
+      logoY.value = withTiming(0, { duration: 1100, easing: Easing.inOut(Easing.cubic) });
+    });
+  };
+  const logoStyle = useAnimatedStyle(() => ({ opacity: logoO.value, transform: [{ translateY: logoY.value }] }));
+
   const goEmail = () => {
     if (leaving) return;
+    playUi("tapSecondary");
     setLeaving(true);
     setTimeout(() => router.push("/(auth)/email"), 950);
   };
@@ -97,33 +115,38 @@ export default function LoginScreen() {
   }, [busy, user]);
 
   const handleGoogle = async () => {
+    if (!configured) playUi("tapPrimary");
     if (!configured) {
       Alert.alert(pickLang(lang, { ru: "Вход", en: "Sign in", kk: "Кіру" }), pickLang(lang, { ru: "Авторизация не настроена. Добавь Firebase-ключи в Replit Secrets.", en: "Sign-in isn't configured. Add the Firebase keys to Replit Secrets.", kk: "Авторизация бапталмаған. Firebase кілттерін Replit Secrets-ке қосыңыз." }));
       return;
     }
+    playUi("tapPrimary");
     setBusy("google");
     await signInWithGoogle();
   };
 
   const handleApple = async () => {
+    if (!configured) playUi("tapPrimary");
     if (!configured) {
       Alert.alert(pickLang(lang, { ru: "Вход", en: "Sign in", kk: "Кіру" }), pickLang(lang, { ru: "Авторизация не настроена. Добавь Firebase-ключи в Replit Secrets.", en: "Sign-in isn't configured. Add the Firebase keys to Replit Secrets.", kk: "Авторизация бапталмаған. Firebase кілттерін Replit Secrets-ке қосыңыз." }));
       return;
     }
+    playUi("tapPrimary");
     setBusy("apple");
     await signInWithApple();
   };
 
 
   const handleOffline = async () => {
+    playUi("tapSoft");
     await continueOffline();
   };
 
   // Sign-in on the paywall's animated aurora (same component, 1:1): light
   // logo in the middle, the ways in at the bottom.
   const INK = "#262628";
-  // the logo is already in place (carried over from Welcome): the ways in rise soon
-  const UI_AT = 350;
+  // the ways in rise softly while the logo settles
+  const UI_AT = 650;
   const CREAM = "#FFF7F0";
 
   return (
@@ -133,8 +156,10 @@ export default function LoginScreen() {
 
       {/* the logo stays where Welcome left it */}
       <View style={s.center}>
-        <AnimatedBrandLogo width={rs(220)} color={CREAM} instant />
-        <Animated.View entering={FadeIn.delay(UI_AT + 300).duration(900)}>
+        <Animated.View ref={logoRef} onLayout={onLogoLayout} style={logoStyle}>
+          <AnimatedBrandLogo width={rs(220)} color={CREAM} instant />
+        </Animated.View>
+        <Animated.View entering={FadeIn.delay(UI_AT + 500).duration(1000)}>
           <QuoteRotator lang={lang} />
         </Animated.View>
       </View>
@@ -148,7 +173,7 @@ export default function LoginScreen() {
         </Animated.View>
       )}
 
-      <Animated.View entering={FadeInDown.delay(UI_AT).duration(700)} style={s.btns}>
+      <Animated.View entering={FadeInDown.delay(UI_AT).duration(900)} style={s.btns}>
         {/* Google — the main way in: bright glass with a breathing glow */}
         <Pressable style={({ pressed }) => [s.btn, s.black, { opacity: pressed ? 0.85 : 1 }]} onPress={handleGoogle} disabled={busy !== null}>
           <Ionicons name="logo-google" size={rs(19)} color="#FFFFFF" />

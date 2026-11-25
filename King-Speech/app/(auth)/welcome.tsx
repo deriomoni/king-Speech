@@ -1,10 +1,11 @@
-// Welcome — the sign-in look: the dusk aurora draws itself out of black, the
-// logo lands as in the splash, then the white greeting fades up with one flare
+// Welcome — the sign-in look. The launch splash's logo hands over in place
+// (same size, same spot), then rises to the top while the dusk aurora draws
+// itself out of black; the white greeting fades up in the centre with one flare
 // of light. The language lives behind a globe button: tap it and
 // РУС / ҚАЗ / ENG roll out as circles. The black «Начать» comes last and fades
 // into sign-in, which keeps the same aurora and logo.
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Pressable, Platform, StatusBar } from "react-native";
+import { View, Text, StyleSheet, Pressable, Platform, StatusBar, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,19 +24,21 @@ import Animated, {
 import { useLang, Lang, LANG_NAMES } from "@/context/LangContext";
 import { rs } from "@/lib/responsive";
 import { useScreenMusic } from "@/lib/music";
-import { useSplashDone } from "@/lib/splashState";
+import { setLogoHandoff, useSplashDone } from "@/lib/splashState";
+import { playUi } from "@/lib/uiSound";
 import { AnimatedBrandLogo } from "@/components/AnimatedBrandLogo";
 import AuroraBackground, { AURORA_DUSK } from "@/components/subscription/AuroraBackground";
 
 const MaskedView = MaskedViewBase as unknown as React.ComponentType<any>;
 
 const CREAM = "#FFF7F0";
-const LOGO_AT = 700; // the aurora is drawing out of black meanwhile
-const GREET_AT = LOGO_AT + 1050; // with the wordmark sliding out
+const RISE_AT = 250; // the logo starts rising from the splash's centre
+const RISE_MS = 1300;
+const GREET_AT = RISE_AT + 700; // the greeting fades up as the logo clears the centre
 const APPEAR_MS = 1600; // greeting fades up
 const SHINE_MS = 1200; // the light sweeping through it
-const SUB_AT = GREET_AT + 700;
-const CTA_AT = GREET_AT + 1500;
+const SUB_AT = GREET_AT + 800;
+const CTA_AT = 3000;
 
 const LANG_ORDER: Lang[] = ["ru", "kk", "en"];
 const LANG_LABEL: Record<Lang, string> = { ru: "РУС", kk: "ҚАЗ", en: "ENG" };
@@ -132,7 +135,14 @@ function LangCircle({
   });
   return (
     <Animated.View pointerEvents={open ? "auto" : "none"} style={[s.langCircle, on && s.langCircleOn, style]}>
-      <Pressable onPress={onPress} accessibilityLabel={name} style={s.langHit}>
+      <Pressable
+        onPress={() => {
+          playUi("tapSoft");
+          onPress();
+        }}
+        accessibilityLabel={name}
+        style={s.langHit}
+      >
         <Text style={[s.langTxt, on && { color: "#000000" }]}>{label}</Text>
       </Pressable>
     </Animated.View>
@@ -164,7 +174,10 @@ function LangGlobe({ lang, onPick }: { lang: Lang; onPick: (l: Lang) => void }) 
         />
       ))}
       <Pressable
-        onPress={() => setOpen((v) => !v)}
+        onPress={() => {
+          playUi("tapSoft");
+          setOpen((v) => !v);
+        }}
         style={({ pressed }) => [s.globe, open && s.globeOpen, { opacity: pressed ? 0.8 : 1 }]}
         accessibilityLabel="Language"
       >
@@ -189,6 +202,12 @@ export default function WelcomeScreen() {
   const text = greeting.length > 11 && words.length > 1 ? `${words[0]}\n${words.slice(1).join(" ")}` : greeting;
 
   const run = useSplashDone();
+  const { width: W, height: H } = useWindowDimensions();
+  // the splash's logo, 1:1 — then it settles smaller, near the top
+  const splashW = Math.min(W * 0.64, rs(290));
+  const endScale = rs(220) / splashW;
+  const endY = topPad + rs(120) - H / 2;
+  const rise = useSharedValue(0);
   const sub = useSharedValue(0);
   const [ctaShown, setCtaShown] = useState(false);
   // after a language switch the greeting comes back right away
@@ -196,10 +215,15 @@ export default function WelcomeScreen() {
 
   useEffect(() => {
     if (!run) return;
+    rise.value = withDelay(RISE_AT, withTiming(1, { duration: RISE_MS, easing: Easing.inOut(Easing.cubic) }));
     sub.value = withDelay(SUB_AT, withTiming(1, { duration: 900, easing: Easing.out(Easing.quad) }));
     const id = setTimeout(() => setCtaShown(true), CTA_AT);
     return () => clearTimeout(id);
-  }, [run, sub]);
+  }, [run, rise, sub]);
+
+  const logoStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: rise.value * endY }, { scale: 1 + rise.value * (endScale - 1) }],
+  }));
 
   const subStyle = useAnimatedStyle(() => ({ opacity: sub.value, transform: [{ translateY: (1 - sub.value) * 10 }] }));
 
@@ -208,8 +232,12 @@ export default function WelcomeScreen() {
     setLang(l);
   };
 
-  // sign-in shares the aurora and the logo, so a plain fade is seamless
-  const start = () => router.push("/(auth)/login");
+  // sign-in shares the aurora; its logo glides down from where this one is
+  const start = () => {
+    playUi("tapPrimary");
+    setLogoHandoff(H / 2 + endY);
+    router.push("/(auth)/login");
+  };
 
   return (
     <View style={[s.root, { paddingTop: topPad, paddingBottom: bottomPad + rs(20) }]}>
@@ -217,18 +245,27 @@ export default function WelcomeScreen() {
       {/* black until the splash is gone, then the aurora draws out of it */}
       {run ? <AuroraBackground palette={AURORA_DUSK} dim={false} rim fromBlack shade={0} initialShade={0} /> : null}
 
+      {/* the splash's logo, already in place; it rises once the splash is gone */}
+      <View pointerEvents="none" style={s.logoLayer}>
+        <Animated.View style={logoStyle}>
+          <AnimatedBrandLogo width={splashW} color={CREAM} instant />
+        </Animated.View>
+      </View>
+
+      {/* the greeting sits in the very centre; the line under it hangs below */}
+      <View pointerEvents="none" style={s.logoLayer}>
+        <View>
+          {/* key = language: a new language fades up and shines again */}
+          <Greeting key={lang} text={text} run={run} delay={greetDelay} />
+          <Animated.Text style={[s.sub, s.subHang, subStyle]}>{t("welcomeSub")}</Animated.Text>
+        </View>
+      </View>
+
       <View style={s.topRow}>
         <LangGlobe lang={lang} onPick={chooseLang} />
       </View>
 
-      <View style={s.center}>
-        {run ? <AnimatedBrandLogo width={rs(220)} color={CREAM} delay={LOGO_AT} /> : null}
-        <View style={s.greetBox}>
-          {/* key = language: a new language fades up and shines again */}
-          <Greeting key={lang} text={text} run={run} delay={greetDelay} />
-          <Animated.Text style={[s.sub, subStyle]}>{t("welcomeSub")}</Animated.Text>
-        </View>
-      </View>
+      <View style={s.center} />
 
       <View style={s.btnBlock}>
         {ctaShown ? (
@@ -263,16 +300,14 @@ const s = StyleSheet.create({
     width: CIRCLE,
     height: CIRCLE,
     borderRadius: CIRCLE / 2,
-    backgroundColor: "rgba(10,8,30,0.45)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.28)",
+    backgroundColor: "#0A0A0C",
   },
-  langCircleOn: { backgroundColor: "#FFFFFF", borderColor: "#FFFFFF" },
+  langCircleOn: { backgroundColor: "#FFFFFF" },
   langHit: { flex: 1, alignItems: "center", justifyContent: "center" },
   langTxt: { fontSize: 11.5, letterSpacing: 0.4, color: "#FFFFFF", fontFamily: "Geologica_800ExtraBold" },
   center: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 },
-  // the logo sits in the middle as on sign-in; the words hang below it
-  greetBox: { position: "absolute", left: 24, right: 24, top: "50%", marginTop: rs(70), alignItems: "center" },
+  logoLayer: { position: "absolute", left: 0, right: 0, top: 0, bottom: 0, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 },
+  subHang: { position: "absolute", left: 0, right: 0, top: "100%", alignSelf: "center", maxWidth: undefined },
   greeting: {
     fontSize: 46,
     lineHeight: 50,
