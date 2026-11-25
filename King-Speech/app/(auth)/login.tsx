@@ -94,9 +94,6 @@ export default function LoginScreen() {
     await signInWithApple();
   };
 
-  const handleEmail = () => {
-    Alert.alert(pickLang(lang, { ru: "Скоро", en: "Coming soon", kk: "Жақында" }), pickLang(lang, { ru: "Вход по Email будет добавлен позже. Сейчас доступны Google и Apple.", en: "Email sign-in is coming later. Google and Apple are available now.", kk: "Email арқылы кіру кейінірек қосылады. Қазір Google мен Apple қолжетімді." }));
-  };
 
   const handleOffline = async () => {
     await continueOffline();
@@ -152,29 +149,31 @@ export default function LoginScreen() {
           </Pressable>
         )}
 
-        {/* Email */}
-        <Pressable style={({ pressed }) => [s.btn, s.black, { opacity: pressed ? 0.85 : 1 }]} onPress={handleEmail} disabled={busy !== null}>
-          <Ionicons name="mail-outline" size={rs(19)} color="#FFFFFF" />
-          <Text style={[s.btnTxt, { color: "#FFFFFF" }]}>
-            {pickLang(lang, { ru: "Войти по email", en: "Continue with email", kk: "Email арқылы кіру" })}
-          </Text>
-        </Pressable>
       </Animated.View>
 
-      {/* Continue offline — always available as a fallback (AsyncStorage only). */}
+      {/* Email + password sign-in / sign-up */}
       <Pressable
         style={({ pressed }) => [s.skipBtn, { opacity: pressed ? 0.6 : 1 }]}
-        onPress={handleOffline}
+        onPress={() => router.push("/(auth)/email")}
         disabled={busy !== null}
         hitSlop={10}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: rs(8) }}>
-          <Text style={[s.skipBtnTxt, { color: "rgba(255,247,240,0.75)" }]}>
-            {pickLang(lang, { ru: "Продолжить без входа", en: "Continue without signing in", kk: "Кірмей жалғастыру" })}
+          <Text style={[s.skipBtnTxt, { color: "#FFFFFF" }]}>
+            {pickLang(lang, { ru: "Войти", en: "Sign in", kk: "Кіру" })}
           </Text>
-          <NextChevron color="rgba(255,247,240,0.75)" size={rs(13)} />
+          <NextChevron color="#FFFFFF" size={rs(13)} />
         </View>
       </Pressable>
+
+      {/* Dev only: no Firebase keys yet → still let the team into the app. */}
+      {__DEV__ && !configured ? (
+        <Pressable onPress={handleOffline} disabled={busy !== null} hitSlop={8} style={{ alignSelf: "center", marginTop: rs(10) }}>
+          <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontFamily: "Geologica_600SemiBold" }}>
+            dev: продолжить без входа
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }

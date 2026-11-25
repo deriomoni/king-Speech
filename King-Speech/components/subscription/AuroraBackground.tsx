@@ -39,13 +39,16 @@ const BANDS = [
 /** Sign-in palette (the glowing-card reference): deep navy → blue → lavender →
  *  orange → pink → hot red, back through violet to navy. */
 export const AURORA_DUSK = [
-  "#05031A",
-  "#0D2897",
-  "#5E52A8",
-  "#C46A2E",
-  "#B8508E",
-  "#4A1F86",
-  "#05031A",
+  "#1C0F52",
+  "#1838B8",
+  "#6A5AC4",
+  "#FFB42E",
+  "#FFF1B8",
+  "#FF8E3A",
+  "#FF4FAE",
+  "#FFC6EA",
+  "#B0309E",
+  "#1C0F52",
 ] as const;
 
 // three periods (column = exactly 3 periods tall) so the scroll wraps seamlessly
@@ -80,7 +83,7 @@ const STRIPES = 9;
 const SLICES = 8;
 const SOFT_COLUMNS = STRIPES * SLICES;
 /** how far the gradient climbs across one stripe (share of the period) */
-const SAW = 0.15;
+const SAW = 0.12;
 const LOOP_MS = 18000;
 
 function Column({
@@ -132,15 +135,17 @@ function Column({
             {
               backgroundColor:
                 slice === 0
-                  ? "rgba(0,0,0,0.22)"
-                  : `rgba(255,255,255,${(0.015 + 0.075 * (slice / (SLICES - 1)) ** 2).toFixed(3)})`,
+                  ? "rgba(0,0,0,0.10)"
+                  : slice === 1
+                    ? "rgba(0,0,0,0.04)"
+                    : `rgba(255,255,255,${(0.01 + 0.06 * (slice / (SLICES - 1)) ** 2).toFixed(3)})`,
             },
           ]}
         />
       ) : null}
       {soft && slice === SLICES - 1 ? (
         <LinearGradient
-          colors={["rgba(255,255,255,0)", "rgba(255,255,255,0.32)"]}
+          colors={["rgba(255,255,255,0)", "rgba(255,255,255,0.18)"]}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
           style={StyleSheet.absoluteFill}

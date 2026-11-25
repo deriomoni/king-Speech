@@ -17,6 +17,9 @@ import {
   onAuthStateChanged,
   signOut as fbSignOut,
   signInWithCredential,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   GoogleAuthProvider,
   OAuthProvider,
   type User as FirebaseUser,
@@ -61,6 +64,11 @@ interface AuthContextValue {
   signIn: (method: AuthMethod) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
+  /** Email + password: true on success, otherwise authError is set. */
+  signInWithEmail: (email: string, password: string) => Promise<boolean>;
+  signUpWithEmail: (email: string, password: string) => Promise<boolean>;
+  resetPassword: (email: string) => Promise<boolean>;
+  clearAuthError: () => void;
   continueOffline: () => Promise<void>;
   saveProfile: (name: string, gender: Gender) => Promise<void>;
   setPhotoURL: (url: string) => Promise<void>;
@@ -77,6 +85,10 @@ const AuthContext = createContext<AuthContextValue>({
   signIn: async () => {},
   signInWithGoogle: async () => {},
   signInWithApple: async () => {},
+  signInWithEmail: async () => false,
+  signUpWithEmail: async () => false,
+  resetPassword: async () => false,
+  clearAuthError: () => {},
   continueOffline: async () => {},
   saveProfile: async () => {},
   setPhotoURL: async () => {},
@@ -183,7 +195,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               gender: "male",
               authMethod: (fbUser.providerData[0]?.providerId.includes("apple")
                 ? "apple"
-                : "google") as AuthMethod,
+                : fbUser.providerData[0]?.providerId === "password"
+                  ? "email"
+                  : "google") as AuthMethod,
               // If the provider already gave us a usable display name, treat
               // the profile as complete (gender defaults to "male" — the user
               // can change it later in Profile). This avoids forcing a manual
@@ -453,6 +467,80 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // ── Email + password (Firebase Auth) ─────────────────────────────────────
+  // Firebase error codes → short, human messages in the UI language.
+  const emailError = (code: string | undefined) => {
+    switch (code) {
+      case "auth/invalid-email":
+        return tx({ ru: "Проверь email — похоже, в нём опечатка.", en: "Check the email — it looks mistyped.", kk: "Email-ді тексеріңіз — қате терілген сияқты." });
+      case "auth/missing-password":
+      case "auth/weak-password":
+        return tx({ ru: "Пароль должен быть не короче 6 символов.", en: "The password must be at least 6 characters.", kk: "Құпиясөз кемінде 6 таңбадан тұруы керек." });
+      case "auth/email-already-in-use":
+        return tx({ ru: "Этот email уже зарегистрирован — просто войди.", en: "This email is already registered — just sign in.", kk: "Бұл email тіркелген — жай ғана кіріңіз." });
+      case "auth/invalid-credential":
+      case "auth/wrong-password":
+      case "auth/user-not-found":
+        return tx({ ru: "Неверный email или пароль.", en: "Wrong email or password.", kk: "Email немесе құпиясөз қате." });
+      case "auth/too-many-requests":
+        return tx({ ru: "Слишком много попыток. Подожди немного и попробуй снова.", en: "Too many attempts. Wait a bit and try again.", kk: "Әрекет тым көп. Біраз күтіп, қайталаңыз." });
+      case "auth/network-request-failed":
+        return tx({ ru: "Нет соединения с интернетом.", en: "No internet connection.", kk: "Интернет байланысы жоқ." });
+      default:
+        return tx({ ru: "Не удалось войти. Попробуй ещё раз.", en: "Couldn't sign in. Please try again.", kk: "Кіру мүмкін болмады. Тағы байқап көріңіз." });
+    }
+  };
+  const notConfigured = () =>
+    setAuthError(tx({ ru: "Авторизация не настроена. Добавь Firebase-ключи.", en: "Sign-in isn't configured. Add the Firebase keys.", kk: "Авторизация бапталмаған. Firebase кілттерін қосыңыз." }));
+
+  const signInWithEmail = useCallback(async (email: string, password: string) => {
+    setAuthError(null);
+    if (!firebaseConfigured || !fbAuth) {
+      notConfigured();
+      return false;
+    }
+    try {
+      await signInWithEmailAndPassword(fbAuth, email.trim(), password);
+      return true; // onAuthStateChanged loads the profile and the screen routes on
+    } catch (e: any) {
+      setAuthError(emailError(e?.code));
+      return false;
+    }
+  }, []);
+
+  const signUpWithEmail = useCallback(async (email: string, password: string) => {
+    setAuthError(null);
+    if (!firebaseConfigured || !fbAuth) {
+      notConfigured();
+      return false;
+    }
+    try {
+      // a new account has no name yet → profile-setup asks for it
+      await createUserWithEmailAndPassword(fbAuth, email.trim(), password);
+      return true;
+    } catch (e: any) {
+      setAuthError(emailError(e?.code));
+      return false;
+    }
+  }, []);
+
+  const resetPassword = useCallback(async (email: string) => {
+    setAuthError(null);
+    if (!firebaseConfigured || !fbAuth) {
+      notConfigured();
+      return false;
+    }
+    try {
+      await sendPasswordResetEmail(fbAuth, email.trim());
+      return true;
+    } catch (e: any) {
+      setAuthError(emailError(e?.code));
+      return false;
+    }
+  }, []);
+
+  const clearAuthError = useCallback(() => setAuthError(null), []);
+
   // Offline / guest mode — used when Firebase is not configured OR the user
   // explicitly chooses to skip cloud auth. Creates a local-only profile
   // cached in AsyncStorage. GameContext continues to work entirely from
@@ -573,6 +661,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signIn,
         signInWithGoogle,
         signInWithApple,
+        signInWithEmail,
+        signUpWithEmail,
+        resetPassword,
+        clearAuthError,
         continueOffline,
         saveProfile,
         setPhotoURL,
