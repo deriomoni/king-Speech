@@ -165,9 +165,9 @@ export default function EmailAuthScreen() {
           <Pressable
             onPress={submit}
             disabled={!canSubmit}
-            style={({ pressed }) => [s.btn, { opacity: !canSubmit ? 0.5 : pressed ? 0.85 : 1 }]}
+            style={({ pressed }) => [s.btn, { opacity: pressed ? 0.85 : 1 }]}
           >
-            <Text style={s.btnTxt}>
+            <Text style={[s.btnTxt, !canSubmit && { color: "rgba(255,255,255,0.45)" }]}>
               {isUp ? tr({ ru: "Зарегистрироваться", en: "Create account", kk: "Тіркелу" }) : tr({ ru: "Войти", en: "Sign in", kk: "Кіру" })}
             </Text>
             {busy ? (

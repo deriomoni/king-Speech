@@ -54,6 +54,10 @@ export interface UserProfile {
   profileCompleted: boolean;
   onboardingCompleted: boolean;
   createdAt: string;
+  /** Age bracket picked at sign-up (e.g. "18-24"). */
+  age?: string;
+  /** Sign-up questionnaire: question id → chosen option ids. */
+  survey?: Record<string, string[]>;
 }
 
 interface AuthContextValue {
@@ -71,6 +75,10 @@ interface AuthContextValue {
   clearAuthError: () => void;
   continueOffline: () => Promise<void>;
   saveProfile: (name: string, gender: Gender) => Promise<void>;
+  /** Sign-up step 1: name + age (profile not complete until the survey). */
+  saveProfileDraft: (name: string, age: string) => Promise<void>;
+  /** Sign-up step 2: questionnaire answers — completes the profile. */
+  saveSurvey: (answers: Record<string, string[]>) => Promise<void>;
   setPhotoURL: (url: string) => Promise<void>;
   completeOnboarding: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -91,6 +99,8 @@ const AuthContext = createContext<AuthContextValue>({
   clearAuthError: () => {},
   continueOffline: async () => {},
   saveProfile: async () => {},
+  saveProfileDraft: async () => {},
+  saveSurvey: async () => {},
   setPhotoURL: async () => {},
   completeOnboarding: async () => {},
   signOut: async () => {},
@@ -602,6 +612,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user, persistProfile],
   );
 
+  const saveProfileDraft = useCallback(
+    async (name: string, age: string) => {
+      const current =
+        user ??
+        ({
+          id: firebaseUserRef.current?.uid ?? genId(),
+          name: "",
+          gender: "male",
+          authMethod: "email",
+          profileCompleted: false,
+          onboardingCompleted: false,
+          createdAt: new Date().toISOString(),
+        } as UserProfile);
+      await persistProfile({ ...current, name, age, nameEditedByUser: true, profileCompleted: false });
+    },
+    [user, persistProfile],
+  );
+
+  const saveSurvey = useCallback(
+    async (answers: Record<string, string[]>) => {
+      if (!user) return;
+      await persistProfile({ ...user, survey: answers, profileCompleted: true });
+    },
+    [user, persistProfile],
+  );
+
   const setPhotoURL = useCallback(
     async (url: string) => {
       if (!user) return;
@@ -667,6 +703,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearAuthError,
         continueOffline,
         saveProfile,
+        saveProfileDraft,
+        saveSurvey,
         setPhotoURL,
         completeOnboarding,
         signOut,

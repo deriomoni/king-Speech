@@ -211,7 +211,8 @@ function ReadinessGate({
       return;
     }
     if (!u.profileCompleted) {
-      if (sub !== "profile-setup") router.replace("/(auth)/profile-setup");
+      // name + age, then the short questionnaire, complete the profile
+      if (sub !== "profile-setup" && sub !== "survey") router.replace("/(auth)/profile-setup");
       return;
     }
     if (!u.onboardingCompleted) {
