@@ -55,6 +55,14 @@ const tripled = (b: readonly string[]) => [...b, ...b.slice(1), ...b.slice(1)];
 
 const hexRgb = (h: string) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 const rgbHex = (c: number[]) => "#" + c.map((v) => Math.round(v).toString(16).padStart(2, "0")).join("");
+/** The same colour, darker: value scaled down, saturation nudged up — hue kept. */
+function deepen(hex: string, k = 0.42): string {
+  const [r, g, b] = hexRgb(hex);
+  const m = (r + g + b) / 3;
+  const sat = 1.15;
+  return rgbHex([r, g, b].map((v) => Math.max(0, Math.min(255, (m + (v - m) * sat) * k))));
+}
+
 /** Adds eased (smoothstep) in-between tones so neighbouring colours melt into each other. */
 function blended(b: readonly string[], steps = 4): string[] {
   const out: string[] = [];
@@ -85,34 +93,6 @@ const SOFT_COLUMNS = STRIPES * SLICES;
 const SAW = 0.12;
 const LOOP_MS = 18000;
 
-/** A dark veil over one stripe; stripes darken one after another (left → right). */
-function StripeShade({
-  k,
-  W,
-  shadeV,
-  max,
-}: {
-  k: number;
-  W: number;
-  shadeV: SharedValue<number>;
-  max: number;
-}) {
-  const sw = W / STRIPES;
-  const style = useAnimatedStyle(() => {
-    // each stripe takes 40% of the sweep; starts spread over the rest
-    const start = (k / (STRIPES - 1)) * 0.6;
-    const p = Math.min(1, Math.max(0, (shadeV.value - start) / 0.4));
-    const e = p * p * (3 - 2 * p);
-    return { opacity: e * max };
-  });
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[{ position: "absolute", top: 0, bottom: 0, left: Math.floor(k * sw), width: Math.ceil(sw) + 1, backgroundColor: "#05031A" }, style]}
-    />
-  );
-}
-
 function Column({
   i,
   colW,
@@ -121,8 +101,13 @@ function Column({
   stops,
   locs,
   soft,
+  darkStops,
+  shadeV,
 }: {
   soft: boolean;
+  /** the same gradient, recoloured darker (soft mode) */
+  darkStops?: string[];
+  shadeV?: SharedValue<number>;
   i: number;
   colW: number;
   period: number;
@@ -146,11 +131,27 @@ function Column({
         period * 0.04 * Math.sin(TAU * (x * 1.8 - 2 * t) + 1.3);
     return { transform: [{ translateY: -period * t + wave + saw - period * 0.15 }] };
   });
+  // stripes recolour one after another, left → right
+  const darkStyle = useAnimatedStyle(() => {
+    if (!shadeV) return { opacity: 0 };
+    const start = (stripe / (STRIPES - 1)) * 0.6;
+    const p = Math.min(1, Math.max(0, (shadeV.value - start) / 0.4));
+    return { opacity: p * p * (3 - 2 * p) };
+  });
   return (
     <Animated.View
       style={[{ position: "absolute", top: 0, left: Math.floor(i * colW), width: Math.ceil(colW) + 1, height: period * 3 }, style]}
     >
       <LinearGradient colors={stops as unknown as readonly [string, string, ...string[]]} locations={locs as unknown as readonly [number, number, ...number[]]} style={StyleSheet.absoluteFill} />
+      {soft && darkStops ? (
+        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, darkStyle]}>
+          <LinearGradient
+            colors={darkStops as unknown as readonly [string, string, ...string[]]}
+            locations={locs as unknown as readonly [number, number, ...number[]]}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
+      ) : null}
       {soft ? (
         // fluted glass: every stripe is a rounded glass blade — shaded where
         // it begins, catching more light across its width, with a bright
@@ -189,15 +190,12 @@ export default function AuroraBackground({
   grain = false,
   shade = 0,
   initialShade,
-  shadeMax = 0.5,
   shadeMs = 650,
 }: {
-  /** Darken the stripes one by one (0 = clear, 1 = dark) — animated on change. */
+  /** Recolour the stripes darker one by one (0 = normal, 1 = dark) — animated on change. */
   shade?: number;
   /** Where the darkening starts on mount (default: = shade, no animation). */
   initialShade?: number;
-  /** Opacity of a fully shaded stripe. */
-  shadeMax?: number;
   shadeMs?: number;
   /** Fine film grain on top. */
   grain?: boolean;
@@ -211,6 +209,7 @@ export default function AuroraBackground({
   const { width: W, height: H } = useWindowDimensions();
   const stops = React.useMemo(() => (palette ? tripled(blended(palette)) : STOPS), [palette]);
   const locs = React.useMemo(() => (palette ? locsOf(stops) : LOCS), [palette, stops]);
+  const darkStops = React.useMemo(() => (palette ? stops.map((c) => deepen(c)) : undefined), [palette, stops]);
   // one palette period ≈ 1.15 screens: about one band of each colour on screen
   // custom palettes (sign-in) read as one calm sweep: a longer period
   const period = H * (palette ? 2.2 : 1.15);
@@ -218,6 +217,8 @@ export default function AuroraBackground({
   const colW = W / cols;
   const clock = useSharedValue(0);
   const shadeV = useSharedValue(initialShade ?? shade);
+  // the rim dims together with the recolour
+  const rimStyle = useAnimatedStyle(() => ({ opacity: 1 - 0.65 * shadeV.value }));
   useEffect(() => {
     shadeV.value = withTiming(shade, { duration: shadeMs, easing: Easing.inOut(Easing.quad) });
   }, [shade, shadeMs, shadeV]);
@@ -231,13 +232,8 @@ export default function AuroraBackground({
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.root]}>
       {Array.from({ length: cols }, (_, i) => (
-        <Column key={i} i={i} colW={colW} period={period} clock={clock} stops={stops} locs={locs} soft={!!palette} />
+        <Column key={i} i={i} colW={colW} period={period} clock={clock} stops={stops} locs={locs} soft={!!palette} darkStops={darkStops} shadeV={shadeV} />
       ))}
-      {palette
-        ? Array.from({ length: STRIPES }, (_, k) => (
-            <StripeShade key={`sh${k}`} k={k} W={W} shadeV={shadeV} max={shadeMax} />
-          ))
-        : null}
       {/* keep the UI readable: deep top and bottom, softer middle */}
       {dim ? (
         <LinearGradient
@@ -255,6 +251,7 @@ export default function AuroraBackground({
       ) : null}
       {rim ? (
         // the glowing rim of the reference card, along the screen edges (static)
+        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, rimStyle]}>
         <Svg width={W} height={H} style={StyleSheet.absoluteFill}>
           <Defs>
             <SvgLinearGradient id="auroraRim" x1="0" y1="0" x2="0" y2="1">
@@ -280,6 +277,7 @@ export default function AuroraBackground({
             opacity={0.6}
           />
         </Svg>
+        </Animated.View>
       ) : null}
     </View>
   );
