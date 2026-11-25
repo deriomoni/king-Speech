@@ -18,7 +18,7 @@ import { useLang, pickLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { KingSpeechLogo } from "@/components/auth/AuthUI";
-import AuroraBackground from "@/components/subscription/AuroraBackground";
+import AuroraBackground, { AURORA_DUSK } from "@/components/subscription/AuroraBackground";
 import { rs } from "@/lib/responsive";
 
 export default function LoginScreen() {
@@ -108,9 +108,9 @@ export default function LoginScreen() {
   const CREAM = "#FFF7F0";
 
   return (
-    <View style={[s.root, { backgroundColor: "#08061A", paddingTop: topPad, paddingBottom: bottomPad + rs(20) }]}>
+    <View style={[s.root, { backgroundColor: "#070423", paddingTop: topPad, paddingBottom: bottomPad + rs(20) }]}>
       <StatusBar barStyle="light-content" />
-      <AuroraBackground />
+      <AuroraBackground palette={AURORA_DUSK} dim={false} rim />
 
       <Animated.View entering={FadeIn.duration(500)} style={s.center}>
         <KingSpeechLogo color={CREAM} width={220} />
@@ -209,7 +209,7 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(10,8,30,0.38)",
   },
   notConfiguredTxt: {
     flex: 1,
@@ -228,8 +228,9 @@ const s = StyleSheet.create({
     justifyContent: "center",
     gap: 10,
   },
+  // dark glass: reads on navy and on the bright pink / orange alike
   glass: {
-    backgroundColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "rgba(10,8,30,0.38)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.22)",
   },
@@ -246,6 +247,9 @@ const s = StyleSheet.create({
     marginTop: 18,
   },
   skipBtnTxt: {
+    textShadowColor: "rgba(10,8,30,0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
     fontSize: 15,
     fontFamily: "Geologica_700Bold",
     textAlign: "center",
