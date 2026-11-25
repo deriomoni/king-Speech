@@ -9,6 +9,7 @@ import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
+import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   Easing,
   FadeIn,
@@ -276,7 +277,7 @@ export default function AppTour() {
             <Text style={[s.count, { color: soft }]}>
               {i + 1} / {STEPS.length}
             </Text>
-            {step.kind !== "done" ? (
+            {step.kind !== "done" && step.kind !== "hello" ? (
               <Pressable onPress={skip} hitSlop={10}>
                 <Text style={[s.skip, { color: soft }]}>{tr({ ru: "Пропустить", en: "Skip", kk: "Өткізу" })}</Text>
               </Pressable>
@@ -286,12 +287,6 @@ export default function AppTour() {
           {centered ? (
             <View style={s.oscar}>
               <OscarMascot emotion={step.kind === "done" ? "happy" : "hi"} size={rs(130)} />
-            </View>
-          ) : null}
-
-          {step.kind === "section" ? (
-            <View style={[s.badge, { backgroundColor: GOLD }]}>
-              <step.s.Icon size={rs(22)} color="#262628" />
             </View>
           ) : null}
 
@@ -312,16 +307,35 @@ export default function AppTour() {
             </View>
           ) : null}
 
-          <View style={s.btns}>
-            {i > 0 && step.kind !== "done" ? (
-              <Pressable onPress={back} hitSlop={8} style={({ pressed }) => [s.backBtn, { borderColor: line, opacity: pressed ? 0.7 : 1 }]}>
-                <Text style={[s.backTxt, { color: ink }]}>{tr({ ru: "Назад", en: "Back", kk: "Артқа" })}</Text>
-              </Pressable>
-            ) : null}
-            <Pressable onPress={next} style={({ pressed }) => [s.nextBtn, { opacity: pressed ? 0.85 : 1 }]}>
+          {centered ? (
+            // hello / done: one black button
+            <Pressable
+              onPress={next}
+              style={({ pressed }) => [s.nextBtn, dark && s.nextBtnDark, { opacity: pressed ? 0.85 : 1 }]}
+            >
               <Text style={s.nextTxt}>{nextLabel}</Text>
             </Pressable>
-          </View>
+          ) : (
+            // in between: just two triangles pointing the way
+            <View style={s.arrows}>
+              <Pressable
+                onPress={back}
+                hitSlop={10}
+                accessibilityLabel={tr({ ru: "Назад", en: "Back", kk: "Артқа" })}
+                style={({ pressed }) => [s.arrow, { opacity: pressed ? 0.5 : 1 }]}
+              >
+                <Ionicons name="caret-back" size={rs(30)} color={ink} />
+              </Pressable>
+              <Pressable
+                onPress={next}
+                hitSlop={10}
+                accessibilityLabel={tr({ ru: "Дальше", en: "Next", kk: "Әрі қарай" })}
+                style={({ pressed }) => [s.arrow, { opacity: pressed ? 0.5 : 1 }]}
+              >
+                <Ionicons name="caret-forward" size={rs(30)} color={ink} />
+              </Pressable>
+            </View>
+          )}
         </Animated.View>
       </View>
     </Animated.View>
@@ -345,17 +359,17 @@ const s = StyleSheet.create({
   count: { fontSize: 13, fontFamily: "Geologica_700Bold", letterSpacing: 0.3 },
   skip: { fontSize: 14, fontFamily: "Geologica_600SemiBold" },
   oscar: { alignItems: "center", marginBottom: 8 },
-  badge: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center", marginBottom: 12 },
   title: { fontSize: 24, lineHeight: 29, letterSpacing: -0.4, fontFamily: "Geologica_900Black" },
   body: { marginTop: 8, fontSize: 16, lineHeight: 22, fontFamily: "Geologica_500Medium" },
   center: { textAlign: "center" },
   list: { marginTop: 12 },
   row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 9 },
-  rowName: { width: rs(96), fontSize: 16, fontFamily: "Geologica_800ExtraBold" },
+  rowName: { width: rs(124), fontSize: 16, fontFamily: "Geologica_800ExtraBold" },
   rowShort: { flex: 1, fontSize: 14, fontFamily: "Geologica_500Medium" },
-  btns: { flexDirection: "row", gap: 10, marginTop: 20 },
-  backBtn: { height: 54, paddingHorizontal: 20, borderRadius: 27, borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
-  backTxt: { fontSize: 16, fontFamily: "Geologica_700Bold" },
-  nextBtn: { flex: 1, height: 54, borderRadius: 27, backgroundColor: GOLD, alignItems: "center", justifyContent: "center" },
-  nextTxt: { fontSize: 17, color: "#262628", fontFamily: "Geologica_800ExtraBold" },
+  nextBtn: { marginTop: 20, height: 54, borderRadius: 27, backgroundColor: "#0A0A0C", alignItems: "center", justifyContent: "center" },
+  // on the dark card the black button keeps a faint edge
+  nextBtnDark: { borderWidth: 1, borderColor: "rgba(255,255,255,0.14)" },
+  nextTxt: { fontSize: 17, color: "#FFFFFF", fontFamily: "Geologica_800ExtraBold" },
+  arrows: { marginTop: 16, flexDirection: "row", justifyContent: "space-between", marginHorizontal: -8 },
+  arrow: { width: 48, height: 44, alignItems: "center", justifyContent: "center" },
 });
