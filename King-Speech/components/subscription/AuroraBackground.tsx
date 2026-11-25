@@ -16,6 +16,7 @@ import Animated, {
   Easing,
   useAnimatedStyle,
   useFrameCallback,
+  makeMutable,
   runOnJS,
   useSharedValue,
   withTiming,
@@ -99,6 +100,11 @@ const SOFT_COLUMNS = STRIPES * SLICES;
 /** how far the gradient climbs across one stripe (share of the period) */
 const SAW = 0.12;
 const LOOP_MS = 18000;
+// Where the loop starts when the first aurora appears (0..1): navy and blue on
+// top, violet through the middle, the orange just rising at the bottom.
+export const AURORA_START_PHASE = 0.64;
+// one epoch for every copy, so screens fading over each other stay in phase
+const epoch = makeMutable(-1);
 
 function Column({
   i,
@@ -238,7 +244,8 @@ export default function AuroraBackground({
   // the clock follows the frame timestamp (system time), so every copy of the
   // aurora — e.g. sign-in and the email screen fading over it — is in phase
   useFrameCallback((frame) => {
-    clock.value = (frame.timestamp % LOOP_MS) / LOOP_MS;
+    if (epoch.value < 0) epoch.value = frame.timestamp - AURORA_START_PHASE * LOOP_MS;
+    clock.value = (((frame.timestamp - epoch.value) % LOOP_MS) + LOOP_MS) % LOOP_MS / LOOP_MS;
   });
 
   return (
