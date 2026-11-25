@@ -12,7 +12,7 @@ import { rs } from "@/lib/responsive";
  * gold glow behind the title, a 4pt pale rim and 32pt corners, over a dimmed
  * stage. Also the renderer behind the shared AppDialog (every app pop-up).
  */
-export type GlassBtnVariant = "primary" | "secondary" | "link";
+export type GlassBtnVariant = "primary" | "secondary" | "link" | "danger";
 
 export interface GlassBtn {
   label: string;
@@ -131,7 +131,8 @@ export default function StageGlassDialog({
                     </Pressable>
                   );
                 }
-                const primary = v === "primary" && !b.disabled;
+                const danger = v === "danger" && !b.disabled;
+                const primary = (v === "primary" || danger) && !b.disabled;
                 return (
                   <Pressable
                     key={i}
@@ -140,7 +141,9 @@ export default function StageGlassDialog({
                     accessibilityState={{ disabled: !!b.disabled }}
                     style={({ pressed }) => [
                       stacked ? styles.btnHug : styles.btn,
-                      primary
+                      danger
+                        ? { backgroundColor: "#E5483B", borderColor: "#B8322A", borderWidth: 4 }
+                        : primary
                         ? { backgroundColor: theme.accent, borderColor: theme.ctaStroke, borderWidth: 4 }
                         : { backgroundColor: secFill, borderColor: secStroke, borderWidth: 1.5 },
                       { opacity: b.disabled ? 0.6 : pressed ? 0.85 : 1 },
@@ -149,7 +152,7 @@ export default function StageGlassDialog({
                     <Text
                       style={[
                         primary || b.disabled ? (stacked ? styles.btnTextHug : styles.btnTextPrimary) : styles.btnTextSecondary,
-                        { color: primary ? theme.accentText : theme.text },
+                        { color: danger ? "#FFFFFF" : primary ? theme.accentText : theme.text },
                       ]}
                     >
                       {b.label}

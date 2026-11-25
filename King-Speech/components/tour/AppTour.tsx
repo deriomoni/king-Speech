@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import Svg, { Defs, LinearGradient as SvgGradient, Path, Stop } from "react-native-svg";
 import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   Easing,
@@ -222,8 +223,8 @@ export default function AppTour() {
   };
 
   const dark = themeMode === "dark";
-  const card = dark ? "rgba(32,32,36,0.55)" : "rgba(255,255,255,0.62)";
-  const edge = dark ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.75)";
+  const card = dark ? "rgba(62,62,68,0.6)" : "rgba(255,255,255,0.8)";
+  const edge = dark ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.95)";
   const ink = dark ? "#F0EEE9" : "#262628";
   const soft = dark ? "rgba(240,238,233,0.62)" : "rgba(38,38,40,0.62)";
   const line = dark ? "rgba(240,238,233,0.08)" : "rgba(38,38,40,0.07)";
@@ -279,11 +280,11 @@ export default function AppTour() {
           <AnimatedPath animatedProps={dimProps} fill="rgba(0,0,0,0.72)" fillRule="evenodd" />
           <Defs>
             <SvgGradient id="tourRing" x1="0" y1="0" x2="1" y2="1">
-              <Stop offset="0" stopColor="#FFE9A0" />
-              <Stop offset="0.3" stopColor="#FFB42E" />
-              <Stop offset="0.55" stopColor="#FF8E3A" />
-              <Stop offset="0.8" stopColor="#C2338F" />
-              <Stop offset="1" stopColor="#6A22C8" />
+              <Stop offset="0" stopColor="#FFFFFF" />
+              <Stop offset="0.35" stopColor="#FFF1C2" />
+              <Stop offset="0.6" stopColor="#FFD857" />
+              <Stop offset="0.85" stopColor="#F2B632" />
+              <Stop offset="1" stopColor="#FFF6DA" />
             </SvgGradient>
           </Defs>
           {/* soft glow under the line */}
@@ -296,7 +297,21 @@ export default function AppTour() {
 
       <View pointerEvents="box-none" style={[s.cardWrap, cardPos]}>
         <Animated.View key={i} entering={FadeInDown.duration(420)} style={[s.card, { backgroundColor: card, borderColor: edge }]}>
-          <BlurView intensity={40} tint={dark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
+          <BlurView intensity={60} tint={dark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
+          {/* a bright sheen across the top of the glass */}
+          <LinearGradient
+            pointerEvents="none"
+            colors={[dark ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.7)", "rgba(255,255,255,0)"]}
+            style={[StyleSheet.absoluteFill, { bottom: "55%" }]}
+          />
+          {/* the lit tab below throws a warm reflex onto the card's lower edge */}
+          {!centered ? (
+            <LinearGradient
+              pointerEvents="none"
+              colors={["rgba(255,216,87,0)", dark ? "rgba(255,216,87,0.16)" : "rgba(255,206,70,0.22)"]}
+              style={[StyleSheet.absoluteFill, { top: "45%" }]}
+            />
+          ) : null}
           <View style={s.head}>
             <Text style={[s.count, { color: soft }]}>
               {i + 1} / {STEPS.length}
@@ -305,7 +320,7 @@ export default function AppTour() {
 
           {centered ? (
             <View style={s.oscar}>
-              <OscarMascot emotion={step.kind === "done" ? "happy" : "hi"} size={rs(130)} />
+              <OscarMascot emotion={step.kind === "done" ? "happy" : "hi"} size={step.kind === "done" ? rs(190) : rs(130)} />
             </View>
           ) : null}
 

@@ -13,7 +13,7 @@ import StageGlassDialog, { type GlassBtn } from "@/components/showtime/StageGlas
  *
  * Public API unchanged — use it instead of hand-rolling a <Modal>.
  */
-export type AppDialogButtonVariant = "primary" | "secondary";
+export type AppDialogButtonVariant = "primary" | "secondary" | "danger";
 
 export interface AppDialogButton {
   label: string;
@@ -41,7 +41,7 @@ export default function AppDialog({
   const glassButtons: GlassBtn[] = buttons.map((b) => ({
     label: b.label,
     onPress: b.onPress,
-    variant: single || b.variant === "primary" ? "primary" : "secondary",
+    variant: b.variant === "danger" ? "danger" : single || b.variant === "primary" ? "primary" : "secondary",
   }));
 
   return (

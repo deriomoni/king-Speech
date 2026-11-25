@@ -26,6 +26,7 @@ import { rs } from "@/lib/responsive";
 import { useScreenMusic } from "@/lib/music";
 import { setLogoHandoff, useSplashDone } from "@/lib/splashState";
 import { playUi } from "@/lib/uiSound";
+import * as Haptics from "@/lib/haptics";
 import { AnimatedBrandLogo } from "@/components/AnimatedBrandLogo";
 import AuroraBackground, { AURORA_DUSK } from "@/components/subscription/AuroraBackground";
 
@@ -234,7 +235,6 @@ export default function WelcomeScreen() {
 
   // sign-in shares the aurora; its logo glides down from where this one is
   const start = () => {
-    playUi("tapPrimary");
     setLogoHandoff(H / 2 + endY);
     router.push("/(auth)/login");
   };
@@ -270,8 +270,25 @@ export default function WelcomeScreen() {
       <View style={s.btnBlock}>
         {ctaShown ? (
           <Animated.View entering={FadeInDown.duration(700)}>
-            <Pressable onPress={start} style={({ pressed }) => [s.btn, { opacity: pressed ? 0.85 : 1 }]}>
-              <Text style={s.btnTxt}>{t("start")}</Text>
+            <Pressable
+              onPressIn={() => {
+                playUi("tapPrimary");
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+              }}
+              onPress={start}
+              style={s.btn3d}
+            >
+              {({ pressed }) => (
+                <>
+                  {/* the base: the button's thickness */}
+                  <View style={s.btnBase} />
+                  {/* the face: sinks into the base while pressed */}
+                  <View style={[s.btnFace, { transform: [{ translateY: pressed ? DEPTH - 1 : 0 }] }]}>
+                    <LinearGradient colors={["#2C2C31", "#0B0B0D"]} style={StyleSheet.absoluteFill} />
+                    <Text style={s.btnTxt}>{t("start")}</Text>
+                  </View>
+                </>
+              )}
             </Pressable>
           </Animated.View>
         ) : null}
@@ -281,6 +298,8 @@ export default function WelcomeScreen() {
 }
 
 const CIRCLE = 46;
+const GLOW_PAD = 32;
+const DEPTH = 6; // how far the «Начать» face sits above its base
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000000" },
@@ -316,11 +335,13 @@ const s = StyleSheet.create({
     color: "#FFFFFF",
     fontFamily: "Geologica_900Black",
   },
+  // the glow's box is padded out so the light never gets cut at the edges
   glow: {
     position: "absolute",
-    left: 0,
-    right: 0,
-    top: 0,
+    left: -GLOW_PAD,
+    right: -GLOW_PAD,
+    top: -GLOW_PAD,
+    padding: GLOW_PAD,
     textShadowColor: "rgba(255,255,255,0.95)",
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 22,
@@ -337,7 +358,17 @@ const s = StyleSheet.create({
     fontFamily: "Geologica_500Medium",
     maxWidth: 320,
   },
-  btnBlock: { height: 58, marginHorizontal: 24 },
-  btn: { height: 58, borderRadius: 32, backgroundColor: "#0A0A0C", alignItems: "center", justifyContent: "center" },
+  btnBlock: { height: 58 + DEPTH, marginHorizontal: 24 },
+  btn3d: { height: 58 + DEPTH },
+  btnBase: { position: "absolute", left: 0, right: 0, top: DEPTH, height: 58, borderRadius: 32, backgroundColor: "#000000" },
+  btnFace: {
+    height: 58,
+    borderRadius: 32,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.16)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   btnTxt: { fontSize: 17, color: "#FFFFFF", fontFamily: "Geologica_800ExtraBold" },
 });

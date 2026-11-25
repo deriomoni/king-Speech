@@ -131,7 +131,7 @@ export default function AccountScreen() {
         { label: pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" }), onPress: closeDialog },
         {
           label: pickLang(lang, { ru: "Сбросить", en: "Reset", kk: "Тастау" }),
-          variant: "primary",
+          variant: "danger",
           onPress: () => {
             closeDialog();
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -149,7 +149,7 @@ export default function AccountScreen() {
         { label: pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" }), onPress: closeDialog },
         {
           label: pickLang(lang, { ru: "Удалить", en: "Delete", kk: "Жою" }),
-          variant: "primary",
+          variant: "danger",
           onPress: async () => {
             closeDialog();
             // TODO(design): call a real account-deletion API (Firebase user + data
@@ -248,26 +248,30 @@ export default function AccountScreen() {
               {pickLang(lang, { ru: "Выйти из аккаунта", en: "Sign out", kk: "Аккаунттан шығу" })}
             </Text>
           </Pressable>
-          <View style={[styles.divider, { backgroundColor: theme.divider }]} />
-          <Pressable
-            onPress={confirmReset}
-            style={({ pressed }) => [styles.row, styles.rowIcon, pressed && { backgroundColor: theme.rowPressed }]}
-          >
-            <Ionicons name="refresh" size={rs(21)} color={theme.text} style={{ transform: [{ scaleX: -1 }] }} />
-            <Text style={[styles.rowLabel, { color: theme.text, flex: 1, marginLeft: rs(12) }]}>
-              {pickLang(lang, { ru: "Сбросить прогресс", en: "Reset progress", kk: "Прогресті тастау" })}
-            </Text>
-            <Chevron />
-          </Pressable>
         </View>
 
-        {/* Delete account */}
-        <Pressable
-          onPress={confirmDelete}
-          style={({ pressed }) => [styles.deleteBtn, { opacity: pressed ? 0.8 : 1 }]}
-        >
-          <Text style={styles.deleteText}>{pickLang(lang, { ru: "Удалить аккаунт", en: "Delete account", kk: "Аккаунтты жою" })}</Text>
-        </Pressable>
+        {/* The irreversible two, side by side on their own plaque */}
+        <View style={[styles.card, styles.dangerCard, { backgroundColor: theme.card, borderColor: stroke }]}>
+          <Pressable
+            onPress={confirmReset}
+            style={({ pressed }) => [styles.dangerHalf, pressed && { backgroundColor: theme.rowPressed }]}
+          >
+            <Ionicons name="refresh" size={rs(22)} color={theme.text} style={{ transform: [{ scaleX: -1 }] }} />
+            <Text style={[styles.dangerLabel, { color: theme.text }]}>
+              {pickLang(lang, { ru: "Сбросить прогресс", en: "Reset progress", kk: "Прогресті тастау" })}
+            </Text>
+          </Pressable>
+          <View style={[styles.dangerDivider, { backgroundColor: theme.divider }]} />
+          <Pressable
+            onPress={confirmDelete}
+            style={({ pressed }) => [styles.dangerHalf, pressed && { backgroundColor: theme.rowPressed }]}
+          >
+            <Ionicons name="trash-outline" size={rs(22)} color="#FF6B5E" />
+            <Text style={[styles.dangerLabel, { color: "#FF6B5E" }]}>
+              {pickLang(lang, { ru: "Удалить аккаунт", en: "Delete account", kk: "Аккаунтты жою" })}
+            </Text>
+          </Pressable>
+        </View>
         <Text style={[styles.deleteNote, { color: ink(0.5) }]}>
           {pickLang(lang, { ru: "Удалятся профиль, записи, прогресс и монеты. Восстановить их будет нельзя.", en: "Your profile, recordings, progress and coins will be deleted. This can't be undone.", kk: "Профиль, жазбалар, прогресс пен монеталар жойылады. Оларды қалпына келтіру мүмкін болмайды." })}
         </Text>
@@ -351,18 +355,10 @@ const styles = StyleSheet.create({
   rowLabel: { fontSize: 15, fontFamily: "Geologica_400Regular" },
   rowValue: { fontSize: 14, fontFamily: "Geologica_400Regular", flexShrink: 1 },
   divider: { height: 1, marginHorizontal: 16 },
-  deleteBtn: {
-    marginTop: 80,
-    marginHorizontal: 20,
-    height: 52,
-    borderRadius: 26,
-    borderWidth: 2,
-    borderColor: "rgba(255,90,78,0.25)",
-    backgroundColor: "rgba(255,90,78,0.1)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  deleteText: { color: "#FF6B5E", fontSize: 15, fontFamily: "Geologica_600SemiBold" },
+  dangerCard: { marginTop: 40, flexDirection: "row" },
+  dangerHalf: { flex: 1, minHeight: 92, paddingVertical: 14, paddingHorizontal: 10, alignItems: "center", justifyContent: "center", gap: 8 },
+  dangerDivider: { width: 1, marginVertical: 16 },
+  dangerLabel: { fontSize: 14, lineHeight: 18, textAlign: "center", fontFamily: "Geologica_600SemiBold" },
   deleteNote: {
     marginTop: 12,
     alignSelf: "center",

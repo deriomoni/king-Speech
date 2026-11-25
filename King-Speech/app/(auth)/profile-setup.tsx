@@ -1,5 +1,5 @@
 // Sign-up, step 1 — a short scene on black, hosted by Oscar:
-//   Oscar: «Здравствуйте! Меня зовут Оскар.» → «А как вас зовут?»
+//   3 s of pure black, then Oscar: «Здравствуйте! Меня зовут Оскар.» → «А как вас зовут?»
 //   → Oscar steps away, the question settles as the title, the name field appears
 //   → (return key) Oscar again: «{Имя}, рад знакомству!» → steps away
 //   → «Сколько вам лет?» with the options fading in
@@ -16,7 +16,7 @@ import OscarMascot from "@/components/OscarMascot";
 import { rs } from "@/lib/responsive";
 import { playUi } from "@/lib/uiSound";
 
-type Phase = "hello" | "ask" | "name" | "greet" | "age";
+type Phase = "blank" | "hello" | "ask" | "name" | "greet" | "age";
 type L = { ru: string; en: string; kk: string };
 
 const AGES: { id: string; label: L }[] = [
@@ -30,6 +30,7 @@ const AGES: { id: string; label: L }[] = [
   { id: "67plus", label: { ru: "67+", en: "67+", kk: "67+" } },
 ];
 
+const BLANK_MS = 3000; // pure black first — then Oscar
 const HELLO_MS = 2200; // «Здравствуйте! Меня зовут Оскар.»
 const ASK_MS = 1700; // «А как вас зовут?» before it becomes the title
 const GREET_MS = 2200; // «{Имя}, рад знакомству!»
@@ -41,7 +42,7 @@ export default function ProfileSetupScreen() {
   const tr = (v: L) => pickLang(lang, v);
   const { saveProfileDraft, user } = useAuth();
 
-  const [phase, setPhase] = useState<Phase>("hello");
+  const [phase, setPhase] = useState<Phase>("blank");
   const [name, setName] = useState(user?.name ?? "");
   const [age, setAge] = useState<string | null>(null);
 
@@ -51,7 +52,8 @@ export default function ProfileSetupScreen() {
   // the scene's timeline
   useEffect(() => {
     let id: ReturnType<typeof setTimeout> | undefined;
-    if (phase === "hello") id = setTimeout(() => setPhase("ask"), HELLO_MS);
+    if (phase === "blank") id = setTimeout(() => setPhase("hello"), BLANK_MS);
+    else if (phase === "hello") id = setTimeout(() => setPhase("ask"), HELLO_MS);
     else if (phase === "ask") id = setTimeout(() => setPhase("name"), ASK_MS);
     else if (phase === "greet") id = setTimeout(() => setPhase("age"), GREET_MS);
     return () => {
