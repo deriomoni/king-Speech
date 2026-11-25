@@ -40,11 +40,14 @@ export function AnimatedBrandLogo({
   color,
   delay = 0,
   onDone,
+  instant = false,
 }: {
   width: number;
   color: string;
   delay?: number;
   onDone?: () => void;
+  /** already in place — no intro (e.g. the logo carried over from Welcome) */
+  instant?: boolean;
 }) {
   const k = width / LOGO_FULL_W;
   const h = LOGO_H * k;
@@ -57,15 +60,16 @@ export function AnimatedBrandLogo({
   // of the crown rather than out of empty space
   const maskW = gap + textW;
 
-  const crownOpacity = useSharedValue(0);
-  const crownScale = useSharedValue(0.72);
-  const groupX = useSharedValue(startShift);
-  const kingX = useSharedValue(-maskW);
-  const kingO = useSharedValue(0);
-  const speechX = useSharedValue(-maskW);
-  const speechO = useSharedValue(0);
+  const crownOpacity = useSharedValue(instant ? 1 : 0);
+  const crownScale = useSharedValue(instant ? 1 : 0.72);
+  const groupX = useSharedValue(instant ? 0 : startShift);
+  const kingX = useSharedValue(instant ? 0 : -maskW);
+  const kingO = useSharedValue(instant ? 1 : 0);
+  const speechX = useSharedValue(instant ? 0 : -maskW);
+  const speechO = useSharedValue(instant ? 1 : 0);
 
   useEffect(() => {
+    if (instant) return;
     const slide = (at: number) => withDelay(delay + at, withTiming(0, { duration: SLIDE_DUR, easing: EASE_OUT }));
     crownOpacity.value = withDelay(delay, withTiming(1, { duration: CROWN_IN, easing: EASE_OUT }));
     crownScale.value = withDelay(delay, withSpring(1, { damping: 15, stiffness: 105, mass: 1 }));

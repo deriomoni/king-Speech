@@ -17,17 +17,14 @@ import Animated, {
   Easing,
   FadeIn,
   FadeInDown,
-  runOnJS,
-  useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import { BlurView } from "expo-blur";
 import { useLang, pickLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
-import { AnimatedBrandLogo, LOGO_INTRO_MS } from "@/components/AnimatedBrandLogo";
+import { AnimatedBrandLogo } from "@/components/AnimatedBrandLogo";
 import AuroraBackground, { AURORA_DUSK } from "@/components/subscription/AuroraBackground";
 import { rs } from "@/lib/responsive";
 
@@ -49,15 +46,6 @@ export default function LoginScreen() {
   // «Войти»: the stripes darken one by one, then the email screen (already
   // dark) takes over; coming back, they light up again the same way.
   const [leaving, setLeaving] = useState(false);
-  // arriving from Welcome: the screen starts blurred and clears
-  const arriveBlur = useSharedValue(1);
-  const [blurOn, setBlurOn] = useState(true);
-  useEffect(() => {
-    arriveBlur.value = withTiming(0, { duration: 1100, easing: Easing.out(Easing.quad) }, (done) => {
-      if (done) runOnJS(setBlurOn)(false);
-    });
-  }, [arriveBlur]);
-  const arriveBlurProps = useAnimatedProps(() => ({ intensity: arriveBlur.value * 60 }));
   const goEmail = () => {
     if (leaving) return;
     setLeaving(true);
@@ -134,18 +122,18 @@ export default function LoginScreen() {
   // Sign-in on the paywall's animated aurora (same component, 1:1): light
   // logo in the middle, the ways in at the bottom.
   const INK = "#262628";
-  // buttons and links rise in once the logo has landed
-  const UI_AT = 700 + LOGO_INTRO_MS - 600;
+  // the logo is already in place (carried over from Welcome): the ways in rise soon
+  const UI_AT = 350;
   const CREAM = "#FFF7F0";
 
   return (
     <View style={[s.root, { backgroundColor: "#070423", paddingTop: topPad, paddingBottom: bottomPad + rs(20) }]}>
       <StatusBar barStyle="light-content" />
-      <AuroraBackground palette={AURORA_DUSK} dim={false} rim fromBlack shade={leaving ? 1 : 0} initialShade={0} />
+      <AuroraBackground palette={AURORA_DUSK} dim={false} rim shade={leaving ? 1 : 0} initialShade={0} />
 
-      {/* the logo arrives exactly like the launch splash's */}
+      {/* the logo stays where Welcome left it */}
       <View style={s.center}>
-        <AnimatedBrandLogo width={rs(220)} color={CREAM} delay={700} />
+        <AnimatedBrandLogo width={rs(220)} color={CREAM} instant />
         <Animated.View entering={FadeIn.delay(UI_AT + 300).duration(900)}>
           <QuoteRotator lang={lang} />
         </Animated.View>
@@ -216,14 +204,9 @@ export default function LoginScreen() {
         </Pressable>
         </Animated.View>
       ) : null}
-      {blurOn ? (
-        <AnimatedBlurView pointerEvents="none" tint="dark" animatedProps={arriveBlurProps} style={StyleSheet.absoluteFill} />
-      ) : null}
     </View>
   );
 }
-
-const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 // Why speaking matters — in the words of people who knew. One every 15 s.
 type LQ = { ru: string; en: string; kk: string };

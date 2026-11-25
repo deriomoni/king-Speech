@@ -1,19 +1,18 @@
-// Welcome — on black. Oscar rises in softly, the gold greeting fades up and,
-// once it's fully there, a bright light flares through it. The language lives
-// behind a globe button: tap it and РУС / ҚАЗ / ENG roll out as circles.
-// «Начать» appears after 3 s; pressing it blurs the screen out into sign-in.
+// Welcome — the sign-in look: the dusk aurora draws itself out of black, the
+// logo lands as in the splash, then the white greeting fades up with one flare
+// of light. The language lives behind a globe button: tap it and
+// РУС / ҚАЗ / ENG roll out as circles. The black «Начать» comes last and fades
+// into sign-in, which keeps the same aurora and logo.
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Pressable, Platform, StatusBar } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import MaskedViewBase from "@react-native-masked-view/masked-view";
 import Animated, {
   Easing,
   FadeInDown,
-  useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -25,22 +24,24 @@ import { useLang, Lang, LANG_NAMES } from "@/context/LangContext";
 import { rs } from "@/lib/responsive";
 import { useScreenMusic } from "@/lib/music";
 import { useSplashDone } from "@/lib/splashState";
-import OscarMascot from "@/components/OscarMascot";
+import { AnimatedBrandLogo } from "@/components/AnimatedBrandLogo";
+import AuroraBackground, { AURORA_DUSK } from "@/components/subscription/AuroraBackground";
 
 const MaskedView = MaskedViewBase as unknown as React.ComponentType<any>;
-const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
-const BRAND_GOLD = "#FFD857";
+const CREAM = "#FFF7F0";
+const LOGO_AT = 700; // the aurora is drawing out of black meanwhile
+const GREET_AT = LOGO_AT + 1050; // with the wordmark sliding out
 const APPEAR_MS = 1600; // greeting fades up
 const SHINE_MS = 1200; // the light sweeping through it
-const SUB_AT = 1700;
-const CTA_AT = 3000;
+const SUB_AT = GREET_AT + 700;
+const CTA_AT = GREET_AT + 1500;
 
 const LANG_ORDER: Lang[] = ["ru", "kk", "en"];
 const LANG_LABEL: Record<Lang, string> = { ru: "РУС", kk: "ҚАЗ", en: "ENG" };
 
 /** The greeting: fades up, then glows and a bright band of light runs through it. */
-function Greeting({ text, run }: { text: string; run: boolean }) {
+function Greeting({ text, run, delay }: { text: string; run: boolean; delay: number }) {
   const appear = useSharedValue(0);
   const glow = useSharedValue(0);
   const shine = useSharedValue(0);
@@ -48,17 +49,17 @@ function Greeting({ text, run }: { text: string; run: boolean }) {
 
   useEffect(() => {
     if (!run) return;
-    appear.value = withTiming(1, { duration: APPEAR_MS, easing: Easing.out(Easing.cubic) });
-    // once it's fully there: a flare of light, settling into a soft glow
+    appear.value = withDelay(delay, withTiming(1, { duration: APPEAR_MS, easing: Easing.out(Easing.cubic) }));
+    // once it's fully there: one flare of light that fades away
     glow.value = withDelay(
-      APPEAR_MS - 200,
+      delay + APPEAR_MS - 200,
       withSequence(
         withTiming(1, { duration: 500, easing: Easing.out(Easing.quad) }),
         withTiming(0, { duration: 1400, easing: Easing.inOut(Easing.quad) }),
       ),
     );
-    shine.value = withDelay(APPEAR_MS - 300, withTiming(1, { duration: SHINE_MS, easing: Easing.inOut(Easing.cubic) }));
-  }, [run, appear, glow, shine]);
+    shine.value = withDelay(delay + APPEAR_MS - 300, withTiming(1, { duration: SHINE_MS, easing: Easing.inOut(Easing.cubic) }));
+  }, [run, delay, appear, glow, shine]);
 
   const textStyle = useAnimatedStyle(() => ({
     opacity: appear.value,
@@ -69,7 +70,7 @@ function Greeting({ text, run }: { text: string; run: boolean }) {
 
   return (
     <Animated.View style={textStyle}>
-      {/* soft gold glow behind the letters */}
+      {/* soft white glow behind the letters */}
       <Animated.Text style={[s.greeting, s.glow, glowStyle]} pointerEvents="none">
         {text}
       </Animated.Text>
@@ -188,64 +189,56 @@ export default function WelcomeScreen() {
   const text = greeting.length > 11 && words.length > 1 ? `${words[0]}\n${words.slice(1).join(" ")}` : greeting;
 
   const run = useSplashDone();
-  const oscar = useSharedValue(0);
   const sub = useSharedValue(0);
-  const blur = useSharedValue(0);
-  const out = useSharedValue(1);
   const [ctaShown, setCtaShown] = useState(false);
+  // after a language switch the greeting comes back right away
+  const [greetDelay, setGreetDelay] = useState(GREET_AT);
 
   useEffect(() => {
     if (!run) return;
-    // Oscar: a slow, soft rise
-    oscar.value = withTiming(1, { duration: 1400, easing: Easing.out(Easing.cubic) });
     sub.value = withDelay(SUB_AT, withTiming(1, { duration: 900, easing: Easing.out(Easing.quad) }));
     const id = setTimeout(() => setCtaShown(true), CTA_AT);
     return () => clearTimeout(id);
-  }, [run, oscar, sub]);
+  }, [run, sub]);
 
-  const oscarStyle = useAnimatedStyle(() => ({
-    opacity: oscar.value,
-    transform: [{ translateY: (1 - oscar.value) * 30 }, { scale: 0.88 + oscar.value * 0.12 }],
-  }));
   const subStyle = useAnimatedStyle(() => ({ opacity: sub.value, transform: [{ translateY: (1 - sub.value) * 10 }] }));
-  const outStyle = useAnimatedStyle(() => ({ opacity: out.value }));
-  const blurProps = useAnimatedProps(() => ({ intensity: blur.value * 60 }));
 
-  const start = () => {
-    // the screen blurs out; sign-in then arrives blurred and clears
-    blur.value = withTiming(1, { duration: 500, easing: Easing.in(Easing.quad) });
-    out.value = withTiming(0, { duration: 650, easing: Easing.in(Easing.quad) });
-    setTimeout(() => router.push("/(auth)/login"), 520);
+  const chooseLang = (l: Lang) => {
+    setGreetDelay(0);
+    setLang(l);
   };
 
-  return (
-    <View style={[s.root, { paddingTop: topPad, paddingBottom: bottomPad + rs(16) }]}>
-      <StatusBar barStyle="light-content" />
-      <Animated.View style={[s.fill, outStyle]}>
-        <View style={s.topRow}>
-          <LangGlobe lang={lang} onPick={setLang} />
-        </View>
+  // sign-in shares the aurora and the logo, so a plain fade is seamless
+  const start = () => router.push("/(auth)/login");
 
-        <View style={s.center}>
-          <Animated.View style={[s.oscar, oscarStyle]}>
-            <OscarMascot emotion="hi" size={rs(190)} />
-          </Animated.View>
+  return (
+    <View style={[s.root, { paddingTop: topPad, paddingBottom: bottomPad + rs(20) }]}>
+      <StatusBar barStyle="light-content" />
+      {/* black until the splash is gone, then the aurora draws out of it */}
+      {run ? <AuroraBackground palette={AURORA_DUSK} dim={false} rim fromBlack shade={0} initialShade={0} /> : null}
+
+      <View style={s.topRow}>
+        <LangGlobe lang={lang} onPick={chooseLang} />
+      </View>
+
+      <View style={s.center}>
+        {run ? <AnimatedBrandLogo width={rs(220)} color={CREAM} delay={LOGO_AT} /> : null}
+        <View style={s.greetBox}>
           {/* key = language: a new language fades up and shines again */}
-          <Greeting key={lang} text={text} run={run} />
+          <Greeting key={lang} text={text} run={run} delay={greetDelay} />
           <Animated.Text style={[s.sub, subStyle]}>{t("welcomeSub")}</Animated.Text>
         </View>
+      </View>
 
-        <View style={s.btnBlock}>
-          {ctaShown ? (
-            <Animated.View entering={FadeInDown.duration(700)}>
-              <Pressable onPress={start} style={({ pressed }) => [s.btn, { opacity: pressed ? 0.85 : 1 }]}>
-                <Text style={s.btnTxt}>{t("start")}</Text>
-              </Pressable>
-            </Animated.View>
-          ) : null}
-        </View>
-      </Animated.View>
-      <AnimatedBlurView pointerEvents="none" tint="dark" animatedProps={blurProps} style={StyleSheet.absoluteFill} />
+      <View style={s.btnBlock}>
+        {ctaShown ? (
+          <Animated.View entering={FadeInDown.duration(700)}>
+            <Pressable onPress={start} style={({ pressed }) => [s.btn, { opacity: pressed ? 0.85 : 1 }]}>
+              <Text style={s.btnTxt}>{t("start")}</Text>
+            </Pressable>
+          </Animated.View>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -254,8 +247,7 @@ const CIRCLE = 46;
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000000" },
-  fill: { flex: 1 },
-  topRow: { flexDirection: "row", justifyContent: "flex-end", paddingHorizontal: 20, marginTop: 8, height: CIRCLE },
+  topRow: { flexDirection: "row", justifyContent: "flex-end", paddingHorizontal: 20, marginTop: 8, height: CIRCLE, zIndex: 2 },
   globeWrap: { width: CIRCLE, height: CIRCLE },
   globe: {
     width: CIRCLE,
@@ -271,21 +263,22 @@ const s = StyleSheet.create({
     width: CIRCLE,
     height: CIRCLE,
     borderRadius: CIRCLE / 2,
-    backgroundColor: "#1A1A1C",
+    backgroundColor: "rgba(10,8,30,0.45)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
+    borderColor: "rgba(255,255,255,0.28)",
   },
   langCircleOn: { backgroundColor: "#FFFFFF", borderColor: "#FFFFFF" },
   langHit: { flex: 1, alignItems: "center", justifyContent: "center" },
   langTxt: { fontSize: 11.5, letterSpacing: 0.4, color: "#FFFFFF", fontFamily: "Geologica_800ExtraBold" },
   center: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 },
-  oscar: { marginBottom: 14, alignItems: "center", justifyContent: "center" },
+  // the logo sits in the middle as on sign-in; the words hang below it
+  greetBox: { position: "absolute", left: 24, right: 24, top: "50%", marginTop: rs(70), alignItems: "center" },
   greeting: {
     fontSize: 46,
     lineHeight: 50,
     letterSpacing: -0.8,
     textAlign: "center",
-    color: BRAND_GOLD,
+    color: "#FFFFFF",
     fontFamily: "Geologica_900Black",
   },
   glow: {
@@ -293,7 +286,7 @@ const s = StyleSheet.create({
     left: 0,
     right: 0,
     top: 0,
-    textShadowColor: "rgba(255,216,87,0.95)",
+    textShadowColor: "rgba(255,255,255,0.95)",
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 22,
   },
@@ -302,11 +295,14 @@ const s = StyleSheet.create({
     fontSize: 16,
     lineHeight: 23,
     textAlign: "center",
-    color: "rgba(255,255,255,0.65)",
+    color: "rgba(255,247,240,0.9)",
+    textShadowColor: "rgba(10,8,30,0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
     fontFamily: "Geologica_500Medium",
     maxWidth: 320,
   },
   btnBlock: { height: 58, marginHorizontal: 24 },
-  btn: { height: 58, borderRadius: 32, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
-  btnTxt: { fontSize: 17, color: "#000000", fontFamily: "Geologica_800ExtraBold" },
+  btn: { height: 58, borderRadius: 32, backgroundColor: "#0A0A0C", alignItems: "center", justifyContent: "center" },
+  btnTxt: { fontSize: 17, color: "#FFFFFF", fontFamily: "Geologica_800ExtraBold" },
 });
