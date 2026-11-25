@@ -1,8 +1,8 @@
 /**
  * Oscar's voice — the onboarding lines recorded in Higgsfield (text2speech_v2,
  * voice «Andre», 30.05.2026; see the «Оскар — реплики онбординга» script).
- * Russian and English are recorded; Kazakh has none yet (its text runs on a
- * plain clock instead).
+ * Russian and English are fully recorded; Kazakh has everything but the
+ * send-off (25.11.2026), which stays text only.
  *
  * `useOscarVoice(line, enabled)` plays a line once while enabled and returns
  * where it is (ms since it started; -1 before; DONE once it has finished), so
@@ -34,15 +34,22 @@ const SOURCES: Partial<Record<Lang, Partial<Record<OscarLine, number>>>> = {
     welcome: require("@/assets/sounds/oscar/en-welcome.mp3"),
     intro: require("@/assets/sounds/oscar/en-intro.mp3"),
     greet: require("@/assets/sounds/oscar/en-greet.mp3"),
+    overview: require("@/assets/sounds/oscar/en-overview.mp3"),
     sendoff: require("@/assets/sounds/oscar/en-sendoff.mp3"),
+  },
+  kk: {
+    welcome: require("@/assets/sounds/oscar/kk-welcome.mp3"),
+    intro: require("@/assets/sounds/oscar/kk-intro.mp3"),
+    greet: require("@/assets/sounds/oscar/kk-greet.mp3"),
+    overview: require("@/assets/sounds/oscar/kk-overview.mp3"),
   },
 };
 
 /** Length of each recording (ms); for silent text, a reading-pace estimate. */
 export const LINE_MS: Record<Lang, Record<OscarLine, number>> = {
   ru: { welcome: 17360, intro: 5680, greet: 3040, overview: 20240, sendoff: 6640 },
-  en: { welcome: 18320, intro: 6160, greet: 3200, overview: 18500, sendoff: 7840 },
-  kk: { welcome: 0, intro: 6000, greet: 3200, overview: 19500, sendoff: 7000 },
+  en: { welcome: 18320, intro: 6160, greet: 3200, overview: 19760, sendoff: 7840 },
+  kk: { welcome: 11600, intro: 6080, greet: 3040, overview: 18880, sendoff: 7000 },
 };
 
 /** Phrase cues: `at` = ms into the line where the phrase begins. */
@@ -59,6 +66,11 @@ export const WELCOME_CUES: Partial<Record<Lang, Cue[]>> = {
     { at: 9450, text: "If you're eager to become a great speaker and sharpen your skills, I'm here to help." },
     { at: 14750, text: "Just press this button, and let's go do great things together!" },
   ],
+  kk: [
+    { at: 2250, text: "Осы жерде сенің сенімді сөйлеуге апаратын жолың басталады." },
+    { at: 6000, text: "Жақсы шешен болғың келсе, мен саған көмектесемін." },
+    { at: 9200, text: "Мына батырманы бас та, бірге бастайық!" },
+  ],
 };
 
 /** The overview, phrase by phrase; `focus` = what the spotlight shows meanwhile. */
@@ -71,18 +83,17 @@ export const OVERVIEW_CUES: Partial<Record<Lang, (Cue & { focus: OverviewFocus }
     { at: 10330, text: "Дальше у нас Show Time — твой личный зал, где ты можешь свободно выступать перед публикой на любимые темы.", focus: 2 },
     { at: 17580, text: "А ещё дальше — твой профиль и настройки.", focus: "profileSettings" },
   ],
-  // not recorded yet: the same tour on a silent clock
   en: [
     { at: 0, text: "So, let's start from the beginning.", focus: "bar" },
-    { at: 2500, text: "Your Path is where you'll complete tasks every day — from tongue twisters to real speeches.", focus: 0 },
-    { at: 9000, text: "Next up is Show Time, your own stage, where you can speak freely in front of an audience on topics you love.", focus: 2 },
-    { at: 15500, text: "And further on — your profile and settings.", focus: "profileSettings" },
+    { at: 2450, text: "Your Path is where you'll complete tasks every day — from tongue twisters to real speeches.", focus: 0 },
+    { at: 8850, text: "Next up is Show Time, your own stage, where you can speak freely in front of an audience on topics you love.", focus: 2 },
+    { at: 16650, text: "And further on — your profile and settings.", focus: "profileSettings" },
   ],
   kk: [
     { at: 0, text: "Ендеше, ретімен бастайық.", focus: "bar" },
-    { at: 2500, text: "«Жол» бөлімінде сен күн сайын тапсырма орындайсың: жаңылтпаштан бастап нағыз сөз сөйлеуге дейін.", focus: 0 },
-    { at: 9500, text: "Келесі — «Show Time». Бұл сенің жеке сахнаң: мұнда ұнайтын тақырыбың бойынша көрермен алдында сөйлей аласың.", focus: 2 },
-    { at: 16500, text: "Одан кейін — профиль мен баптаулар.", focus: "profileSettings" },
+    { at: 2200, text: "«Жол» бөлімінде сен күн сайын тапсырма орындайсың: жаңылтпаштан бастап нағыз сөз сөйлеуге дейін.", focus: 0 },
+    { at: 8620, text: "Келесі — «Show Time». Бұл сенің жеке сахнаң: мұнда ұнайтын тақырыбың бойынша көрермен алдында сөйлей аласың.", focus: 2 },
+    { at: 16520, text: "Одан кейін — профиль мен баптаулар.", focus: "profileSettings" },
   ],
 };
 

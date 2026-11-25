@@ -671,7 +671,7 @@ const translations = {
     okBtn: "OK",
   },
   kk: {
-    welcome: "Қош келдіңіз!",
+    welcome: "Қош келдің!",
     welcomeSub: "Сөйлеу дағдыларыңызды дамытыңыз",
     start: "Бастау",
     alreadyHaveAccount: "Аккаунтыңыз бар ма? Кіру",

@@ -36,7 +36,7 @@ const BLANK_MS = 3000; // pure black first — then Oscar
 // The scene follows Oscar's voice: «А как зовут тебя?» shows the moment he
 // starts saying it (ms into the intro recording), and each step moves on only
 // after his last word plus a short beat — nothing is ever cut off.
-const ASK_AT: Record<string, number> = { ru: 4800, en: 5200, kk: 4000 };
+const ASK_AT: Record<string, number> = { ru: 4800, en: 5200, kk: 4900 };
 const AFTER_LINE_MS = 600;
 
 export default function ProfileSetupScreen() {
@@ -117,7 +117,7 @@ export default function ProfileSetupScreen() {
       ? tr({
           ru: "Ах да, где же мои манеры? Забыл представиться: я — Оскар.",
           en: "Oh, where are my manners? I forgot to introduce myself — I'm Oscar.",
-          kk: "Әй, әдебім қайда? Танысуды ұмытып кетіппін: мен — Оскармын.",
+          kk: "Айтпақшы, өзімді таныстыруды ұмытып кетіппін. Менің атым — Оскар.",
         })
       : phase === "ask"
         ? tr({ ru: "А как зовут тебя?", en: "And what's your name?", kk: "Ал сенің атың кім?" })
