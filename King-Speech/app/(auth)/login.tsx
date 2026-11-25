@@ -18,7 +18,7 @@ import { useLang, pickLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { KingSpeechLogo } from "@/components/auth/AuthUI";
-import AuraBackground, { AURA_BASE } from "@/components/auth/AuraBackground";
+import AuroraBackground from "@/components/subscription/AuroraBackground";
 import { rs } from "@/lib/responsive";
 
 export default function LoginScreen() {
@@ -102,71 +102,72 @@ export default function LoginScreen() {
     await continueOffline();
   };
 
-  // Sign-in: the brand gold and nothing else — the logo in the middle, the
-  // ways in at the bottom.
+  // Sign-in on the paywall's animated aurora (same component, 1:1): light
+  // logo in the middle, the ways in at the bottom.
   const INK = "#262628";
+  const CREAM = "#FFF7F0";
 
   return (
-    <View style={[s.root, { backgroundColor: AURA_BASE, paddingTop: topPad, paddingBottom: bottomPad + rs(20) }]}>
-      <StatusBar barStyle="dark-content" />
-      <AuraBackground />
+    <View style={[s.root, { backgroundColor: "#08061A", paddingTop: topPad, paddingBottom: bottomPad + rs(20) }]}>
+      <StatusBar barStyle="light-content" />
+      <AuroraBackground />
 
       <Animated.View entering={FadeIn.duration(500)} style={s.center}>
-        <KingSpeechLogo color={INK} width={220} />
+        <KingSpeechLogo color={CREAM} width={220} />
       </Animated.View>
 
       {!configured && (
         <View style={s.notConfiguredBanner}>
-          <Ionicons name="warning-outline" size={rs(16)} color={INK} />
-          <Text style={[s.notConfiguredTxt, { color: "rgba(38,38,40,0.75)" }]}>
+          <Ionicons name="warning-outline" size={rs(16)} color={CREAM} />
+          <Text style={[s.notConfiguredTxt, { color: "rgba(255,247,240,0.75)" }]}>
             {pickLang(lang, { ru: "Облачная авторизация не настроена. Доступен только режим без входа.", en: "Cloud sign-in isn't configured. Only offline mode is available.", kk: "Бұлттық авторизация бапталмаған. Тек кірусіз режим қолжетімді." })}
           </Text>
         </View>
       )}
 
       <Animated.View entering={FadeInDown.delay(150).duration(500)} style={s.btns}>
-        {/* Google — the main way in: ink pill */}
+        {/* Google — the main way in: white pill */}
         <Pressable
-          style={({ pressed }) => [s.btn, { backgroundColor: INK, opacity: pressed ? 0.88 : 1 }]}
+          style={({ pressed }) => [s.btn, { backgroundColor: "#FFFFFF", opacity: pressed ? 0.88 : 1 }]}
           onPress={handleGoogle}
           disabled={busy !== null}
         >
-          <Ionicons name="logo-google" size={rs(19)} color="#FFFFFF" />
-          <Text style={[s.btnTxt, { color: "#FFFFFF" }]}>
+          <Ionicons name="logo-google" size={rs(19)} color={INK} />
+          <Text style={[s.btnTxt, { color: INK }]}>
             {pickLang(lang, { ru: "Войти через Google", en: "Continue with Google", kk: "Google арқылы кіру" })}
           </Text>
           {busy === "google" ? (
             <View style={s.busy}>
-              <ActivityIndicator size="small" color="#FFFFFF" />
+              <ActivityIndicator size="small" color={INK} />
             </View>
           ) : null}
         </Pressable>
 
-        {/* Apple — iOS only: white pill */}
+        {/* Apple — iOS only: glass pill */}
         {Platform.OS === "ios" && (
           <Pressable
-            style={({ pressed }) => [s.btn, { backgroundColor: "#FFFFFF", opacity: pressed ? 0.88 : 1 }]}
+            style={({ pressed }) => [s.btn, s.glass, { opacity: pressed ? 0.8 : 1 }]}
             onPress={handleApple}
             disabled={busy !== null}
           >
-            <Ionicons name="logo-apple" size={rs(20)} color={INK} />
-            <Text style={[s.btnTxt, { color: INK }]}>{t("continueApple")}</Text>
+            <Ionicons name="logo-apple" size={rs(20)} color={CREAM} />
+            <Text style={[s.btnTxt, { color: CREAM }]}>{t("continueApple")}</Text>
             {busy === "apple" ? (
               <View style={s.busy}>
-                <ActivityIndicator size="small" color={INK} />
+                <ActivityIndicator size="small" color={CREAM} />
               </View>
             ) : null}
           </Pressable>
         )}
 
-        {/* Email — quiet: ink wash on the gold */}
+        {/* Email — quiet glass */}
         <Pressable
-          style={({ pressed }) => [s.btn, { backgroundColor: "rgba(38,38,40,0.08)", opacity: pressed ? 0.7 : 1 }]}
+          style={({ pressed }) => [s.btn, s.glass, { opacity: pressed ? 0.7 : 1 }]}
           onPress={handleEmail}
           disabled={busy !== null}
         >
-          <Ionicons name="mail-outline" size={rs(19)} color={INK} />
-          <Text style={[s.btnTxt, { color: INK }]}>
+          <Ionicons name="mail-outline" size={rs(19)} color={CREAM} />
+          <Text style={[s.btnTxt, { color: CREAM }]}>
             {pickLang(lang, { ru: "Войти по email", en: "Continue with email", kk: "Email арқылы кіру" })}
           </Text>
         </Pressable>
@@ -180,10 +181,10 @@ export default function LoginScreen() {
         hitSlop={10}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: rs(8) }}>
-          <Text style={[s.skipBtnTxt, { color: "rgba(38,38,40,0.7)" }]}>
+          <Text style={[s.skipBtnTxt, { color: "rgba(255,247,240,0.75)" }]}>
             {pickLang(lang, { ru: "Продолжить без входа", en: "Continue without signing in", kk: "Кірмей жалғастыру" })}
           </Text>
-          <NextChevron color="rgba(38,38,40,0.7)" size={rs(13)} />
+          <NextChevron color="rgba(255,247,240,0.75)" size={rs(13)} />
         </View>
       </Pressable>
     </View>
@@ -208,7 +209,7 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 14,
-    backgroundColor: "rgba(38,38,40,0.08)",
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
   notConfiguredTxt: {
     flex: 1,
@@ -226,6 +227,11 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
+  },
+  glass: {
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.22)",
   },
   btnTxt: {
     fontSize: 17,
