@@ -36,6 +36,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { BrandSplash } from "@/components/BrandSplash";
 import { playUi, preloadUiSounds } from "@/lib/uiSound";
+import { markSplashDone } from "@/lib/splashState";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
 import { GameProvider, useGame } from "@/context/GameContext";
@@ -230,7 +231,13 @@ function ReadinessGate({
         </Animated.View>
       ) : null}
       {canShowLoadingScreen && !splashGone ? (
-        <BrandSplash ready={ready} onFinish={() => setSplashGone(true)} />
+        <BrandSplash
+          ready={ready}
+          onFinish={() => {
+            setSplashGone(true);
+            markSplashDone();
+          }}
+        />
       ) : null}
     </View>
   );

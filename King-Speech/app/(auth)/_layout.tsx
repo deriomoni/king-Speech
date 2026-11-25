@@ -2,10 +2,11 @@ import { Stack } from "expo-router";
 
 export default function AuthLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false, animation: "fade", gestureEnabled: false }}>
+    // every step of sign-up crossfades softly (longer than the default fade)
+    <Stack screenOptions={{ headerShown: false, animation: "fade", animationDuration: 450, gestureEnabled: false, contentStyle: { backgroundColor: "#000000" } }}>
       <Stack.Screen name="welcome" />
       <Stack.Screen name="login" />
-      <Stack.Screen name="email" options={{ animation: "fade", animationDuration: 250, gestureEnabled: true }} />
+      <Stack.Screen name="email" options={{ animation: "fade", animationDuration: 350, gestureEnabled: true }} />
       <Stack.Screen name="profile-setup" />
       <Stack.Screen name="survey" />
       <Stack.Screen name="onboarding" />
