@@ -75,7 +75,9 @@ export default function ProfileSetupScreen() {
             autoCapitalize="words"
             autoCorrect={false}
             textContentType="givenName"
-            returnKeyType="done"
+            returnKeyType="next"
+            enablesReturnKeyAutomatically
+            blurOnSubmit={false}
             onSubmitEditing={done}
             maxLength={32}
             style={s.input}
@@ -108,15 +110,6 @@ export default function ProfileSetupScreen() {
         </Animated.View>
       )}
 
-      {step === "name" ? (
-        <Pressable
-          onPress={done}
-          disabled={!canDone}
-          style={({ pressed }) => [s.btn, { opacity: !canDone ? 0.35 : pressed ? 0.85 : 1 }]}
-        >
-          <Text style={s.btnTxt}>{tr({ ru: "Готово", en: "Done", kk: "Дайын" })}</Text>
-        </Pressable>
-      ) : null}
     </KeyboardAvoidingView>
   );
 }

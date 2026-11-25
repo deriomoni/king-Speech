@@ -13,7 +13,16 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import Animated, {
+  Easing,
+  FadeIn,
+  FadeInDown,
+  runOnJS,
+  useAnimatedProps,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { BlurView } from "expo-blur";
 import { useLang, pickLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
@@ -39,6 +48,15 @@ export default function LoginScreen() {
   // «Войти»: the stripes darken one by one, then the email screen (already
   // dark) takes over; coming back, they light up again the same way.
   const [leaving, setLeaving] = useState(false);
+  // arriving from Welcome: the screen starts blurred and clears
+  const arriveBlur = useSharedValue(1);
+  const [blurOn, setBlurOn] = useState(true);
+  useEffect(() => {
+    arriveBlur.value = withTiming(0, { duration: 1100, easing: Easing.out(Easing.quad) }, (done) => {
+      if (done) runOnJS(setBlurOn)(false);
+    });
+  }, [arriveBlur]);
+  const arriveBlurProps = useAnimatedProps(() => ({ intensity: arriveBlur.value * 60 }));
   const goEmail = () => {
     if (leaving) return;
     setLeaving(true);
@@ -194,9 +212,14 @@ export default function LoginScreen() {
         </Pressable>
         </Animated.View>
       ) : null}
+      {blurOn ? (
+        <AnimatedBlurView pointerEvents="none" tint="dark" animatedProps={arriveBlurProps} style={StyleSheet.absoluteFill} />
+      ) : null}
     </View>
   );
 }
+
+const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 const s = StyleSheet.create({
   root: {
