@@ -18,6 +18,7 @@ import { useLang, pickLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { KingSpeechLogo } from "@/components/auth/AuthUI";
+import GlassPill from "@/components/auth/GlassPill";
 import AuroraBackground, { AURORA_DUSK } from "@/components/subscription/AuroraBackground";
 import { rs } from "@/lib/responsive";
 
@@ -110,7 +111,7 @@ export default function LoginScreen() {
   return (
     <View style={[s.root, { backgroundColor: "#070423", paddingTop: topPad, paddingBottom: bottomPad + rs(20) }]}>
       <StatusBar barStyle="light-content" />
-      <AuroraBackground palette={AURORA_DUSK} dim={false} rim />
+      <AuroraBackground palette={AURORA_DUSK} dim={false} rim grain />
 
       <Animated.View entering={FadeIn.duration(500)} style={s.center}>
         <KingSpeechLogo color={CREAM} width={220} />
@@ -126,30 +127,22 @@ export default function LoginScreen() {
       )}
 
       <Animated.View entering={FadeInDown.delay(150).duration(500)} style={s.btns}>
-        {/* Google — the main way in: white pill */}
-        <Pressable
-          style={({ pressed }) => [s.btn, { backgroundColor: "#FFFFFF", opacity: pressed ? 0.88 : 1 }]}
-          onPress={handleGoogle}
-          disabled={busy !== null}
-        >
-          <Ionicons name="logo-google" size={rs(19)} color={INK} />
-          <Text style={[s.btnTxt, { color: INK }]}>
+        {/* Google — the main way in: bright glass with a breathing glow */}
+        <GlassPill primary onPress={handleGoogle} disabled={busy !== null}>
+          <Ionicons name="logo-google" size={rs(19)} color={CREAM} />
+          <Text style={[s.btnTxt, { color: CREAM }]}>
             {pickLang(lang, { ru: "Войти через Google", en: "Continue with Google", kk: "Google арқылы кіру" })}
           </Text>
           {busy === "google" ? (
             <View style={s.busy}>
-              <ActivityIndicator size="small" color={INK} />
+              <ActivityIndicator size="small" color={CREAM} />
             </View>
           ) : null}
-        </Pressable>
+        </GlassPill>
 
-        {/* Apple — iOS only: glass pill */}
+        {/* Apple — iOS only: dark glass */}
         {Platform.OS === "ios" && (
-          <Pressable
-            style={({ pressed }) => [s.btn, s.glass, { opacity: pressed ? 0.8 : 1 }]}
-            onPress={handleApple}
-            disabled={busy !== null}
-          >
+          <GlassPill onPress={handleApple} disabled={busy !== null}>
             <Ionicons name="logo-apple" size={rs(20)} color={CREAM} />
             <Text style={[s.btnTxt, { color: CREAM }]}>{t("continueApple")}</Text>
             {busy === "apple" ? (
@@ -157,20 +150,16 @@ export default function LoginScreen() {
                 <ActivityIndicator size="small" color={CREAM} />
               </View>
             ) : null}
-          </Pressable>
+          </GlassPill>
         )}
 
-        {/* Email — quiet glass */}
-        <Pressable
-          style={({ pressed }) => [s.btn, s.glass, { opacity: pressed ? 0.7 : 1 }]}
-          onPress={handleEmail}
-          disabled={busy !== null}
-        >
+        {/* Email — dark glass */}
+        <GlassPill onPress={handleEmail} disabled={busy !== null}>
           <Ionicons name="mail-outline" size={rs(19)} color={CREAM} />
           <Text style={[s.btnTxt, { color: CREAM }]}>
             {pickLang(lang, { ru: "Войти по email", en: "Continue with email", kk: "Email арқылы кіру" })}
           </Text>
-        </Pressable>
+        </GlassPill>
       </Animated.View>
 
       {/* Continue offline — always available as a fallback (AsyncStorage only). */}
@@ -235,6 +224,9 @@ const s = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.22)",
   },
   btnTxt: {
+    textShadowColor: "rgba(10,8,30,0.35)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
     fontSize: 17,
     fontFamily: "Geologica_800ExtraBold",
   },

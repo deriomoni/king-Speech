@@ -8,7 +8,7 @@
 // nudged up/down by two sines of its x — neighbours differ by a few px, so
 // the bands read as continuous waves. Everything runs on the UI thread.
 import React, { useEffect } from "react";
-import { StyleSheet, View, useWindowDimensions } from "react-native";
+import { Image, StyleSheet, View, useWindowDimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, FeGaussianBlur, Filter, LinearGradient as SvgLinearGradient, Rect, Stop } from "react-native-svg";
 import Animated, {
@@ -39,13 +39,13 @@ const BANDS = [
 /** Sign-in palette (the glowing-card reference): deep navy → blue → lavender →
  *  orange → pink → hot red, back through violet to navy. */
 export const AURORA_DUSK = [
-  "#070423",
-  "#1238C8",
-  "#9C92D8",
-  "#F29A52",
-  "#F78AD6",
-  "#6A2BB8",
-  "#070423",
+  "#05031A",
+  "#0D2897",
+  "#5E52A8",
+  "#C46A2E",
+  "#B8508E",
+  "#4A1F86",
+  "#05031A",
 ] as const;
 
 // three periods (column = exactly 3 periods tall) so the scroll wraps seamlessly
@@ -138,7 +138,10 @@ export default function AuroraBackground({
   palette,
   dim = true,
   rim = false,
+  grain = false,
 }: {
+  /** Fine film grain on top. */
+  grain?: boolean;
   /** One palette period, top → bottom (default: the paywall's pink/indigo/orange). */
   palette?: readonly string[];
   /** Darken top and bottom for legibility (paywall). */
@@ -174,6 +177,13 @@ export default function AuroraBackground({
           style={StyleSheet.absoluteFill}
         />
       ) : null}
+      {grain ? (
+        <Image
+          source={require("@/assets/images/noise.png")}
+          resizeMode="repeat"
+          style={[StyleSheet.absoluteFill, { width: W, height: H, opacity: 0.09 }]}
+        />
+      ) : null}
       {rim ? (
         // the glowing rim of the reference card, along the screen edges (static)
         <Svg width={W} height={H} style={StyleSheet.absoluteFill}>
@@ -198,7 +208,7 @@ export default function AuroraBackground({
             stroke="url(#auroraRim)"
             strokeWidth={W * 0.18}
             filter="url(#auroraRimBlur)"
-            opacity={0.8}
+            opacity={0.6}
           />
         </Svg>
       ) : null}
