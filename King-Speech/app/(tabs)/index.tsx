@@ -64,7 +64,10 @@ const DAILY_TIP_KEY = "@kingspeech_daily_tip_seen_v1";
 function useDailyTip() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  // not during the first-run tour — the tip waits until it's over
+  const touring = !!user && !user.onboardingCompleted;
   useEffect(() => {
+    if (touring) return;
     const today = new Date().toDateString();
     AsyncStorage.getItem(DAILY_TIP_KEY)
       .then((seen) => {
@@ -73,7 +76,7 @@ function useDailyTip() {
         AsyncStorage.setItem(DAILY_TIP_KEY, today).catch(() => {});
       })
       .catch(() => {});
-  }, []);
+  }, [touring]);
   return { open, close: () => setOpen(false), tip: getDailyTip(new Date(), user?.createdAt) };
 }
 

@@ -178,8 +178,8 @@ function ReadinessGate({
   // correct stack based on their auth/onboarding state:
   //   no user                       -> /(auth)/welcome
   //   profile incomplete            -> /(auth)/profile-setup
-  //   onboarding incomplete         -> /(auth)/onboarding
-  //   fully ready                   -> /(tabs)
+  //   otherwise                     -> /(tabs) (the first time with the
+  //                                    guided tour on top — see AppTour)
   // Without this, a brand-new install would land straight in /(tabs) and
   // never see the real Google/Apple sign-in flow.
   const router = useRouter();
@@ -214,10 +214,6 @@ function ReadinessGate({
     if (!u.profileCompleted) {
       // name + age, then the short questionnaire, complete the profile
       if (sub !== "profile-setup" && sub !== "survey") router.replace("/(auth)/profile-setup");
-      return;
-    }
-    if (!u.onboardingCompleted) {
-      if (sub !== "onboarding") router.replace("/(auth)/onboarding");
       return;
     }
     if (inAuth) router.replace("/(tabs)");

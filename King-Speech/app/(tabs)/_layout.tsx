@@ -28,6 +28,8 @@ type BottomTabBarProps = {
   descriptors: Record<string, { options: { tabBarStyle?: unknown } }>;
 };
 import { useLang } from "@/context/LangContext";
+import { useAuth } from "@/context/AuthContext";
+import AppTour from "@/components/tour/AppTour";
 import { useTheme } from "@/context/ThemeContext";
 import { rs } from "@/lib/responsive";
 import {
@@ -230,7 +232,11 @@ function TabSlot({
 export default function TabLayout() {
   const { t } = useLang();
   const { theme } = useTheme();
+  const { user } = useAuth();
+  // first run (right after sign-up): the guided tour over the app
+  const showTour = !!user && !user.onboardingCompleted;
   return (
+    <View style={{ flex: 1 }}>
     <Tabs
       screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: theme.bg } }}
       tabBar={(props) => <SonicTabBar {...props} />}
@@ -241,6 +247,8 @@ export default function TabLayout() {
       <Tabs.Screen name="profile" options={{ title: t("tabProfile") }} />
       <Tabs.Screen name="settings" options={{ title: t("tabSettings") }} />
     </Tabs>
+    {showTour ? <AppTour /> : null}
+    </View>
   );
 }
 

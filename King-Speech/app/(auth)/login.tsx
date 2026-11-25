@@ -86,8 +86,6 @@ export default function LoginScreen() {
     setBusy(null);
     if (!user.profileCompleted) {
       router.replace("/(auth)/profile-setup");
-    } else if (!user.onboardingCompleted) {
-      router.replace("/(auth)/onboarding");
     } else {
       router.replace("/(tabs)");
     }
