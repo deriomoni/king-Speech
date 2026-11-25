@@ -213,7 +213,14 @@ function ReadinessGate({
     }
     if (!u.profileCompleted) {
       // name + age, then the short questionnaire, complete the profile
-      if (sub !== "profile-setup" && sub !== "survey") router.replace("/(auth)/profile-setup");
+      // (welcome / sign-in / email are dropped from the stack first, so they
+      // can't be swiped back to and don't linger mounted underneath)
+      if (sub !== "profile-setup" && sub !== "survey") {
+        try {
+          if (router.canDismiss()) router.dismissAll();
+        } catch {}
+        router.replace("/(auth)/profile-setup");
+      }
       return;
     }
     if (inAuth) router.replace("/(tabs)");

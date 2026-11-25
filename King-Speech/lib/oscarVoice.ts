@@ -109,6 +109,20 @@ const VOLUME = 1;
 
 type Handle = { stop: () => void };
 
+// Oscar has one voice: starting a line silences whatever he was saying before
+let speaking: Handle | null = null;
+function take(h: Handle): Handle {
+  speaking?.stop();
+  const own: Handle = {
+    stop: () => {
+      h.stop();
+      if (speaking === own) speaking = null;
+    },
+  };
+  speaking = own;
+  return own;
+}
+
 async function play(src: number, onPos: (ms: number) => void): Promise<Handle | null> {
   if (Platform.OS === "web") {
     try {
@@ -158,11 +172,12 @@ async function play(src: number, onPos: (ms: number) => void): Promise<Handle | 
  * starts, DONE after the last word). It stops when disabled or unmounted.
  */
 export function useOscarVoice(line: OscarLine | null, enabled = true, delayMs = 0): number {
-  const { lang } = useLang();
+  // wait for the saved language, so a line never starts in the wrong one
+  const { lang, isLoaded } = useLang();
   const [pos, setPos] = useState(-1);
   useEffect(() => {
     setPos(-1);
-    if (!enabled || !line) return;
+    if (!enabled || !line || !isLoaded) return;
     const src = SOURCES[lang as Lang]?.[line];
     const length = LINE_MS[lang as Lang]?.[line] ?? 0;
     let handle: Handle | null = null;
@@ -188,7 +203,7 @@ export function useOscarVoice(line: OscarLine | null, enabled = true, delayMs = 
         if (!gone) setPos(ms);
       }).then((h) => {
         if (gone) h?.stop();
-        else if (h) handle = h;
+        else if (h) handle = take(h);
         else runClock();
       });
     }, delayMs);
@@ -198,6 +213,6 @@ export function useOscarVoice(line: OscarLine | null, enabled = true, delayMs = 
       if (clock) clearInterval(clock);
       handle?.stop();
     };
-  }, [line, enabled, delayMs, lang]);
+  }, [line, enabled, delayMs, lang, isLoaded]);
   return pos;
 }

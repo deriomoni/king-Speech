@@ -78,18 +78,13 @@ export default function LoginScreen() {
   const topPad = Platform.OS === "web" ? 54 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  // When the auth state flips to a signed-in user, route based on profile
-  // completeness. New accounts (no name yet) → profile-setup; existing ones
-  // skip straight to onboarding or the main app.
+  // Signed in: the root gate (app/_layout.tsx) alone decides where to go.
+  // This screen stays mounted under email/profile-setup, so routing from here
+  // too re-opened profile-setup on every profile save — doubled screens and
+  // Oscar talking over himself.
   useEffect(() => {
-    if (!user) return;
-    setBusy(null);
-    if (!user.profileCompleted) {
-      router.replace("/(auth)/profile-setup");
-    } else {
-      router.replace("/(tabs)");
-    }
-  }, [user, router]);
+    if (user) setBusy(null);
+  }, [user]);
 
   useEffect(() => {
     if (authError) {
