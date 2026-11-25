@@ -27,7 +27,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { rs } from "@/lib/responsive";
 import { playUi } from "@/lib/uiSound";
-import { useOscarVoice } from "@/lib/oscarVoice";
+import { OVERVIEW_CUES, cueAt, useOscarVoice } from "@/lib/oscarVoice";
 import OscarMascot from "@/components/OscarMascot";
 import { IconHome, IconCheatSheet, IconClapperboard, IconAvatar, IconGear } from "@/components/tabs/TabBarIcons";
 
@@ -144,6 +144,14 @@ export default function AppTour() {
   const [closing, setClosing] = useState(false);
   const step = STEPS[i];
 
+  // Oscar talks the overview through (the spotlight follows what he names),
+  // and sees you off at the end
+  const ovCues = OVERVIEW_CUES[lang];
+  const ovPos = useOscarVoice("overview", step.kind === "overview" && !closing && !!ovCues, 300);
+  const ovCue = step.kind === "overview" ? Math.max(0, cueAt(ovCues, ovPos)) : -1;
+  const ovFocus = ovCues && ovCue >= 0 ? ovCues[ovCue].focus : "bar";
+  useOscarVoice("sendoff", step.kind === "done" && !closing, 300);
+
   // the tab bar's geometry (same maths as the bar itself)
   const bottomInset = Platform.OS === "web" ? rs(18) : Math.max(insets.bottom, rs(12));
   const barW = Math.min(W - BAR_SIDE * 2, BAR_MAX_W);
@@ -153,6 +161,17 @@ export default function AppTour() {
 
   // the spotlight: a rounded hole in the dimmed layer
   const target = useMemo(() => {
+    const slotX = (k: number) => barX + BAR_BORDER + BAR_PAD + slotW * k;
+    if (step.kind === "overview" && typeof ovFocus === "number") {
+      const cx = slotX(ovFocus + 0.5);
+      const d = rs(58);
+      return { x: cx - d / 2, y: barY + BAR_H / 2 - d / 2, w: d, h: d, r: d / 2 };
+    }
+    if (step.kind === "overview" && ovFocus === "profileSettings") {
+      const d = rs(58);
+      const x0 = slotX(3.5) - d / 2;
+      return { x: x0, y: barY + BAR_H / 2 - d / 2, w: slotX(4.5) + d / 2 - x0, h: d, r: d / 2 };
+    }
     if (step.kind === "overview") return { x: barX - 6, y: barY - 6, w: barW + 12, h: BAR_H + 12, r: BAR_H / 2 + 6 };
     if (step.kind === "section") {
       const cx = barX + BAR_BORDER + BAR_PAD + slotW * (step.s.tab + 0.5);
@@ -161,7 +180,7 @@ export default function AppTour() {
     }
     // no hole: a dot in the middle of the bar, ready to open
     return { x: W / 2, y: barY + BAR_H / 2, w: 0, h: 0, r: 0 };
-  }, [step, barX, barY, barW, slotW, W]);
+  }, [step, ovFocus, barX, barY, barW, slotW, W]);
 
   const hx = useSharedValue(target.x);
   const hy = useSharedValue(target.y);
@@ -197,9 +216,6 @@ export default function AppTour() {
     };
   });
 
-  // Oscar talks the overview through, and sees you off at the end
-  useOscarVoice("overview", step.kind === "overview" && !closing, 300);
-  useOscarVoice("sendoff", step.kind === "done" && !closing, 300);
 
   // show the section behind its card
   useEffect(() => {
@@ -252,16 +268,20 @@ export default function AppTour() {
       kk: "Мен Оскармын. Мұнда бәрі қалай жұмыс істейтінін көрсетейін — бір минут қана.",
     });
   } else if (step.kind === "overview") {
-    title = tr({ ru: "Здесь пять разделов", en: "Five sections live here", kk: "Мұнда бес бөлім бар" });
+    // with a recording: his words, phrase by phrase; without: the plain list title
+    title = ovCues
+      ? ovCues[0].text
+      : tr({ ru: "Здесь пять разделов", en: "Five sections live here", kk: "Мұнда бес бөлім бар" });
+    if (ovCues && ovCue > 0) body = ovCues[ovCue].text;
   } else if (step.kind === "section") {
     title = tr(step.s.title);
     body = tr(step.s.body);
   } else {
     title = tr({ ru: "Всё готово!", en: "You're all set!", kk: "Бәрі дайын!" });
     body = tr({
-      ru: "По глазам вижу — тебе уже не терпится приступить! Не буду тебя томить. Вперёд и с песней!",
+      ru: "По глазам вижу — тебе уже не терпится приступить! Поэтому не буду тебя томить. Вперёд и с песней!",
       en: "I can see it in your eyes — you can't wait to get started! So I won't keep you waiting. Off you go, and good luck!",
-      kk: "Көзіңнен көріп тұрмын — бастауға асығып тұрсың! Сені күттірмейін. Алға, сәттілік!",
+      kk: "Көзіңнен көріп тұрмын — бастауға асығып тұрсың! Сондықтан сені күттірмейін. Алға, сәттілік!",
     });
   }
 
@@ -330,7 +350,17 @@ export default function AppTour() {
           ) : null}
 
           <Text style={[s.title, { color: ink }, centered && s.center]}>{title}</Text>
-          {body ? <Text style={[s.body, { color: soft }, centered && s.center]}>{body}</Text> : null}
+          {step.kind === "overview" && ovCues ? (
+            <View style={s.captionBox}>
+              {body ? (
+                <Animated.Text key={ovCue} entering={FadeIn.duration(400)} style={[s.body, { color: soft }]}>
+                  {body}
+                </Animated.Text>
+              ) : null}
+            </View>
+          ) : body ? (
+            <Text style={[s.body, { color: soft }, centered && s.center]}>{body}</Text>
+          ) : null}
           {step.kind === "done" ? (
             <Text style={[s.cheer, { color: ink }]}>
               {tr({
@@ -406,6 +436,7 @@ const s = StyleSheet.create({
   title: { fontSize: 24, lineHeight: 29, letterSpacing: -0.4, fontFamily: "Geologica_900Black" },
   body: { marginTop: 8, fontSize: 16, lineHeight: 22, fontFamily: "Geologica_500Medium" },
   center: { textAlign: "center" },
+  captionBox: { minHeight: 22 * 4 + 8 },
   cheer: { marginTop: 14, fontSize: 15, lineHeight: 21, textAlign: "center", fontFamily: "Geologica_600SemiBold", fontStyle: "italic" },
   list: { marginTop: 12 },
   row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 9 },

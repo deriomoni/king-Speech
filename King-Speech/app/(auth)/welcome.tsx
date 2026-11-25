@@ -13,7 +13,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import MaskedViewBase from "@react-native-masked-view/masked-view";
 import Animated, {
   Easing,
+  FadeIn,
   FadeInDown,
+  FadeOut,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -26,7 +28,7 @@ import { rs } from "@/lib/responsive";
 import { useScreenMusic } from "@/lib/music";
 import { setLogoHandoff, useSplashDone } from "@/lib/splashState";
 import { playUi } from "@/lib/uiSound";
-import { useOscarVoice } from "@/lib/oscarVoice";
+import { WELCOME_CUES, cueAt, useOscarVoice } from "@/lib/oscarVoice";
 import * as Haptics from "@/lib/haptics";
 import { AnimatedBrandLogo } from "@/components/AnimatedBrandLogo";
 import AuroraBackground, { AURORA_DUSK } from "@/components/subscription/AuroraBackground";
@@ -206,7 +208,9 @@ export default function WelcomeScreen() {
   const run = useSplashDone();
   // Oscar's welcome, voiced, once the logo has settled («…нажимай эту кнопку»)
   const [leaving, setLeaving] = useState(false);
-  useOscarVoice("welcome", run && !leaving, 1400);
+  const voicePos = useOscarVoice("welcome", run && !leaving, 1400);
+  const cues = WELCOME_CUES[lang];
+  const cue = cueAt(cues, voicePos);
   const { width: W, height: H } = useWindowDimensions();
   // the splash's logo, 1:1 — then it settles smaller, near the top
   const splashW = Math.min(W * 0.64, rs(290));
@@ -262,7 +266,23 @@ export default function WelcomeScreen() {
         <View>
           {/* key = language: a new language fades up and shines again */}
           <Greeting key={lang} text={text} run={run} delay={greetDelay} />
-          <Animated.Text style={[s.sub, s.subHang, subStyle]}>{t("welcomeSub")}</Animated.Text>
+          {cues ? (
+            // the phrase being said, crossfading as he speaks (the last one stays)
+            <View style={[s.subHang, s.captionBox]}>
+              {cue >= 0 ? (
+                <Animated.Text
+                  key={`${lang}-${cue}`}
+                  entering={FadeIn.duration(500)}
+                  exiting={FadeOut.duration(300)}
+                  style={[s.sub, s.caption]}
+                >
+                  {cues[cue].text}
+                </Animated.Text>
+              ) : null}
+            </View>
+          ) : (
+            <Animated.Text style={[s.sub, s.subHang, subStyle]}>{t("welcomeSub")}</Animated.Text>
+          )}
         </View>
       </View>
 
@@ -331,6 +351,8 @@ const s = StyleSheet.create({
   langTxt: { fontSize: 11.5, letterSpacing: 0.4, color: "#FFFFFF", fontFamily: "Geologica_800ExtraBold" },
   center: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 },
   logoLayer: { position: "absolute", left: 0, right: 0, top: 0, bottom: 0, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 },
+  captionBox: { alignItems: "center" },
+  caption: { position: "absolute", left: 0, right: 0, top: 0, marginTop: 14, alignSelf: "center" },
   subHang: { position: "absolute", left: 0, right: 0, top: "100%", alignSelf: "center", maxWidth: undefined },
   greeting: {
     fontSize: 46,

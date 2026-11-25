@@ -16,7 +16,7 @@ import { useAuth } from "@/context/AuthContext";
 import OscarMascot from "@/components/OscarMascot";
 import { rs } from "@/lib/responsive";
 import { playUi } from "@/lib/uiSound";
-import { useOscarVoice } from "@/lib/oscarVoice";
+import { DONE, useOscarVoice } from "@/lib/oscarVoice";
 
 type Phase = "blank" | "hello" | "ask" | "name" | "greet" | "age";
 type L = { ru: string; en: string; kk: string };
@@ -33,10 +33,11 @@ const AGES: { id: string; label: L }[] = [
 ];
 
 const BLANK_MS = 3000; // pure black first — then Oscar
-// timed to the recordings (intro 5.7 s, greet 3.0 s)
-const HELLO_MS = 4000; // «Ах да, где же мои манеры? … Я Оскар.»
-const ASK_MS = 2300; // «А как зовут тебя?» before it becomes the title
-const GREET_MS = 3600; // «{Имя}, рад знакомству! Пойдём, покажу тебе тут всё.»
+// The scene follows Oscar's voice: «А как зовут тебя?» shows the moment he
+// starts saying it (ms into the intro recording), and each step moves on only
+// after his last word plus a short beat — nothing is ever cut off.
+const ASK_AT: Record<string, number> = { ru: 4800, en: 5200, kk: 4000 };
+const AFTER_LINE_MS = 600;
 
 export default function ProfileSetupScreen() {
   const insets = useSafeAreaInsets();
@@ -56,9 +57,6 @@ export default function ProfileSetupScreen() {
   useEffect(() => {
     let id: ReturnType<typeof setTimeout> | undefined;
     if (phase === "blank") id = setTimeout(() => setPhase("hello"), BLANK_MS);
-    else if (phase === "hello") id = setTimeout(() => setPhase("ask"), HELLO_MS);
-    else if (phase === "ask") id = setTimeout(() => setPhase("name"), ASK_MS);
-    else if (phase === "greet") id = setTimeout(() => setPhase("age"), GREET_MS);
     return () => {
       if (id) clearTimeout(id);
     };
@@ -99,24 +97,35 @@ export default function ProfileSetupScreen() {
     }, [backToName]),
   );
 
-  const firstName = name.trim().split(/\s+/)[0] ?? "";
+  // his voice: the intro over «hello → ask», the greeting after the name
+  const introPos = useOscarVoice("intro", phase === "hello" || phase === "ask");
+  const greetPos = useOscarVoice("greet", phase === "greet");
+  useEffect(() => {
+    if (phase === "hello" && introPos >= (ASK_AT[lang] ?? 4800)) setPhase("ask");
+  }, [phase, introPos, lang]);
+  useEffect(() => {
+    let id: ReturnType<typeof setTimeout> | undefined;
+    if (phase === "ask" && introPos === DONE) id = setTimeout(() => setPhase("name"), AFTER_LINE_MS);
+    if (phase === "greet" && greetPos === DONE) id = setTimeout(() => setPhase("age"), AFTER_LINE_MS);
+    return () => {
+      if (id) clearTimeout(id);
+    };
+  }, [phase, introPos, greetPos]);
+
   const oscarLine =
     phase === "hello"
       ? tr({
-          ru: "Ах да, где же мои манеры? Забыл представиться. Я Оскар.",
-          en: "Oh, where are my manners? I forgot to introduce myself. I'm Oscar.",
-          kk: "Әй, әдебім қайда? Танысуды ұмытып кетіппін. Мен Оскармын.",
+          ru: "Ах да, где же мои манеры? Забыл представиться: я — Оскар.",
+          en: "Oh, where are my manners? I forgot to introduce myself — I'm Oscar.",
+          kk: "Әй, әдебім қайда? Танысуды ұмытып кетіппін: мен — Оскармын.",
         })
       : phase === "ask"
         ? tr({ ru: "А как зовут тебя?", en: "And what's your name?", kk: "Ал сенің атың кім?" })
         : tr({
-            ru: `${firstName}, рад знакомству! Пойдём, покажу тебе тут всё.`,
-            en: `${firstName}, glad to meet you! Come on, I'll show you everything here.`,
-            kk: `${firstName}, танысқаныма қуаныштымын! Жүр, бәрін көрсетейін.`,
+            ru: "Рад знакомству! Пойдём, покажу тебе тут всё!",
+            en: "Glad to meet you! Come on, I'll show you everything here!",
+            kk: "Танысқаныма қуаныштымын! Жүр, бәрін көрсетейін!",
           });
-  // his voice: the intro over «hello → ask», the greeting after the name
-  useOscarVoice("intro", phase === "hello");
-  useOscarVoice("greet", phase === "greet");
   const oscarShown = phase === "hello" || phase === "ask" || phase === "greet";
 
   return (
@@ -143,7 +152,7 @@ export default function ProfileSetupScreen() {
 
       {phase === "name" ? (
         <Animated.View key="name" entering={FadeIn.duration(900)} exiting={FadeOutUp.duration(400)} style={s.block}>
-          <Text style={s.title}>{tr({ ru: "Как вас зовут?", en: "What's your name?", kk: "Атыңыз кім?" })}</Text>
+          <Text style={s.title}>{tr({ ru: "Как тебя зовут?", en: "What's your name?", kk: "Атың кім?" })}</Text>
           <Animated.View entering={FadeInDown.delay(350).duration(700)}>
             <TextInput
               value={name}
@@ -175,12 +184,12 @@ export default function ProfileSetupScreen() {
 
       {phase === "age" ? (
         <Animated.View key="age" entering={FadeIn.duration(800)} style={s.block}>
-          <Text style={s.title}>{tr({ ru: "Сколько вам лет?", en: "How old are you?", kk: "Жасыңыз нешеде?" })}</Text>
+          <Text style={s.title}>{tr({ ru: "Сколько тебе лет?", en: "How old are you?", kk: "Жасың нешеде?" })}</Text>
           <Text style={s.note}>
             {tr({
-              ru: "King Speech подходит для любого возраста — это нужно, чтобы подобрать темы под вас.",
+              ru: "King Speech подходит для любого возраста — это нужно, чтобы подобрать темы под тебя.",
               en: "King Speech is for any age — this just helps us pick topics for you.",
-              kk: "King Speech кез келген жасқа лайық — бұл сізге тақырып таңдау үшін керек.",
+              kk: "King Speech кез келген жасқа лайық — бұл саған тақырып таңдау үшін керек.",
             })}
           </Text>
           <View style={s.chips}>

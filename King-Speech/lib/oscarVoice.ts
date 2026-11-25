@@ -1,20 +1,28 @@
 /**
  * Oscar's voice — the onboarding lines recorded in Higgsfield (text2speech_v2,
  * voice «Andre», 30.05.2026; see the «Оскар — реплики онбординга» script).
- * Russian and English are recorded; Kazakh has none yet, so it stays silent.
+ * Russian and English are recorded; Kazakh has none yet (its text runs on a
+ * plain clock instead).
  *
- * `useOscarVoice(line, enabled)` plays a line once while the screen (or step)
- * is showing and stops it when it goes away. Obeys the «Звуковые эффекты»
- * switch; every failure degrades to silence.
+ * `useOscarVoice(line, enabled)` plays a line once while enabled and returns
+ * where it is (ms since it started; -1 before; DONE once it has finished), so
+ * screens can show each phrase exactly while it is being said and move on only
+ * after the last word. Muted / failed / no recording → the same clock runs
+ * without sound, so the texts still pace themselves.
+ *
+ * The cue times come from the pauses in the recordings (ffmpeg silencedetect).
  */
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Platform } from "react-native";
 import { isSfxMuted } from "@/lib/sfx";
 import { useLang } from "@/context/LangContext";
 
 export type OscarLine = "welcome" | "intro" | "greet" | "overview" | "sendoff";
+type Lang = "ru" | "en" | "kk";
 
-const SOURCES: Partial<Record<"ru" | "en" | "kk", Partial<Record<OscarLine, number>>>> = {
+export const DONE = 1e9;
+
+const SOURCES: Partial<Record<Lang, Partial<Record<OscarLine, number>>>> = {
   ru: {
     welcome: require("@/assets/sounds/oscar/ru-welcome.mp3"),
     intro: require("@/assets/sounds/oscar/ru-intro.mp3"),
@@ -30,54 +38,142 @@ const SOURCES: Partial<Record<"ru" | "en" | "kk", Partial<Record<OscarLine, numb
   },
 };
 
+/** Length of each recording (ms); for silent text, a reading-pace estimate. */
+export const LINE_MS: Record<Lang, Record<OscarLine, number>> = {
+  ru: { welcome: 17360, intro: 5680, greet: 3040, overview: 20240, sendoff: 6640 },
+  en: { welcome: 18320, intro: 6160, greet: 3200, overview: 0, sendoff: 7840 },
+  kk: { welcome: 0, intro: 6000, greet: 3200, overview: 0, sendoff: 7000 },
+};
+
+/** Phrase cues: `at` = ms into the line where the phrase begins. */
+export type Cue = { at: number; text: string };
+
+export const WELCOME_CUES: Partial<Record<Lang, Cue[]>> = {
+  ru: [
+    { at: 3200, text: "Здесь начинается твой путь к сильной, уверенной речи — увлекательный и интересный." },
+    { at: 9000, text: "Если ты горишь желанием стать оратором и улучшить свою речь, я тебе помогу." },
+    { at: 13800, text: "Нажимай эту кнопку — и пошли делать великие дела!" },
+  ],
+  en: [
+    { at: 2650, text: "This is where your journey to strong, confident speech begins — and it's going to be an exciting one." },
+    { at: 9450, text: "If you're eager to become a great speaker and sharpen your skills, I'm here to help." },
+    { at: 14750, text: "Just press this button, and let's go do great things together!" },
+  ],
+};
+
+/** The overview, phrase by phrase; `focus` = what the spotlight shows meanwhile. */
+export type OverviewFocus = "bar" | 0 | 2 | "profileSettings";
+export const OVERVIEW_CUES: Partial<Record<Lang, (Cue & { focus: OverviewFocus })[]>> = {
+  ru: [
+    { at: 0, text: "Итак, начнём по порядку.", focus: "bar" },
+    { at: 2050, text: "Твой Путь — это место, где ты будешь каждый день проходить задания.", focus: 0 },
+    { at: 5950, text: "Здесь много всего разного: от скороговорок до настоящих выступлений.", focus: 0 },
+    { at: 10330, text: "Дальше у нас Show Time — твой личный зал, где ты можешь свободно выступать перед публикой на любимые темы.", focus: 2 },
+    { at: 17580, text: "А ещё дальше — твой профиль и настройки.", focus: "profileSettings" },
+  ],
+};
+
+/** Index of the cue being said at `pos` (-1 before the first). */
+export function cueAt(cues: { at: number }[] | undefined, pos: number) {
+  if (!cues) return -1;
+  let k = -1;
+  for (let i = 0; i < cues.length; i++) if (pos >= cues[i].at) k = i;
+  return k;
+}
+
 const VOLUME = 1;
 
 type Handle = { stop: () => void };
 
-async function play(src: number): Promise<Handle | null> {
+async function play(src: number, onPos: (ms: number) => void): Promise<Handle | null> {
   if (Platform.OS === "web") {
     try {
       const { Asset } = require("expo-asset");
       const el = new (globalThis as any).Audio(Asset.fromModule(src).uri);
       el.volume = VOLUME;
-      el.play?.().catch(() => {});
-      return { stop: () => { try { el.pause(); el.src = ""; } catch {} } };
+      el.ontimeupdate = () => onPos(el.currentTime * 1000);
+      el.onended = () => onPos(DONE);
+      const started = await el.play?.().then(() => true).catch(() => false);
+      if (started === false) return null; // autoplay refused → the clock takes over
+      return {
+        stop: () => {
+          try {
+            el.ontimeupdate = null;
+            el.onended = null;
+            el.pause();
+            el.src = "";
+          } catch {}
+        },
+      };
     } catch {
       return null;
     }
   }
   try {
     const { Audio } = require("@/lib/av");
-    const { sound } = await Audio.Sound.createAsync(src, { volume: VOLUME, shouldPlay: true });
-    return { stop: () => { sound.stopAsync().catch(() => {}); sound.unloadAsync().catch(() => {}); } };
+    const { sound } = await Audio.Sound.createAsync(src, { volume: VOLUME, shouldPlay: true, progressUpdateIntervalMillis: 120 });
+    sound.setOnPlaybackStatusUpdate((st: any) => {
+      if (!st?.isLoaded) return;
+      if (st.didJustFinish) onPos(DONE);
+      else onPos(st.positionMillis ?? 0);
+    });
+    return {
+      stop: () => {
+        sound.setOnPlaybackStatusUpdate(null);
+        sound.stopAsync().catch(() => {});
+        sound.unloadAsync().catch(() => {});
+      },
+    };
   } catch {
     return null;
   }
 }
 
-/** Whether a line has a recording in the current language. */
-export function hasOscarVoice(lang: string, line: OscarLine) {
-  return !!SOURCES[lang as "ru" | "en"]?.[line];
-}
-
-/** Say `line` once while `enabled`; it stops when disabled or unmounted. */
-export function useOscarVoice(line: OscarLine | null, enabled = true, delayMs = 0) {
+/**
+ * Say `line` once while `enabled`; returns its position (ms, -1 before it
+ * starts, DONE after the last word). It stops when disabled or unmounted.
+ */
+export function useOscarVoice(line: OscarLine | null, enabled = true, delayMs = 0): number {
   const { lang } = useLang();
+  const [pos, setPos] = useState(-1);
   useEffect(() => {
-    const src = line ? SOURCES[lang]?.[line] : undefined;
-    if (!enabled || !src || isSfxMuted()) return;
+    setPos(-1);
+    if (!enabled || !line) return;
+    const src = SOURCES[lang as Lang]?.[line];
+    const length = LINE_MS[lang as Lang]?.[line] ?? 0;
     let handle: Handle | null = null;
+    let clock: ReturnType<typeof setInterval> | null = null;
     let gone = false;
+    // no sound: the same timeline on a plain clock
+    const runClock = () => {
+      const t0 = Date.now();
+      setPos(0);
+      clock = setInterval(() => {
+        const ms = Date.now() - t0;
+        setPos(ms >= length ? DONE : ms);
+        if (ms >= length && clock) clearInterval(clock);
+      }, 120);
+    };
     const id = setTimeout(() => {
-      play(src).then((h) => {
+      if (!src || isSfxMuted()) {
+        runClock();
+        return;
+      }
+      setPos(0);
+      play(src, (ms) => {
+        if (!gone) setPos(ms);
+      }).then((h) => {
         if (gone) h?.stop();
-        else handle = h;
+        else if (h) handle = h;
+        else runClock();
       });
     }, delayMs);
     return () => {
       gone = true;
       clearTimeout(id);
+      if (clock) clearInterval(clock);
       handle?.stop();
     };
   }, [line, enabled, delayMs, lang]);
+  return pos;
 }
