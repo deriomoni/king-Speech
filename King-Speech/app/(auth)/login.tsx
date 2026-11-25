@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import NextChevron from "@/components/NextChevron";
 import {
   View,
@@ -11,7 +11,7 @@ import {
   Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useLang, pickLang } from "@/context/LangContext";
@@ -36,6 +36,19 @@ export default function LoginScreen() {
     configured,
   } = useAuth();
   const [busy, setBusy] = useState<"google" | "apple" | null>(null);
+  // «Войти»: the stripes darken one by one, then the email screen (already
+  // dark) takes over; coming back, they light up again the same way.
+  const [leaving, setLeaving] = useState(false);
+  const goEmail = () => {
+    if (leaving) return;
+    setLeaving(true);
+    setTimeout(() => router.push("/(auth)/email"), 620);
+  };
+  useFocusEffect(
+    useCallback(() => {
+      setLeaving(false);
+    }, []),
+  );
 
   const topPad = Platform.OS === "web" ? 54 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -107,7 +120,7 @@ export default function LoginScreen() {
   return (
     <View style={[s.root, { backgroundColor: "#070423", paddingTop: topPad, paddingBottom: bottomPad + rs(20) }]}>
       <StatusBar barStyle="light-content" />
-      <AuroraBackground palette={AURORA_DUSK} dim={false} rim />
+      <AuroraBackground palette={AURORA_DUSK} dim={false} rim shade={leaving ? 1 : 0} initialShade={0} />
 
       <Animated.View entering={FadeIn.duration(500)} style={s.center}>
         <KingSpeechLogo color={CREAM} width={220} />
@@ -154,7 +167,7 @@ export default function LoginScreen() {
       {/* Email + password sign-in / sign-up */}
       <Pressable
         style={({ pressed }) => [s.skipBtn, { opacity: pressed ? 0.6 : 1 }]}
-        onPress={() => router.push("/(auth)/email")}
+        onPress={goEmail}
         disabled={busy !== null}
         hitSlop={10}
       >

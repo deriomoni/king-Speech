@@ -83,7 +83,8 @@ export default function EmailAuthScreen() {
   return (
     <View style={[s.root, { paddingTop: topPad, paddingBottom: bottomPad + rs(16) }]}>
       <StatusBar barStyle="light-content" />
-      <AuroraBackground palette={AURORA_DUSK} dim={false} rim />
+      {/* arrives already darkened, stripe by stripe, from the sign-in screen */}
+      <AuroraBackground palette={AURORA_DUSK} dim={false} rim shade={1} />
 
       <Pressable onPress={() => router.back()} hitSlop={12} style={s.back} accessibilityLabel={tr({ ru: "Назад", en: "Back", kk: "Артқа" })}>
         <Ionicons name="chevron-back" size={rs(26)} color="#FFFFFF" />

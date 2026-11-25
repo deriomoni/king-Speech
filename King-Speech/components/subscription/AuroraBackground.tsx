@@ -13,10 +13,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, FeGaussianBlur, Filter, LinearGradient as SvgLinearGradient, Rect, Stop } from "react-native-svg";
 import Animated, {
   Easing,
-  cancelAnimation,
   useAnimatedStyle,
+  useFrameCallback,
   useSharedValue,
-  withRepeat,
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
@@ -45,9 +44,9 @@ export const AURORA_DUSK = [
   "#FFB42E",
   "#FFF1B8",
   "#FF8E3A",
-  "#FF4FAE",
-  "#FFC6EA",
-  "#B0309E",
+  "#D2589A",
+  "#F0C8DC",
+  "#8C3484",
   "#1C0F52",
 ] as const;
 
@@ -85,6 +84,34 @@ const SOFT_COLUMNS = STRIPES * SLICES;
 /** how far the gradient climbs across one stripe (share of the period) */
 const SAW = 0.12;
 const LOOP_MS = 18000;
+
+/** A dark veil over one stripe; stripes darken one after another (left → right). */
+function StripeShade({
+  k,
+  W,
+  shadeV,
+  max,
+}: {
+  k: number;
+  W: number;
+  shadeV: SharedValue<number>;
+  max: number;
+}) {
+  const sw = W / STRIPES;
+  const style = useAnimatedStyle(() => {
+    // each stripe takes 40% of the sweep; starts spread over the rest
+    const start = (k / (STRIPES - 1)) * 0.6;
+    const p = Math.min(1, Math.max(0, (shadeV.value - start) / 0.4));
+    const e = p * p * (3 - 2 * p);
+    return { opacity: e * max };
+  });
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[{ position: "absolute", top: 0, bottom: 0, left: Math.floor(k * sw), width: Math.ceil(sw) + 1, backgroundColor: "#05031A" }, style]}
+    />
+  );
+}
 
 function Column({
   i,
@@ -160,7 +187,18 @@ export default function AuroraBackground({
   dim = true,
   rim = false,
   grain = false,
+  shade = 0,
+  initialShade,
+  shadeMax = 0.5,
+  shadeMs = 650,
 }: {
+  /** Darken the stripes one by one (0 = clear, 1 = dark) — animated on change. */
+  shade?: number;
+  /** Where the darkening starts on mount (default: = shade, no animation). */
+  initialShade?: number;
+  /** Opacity of a fully shaded stripe. */
+  shadeMax?: number;
+  shadeMs?: number;
   /** Fine film grain on top. */
   grain?: boolean;
   /** One palette period, top → bottom (default: the paywall's pink/indigo/orange). */
@@ -179,17 +217,27 @@ export default function AuroraBackground({
   const cols = palette ? SOFT_COLUMNS : COLUMNS;
   const colW = W / cols;
   const clock = useSharedValue(0);
-
+  const shadeV = useSharedValue(initialShade ?? shade);
   useEffect(() => {
-    clock.value = withRepeat(withTiming(1, { duration: LOOP_MS, easing: Easing.linear }), -1, false);
-    return () => cancelAnimation(clock);
-  }, [clock]);
+    shadeV.value = withTiming(shade, { duration: shadeMs, easing: Easing.inOut(Easing.quad) });
+  }, [shade, shadeMs, shadeV]);
+
+  // the clock follows the frame timestamp (system time), so every copy of the
+  // aurora — e.g. sign-in and the email screen fading over it — is in phase
+  useFrameCallback((frame) => {
+    clock.value = (frame.timestamp % LOOP_MS) / LOOP_MS;
+  });
 
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.root]}>
       {Array.from({ length: cols }, (_, i) => (
         <Column key={i} i={i} colW={colW} period={period} clock={clock} stops={stops} locs={locs} soft={!!palette} />
       ))}
+      {palette
+        ? Array.from({ length: STRIPES }, (_, k) => (
+            <StripeShade key={`sh${k}`} k={k} W={W} shadeV={shadeV} max={shadeMax} />
+          ))
+        : null}
       {/* keep the UI readable: deep top and bottom, softer middle */}
       {dim ? (
         <LinearGradient
