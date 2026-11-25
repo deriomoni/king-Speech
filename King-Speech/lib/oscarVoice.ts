@@ -41,8 +41,8 @@ const SOURCES: Partial<Record<Lang, Partial<Record<OscarLine, number>>>> = {
 /** Length of each recording (ms); for silent text, a reading-pace estimate. */
 export const LINE_MS: Record<Lang, Record<OscarLine, number>> = {
   ru: { welcome: 17360, intro: 5680, greet: 3040, overview: 20240, sendoff: 6640 },
-  en: { welcome: 18320, intro: 6160, greet: 3200, overview: 0, sendoff: 7840 },
-  kk: { welcome: 0, intro: 6000, greet: 3200, overview: 0, sendoff: 7000 },
+  en: { welcome: 18320, intro: 6160, greet: 3200, overview: 18500, sendoff: 7840 },
+  kk: { welcome: 0, intro: 6000, greet: 3200, overview: 19500, sendoff: 7000 },
 };
 
 /** Phrase cues: `at` = ms into the line where the phrase begins. */
@@ -70,6 +70,19 @@ export const OVERVIEW_CUES: Partial<Record<Lang, (Cue & { focus: OverviewFocus }
     { at: 5950, text: "Здесь много всего разного: от скороговорок до настоящих выступлений.", focus: 0 },
     { at: 10330, text: "Дальше у нас Show Time — твой личный зал, где ты можешь свободно выступать перед публикой на любимые темы.", focus: 2 },
     { at: 17580, text: "А ещё дальше — твой профиль и настройки.", focus: "profileSettings" },
+  ],
+  // not recorded yet: the same tour on a silent clock
+  en: [
+    { at: 0, text: "So, let's start from the beginning.", focus: "bar" },
+    { at: 2500, text: "Your Path is where you'll complete tasks every day — from tongue twisters to real speeches.", focus: 0 },
+    { at: 9000, text: "Next up is Show Time, your own stage, where you can speak freely in front of an audience on topics you love.", focus: 2 },
+    { at: 15500, text: "And further on — your profile and settings.", focus: "profileSettings" },
+  ],
+  kk: [
+    { at: 0, text: "Ендеше, ретімен бастайық.", focus: "bar" },
+    { at: 2500, text: "«Жол» бөлімінде сен күн сайын тапсырма орындайсың: жаңылтпаштан бастап нағыз сөз сөйлеуге дейін.", focus: 0 },
+    { at: 9500, text: "Келесі — «Show Time». Бұл сенің жеке сахнаң: мұнда ұнайтын тақырыбың бойынша көрермен алдында сөйлей аласың.", focus: 2 },
+    { at: 16500, text: "Одан кейін — профиль мен баптаулар.", focus: "profileSettings" },
   ],
 };
 
