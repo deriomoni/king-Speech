@@ -73,7 +73,7 @@ const LOCS = locsOf(STOPS);
 
 const COLUMNS = 72;
 /** Soft mode (sign-in): fewer, wider columns — the streaks read as a texture. */
-const SOFT_COLUMNS = 22;
+const SOFT_COLUMNS = 36;
 const LOOP_MS = 18000;
 
 function Column({
@@ -174,7 +174,7 @@ export default function AuroraBackground({
               <Stop offset="1" stopColor="#FF3B2F" />
             </SvgLinearGradient>
             <Filter id="auroraRimBlur" x="-30%" y="-30%" width="160%" height="160%">
-              <FeGaussianBlur stdDeviation={W * 0.08} />
+              <FeGaussianBlur stdDeviation={W * 0.055} />
             </Filter>
           </Defs>
           <Rect
@@ -185,7 +185,7 @@ export default function AuroraBackground({
             rx={W * 0.12}
             fill="none"
             stroke="url(#auroraRim)"
-            strokeWidth={W * 0.24}
+            strokeWidth={W * 0.18}
             filter="url(#auroraRimBlur)"
             opacity={0.8}
           />
