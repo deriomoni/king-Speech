@@ -12,13 +12,14 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useLang, pickLang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { KingSpeechLogo } from "@/components/auth/AuthUI";
-import FlareBackground, { FLARE_BG } from "@/components/auth/FlareBackground";
+import TrailBackground, { TRAIL_BG } from "@/components/auth/TrailBackground";
 import { rs } from "@/lib/responsive";
 
 export default function LoginScreen() {
@@ -107,12 +108,20 @@ export default function LoginScreen() {
   const INK = "#262628";
 
   return (
-    <View style={[s.root, { backgroundColor: FLARE_BG, paddingTop: topPad, paddingBottom: bottomPad + rs(20) }]}>
+    <View style={[s.root, { backgroundColor: TRAIL_BG, paddingTop: topPad, paddingBottom: bottomPad + rs(20) }]}>
       <StatusBar barStyle="light-content" />
-      <FlareBackground />
+      <TrailBackground />
+      {/* quiets the narrow top of the beam so the light logo reads */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={["rgba(14,6,4,0.85)", "rgba(14,6,4,0.55)", "rgba(14,6,4,0)"]}
+        locations={[0, 0.55, 1]}
+        style={s.topShade}
+      />
 
       <Animated.View entering={FadeIn.duration(500)} style={s.center}>
-        <KingSpeechLogo color={INK} width={220} />
+        {/* light logo: it stands on the dark around the beam */}
+        <KingSpeechLogo color="#FFF7F0" width={220} />
       </Animated.View>
 
       {!configured && (
@@ -195,11 +204,14 @@ const s = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
   },
+  // logo up top, where the beam is still a narrow column
   center: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
+    paddingTop: "22%",
   },
+  topShade: { position: "absolute", left: 0, right: 0, top: 0, height: "45%" },
   notConfiguredBanner: {
     flexDirection: "row",
     alignItems: "center",
