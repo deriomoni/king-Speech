@@ -34,7 +34,7 @@ export function pickLang<T>(lang: Lang, v: { ru: T; en?: T; kk?: T }): T {
 const translations = {
   ru: {
     welcome: "Добро пожаловать!",
-    welcomeSub: "Развивай навыки публичных выступлений",
+    welcomeSub: "Развивай навыки выступлений",
     start: "Начать",
     alreadyHaveAccount: "Уже есть аккаунт? Войти",
     loginTitle: "Войдите, чтобы продолжить",
@@ -353,7 +353,7 @@ const translations = {
   },
   en: {
     welcome: "Welcome!",
-    welcomeSub: "Develop your public speaking skills",
+    welcomeSub: "Develop your speaking skills",
     start: "Get Started",
     alreadyHaveAccount: "Already have an account? Sign in",
     loginTitle: "Sign in to continue",
@@ -672,7 +672,7 @@ const translations = {
   },
   kk: {
     welcome: "Қош келдіңіз!",
-    welcomeSub: "Көпшілік алдында сөйлеу дағдыларыңызды дамытыңыз",
+    welcomeSub: "Сөйлеу дағдыларыңызды дамытыңыз",
     start: "Бастау",
     alreadyHaveAccount: "Аккаунтыңыз бар ма? Кіру",
     loginTitle: "Жалғастыру үшін кіріңіз",

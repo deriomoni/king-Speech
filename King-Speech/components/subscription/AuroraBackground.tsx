@@ -41,16 +41,17 @@ const BANDS = [
 /** Sign-in palette (the glowing-card reference): deep navy → blue → lavender →
  *  orange → pink → hot red, back through violet to navy. */
 export const AURORA_DUSK = [
-  "#1C0F52",
-  "#1838B8",
-  "#6A5AC4",
+  "#1A0B4D",
+  "#1636B8",
+  "#3B2DC4",
+  "#6A22C8",
   "#FFB42E",
   "#FFF1B8",
   "#FF8E3A",
-  "#D2589A",
-  "#F0C8DC",
-  "#8C3484",
-  "#1C0F52",
+  "#C2338F",
+  "#7A1E9C",
+  "#3A158F",
+  "#1A0B4D",
 ] as const;
 
 // three periods (column = exactly 3 periods tall) so the scroll wraps seamlessly

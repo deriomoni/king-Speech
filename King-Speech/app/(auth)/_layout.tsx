@@ -7,8 +7,8 @@ export default function AuthLayout() {
       <Stack.Screen name="welcome" />
       <Stack.Screen name="login" />
       <Stack.Screen name="email" options={{ animation: "fade", animationDuration: 350, gestureEnabled: true }} />
-      {/* «Как вас зовут?» rises from below over the gradient */}
-      <Stack.Screen name="profile-setup" options={{ animation: "slide_from_bottom", animationDuration: 600 }} />
+      {/* Oscar's introduction: a slow fade into black */}
+      <Stack.Screen name="profile-setup" options={{ animation: "fade", animationDuration: 800 }} />
       <Stack.Screen name="survey" />
       <Stack.Screen name="onboarding" />
     </Stack>

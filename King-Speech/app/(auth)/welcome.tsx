@@ -18,6 +18,7 @@ import Animated, {
   useSharedValue,
   withDelay,
   withSequence,
+  withRepeat,
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
@@ -54,10 +55,27 @@ function Greeting({ text, run }: { text: string; run: boolean }) {
       APPEAR_MS - 200,
       withSequence(
         withTiming(1, { duration: 500, easing: Easing.out(Easing.quad) }),
-        withTiming(0.45, { duration: 1100, easing: Easing.inOut(Easing.quad) }),
+        withRepeat(
+          withSequence(
+            withTiming(0.35, { duration: 1500, easing: Easing.inOut(Easing.quad) }),
+            withTiming(0.75, { duration: 1500, easing: Easing.inOut(Easing.quad) }),
+          ),
+          -1,
+          true,
+        ),
       ),
     );
-    shine.value = withDelay(APPEAR_MS - 300, withTiming(1, { duration: SHINE_MS, easing: Easing.inOut(Easing.cubic) }));
+    shine.value = withDelay(
+      APPEAR_MS - 300,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: SHINE_MS, easing: Easing.inOut(Easing.cubic) }),
+          withDelay(1800, withTiming(0, { duration: 0 })),
+        ),
+        -1,
+        false,
+      ),
+    );
   }, [run, appear, glow, shine]);
 
   const textStyle = useAnimatedStyle(() => ({
