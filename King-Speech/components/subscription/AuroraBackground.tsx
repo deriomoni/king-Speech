@@ -8,13 +8,15 @@
 // nudged up/down by two sines of its x — neighbours differ by a few px, so
 // the bands read as continuous waves. Everything runs on the UI thread.
 import React, { useEffect } from "react";
-import { Image, StyleSheet, View, useWindowDimensions } from "react-native";
+import { Image, Platform, StyleSheet, View, useWindowDimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import MaskedViewBase from "@react-native-masked-view/masked-view";
 import Svg, { Defs, FeGaussianBlur, Filter, LinearGradient as SvgLinearGradient, Rect, Stop } from "react-native-svg";
 import Animated, {
   Easing,
   useAnimatedStyle,
   useFrameCallback,
+  runOnJS,
   useSharedValue,
   withTiming,
   type SharedValue,
@@ -81,6 +83,9 @@ const locsOf = (stops: readonly string[]) => stops.map((_, i) => i / (stops.leng
 const STOPS = tripled(BANDS);
 const LOCS = locsOf(STOPS);
 
+// its class typings predate the current React types; the component itself is fine
+const MaskedView = MaskedViewBase as unknown as React.ComponentType<any>;
+
 const COLUMNS = 72;
 /** Soft mode (sign-in): the screen is cut into STRIPES; each stripe is built
  *  from SLICES thin slices, every slice a little higher than the one before,
@@ -101,13 +106,8 @@ function Column({
   stops,
   locs,
   soft,
-  darkStops,
-  shadeV,
 }: {
   soft: boolean;
-  /** the same gradient, recoloured darker (soft mode) */
-  darkStops?: string[];
-  shadeV?: SharedValue<number>;
   i: number;
   colW: number;
   period: number;
@@ -131,27 +131,11 @@ function Column({
         period * 0.04 * Math.sin(TAU * (x * 1.8 - 2 * t) + 1.3);
     return { transform: [{ translateY: -period * t + wave + saw - period * 0.15 }] };
   });
-  // stripes recolour one after another, left → right
-  const darkStyle = useAnimatedStyle(() => {
-    if (!shadeV) return { opacity: 0 };
-    const start = (stripe / (STRIPES - 1)) * 0.6;
-    const p = Math.min(1, Math.max(0, (shadeV.value - start) / 0.4));
-    return { opacity: p * p * (3 - 2 * p) };
-  });
   return (
     <Animated.View
       style={[{ position: "absolute", top: 0, left: Math.floor(i * colW), width: Math.ceil(colW) + 1, height: period * 3 }, style]}
     >
       <LinearGradient colors={stops as unknown as readonly [string, string, ...string[]]} locations={locs as unknown as readonly [number, number, ...number[]]} style={StyleSheet.absoluteFill} />
-      {soft && darkStops ? (
-        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, darkStyle]}>
-          <LinearGradient
-            colors={darkStops as unknown as readonly [string, string, ...string[]]}
-            locations={locs as unknown as readonly [number, number, ...number[]]}
-            style={StyleSheet.absoluteFill}
-          />
-        </Animated.View>
-      ) : null}
       {soft ? (
         // fluted glass: every stripe is a rounded glass blade — shaded where
         // it begins, catching more light across its width, with a bright
@@ -190,9 +174,9 @@ export default function AuroraBackground({
   grain = false,
   shade = 0,
   initialShade,
-  shadeMs = 650,
+  shadeMs = 1100,
 }: {
-  /** Recolour the stripes darker one by one (0 = normal, 1 = dark) — animated on change. */
+  /** Recolour the whole gradient darker (0 = normal, 1 = dark), washing in from the top — animated on change. */
   shade?: number;
   /** Where the darkening starts on mount (default: = shade, no animation). */
   initialShade?: number;
@@ -219,9 +203,17 @@ export default function AuroraBackground({
   const shadeV = useSharedValue(initialShade ?? shade);
   // the rim dims together with the recolour
   const rimStyle = useAnimatedStyle(() => ({ opacity: 1 - 0.65 * shadeV.value }));
+  // the dark layer only exists while it's (becoming) visible
+  const [darkOn, setDarkOn] = React.useState((initialShade ?? shade) > 0 || shade > 0);
   useEffect(() => {
-    shadeV.value = withTiming(shade, { duration: shadeMs, easing: Easing.inOut(Easing.quad) });
+    if (shade > 0) setDarkOn(true);
+    shadeV.value = withTiming(shade, { duration: shadeMs, easing: Easing.inOut(Easing.sin) }, (done) => {
+      if (done && shade === 0) runOnJS(setDarkOn)(false);
+    });
   }, [shade, shadeMs, shadeV]);
+  // a tall soft mask slides down: opaque on top, a full screen of feather below
+  const webDarkStyle = useAnimatedStyle(() => ({ opacity: shadeV.value }));
+  const maskStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -2 * H * (1 - shadeV.value) }] }));
 
   // the clock follows the frame timestamp (system time), so every copy of the
   // aurora — e.g. sign-in and the email screen fading over it — is in phase
@@ -232,8 +224,37 @@ export default function AuroraBackground({
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.root]}>
       {Array.from({ length: cols }, (_, i) => (
-        <Column key={i} i={i} colW={colW} period={period} clock={clock} stops={stops} locs={locs} soft={!!palette} darkStops={darkStops} shadeV={shadeV} />
+        <Column key={i} i={i} colW={colW} period={period} clock={clock} stops={stops} locs={locs} soft={!!palette} />
       ))}
+      {palette && darkStops && darkOn && Platform.OS === "web" ? (
+        // web: MaskedView renders only its mask there — fade the dark copy in whole
+        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, webDarkStyle]}>
+          {Array.from({ length: cols }, (_, i) => (
+            <Column key={`w${i}`} i={i} colW={colW} period={period} clock={clock} stops={darkStops} locs={locs} soft />
+          ))}
+        </Animated.View>
+      ) : null}
+      {palette && darkStops && darkOn && Platform.OS !== "web" ? (
+        // the same aurora, recoloured darker, revealed top → bottom through a
+        // soft gradient mask — the colours themselves deepen, no black veil
+        <MaskedView
+          pointerEvents="none"
+          style={StyleSheet.absoluteFill}
+          maskElement={
+            <Animated.View style={[{ position: "absolute", left: 0, right: 0, top: 0, height: 2 * H }, maskStyle]}>
+              <LinearGradient
+                colors={["#000000", "#000000", "rgba(0,0,0,0)"]}
+                locations={[0, 0.5, 1]}
+                style={StyleSheet.absoluteFill}
+              />
+            </Animated.View>
+          }
+        >
+          {Array.from({ length: cols }, (_, i) => (
+            <Column key={`d${i}`} i={i} colW={colW} period={period} clock={clock} stops={darkStops} locs={locs} soft />
+          ))}
+        </MaskedView>
+      ) : null}
       {/* keep the UI readable: deep top and bottom, softer middle */}
       {dim ? (
         <LinearGradient

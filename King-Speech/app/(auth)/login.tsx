@@ -42,7 +42,7 @@ export default function LoginScreen() {
   const goEmail = () => {
     if (leaving) return;
     setLeaving(true);
-    setTimeout(() => router.push("/(auth)/email"), 620);
+    setTimeout(() => router.push("/(auth)/email"), 950);
   };
   useFocusEffect(
     useCallback(() => {
