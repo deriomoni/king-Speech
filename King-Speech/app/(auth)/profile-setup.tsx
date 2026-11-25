@@ -2,7 +2,7 @@
 //   Oscar: «Здравствуйте! Меня зовут Оскар.» → «А как вас зовут?»
 //   → Oscar steps away, the question settles as the title, the name field appears
 //   → (return key) Oscar again: «{Имя}, рад знакомству!» → steps away
-//   → «Сколько вам лет?» with the options dropping in as bricks
+//   → «Сколько вам лет?» with the options fading in
 //   → picking one saves the draft and opens the short questionnaire.
 import React, { useEffect, useState } from "react";
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, Text, TextInput, View } from "react-native";
@@ -135,16 +135,13 @@ export default function ProfileSetupScreen() {
               kk: "King Speech кез келген жасқа лайық — бұл сізге тақырып таңдау үшін керек.",
             })}
           </Text>
-          <View style={s.bricks}>
+          <View style={s.chips}>
             {AGES.map((a, i) => {
               const on = age === a.id;
               return (
-                <Animated.View key={a.id} entering={FadeInDown.delay(250 + i * 70).duration(500)} style={s.brickCell}>
-                  <Pressable
-                    onPress={() => pickAge(a.id)}
-                    style={({ pressed }) => [s.brick, on && s.brickOn, pressed && s.brickPressed]}
-                  >
-                    <Text style={[s.brickTxt, on && s.brickTxtOn]}>{tr(a.label)}</Text>
+                <Animated.View key={a.id} entering={FadeInDown.delay(250 + i * 70).duration(500)}>
+                  <Pressable onPress={() => pickAge(a.id)} style={[s.chip, on && s.chipOn]}>
+                    <Text style={[s.chipTxt, on && s.chipTxtOn]}>{tr(a.label)}</Text>
                   </Pressable>
                 </Animated.View>
               );
@@ -182,20 +179,19 @@ const s = StyleSheet.create({
     fontFamily: "Geologica_600SemiBold",
   },
   note: { marginTop: 10, fontSize: 15, lineHeight: 21, color: "rgba(255,255,255,0.6)", fontFamily: "Geologica_500Medium" },
-  // options as bricks: a face on a darker side, pressed = sinks in
-  bricks: { marginTop: 22, flexDirection: "row", flexWrap: "wrap", marginHorizontal: -5 },
-  brickCell: { width: "50%", padding: 5 },
-  brick: {
-    height: 58,
-    borderRadius: 16,
-    backgroundColor: "#1C1C1F",
-    borderBottomWidth: 5,
-    borderBottomColor: "#0C0C0E",
+  chips: { marginTop: 22, flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  chip: {
+    minWidth: 96,
+    height: 52,
+    paddingHorizontal: 18,
+    borderRadius: 26,
+    backgroundColor: "#151517",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
-  brickOn: { backgroundColor: "#FFFFFF", borderBottomColor: "#9A9A9E" },
-  brickPressed: { borderBottomWidth: 1, marginTop: 4 },
-  brickTxt: { fontSize: 17, color: "#FFFFFF", fontFamily: "Geologica_800ExtraBold" },
-  brickTxtOn: { color: "#000000" },
+  chipOn: { backgroundColor: "#FFFFFF", borderColor: "#FFFFFF" },
+  chipTxt: { fontSize: 16, color: "#FFFFFF", fontFamily: "Geologica_700Bold" },
+  chipTxtOn: { color: "#000000" },
 });
