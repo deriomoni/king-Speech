@@ -72,8 +72,15 @@ const STOPS = tripled(BANDS);
 const LOCS = locsOf(STOPS);
 
 const COLUMNS = 72;
-/** Soft mode (sign-in): fewer, wider columns — the streaks read as a texture. */
-const SOFT_COLUMNS = 36;
+/** Soft mode (sign-in): the screen is cut into STRIPES; each stripe is built
+ *  from SLICES thin slices, every slice a little higher than the one before,
+ *  so the light runs diagonally through the stripe's own shape and steps
+ *  back down at the next stripe — a sawtooth of light. */
+const STRIPES = 9;
+const SLICES = 8;
+const SOFT_COLUMNS = STRIPES * SLICES;
+/** how far the gradient climbs across one stripe (share of the period) */
+const SAW = 0.15;
 const LOOP_MS = 18000;
 
 function Column({
@@ -93,7 +100,11 @@ function Column({
   stops: string[];
   locs: number[];
 }) {
-  const x = i / (soft ? SOFT_COLUMNS : COLUMNS);
+  const stripe = Math.floor(i / SLICES);
+  const slice = i % SLICES;
+  // soft: the whole stripe moves as one (wave sampled at its centre)
+  const x = soft ? (stripe + 0.5) / STRIPES : i / COLUMNS;
+  const saw = soft ? -(slice / (SLICES - 1)) * SAW * period : 0;
   const style = useAnimatedStyle(() => {
     const t = clock.value; // 0 → 1 per loop
     const TAU = Math.PI * 2;
@@ -103,17 +114,17 @@ function Column({
         period * 0.07 * Math.sin(TAU * (x * 0.5 + t)) + period * 0.015 * Math.sin(TAU * (x * 0.8 - t) + 0.9)
       : period * 0.085 * Math.sin(TAU * (x * 0.9 + t)) +
         period * 0.04 * Math.sin(TAU * (x * 1.8 - 2 * t) + 1.3);
-    return { transform: [{ translateY: -period * t + wave - period * 0.15 }] };
+    return { transform: [{ translateY: -period * t + wave + saw - period * 0.15 }] };
   });
   return (
     <Animated.View
       style={[{ position: "absolute", top: 0, left: Math.floor(i * colW), width: Math.ceil(colW) + 1, height: period * 3 }, style]}
     >
       <LinearGradient colors={stops as unknown as readonly [string, string, ...string[]]} locations={locs as unknown as readonly [number, number, ...number[]]} style={StyleSheet.absoluteFill} />
-      {soft ? (
-        // each streak: a faint light-to-shade sheen across its width
+      {soft && slice === 0 ? (
+        // a soft shade where a stripe begins, so each stripe reads as its own blade
         <LinearGradient
-          colors={["rgba(255,255,255,0.10)", "rgba(255,255,255,0)", "rgba(0,0,0,0.10)"]}
+          colors={["rgba(0,0,0,0.14)", "rgba(0,0,0,0)"]}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
           style={StyleSheet.absoluteFill}
