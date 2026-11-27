@@ -1,3 +1,4 @@
+import AppAlertHost from "@/components/AppAlertHost";
 // Type families (per the Figma design system):
 //  · Geologica = every UI string (titles, body, labels, buttons)
 //  · Literata  = reading / in-level literary content
@@ -129,14 +130,11 @@ function RootLayoutNav() {
         options={{ headerShown: false, presentation: "card" }}
       />
       <Stack.Screen
-        name="speaker-tips"
-        options={{ headerShown: false, presentation: "card" }}
-      />
-      <Stack.Screen
         name="diary-record"
         options={{ headerShown: false, presentation: FULL_MODAL, gestureEnabled: false, ...SOFT_FADE }}
       />
       </Stack>
+      <AppAlertHost />
     </NavThemeProvider>
   );
 }

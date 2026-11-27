@@ -122,7 +122,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     height: 56,
     borderRadius: 32,
-    borderWidth: 4,
   },
   ctaText: { fontSize: 17, fontFamily: warmupFonts.title },
   backLink: { marginTop: 18, padding: 8 },

@@ -39,7 +39,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "@/lib/haptics";
 import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useTheme } from "@/context/ThemeContext";
-import { useGame, getModuleQuote } from "@/context/GameContext";
+import { useGame, getModuleQuote, getRankForSection } from "@/context/GameContext";
+import RankProgressPill, { ModuleTopGlow } from "@/components/path/RankProgressPill";
+import { getPathBrickColor, darkenHex, readableText } from "@/constants/pathPalette";
+import { lightenHex } from "@/components/path/BrickStroke";
 import GoldCoin from "@/components/GoldCoin";
 import { rs } from "@/lib/responsive";
 import { MT_SPARKLE_SVG } from "@/assets/figma/endings/moduleTransitionSvgs";
@@ -337,6 +340,23 @@ export default function ModuleTransitionOverlay({
   const { width: W } = useWindowDimensions();
 
   const ink = dark ? "240,238,233" : "38,38,40";
+
+  // Rank progress in modules: the one just finished (`from`) counts as done.
+  const rank = getRankForSection(from);
+  const rankTotal = rank.toSection - rank.fromSection + 1;
+  const rankDone = Math.min(rankTotal, Math.max(0, from - rank.fromSection + 1));
+  const moduleColor = getPathBrickColor(to, dark);
+  const lum = (() => {
+    const n = parseInt(moduleColor.slice(1, 7), 16);
+    return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  })();
+  const HERO: Faces = {
+    front: [lightenHex(moduleColor, 0.22), moduleColor],
+    top: lightenHex(moduleColor, 0.55),
+    side: darkenHex(moduleColor, 0.22),
+    edge: "rgba(255,255,255,0.7)",
+    num: lum > 0.62 ? "rgba(20,20,22,0.85)" : "#FFFFFF",
+  };
   const quote =
     getModuleQuote(to, lang) ||
     (FALLBACK_QUOTES[lang] ?? FALLBACK_QUOTES.ru)[to % FALLBACK_QUOTES.ru.length];
@@ -495,6 +515,7 @@ export default function ModuleTransitionOverlay({
 
   return (
     <Animated.View style={[styles.root, { backgroundColor: theme.bg }, rootStyle]}>
+      <ModuleTopGlow color={moduleColor} isDark={dark} />
       <View
         style={{
           flex: 1,
@@ -515,6 +536,19 @@ export default function ModuleTransitionOverlay({
           {!!quote && <Text style={[styles.quote, { color: `rgba(${ink},0.55)` }]}>{quote}</Text>}
         </Animated.View>
 
+        {/* Frosted rank-progress pill above the staircase */}
+        <View style={styles.rankPill}>
+          <RankProgressPill
+            done={rankDone}
+            prevDone={rankDone - 1}
+            total={rankTotal}
+            color={moduleColor}
+            isDark={dark}
+            delay={LANDED_AT}
+            enterDelay={260}
+          />
+        </View>
+
         {/* Staircase scene — full screen width */}
         <View style={styles.stage} onLayout={(e) => setStage(e.nativeEvent.layout)}>
           {stage && sceneH > 0 && (
@@ -526,8 +560,8 @@ export default function ModuleTransitionOverlay({
                 <Svg width={rs(320)} height={rs(320)} viewBox="0 0 320 320">
                   <Defs>
                     <RadialGradient id="mtGold" cx="50%" cy="50%" r="50%">
-                      <Stop offset="0" stopColor="#FFD857" stopOpacity={dark ? 0.3 : 0.4} />
-                      <Stop offset="1" stopColor="#FFD857" stopOpacity={0} />
+                      <Stop offset="0" stopColor={moduleColor} stopOpacity={dark ? 0.3 : 0.4} />
+                      <Stop offset="1" stopColor={moduleColor} stopOpacity={0} />
                     </RadialGradient>
                   </Defs>
                   <Ellipse cx={160} cy={160} rx={160} ry={160} fill="url(#mtGold)" />
@@ -537,8 +571,8 @@ export default function ModuleTransitionOverlay({
               <Svg width={W} height={sceneH} style={StyleSheet.absoluteFill}>
                 <Defs>
                   <SvgLinearGradient id="gGold" x1="0" y1="0" x2="0" y2="1">
-                    <Stop offset="0" stopColor={GOLD.front[0]} />
-                    <Stop offset="1" stopColor={GOLD.front[1]} />
+                    <Stop offset="0" stopColor={HERO.front[0]} />
+                    <Stop offset="1" stopColor={HERO.front[1]} />
                   </SvgLinearGradient>
                   <SvgLinearGradient id="gStone" x1="0" y1="0" x2="0" y2="1">
                     <Stop offset="0" stopColor={stone.front[0]} />
@@ -606,7 +640,7 @@ export default function ModuleTransitionOverlay({
                       h={h * g * (1 - dip)}
                       dx={dx}
                       dy={dy}
-                      faces={i === 2 ? GOLD : stone}
+                      faces={i === 2 ? HERO : stone}
                       label={labels[i]}
                       labelOpacity={clamp01((g - 0.75) / 0.25)}
                       fontSize={i === 2 ? numSize : Math.round(numSize * 0.8)}
@@ -640,17 +674,16 @@ export default function ModuleTransitionOverlay({
             style={({ pressed }) => [
               styles.cta,
               {
-                backgroundColor: theme.accent,
-                borderColor: theme.ctaStroke,
+                backgroundColor: moduleColor,
                 transform: [{ scale: pressed ? 0.97 : 1 }],
               },
             ]}
           >
             <View style={styles.ctaRow}>
-              <Text style={[styles.ctaText, { color: theme.accentText }]}>
+              <Text style={[styles.ctaText, { color: readableText(moduleColor) }]}>
                 {pickLang(lang, { ru: `К модулю ${to}`, en: `To module ${to}`, kk: `${to}-модульге` })}
               </Text>
-              <NextChevron color={theme.accentText} size={rs(17)} />
+              <NextChevron color={readableText(moduleColor)} size={rs(17)} />
             </View>
           </Pressable>
         </Animated.View>
@@ -722,6 +755,7 @@ const styles = StyleSheet.create({
     maxWidth: 300,
   },
   stage: { flex: 1, marginHorizontal: -28, marginTop: 8, marginBottom: 40 },
+  rankPill: { marginTop: 22 },
   reward: {
     height: 58,
     alignItems: "center",
@@ -733,7 +767,6 @@ const styles = StyleSheet.create({
     marginTop: 14,
     height: 58,
     borderRadius: 32,
-    borderWidth: 4,
     alignItems: "center",
     justifyContent: "center",
   },

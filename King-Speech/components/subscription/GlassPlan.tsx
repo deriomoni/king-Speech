@@ -122,14 +122,13 @@ function BuyButton({
       <Animated.View pointerEvents="none" style={[st.halo, { backgroundColor: glow }, halo]} />
       <Animated.View style={[st.ctaWrap, { shadowColor: glow }, shine]}>
         <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.cta}>
-          {/* glass: bright top sheen + inner rim */}
+          {/* glass: bright top sheen */}
           <LinearGradient
             pointerEvents="none"
             colors={["rgba(255,255,255,0.75)", "rgba(255,255,255,0)"]}
             locations={[0, 0.55]}
             style={StyleSheet.absoluteFill}
           />
-          <View pointerEvents="none" style={st.ctaRim} />
           <Text style={[st.ctaText, { color: textColor }]}>{label}</Text>
         </LinearGradient>
       </Animated.View>
@@ -258,7 +257,7 @@ const st = StyleSheet.create({
   tiles: { flexDirection: "row", gap: 10, marginTop: 18 },
   tile: { flex: 1, height: 70, borderRadius: 20, paddingHorizontal: 14, justifyContent: "center" },
   tileOn: { backgroundColor: "#FFF7F0" },
-  tileOff: { backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
+  tileOff: { backgroundColor: "rgba(255,255,255,0.12)" },
   tileLabel: { fontSize: 11, letterSpacing: 0.6, fontFamily: "Geologica_800ExtraBold" },
   tilePrice: { marginTop: 3, fontSize: 21, letterSpacing: -0.2, fontFamily: "Geologica_900Black" },
   save: {
@@ -281,7 +280,6 @@ const st = StyleSheet.create({
   halo: { position: "absolute", left: 6, right: 6, top: 2, bottom: 2, borderRadius: 24 },
   ctaWrap: { borderRadius: 20, shadowRadius: 18, shadowOffset: { width: 0, height: 0 } },
   cta: { height: 58, borderRadius: 20, alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  ctaRim: { position: "absolute", left: 0, right: 0, top: 0, bottom: 0, borderRadius: 20, borderWidth: 1.2, borderColor: "rgba(255,255,255,0.85)" },
   ctaText: { fontSize: 17, letterSpacing: -0.1, fontFamily: "Geologica_900Black" },
 
   free: { padding: 20, gap: 14 },

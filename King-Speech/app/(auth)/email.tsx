@@ -2,9 +2,9 @@
 // screen. Signing in or up flips the auth state; the root gate then routes on
 // (profile-setup for a brand-new account, otherwise onboarding or the app).
 import React, { useEffect, useState } from "react";
+import { appAlert } from "@/lib/appAlert";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -72,7 +72,7 @@ export default function EmailAuthScreen() {
     }
     const ok = await resetPassword(email);
     if (ok) {
-      Alert.alert(
+      appAlert(
         tr({ ru: "Письмо отправлено", en: "Email sent", kk: "Хат жіберілді" }),
         tr({ ru: "Проверь почту — там ссылка для нового пароля.", en: "Check your inbox for a link to set a new password.", kk: "Поштаңызды тексеріңіз — жаңа құпиясөз сілтемесі сонда." }),
       );

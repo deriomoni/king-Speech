@@ -180,7 +180,6 @@ const styles = StyleSheet.create({
   mBtn: {
     height: 52,
     borderRadius: 32,
-    borderWidth: 4,
     alignItems: "center",
     justifyContent: "center",
   },

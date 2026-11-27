@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 // «Стать автором» → Show Time stage hand-off (app/author.tsx ↔ app/showtime-stage.tsx).
 // The stage writes the result here when the reading is finished; the editor
 // consumes it on focus and opens its publish sheet.
@@ -23,4 +24,47 @@ export function splitAuthorText(text: string): string[] {
     }
   }
   return out;
+}
+
+// ── My Studio drafts (local) ────────────────────────────────────────────────
+// Every speech the player saves in My Studio lands here first; from the drafts
+// list it can be read on the stage, and published from the score screen.
+
+export const AUTHOR_DRAFTS_KEY = "@kingspeech_author_drafts_v1";
+
+export type AuthorCategoryId = "holidays" | "business" | "study" | "kids";
+
+export type AuthorDraft = {
+  id: string;
+  title: string;
+  category: AuthorCategoryId;
+  text: string;
+  coverUri?: string;
+  updatedAt: number;
+  /** Set once the speech was sent to the public catalog. */
+  publishedAt?: number;
+};
+
+export async function readAuthorDrafts(): Promise<AuthorDraft[]> {
+  try {
+    const raw = await AsyncStorage.getItem(AUTHOR_DRAFTS_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr.sort((a: AuthorDraft, b: AuthorDraft) => b.updatedAt - a.updatedAt) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function writeAuthorDrafts(drafts: AuthorDraft[]): Promise<void> {
+  await AsyncStorage.setItem(AUTHOR_DRAFTS_KEY, JSON.stringify(drafts.slice(0, 50)));
+}
+
+/** Insert or update one draft (newest first). */
+export async function upsertAuthorDraft(draft: AuthorDraft): Promise<void> {
+  const rest = (await readAuthorDrafts()).filter((d) => d.id !== draft.id);
+  await writeAuthorDrafts([draft, ...rest]);
+}
+
+export async function deleteAuthorDraft(id: string): Promise<void> {
+  await writeAuthorDrafts((await readAuthorDrafts()).filter((d) => d.id !== id));
 }

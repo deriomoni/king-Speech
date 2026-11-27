@@ -1,5 +1,6 @@
 // «Настройки · Аккаунт» — Figma 313:4647.
 import React, { useState } from "react";
+import { appAlert } from "@/lib/appAlert";
 import {
   View,
   Text,
@@ -9,8 +10,7 @@ import {
   Platform,
   Image,
   ActivityIndicator,
-  Alert,
-} from "react-native";
+  } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -71,7 +71,7 @@ export default function AccountScreen() {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert(pickLang(lang, { ru: "Доступ к фото", en: "Photo access", kk: "Фотоға рұқсат" }), pickLang(lang, { ru: "Разреши доступ к галерее, чтобы установить аватар.", en: "Allow gallery access to set your avatar.", kk: "Аватар орнату үшін галереяға рұқсат беріңіз." }));
+        appAlert(pickLang(lang, { ru: "Доступ к фото", en: "Photo access", kk: "Фотоға рұқсат" }), pickLang(lang, { ru: "Разреши доступ к галерее, чтобы установить аватар.", en: "Allow gallery access to set your avatar.", kk: "Аватар орнату үшін галереяға рұқсат беріңіз." }));
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({

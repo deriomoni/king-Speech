@@ -301,9 +301,7 @@ const pb = StyleSheet.create({
     elevation: 6,
   },
   btnGhost: {
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: sonic.glassBorder,
+    backgroundColor: "rgba(255,255,255,0.12)",
     shadowOpacity: 0,
     elevation: 0,
   },

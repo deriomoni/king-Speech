@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import NextChevron from "@/components/NextChevron";
 import * as Haptics from "@/lib/haptics";
 import WaveformVoiceRecorder from "@/components/WaveformVoiceRecorder";
+import { WavePill, WavePlayButton, WaveBars } from "@/components/VoiceWave";
 import { toneFor, aspectsFromScore10 } from "@/components/ScoreFlower";
 import { analyzeGenericTask, type TaskAnalysisResult } from "@/services/analyzeGenericTask";
 import { scoreLiteracy, type LiteracyResult } from "@/services/literacyScore";
@@ -673,7 +674,7 @@ export default function TaskFlowView({
           <Animated.View
             key="ana"
             entering={FadeIn.duration(200)}
-            style={[st.analyzingPill, { backgroundColor: theme.accent, borderColor: theme.ctaStroke }]}
+            style={[st.analyzingPill, { backgroundColor: theme.accent }]}
           >
             <ActivityIndicator size="small" color={theme.accentText} />
             <Text style={[st.pillText, { color: theme.accentText, fontFamily: "Geologica_800ExtraBold" }]}>
@@ -688,7 +689,7 @@ export default function TaskFlowView({
                 onPress={advance}
                 style={({ pressed }) => [
                   st.pill,
-                  { backgroundColor: theme.accent, borderColor: theme.ctaStroke, borderWidth: 4, opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+                  { backgroundColor: theme.accent, opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
                 ]}
               >
                 <Text style={[st.pillText, { color: theme.accentText, fontFamily: "Geologica_800ExtraBold" }]}>
@@ -944,8 +945,7 @@ function fmtClock(sec: number): string {
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
 
-// Figma "Recorder bar" · state Playback: gold play disc, waveform with a gold
-// playhead (played part solid, rest 30%), duration on the right.
+// Playback: iMessage-style voice pill — bare ▶, bars light up as they play.
 function PlaybackBar({
   wave,
   durationSec,
@@ -963,66 +963,16 @@ function PlaybackBar({
   onPress: () => void;
   lang: Lang;
 }) {
-  const { theme, themeMode } = useTheme();
-  const isDark = themeMode === "dark";
-  const [w, setW] = useState(0);
   const bars = resampleWave(wave, PLAYBACK_BARS);
   // At rest the whole take reads solid; while playing, bars right of the
   // playhead dim to 30%.
   const showHead = playing || progress > 0;
   const played = showHead ? progress : 1;
-  const dim = isDark ? "rgba(240,238,233,0.3)" : "rgba(38,38,40,0.25)";
   return (
-    <View
-      style={[
-        st.pbBar,
-        {
-          backgroundColor: theme.cardElevated,
-          borderColor: isDark ? "rgba(240,238,233,0.45)" : "rgba(38,38,40,0.3)",
-        },
-      ]}
-    >
-      <Pressable
-        onPress={onPress}
-        disabled={disabled}
-        hitSlop={8}
-        accessibilityRole="button"
-        accessibilityLabel={playing ? (pickLang(lang, { ru: "Остановить", en: "Stop", kk: "Тоқтату" })) : pickLang(lang, { ru: "Прослушать запись", en: "Play recording", kk: "Жазбаны тыңдау" })}
-        style={({ pressed }) => [
-          st.pbPlay,
-          { backgroundColor: theme.accent, opacity: disabled ? 0.45 : pressed ? 0.8 : 1 },
-        ]}
-      >
-        {playing ? (
-          <View style={[st.pbStop, { backgroundColor: theme.accentText }]} />
-        ) : (
-          <Ionicons name="play" size={rs(16)} color={theme.accentText} style={{ marginLeft: rs(2) }} />
-        )}
-      </Pressable>
-      <View style={st.pbWave} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
-        {bars.map((v, i) => (
-          <View
-            key={i}
-            style={[
-              st.pbWaveBar,
-              {
-                height: rs(6 + v * 28),
-                backgroundColor: (i + 0.5) / bars.length <= played ? theme.text : dim,
-              },
-            ]}
-          />
-        ))}
-        {showHead && w > 0 ? (
-          <View pointerEvents="none" style={[st.pbHead, { left: Math.max(0, Math.min(w - rs(2), progress * w)) - rs(2.5) }]}>
-            <View style={[st.pbHeadDot, { backgroundColor: theme.accent }]} />
-            <View style={[st.pbHeadLine, { backgroundColor: theme.accent }]} />
-          </View>
-        ) : null}
-      </View>
-      <Text style={[st.pbTime, { color: isDark ? "rgba(240,238,233,0.6)" : theme.textSecondary }]}>
-        {fmtClock(durationSec)}
-      </Text>
-    </View>
+    <WavePill>
+      <WavePlayButton playing={playing} onPress={onPress} disabled={disabled} />
+      <WaveBars values={bars} lit={Math.round(played * bars.length)} />
+    </WavePill>
   );
 }
 
@@ -1245,7 +1195,7 @@ function DevReport({
           onPress={onContinue}
           style={({ pressed }) => [
             st.devContinue,
-            { backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.9 : 1 },
+            { backgroundColor: theme.accent, opacity: pressed ? 0.9 : 1 },
           ]}
         >
           <Text style={[st.devContinueText, { color: theme.accentText }]}>{pickLang(lang, { ru: "Продолжить", en: "Continue", kk: "Жалғастыру" })}</Text>
@@ -1332,7 +1282,6 @@ const st = StyleSheet.create({
     width: "100%",
     height: 64,
     borderRadius: 32,
-    borderWidth: 4,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1436,7 +1385,6 @@ const st = StyleSheet.create({
     marginTop: 44,
     height: 58,
     borderRadius: 32,
-    borderWidth: 4,
     alignItems: "center",
     justifyContent: "center",
   },

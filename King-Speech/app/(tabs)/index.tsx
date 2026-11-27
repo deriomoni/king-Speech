@@ -1453,6 +1453,7 @@ export default function PathScreen() {
         </View>
       </Animated.ScrollView>
 
+
       <Animated.View
         pointerEvents={showFab ? "auto" : "none"}
         style={[

@@ -95,20 +95,22 @@ export function PriceTile({
   let priceColor: string;
   if (variant === "royal") {
     box = selected
-      ? { backgroundColor: INK, borderColor: INK, borderWidth: 2 }
-      : { backgroundColor: "rgba(38,38,40,0.08)", borderColor: "rgba(38,38,40,0.15)", borderWidth: 2 };
+      ? { backgroundColor: INK }
+      : { backgroundColor: "rgba(38,38,40,0.08)" };
     labelColor = selected ? "rgba(255,216,87,0.85)" : "rgba(38,38,40,0.6)";
     priceColor = selected ? GOLD : INK;
   } else {
     box = selected
-      ? { backgroundColor: GOLD, borderColor: "transparent", borderWidth: 4 }
-      : { backgroundColor: "rgba(240,238,233,0.08)", borderColor: "rgba(240,238,233,0.15)", borderWidth: 2 };
+      ? { backgroundColor: GOLD }
+      : { backgroundColor: "rgba(240,238,233,0.08)" };
     labelColor = selected ? "rgba(38,38,40,0.85)" : "rgba(240,238,233,0.6)";
     priceColor = selected ? INK : CREAM;
   }
-  const thick = (box.borderWidth as number) === 4;
-  const top = rs(thick ? 10 : 11);
-  const left = rs(thick ? 12 : 13);
+  // the tiles used to carry a 2/4pt border; keep that inset so the content doesn't shift
+  const thick = variant !== "royal" && selected;
+  const rim = thick ? 4 : 2;
+  const top = rim + rs(thick ? 10 : 11);
+  const left = rim + rs(thick ? 12 : 13);
   return (
     <Pressable
       onPress={onPress}
@@ -127,7 +129,7 @@ export function PriceTile({
           label={save}
           bg={GOLD}
           color={INK}
-          style={{ position: "absolute", left: rs(102), top: rs(10), paddingHorizontal: rs(7), paddingVertical: rs(2) }}
+          style={{ position: "absolute", left: rim + rs(102), top: rim + rs(10), paddingHorizontal: rs(7), paddingVertical: rs(2) }}
         />
       ) : null}
     </Pressable>

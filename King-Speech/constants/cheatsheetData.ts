@@ -592,6 +592,36 @@ const finalStep: FinalStep = {
   mantra: { ru: "Голос разогрет, дыхание ровное. Сцена твоя.", en: "Voice warmed up, breath steady. The stage is yours.", kk: "Дауыс қызды, тыныс бірқалыпты. Сахна сіздікі." },
 };
 
+// «Ты готов!» checklist: three of these, picked fresh every time the screen
+// opens — quick last-second reminders before walking out.
+export const FINAL_TIPS: Loc[] = [
+  { ru: "Плечи вниз, макушка вверх.", en: "Shoulders down, crown up.", kk: "Иық төмен, төбе жоғары." },
+  { ru: "Один спокойный вдох.", en: "One calm breath.", kk: "Бір тыныш дем." },
+  { ru: "Первую фразу — уверенно и не спеша.", en: "Deliver your first line with calm confidence.", kk: "Алғашқы сөйлемді — сенімді әрі асықпай." },
+  { ru: "Найди глазами доброе лицо в зале.", en: "Find a friendly face in the room.", kk: "Залдан мейірімді жүзді тап." },
+  { ru: "Пауза — твой союзник, не враг.", en: "A pause is your ally, not your enemy.", kk: "Үзіліс — жауың емес, одағың." },
+  { ru: "Говори на выдохе.", en: "Speak on the out-breath.", kk: "Дем шығарып сөйле." },
+  { ru: "Улыбнись перед первым словом.", en: "Smile before your first word.", kk: "Алғашқы сөз алдында күлімде." },
+  { ru: "Говори медленнее, чем хочется.", en: "Speak slower than you feel like.", kk: "Қалағаныңнан баяу сөйле." },
+  { ru: "Волнение — это энергия. Направь её в голос.", en: "Nerves are energy. Put them into your voice.", kk: "Толқу — бұл энергия. Оны дауысқа бағытта." },
+  { ru: "Стой устойчиво, обе стопы на полу.", en: "Stand steady, both feet on the floor.", kk: "Нық тұр, екі аяқ еденде." },
+  { ru: "Ошибся — просто продолжай.", en: "Slipped up? Just keep going.", kk: "Қателестің бе — жалғастыра бер." },
+  { ru: "Помни главную мысль — остальное придёт.", en: "Hold on to your main point — the rest will come.", kk: "Басты ойды есте сақта — қалғаны келеді." },
+  { ru: "Держи руки свободными, не прячь их.", en: "Keep your hands free, don't hide them.", kk: "Қолыңды еркін ұста, жасырма." },
+  { ru: "Говори для последнего ряда.", en: "Speak to the back row.", kk: "Соңғы қатарға арнап сөйле." },
+  { ru: "Тебя пришли слушать, а не судить.", en: "They came to listen, not to judge.", kk: "Олар сынау үшін емес, тыңдау үшін келді." },
+];
+
+/** Three distinct tips from FINAL_TIPS, in random order. */
+export function pickFinalTips(n = 3): Loc[] {
+  const pool = [...FINAL_TIPS];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, n);
+}
+
 // Full tongue-twister pool (easy → hellish) — used by the karaoke twister view's
 // "Замена" (replace) button to cycle to another twister.
 export const TWISTERS: TwisterStep[] = [

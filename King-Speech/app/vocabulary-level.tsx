@@ -114,7 +114,8 @@ export default function VocabularyLevelScreen() {
   const { addXP, markLevelComplete, getLevelById, claimLevelReward } = useGame();
   const { t: tr, lang: uiLang } = useLang();
   // First clear → trophy + coins, then the module transition.
-  const [victory, setVictory] = useState<{ coins: number; score: number } | null>(null);
+  const [victory, setVictory] = useState<{ coins: number; score: number; dur: number } | null>(null);
+  const startedAtRef = React.useRef(Date.now());
   // coins and the module-passed celebration are for the first clear only
   const clearedBefore = React.useRef<boolean | null>(null);
   if (clearedBefore.current === null) clearedBefore.current = !!getLevelById(levelId as any)?.completed;
@@ -257,14 +258,14 @@ export default function VocabularyLevelScreen() {
             if (victory) return;
             if (first) addXP(Math.min(50, foundSynonyms.length * 6));
             markLevelComplete(levelId);
-            // First clear → trophy + coins (paid once, from found / total).
+            // First clear → coins (paid once, from found / total). No trophy
+            // screen here: it's only for interview / tongue twisters / reading.
             if (first) {
               const total = selectedWord.synonyms.length || 1;
               const score10 = Math.min(10, (foundSynonyms.length / total) * 10);
-              setVictory({ coins: claimLevelReward(levelId, score10), score: score10 });
-              return;
+              claimLevelReward(levelId, score10);
             }
-            continueAfterLevel(false);
+            continueAfterLevel(first);
           }}
         />
       )}
@@ -276,7 +277,7 @@ export default function VocabularyLevelScreen() {
           xpEarned={victory.coins}
           avgScore={victory.score}
           bestScore={victory.score}
-          durationSec={0}
+          durationSec={victory.dur}
           hasNext
           onNext={() => continueAfterLevel(true)}
           onMap={() => continueAfterLevel(true)}
@@ -1270,7 +1271,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 24,
     height: 56,
     borderRadius: 32,
-    borderWidth: 4,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1317,7 +1317,6 @@ const styles = StyleSheet.create({
     width: 104,
     height: 104,
     borderRadius: 52,
-    borderWidth: 4,
     alignItems: "center",
     justifyContent: "center",
   },

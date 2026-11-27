@@ -387,13 +387,20 @@ const s = StyleSheet.create({
   },
   btnBlock: { height: 58 + DEPTH, marginHorizontal: 24 },
   btn3d: { height: 58 + DEPTH },
-  btnBase: { position: "absolute", left: 0, right: 0, top: DEPTH, height: 58, borderRadius: 32, backgroundColor: "#000000" },
+  // the base runs the full height, so its side walls meet the face at the top
+  btnBase: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: 32,
+    backgroundColor: "#1B1B1F",
+  },
   btnFace: {
     height: 58,
     borderRadius: 32,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.16)",
     alignItems: "center",
     justifyContent: "center",
   },

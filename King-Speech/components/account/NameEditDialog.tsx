@@ -42,7 +42,7 @@ export default function NameEditDialog({
             style={[styles.input, { color: colors.text, borderColor: colors.border }]}
           />
           <View style={styles.btns}>
-            <Pressable onPress={onCancel} style={[styles.btn, { borderWidth: 1.5, borderColor: colors.border }]}>
+            <Pressable onPress={onCancel} style={[styles.btn, { backgroundColor: isDark ? "rgba(255,255,255,0.12)" : "rgba(17,17,20,0.08)" }]}>
               <Text style={[styles.btnText, { color: colors.text }]}>{pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" })}</Text>
             </Pressable>
             <Pressable

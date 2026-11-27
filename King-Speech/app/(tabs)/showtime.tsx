@@ -406,14 +406,14 @@ export default function ShowTimeScreen() {
             style={st.backing}
             pointerEvents="none"
           />
-          {/* Modes · bento (380:1122): «Королевские манеры» + «Подсказки» */}
+          {/* Modes · bento (380:1122): «Королевские манеры» + «My Studio» */}
           <View style={st.backingInner}>
             <EdgeScale>
             <ShowTimeModeTiles
               mode={isLight ? "light" : "dark"}
               lang={lang}
               onManners={() => router.push("/manners")}
-              onHints={() => router.push("/speaker-tips")}
+              onStudio={() => router.push("/author")}
             />
             </EdgeScale>
           </View>

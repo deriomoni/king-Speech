@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { appAlert } from "@/lib/appAlert";
 import {
   View,
   Text,
@@ -8,14 +9,13 @@ import {
   Platform,
   Image,
   ActivityIndicator,
-  Alert,
   Modal,
   TextInput,
 } from "react-native";
 import OverscrollFill from "@/components/OverscrollFill";
 import { EdgeScale, EdgeScaleProvider, useEdgeScroll } from "@/components/EdgeScale";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { SvgXml } from "react-native-svg";
@@ -36,20 +36,31 @@ import { useTheme, type Theme } from "@/context/ThemeContext";
 import ProfileCover, { COVER_HEIGHT, PlainPlateThumb } from "@/components/profile/ProfileCover";
 import { COVER_PATTERNS, COVER_ART_RATIO } from "@/components/profile/coverPatterns";
 import StreakCard from "@/components/profile/StreakCard";
-import GlossTile, { type TilePalette } from "@/components/profile/GlossTile";
+import { type TilePalette } from "@/components/profile/GlossTile";
+import SoftTile from "@/components/profile/SoftTile";
+import CoinScatter, { SPARK_COLOR } from "@/components/profile/CoinScatter";
+import LibraryLogo from "@/components/profile/LibraryLogo";
+import { isDailyClaimedToday } from "@/components/DailyRewards";
 
-// Each profile tile has its own colour (same in light and dark).
+// Flat bright tiles (same in light and dark), Google Labs-style palette:
+// saturated-but-soft fills with dark ink.
+const TILE_INK = "#1F1E1D";
+// Shared tile geometry so all cards read as one set.
+const TILE_H = 196;
+const TILE_BAND = 62;
+const TILE_TITLE = 16;
+const TILE_BLOB = 46;
 const TILE_PALETTES: Record<"diary" | "studio" | "library" | "coins", TilePalette> = {
-  diary: { fill: ["#FF8A5C", "#E8457A", "#8E2A72"], glow: "#FFD3B5" },
-  studio: { fill: ["#9B7BFF", "#6B42E6", "#33188F"], glow: "#D9CCFF" },
-  library: { fill: ["#36CDB0", "#14918A", "#0B4A5C"], glow: "#B8FFF0" },
-  coins: { fill: ["#4B6BFF", "#2537C9", "#141C6E"], glow: "#FFE7A3" },
+  // each colour drifts to a neighbouring hue at the bottom
+  diary: { color: "#A0A3FF", ink: TILE_INK }, // Raman
+  studio: { color: "#5B3DB8", ink: "#F4F2EE", flat: true }, // deep violet, solid
+  library: { color: "#F7F6F2", ink: TILE_INK }, // light paper, colourful books
+  coins: { color: "#5C5BEE", ink: "#FFFFFF" }, // Röntgen — white ink reads better
 };
 import ProfileMenuPopover, { type MenuAnchor, type MenuOption } from "@/components/profile/ProfileMenuPopover";
 import {
   CASSETTE,
   QUILL,
-  LIBRARY,
   COINS,
   RANK_SHIELD,
   themedSvg,
@@ -131,6 +142,13 @@ export default function ProfileScreen() {
   const { t, lang } = useLang();
   const insets = useSafeAreaInsets();
   const { levels, coins, activityLog, currentRank } = useGame();
+  // «Получите бесплатные монеты» (hidden once) today’s daily bonus is taken (on /coins).
+  const [dailyClaimed, setDailyClaimed] = useState(false);
+  useFocusEffect(
+    React.useCallback(() => {
+      isDailyClaimedToday().then(setDailyClaimed);
+    }, []),
+  );
   const { user, setPhotoURL, saveProfile } = useAuth();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
@@ -171,7 +189,7 @@ export default function ProfileScreen() {
         } catch (e: any) {
           console.warn("[profile] avatar upload failed:", e);
           await setPhotoURL(asset.uri);
-          Alert.alert(pickLang(lang, { ru: "Загрузка", en: "Upload", kk: "Жүктеу" }), pickLang(lang, { ru: "Не удалось загрузить в облако — фото сохранено локально.", en: "Couldn't upload to the cloud — the photo is saved on this device.", kk: "Бұлтқа жүктеу мүмкін болмады — фото құрылғыда сақталды." }));
+          appAlert(pickLang(lang, { ru: "Загрузка", en: "Upload", kk: "Жүктеу" }), pickLang(lang, { ru: "Не удалось загрузить в облако — фото сохранено локально.", en: "Couldn't upload to the cloud — the photo is saved on this device.", kk: "Бұлтқа жүктеу мүмкін болмады — фото құрылғыда сақталды." }));
         }
       } else {
         await setPhotoURL(asset.uri);
@@ -185,7 +203,7 @@ export default function ProfileScreen() {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert(pickLang(lang, { ru: "Доступ к фото", en: "Photo access", kk: "Фотоға рұқсат" }), pickLang(lang, { ru: "Разреши доступ к галерее, чтобы установить аватар.", en: "Allow gallery access to set your avatar.", kk: "Аватар орнату үшін галереяға рұқсат беріңіз." }));
+        appAlert(pickLang(lang, { ru: "Доступ к фото", en: "Photo access", kk: "Фотоға рұқсат" }), pickLang(lang, { ru: "Разреши доступ к галерее, чтобы установить аватар.", en: "Allow gallery access to set your avatar.", kk: "Аватар орнату үшін галереяға рұқсат беріңіз." }));
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -198,7 +216,7 @@ export default function ProfileScreen() {
       await uploadPickedAsset(result.assets[0]);
     } catch (e: any) {
       console.warn("[profile] pick avatar failed:", e);
-      Alert.alert(pickLang(lang, { ru: "Ошибка", en: "Error", kk: "Қате" }), e?.message ?? pickLang(lang, { ru: "Не удалось выбрать фото", en: "Couldn't pick a photo", kk: "Фото таңдау мүмкін болмады" }));
+      appAlert(pickLang(lang, { ru: "Ошибка", en: "Error", kk: "Қате" }), e?.message ?? pickLang(lang, { ru: "Не удалось выбрать фото", en: "Couldn't pick a photo", kk: "Фото таңдау мүмкін болмады" }));
     }
   };
 
@@ -206,7 +224,7 @@ export default function ProfileScreen() {
     try {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert(pickLang(lang, { ru: "Доступ к камере", en: "Camera access", kk: "Камераға рұқсат" }), pickLang(lang, { ru: "Разреши доступ к камере, чтобы сделать селфи.", en: "Allow camera access to take a selfie.", kk: "Селфи түсіру үшін камераға рұқсат беріңіз." }));
+        appAlert(pickLang(lang, { ru: "Доступ к камере", en: "Camera access", kk: "Камераға рұқсат" }), pickLang(lang, { ru: "Разреши доступ к камере, чтобы сделать селфи.", en: "Allow camera access to take a selfie.", kk: "Селфи түсіру үшін камераға рұқсат беріңіз." }));
         return;
       }
       const result = await ImagePicker.launchCameraAsync({
@@ -219,7 +237,7 @@ export default function ProfileScreen() {
       await uploadPickedAsset(result.assets[0]);
     } catch (e: any) {
       console.warn("[profile] take selfie failed:", e);
-      Alert.alert(pickLang(lang, { ru: "Ошибка", en: "Error", kk: "Қате" }), e?.message ?? pickLang(lang, { ru: "Не удалось сделать селфи", en: "Couldn't take a selfie", kk: "Селфи түсіру мүмкін болмады" }));
+      appAlert(pickLang(lang, { ru: "Ошибка", en: "Error", kk: "Қате" }), e?.message ?? pickLang(lang, { ru: "Не удалось сделать селфи", en: "Couldn't take a selfie", kk: "Селфи түсіру мүмкін болмады" }));
     }
   };
 
@@ -262,7 +280,7 @@ export default function ProfileScreen() {
       return;
     }
     closeMenuThen(() => {
-      Alert.alert(pickLang(lang, { ru: "Фото профиля", en: "Profile photo", kk: "Профиль фотосы" }), undefined, [
+      appAlert(pickLang(lang, { ru: "Фото профиля", en: "Profile photo", kk: "Профиль фотосы" }), undefined, [
         { text: t("takeSelfie"), onPress: () => handleTakeSelfie() },
         { text: t("chooseFromGallery"), onPress: () => handlePickFromGallery() },
         { text: t("cancel"), style: "cancel" },
@@ -312,7 +330,7 @@ export default function ProfileScreen() {
       await saveProfile(trimmed, user?.gender ?? "male");
     } catch (e: any) {
       console.warn("[profile] save name failed:", e);
-      Alert.alert(pickLang(lang, { ru: "Ошибка", en: "Error", kk: "Қате" }), e?.message ?? pickLang(lang, { ru: "Не удалось сохранить имя", en: "Couldn't save the name", kk: "Атты сақтау мүмкін болмады" }));
+      appAlert(pickLang(lang, { ru: "Ошибка", en: "Error", kk: "Қате" }), e?.message ?? pickLang(lang, { ru: "Не удалось сохранить имя", en: "Couldn't save the name", kk: "Атты сақтау мүмкін болмады" }));
     }
   };
 
@@ -492,90 +510,69 @@ export default function ProfileScreen() {
             pointerEvents="none"
           />
 
-          {/* Bento: tall diary on the left, studio + library stacked on the right,
-              coins across the bottom. */}
+          {/* Bento: diary + library side by side (mirrored blob corners, same
+              band, same type scale, art centred above the title), coins below. */}
           <EdgeScale entering={FadeInDown.delay(220).duration(400)} style={styles.bentoRow}>
-            <GlossTile
-              mode={mode}
-              idSuffix="diary"
-              height={232}
-              radius={32}
+            <SoftTile
+              height={TILE_H}
+              band={TILE_BAND}
               style={{ flex: 1 }}
-              text={{
-                title: pickLang(lang, { ru: "Аудио-дневник", en: "Audio diary", kk: "Аудиокүнделік" }),
-                sub: pickLang(lang, { ru: "Расскажи, как прошёл день", en: "Tell how your day went", kk: "Күніңіз қалай өткенін айтып беріңіз" }),
-                x: 18,
-                y: 156,
-                titleSize: 17,
-                subSize: 12,
-                subOffset: 27,
-                subLines: 2,
-              }}
-              spot={{ x: -40, y: -60, size: 260 }}
               palette={TILE_PALETTES.diary}
-              art={art(themedSvg(CASSETTE, "dark"), 18, 34, 140, 89)}
+              title={pickLang(lang, { ru: "Аудио-дневник", en: "Audio diary", kk: "Аудиокүнделік" })}
+              sub={pickLang(lang, { ru: "Расскажи о дне", en: "Tell about your day", kk: "Күніңді айтып бер" })}
+              titleSize={TILE_TITLE}
+              blob={{ corner: "tl", radius: TILE_BLOB }}
+              art={
+                <View pointerEvents="none" style={[styles.tileArt, { top: rs(30) }]}>
+                  <SvgXml xml={themedSvg(CASSETTE, "dark")} width={rs(122)} height={rs(78)} />
+                </View>
+              }
               onPress={() => router.push("/diary")}
             />
-            <View style={styles.bentoCol}>
-              <GlossTile
-                mode={mode}
-                idSuffix="author"
-                height={110}
-                radius={32}
-                text={{
-                  title: "My Studio",
-                  sub: pickLang(lang, { ru: "Предложи свою тему", en: "Suggest your topic", kk: "Өз тақырыбыңызды ұсыныңыз" }),
-                  x: 16,
-                  y: 62,
-                  titleSize: 16,
-                  subSize: 11,
-                  subOffset: 22,
-                }}
-                spot={{ x: 40, y: -80, size: 200 }}
-                palette={TILE_PALETTES.studio}
-                art={art(themedSvg(QUILL, "dark"), 104, 8, 58, 53)}
-                onPress={() => router.push("/author")}
-              />
-              <GlossTile
-                mode={mode}
-                idSuffix="library"
-                height={110}
-                radius={32}
-                text={{
-                  title: pickLang(lang, { ru: "Библиотека", en: "Library", kk: "Кітапхана" }),
-                  sub: pickLang(lang, { ru: "Твои выступления", en: "Your performances", kk: "Өнер көрсетулеріңіз" }),
-                  x: 16,
-                  y: 62,
-                  titleSize: 16,
-                  subSize: 11,
-                  subOffset: 22,
-                }}
-                spot={{ x: 40, y: -80, size: 200 }}
-                palette={TILE_PALETTES.library}
-                art={art(themedSvg(LIBRARY, "dark"), 70, 6, 92, 54)}
-                onPress={() => router.push("/library")}
-              />
-            </View>
+            <SoftTile
+              height={TILE_H}
+              band={TILE_BAND}
+              style={{ flex: 1 }}
+              palette={TILE_PALETTES.library}
+              title={pickLang(lang, { ru: "Библиотека", en: "Library", kk: "Кітапхана" })}
+              sub={pickLang(lang, { ru: "Ваших записей", en: "of your recordings", kk: "Жазбаларыңыздың" })}
+              titleSize={TILE_TITLE}
+              blob={{ corner: "tr", radius: TILE_BLOB }}
+              art={
+                <View pointerEvents="none" style={[styles.tileArt, { top: rs(24) }]}>
+                  <LibraryLogo width={rs(124)} height={rs(87)} />
+                </View>
+              }
+              onPress={() => router.push("/library")}
+            />
           </EdgeScale>
 
           <EdgeScale entering={FadeInDown.delay(300).duration(400)} style={{ marginTop: rs(12) }}>
-            <GlossTile
-              mode={mode}
-              idSuffix="coins"
-              radius={32}
+            <SoftTile
+              height={124}
+              band={TILE_BAND}
               palette={TILE_PALETTES.coins}
-              height={92}
-              text={{
-                title: pickLang(lang, { ru: "Купить монеты", en: "Buy coins", kk: "Монета сатып алу" }),
-                sub: pickLang(lang, { ru: "Подсказки, темы и бонусы", en: "Hints, themes and bonuses", kk: "Кеңестер, тақырыптар мен бонустар" }),
-                x: 22,
-                y: 22,
-                titleSize: 21,
-                subSize: 13,
-                subOffset: 30,
-              }}
-              spot={{ x: 170, y: -70, size: 240 }}
-              art={art(themedSvg(COINS, "dark"), 218, 10, 120, 73)}
+              title={pickLang(lang, { ru: "Купить монеты", en: "Buy coins", kk: "Монета сатып алу" })}
+              sub={pickLang(lang, { ru: "Подсказки, темы и бонусы", en: "Hints, themes and bonuses", kk: "Кеңестер, тақырыптар мен бонустар" })}
+              titleSize={TILE_TITLE}
+              badge={
+                dailyClaimed
+                  ? undefined
+                  : { text: pickLang(lang, { ru: "Получите бесплатные монеты", en: "Get free coins", kk: "Тегін монеталар алыңыз" }) }
+              }
+              art={
+                // coin stack on the right, vertically centred; loose coins around it
+                <>
+                  <SvgXml
+                    xml={themedSvg({ ...COINS, light: ["0.9", SPARK_COLOR] }, "light")}
+                    width={rs(112)}
+                    height={rs(68)}
+                    pointerEvents="none"
+                    style={{ position: "absolute", right: rs(30), top: rs(28) }}
+                  />
+                  <CoinScatter />
+                </>
+              }
               onPress={() => router.push("/coins")}
             />
           </EdgeScale>
@@ -710,6 +707,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   bentoRow: { flexDirection: "row", gap: 12 },
   bentoCol: { flex: 1, gap: 12 },
+  tileArt: { position: "absolute", left: 0, right: 0, alignItems: "center" },
   container: { flex: 1 },
   scrollOuter: { flexGrow: 1 },
   topPanel: {
@@ -742,7 +740,6 @@ const styles = StyleSheet.create({
     width: PLUS_SIZE,
     height: PLUS_SIZE,
     borderRadius: PLUS_SIZE / 2,
-    borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -846,7 +843,6 @@ const styles = StyleSheet.create({
   nameSaveBtn: {
     height: 52,
     borderRadius: 32,
-    borderWidth: 4,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -904,7 +900,6 @@ const styles = StyleSheet.create({
     gap: 8,
     height: 46,
     borderRadius: 16,
-    borderWidth: 2,
   },
   resetColorTxt: {
     fontSize: 14,

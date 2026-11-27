@@ -4,7 +4,7 @@ import * as Haptics from "@/lib/haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "expo-router";
 import Animated, { FadeIn } from "react-native-reanimated";
-import { useLang, pickLang } from "@/context/LangContext";
+import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useAppColors } from "@/hooks/useAppColors";
 import { useTheme } from "@/context/ThemeContext";
 import { fonts } from "@/constants/colors";
@@ -18,38 +18,25 @@ const HERO_STRETCH = 1.15;
 
 // Encouraging one-liners shown under the title; rotates once per day so the
 // screen feels fresh. Source: тексты для Шпаргалки.docx (updates daily).
-const DAILY_TEXTS = [
-  "Глубокий вдох, выдох — и шпаргалка под рукой.",
-  "Волнуешься перед выступлением? Пройди быстрые задания и подготовься.",
-  "Нервничаешь? Давай разомнёмся — и страх отступит.",
-  "Разогреем связки и разомнёмся.",
-  "Голос звучит увереннее, когда связки разогреты. Начнём?",
-  "Пара минут на разминку — и вперёд.",
-  "Короткий тренажёр к уверенному выходу.",
-  "Экспресс-подготовка к ответственному выступлению.",
-  "Быстрый способ подготовиться к важному выступлению.",
-  "Твой выход, маэстро — не забудь разогреться.",
-  "Разминка голоса не помешает.",
-  "Оратор, вам не помешает размяться.",
-  "Всё главное — в одном месте.",
-  "Соберись за пару минут.",
-  "Для уверенного старта.",
-  "Освежись перед выходом на сцену.",
-  "Быстрая подготовка — коротко и по делу.",
-  "Минута пошла — собери мысли в порядок.",
-  "Спокоен как удав.",
-  "Перед выходом загляни сюда.",
-  "Оратор рождается из подготовки.",
-  "Поэтами рождаются, ораторами становятся.",
-  "Сначала разогрейся — слова придут сами.",
-  "Волнение — это твоя энергия. Направь её в голос.",
-  "Говори не идеально — говори честно.",
+// Subtitle under «Разогрев»: one line per calendar day, always a nudge to get
+// ready before an important talk.
+const DAILY_TEXTS: { ru: string; en: string; kk: string }[] = [
+  { ru: "Быстро подготовься перед важным выходом.", en: "Get ready fast before your big moment.", kk: "Маңызды шығар алдында тез дайындал." },
+  { ru: "Пара минут — и ты готов к выступлению.", en: "A couple of minutes and you're ready to speak.", kk: "Бірнеше минут — және сен сөйлеуге дайынсың." },
+  { ru: "Разогрей голос, прежде чем выйти к людям.", en: "Warm up your voice before you face the room.", kk: "Адамдарға шықпас бұрын дауысыңды қыздыр." },
+  { ru: "Важная речь впереди? Начни с разминки.", en: "Big talk ahead? Start with a warm-up.", kk: "Алда маңызды сөз бе? Жаттығудан баста." },
+  { ru: "Соберись за пару минут перед выходом.", en: "Pull yourself together in a couple of minutes.", kk: "Шығар алдында бірнеше минутта жинақтал." },
+  { ru: "Подготовь голос и мысли — сцена ждёт.", en: "Ready your voice and thoughts — the stage is waiting.", kk: "Дауыс пен ойды дайында — сахна күтіп тұр." },
+  { ru: "Перед выступлением загляни сюда.", en: "Stop by here before you speak.", kk: "Сөйлер алдында осында кір." },
+  { ru: "Короткая разминка — уверенный старт.", en: "A short warm-up, a confident start.", kk: "Қысқа жаттығу — сенімді бастама." },
+  { ru: "Настройся на речь, пока есть минута.", en: "Tune in to your talk while you have a minute.", kk: "Бір минутың барда сөзге бейімдел." },
+  { ru: "Выйди к слушателям готовым.", en: "Walk out to your audience ready.", kk: "Тыңдаушыларға дайын күйде шық." },
 ];
 
-function useDailyText(): string {
+function useDailyText(lang: Lang): string {
   // Day index since epoch → same line for the whole calendar day, rotates daily.
-  const day = Math.floor(Date.now() / 86_400_000);
-  return DAILY_TEXTS[day % DAILY_TEXTS.length];
+  const day = Math.floor((Date.now() - new Date().getTimezoneOffset() * 60_000) / 86_400_000);
+  return pickLang(lang, DAILY_TEXTS[day % DAILY_TEXTS.length]);
 }
 
 function haptic() {
@@ -64,14 +51,7 @@ export default function CheatSheetScreen() {
   const { lang } = useLang();
   const { colors, isDark } = useAppColors();
   const { theme } = useTheme();
-  // Figma 12:202 pins this line as the subtitle; the daily rotation list
-  // above is kept for later. TODO(design): restore rotation if desired.
-  void useDailyText;
-  const dailyText = pickLang(lang, {
-    ru: "Сначала разогрейся - слова придут сами.",
-    en: "Your quick prep before you speak.",
-    kk: "Алдымен дауысыңызды жаттықтырыңыз — сөз өзі келеді.",
-  });
+  const dailyText = useDailyText(lang);
   const [activeRoute, setActiveRoute] = useState<CheatRoute | null>(null);
   // The warm-up chosen on the wheel, held during the 5-second countdown.
   const [pending, setPending] = useState<CheatRoute | null>(null);

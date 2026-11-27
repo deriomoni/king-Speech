@@ -200,6 +200,6 @@ const s = StyleSheet.create({
   center: { textAlign: "center" },
   oscar: { alignItems: "center", marginBottom: 10 },
   btn: { marginTop: 22, height: 54, borderRadius: 27, backgroundColor: "#0A0A0C", alignItems: "center", justifyContent: "center" },
-  btnDark: { borderWidth: 1, borderColor: "rgba(255,255,255,0.14)" },
+  btnDark: { backgroundColor: "rgba(255,255,255,0.12)" },
   btnTxt: { fontSize: 17, color: "#FFFFFF", fontFamily: "Geologica_800ExtraBold" },
 });

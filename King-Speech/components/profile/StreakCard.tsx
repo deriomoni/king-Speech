@@ -81,13 +81,6 @@ export function computeStreak(activity: ActivityEntry[], now = new Date()) {
   return { streak, week };
 }
 
-function pluralDaysRu(n: number) {
-  const m10 = n % 10;
-  const m100 = n % 100;
-  if (m10 === 1 && m100 !== 11) return "день";
-  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return "дня";
-  return "дней";
-}
 
 // Ring colour by how much of the day's goal was completed (Figma ring/progress):
 // ≥90% green, ≥50% amber, otherwise coral. A missed day shows only the grey track.
@@ -150,7 +143,7 @@ export default function StreakCard({
   activity: ActivityEntry[];
   lang: Lang;
 }) {
-  const { streak, week } = useMemo(() => computeStreak(activity), [activity]);
+  const { week } = useMemo(() => computeStreak(activity), [activity]);
   const isDark = theme.mode === "dark";
   const labels = pickLang(lang, { ru: DAY_LABELS_RU, en: DAY_LABELS_EN, kk: DAY_LABELS_KK });
   const trackColor = isDark ? "rgba(240,238,233,0.10)" : "rgba(38,38,40,0.10)";
@@ -158,14 +151,6 @@ export default function StreakCard({
 
   return (
     <View style={[styles.card, { backgroundColor: theme.card, borderColor: stroke }]}>
-      <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
-        <Text style={styles.titleNum}>{streak}</Text>
-        {pickLang(lang, {
-          ru: ` ${pluralDaysRu(streak)} подряд в ударе`,
-          en: ` ${streak === 1 ? "day" : "days"} on a roll`,
-          kk: " күн қатарынан екпінде",
-        })}
-      </Text>
       <View style={styles.daysRow}>
         {week.map((d, i) => {
           const active = d.progress > 0;
@@ -207,19 +192,10 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
     borderRadius: 22,
     borderWidth: 2,
-    paddingTop: 15,
+    paddingTop: 14,
     paddingHorizontal: 14,
   },
-  title: {
-    fontSize: 17,
-    fontFamily: "Geologica_700Bold",
-    paddingLeft: 3,
-  },
-  titleNum: {
-    fontFamily: "Geologica_900Black",
-  },
   daysRow: {
-    marginTop: 8,
     flexDirection: "row",
     justifyContent: "space-between",
   },

@@ -285,7 +285,7 @@ export default function DiaryScreen() {
           <Pressable
             onPress={() => setInfoOpen(true)}
             hitSlop={12}
-            style={[s.infoBtn, { top: topPad + rs(16), borderColor: c.text }]}
+            style={[s.infoBtn, { top: topPad + rs(16), backgroundColor: c.mode === "dark" ? "rgba(240,238,233,0.12)" : "rgba(38,38,40,0.12)" }]}
             accessibilityRole="button"
             accessibilityLabel={tr("О дневнике", "About the diary", "Күнделік туралы")}
           >
@@ -418,7 +418,6 @@ const s = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
     zIndex: 2,

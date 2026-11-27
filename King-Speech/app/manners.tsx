@@ -14,7 +14,7 @@ import { fonts } from "@/constants/colors";
 import { rs } from "@/lib/responsive";
 import { MANNERS_RULES, MANNERS_TOTAL, pickMannersRound, tl, type MannersRule } from "@/constants/mannersData";
 import { useMannersProgress } from "@/lib/mannersProgress";
-import MannersQuiz, { MannersButton, type MannersResult } from "@/components/manners/MannersQuiz";
+import MannersQuiz, { AnswerMark, MannersButton, type MannersResult } from "@/components/manners/MannersQuiz";
 import MannersMark from "@/components/manners/MannersMark";
 
 const ROUND = 5;
@@ -265,7 +265,7 @@ function Result({
             if (!rule) return null;
             return (
               <Animated.View key={r.id} entering={FadeInDown.duration(320).delay(120 + i * 60)} style={[styles.resRow, { backgroundColor: theme.card }]}>
-                <Ionicons name={r.correct ? "checkmark-circle" : "close-circle"} size={rs(22)} color={r.correct ? brand.success : brand.error} />
+                <AnswerMark kind={r.correct ? "check" : "cross"} size={rs(20)} color={r.correct ? brand.success : brand.error} />
                 <Text style={[styles.resRowTxt, { color: theme.text }]}>{tl(rule.title, lang)}</Text>
               </Animated.View>
             );

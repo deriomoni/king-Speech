@@ -1,5 +1,5 @@
 import React from "react";
-import { Image, Text, StyleSheet, Pressable, Platform, type ViewStyle } from "react-native";
+import { Text, StyleSheet, Pressable, Platform, type ViewStyle } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, RadialGradient, Stop, Circle } from "react-native-svg";
 import * as Haptics from "@/lib/haptics";
@@ -40,12 +40,19 @@ const LOOK = {
   },
 };
 
-/** A colour identity for the tile: rich diagonal gradient + glow behind the art. */
+/** Flat colour tile (Wish-app look): one solid colour, no gloss or shadow,
+ *  and one oversized "blob" corner. */
 export type TilePalette = {
-  fill: readonly [string, string, string];
-  /** soft light behind the illustration */
-  glow: string;
+  color: string;
+  /** text colour (default white) */
+  ink?: string;
+  /** soft vertical colour wash over the base (top → bottom) */
+  /** solid fill only: no wash and no top-left light */
+  flat?: boolean;
+  wash?: { colors: readonly [string, string, ...string[]]; locations?: readonly [number, number, ...number[]] };
 };
+
+export type BlobCorner = "tl" | "tr" | "bl" | "br";
 
 export type TileText = {
   title: string;
@@ -72,7 +79,10 @@ export default function GlossTile({
   idSuffix,
   palette,
   radius = RADIUS,
+  blob,
 }: {
+  /** Which corner gets the big rounded "blob" curve, and its radius (Figma px). */
+  blob?: { corner: BlobCorner; radius: number };
   /** Corner radius (bento tiles use rounder corners). */
   radius?: number;
   /** Colourful tile (same in both themes) instead of the plain gloss slab. */
@@ -89,19 +99,59 @@ export default function GlossTile({
   /** Unique id for the svg gradient (several tiles share the web DOM). */
   idSuffix: string;
 }) {
-  const base = LOOK[mode];
-  const look = palette
-    ? {
-        fill: palette.fill,
-        fillLoc: [0, 0.55, 1] as const,
-        stroke: ["rgba(255,255,255,0.38)", "rgba(255,255,255,0.08)", "rgba(255,255,255,0.16)"] as const,
-        spotColor: palette.glow,
-        spotOpacity: 1,
-        spotStop: 0.55,
-        ink: "#FFFFFF",
-        shadow: { y: 12, blur: 26, color: palette.fill[1] + "59", opacity: 0.35 },
-      }
-    : base;
+  if (palette) {
+    const ink = palette.ink ?? "#FFFFFF";
+    const big = blob ? rs(blob.radius) : radius;
+    const corners = {
+      borderTopLeftRadius: blob?.corner === "tl" ? big : radius,
+      borderTopRightRadius: blob?.corner === "tr" ? big : radius,
+      borderBottomLeftRadius: blob?.corner === "bl" ? big : radius,
+      borderBottomRightRadius: blob?.corner === "br" ? big : radius,
+    };
+    return (
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+          onPress();
+        }}
+        style={({ pressed }) => [
+          styles.flat,
+          corners,
+          { height: rs(height), backgroundColor: palette.color },
+          pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+          style,
+        ]}
+      >
+        {palette.wash ? (
+          <LinearGradient
+            pointerEvents="none"
+            colors={palette.wash.colors}
+            locations={palette.wash.locations}
+            style={StyleSheet.absoluteFill}
+          />
+        ) : null}
+        {art}
+        <Text
+          numberOfLines={1}
+          style={[styles.flatTitle, { color: ink, left: rs(text.x - 1), top: rs(text.y - 1), fontSize: rs(text.titleSize) }]}
+        >
+          {text.title}
+        </Text>
+        <Text
+          numberOfLines={text.subLines ?? 1}
+          style={[
+            styles.flatSub,
+            (text.subLines ?? 1) > 1 && { right: rs(text.x - 1), lineHeight: rs(text.subSize * 1.3) },
+            { color: ink, left: rs(text.x - 1), top: rs(text.y - 1 + text.subOffset), fontSize: rs(text.subSize) },
+          ]}
+        >
+          {text.sub}
+        </Text>
+      </Pressable>
+    );
+  }
+  const look = LOOK[mode];
   const shadow =
     Platform.OS === "web"
       ? ({ boxShadow: `0px ${rs(look.shadow.y)}px ${rs(look.shadow.blur)}px ${look.shadow.color}` } as any)
@@ -110,7 +160,7 @@ export default function GlossTile({
           // rounded bounds instead of re-rendering every tile offscreen to find
           // its alpha mask (a real cost with 5 tiles in a scrolling screen).
           backgroundColor: look.fill[2],
-          shadowColor: palette ? palette.fill[1] : "#000",
+          shadowColor: "#000",
           shadowOpacity: look.shadow.opacity,
           shadowRadius: rs(look.shadow.blur / 2),
           shadowOffset: { width: 0, height: rs(look.shadow.y) },
@@ -136,37 +186,11 @@ export default function GlossTile({
         <LinearGradient
           colors={look.fill}
           locations={look.fillLoc}
-          start={palette ? { x: 0, y: 0 } : undefined}
-          end={palette ? { x: 1, y: 1 } : undefined}
+          start={undefined}
+          end={undefined}
           style={[styles.fill, { borderRadius: radius - 1 }]}
         >
-          {palette ? (
-            <>
-              {/* glass: light from the top edge */}
-              <LinearGradient
-                pointerEvents="none"
-                colors={["rgba(255,255,255,0.26)", "rgba(255,255,255,0)"]}
-                locations={[0, 0.5]}
-                style={StyleSheet.absoluteFill}
-              />
-              {/* a soft diagonal glint across the glass */}
-              <LinearGradient
-                pointerEvents="none"
-                colors={["rgba(255,255,255,0)", "rgba(255,255,255,0.13)", "rgba(255,255,255,0)"]}
-                locations={[0.28, 0.4, 0.52]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFill}
-              />
-              {/* frosted grain */}
-              <Image
-                source={require("@/assets/images/noise.png")}
-                resizeMode="repeat"
-                style={[StyleSheet.absoluteFill, { opacity: 0.07 }]}
-              />
-            </>
-          ) : null}
-          <Svg
+                    <Svg
             pointerEvents="none"
             width={rs(spot.size)}
             height={rs(spot.size)}
@@ -196,7 +220,6 @@ export default function GlossTile({
             style={[
               styles.sub,
               (text.subLines ?? 1) > 1 && { right: rs(text.x - 1), lineHeight: rs(text.subSize * 1.3) },
-              palette && { opacity: 0.78 },
               {
                 color: look.ink,
                 left: rs(text.x - 1),
@@ -219,4 +242,7 @@ const styles = StyleSheet.create({
   fill: { flex: 1, borderRadius: RADIUS - 1, overflow: "hidden" },
   title: { position: "absolute", fontFamily: "Geologica_800ExtraBold", letterSpacing: -0.1 },
   sub: { position: "absolute", fontFamily: "Geologica_400Regular", opacity: 0.55 },
+  flat: { overflow: "hidden" },
+  flatTitle: { position: "absolute", fontFamily: "Geologica_700Bold", letterSpacing: -0.2 },
+  flatSub: { position: "absolute", fontFamily: "Geologica_500Medium", opacity: 0.82 },
 });

@@ -37,6 +37,7 @@ import { pickLang, type Lang } from "@/context/LangContext";
 import StageGlassDialog from "@/components/showtime/StageGlassDialog";
 import { headphonesXml } from "@/assets/figma/showtime-stage/svgs";
 import { rs } from "@/lib/responsive";
+import { WavePill, WavePlayButton, WaveBars } from "@/components/VoiceWave";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -540,7 +541,6 @@ export default function ReadingResultsView({
               st.saveBtn,
               {
                 backgroundColor: accent,
-                borderColor: theme.ctaStroke,
                 opacity: !canSave ? 0.45 : pressed ? 0.88 : 1,
               },
             ]}
@@ -574,66 +574,15 @@ function RecorderBar({
   dark: boolean;
   lang: Lang;
 }) {
-  const { theme } = useTheme();
-  const [w, setW] = useState(0);
-  const dim = dark ? "rgba(240,238,233,0.3)" : "rgba(38,38,40,0.25)";
-  // At rest the whole take reads solid; once it plays, bars right of the
-  // gold playhead dim to 30% (same rule as the task-flow recorder bar).
+  // At rest the whole take reads solid; while it plays, the bars light up
+  // as they are heard (brightness only — no playhead).
   const showHead = playing || progress > 0;
   const played = showHead ? progress : 1;
   return (
-    <View
-      style={[
-        st.rbBar,
-        {
-          backgroundColor: dark ? theme.bg : theme.cardElevated,
-          borderColor: dark ? "rgba(240,238,233,0.45)" : "rgba(38,38,40,0.3)",
-        },
-      ]}
-    >
-      <Pressable
-        onPress={onPress}
-        disabled={disabled}
-        hitSlop={8}
-        accessibilityRole="button"
-        accessibilityLabel={playing ? (pickLang(lang, { ru: "Пауза", en: "Pause", kk: "Кідірту" })) : pickLang(lang, { ru: "Прослушать запись", en: "Play recording", kk: "Жазбаны тыңдау" })}
-        style={({ pressed }) => [
-          st.rbPlay,
-          { backgroundColor: "#000000", opacity: disabled ? 0.45 : pressed ? 0.8 : 1 },
-        ]}
-      >
-        <Ionicons
-          name={playing ? "pause" : "play"}
-          size={rs(17)}
-          color="#FFFFFF"
-          style={{ marginLeft: playing ? 0 : rs(2) }}
-        />
-      </Pressable>
-      <View style={st.rbWave} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
-        {wave.map((v, i) => (
-          <View
-            key={i}
-            style={[
-              st.rbWaveBar,
-              {
-                height: rs(9 + v * 27),
-                backgroundColor: (i + 0.5) / wave.length <= played ? theme.text : dim,
-              },
-            ]}
-          />
-        ))}
-        {showHead && w > 0 ? (
-          <View
-            pointerEvents="none"
-            style={[st.rbHead, { left: Math.max(0, Math.min(w - rs(3), progress * w)) - rs(2.75) }]}
-          >
-            <View style={[st.rbHeadDot, { backgroundColor: theme.accent }]} />
-            <View style={[st.rbHeadLine, { backgroundColor: theme.accent }]} />
-          </View>
-        ) : null}
-      </View>
-      <Text style={[st.rbTime, { color: readingInk(dark, 0.6) }]}>{timeLabel}</Text>
-    </View>
+    <WavePill>
+      <WavePlayButton playing={playing} onPress={onPress} disabled={disabled} />
+      <WaveBars values={wave} lit={Math.round(played * wave.length)} />
+    </WavePill>
   );
 }
 
@@ -870,7 +819,7 @@ function ListenStage({
                 }}
                 style={({ pressed }) => [
                   st.lsRateBtn,
-                  { backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.88 : 1 },
+                  { backgroundColor: theme.accent, opacity: pressed ? 0.88 : 1 },
                 ]}
               >
                 <Text style={[st.lsRateText, { color: theme.accentText }]}>
@@ -885,7 +834,7 @@ function ListenStage({
               style={[
                 st.lsRateBtn,
                 st.lsStarsBar,
-                { borderColor: theme.accent, backgroundColor: withAlpha(theme.accent, dark ? 0.1 : 0.16) },
+                { backgroundColor: withAlpha(theme.accent, dark ? 0.1 : 0.16) },
               ]}
             >
               {[1, 2, 3, 4, 5].map((n) => (
@@ -912,7 +861,7 @@ function ListenStage({
                 style={({ pressed }) => [
                   st.lsRateBtn,
                   st.lsNextBtn,
-                  { alignSelf: "stretch", backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.88 : 1 },
+                  { alignSelf: "stretch", backgroundColor: theme.accent, opacity: pressed ? 0.88 : 1 },
                 ]}
               >
                 <Text style={[st.lsRateText, { color: theme.accentText }]}>
@@ -964,7 +913,7 @@ function ListenStage({
       {/* Same nudge as Show Time («Послушай себя», Figma 36:1228) */}
       <StageGlassDialog
         visible={listenPrompt}
-        icon={<SvgXml xml={headphonesXml} width={rs(38)} height={rs(38)} />}
+        icon={<SvgXml xml={headphonesXml.replace(/#FFD857/g, dark ? "#F0EEE9" : "#000000")} width={rs(38)} height={rs(38)} />}
         title={pickLang(lang, { ru: "Послушай себя", en: "Listen to yourself", kk: "Өзіңізді тыңдаңыз" })}
         message={pickLang(lang, {
           ru: "Прослушай свою речь до конца - честный самоанализ это шаг к тому, чтобы стать лучше.",
@@ -1048,7 +997,6 @@ const st = StyleSheet.create({
     height: 52,
     paddingHorizontal: 20,
     borderRadius: 32,
-    borderWidth: 4,
   },
   saveText: { fontFamily: "Geologica_700Bold", fontSize: 15 },
   // Recorder bar (Figma 153:1883): 72pt pill, 4pt rim, gold 40pt play disc.
@@ -1125,7 +1073,7 @@ const st = StyleSheet.create({
   lsSpeed: { position: "absolute", right: 0, top: 22 },
   lsRetry: { position: "absolute", left: 0, top: 22 },
   lsNextBtn: { flexDirection: "row", gap: 8 },
-  lsStarsBar: { flexDirection: "row", justifyContent: "space-evenly", borderWidth: 2 },
+  lsStarsBar: { flexDirection: "row", justifyContent: "space-evenly" },
   lsSave: { marginTop: 14, alignItems: "center", gap: 12 },
   lsSaveText: { fontFamily: "Geologica_600SemiBold", fontSize: 15.5, textAlign: "center" },
   lsSaveBtns: { flexDirection: "row", gap: 12, alignSelf: "stretch" },
@@ -1136,7 +1084,6 @@ const st = StyleSheet.create({
     marginTop: 30,
     height: 56,
     borderRadius: 28,
-    borderWidth: 4,
     alignItems: "center",
     justifyContent: "center",
   },

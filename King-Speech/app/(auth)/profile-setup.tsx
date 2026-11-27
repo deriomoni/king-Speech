@@ -250,12 +250,10 @@ const s = StyleSheet.create({
     paddingHorizontal: 18,
     borderRadius: 26,
     backgroundColor: "#151517",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
-  chipOn: { backgroundColor: "#FFFFFF", borderColor: "#FFFFFF" },
+  chipOn: { backgroundColor: "#FFFFFF" },
   chipTxt: { fontSize: 16, color: "#FFFFFF", fontFamily: "Geologica_700Bold" },
   chipTxtOn: { color: "#000000" },
 });

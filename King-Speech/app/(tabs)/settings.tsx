@@ -361,7 +361,7 @@ export default function SettingsScreen() {
           <EdgeScale>
           <View style={styles.credits}>
             <Text style={[styles.creditsLabel, { color: theme.textMuted }]}>
-              {pickLang(appLang, { ru: "ПРИЛОЖЕНИЕ СОЗДАНО", en: "APP CREATED BY", kk: "ҚОСЫМША ӘЗІРЛЕНДІ" })}
+              DEVELOPED BY
             </Text>
             <View style={{ opacity: 0.7 }}>
               <ThemedSvg xml={bekWaveLogoXml} width={rs(150)} height={rs(20)} fg={theme.text} />

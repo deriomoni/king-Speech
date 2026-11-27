@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { appAlert } from "@/lib/appAlert";
 import {
   View,
   Text,
@@ -7,7 +8,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
-} from "react-native";
+  } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, router, useNavigation } from "expo-router";
 import Animated, {
@@ -35,10 +36,14 @@ import { getLevelsData } from "@/constants/gameContent";
 import SpeechAnalyzingLoader from "@/components/SpeechAnalyzingLoader";
 import StageGlassDialog from "@/components/showtime/StageGlassDialog";
 import LevelCompleteModal from "@/components/LevelCompleteModal";
+import OscarMascot from "@/components/OscarMascot";
+import { useRoyalAccess } from "@/lib/subscription";
+import { showtimeHeadline } from "@/constants/showtimeHeadlines";
 import { aspectsFromMetrics5 } from "@/components/ScoreFlower";
 import { headphonesXml } from "@/assets/figma/showtime-stage/svgs";
 import RoundStar from "@/components/RoundStar";
 import { rs } from "@/lib/responsive";
+import { WavePill, WavePlayButton, WaveBars } from "@/components/VoiceWave";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -152,50 +157,15 @@ function AudioPlayer({ uri, waveform, onPlaybackComplete }: { uri: string; wavef
 
   const progress = duration > 0 && Number.isFinite(duration) ? Math.min(1, position / duration) : 0;
   // At rest the whole take reads solid; while playing, bars right of the
-  // playhead dim to 30% and the gold playhead rides on top.
+  // already-heard bars stay solid and the rest dim (brightness only, no playhead).
   const showHead = isPlaying || progress > 0;
   const played = showHead ? progress : 1;
-  const dim = isDark ? "rgba(240,238,233,0.3)" : "rgba(38,38,40,0.25)";
-  const shown = isPlaying || position > 0 ? position : duration;
 
   return (
-    <View
-      style={[
-        ap.bar,
-        {
-          backgroundColor: isDark ? "#3C3C3D" : theme.cardElevated,
-          borderColor: isDark ? "rgba(240,238,233,0.45)" : "rgba(38,38,40,0.3)",
-        },
-      ]}
-    >
-      <Pressable
-        onPress={handlePlay}
-        disabled={!uri}
-        hitSlop={8}
-        style={({ pressed }) => [ap.play, { backgroundColor: "#000000", opacity: !uri ? 1 : pressed ? 0.8 : 1 }]}
-      >
-        {isPlaying ? (
-          <View style={[ap.pause, { backgroundColor: "#FFFFFF" }]} />
-        ) : (
-          <Ionicons name="play" size={rs(16)} color="#FFFFFF" style={{ marginLeft: rs(2) }} />
-        )}
-      </Pressable>
-      <View style={ap.wave} onLayout={(e) => setWaveW(e.nativeEvent.layout.width)}>
-        {bars.map((v, i) => (
-          <View
-            key={i}
-            style={[ap.waveBar, { height: rs(6 + v * 28), backgroundColor: (i + 0.5) / bars.length <= played ? theme.text : dim }]}
-          />
-        ))}
-        {showHead && waveW > 0 ? (
-          <View pointerEvents="none" style={[ap.head, { left: Math.max(0, Math.min(waveW - rs(2), progress * waveW)) - rs(2.5) }]}>
-            <View style={[ap.headDot, { backgroundColor: theme.accent }]} />
-            <View style={[ap.headLine, { backgroundColor: theme.accent }]} />
-          </View>
-        ) : null}
-      </View>
-      <Text style={[ap.time, { color: isDark ? "rgba(240,238,233,0.6)" : theme.textSecondary }]}>{fmt(Math.max(0, shown || 0))}</Text>
-    </View>
+    <WavePill>
+      <WavePlayButton playing={isPlaying} onPress={handlePlay} disabled={!uri} />
+      <WaveBars values={bars} lit={Math.round(played * bars.length)} />
+    </WavePill>
   );
 }
 
@@ -300,7 +270,9 @@ function MetricRow({ label, value }: { label: string; value: number }) {
 
 // ── MAIN PLAYBACK SCREEN ──────────────────────────────────────────────────────
 export default function ShowtimePlaybackScreen() {
-  const { recordingUri, title, taskNumber: taskNumberParam, levelId: levelIdParam, mode: modeParam, demo: demoParam, scriptText: scriptTextParam, waveform: waveformParam } = useLocalSearchParams<{
+  const { recordingUri, title, taskNumber: taskNumberParam, levelId: levelIdParam, mode: modeParam, demo: demoParam, scriptText: scriptTextParam, waveform: waveformParam, draftId: draftIdParam, category: categoryParam } = useLocalSearchParams<{
+    draftId?: string;
+    category?: string;
     recordingUri: string;
     title: string;
     taskNumber?: string;
@@ -331,13 +303,47 @@ export default function ShowtimePlaybackScreen() {
   const { completeTask, getLevelById, addShowTimeRecording, recordMetricScores, logActivity, claimLevelReward } = useGame();
   // First clear of a Path Show Time level → trophy + coins, then move on.
   const [victory, setVictory] = useState<{ coins: number; score: number; dur: number } | null>(null);
+  // Length of the take, read from the file — the trophy screen falls back to
+  // it when the analysis didn't report a duration (it used to show 0:00).
+  const recDurRef = React.useRef(0);
+  useEffect(() => {
+    if (!recordingUri || !Audio) return;
+    let snd: any = null;
+    let alive = true;
+    (async () => {
+      try {
+        const { sound } = await Audio.Sound.createAsync({ uri: recordingUri }, { shouldPlay: false });
+        snd = sound;
+        const st = await sound.getStatusAsync();
+        if (alive && st?.isLoaded && st.durationMillis) recDurRef.current = Math.round(st.durationMillis / 1000);
+      } catch {}
+      try { await snd?.unloadAsync(); } catch {}
+    })();
+    return () => { alive = false; };
+  }, [recordingUri]);
   const { t, lang } = useLang();
   const { theme, themeMode } = useTheme();
   const isDark = themeMode === "dark";
   const taskNumber = parseInt(taskNumberParam ?? "1", 10) || 1;
   void taskNumber;
   const levelId = levelIdParam ?? "showtime";
-  const isTrainer = modeParam === "trainer";
+  // A My Studio draft read on the stage: no Path progress, can be published.
+  const isAuthorRun = modeParam === "author";
+  const isTrainer = modeParam === "trainer" || isAuthorRun;
+  const { hasRoyal } = useRoyalAccess();
+  const [paywallOpen, setPaywallOpen] = useState(false);
+  const publishDraft = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    if (!hasRoyal) {
+      setPaywallOpen(true);
+      return;
+    }
+    // TODO(backend): upload the speech (title, category, text) to the shared catalog.
+    appAlert(
+      pickLang(lang, { ru: "Скоро", en: "Coming soon", kk: "Жақында" }),
+      pickLang(lang, { ru: "Публикация в каталог появится в ближайшем обновлении.", en: "Publishing to the catalog arrives in an upcoming update.", kk: "Каталогқа жариялау жақын арада қосылады." }),
+    );
+  };
 
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
@@ -483,6 +489,11 @@ export default function ShowtimePlaybackScreen() {
     // so the next level (e.g. Reading) renders as a window ON TOP of the lingering
     // Show Time screen. Collapse the whole Show Time flow back to the map first,
     // then open the next level fresh — exactly like tapping its tile on the map.
+    if (isAuthorRun) {
+      // Back to My Studio (the stage and this screen close).
+      router.dismissTo("/author");
+      return;
+    }
     router.dismissAll();
 
     if (isTrainer) return; // dismissAll already returned to the map
@@ -518,7 +529,7 @@ export default function ShowtimePlaybackScreen() {
       const score = shown ?? analysisResult?.score ?? 7;
       const before = getLevelById(levelId);
       if (before && !before.completed) {
-        firstClear = { coins: claimLevelReward(levelId, score), score, dur: analysisResult?.durationSec ?? 0 };
+        firstClear = { coins: claimLevelReward(levelId, score), score, dur: analysisResult?.durationSec || recDurRef.current || 0 };
       }
       completeTask(levelId as any, 1, score);
       completeTask(levelId as any, 2, score);
@@ -564,10 +575,8 @@ export default function ShowtimePlaybackScreen() {
       }
     }
 
-    if (firstClear) {
-      setVictory(firstClear);
-      return;
-    }
+    // Coins are paid above; Show Time has no separate trophy screen — its own
+    // score screen is the finale.
     goAfterShowTime();
   };
 
@@ -607,6 +616,9 @@ export default function ShowtimePlaybackScreen() {
 
   const sum = analysisResult && !isSilent ? summarize(analysisResult) : null;
   const verdict = sum ? (sum.finalStars === 3 ? t("excellent") : sum.finalStars === 2 ? t("good") : t("keepGoing")) : "";
+  // Oscar + headline at the top: follows the score, a fresh line each time.
+  const headlineSeed = React.useMemo(() => Math.random(), [analysisResult]);
+  const headline = analysisResult ? showtimeHeadline(sum ? sum.overall10 : null, isSilent, headlineSeed) : null;
   const metrics = analysisResult?.metrics;
   const metricRows = metrics
     ? METRIC_ORDER.map((k) => aspectsFromMetrics5(metrics, lang).find((a) => a.key === k)).filter(Boolean) as { key: string; label: string; score: number }[]
@@ -632,9 +644,14 @@ export default function ShowtimePlaybackScreen() {
         contentContainerStyle={[pb.scroll, { paddingTop: topPad + rs(55), paddingBottom: bottomPad + rs(40) }]}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.Text style={[pb.title, { color: theme.text }, headerStyle]}>
-          {pickLang(lang, { ru: "Разбор выступления", en: "Performance review", kk: "Сөз сөйлеуді талдау" })}
-        </Animated.Text>
+        <Animated.View style={[pb.hero, headerStyle]}>
+          <OscarMascot emotion={headline?.emotion ?? "idle"} size={rs(150)} tight />
+          <Animated.Text key={headline ? pickLang(lang, headline.line) : "review"} entering={FadeIn.duration(400)} style={[pb.title, pb.heroTitle, { color: theme.text }]}>
+            {headline
+              ? pickLang(lang, headline.line)
+              : pickLang(lang, { ru: "Разбор выступления", en: "Performance review", kk: "Сөз сөйлеуді талдау" })}
+          </Animated.Text>
+        </Animated.View>
 
         <Animated.View style={[contentStyle, { flexGrow: 1 }]}>
           {/* Overall score + verdict */}
@@ -792,20 +809,41 @@ export default function ShowtimePlaybackScreen() {
 
           <View style={{ flexGrow: 1, minHeight: rs(44) }} />
 
+          {/* My Studio draft: publish to the catalog — Royal plan only */}
+          {isAuthorRun && sum ? (
+            <Pressable
+              onPress={publishDraft}
+              style={({ pressed }) => [pb.btn, pb.publishBtn, { backgroundColor: theme.text, opacity: pressed ? 0.85 : 1 }]}
+              accessibilityRole="button"
+            >
+              <Ionicons name={hasRoyal ? "megaphone" : "lock-closed"} size={rs(16)} color={theme.bg} />
+              <Text style={[pb.btnTextPrimary, { color: theme.bg }]} numberOfLines={1}>
+                {pickLang(lang, { ru: "Опубликовать", en: "Publish", kk: "Жариялау" })}
+              </Text>
+              {!hasRoyal ? (
+                <View style={pb.royalTag}>
+                  <Text style={pb.royalTagText}>{pickLang(lang, { ru: "КОРОЛЕВСКИЙ", en: "ROYAL", kk: "ПАТША" })}</Text>
+                </View>
+              ) : null}
+            </Pressable>
+          ) : null}
+
           {/* Actions */}
           <View style={pb.actions}>
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 // replace (not push) so playback doesn't stack on top of stage.
+                if (isAuthorRun) {
+                  router.replace({ pathname: "/showtime-stage", params: { source: "author", title: title ?? "", text: scriptTextParam ?? "", category: categoryParam ?? "", draftId: draftIdParam ?? "" } });
+                  return;
+                }
                 router.replace({ pathname: "/showtime-stage", params: { levelId, mode: isTrainer ? "trainer" : "game" } });
               }}
               style={({ pressed }) => [
                 pb.btn,
                 {
                   backgroundColor: isDark ? "#2E2E2F" : theme.card,
-                  borderColor: isDark ? "rgba(240,238,233,0.06)" : theme.cardBorder,
-                  borderWidth: 2,
                   opacity: pressed ? 0.8 : 1,
                 },
               ]}
@@ -818,8 +856,8 @@ export default function ShowtimePlaybackScreen() {
               style={({ pressed }) => [
                 pb.btn,
                 isSilent
-                  ? { backgroundColor: isDark ? "rgba(240,238,233,0.06)" : theme.card, borderColor: "transparent", borderWidth: 2 }
-                  : { backgroundColor: theme.accent, borderColor: theme.ctaStroke, borderWidth: 4 },
+                  ? { backgroundColor: isDark ? "rgba(240,238,233,0.06)" : theme.card }
+                  : { backgroundColor: theme.accent },
                 { opacity: pressed || completing || !analysisResult ? 0.5 : 1 },
               ]}
             >
@@ -862,10 +900,27 @@ export default function ShowtimePlaybackScreen() {
         />
       ) : null}
 
+      <StageGlassDialog
+        visible={paywallOpen}
+        icon={<Ionicons name="lock-closed" size={rs(32)} color={theme.text} />}
+        title={pickLang(lang, { ru: "Публикация — с подпиской", en: "Publishing needs a plan", kk: "Жариялау — жазылыммен" })}
+        message={pickLang(lang, {
+          ru: "Публиковать свои выступления в каталог можно с подпиской «Королевский».",
+          en: "Publishing your speeches to the catalog comes with the Royal plan.",
+          kk: "Өз сөздеріңізді каталогқа «Патша» жазылымымен жариялай аласыз.",
+        })}
+        stacked
+        onRequestClose={() => setPaywallOpen(false)}
+        buttons={[
+          { label: pickLang(lang, { ru: "Оформить подписку", en: "Get Royal", kk: "Жазылымды рәсімдеу" }), variant: "primary", onPress: () => { setPaywallOpen(false); router.push("/subscription"); } },
+          { label: pickLang(lang, { ru: "Не сейчас", en: "Not now", kk: "Қазір емес" }), variant: "link", onPress: () => setPaywallOpen(false) },
+        ]}
+      />
+
       {/* Figma 36:1228 "Show Time · Послушай себя (modal)" */}
       <StageGlassDialog
         visible={showListenPrompt}
-        icon={<SvgXml xml={headphonesXml} width={rs(38)} height={rs(38)} />}
+        icon={<SvgXml xml={headphonesXml.replace(/#FFD857/g, isDark ? "#F0EEE9" : "#000000")} width={rs(38)} height={rs(38)} />}
         title={pickLang(lang, { ru: "Послушай себя", en: "Listen to yourself", kk: "Өзіңізді тыңдаңыз" })}
         message={
           pickLang(lang, {
@@ -890,6 +945,8 @@ const pb = StyleSheet.create({
   // maxWidth only bites on tablets (480 × UI_SCALE): a centred results column
   scroll: { flexGrow: 1, paddingHorizontal: 20, width: "100%", maxWidth: 480, alignSelf: "center" },
   title: { fontFamily: "Geologica_900Black", fontSize: 28, lineHeight: 34, letterSpacing: -0.28 },
+  hero: { alignItems: "center", marginTop: -rs(30) },
+  heroTitle: { textAlign: "center", marginTop: rs(6) },
   label: { fontFamily: "Geologica_600SemiBold", fontSize: 12, letterSpacing: 0.6 },
   scoreBlock: { marginTop: 28, gap: 4 },
   feedback: { fontFamily: "Geologica_500Medium", fontSize: 15, lineHeight: 21 },
@@ -926,6 +983,9 @@ const pb = StyleSheet.create({
   metricFill: { height: 6, borderRadius: 3 },
   metricValue: { width: 24, textAlign: "right", fontFamily: "Geologica_700Bold", fontSize: 15 },
   actions: { flexDirection: "row", gap: 12 },
+  publishBtn: { flex: 0, alignSelf: "stretch", marginBottom: 12 },
+  royalTag: { backgroundColor: "#FFD857", borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 },
+  royalTagText: { color: "#262628", fontSize: 10, letterSpacing: 0.6, fontFamily: "Geologica_800ExtraBold" },
   btn: { flex: 1, minHeight: 50, paddingHorizontal: 20, paddingVertical: 8, borderRadius: 32, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
   btnTextSecondary: { fontFamily: "Geologica_600SemiBold", fontSize: 15, textAlign: "center", flexShrink: 1 },
   btnTextPrimary: { fontFamily: "Geologica_700Bold", fontSize: 15, textAlign: "center", flexShrink: 1 },

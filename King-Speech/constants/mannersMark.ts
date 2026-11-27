@@ -1,101 +1,49 @@
-// Geometry of the «Королевские манеры» mark (crown + bow tie), shared by the
-// MannersMark component and exports. Symmetric by construction: only the left
-// half is written down, the right half is its mirror about x = CX.
-//   · three equal balls, each 18 units above its peak
-//   · the crown has straight sides and a softly rounded bottom
-//   · the bow tie sits separately under the crown (it does not wrap its edge)
+// Geometry of the «Королевские манеры» mark: the King Speech app crown
+// (constants/crownPath.ts, 48.3 × 39 units) with a bow tie under it. The bow
+// is two mirrored triangles meeting at a single centre point — no knot, no
+// seams — drawn as ONE path so it renders as one solid shape. Corners are
+// softened by stroking the path with the fill colour (round joins).
+import { CROWN_PATH } from "@/constants/crownPath";
 
-const CX = 512;
-const mx = (x: number) => 2 * CX - x;
-const r = (n: number) => +n.toFixed(2);
+export const CROWN = CROWN_PATH;
 
-// ── Crown ──────────────────────────────────────────────────────────────────
-const SIDE_X = 266; // left side (right = 758)
-const SIDE_TOP = 366; // side-peak tip
-const PEAK = 293; // centre peak tip
-const TIP = 16; // flat top of every tooth (side teeth match the centre one)
-const SIDE_TIP_X = SIDE_X + TIP; // inner end of the side tooth tip
-const CORNER = 600; // where the sides meet the bottom curve
-const SAG = 160; // control-point drop of the bottom curve
+const CX = 24.13; // crown axis (centre ball)
+const CROWN_BOTTOM = 38.85; // lowest point of the crown's rounded bottom
+export const GAP = 5.1; // crown ↔ bow
+const BOW_HALF_W = 14.6; // centre → wing tip
+const BOW_HALF_H = 5.9; // half height of a wing at its outer edge
+export const BOW_MID = CROWN_BOTTOM + GAP + BOW_HALF_H;
 
-// Bottom edge = quadratic (SIDE_X, CORNER) → ctrl (CX, CORNER + SAG) → (mx(SIDE_X), CORNER)
-const bottomAt = (t: number) => ({ x: SIDE_X + 2 * (CX - SIDE_X) * t, y: CORNER + 2 * t * (1 - t) * SAG });
-export const crownBottomAtX = (x: number) => bottomAt((x - SIDE_X) / (2 * (CX - SIDE_X))).y;
-const T0 = 0.05; // the rounded corners take the first / last 5 % of the curve
-const c0 = bottomAt(T0);
-const midCtrlY = CORNER + ((1 - T0) ** 2 + T0 ** 2) * SAG; // control of the sub-curve [T0, 1 − T0]
-export const CROWN_BOTTOM_Y = CORNER + SAG / 2; // lowest point (centre)
+const L = CX - BOW_HALF_W;
+const R = CX + BOW_HALF_W;
+export const BOW = [
+  `M ${CX} ${BOW_MID}`,
+  `L ${L} ${BOW_MID - BOW_HALF_H}`,
+  `L ${L} ${BOW_MID + BOW_HALF_H}`,
+  "Z",
+  `M ${CX} ${BOW_MID}`,
+  `L ${R} ${BOW_MID - BOW_HALF_H}`,
+  `L ${R} ${BOW_MID + BOW_HALF_H}`,
+  "Z",
+].join(" ");
 
-function crownPath(): string {
-  return [
-    `M ${SIDE_X} ${SIDE_TOP}`,
-    `L ${SIDE_TIP_X} ${SIDE_TOP}`,
-    `C 288 395 330 416 378 416`,
-    `C 430 416 482 372 ${CX - TIP / 2} ${PEAK}`,
-    `L ${CX + TIP / 2} ${PEAK}`,
-    `C ${mx(482)} 372 ${mx(430)} 416 ${mx(378)} 416`,
-    `C ${mx(330)} 416 ${mx(288)} 395 ${mx(SIDE_TIP_X)} ${SIDE_TOP}`,
-    `L ${mx(SIDE_X)} ${SIDE_TOP}`,
-    `L ${mx(SIDE_X)} ${CORNER - 12}`,
-    `Q ${mx(SIDE_X)} ${CORNER} ${r(mx(c0.x))} ${r(c0.y)}`,
-    `Q ${CX} ${r(midCtrlY)} ${r(c0.x)} ${r(c0.y)}`,
-    `Q ${SIDE_X} ${CORNER} ${SIDE_X} ${CORNER - 12}`,
-    "Z",
-  ].join(" ");
-}
+/** Width of the round-join stroke that softens the bow corners (view-box units). */
+export const SOFTEN = 4;
 
-// ── Bow tie ────────────────────────────────────────────────────────────────
-export const GAP = 36; // crown ↔ knot
-const KNOT_GAP = 22; // wing ↔ knot
-const KNOT_S = 104;
-export const KNOT = { x: CX - KNOT_S / 2, y: CROWN_BOTTOM_Y + GAP, w: KNOT_S, h: KNOT_S, r: 26 };
-export const BOW_MID = KNOT.y + KNOT_S / 2; // horizontal axis of the bow
-export const WING_IN_X = KNOT.x - KNOT_GAP; // wing inner end
-const IN_H = 48; // half-height of the inner end
-const OUT_X = SIDE_X; // outer edge lines up with the crown side
-export const WING_TOP_X = 292; // straight top edge meets the rounded outer end here
-export const WING_TOP_Y = r(crownBottomAtX(WING_TOP_X) + 38);
-const BY = r(2 * BOW_MID - WING_TOP_Y);
-const WING_L: [string, ...number[]][] = [
-  ["M", WING_IN_X, BOW_MID - IN_H],
-  ["L", WING_TOP_X, WING_TOP_Y],
-  ["C", OUT_X + 8, WING_TOP_Y - 9, OUT_X, WING_TOP_Y + 6, OUT_X, WING_TOP_Y + 30],
-  ["L", OUT_X, BY - 30],
-  ["C", OUT_X, BY - 6, OUT_X + 8, BY + 9, WING_TOP_X, BY],
-  ["L", WING_IN_X, BOW_MID + IN_H],
-];
-const wingPath = (mirror: boolean) =>
-  WING_L.map(([cmd, ...v]) => `${cmd} ${v.map((n, i) => r(mirror && i % 2 === 0 ? mx(n) : n)).join(" ")}`).join(" ") + " Z";
-
-// ── Balls ──────────────────────────────────────────────────────────────────
-export const BALL_R = 52;
-export const BALLS: [number, number][] = [
-  [CX, PEAK - 18 - BALL_R],
-  [SIDE_X + TIP / 2, SIDE_TOP - 18 - BALL_R], // every ball centred over its tooth tip
-  [mx(SIDE_X + TIP / 2), SIDE_TOP - 18 - BALL_R],
-];
-
-export const CROWN = crownPath();
-export const WING_LEFT = wingPath(false);
-export const WING_RIGHT = wingPath(true);
-
-// View box: 8 units of air around the mark.
-const TOP = BALLS[0][1] - BALL_R;
-const LEFT = BALLS[1][0] - BALL_R;
-const BOTTOM = BY + 3;
-export const VB_X = LEFT - 8, VB_Y = TOP - 8;
-export const VB_W = mx(LEFT) - LEFT + 16, VB_H = r(BOTTOM - TOP + 16);
+// View box: crown 0…48.3 wide; a little air for the softening stroke.
+const PAD = 1.4;
+export const VB_X = -PAD;
+export const VB_Y = -PAD;
+export const VB_W = 48.3 + PAD * 2;
+export const VB_H = +(BOW_MID + BOW_HALF_H + SOFTEN / 2 + PAD * 2).toFixed(2);
 export const MANNERS_MARK_RATIO = VB_W / VB_H; // width / height
 
 /** Same mark as a standalone SVG string (for export). */
 export function mannersMarkSvg(color = "#262628"): string {
   return [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${VB_X} ${VB_Y} ${VB_W} ${VB_H}"><g fill="${color}">`,
-    ...BALLS.map(([cx, cy]) => `<circle cx="${cx}" cy="${cy}" r="${BALL_R}"/>`),
-    `<path d="${CROWN}"/>`,
-    `<path d="${WING_LEFT}"/>`,
-    `<path d="${WING_RIGHT}"/>`,
-    `<rect x="${KNOT.x}" y="${KNOT.y}" width="${KNOT.w}" height="${KNOT.h}" rx="${KNOT.r}"/>`,
-    `</g></svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${VB_X} ${VB_Y} ${VB_W} ${VB_H}">`,
+    `<path d="${CROWN}" fill="${color}"/>`,
+    `<path d="${BOW}" fill="${color}" stroke="${color}" stroke-width="${SOFTEN}" stroke-linejoin="round"/>`,
+    `</svg>`,
   ].join("\n");
 }

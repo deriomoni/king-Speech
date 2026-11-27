@@ -196,10 +196,27 @@ const SHOWTIME_FREE_KEY = "@kingspeech_showtime_free_v1";
 const ACTIVITY_KEY = "@kingspeech_activity_v1";
 // Levels whose completion reward (coins) was already paid — once per level.
 const LEVEL_REWARDS_KEY = "@kingspeech_level_rewards_v1";
-/** Coins for finishing a level: straight from its score (0..10) → 0..30. */
+/**
+ * Coin calculator: the reward grows straight from the level's score (0..10).
+ *   · 2.5 coins per score point          → 0..25
+ *   · bonus for a strong take: 7+ → +2, 9+ → +5   (a 10/10 pays 30)
+ *   · at least 1 coin for any cleared level
+ * e.g. 3 → 8, 5 → 13, 7 → 20, 8 → 22, 9 → 28, 10 → 30.
+ */
 export function coinsForScore(score10: number): number {
   const s = Number.isFinite(score10) ? Math.max(0, Math.min(10, score10)) : 0;
-  return Math.round(s * 3);
+  const bonus = s >= 9 ? 5 : s >= 7 ? 2 : 0;
+  return Math.max(1, Math.round(s * 2.5) + bonus);
+}
+/** Reading levels always pay a flat reward, whatever the score. */
+export const READING_COINS = 15;
+/** Coins for a level: the score calculator, except reading (flat 15). */
+export function coinsForLevel(levelId: string, score10: number): number {
+  return levelId.startsWith("reading") ? READING_COINS : coinsForScore(score10);
+}
+/** Only these Path levels end on the «Уровень пройден» trophy screen. */
+export function hasVictoryScreen(levelId: string): boolean {
+  return /^(interview|tonguetwister|reading)/.test(levelId);
 }
 export type ActivityKind = "path" | "other";
 export type ActivityEntry = { t: number; k: ActivityKind };
@@ -676,12 +693,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, []);
   const isLevelRewarded = (levelId: string) => rewardedRef.current.has(levelId);
   const claimLevelReward = (levelId: string, score10: number): number => {
-    if (isOpenTestingEnabled) return 0;
-    if (!levelId || levelId.startsWith("warmup")) return 0;
+    if (!levelId) return 0;
+    // Open testing: show the reward animation, but don't credit the wallet.
+    if (isOpenTestingEnabled) return coinsForLevel(levelId, score10);
     if (rewardedRef.current.has(levelId)) return 0;
     rewardedRef.current.add(levelId);
     AsyncStorage.setItem(LEVEL_REWARDS_KEY, JSON.stringify([...rewardedRef.current])).catch(() => {});
-    const amount = coinsForScore(score10);
+    const amount = coinsForLevel(levelId, score10);
     addCoins(amount);
     return amount;
   };

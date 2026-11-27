@@ -4988,6 +4988,11 @@ export default function ShowtimeStageScreen() {
 
   const [currentLine, setCurrentLine] = useState(0);
   const [started, setStarted] = useState(false);
+  // My Studio speech: no theme preview — straight to the countdown.
+  useEffect(() => {
+    if (isAuthor) setCountdownOn(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [finished, setFinished] = useState(false);
   // live hall: the closing applause plays out before the screen moves on
 
@@ -5202,7 +5207,20 @@ export default function ShowtimeStageScreen() {
     setTimeout(() => {
       const uri = recordingUriRef.current ?? "";
       if (isAuthor) {
-        void leaveToAuthor(true, uri);
+        // My Studio draft: the regular score screen, which can also publish it.
+        router.push({
+          pathname: "/showtime-playback",
+          params: {
+            recordingUri: uri,
+            title: speech.title,
+            levelId: "author",
+            mode: "author",
+            scriptText: authorTextParam ?? speech.lines.join(" "),
+            draftId: authorDraftIdParam ?? "",
+            category: authorCategoryParam ?? "",
+            waveform: waveformRef.current ? JSON.stringify(waveformRef.current) : "",
+          },
+        });
         return;
       }
       router.push({ pathname: "/showtime-playback", params: { recordingUri: uri, title: speech.title, levelId, mode, scriptText: speech.lines.join("\n"), waveform: waveformRef.current ? JSON.stringify(waveformRef.current) : "" } });
@@ -5460,7 +5478,7 @@ export default function ShowtimeStageScreen() {
           Превью темы"): line-art stage, category + title, length/difficulty,
           a short brief, the delivery set-up, then the scroll mode and the CTA.
           Fades away as the hall comes up. */}
-      {!started && (
+      {!started && !isAuthor && (
         <Animated.View style={[StyleSheet.absoluteFill, curtainStyle, { backgroundColor: ui.bg, zIndex: 20 }]}>
           <ScrollView
             style={StyleSheet.absoluteFill}
@@ -5821,10 +5839,10 @@ const s = StyleSheet.create({
   pvChip: { flex: 1, borderRadius: 16, borderWidth: 2, paddingHorizontal: 12, paddingVertical: 10, gap: 2 },
   pvChipKey: { fontFamily: "Geologica_500Medium", fontSize: 12 },
   pvChipVal: { fontFamily: "Geologica_600SemiBold", fontSize: 14 },
-  pvSeg: { height: 44, borderRadius: 22, borderWidth: 2, flexDirection: "row", padding: 2, overflow: "hidden" },
+  pvSeg: { height: 44, borderRadius: 22, flexDirection: "row", padding: 2, overflow: "hidden" },
   pvSegItem: { flex: 1, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   pvSegText: { fontFamily: "Geologica_600SemiBold", fontSize: 14 },
-  pvCta: { height: 56, borderRadius: 28, borderWidth: 4, marginTop: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
+  pvCta: { height: 56, borderRadius: 28, marginTop: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
   pvCtaText: { fontFamily: "Geologica_800ExtraBold", fontSize: 17 },
   pvCtaCost: {
     flexDirection: "row",
@@ -5842,11 +5860,11 @@ const s = StyleSheet.create({
   curtainHint: { fontSize: 14, color: "rgba(255,255,255,0.4)", textAlign: "center", lineHeight: 20 },
   // Scroll-mode selector (curtain)
   modeRow: { flexDirection: "row", gap: 10, marginTop: 6 },
-  modeBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 14, borderWidth: 1.5 },
+  modeBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 14 },
   modeBtnText: { fontSize: 14 },
   // Auto controls (panel)
   autoRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
-  autoChip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, borderWidth: 1, backgroundColor: "rgba(0,0,0,0.25)" },
+  autoChip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: "rgba(0,0,0,0.25)" },
   autoChipText: { fontSize: 13 },
   // Speech panel — raised off the bottom so the text sits comfortably and
   // never jams into the very bottom edge.

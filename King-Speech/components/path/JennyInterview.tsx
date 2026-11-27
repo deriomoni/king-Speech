@@ -228,7 +228,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
   },
   captionBox: {
     flexDirection: "row",

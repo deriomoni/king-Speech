@@ -55,6 +55,16 @@ function untilMidnight(lang: Lang) {
 
 type Saved = { last: string | null; day: number };
 
+/** True when today’s daily bonus has already been collected. */
+export async function isDailyClaimedToday(): Promise<boolean> {
+  try {
+    const raw = await AsyncStorage.getItem(KEY);
+    return !!raw && JSON.parse(raw).last === dayStr();
+  } catch {
+    return false;
+  }
+}
+
 export default function DailyRewards({
   width,
   onClaim,

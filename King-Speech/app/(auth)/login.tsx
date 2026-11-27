@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { appAlert } from "@/lib/appAlert";
 import NextChevron from "@/components/NextChevron";
 import {
   View,
@@ -8,8 +9,7 @@ import {
   Platform,
   StatusBar,
   ActivityIndicator,
-  Alert,
-} from "react-native";
+  } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -89,7 +89,7 @@ export default function LoginScreen() {
   useEffect(() => {
     if (authError) {
       setBusy(null);
-      Alert.alert(pickLang(lang, { ru: "Вход", en: "Sign in", kk: "Кіру" }), authError);
+      appAlert(pickLang(lang, { ru: "Вход", en: "Sign in", kk: "Кіру" }), authError);
     }
   }, [authError]);
 
@@ -110,7 +110,7 @@ export default function LoginScreen() {
   const handleGoogle = async () => {
     if (!configured) playUi("tapPrimary");
     if (!configured) {
-      Alert.alert(pickLang(lang, { ru: "Вход", en: "Sign in", kk: "Кіру" }), pickLang(lang, { ru: "Авторизация не настроена. Добавь Firebase-ключи в Replit Secrets.", en: "Sign-in isn't configured. Add the Firebase keys to Replit Secrets.", kk: "Авторизация бапталмаған. Firebase кілттерін Replit Secrets-ке қосыңыз." }));
+      appAlert(pickLang(lang, { ru: "Вход", en: "Sign in", kk: "Кіру" }), pickLang(lang, { ru: "Авторизация не настроена. Добавь Firebase-ключи в Replit Secrets.", en: "Sign-in isn't configured. Add the Firebase keys to Replit Secrets.", kk: "Авторизация бапталмаған. Firebase кілттерін Replit Secrets-ке қосыңыз." }));
       return;
     }
     playUi("tapPrimary");
@@ -121,7 +121,7 @@ export default function LoginScreen() {
   const handleApple = async () => {
     if (!configured) playUi("tapPrimary");
     if (!configured) {
-      Alert.alert(pickLang(lang, { ru: "Вход", en: "Sign in", kk: "Кіру" }), pickLang(lang, { ru: "Авторизация не настроена. Добавь Firebase-ключи в Replit Secrets.", en: "Sign-in isn't configured. Add the Firebase keys to Replit Secrets.", kk: "Авторизация бапталмаған. Firebase кілттерін Replit Secrets-ке қосыңыз." }));
+      appAlert(pickLang(lang, { ru: "Вход", en: "Sign in", kk: "Кіру" }), pickLang(lang, { ru: "Авторизация не настроена. Добавь Firebase-ключи в Replit Secrets.", en: "Sign-in isn't configured. Add the Firebase keys to Replit Secrets.", kk: "Авторизация бапталмаған. Firebase кілттерін Replit Secrets-ке қосыңыз." }));
       return;
     }
     playUi("tapPrimary");
@@ -346,8 +346,6 @@ const s = StyleSheet.create({
   // dark glass: reads on navy and on the bright pink / orange alike
   glass: {
     backgroundColor: "rgba(10,8,30,0.38)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.22)",
   },
   black: { backgroundColor: "#0A0A0C" },
   btnTxt: {

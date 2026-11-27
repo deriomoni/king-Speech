@@ -1,16 +1,15 @@
 import React, { useEffect } from "react";
+import { appAlert } from "@/lib/appAlert";
 import {
   View,
   Text,
   Pressable,
   StyleSheet,
-  Alert,
   Platform,
 } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
   withRepeat,
   withSequence,
   withTiming,
@@ -28,17 +27,16 @@ import {
 import RecButton, { RecGlyph } from "@/components/RecButton";
 import { pickLang, type Lang } from "@/context/LangContext";
 import { rs } from "@/lib/responsive";
+import { WavePill, WaveBars } from "@/components/VoiceWave";
 
-// Figma "Recorder bar" (151:1584, state Active): a 354x72 pill with a 4pt
-// translucent-ink outline, 3pt bars growing left to right, a gold playhead
-// (with a dot on top) at the live edge and a faint "rest line" to the right.
-// Below it: gold restart icon, gold "Стоп" pill, and a gold pause icon (kept
-// for the existing pause/resume feature).
+// Recorder: timer, an iMessage-style voice pill (bars light up as they are
+// recorded, empty slots are dim dots — no playhead), then «Заново» / «Стоп» /
+// pause controls.
 
-const BAR_WIDTH = 3;
-const BAR_GAP = 3.5;
-const BAR_MAX_H = 40; // tallest bar inside the 72pt pill
-const VISIBLE_BARS = 30; // the live edge scrolls once the pill is full
+const VISIBLE_BARS = 34; // slots in the pill; the oldest bars scroll off once full
+
+const norm = (b: WaveBar) =>
+  Math.max(0, Math.min(1, (b.height - WAVEFORM_BAR_MIN) / (WAVEFORM_BAR_MAX - WAVEFORM_BAR_MIN)));
 
 interface Props {
   isRecording: boolean;
@@ -82,24 +80,6 @@ function RecDot({ active, color }: { active: boolean; color: string }) {
   return <Animated.View style={[styles.recDot, { backgroundColor: color }, style]} />;
 }
 
-function Bar({ bar, isNewest, color }: { bar: WaveBar; isNewest: boolean; color: string }) {
-  const scale = useSharedValue(isNewest ? 0.4 : 1);
-  useEffect(() => {
-    if (isNewest) {
-      scale.value = withSpring(1, { damping: 14, stiffness: 220, mass: 0.4 });
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const style = useAnimatedStyle(() => ({
-    transform: [{ scaleY: scale.value }],
-  }));
-  // Hook heights live in [MIN..MAX]; map them onto the pill's 6..40pt range.
-  const t = Math.max(
-    0,
-    Math.min(1, (bar.height - WAVEFORM_BAR_MIN) / (WAVEFORM_BAR_MAX - WAVEFORM_BAR_MIN)),
-  );
-  const h = rs(6 + t * (BAR_MAX_H - 6));
-  return <Animated.View style={[styles.bar, { height: h, backgroundColor: color }, style]} />;
-}
 
 export default function WaveformRecorder({
   isRecording,
@@ -115,8 +95,6 @@ export default function WaveformRecorder({
 }: Props) {
   const { theme, themeMode } = useTheme();
   const isDark = themeMode === "dark";
-  const pillStroke = isDark ? "rgba(240,238,233,0.45)" : "rgba(38,38,40,0.3)";
-  const restLine = isDark ? "rgba(240,238,233,0.25)" : "rgba(38,38,40,0.2)";
   const visible = bars.slice(-VISIBLE_BARS);
 
   const stopLabel = pickLang(lang, { ru: "Стоп", en: "Stop", kk: "Тоқтату" });
@@ -130,7 +108,7 @@ export default function WaveformRecorder({
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     }
-    Alert.alert(restartTitle, restartMsg, [
+    appAlert(restartTitle, restartMsg, [
       { text: cancelLabel, style: "cancel" },
       {
         text: restartLabel,
@@ -164,18 +142,11 @@ export default function WaveformRecorder({
         <Text style={[styles.timerText, { color: theme.accentInk }]}>{formatTime(elapsedSeconds)}</Text>
       </View>
 
-      <View style={[styles.panel, { backgroundColor: theme.bg, borderColor: pillStroke }]}>
-        <View style={styles.panelInner}>
-          {visible.map((b, i) => (
-            <Bar key={b.id} bar={b} isNewest={i === visible.length - 1} color={theme.text} />
-          ))}
-          <View style={styles.playheadWrap}>
-            <View style={[styles.playheadDot, { backgroundColor: theme.accent }]} />
-            <View style={[styles.playhead, { backgroundColor: theme.accent }]} />
-          </View>
-          <View style={[styles.restLine, { backgroundColor: restLine }]} />
-        </View>
-      </View>
+      {/* iMessage-style pill: recorded bars solid, empty slots as dim dots —
+          progress is read from brightness only, no playhead. */}
+      <WavePill style={{ width: "100%", marginTop: rs(19) }}>
+        <WaveBars values={visible.map(norm)} lit={visible.length} slots={VISIBLE_BARS} />
+      </WavePill>
 
       <View style={[styles.controls, stopOnly && { justifyContent: "center" }]}>
         {!stopOnly && <Pressable
@@ -197,7 +168,7 @@ export default function WaveformRecorder({
           accessibilityLabel={stopLabel}
           style={({ pressed }) => [
             styles.stopPill,
-            { backgroundColor: theme.accent, borderColor: theme.ctaStroke, opacity: pressed ? 0.85 : 1 },
+            { backgroundColor: theme.accent, opacity: pressed ? 0.85 : 1 },
           ]}
           testID="waveform-stop"
         >
@@ -242,48 +213,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     letterSpacing: -0.09,
   },
-  panel: {
-    width: "100%",
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 4,
-    overflow: "hidden",
-    paddingHorizontal: 24,
-    justifyContent: "center",
-    marginTop: 19,
-  },
-  panelInner: {
-    flexDirection: "row",
-    alignItems: "center",
-    height: 56,
-    gap: BAR_GAP,
-  },
-  bar: {
-    width: BAR_WIDTH,
-    borderRadius: 1.5,
-  },
-  playheadWrap: {
-    width: 8,
-    height: 50,
-    alignItems: "center",
-    marginHorizontal: -2.75,
-  },
-  playheadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  playhead: {
-    width: 2.5,
-    height: 46,
-    borderRadius: 1.25,
-    marginTop: -4,
-  },
-  restLine: {
-    flex: 1,
-    height: 2,
-    borderRadius: 1,
-  },
   controls: {
     flexDirection: "row",
     alignItems: "center",
@@ -309,7 +238,6 @@ const styles = StyleSheet.create({
     height: 50,
     paddingHorizontal: 20,
     borderRadius: 32,
-    borderWidth: 4,
   },
   stopPillText: {
     fontFamily: "Geologica_700Bold",

@@ -58,14 +58,14 @@ export function PillButton({ label, onPress, variant = "primary", disabled, busy
   let box: ViewStyle;
   let color: string;
   if (variant === "primary") {
-    box = { backgroundColor: theme.accent, borderWidth: 4, borderColor: theme.ctaStroke };
+    box = { backgroundColor: theme.accent };
     color = theme.accentText;
   } else if (variant === "secondaryOnGold" || dark) {
     // Secondary: neutral graphite (replaced the Figma brown #716250).
     box = { backgroundColor: theme.btnSecondary };
     color = theme.btnSecondaryText;
   } else {
-    box = { backgroundColor: "rgba(38,38,40,0.05)", borderWidth: 2, borderColor: "rgba(38,38,40,0.14)" };
+    box = { backgroundColor: "rgba(38,38,40,0.10)" };
     color = "rgba(38,38,40,0.45)";
   }
   return (

@@ -146,6 +146,6 @@ const styles = StyleSheet.create({
   chipText: { fontFamily: "Geologica_500Medium", fontSize: 13 },
   stats: { marginTop: 18, fontFamily: "Geologica_500Medium", fontSize: 14, textAlign: "center" },
   encourage: { marginTop: 30, fontFamily: "Geologica_500Medium", fontStyle: "italic", fontSize: 16, textAlign: "center" },
-  cta: { marginTop: 28, height: 54, borderRadius: 32, borderWidth: 4, alignItems: "center", justifyContent: "center" },
+  cta: { marginTop: 28, height: 54, borderRadius: 32, alignItems: "center", justifyContent: "center" },
   ctaText: { fontFamily: "Geologica_600SemiBold", fontSize: 15 },
 });

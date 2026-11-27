@@ -299,7 +299,16 @@ export function getPathBrickColor(moduleNum: number, isDark: boolean): string {
   const p =
     PATH_PALETTE[(Math.max(1, moduleNum) - 1) % PATH_PALETTE.length] ??
     PATH_PALETTE[0];
-  return isDark ? darkBrick(p.brick) : p.brick;
+  const brick = vividBrick(p.brick);
+  return isDark ? darkBrick(brick) : brick;
+}
+
+/** Bricks must always read as a colour: dark or greyish ones (navy, charcoal,
+ *  oxblood, forest…) are lifted to a saturated mid tone of the same hue. */
+function vividBrick(hex: string): string {
+  const [h, s, l] = hexToHsl(hex);
+  if (l >= 0.42) return hex;
+  return hslToHex(h, clamp(Math.max(s, 0.5), 0, 0.62), 0.52);
 }
 
 // ── background pattern ink ─────────────────────────────────────────────────

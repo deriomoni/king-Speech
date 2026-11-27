@@ -290,17 +290,6 @@ export default function MicButton({
               doneLayerStyle,
             ]}
           />
-          <View
-            pointerEvents="none"
-            style={[
-              StyleSheet.absoluteFillObject,
-              {
-                borderRadius: size / 2,
-                borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.18)",
-              },
-            ]}
-          />
 
           <Ionicons
             name={isRecording ? "stop" : isDone ? "checkmark" : "mic"}

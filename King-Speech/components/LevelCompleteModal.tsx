@@ -286,7 +286,8 @@ function VictoryScreen({ bestScore, durationSec, xpEarned, onNext, onMap, t, lan
 
   const score = Math.max(0, Math.min(10, bestScore || 0));
   const scoreStr = Number.isInteger(score) ? String(score) : score.toFixed(1);
-  const timeStr = `${Math.floor(durationSec / 60)}:${String(Math.floor(durationSec % 60)).padStart(2, "0")}`;
+  const secs = Math.max(1, Math.round(durationSec || 0));
+  const timeStr = durationSec > 0 ? `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}` : "—";
   const stars = score >= 9 ? 3 : score >= 7 ? 2 : 1;
   const verdict =
     score >= 9.5

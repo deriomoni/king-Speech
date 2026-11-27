@@ -756,7 +756,6 @@ const st = StyleSheet.create({
     minWidth: 154,
     paddingHorizontal: 36,
     borderRadius: 32,
-    borderWidth: 2,
   },
   startLabel: { fontFamily: "Geologica_800ExtraBold", fontSize: 16 },
   overlay: {

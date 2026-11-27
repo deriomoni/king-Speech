@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { appAlert } from "@/lib/appAlert";
 import {
   View,
   Text,
@@ -7,7 +8,6 @@ import {
   Pressable,
   Platform,
   Modal,
-  Alert,
   Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -35,7 +35,7 @@ import NextChevron from "@/components/NextChevron";
 import * as Haptics from "@/lib/haptics";
 import Colors from "@/constants/colors";
 import { useAppColors } from "@/hooks/useAppColors";
-import { useGame, LevelType, Task, getBaseType, coinsForScore } from "@/context/GameContext";
+import { useGame, LevelType, Task, getBaseType, coinsForLevel, hasVictoryScreen } from "@/context/GameContext";
 import { useLang, pickLang, type Lang } from "@/context/LangContext";
 import { useDevTools } from "@/context/DevToolsContext";
 import VoiceRecorder from "@/components/WaveformVoiceRecorder";
@@ -378,7 +378,10 @@ export default function LevelScreen() {
   // (none for warm-ups), paid once — the first time the level is cleared, the
   // same moment the trophy screen shows them flying into the wallet.
   const levelScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
-  const levelCoins = getBaseType(levelId) === "warmup" ? 0 : coinsForScore(levelScore);
+  const levelCoins = coinsForLevel(levelId, levelScore);
+  // Trophy screen only for interview / tongue twisters / reading; the other
+  // levels pay their coins and go straight back to the map.
+  const victoryEligible = hasVictoryScreen(levelId);
   const rewardPaidRef = React.useRef(false);
   const [readingResetSignal, setReadingResetSignal] = useState(0);
   const [readingRestartSignal, setReadingRestartSignal] = useState(0);
@@ -445,10 +448,10 @@ export default function LevelScreen() {
     setShowLevelComplete(false);
   }, [levelId]);
 
-  // Replay of a passed level: no victory screen — back to the map.
+  // Replay of a passed level, or a level without a trophy screen: back to the map.
   useEffect(() => {
-    if (showLevelComplete && clearedBefore.current) handleLevelCompleteMap();
-  }, [showLevelComplete, handleLevelCompleteMap]);
+    if (showLevelComplete && (clearedBefore.current || !victoryEligible)) handleLevelCompleteMap();
+  }, [showLevelComplete, handleLevelCompleteMap, victoryEligible]);
 
   // First clear: pay the level's coins as the victory screen opens.
   useEffect(() => {
@@ -486,7 +489,7 @@ export default function LevelScreen() {
     const inTask = activeTaskIndex !== null || showResults || analyzing;
     const doExit = () => leaveTo("/(tabs)");
     if (inTask) {
-      Alert.alert(
+      appAlert(
         t("exitTaskTitle"),
         t("exitTaskMsg"),
         [
@@ -944,7 +947,7 @@ export default function LevelScreen() {
           onAllComplete={handleWarmupAllComplete}
         />
         <LevelCompleteModal
-          visible={showLevelComplete && !clearedBefore.current}
+          visible={showLevelComplete && !clearedBefore.current && victoryEligible}
           levelTitle={level.title}
           xpEarned={levelCoins}
           avgScore={avgScore}
@@ -1045,7 +1048,7 @@ export default function LevelScreen() {
         />
 
         <LevelCompleteModal
-          visible={showLevelComplete && !clearedBefore.current}
+          visible={showLevelComplete && !clearedBefore.current && victoryEligible}
           levelTitle={level.title}
           xpEarned={levelCoins}
           avgScore={avgScore}
@@ -1164,7 +1167,7 @@ export default function LevelScreen() {
 
       {/* Level Complete Modal */}
       <LevelCompleteModal
-        visible={showLevelComplete && !clearedBefore.current}
+        visible={showLevelComplete && !clearedBefore.current && victoryEligible}
         levelTitle={level.title}
         xpEarned={levelCoins}
         avgScore={avgScore}
@@ -1314,7 +1317,6 @@ const rs = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 16,
-    borderWidth: 1,
   },
   retryBtnText: { fontSize: 15 },
   nextBtn: {
@@ -1332,7 +1334,7 @@ const rs = StyleSheet.create({
 
   // Flower result window (Figma 37:5981 "Оценка уровня")
   heroSection: { alignItems: "center", gap: 4, marginTop: -14 },
-  flowerNextBtn: { height: 48, paddingVertical: 0, borderRadius: 32, borderWidth: 4 },
+  flowerNextBtn: { height: 48, paddingVertical: 0, borderRadius: 32 },
   scoreRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1452,7 +1454,6 @@ const styles = StyleSheet.create({
   readingExitStay: {
     height: 50,
     borderRadius: 15,
-    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },

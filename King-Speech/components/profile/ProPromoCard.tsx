@@ -130,7 +130,6 @@ const styles = StyleSheet.create({
     height: 44,
     paddingHorizontal: 18,
     borderRadius: 32,
-    borderWidth: 4,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",

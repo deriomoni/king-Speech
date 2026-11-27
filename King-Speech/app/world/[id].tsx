@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useEffect, useRef, useState } from "react";
+import { appAlert } from "@/lib/appAlert";
 import {
   View,
   Text,
@@ -8,7 +9,6 @@ import {
   Platform,
   Modal,
   TextInput,
-  Alert,
   type GestureResponderEvent,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -271,7 +271,7 @@ async function shareRecording(
   try {
     const available = await Sharing.isAvailableAsync();
     if (!available) {
-      Alert.alert(
+      appAlert(
         pickLang(lang, { ru: "Поделиться нельзя", en: "Sharing unavailable", kk: "Бөлісу мүмкін емес" }),
         pickLang(lang, { ru: "На этом устройстве недоступно.", en: "Sharing isn't supported on this device.", kk: "Бұл құрылғыда қолжетімсіз." })
       );
@@ -360,7 +360,7 @@ function RecordingsBlock({
       if (ok) performDelete(uri);
       return;
     }
-    Alert.alert(title, msg, [
+    appAlert(title, msg, [
       { text: pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" }), style: "cancel" },
       {
         text: pickLang(lang, { ru: "Удалить", en: "Delete", kk: "Жою" }),
@@ -533,7 +533,7 @@ function ActionSheetModal({
             onPress={onClose}
             style={({ pressed }) => [
               detailStyles.sheetCancel,
-              { borderColor: theme.borderColor, opacity: pressed ? 0.8 : 1 },
+              { backgroundColor: theme.borderColor + "24", opacity: pressed ? 0.8 : 1 },
             ]}
             accessibilityRole="button"
             accessibilityLabel={pickLang(lang, { ru: "Отмена", en: "Cancel", kk: "Болдырмау" })}
@@ -675,7 +675,7 @@ function RenameModal({
               onPress={onCancel}
               style={({ pressed }) => [
                 detailStyles.renameBtn,
-                { borderColor: theme.borderColor, opacity: pressed ? 0.8 : 1 },
+                { backgroundColor: theme.borderColor + "24", opacity: pressed ? 0.8 : 1 },
               ]}
               testID="recording-rename-cancel"
             >
@@ -1054,8 +1054,7 @@ function RecordingItem({
         style={({ pressed }) => [
           detailStyles.recMute,
           {
-            borderColor: theme.accent + "66",
-            backgroundColor: muted ? theme.accent + "22" : "transparent",
+            backgroundColor: muted ? theme.accent + "33" : theme.accent + "1F",
             opacity: pressed ? 0.8 : 1,
           },
         ]}
@@ -1089,7 +1088,7 @@ function RecordingItem({
         style={({ pressed }) => [
           detailStyles.recMore,
           {
-            borderColor: theme.accent + "66",
+            backgroundColor: theme.accent + "1F",
             opacity: pressed ? 0.7 : 1,
           },
         ]}
@@ -1292,7 +1291,6 @@ const detailStyles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1380,7 +1378,6 @@ const detailStyles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1388,7 +1385,6 @@ const detailStyles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1481,7 +1477,6 @@ const detailStyles = StyleSheet.create({
     marginTop: 8,
     paddingVertical: 12,
     borderRadius: 14,
-    borderWidth: 1,
     alignItems: "center",
   },
   sheetCancelText: { fontSize: 14 },
@@ -1511,7 +1506,6 @@ const detailStyles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 12,
-    borderWidth: 1,
   },
   renameBtnText: { fontSize: 14 },
 });

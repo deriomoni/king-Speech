@@ -37,6 +37,7 @@ import {
   tx,
   DIFFICULTY_LABEL,
   TWISTERS,
+  pickFinalTips,
   type CheatRoute,
   type CheatStep,
   type ActionStep,
@@ -375,7 +376,7 @@ function TwisterView({ step, lang, c, isDark }: { step: TwisterStep; lang: Lang;
         onPress={replace}
         style={({ pressed }) => [
           styles.twReplaceBtn,
-          { backgroundColor: ink(isDark, 0.06), borderColor: ink(isDark, 0.12), opacity: pressed ? 0.7 : 1 },
+          { backgroundColor: ink(isDark, 0.1), opacity: pressed ? 0.7 : 1 },
         ]}
         accessibilityRole="button"
         accessibilityLabel={pickLang(lang, { ru: "Замена", en: "Replace", kk: "Ауыстыру" })}
@@ -430,6 +431,8 @@ function MannersView({ lang, c }: { lang: Lang; c: AppColors }) {
 
 // ── Final anchor ──────────────────────────────────────────────────────────────
 function FinalView({ step, lang, onDone, c }: { step: FinalStep; lang: Lang; onDone: () => void; c: AppColors }) {
+  // Fresh set of three quick tips every time the screen opens.
+  const lines = React.useMemo(() => pickFinalTips(3), []);
   return (
     <View style={styles.finalWrap}>
       {/* hero: the verdict first, then the line under it, then Oscar (pose №5) */}
@@ -445,7 +448,7 @@ function FinalView({ step, lang, onDone, c }: { step: FinalStep; lang: Lang; onD
       {/* checklist + button sit low, near the thumb */}
       <Animated.View entering={FadeInDown.duration(380).delay(220)} style={styles.finalBottom}>
         <View style={styles.finalLines}>
-          {step.lines.map((l, k) => (
+          {lines.map((l, k) => (
             <View key={k} style={styles.finalLineRow}>
               <View style={styles.finalDot} />
               <Text style={[styles.finalLine, { color: c.text }]}>{tx(l, lang)}</Text>
@@ -772,7 +775,7 @@ const styles = StyleSheet.create({
   twKaraoke: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 6 },
   twWord: { fontSize: 27, lineHeight: 38, fontFamily: fonts.display, textAlign: "center" },
   twWordActive: { color: GOLD },
-  twReplaceBtn: { flexDirection: "row", alignItems: "center", gap: 7, paddingVertical: 10, paddingHorizontal: 18, borderRadius: 22, borderWidth: 1, marginTop: 4 },
+  twReplaceBtn: { flexDirection: "row", alignItems: "center", gap: 7, paddingVertical: 10, paddingHorizontal: 18, borderRadius: 22, marginTop: 4 },
   twReplaceTxt: { fontSize: 14, fontFamily: fonts.bodyBold },
 
   // tip / fix

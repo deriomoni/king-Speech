@@ -94,7 +94,5 @@ const s = StyleSheet.create({
     backgroundColor: REC_GOLD,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 3,
-    borderColor: "rgba(42,28,2,0.10)",
   },
 });

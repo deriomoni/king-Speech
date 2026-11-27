@@ -101,7 +101,10 @@ const FPS = 20;
  * short timed cross-fade (two render passes only while it runs), the rest of
  * the slider's travel is the smooth black sheet the stage lays over the hall */
 const SIL_AT = 0.3;
-const SIL_FADE_SEC = 0.35;
+const SIL_FADE_SEC = 0.7; // matches the black sheet fade in showtime-stage (700 ms)
+// While the house lights fade the hall redraws at this rate so the change is
+// smooth; otherwise it idles at FPS to keep the phone cool.
+const FADE_FPS = 50;
 const silOf = (dim: number) => (dim > SIL_AT ? 1 : 0);
 
 export function useLiveAudience<H>(props: LiveAudienceProps, backend: Backend<H> | null, draw: (A: Audience, cr: Cairo<H>, t: number, sil: number) => void) {
@@ -160,7 +163,9 @@ export function useLiveAudience<H>(props: LiveAudienceProps, backend: Backend<H>
     const loop = () => {
       if (!alive) return;
       const ms = Date.now();
-      if (ms - last >= 1000 / FPS) {
+      const fading = silMix.current !== silOf(dimRef.current);
+      if (ms - last >= 1000 / (fading ? FADE_FPS : FPS)) {
+        const dt = last ? Math.min(0.1, (ms - last) / 1000) : 1 / FPS;
         last = ms; const t = now();
         const lv = levelsRef?.current;
         if (lv && lv.length > 10) {
@@ -169,7 +174,7 @@ export function useLiveAudience<H>(props: LiveAudienceProps, backend: Backend<H>
           engine.A.chatRate = avg < 0.18 ? 2.2 : avg > 0.45 ? 0.6 : 1;
         }
         engine.A.tick(t);
-        const target = silOf(dimRef.current); const step = 1 / (FPS * SIL_FADE_SEC);
+        const target = silOf(dimRef.current); const step = dt / SIL_FADE_SEC; // time-based, independent of frame rate
         silMix.current = target > silMix.current ? Math.min(target, silMix.current + step) : Math.max(target, silMix.current - step);
         const m = silMix.current; const eased = m * m * (3 - 2 * m);
         draw(engine.A, engine.cr, t, eased);

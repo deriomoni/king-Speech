@@ -253,7 +253,8 @@ html,body{margin:0;padding:0;background:transparent;overflow:hidden;height:100%;
 canvas{display:block;width:100vw;height:100vh;background:transparent;}
 </style></head><body>
 <canvas id="c"></canvas>
-<script src="https://unpkg.com/@rive-app/canvas@2.37.6"></script>
+<script>window.onerror=function(m){try{window.ReactNativeWebView.postMessage("jserr "+m)}catch(e){}};try{window.ReactNativeWebView.postMessage("html start")}catch(e){}</script>
+<script src="https://unpkg.com/@rive-app/canvas@2.37.6" onerror="window.ReactNativeWebView&&window.ReactNativeWebView.postMessage(&quot;cdn failed&quot;)"></script>
 <script>
 (function(){
   function log(m){ try{ window.ReactNativeWebView && window.ReactNativeWebView.postMessage(String(m)); }catch(e){} }
@@ -345,6 +346,7 @@ function ExpoGoRiveView({
           allowUniversalAccessFromFileURLs
           onMessage={(e: any) => {
             const msg = String(e?.nativeEvent?.data ?? "");
+            console.log("[RiveAnim][dbg] msg", msg);
             if (msg === "loaded") setReady(true);
             else if (msg.startsWith("loadError") || msg.startsWith("ctor") || msg.startsWith("rive runtime")) {
               console.warn("[RiveAnim] expo-go", msg);

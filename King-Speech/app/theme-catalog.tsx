@@ -372,7 +372,7 @@ const s = StyleSheet.create({
 
   chipsScroll: { marginTop: 18, marginHorizontal: -20 },
   chips: { paddingHorizontal: 20, gap: 8 },
-  chip: { height: 36, borderRadius: 18, borderWidth: 1, paddingHorizontal: 15, justifyContent: "center" },
+  chip: { height: 36, borderRadius: 18, paddingHorizontal: 15, justifyContent: "center" },
   chipText: { fontSize: 13, fontFamily: "Geologica_700Bold" },
 
   featured: { aspectRatio: 1, marginTop: 20 },

@@ -154,7 +154,7 @@ function ActionButton({
       style={({ pressed }) => [
         styles.action,
         gold
-          ? { backgroundColor: theme.accent, borderColor: theme.ctaStroke, borderWidth: 4 }
+          ? { backgroundColor: theme.accent }
           : { backgroundColor: theme.btnSecondary },
         { opacity: pressed ? 0.8 : 1 },
       ]}
@@ -287,7 +287,7 @@ export default function VocabPlayView({
             accessibilityLabel={pickLang(lang, { ru: "Добавить время ×2", en: "Add time ×2", kk: "Уақыт қосу ×2" })}
             style={({ pressed }) => [
               styles.boost,
-              { borderColor: theme.accent, opacity: extraTimeUsed ? 0.4 : pressed ? 0.75 : 1 },
+              { backgroundColor: theme.accent + "24", opacity: extraTimeUsed ? 0.4 : pressed ? 0.75 : 1 },
             ]}
           >
             <Text style={[styles.boostText, { color: theme.text }]}>×2</Text>
@@ -598,7 +598,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     paddingHorizontal: 12,
-    borderWidth: 4,
     borderRadius: 32,
     marginRight: 3,
     marginTop: -6,

@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, Pressable, ScrollView, Platform } from "react-native";
 import Animated, { Easing, FadeIn, FadeInDown, cancelAnimation, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
+import Svg, { Path } from "react-native-svg";
 import * as Haptics from "@/lib/haptics";
 import NextChevron from "@/components/NextChevron";
 import { useAppColors } from "@/hooks/useAppColors";
@@ -31,6 +32,23 @@ function shuffledOrder(n: number): number[] {
   return a;
 }
 
+// ── check / cross marks ───────────────────────────────────────────────────────
+// Drawn by hand (not icon-font glyphs) so the stroke can be a touch heavier.
+export function AnswerMark({ kind, size, color }: { kind: "check" | "cross"; size: number; color: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        d={kind === "check" ? "M5 12.5l4.6 4.6L19 7.5" : "M6.5 6.5l11 11M17.5 6.5l-11 11"}
+        stroke={color}
+        strokeWidth={3.4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </Svg>
+  );
+}
+
 // ── one answer option ─────────────────────────────────────────────────────────
 function Option({
   letter,
@@ -54,7 +72,7 @@ function Option({
   const tint =
     state === "right" || state === "missed" ? GOOD : state === "wrong" ? BAD : null;
   const bg =
-    state === "right" ? GOOD + (isDark ? "26" : "22") : state === "wrong" ? BAD + (isDark ? "22" : "1C") : theme.card;
+    state === "right" || state === "missed" ? GOOD + (isDark ? "26" : "22") : state === "wrong" ? BAD + (isDark ? "22" : "1C") : theme.card;
   return (
     <Animated.View style={[anim, { opacity: state === "dim" ? (note ? 0.7 : 0.45) : 1 }]}>
       <Pressable
@@ -65,7 +83,7 @@ function Option({
         onPressOut={() => (scale.value = withSpring(1, { damping: 16, stiffness: 300, overshootClamping: true }))}
         style={[
           styles.option,
-          { backgroundColor: bg, borderColor: tint ?? "transparent" },
+          { backgroundColor: bg },
         ]}
         accessibilityRole="button"
       >
@@ -76,9 +94,9 @@ function Option({
           ]}
         >
           {state === "right" || state === "missed" ? (
-            <Ionicons name="checkmark" size={rs(16)} color="#FFFFFF" />
+            <AnswerMark kind="check" size={rs(17)} color="#FFFFFF" />
           ) : state === "wrong" ? (
-            <Ionicons name="close" size={rs(16)} color="#FFFFFF" />
+            <AnswerMark kind="cross" size={rs(17)} color="#FFFFFF" />
           ) : (
             <Text style={[styles.badgeTxt, { color: theme.textSecondary }]}>{letter}</Text>
           )}
@@ -157,25 +175,12 @@ export function MannersQuestion({
   };
   pickRef.current = pick;
 
-  const kindLabel =
-    rule.kind === "trick"
-      ? pickLang(lang, { ru: "С подвохом", en: "Trick question", kk: "Астарлы сұрақ" })
-      : rule.kind === "hard"
-        ? pickLang(lang, { ru: "Сложная ситуация", en: "Tough call", kk: "Күрделі жағдай" })
-        : null;
-
   return (
     <View style={styles.q}>
       <View style={styles.kickerRow}>
         <Text style={[styles.kicker, { color: theme.textMuted }]}>
           {pickLang(lang, { ru: "Как ты поступишь?", en: "What would you do?", kk: "Сен не істейсің?" })}
         </Text>
-        {kindLabel && (
-          <View style={[styles.kindChip, { backgroundColor: rule.kind === "trick" ? brand.purple + "22" : brand.warning + "26" }]}>
-            <Ionicons name={rule.kind === "trick" ? "eye" : "flash"} size={rs(12)} color={rule.kind === "trick" ? brand.purple : brand.warning} />
-            <Text style={[styles.kindTxt, { color: rule.kind === "trick" ? brand.purple : brand.warning }]}>{kindLabel}</Text>
-          </View>
-        )}
       </View>
       {timed && (
         <View style={[styles.timeTrack, { backgroundColor: isDark ? "rgba(240,238,233,0.08)" : "rgba(38,38,40,0.07)", opacity: answered ? 0 : 1 }]}>
@@ -214,9 +219,7 @@ export function MannersQuestion({
       {answered && (
         <Animated.View entering={FadeInDown.duration(360)} style={[styles.reveal, { backgroundColor: theme.card }]}>
           <View style={styles.revealHead}>
-            <View style={[styles.revealIcon, { backgroundColor: (isRight ? GOOD : BAD) + "26" }]}>
-              <Ionicons name={isRight ? "checkmark-circle" : "information-circle"} size={rs(20)} color={isRight ? GOOD : BAD} />
-            </View>
+            <AnswerMark kind={isRight ? "check" : "cross"} size={rs(22)} color={isRight ? GOOD : BAD} />
             <Text style={[styles.revealTitle, { color: isRight ? GOOD : BAD }]}>
               {timedOut
                 ? pickLang(lang, { ru: "Время вышло", en: "Time's up", kk: "Уақыт бітті" })
@@ -396,8 +399,6 @@ const styles = StyleSheet.create({
   q: { gap: 0 },
   kickerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
   kicker: { fontSize: 13, fontFamily: fonts.bodySemibold, letterSpacing: 0.2 },
-  kindChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
-  kindTxt: { fontSize: 12, fontFamily: fonts.bodyBold },
   timeTrack: { height: 4, borderRadius: 2, marginTop: 12, overflow: "hidden" },
   timeBar: { height: 4, borderRadius: 2 },
   multiNote: { fontSize: 14, lineHeight: 20, fontFamily: fonts.body, marginTop: 10 },
@@ -410,7 +411,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderRadius: 20,
-    borderWidth: 1.5,
   },
   badge: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
   badgeTxt: { fontSize: 13, fontFamily: fonts.bodyBold },
@@ -419,7 +419,6 @@ const styles = StyleSheet.create({
 
   reveal: { marginTop: 18, borderRadius: 22, padding: 18 },
   revealHead: { flexDirection: "row", alignItems: "center", gap: 10 },
-  revealIcon: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   revealTitle: { fontSize: 17, fontFamily: fonts.bodyBold },
   ruleTitle: { fontSize: 17, lineHeight: 23, fontFamily: fonts.display, marginTop: 14 },
   why: { fontSize: 15, lineHeight: 22, fontFamily: fonts.body, marginTop: 6 },

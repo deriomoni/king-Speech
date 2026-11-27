@@ -8,7 +8,8 @@
 import React from "react";
 import { View, Text, StyleSheet, Pressable, Platform } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Defs, RadialGradient, Stop, Circle } from "react-native-svg";
+import Svg, { Defs, RadialGradient, Stop, Circle, SvgXml } from "react-native-svg";
+import { QUILL, themedSvg } from "@/assets/figma/profile/tiles";
 import * as Haptics from "@/lib/haptics";
 import MannersMark from "@/components/manners/MannersMark";
 import { rs } from "@/lib/responsive";
@@ -150,60 +151,24 @@ function placed(x: number, y: number, w: number, h: number, figmaRot: number) {
 }
 
 // The «Королевские манеры» mark (crown + bow tie), sized like the old crown.
-const MARK_H = 92;
+// Both mode tiles share one art box so the pair reads as a set.
+const ART_H = 88;
 
 function MannersArt({ look }: { look: Look }) {
   // Centred in the space above the title.
   return (
     <View pointerEvents="none" style={styles.markSlot}>
-      <MannersMark height={rs(MARK_H)} color={look.mask} />
+      <MannersMark height={rs(ART_H)} color={look.mask} />
     </View>
   );
 }
 
-// Script sheet lines (382:1158…1165): [x, y, w].
-const LINES_TOP: [number, number, number][] = [
-  [12, 16, 64],
-  [12, 27, 76],
-  [12, 38, 50],
-];
-const LINES_BOTTOM: [number, number, number][] = [
-  [12, 80, 70],
-  [12, 91, 52],
-  [12, 102, 62],
-];
-
-function HintsArt({ look }: { look: Look }) {
-  const line = ([x, y, w]: [number, number, number], i: number) => (
-    <View
-      key={`${x}-${y}-${i}`}
-      style={[styles.bar, { left: rs(x), top: rs(y), width: rs(w), backgroundColor: look.line }]}
-    />
-  );
+// «My Studio» tile art: the quill, centred like the manners mark.
+function StudioArt({ mode }: { mode: Mode }) {
   return (
-    <>
-      {/* Translucent sheet behind (382:1156) */}
-      <View
-        pointerEvents="none"
-        style={[placed(50, 46, 100, 118, -9), styles.sheet, { backgroundColor: look.sheetBack }]}
-      />
-      {/* Script sheet (382:1157) */}
-      <View pointerEvents="none" style={[placed(36, 48, 100, 118, 5), styles.sheet, { backgroundColor: look.sheet }]}>
-        {LINES_TOP.map(line)}
-        {/* Highlighted cue line — two dark dashes, no word (382:1161) */}
-        <View style={styles.hint}>
-          <View style={[styles.dash, { left: rs(9), width: rs(30) }]} />
-          <View style={[styles.dash, { left: rs(44), width: rs(20) }]} />
-        </View>
-        {LINES_BOTTOM.map(line)}
-      </View>
-      {/* Whisper badge with 3 sound bars (382:1166) */}
-      <View pointerEvents="none" style={[styles.whisper, { backgroundColor: look.whisper }]}>
-        <View style={[styles.wbar, { left: rs(11), top: rs(14.5), height: rs(7), backgroundColor: look.whisperBar }]} />
-        <View style={[styles.wbar, { left: rs(17), top: rs(11.5), height: rs(13), backgroundColor: look.whisperBar }]} />
-        <View style={[styles.wbar, { left: rs(23), top: rs(14.5), height: rs(7), backgroundColor: look.whisperBar }]} />
-      </View>
-    </>
+    <View pointerEvents="none" style={styles.markSlot}>
+      <SvgXml xml={themedSvg(QUILL, mode)} width={rs(ART_H * (58 / 53))} height={rs(ART_H)} />
+    </View>
   );
 }
 
@@ -211,12 +176,12 @@ export function ShowTimeModeTiles({
   mode,
   lang,
   onManners,
-  onHints,
+  onStudio,
 }: {
   mode: Mode;
   lang: Lang;
   onManners: () => void;
-  onHints: () => void;
+  onStudio: () => void;
 }) {
   const look = LOOK[mode];
   return (
@@ -224,7 +189,7 @@ export function ShowTimeModeTiles({
       <ModeTile
         mode={mode}
         idSuffix="manners"
-        spotX={-10}
+        spotX={-20}
         titleLines={2}
         title={pickLang(lang, { ru: "Королевские\nманеры", en: "Royal\nmanners", kk: "Корольдік\nәдеп" })}
         sub={pickLang(lang, { ru: "Квиз об этикете", en: "An etiquette quiz", kk: "Әдеп туралы квиз" })}
@@ -234,20 +199,21 @@ export function ShowTimeModeTiles({
       </ModeTile>
       <ModeTile
         mode={mode}
-        idSuffix="hints"
-        spotX={-30}
-        title={pickLang(lang, { ru: "Подсказки", en: "Hints", kk: "Кеңестер" })}
-        sub={pickLang(lang, { ru: "Подскажет, как держать зал", en: "How to hold the room", kk: "Залды қалай ұстауды үйретеді" })}
-        onPress={onHints}
+        idSuffix="studio"
+        spotX={-20}
+        titleLines={2}
+        title={"My\nStudio"}
+        sub={pickLang(lang, { ru: "Свои выступления", en: "Your own speeches", kk: "Өз сөздеріңіз" })}
+        onPress={onStudio}
       >
-        <HintsArt look={look} />
+        <StudioArt mode={mode} />
       </ModeTile>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  markSlot: { position: "absolute", left: 0, right: 0, top: 24, alignItems: "center" },
+  markSlot: { position: "absolute", left: 0, right: 0, top: 30, alignItems: "center" },
   row: { flexDirection: "row", gap: 12 },
   outer: { flex: 1, height: HEIGHT, borderRadius: RADIUS },
   stroke: { flex: 1, borderRadius: RADIUS, padding: 1 },

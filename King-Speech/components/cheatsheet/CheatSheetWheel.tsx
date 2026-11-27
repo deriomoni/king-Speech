@@ -201,8 +201,6 @@ export default function CheatSheetWheel({
           startStyle
             ? {
                 backgroundColor: startStyle.bg,
-                borderColor: startStyle.border,
-                borderWidth: 4,
                 borderRadius: rs(32),
                 paddingHorizontal: rs(26),
               }

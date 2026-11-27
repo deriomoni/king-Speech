@@ -5,6 +5,7 @@ import { pickLang, useLang } from "@/context/LangContext";
 import * as Haptics from "@/lib/haptics";
 import { useAudioWaveform } from "@/hooks/useAudioWaveform";
 import { rs } from "@/lib/responsive";
+import { WavePill, WavePlayButton, WaveBars } from "@/components/VoiceWave";
 
 let Audio: any = null;
 if (Platform.OS !== "web") {
@@ -231,96 +232,34 @@ export default function RecordingPlayer({
       .padStart(2, "0")}`;
   const progress = durationSec > 0 ? Math.min(1, positionSec / durationSec) : 0;
 
-  if (minimal) {
-    return (
-      <View style={s.row}>
-        <Pressable
-          onPress={play}
-          disabled={!uri}
-          style={({ pressed }) => [s.playBtn, { backgroundColor: accentColor, borderWidth: 0, transform: [{ scale: pressed ? 0.94 : 1 }] }]}
-        >
-          <Ionicons name={isPlaying ? "pause" : "play"} size={rs(22)} color="#FFFFFF" style={{ marginLeft: isPlaying ? 0 : rs(3) }} />
-        </Pressable>
-        <View
-          style={s.waveWrap}
-          onLayout={(e) => { barWidthRef.current = e.nativeEvent.layout.width; }}
-          onStartShouldSetResponder={() => !!uri && durationSec > 0}
-          onResponderGrant={(e) => seekFromEvent(e, true)}
-          onResponderMove={(e) => seekFromEvent(e, false)}
-        >
-          {barHeights.map((h, i) => {
-            const filled = (i + 0.5) / BAR_COUNT <= progress;
-            return <View key={i} style={{ width: rs(3), borderRadius: rs(2), height: rs(h), backgroundColor: filled ? accentColor : trackColor }} />;
-          })}
-        </View>
-        <Text style={[s.timeMin, { color: textColor }]}>{fmt(isPlaying || positionSec > 0 ? positionSec : durationSec)}</Text>
-      </View>
-    );
-  }
-
+  // iMessage-style voice pill: bare ▶, bars light up as they play (no
+  // tracker / knob). Tap or drag across the bars to seek.
+  const maxH = Math.max(1, ...barHeights);
+  const values = barHeights.map((h) => Math.max(0, Math.min(1, (h - 4) / Math.max(1, maxH - 4))));
+  const lit = Math.round(progress * values.length);
   return (
-    <View style={[s.container, { borderColor: trackColor }]}>
-      <View style={s.row}>
-        <Pressable
-          onPress={play}
-          disabled={!uri}
-          style={({ pressed }) => [
-            s.playBtn,
-            { backgroundColor: accentColor + "1F", borderColor: accentColor, opacity: pressed ? 0.8 : 1 },
-          ]}
-        >
-          <Ionicons
-            name={isPlaying ? "pause" : "play"}
-            size={rs(22)}
-            color={accentColor}
-            style={{ marginLeft: isPlaying ? 0 : rs(3) }}
-          />
-        </Pressable>
-
-        <View style={s.waveWrap}>
-          {barHeights.map((h, i) => {
-            const filled = (i + 0.5) / BAR_COUNT <= progress;
-            return (
-              <View
-                key={i}
-                style={{ width: rs(3), borderRadius: rs(2), height: rs(h), backgroundColor: filled ? accentColor : trackColor }}
-              />
-            );
-          })}
-        </View>
-
-        <Pressable
-          onPress={replay}
-          disabled={!uri}
-          hitSlop={8}
-          style={({ pressed }) => [s.replayBtn, { opacity: pressed ? 0.6 : 1 }]}
-        >
+    <WavePill>
+      <WavePlayButton playing={isPlaying} onPress={play} disabled={!uri} />
+      <View
+        style={{ flex: 1 }}
+        onLayout={(e) => {
+          barWidthRef.current = e.nativeEvent.layout.width;
+          onBarLayout?.(e);
+        }}
+        onStartShouldSetResponder={() => !!uri && durationSec > 0}
+        onResponderGrant={(e) => seekFromEvent(e, true)}
+        onResponderMove={(e) => seekFromEvent(e, false)}
+      >
+        <WaveBars values={values} lit={lit} />
+      </View>
+      {!minimal ? (
+        <Pressable onPress={replay} disabled={!uri} hitSlop={8} style={({ pressed }) => [s.replayBtn, { opacity: pressed ? 0.6 : 1 }]}>
           <Text numberOfLines={1} style={[s.replayText, { color: textColor }]}>
             {pickLang(lang, { ru: "Заново", en: "Again", kk: "Қайталау" })}
           </Text>
         </Pressable>
-      </View>
-
-      {/* Drag / tap to seek */}
-      <View
-        onLayout={onBarLayout}
-        onStartShouldSetResponder={() => !!uri}
-        onMoveShouldSetResponder={() => !!uri}
-        onResponderGrant={(e) => seekFromEvent(e, true)}
-        onResponderMove={(e) => seekFromEvent(e, false)}
-        style={s.progressHit}
-      >
-        <View style={[s.progressBg, { backgroundColor: trackColor }]}>
-          <View style={[s.progressFill, { backgroundColor: accentColor, width: `${progress * 100}%` as any }]} />
-          <View style={[s.knob, { left: `${progress * 100}%` as any, borderColor: accentColor }]} />
-        </View>
-      </View>
-
-      <View style={s.timeRow}>
-        <Text style={[s.time, { color: textColor }]}>{fmt(positionSec)}</Text>
-        <Text style={[s.time, { color: textColor }]}>{durationSec > 0 ? fmt(durationSec) : "--:--"}</Text>
-      </View>
-    </View>
+      ) : null}
+    </WavePill>
   );
 }
 

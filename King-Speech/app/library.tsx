@@ -550,7 +550,7 @@ const s = StyleSheet.create({
   subtitle: { fontSize: 14, fontFamily: "Geologica_500Medium", marginTop: 2 },
   chipsScroll: { marginTop: 28, alignSelf: "stretch" },
   chips: { paddingHorizontal: 20, gap: 8 },
-  chip: { height: 36, borderRadius: 18, borderWidth: 1, paddingHorizontal: 15, justifyContent: "center" },
+  chip: { height: 36, borderRadius: 18, paddingHorizontal: 15, justifyContent: "center" },
   chipText: { fontSize: 13, fontFamily: "Geologica_700Bold" },
 
   body: { flexGrow: 1, paddingTop: 34, paddingHorizontal: 24 },
